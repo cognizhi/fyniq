@@ -100,6 +100,7 @@ deploy/local/        Compose stack           deploy/docker/   Dockerfiles (P0)
 infra/               OpenTofu (P0)           scripts/         hooks and repo scripts
 docs/prd/            PRD, reviews, research  docs/design-system/, docs/design/  UI system and prototype
 docs/user-guide/     in-app user guide (§7.9)  kb/              compiled knowledge base (§9.11)
+agents/              scheduled-agent skills (§9.12), e.g. agents/company-secretary/SKILL.md
 .claude/skills/      agent skills            .github/workflows/  CI and release-please
 ```
 

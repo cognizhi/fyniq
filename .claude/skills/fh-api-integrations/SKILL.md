@@ -102,6 +102,30 @@ a Spectral rule enforces it).
 `code` values are stable and documented, and each is produced by at least one fixture
 (QA-RPT-02). Messages say what is wrong and how to fix it (ENG-23).
 
+## Outside services: capability interfaces and adapters (rev 0.6, FR-INT-20)
+
+Every outside service (sign-in, outbound and inbound email, Slack and Zoho Cliq, payments, bank
+feeds, the Peppol Access Point, document AI) is an **adapter behind a capability interface**.
+Providers are configuration, never code paths in the core.
+
+| Capability | Adapters | Local substitute |
+|---|---|---|
+| Sign-in (FR-ADM-08) | Google, Zoho (code flow; one provider per Zoho data centre; identify by `sub`), any OpenID Connect provider, SAML (Enterprise) | Firebase Authentication emulator (mock providers) |
+| Outbound email (FR-INT-21) | Zoho ZeptoMail (now Zoho CPaaS; no "delivered" event, no idempotency key), Resend (`Idempotency-Key`, delivered events; account data in the US), SMTP; primary and failover | Mailpit |
+| Inbound email (FR-INT-22) | Resend receiving; IMAP polling of a mailbox (ZeptoMail is send-only) | Mailpit plus a local webhook |
+| Messaging (FR-NTF-04) | Slack, Zoho Cliq, generic incoming webhook | `/dev/messages` sink |
+
+To add a provider:
+1. Implement the interface with **contract tests shared by every adapter** of that capability.
+2. Credentials go to Secret Manager; the interface shows them write-only.
+3. Add a health check and a test action (test send, test message, test sign-in).
+4. Verify inbound webhook signatures, and make sends idempotent.
+5. Record the provider's processing region in the data inventory (PDPA).
+6. Add a local substitute (`fh-local-dev`).
+
+Chat messages carry deep links only: **approvals never happen in chat** (FR-NTF-04). The
+platform's own MFA applies whatever the sign-in provider.
+
 ## Clients, scopes and classes
 
 | Class (AI-34) | Who | Auth | Writes |

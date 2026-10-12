@@ -65,6 +65,13 @@ packs/sg-cpf/2027.1/
 - Packs are released independently of the platform (§12.10). Each organisation sees a
   "parameter update available" task with a diff (ENG-33).
 
+**ACRA pack** (rev 0.6): `sg-acra@<year>.<n>` holds the corporate deadlines and rules that the
+AI company secretary and the checks read (FR-CS-02): AGM and financial-statement timing, the
+annual return, changes of officers, registered office and controllers, share-issue approvals and
+their lapse, the exempt-private-company and XBRL filing categories, and audit exemption. The
+agent never states a deadline from memory (`agents/company-secretary/SKILL.md`). Source notes are
+in `docs/prd/research/`.
+
 ## Routine: January, Budget day, and whenever a source changes
 
 1. **Collect** the new values with their sources and effective dates. Summarise anything

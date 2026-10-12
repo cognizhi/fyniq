@@ -89,6 +89,25 @@ compiled knowledge base via `kb.index`, `kb.read` and `kb.search` (PRD §9.11, A
 never hold organisation figures, so a question that needs a number still goes to a read tool.
 Changing the knowledge base itself is the **fh-knowledge-base** skill.
 
+## Scheduled agents (rev 0.6, PRD §9.12, AI-61…67)
+
+A scheduled agent is a **skill file** in `agents/<name>/SKILL.md`. The first one is
+`company-secretary`.
+- **The front matter declares** the version, the tool allowlist, the outputs and the
+  permission profile.
+- **It runs on a configurable schedule and on events,** as a named principal on behalf of the
+  Owner who enabled it.
+- **Deterministic checks run first;** the model only explains and drafts.
+- **Its outputs are limited** to a run report, tasks and tier-1 drafts (`sec.*`). It never
+  files, approves or changes records.
+
+To change an agent:
+1. Edit its skill file.
+2. Extend the agent evals (QA-AI-07: golden companies with planted problems, plus red-team
+   documents).
+3. Re-pin the hash.
+4. Get a dual-approved change record (CMP-AI-03).
+
 ## Adding a catalogue task type
 
 | Step | Rule | Requirement |

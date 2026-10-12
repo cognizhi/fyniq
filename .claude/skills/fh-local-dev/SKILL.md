@@ -38,6 +38,8 @@ never put a real secret in a committed file (SEC-12).
 | Pub/Sub (P2) | Pub/Sub emulator | Same client library |
 | Load balancer, Cloud Armor, CDN | Caddy, one origin (`templates/Caddyfile.example`) | Same cookies and CSP; WAF tested in staging |
 | Email provider | Mailpit (`http://localhost:8025`) | Templates and links end to end |
+| Slack, Zoho Cliq (rev 0.6, P2) | A message sink at `/dev/messages` in the local `api`, with the same payloads | Routing and content level end to end |
+| Sign-in providers (rev 0.6) | The Firebase Authentication emulator shows a mock sign-in page for any provider ID (Google, Zoho, `oidc.*`); real provider sign-in is tested in staging | Provider linking, MFA after sign-in (the emulator's TOTP support is unconfirmed) |
 | Malware scanning | EICAR-rejecting stub; `scan` profile runs real ClamAV | — |
 | Peppol AP, bank APIs, Stripe | Prism mocks from `contracts/partners/`; `stripe-mock` | Contract-level; partner sandboxes in staging |
 | Observability | `obs` profile: OTel Collector and Jaeger | Same instrumentation |
