@@ -8,7 +8,7 @@ Built for a lean founding team, with the controls a growing company needs.**
 | Document | PRD-001 (initial PRD, greenfield) |
 | Product | Cognizhi Finance Hub Cloud ("FH Cloud"; working name) |
 | Status | Draft for founder review |
-| Revision | 0.2 (12 Oct 2026): review findings applied. See the [review](reviews/prd-001-review-2026-10-12.md) and the revision history at the end. |
+| Revision | 0.3 (12 Oct 2026): founders' money (§8.22), equity and investors (§8.23), evidence on every important activity (§8.16), in-app help and first-run walkthrough (§7.9), and recommended defaults for every open question (§20), all at the founders' request. 0.2 applied the [review](reviews/prd-001-review-2026-10-12.md). See the revision history at the end. |
 | Date | 12 Oct 2026 |
 | Owner | Cognizhi founders |
 | Reviewers | Founders; external accountant / tax agent; security reviewer (later: auditor) |
@@ -224,6 +224,9 @@ later.
   or licensed providers; the platform never stores card data.
 - Statutory audit services or tax advice. The platform prepares figures and files; the
   accountant or tax agent remains responsible for filings.
+- (rev 0.3) Company secretarial work. FH Cloud records share issues and directors' balances
+  (§8.22), keeps the resolutions and lodgement evidence, and tracks the deadlines; the register of
+  members, share certificates and ACRA lodgements stay with the company secretary.
 - Native mobile apps. P2 ships a responsive progressive web app (PWA) for approvals, receipts and
   dashboards.
 - Fully autonomous AI bookkeeping. Autonomy is limited by design (§9).
@@ -427,7 +430,7 @@ the API layer and again by database row-level security. The full matrix is Appen
 
 | # | Control | Mechanism |
 |---|---|---|
-| FM-1 | **Two-person rule for high-risk actions**, regardless of amount: releasing payments, adding or changing payee bank details, approving a pay run, reopening a period, changing roles, policies or the AI task catalogue, changing statutory parameters, voiding a posted document, editing opening balances | Approval engine requires a second founder. Step-up authentication (passkey or TOTP) for both. |
+| FM-1 | **Two-person rule for high-risk actions**, regardless of amount: releasing payments, adding or changing payee bank details, approving a pay run, reopening a period, changing roles, policies or the AI task catalogue, changing statutory parameters, voiding a posted document, editing opening balances; (rev 0.3) repaying, converting or waiving a director's balance and recording a share issue (FR-EQ-05…08) | Approval engine requires a second founder. Step-up authentication (passkey or TOTP) for both. |
 | FM-2 | **Self-approval below a threshold** for routine items (default S$2,000 per document; configurable) | Allowed, but flagged "self-approved" and queued for review |
 | FM-3 | **Weekly review** of the self-approved and high-risk log by another founder | Inbox task; unreviewed items older than 14 days show ⚠ on Checks |
 | FM-4 | **Monthly close attestation** signed by a founder who did not prepare the close | Part of the close checklist; the close cannot complete without it |
@@ -435,6 +438,7 @@ the API layer and again by database row-level security. The full matrix is Appen
 | FM-6 | **AI anomaly review** of journals, vendor changes and payments (advisory) | AI flags unusual items into the weekly review; it never approves |
 | FM-7 | **Accountant review** at least quarterly, with read access to the full audit trail | Time-boxed accountant access; review sign-off recorded |
 | FM-8 | **Break-glass for a single available founder** (e.g. the other is unreachable) | Owner break-glass with reason, 24-hour expiry, automatic notification and mandatory post-review |
+| FM-9 | (rev 0.3) **A founder never approves the settlement of their own balance**: repaying, converting or waiving a founder's balance needs another founder's approval; when every available approver benefits (for example, all founders convert together), the external accountant's recorded review is also required before posting | The approval engine excludes the beneficiary and adds the accountant step automatically; resolutions attached (FR-EQ-05, FR-EQ-06) |
 
 **Mode switching.** Switching mode is dual-controlled and audited. On a switch to Standard mode,
 the platform lists every user whose role combination now conflicts and blocks the switch until
@@ -444,7 +448,7 @@ the conflicts are resolved or explicitly overridden.
 
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
-| FR-APR-01 | Approval policies per object type (bill, payment batch, journal, pay run, expense claim, PO, credit note, write-off, vendor bank change, period reopen, parameter change, role change, AI proposal) with conditions (amount, entity, department, account, vendor, risk tier) and ordered steps (role or named user, quorum) | M | P1 |
+| FR-APR-01 | Approval policies per object type (bill, payment batch, journal, pay run, expense claim, PO, credit note, write-off, vendor bank change, period reopen, parameter change, role change, AI proposal; (rev 0.3) director-balance settlement and share issue, FR-EQ-05/08) with conditions (amount, entity, department, account, vendor, risk tier) and ordered steps (role or named user, quorum) | M | P1 |
 | FR-APR-02 | The approver sees exactly what is approved: the document, the ledger impact (debits and credits), affected balances and checks, and a diff against the previous version | M | P1 |
 | FR-APR-03 | Each approval is a signed record: approver, time, method of authentication, and a SHA-256 hash of the approved payload. For passkey users the WebAuthn challenge includes that hash, so the approval is a cryptographic signature over exactly what was approved. Executing a payload whose hash differs from the approved hash is impossible. | M | P1 |
 | FR-APR-04 | Step-up authentication (passkey or TOTP) for high-risk approvals | M | P1 |
@@ -464,7 +468,8 @@ visual identity.
 
 ### 7.1 Information architecture
 
-Top-level navigation (left sidebar, collapsible to icons with labels in tooltips; at most 12
+Top-level navigation (left sidebar, collapsible to icons with labels in tooltips; at most 13
+(rev 0.3; 12 before Equity)
 items, grouped by job, not by accounting jargon; feature-switched items are hidden when the
 feature is off, FR-ORG-06):
 
@@ -478,9 +483,10 @@ feature is off, FR-ORG-06):
 | **Banking** | Bank and card accounts, feeds and imports, categorise, match, rules, transfers, reconciliations | Uncategorised count |
 | **Payroll** | Employees, pay runs, CPF/SDL/SHG, payslips, IR8A | Due status |
 | **Projects** (feature-switched) | Projects, timesheets, profitability | Over-budget count |
-| **Accounting** | Journals, chart of accounts, dimensions, fixed assets, accruals and schedules, FX, period close, year end | Close status |
+| **Accounting** | Journals, chart of accounts, dimensions, fixed assets, accruals and schedules, FX, period close, year end, director accounts and share issues (rev 0.3, §8.22) | Close status |
 | **Reports** | Financial statements, management reports, tax reports, saved and scheduled reports, board pack | — |
-| **Planning** | Budgets, forecasts and scenarios, 13-week cash, feasibility, cap table and funding | — |
+| **Planning** | Budgets, forecasts and scenarios, 13-week cash, feasibility, funding plan (rev 0.3: the cap table moved to Equity) | — |
+| **Equity** (feature-switched; rev 0.3) | Who owns the company (cap table, issued and fully diluted), shareholders and investors, share classes, share issues and transfers, SAFEs and notes, option pool, round simulator, investor updates (§8.23) | ACRA tasks due |
 | **Compliance** | Statutory calendar, GST returns, filings, Compliance Center (controls and evidence), audit trail explorer | Due count |
 | Settings (footer) | Organisation, users and roles, team mode, approval policies, AI settings and task catalogue, **connected apps** (API and MCP clients, §9.7), integrations and webhooks, statutory parameters | — |
 
@@ -632,7 +638,7 @@ mode):
 
 | Area | Basic: the essentials | Expert: adds |
 |---|---|---|
-| Navigation | Home, Inbox, Sales, Purchases, Contacts, Banking, Reports; Payroll and Projects when the role and feature switch allow (≤ 9 items) | Accounting, Planning, Compliance and all sub-pages (≤ 12 items, §7.1) |
+| Navigation | Home, Inbox, Sales, Purchases, Contacts, Banking, Reports; Payroll and Projects when the role and feature switch allow; (rev 0.3) Equity as "Who owns the company" (≤ 10 items) | Accounting, Planning, Compliance and all sub-pages (≤ 13 items, §7.1) |
 | Data entry | Guided forms: contact, date, amount, category, GST code (suggested), attachment; plain words ("Money in", "Category"); one document at a time | Lines with accounts, dimensions, FX rate overrides, service periods and spreads, discounts, tax overrides, numbering; spreadsheet grids with paste, fill-down and `=` arithmetic (FR-UX-07) |
 | Lists | Simple tables with the key columns, saved filters and a "needs attention" view | Full grids: column chooser, bulk edit, multi-sort, export, saved views (FR-UX-12) |
 | Banking | Categorise one line at a time from suggestions; accept or change; match to an invoice | Bulk categorise, split, transfers, rules editor with regex and back-test (FR-BNK-05), reconciliation workspace |
@@ -642,6 +648,8 @@ mode):
 | Density | Comfortable | Compact by default (the user can change it) |
 | AI assistant | Plain-language answers and suggestions | Also shows ledger lines, account codes and query details behind each figure |
 | Settings | Profile, theme, notifications, connected apps | Everything the role allows |
+| Help (rev 0.3) | Tooltips in plain words, the first-run tour, guide pages for Basic features | Tooltips add the accounting detail; every guide page (§7.9) |
+| Equity (rev 0.3) | Ownership chart and table, my holding, the latest round, a simple round simulator | Classes and rights, instruments, option pool, transactions, fully diluted views, reconciliation (FR-EQ-27) |
 
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
@@ -656,12 +664,29 @@ mode):
 FR-UX-08 (Plain view / Accountant view) stays an independent toggle inside Expert mode. Basic mode
 always uses the Plain view.
 
+### 7.9 Help: tooltips, user guide and first-run walkthrough (rev 0.3, founder request)
+
+Every page explains itself where the user is, a user guide covers the whole platform, and a
+first-time user gets a short animated walkthrough. This builds on the guided set-up (FR-UX-10)
+and the teaching empty states and glossary definitions (FR-UX-11). Help content is part of the
+product: it lives in the repository, ships with each release and is tested like code.
+
+| ID | Requirement | Pri | Phase |
+|---|---|---|---|
+| FR-UX-30 | **Tooltips on every page**: every field label, column header, status chip, stat tile, chart, icon-only control and accounting term has help: a tooltip for a short hint, or an ⓘ info popover (what it is, why it matters, an example, "Learn more" to the guide page). Help **supplements** the visible label and never replaces it. Basic mode words it plainly; Expert mode adds the accounting detail (account, posting, rule ID). WCAG 2.2: shown on hover **and** keyboard focus, dismissible with Esc, hoverable, persistent until dismissed (SC 1.4.13); on touch the ⓘ target is at least 24 × 24 px (SC 2.5.8) and opens on tap | M | P1 |
+| FR-UX-31 | **One help registry**: every help text has a key in the feature registry (FR-UX-29), so the Basic/Expert tag, the tooltip, the guide page and the tour step of a feature are defined in one place. Text is plain English, uses the UI's own names, is reviewed by the accountant where it states an accounting or statutory rule, and is ready for translation (keys, no text in code). A test fails when a field, column, chip, tile or route has no help key (QA-UI-05) | M | P1 |
+| FR-UX-32 | **User guide** for the entire platform, in the app at `/help` (header **Help** button, ⌘K "Help: …", and "Learn more" links): getting started; one page per module and per common task ("How do I record a bill?"); concepts in plain words (money in and out, debits and credits, statuses, Basic and Expert modes, approvals, AI proposals, founders' money); Singapore guides (GST, CPF, filings); keyboard shortcuts; the glossary (§21); **What's new**, built from the release notes. Searchable, deep-linkable, printable, filtered by the user's role and mode. Written in Markdown in `docs/user-guide/`, built into the web app (no external CMS) and versioned with each release; screenshots are regenerated from the end-to-end tests in light and dark themes, so they never go stale | M | P1 |
+| FR-UX-33 | **Context-aware help**: the Help panel opens on the guide page for the current screen (route → page in the registry); the AI assistant answers "how do I…" questions from the user guide with links to the pages it used (the curated knowledge base of AI-25) | S | P1 |
+| FR-UX-34 | **First-run walkthrough**: on a user's first sign-in, an optional animated tour of the real interface: a spotlight moves to each element with a short caption (≤ 7 steps, about 2 minutes): the Basic/Expert toggle, Home, Inbox, recording money in and out, approving, ⌘K search, the AI panel and Help. Variants per role (founder or owner, accountant, employee, approver, board viewer). Skippable at every step, resumable, replayable from Help ("Take the tour again"); progress is stored per user on the server. The tour **never changes data** and never clicks on the user's behalf. With `prefers-reduced-motion` it shows the same steps without animation. It is fully keyboard-operable (Next, Back, Esc), announces each step to screen readers, moves focus to the step and back to where it started, and never hides the focused element (SC 2.4.11) | M | P1 |
+| FR-UX-35 | **Feature tours and "What's new"**: the first time a user opens a feature, or after a release changes it, a one- to three-step tip offers a short tour; release highlights appear once as a dismissible "What's new" card linked to the guide. Each user can turn tips off | S | P2 |
+| FR-UX-36 | **Practice safely**: tours and guide pages can open the sample company (FR-UX-10) in a separate, clearly labelled organisation, so users can try a task without touching the real books | S | P1 |
+
 ---
 
 ## 8. Functional requirements
 
 Each module lists its requirements with priority and phase. Appendix A maps every workbook
-feature to the requirement that replaces it. Posting rules are in §10.3 and Appendix B.
+feature to the requirement that replaces it. Posting rules are in §10.2 and Appendix B.
 
 ### 8.1 Organisation and settings
 
@@ -674,6 +699,7 @@ feature to the requirement that replaces it. Posting rules are in §10.3 and App
 | FR-ORG-05 | **Effective-dated statutory parameters** (GST rates and codes, CPF rate tables and ceilings, SDL, SHG, CIT tiers and rebates) maintained as versioned packs with source URL, effective date, verifier and dual approval (§10.6) | M | P1 |
 | FR-ORG-06 | Organisation-level feature switches (payroll, projects, multi-currency, AI assistant, portals) so the UI shows only what is used | S | P1 |
 | FR-ORG-07 | Data region and retention settings visible to the Owner (read-only where fixed by the platform) | S | P1 |
+| FR-ORG-08 | (rev 0.3) **Recommended defaults, configurable**: every policy the founders were asked to decide (§20, recommended defaults) and every evidence rule (FR-DOC-06) ships set to the recommended value, with a one-line reason and a link to the guide. Settings show **Recommended** or **Changed from recommended**, offer "Reset to recommended", are effective-dated and audited, and need dual approval where FM-1 applies (thresholds, retention, AI and MCP settings, approval policies) | M | P1 |
 
 ### 8.2 Chart of accounts and dimensions
 
@@ -681,7 +707,7 @@ feature to the requirement that replaces it. Posting rules are in §10.3 and App
 |---|---|---|---|
 | FR-COA-01 | Pre-loaded Singapore start-up chart of accounts (the workbook's 83 accounts and ranges, Appendix B of the workbook PRD), editable | M | P1 |
 | FR-COA-02 | Account attributes: code, name, type (asset, liability, equity, revenue, expense), report group, cash-flow line, function (COGS, R&D, S&M, G&A), money-account flag, default GST code, currency (for bank accounts), control-account flag, active flag, usage guidance shown at entry | M | P1 |
-| FR-COA-03 | **System accounts** (AR, AP, GST control, FX and rounding, deferred revenue, prepayments, salaries payable, CPF and SDL payable, employer CPF, SDL, depreciation, accumulated depreciation, suspense, retained earnings, expense claims payable) are protected: they cannot be deleted, retyped or posted to manually where the engine owns them | M | P1 |
+| FR-COA-03 | **System accounts** (AR, AP, GST control, FX and rounding, deferred revenue, prepayments, salaries payable, CPF and SDL payable, employer CPF, SDL, depreciation, accumulated depreciation, suspense, retained earnings, expense claims payable; (rev 0.3) director accounts 2500 and 2120, share capital 3010/3020, capital contribution 3300) are protected: they cannot be deleted, retyped or posted to manually where the engine owns them | M | P1 |
 | FR-COA-04 | Accounts with postings cannot be deleted; they can be deactivated (blocked for new postings) or merged by an approved journal-preserving merge | M | P1 |
 | FR-COA-05 | Hierarchy (parent/child) for reporting roll-ups; unlimited depth for reporting, posting only to leaves | S | P1 |
 | FR-DIM-01 | **Dimensions** (tracking): Department, Project, and up to 8 custom dimensions (e.g. Product line, Region, Customer segment, Funding source). Values can be required per account. | M | P1 |
@@ -749,7 +775,7 @@ feature to the requirement that replaces it. Posting rules are in §10.3 and App
 | FR-AP-04 | **Bill capture**: forward to a per-organisation email address or upload/photograph; document AI extracts vendor, dates, number, lines, GST and totals into a draft bill; duplicates flagged | S | P2 |
 | FR-AP-05 | **Receiving Peppol invoices** (InvoiceNow inbound) into draft bills; the InvoiceNow requirement covers purchase data as well as sales | M with FR-AR-12 | P2 |
 | FR-AP-06 | AP ageing, bills to pay by due date, cash requirement forecast | M | P1 |
-| FR-AP-07 | **Expense claims**: employee submits receipts (mobile), selects category and project, GST captured; approver approves; posts to 2150 Expense claims payable; reimbursed in a payment batch | M | P1 (web) / P2 (PWA) |
+| FR-AP-07 | **Expense claims**: employee submits receipts (mobile), selects category and project, GST captured; approver approves; posts to 2150 Expense claims payable; reimbursed in a payment batch. (rev 0.3) A director may keep a claim as a loan to the company instead (FR-EQ-02) | M | P1 (web) / P2 (PWA) |
 | FR-AP-08 | Corporate card transactions imported (feed or statement) with receipt matching and missing-receipt reminders | S | P2 |
 | FR-AP-09 | Recurring bills | S | P1 |
 | FR-AP-10 | Vendor statement reconciliation | C | P2 |
@@ -820,7 +846,7 @@ feature to the requirement that replaces it. Posting rules are in §10.3 and App
 | FR-TAX-04 | **IRAS audit listings**: sales and purchase listings in Excel/CSV for any period (what IRAS's current GST audit guidance asks for); IRAS Audit File (IAF) only if IRAS republishes a specification (§14.2) | M | P1 |
 | FR-TAX-05 | GST registration monitor: retrospective (calendar-year taxable supplies) and prospective (forecast next 12 months) tests against the threshold, as in the workbook | M | P1 |
 | FR-TAX-06 | Corporate income tax support: tax-adjusted profit working paper (non-deductible expenses, capital allowances), SUTE/PTE and rebate estimates, ECI and Form C-S/C-S Lite data pack for the tax agent | S | P2 |
-| FR-TAX-07 | **Statutory calendar**: GST F5, CPF, IR8A/AIS, ECI, Form C-S/C, ACRA annual return, AGM where applicable, register-of-controllers updates; dates derived from the organisation's FY and GST periods; reminders and Inbox tasks; overdue items on Checks (CMP-02) | M | P1 |
+| FR-TAX-07 | **Statutory calendar**: GST F5, CPF, IR8A/AIS, ECI, Form C-S/C, ACRA annual return, AGM where applicable, register-of-controllers updates, (rev 0.3) share-issue approvals and returns of allotment (FR-EQ-09); dates derived from the organisation's FY and GST periods; reminders and Inbox tasks; overdue items on Checks (CMP-02) | M | P1 |
 | FR-TAX-08 | ACRA filing pack: filing-category classifier (solvent exempt private company, simplified XBRL, full XBRL), BizFinx data pack, then XBRL (Taxonomy 2026) validated with Arelle (§14.2) | C | P3 |
 | FR-TAX-09 | Country packs: tax codes, return formats and payroll rules for other countries as new effective-dated packs | C | P3 |
 
@@ -862,7 +888,7 @@ feature to the requirement that replaces it. Posting rules are in §10.3 and App
 | FR-PLN-04 | **Rolling forecast**: actuals replace forecast months automatically as periods close | S | P2 |
 | FR-PLN-05 | **13-week cash forecast** from open AR and AP (with expected dates from payment behaviour), recurring items, payroll and planned payments | S | P2 |
 | FR-PLN-06 | **Feasibility** calculator (workbook model): NPV, IRR, payback, discounted payback, profitability index, break-even, margin of safety, sensitivity grid, verdict | S | P1 |
-| FR-PLN-07 | **Cap table and funding** (workbook model): holders, share classes, options, SAFEs and notes (cap, discount), next priced round, dilution; fix the workbook limitation (converted SAFE shares and whole-share rounding) | S | P2 |
+| FR-PLN-07 | **Cap table and funding** (workbook model): holders, share classes, options, SAFEs and notes (cap, discount), next priced round, dilution; fix the workbook limitation (converted SAFE shares and whole-share rounding). (rev 0.3) **Partly superseded**: the register, the cap table and round modelling moved to §8.23 (FR-EQ-15…27) in P1; FR-PLN-07 keeps the funding plan inside forecasts, starting from the current cap table | S | P2 |
 | FR-PLN-08 | Forecasts are sandboxed: they never post to the ledger; AI may run scenarios freely (read lane) | M | P1 |
 
 ### 8.15 Controls and checks
@@ -884,6 +910,33 @@ feature to the requirement that replaces it. Posting rules are in §10.3 and App
 | FR-DOC-02 | Stored encrypted in Cloud Storage with retention locks matching the statutory retention period (§14); deletions only by retention expiry, never by users | M | P1 |
 | FR-DOC-03 | Document inbox (emailed-in documents) with AI extraction into drafts (FR-AP-04) | S | P2 |
 | FR-DOC-04 | Generated documents (invoices, payslips, reports) are stored as issued, with a hash, so a re-issued copy can be proven identical | M | P1 |
+| FR-DOC-05 | (rev 0.3) **Evidence on every important activity**: an **Evidence** panel on every record and on every important activity (the FR-APR-01 approval objects, filings and payments to IRAS, CPF and ACRA, close tasks, reconciliations, equity transactions, investor-record changes, founders' settlements, AI-proposal decisions, access reviews and manual control evidence). Add files by drag-and-drop, file picker, **pasting a screenshot from the clipboard**, phone camera (PWA, P2) or forwarding an email; several files per item, each with an evidence type (e.g. "ACRA acknowledgement", "board resolution", "bank letter", "screenshot"), a short note and the date it relates to | M | P1 |
+| FR-DOC-06 | (rev 0.3) **Evidence rules** per activity type: *required*, *recommended* or *optional*, with the evidence types expected. A missing required item blocks completion (✖, in plain words: what is missing and how to add it); a missing recommended item is ⚠. Recommended rules ship as defaults (table below) and are organisation settings (FR-ORG-08) | M | P1 |
+| FR-DOC-07 | (rev 0.3) **Evidence integrity**: each file's SHA-256, uploader, time, source (upload, paste, email, API) and parent record are written to the audit trail in the same transaction (AUD-01). While the parent is a draft, files can be removed; once it is approved, posted or completed, evidence is **append-only**: a file can only be superseded by a newer one with a reason, and both are kept. Stored under the retention lock of FR-DOC-02; a nightly job re-verifies hashes | M | P1 |
+| FR-DOC-08 | (rev 0.3) **Safe files**: PDF, PNG, JPEG, HEIC (converted to JPEG), WebP, CSV, XLSX, DOCX, TXT, EML and MSG; up to 25 MB per file (setting); malware-scanned before they are attached (ClamAV, SEC-24); image metadata such as location is stripped; office files with macros are rejected. Files are untrusted data for the AI (AI-18) | M | P1 |
+| FR-DOC-09 | (rev 0.3) **Personal data in evidence**: each file carries a data class (general, personal data, bank details, payroll, identity document). Payroll and identity evidence follow payroll permissions (FR-PAY-13); the NRIC pattern scan flags unmasked identifiers; a redaction tool creates a redacted copy and keeps the original restricted (P2) | M | P1 (class) / P2 (redaction) |
+| FR-DOC-10 | (rev 0.3) **Find and export evidence**: search by activity, type, date and uploader; a "missing evidence" list; an evidence pack for a period, a filing, an investor or an audit, with a manifest of file hashes (feeds the auditor pack of FR-RPT-10) | S | P1 (search) / P2 (packs) |
+| FR-DOC-11 | (rev 0.3) **Evidence through the API**: integrations upload with `POST /v1/{collection}/{id}/evidence` (multipart, `Idempotency-Key`, the same scanning and rules). AI and MCP clients never upload directly: they can only propose attaching an existing document (`doc.attach`, tier 1), which a human approves | M | P1 |
+
+**Recommended evidence rules (rev 0.3; defaults, configurable under FR-ORG-08):**
+
+| Activity | Required | Recommended |
+|---|---|---|
+| Bill, expense claim, founder cost paid personally | Receipt or invoice | Business purpose note |
+| Payee bank-detail change | Bank letter, or a screenshot of the vendor's confirmation through a known channel | Call-back note (who, when, number used) |
+| Payment batch release | — | Bank confirmation screenshot or file |
+| Manual journal | Supporting calculation or document above S$1,000 | Explanation |
+| Bank reconciliation sign-off | Bank statement for the period (FM-5) | — |
+| Period close | Signed checklist (generated); reconciliations | Flux explanations (FR-GL-14) |
+| GST F5, Form C-S/C, ECI, AIS filing | Submission acknowledgement | Working papers |
+| CPF payment | Payment acknowledgement | CPF submission file |
+| Share issue or conversion (FR-EQ-06, FR-EQ-17) | Shareholders' and board resolutions; written agreement for non-cash consideration; ACRA acknowledgement | Valuation or price basis |
+| Share transfer | Signed transfer form; ACRA acknowledgement | Stamp duty certificate |
+| SAFE, note, option grant | Signed instrument or grant letter | Board resolution |
+| Founder settlement or waiver (FR-EQ-05…07) | Founder's balance confirmation; deed or resolution | — |
+| Investor record change | — | Source document (e.g. updated agreement) |
+| Period reopen, parameter change, role change | Reason (text) | Supporting document |
+| Access review, control evidence (manual) | Review record or screenshot | — |
 
 ### 8.17 Automation
 
@@ -952,6 +1005,117 @@ checked by the contract tests (QA-API-01…03).
 | FR-ADM-03 | Session management: idle timeout, absolute timeout, device list, revoke sessions, sign-in alerts | M | P1 |
 | FR-ADM-04 | Team mode, approval policies, AI settings and task catalogue, statutory parameters, integrations — all changes approval-gated and audited | M | P1 |
 | FR-ADM-05 | Tenant usage and cost view (AI tokens, storage, exports) | S | P2 |
+
+### 8.22 Founders' money: director accounts, deferred pay and conversion to share capital (rev 0.3, founder request)
+
+Founders of a young company often pay company costs from their own pockets, lend it money, take
+no salary or defer it, and later turn what the company owes them into shares. The workbook had
+the accounts for this (1250 Staff & director advances, 2500 Loan from director / shareholder,
+2700 Convertible notes / SAFE, 3010/3020 Share capital, 6050 Directors' fees) but no workflow,
+so these amounts became manual journals without a trail. FH Cloud records each founder's
+position from the first receipt to the share allotment, and keeps the evidence the accountant,
+the tax agent and future investors will ask for.
+
+**The options and the general view.** This is a digest for the founders' decision (open
+questions 15 and 16). It is general information, not tax or legal advice: the accountant and the
+tax agent confirm a route before it is used. The facts were checked against official sources on
+12 Oct 2026 (Appendix I.7 and the [source notes](research/founders-money-sources-2026-10-12.md));
+[verify] marks what no official source confirmed.
+
+Whatever it started as (money lent, a cost paid personally, unpaid pay, a fee), an amount the
+company owes a founder is a **liability to a related party**. It can be settled in five ways:
+
+| Route | What happens | Posting (summary) | Founder: tax and CPF | Company: tax | Paperwork | How investors tend to see it ¹ |
+|---|---|---|---|---|---|---|
+| **Repay** | The company pays the founder back in cash | Dr 2500 / Cr Bank | None: repaying a loan or reimbursing the company's own cost is not income | The underlying costs are deducted as usual | Receipts, in the company's name for the GST claim | Fine while small; repaying founders from a new round's money is rare, and grant money cannot be used for it ¹ |
+| **Keep as a loan** | The balance stays owed, interest-free and repayable on demand unless agreed otherwise | None; 2500 stays | None while it stays a loan | None | A short loan note or board minute with the terms | Disclosed in due diligence; often converted or waived as a condition of the round |
+| **Convert to shares** (capitalise) | The company allots new shares, and the debt is the payment for them | Dr 2500 (or 2120) / Cr 3010 share capital; no cash | No income when the debt was a loan or a reimbursement. When it was pay, the pay was already taxed when due; shares worth more than the debt may be a further gain [verify] | No deduction for issuing shares; no gain or loss when the founder converts as a shareholder | Shareholders' approval (a written resolution is allowed) lodged with ACRA within 14 days; then the return of allotment with the written conversion agreement. The shares exist only when ACRA updates the register of members, and that date cannot be backdated | Preferred: a clean balance sheet before investors' money comes in |
+| **Waive** (capital contribution) | The founder forgives the balance and receives nothing | Dr 2500 / Cr 3300 capital contribution (when waived as a shareholder) | None | A waived non-trade loan is generally capital (IRAS ruled so for one applicant in 2026); waiving an amount the company deducted earlier (pay, fees) may be taxable [verify] | Deed of waiver or written resolution | Simple; the founder gives up the claim and every shareholder gains pro rata |
+| **Convert to a SAFE or convertible note** | The balance becomes an instrument that converts at the next priced round | Dr 2500 / Cr 2700 | As for a loan | None | Instrument terms; cap table (FR-PLN-07) | Common at seed; adds to the dilution the round must model |
+
+¹ The investor practice comes from US and UK sources; Singapore-specific practice is not
+confirmed. The Startup SG Founder grant (S$20k–S$50k, matched 1:1 by the founders' paid-up
+capital) must not be used to pay off loans from the founders. Whether a capitalised founder loan
+counts as the founders' capital injection is for Enterprise Singapore to confirm [verify].
+
+Founder **pay** is a separate decision, best made **before** the month, because the tax and CPF
+effects follow the choice, not the cash:
+
+| Choice | Effect | When it fits |
+|---|---|---|
+| **No salary**, agreed in writing before the period | Nothing to post, no CPF, nothing to convert later | The usual choice while the company cannot pay; the cleanest |
+| **Salary paid** | A normal pay run (§8.7) | When cash allows |
+| **Salary deferred** | The pay run posts as usual (salary expense, CPF, SDL); the net pay moves to 2120 Deferred remuneration payable instead of the bank. CPF falls due at the month end on wages due, paid or not (pay by the 14th of the next month to avoid interest of 1.5% a month), and the founder is taxed on salary in the year it is due, paid or not [verify CPF for unpaid director salary] | Only when the founders accept paying CPF and tax on money not yet received; repay or convert later |
+| **Director's fee** | Approved by the shareholders; taxed in the year the director becomes entitled (for fees approved in arrears, the date of the meeting that votes them); no CPF on fees voted at a general meeting; Dr 6050 / Cr 2120 until paid | Directors who are not employees, or a deliberate split between fee and salary |
+| **Shares instead of pay** ("sweat equity") | An equity-settled share-based payment measured at the shares' grant-date fair value; employment income to the founder, who pays tax without receiving cash; no CPF on shares in kind; no tax deduction for the company for newly issued shares [verify valuation basis] | Rarely sensible before a priced round; needs a valuation |
+
+**The traps, and what the platform does about each.**
+
+1. **Deferring pay silently.** Accruing pay the company never meant to pay creates CPF and tax
+   obligations without the cash, and a liability investors will question. The pay run applies a
+   recorded choice per director and refuses a deferral without one (FR-EQ-04).
+2. **Mixing personal and company spending.** Every founder-paid cost needs a receipt and a
+   business purpose, as for any expense claim. Input GST is claimable only with a tax invoice
+   addressed to the company; an invoice in a founder's name is not claimable unless the founder
+   acted as the company's agent (FR-EQ-02). Costs from before incorporation follow their own rules
+   (FR-EQ-03).
+3. **Converting at an arbitrary price.** The price per share decides who owns what. A price away
+   from the latest round or a valuation moves value between shareholders, so the price basis is
+   recorded and every shareholder's approval is attached. Shares issued without the
+   shareholders' approval are void (FR-EQ-06).
+4. **Overdrawn director accounts.** A debit balance is a loan to a director. The Companies Act
+   bans loans to directors except in an **exempt private company** (no corporate shareholder, at
+   most 20 members) and for approved advances for company expenses. A company loses exempt status
+   when a corporate investor joins, so a debit balance that was allowed becomes a problem at the
+   round (FR-EQ-11).
+5. **Converting without the paperwork.** The conversion stays pending, and the balance stays a
+   liability, until ACRA has registered the allotment; the ledger posts on that date, never
+   earlier. A conversion meant to show in this year's balance sheet must be registered before
+   the year end (FR-EQ-06, FR-EQ-09).
+6. **Misstating the cash flow.** A conversion moves no cash. The cash flow statement must not show
+   it as shares issued for cash and a loan repaid (FR-EQ-10).
+
+| ID | Requirement | Pri | Phase |
+|---|---|---|---|
+| FR-EQ-01 | **Director accounts**: one sub-ledger per director or shareholder on 2500 Loan from director / shareholder (and on 2120 Deferred remuneration payable), linked to the person's contact and, where employed, the employee record. Every movement records its **origin** (cash lent, cost paid personally, pay, fee) because the tax and accounting result depends on it. A statement per person: opening balance, movements by origin, repayments, conversions, waivers, closing balance; PDF export for balance confirmations | M | P1 |
+| FR-EQ-02 | **"Paid personally"** on expense claims (FR-AP-07): when the claimant is a director, each claim settles either to 2150 (reimburse) or to the director's account on 2500 (keep as a loan). Receipt and business purpose are required as for any claim; input GST is claimed only when the tax invoice is addressed to the company, otherwise the GST stays in the cost; another founder approves (FM-2/FM-3 apply below the self-approval threshold) | M | P1 |
+| FR-EQ-03 | **Costs before incorporation or before GST registration**: recorded with their original date and flagged for the accountant's decision. Income tax: revenue costs from up to 12 months before the deemed start of business are deductible (Income Tax Act s14R); incorporation costs are capital; founders' revenue costs from before incorporation [verify]. GST: input tax from before incorporation is claimable in the first GST return with IRAS's approval when the payer became a member, officer or employee, was reimbursed (or holds a written undertaking), was not GST-registered and bought only for the business, and the pre-registration rules hold (services within 6 months; goods still held). Posted at the books start or the adoption date | S | P1 |
+| FR-EQ-04 | **Founder pay choice** per director per period (no salary, salary paid, salary deferred, director's fee), effective-dated and stored with the signed decision. The pay run applies it: deferred net pay goes to 2120 for that person, and the run shows in plain words the CPF, SDL and income tax that still fall due. A deferral without a recorded choice is ✖. Default for new directors: "No salary" (§20 recommended default 16; FR-ORG-08) | M | P1 (with payroll) |
+| FR-EQ-05 | **Settlement routes** for a director's balance on 2500 or 2120: repay (payment batch; FM-1), keep (terms: interest, repayment date, subordination), convert to shares (FR-EQ-06), waive (FR-EQ-07), or convert to a SAFE or convertible note (2700; FR-PLN-07). Each route is an approval object (FR-APR-01) that shows its ledger impact before approval (FR-APR-02), and FM-9 applies. The default route ("keep as a loan") and the default price basis ("latest priced round") are organisation settings (§20 recommended default 15; FR-ORG-08) | M | P1 |
+| FR-EQ-06 | **Conversion to share capital** (capitalisation), in two steps. **Approve**: choose the person, the balance and amount, the share class, the price per share with its basis (latest priced round, independent valuation, or a price every shareholder approves); shares = `RND-SHARE`, and the remainder stays on the director's account. Attach the shareholders' approval (Companies Act s161; a private company may use a written resolution, s184A), the board resolution, the written conversion agreement and the founder's signed balance confirmation. Record the founder's **capacity** (lender, employee or shareholder). **Effective**: record the lodgement reference and the effective date, which is the filing date once ACRA's electronic register of members shows the allotment (FR-EQ-09); the entry posts on that date and is never backdated: Dr 2500/2120 converted amount, Cr 3010 or 3020. Until then the balance stays a liability and the conversion shows as pending. The accountant picks the measurement basis: carrying amount (the default, when the founder converts as a shareholder) or the shares' fair value with the difference in profit or loss (IFRIC 19 ¶9 and its Singapore equivalents; SFRS for Small Entities ¶22.15A–C); a basis other than the default needs a note | M | P1 |
+| FR-EQ-07 | **Waiver**: Dr 2500/2120; Cr 3300 Capital contribution (equity) when the founder waives as a shareholder, or Cr other income otherwise (the accountant's choice, with a reason). A waived amount the company deducted earlier (pay, fees) is tagged for the tax computation [verify taxability] | M | P1 |
+| FR-EQ-08 | **Register of share issues**: every allotment, for cash or not, with holder, class, number, price, consideration type (cash, debt capitalised, services, SAFE or note conversion), resolution references, the ACRA lodgement reference and the **effective date** (the filing date, once ACRA has updated the electronic register of members). Share-capital accounts accept postings only from this register or opening balances (INV-13). It is the issues part of the equity register (§8.23), from which the cap table is computed | M | P1 |
+| FR-EQ-09 | **ACRA steps**, tracked with their evidence (FH Cloud does not lodge, §4.2, §9.6): (a) the shareholders' approval of the share issue is lodged within 14 days of the resolution (Companies Act s161(5) and s186): a ⏰ statutory-calendar task (FR-TAX-07); the approval lapses at the next AGM (or the date by which it must be held), so a conversion not registered by then needs a new approval (⚠); (b) the return of allotment, lodged with the written conversion agreement or a statement of particulars for shares not paid in cash (s63, s63B): an approved conversion not registered after a configurable number of days (default 14) is ⚠ | M | P1 |
+| FR-EQ-10 | **Presentation**: conversions, waivers and other non-cash movements are left out of the cash flow statement and listed as non-cash financing transactions; the statement of changes in equity shows shares issued for cash and for non-cash consideration separately; a related-party schedule (balances with directors, their pay and fees, conversions, waivers) feeds the notes (FR-RPT-11) | M | P1 |
+| FR-EQ-11 | **Director's account in debit**: a director's net balance (2500 and 2120 together) in debit at a month end raises ⚠ on Checks, and the balance sheet presents it in 1250 Staff & director advances. Exempt-private-company status is an effective-dated organisation attribute (FR-ORG-01); when the company is not exempt, the message cites the Companies Act s162 ban on loans to directors and its exception for advances for company expenses (approved in general meeting, or repaid within 6 months after the next AGM). Losing exempt status (for example when a corporate investor joins) re-runs the check | M | P1 |
+| FR-EQ-12 | **Year-end confirmation**: each director confirms their closing balance in the app (passkey); an unconfirmed balance is ⚠ on the year-end close checklist | S | P1 |
+| FR-EQ-13 | **Shares for services** (equity-settled share-based payment): grant record with the grant-date fair value (SFRS(I) 2 / IFRS 2; SFRS for Small Entities section 26), vesting and the expense recognised over the service period; employment-income data for IR8A [verify valuation]; no company tax deduction for newly issued shares. Settling pay already accrued is a conversion (FR-EQ-06), not a share-based payment | C | P2 |
+| FR-EQ-14 | **Modes** (§7.8): the "Paid personally" option and a "Money I put in" card for each founder (balance, latest items, pending settlements) are **Basic**; the settlement routes and the register of share issues are **Expert**. The ⚠ and ⏰ items of FR-EQ-09 and FR-EQ-11 show in both modes (FR-UX-24) | S | P1 |
+
+### 8.23 Equity: shareholders, investors, cap table and dilution (rev 0.3, founder request)
+
+The founders need to know at any date who owns what, what a new round would do to each holder,
+and what every investor holds and is entitled to. FR-PLN-07 planned a cap table **model** for P2;
+this section makes the **equity register** a P1 record, kept from equity transactions, and keeps
+round modelling as a sandbox like forecasts (FR-PLN-08). For a private company the legal register
+of members is ACRA's electronic register of members (EROM); FH Cloud mirrors it, adds the history,
+the instruments ACRA does not hold (SAFEs, notes, options) and the evidence, and reconciles to it.
+
+| ID | Requirement | Pri | Phase |
+|---|---|---|---|
+| FR-EQ-15 | **Holders and investors**: every shareholder, SAFE or note holder and option holder is a contact with the role *investor* or *shareholder* (Contacts filter): individual or entity, identifiers (protected like employee identifiers, CMP-PD-07), address, contact people, holdings by class, instruments, rights and documents. A change to a holder record is versioned, audited and approved; identity documents are evidence (FR-DOC-05) with the personal-data class | M | P1 |
+| FR-EQ-16 | **Share classes**: ordinary and preference (series), each with structured rights: votes per share, liquidation preference (multiple, participating or not, seniority), dividend rights, conversion ratio, anti-dilution (none, broad-based weighted average, full ratchet), pro-rata and redemption rights; the constitution and shareholders' agreement attached as evidence | M | P1 |
+| FR-EQ-17 | **Equity transactions**, append-only and dated by their effective date: issue for cash (Dr Bank, Cr 3010/3020), issue for non-cash consideration (FR-EQ-06), **transfer** between holders (no entry in the company's books; share duty on the transfer document is the parties' matter, on the higher of price and net asset value [verify rate]), conversion between classes, SAFE or note conversion (FR-EQ-18), option exercise (FR-EQ-19); cancellation, buy-back, capital reduction, split and consolidation are C/P2. Each transaction needs approval (FM-1, FM-9) and evidence (FR-DOC-06) and opens its ACRA tasks (FR-EQ-09; how transfers are lodged [verify]). A wrong transaction is corrected by a reversing transaction, never edited | M | P1 |
+| FR-EQ-18 | **SAFEs and convertible notes**: holder, amount, date, valuation cap, discount, most-favoured-nation clause, interest and maturity (notes), conversion trigger and the shares they convert into; posted to 2700 (the accountant classifies each instrument as liability or equity from its terms [verify per instrument]). At a priced round the engine computes the conversion price (the lower of the cap price and the discounted round price, as the terms say) and the shares with `RND-SHARE`, and creates the share issues as drafts for approval. Fixes the workbook limitation on converted SAFE shares and whole-share rounding (Appendix A) | M | P1 |
+| FR-EQ-19 | **Option pool and grants**: pool size set by resolution; grants with holder, number, exercise price, grant date, vesting (cliff, monthly, acceleration), expiry; exercises, forfeitures and expiries update the pool. Each employee sees their own grants. Share-based payment expense schedules (FR-EQ-13) and the employee share-gains data for IR8A (Appendix 8B [verify]) follow in P2 | S | P1 (register) / P2 (expense, IR8A) |
+| FR-EQ-20 | **Cap table at any date**, computed from the transactions and never edited directly: by holder and class; **issued** and **fully diluted** (granted options, the unallocated pool, SAFEs and notes as converted at a stated price); ownership and voting percentages; comparison of two dates; drill-down to each transaction and its evidence; XLSX and PDF export. Percentages are computed exactly and shown to 2 decimals (`RND-DISPLAY`); the oracle computes the same table (QA-ENG-02) | M | P1 |
+| FR-EQ-21 | **Round modelling and dilution** (sandboxed, never posts): pre-money valuation or price per share, new money per investor, option-pool top-up before or after the money, SAFE and note conversions, pro-rata take-up. Outputs: price per share, shares per investor, the pro-forma cap table, each holder's ownership before and after and the dilution in percentage points, post-money valuation; side-by-side scenarios. An approved scenario can create **draft** share issues, which then follow FR-EQ-17. The AI may run scenarios (read lane, like FR-PLN-08) | M | P1 |
+| FR-EQ-22 | **Investor records and obligations**: per investor, the investments (round, instrument, amount, price, date), rights from the agreements (board seat, observer, information rights, pro-rata, consent matters) and documents (subscription agreement, shareholders' agreement, side letters) as evidence. Information rights become calendar tasks (for example quarterly accounts within 45 days) with the delivered pack as evidence | M | P1 (records) / S P2 (obligation tasks) |
+| FR-EQ-23 | **Investor updates**: a monthly or quarterly update built from the board pack (FR-RPT-06): KPIs, cash, runway, highlights, asks; commentary drafted by the AI and edited by a human (`rpt.draft_commentary`); sent to a distribution list as access-controlled links; read status and an archive | S | P2 |
+| FR-EQ-24 | **Investor access**: the Board / investor viewer role sees the investor updates, the board pack and **their own holdings** by default; the full cap table only when an Owner grants it. Employees see only their own option grants | S | P2 |
+| FR-EQ-25 | **Linked statutory checks**: every holder change re-evaluates exempt-private-company status (a corporate holder or a 21st member ends it, FR-EQ-11), and flags any person whose shares or votes cross the controller threshold (more than 25% [verify]) for a register-of-controllers update within 7 days (FR-TAX-07) | M | P1 |
+| FR-EQ-26 | **Integrity**: paid-up capital in the register equals 3010 + 3020 in the ledger (INV-13); the register reconciles to an uploaded ACRA register-of-members extract (business profile), with differences on Checks; equity data is restricted (`fh.read.equity`, never granted by default, AI-37) | M | P1 |
+| FR-EQ-27 | **Basic and Expert** (§7.8): Basic shows "Who owns the company" (ownership chart with a table view, my holding, the latest round) and the round simulator with a few inputs; Expert adds classes and rights, instruments, the option pool, transactions, fully diluted views and reconciliation | S | P1 |
 
 ---
 
@@ -1106,7 +1270,9 @@ them; a control test asserts it): approving or rejecting anything; releasing or 
 payments; creating or changing payee bank details; changing users, roles, team mode, approval
 policies, the AI catalogue or AI settings; changing statutory parameters; reopening periods;
 voiding or deleting posted records; filing with IRAS, CPF or ACRA; exporting the tenant;
-anything touching the audit trail.
+anything touching the audit trail; (rev 0.3) issuing or transferring shares, changing holders,
+instruments or investor rights, or repaying, converting or waiving a director's balance (the AI
+may still draft a founder's expense claim, `exp.draft_claim`, and run round scenarios).
 
 **"List of approved tasks" in the UI**: the *AI tasks* page shows (a) the catalogue with each
 task type's tier, limits and status, and (b) the history of every proposal (pending, approved,
@@ -1143,7 +1309,7 @@ flowchart LR
 | AI-34 | **Client classes.** Every OAuth client is registered with a class: `first-party-app` (our web app and PWA), `integration` (a system with narrow write scopes, FR-INT-02) or `agent` (any AI client). **Every MCP client, and every client not explicitly classed, is an `agent`.** Agents are proposal-only whatever scopes they request: the API rejects any non-proposal write from an agent-class token (control test CTL-MCP-01). | M | P1 |
 | AI-35 | **Off by default, enabled deliberately.** MCP access is off per organisation until the Owner enables it (dual-controlled, FM-1) and off per user until the user opts in. Only clients on the organisation's **allowlist** can connect. **Dynamic client registration is disabled**; P1 pre-registers the first-party public clients with PKCE and fixed loopback redirect URIs. | M | P1 |
 | AI-36 | **Authorisation.** OAuth 2.1 authorisation code with PKCE (S256) only; no implicit grant, no password grant. The MCP server is a resource server: it publishes RFC 9728 protected-resource metadata and accepts only tokens whose audience is the MCP resource (RFC 8707 resource indicators). **No token passthrough**: to call the API, the server exchanges the user's token (RFC 8693) for an API-audience token whose scopes are the intersection of the granted scopes and the user's current rights. | M | P1 |
-| AI-37 | **Consent and scopes.** A consent screen in the web app (after MFA) shows the client name and verified publisher, the requested scopes, the data categories and the expiry. Scopes map to tool groups and catalogue task types: `fh.read.<area>` (reports, sales, purchases, banking, accounting, planning, compliance), `fh.read.proposals` (the status of proposals the client created) and `fh.propose.<task_type>`. **`fh.read.payroll` is never granted by default** and needs the AI payroll setting and the user's payroll role (AI-02). Default grant: `fh.read.reports` only. Consent is renewed every 90 days. | M | P1 |
+| AI-37 | **Consent and scopes.** A consent screen in the web app (after MFA) shows the client name and verified publisher, the requested scopes, the data categories and the expiry. Scopes map to tool groups and catalogue task types: `fh.read.<area>` (reports, sales, purchases, banking, accounting, planning, compliance), `fh.read.proposals` (the status of proposals the client created) and `fh.propose.<task_type>`. **`fh.read.payroll` is never granted by default** and needs the AI payroll setting and the user's payroll role (AI-02). (rev 0.3) **`fh.read.equity`** (holders, holdings, instruments, investor records) is never granted by default either and needs an Owner's grant. Default grant: `fh.read.reports` only. Consent is renewed every 90 days. | M | P1 |
 | AI-38 | **Token lifetimes and revocation.** Access tokens ≤ 60 minutes; refresh tokens rotate on every use with reuse detection, an idle expiry of 14 days and an absolute expiry of 90 days. All of a user's tokens are revoked within 60 seconds when their role changes, they are deactivated, the client is removed or a kill switch is used. Sender-constrained tokens (DPoP, RFC 9449) are required from clients that support them [verify client support]. | M | P1 |
 | AI-39 | **Transport.** Streamable HTTP only, through the load balancer and Cloud Armor; stdio and the legacy HTTP+SSE transport are not offered in production. The server validates the `Origin` header against an allowlist (DNS-rebinding defence). `Mcp-Session-Id` is random, bound to the token's subject and client, and never accepted as authentication. | M | P1 |
 | AI-40 | **Tool surface.** Tools are generated from the shared registry and annotated (`readOnlyHint: true` for read tools; `propose` declares that it creates a pending proposal, not a change). The **never-list** of §9.6 is enforced: there are no approve, reject, execute, export, administration or settings tools (control test CTL-MCP-02). Tool definitions are static, versioned and **hash-pinned per release**; a change needs the eval and red-team suites (CMP-AI-03). Tool descriptions never contain organisation data, so they cannot carry injected text. | M | P1 |
@@ -1245,6 +1411,15 @@ Appendix B. Debit is positive and credit negative in base currency, as in the wo
 | **New:** Income tax provision | 8010 Income tax expense | 2300 Income tax payable | Proposed from the tax working paper; approved journal |
 | **New:** Bad-debt write-off | Bad-debt expense; GST control (relief, when eligible) | AR 1100 | Approval-gated (SOD-9) |
 | **New:** Payment-provider payout | Bank (net payout); payment fees 5040 | Clearing account for the provider | Gross receipts settle invoices from the clearing account |
+| **New (rev 0.3):** Cost a founder paid personally, kept as a loan (FR-EQ-02) | Expense (net); GST control when claimable | 2500 (that director) | Instead of 2150 when the claim settles to the director's account |
+| **New (rev 0.3):** Money a founder lends | Bank | 2500 (that director) | |
+| **New (rev 0.3):** Deferred founder pay (FR-EQ-04) | 2100 (that director's net pay) | 2120 (that director) | After the normal pay-run posting; CPF and SDL stay on 2110 and are paid as usual |
+| **New (rev 0.3):** Director's fee approved | 6050 | 2120 (that director) | Paid later from 2120 |
+| **New (rev 0.3):** Repaying a director | 2500 or 2120 | Bank | Payment batch; FM-1, FM-9 |
+| **New (rev 0.3):** Conversion to shares (FR-EQ-06) | 2500 or 2120 (converted amount) | 3010 or 3020 | No cash; `RND-SHARE`; posts on the date ACRA registers the allotment, never backdated; non-cash in the cash flow statement (FR-EQ-10) |
+| **New (rev 0.3):** Waiver (FR-EQ-07) | 2500 or 2120 | 3300 Capital contribution, or other income | The accountant's choice, with a reason |
+| **New (rev 0.3):** Share issue for cash (FR-EQ-17) | Bank | 3010 or 3020 | Only from the equity register (INV-13), on the effective date |
+| **New (rev 0.3):** SAFE or note received; converted (FR-EQ-18) | Bank; then 2700 (converted amount) | 2700; then 3010 or 3020 | `RND-SHARE`; the remainder stays on 2700 until settled under the terms |
 | **Changed:** Edits of posted documents | Reversal of the previous version's entries + entries of the new version | | Workbook recalculated in place; the platform keeps history (FR-GL-12) |
 
 ### 10.3 Money and precision
@@ -1272,6 +1447,7 @@ by the entries they produce. "Half-up" means half away from zero.
 | `RND-SDL` | SDL = clamp(round(total remuneration × rate, 2), min, max); 0 when remuneration ≤ 0 | CPF Board (0.25%, min S$2, max S$11.25; Jul 2026); workbook |
 | `ALLOC-EVEN` | Splitting an amount into n periods (spreads, deferrals, depreciation): each period = amount ÷ n rounded down to the minor unit; the remainder cents go to the **last** period, so the parts always sum exactly to the whole | **Changed**: the workbook used unrounded monthly amounts; the ledger posts whole cents |
 | `ALLOC-PRORATA` | Splitting by weights (allocations, partial payments across documents): largest-remainder method; ties broken by stable order | New |
+| `RND-SHARE` | (rev 0.3) Shares allotted for an amount at a price per share: the largest whole number of shares n for which round(n × price, 2) ≤ amount (half-up); converted amount = round(n × price, 2); the remainder stays on the source balance. No fractional shares | New (FR-EQ-06); pinned in Appendix G.3 |
 | `RND-DISPLAY` | Display never re-rounds stored amounts; totals are sums of stored amounts, so every report foots and cross-foots exactly | New |
 
 ### 10.5 Statuses and validation
@@ -1312,6 +1488,7 @@ CFW_Check) become the last five rows.
 | INV-10 | Balance sheet balances for every period (BS_Chk); P&L and BS include every account (PL_Chk, BS_Uncl) | Verified; Checks |
 | INV-11 | Cash flow agrees to money-account balances (CF_Chk); movement in equity reconciles (BS_EqChk) | Verified; Checks |
 | INV-12 | The audit chain is unbroken and matches its signed anchors | Nightly verification (§11.5) |
+| INV-13 | (rev 0.3) Share-capital accounts change only through the register of share issues or opening balances; the per-person sub-ledgers equal 2500 and 2120 | Trigger on the posting source + nightly verification |
 
 ### 10.8 Multi-currency
 
@@ -1411,6 +1588,10 @@ organisation ─┬─ entity (P3) ─┬─ period (open | soft-locked | closed
               ├─ approval_request ── approval_decision (signed payload hash)
               ├─ ai_proposal ── ai_proposal_item ── ai_activity
               ├─ attachment (Cloud Storage object + hash + retention)
+              │     └─ evidence_link (rev 0.3: parent, type, data class, related date, superseded_by)
+              ├─ share_class, equity_transaction (append-only), instrument (SAFE | note | option grant),
+              │  round_scenario (sandbox), director_balance_movement (origin)  (rev 0.3)
+              ├─ setting_value (effective-dated; recommended | changed), user_help_state (tour, tips)  (rev 0.3)
               └─ audit_event (append-only, hash-chained per organisation)
 ```
 
@@ -1948,6 +2129,7 @@ build requirements.
 | **InvoiceNow (Peppol)** | Mandatory for **new voluntary GST registrants from 1 Apr 2026** (from 1 Nov 2025 for voluntary registrants within 6 months of incorporation); new compulsory registrants and existing registrants ≤ S$200k from 1 Apr 2028; ≤ S$1m 2029; ≤ S$4m 2030; all others 2031. Covers invoice data for **all sales and purchases** in the return (incl. credit/debit notes), submitted by the earlier of the filing date and the due date, through an InvoiceNow-Ready solution or an **IMDA-accredited Access Point** (IRAS, 8 Oct 2026) | Access Point connector with transmission status per document, inbound and outbound (FR-AR-12, FR-AP-05). **Must be live before Cognizhi registers voluntarily for GST.** | F5 filing blocked until every in-scope document has an Access Point acknowledgement |
 | **Corporate income tax** | 17%; SUTE (first 3 YAs: 75% of first S$100k, 50% of next S$100k; conditions apply); PTE (75% of first S$10k, 50% of next S$190k); YA2026 rebate 50% capped at S$40k incl. a S$2k cash grant that needs a non-shareholder local employee; ECI within 3 months of FY end (waived if revenue ≤ S$5m and ECI nil); Form C-S (revenue ≤ S$5m), C-S Lite (≤ S$200k), Form C otherwise; filing by 30 Nov (15 Dec when filed via ASR+ software, YA2023–2027) (IRAS, Aug–Sep 2026) | YA-keyed tax pack; tax-adjustment tags on accounts; capital allowance register; tax computation working paper; form selector (FR-TAX-06) | Pinned tax computations per YA; CI fails if the current YA's pack is missing or unsourced; deadline alerts at 30 and 7 days |
 | **ACRA** | Annual return within 7 months of FY end; AGM within 6 months unless exempt; from 20 Oct 2026 the annual return confirms officer and member particulars; XBRL: solvent exempt private companies file a solvency declaration, simplified XBRL if revenue and assets ≤ S$500k, full XBRL otherwise; XBRL Taxonomy 2026 from 25 Feb 2026; audit exemption for small companies (2 of 3: revenue ≤ S$10m, assets ≤ S$10m, ≤ 50 employees, two consecutive years) **under review**; SFRS for Small Entities 3rd edition from 1 Jan 2027; register of controllers updated within 7 days (ACRA, 2025–2026) | Statutory calendar; filing-category and audit-exemption classifiers with configurable thresholds; FS templates per framework edition; BizFinx data pack, then XBRL (FR-TAX-07/08) | Classifier boundary tests; XBRL validated against the taxonomy (P3) |
+| **Share issues and directors' balances** (rev 0.3) | Issuing shares needs the company's prior approval in general meeting (s161; a private company may pass it as a written resolution, s184A), lodged with ACRA within 14 days (s161(5), s186); the approval lapses at the next AGM; shares issued without it are void. In a private company the allotment takes effect on the date the return of allotment is filed, once ACRA has updated the electronic register of members, and backdating is generally not allowed (the 14-day return deadline in s63A is for public companies); shares not paid in cash need the written contract, or a statement of particulars, lodged with the return (s63B). Shares have no par value (s62A). Loans to directors are banned except in exempt private companies and for approved advances for company expenses (s162). Share duty applies to transfers; secondary sources say none on new issues [verify]. Founder pay: salary is taxed in the year it is due, paid or not; director's fees when the director becomes entitled; CPF is due at the month end on wages due; no CPF on fees voted at a general meeting or on shares in kind. Re-check the Companies Act after the amendments commencing 20 Oct 2026 (SSO, ACRA 30 Apr 2026, IRAS and CPF Board 2024–2026) | Director accounts with origin per movement, founder pay choice, settlement routes, register of share issues with effective dates, exempt-private-company attribute (FR-EQ-01…14, §8.22) | Lodgement and lapse monitor (C.2 #22); director-debit check citing s162 when not exempt (C.2 #21); pay-choice gate (C.2 #24); share capital only from the register (INV-13, C.2 #25) |
 | **CPF** | 2026 rates by age band (≤55: 17/20; 55–60: 16/18; 60–65: 12.5/12.5; 65–70: 9/7.5; >70: 7.5/5 employer/employee); age band changes from the first day of the month after the birthday; OW ceiling S$8,000 a month; annual salary ceiling S$102,000 (AW ceiling = S$102,000 − OW subject to CPF); graduated rates for wages S$50–750; first/second-year PR tables; total rounded to the dollar, employee share rounded down; **due at month end, pay by the 14th** of the next month to avoid interest; payment via EZPay or One-Stop Payroll, no public API (CPF Board, Oct 2026) | Effective-dated CPF pack keyed by residency, PR year, age band and wage band; year-to-date AW ceiling tracking; CPF submission file (FR-PAY-02/09) | Hand-pinned golden payslips for every band, the graduated range, the AW ceiling and birthday transitions; CPF-not-paid alert on the 10th; January CI fails if the year's tables are missing |
 | **SDL, SHG, levies** | SDL 0.25% of remuneration, min S$2, max S$11.25, all employees incl. foreigners; SHG funds (CDAC, ECF, MBMF, SINDA) tiered amounts remitted with CPF; S Pass levy S$650 a month from 1 Sep 2025 (CPF Board, MOM) | SDL and SHG tables; levy as an expense (FR-PAY-03/04/05) | Pinned tests |
 | **MOM employment records** | Itemised payslips with 12 items within 3 working days; key employment terms (17 items) within 14 days; employment records kept 2 years (and 1 year after an employee leaves) (MOM) | Payslip and KET templates; payslips delivered through the MFA-protected portal or an expiring link (FR-PAY-08) | Payslip schema test for the 12 items |
@@ -2033,7 +2215,7 @@ them.
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
 | CMP-01 | Control dashboard: every control in the registry with status (pass, fail, overdue, not applicable), last run, evidence link, owner and framework mappings; filters by framework | M | P1 |
-| CMP-02 | **Statutory calendar** generated from the organisation's FY, GST periods, payroll and filing categories: GST F5 due dates, CPF (14th), AIS (1 Mar), ECI (FY end + 3 months), Form C-S/C (30 Nov), ACRA annual return (FY end + 7 months), AGM, register-of-controllers updates; reminders at 30, 14, 7 and 1 days; overdue items on Checks | M | P1 |
+| CMP-02 | **Statutory calendar** generated from the organisation's FY, GST periods, payroll and filing categories: GST F5 due dates, CPF (14th), AIS (1 Mar), ECI (FY end + 3 months), Form C-S/C (30 Nov), ACRA annual return (FY end + 7 months), AGM, register-of-controllers updates, (rev 0.3) share-issue approvals (lodged within 14 days of the resolution) and pending returns of allotment (FR-EQ-09); reminders at 30, 14, 7 and 1 days; overdue items on Checks | M | P1 |
 | CMP-03 | Manual attestations (access review, journal review, close sign-off, policy acknowledgement) with due dates, sign-off and evidence | M | P1 |
 | CMP-04 | Evidence export per framework and period for auditors and certification bodies | S | P2 |
 | CMP-05 | Data inventory, DPIAs, breach register with PDPA timers (CMP-PD-02/05/08) | M | P1 |
@@ -2128,6 +2310,8 @@ ledger. FH Cloud keeps that bar and adds the tools a codebase allows.
 | QA-UI-02 | (rev 0.2) Storybook stories for every shared component in light, dark and high-contrast themes, with the axe add-on reporting 0 violations | Blocks merge |
 | QA-UI-03 | (rev 0.2) Token contrast validator (`docs/design-system/.../scripts/check_contrast.py`, later `apps/web`) and the data-viz palette validator (FR-VIZ-07) | Blocks merge |
 | QA-UI-04 | (rev 0.2) **Experience modes**: every route, field group and action is tagged in the feature registry; the same action sends identical API requests in Basic and Expert mode; safety information (FR-UX-24) is visible in both | Blocks merge |
+| QA-UI-05 | (rev 0.3) **Help coverage**: every route, field, column, chip and tile in the feature registry has a help key with text in both modes; every guide link resolves; every route maps to a guide page | Blocks merge |
+| QA-UI-06 | (rev 0.3) **Tours**: an end-to-end test per role completes the first-run tour by keyboard only, with reduced motion and with animation, with 0 axe violations, and asserts that no API write happened during the tour | Blocks merge |
 | QA-TRACE-01 | (rev 0.2) **Requirement traceability**: CI extracts every `M` requirement of the current phase from the PRD tables (ID, priority, phase) and lists those no test references (`// req: FR-GL-08` in Go and TypeScript, `# req:` in Python, `-- req:` in SQL); the list must be empty at the phase gate. S and C requirements are reported, not blocking. The extractor is a P0 script (`scripts/trace_requirements.py`) | Phase gate |
 | QA-SEC-03 | **Authorisation matrix**: every role × every endpoint × allowed/denied, including field masking and SoD rules per team mode | Blocks merge |
 | QA-E2E-01 | End-to-end tests (browser) of the key journeys: set-up, record, sell, buy, pay, payroll, reconcile, close, GST, AI ask and AI propose → approve → execute | Every release |
@@ -2197,13 +2381,13 @@ P0 is done when all of these hold, with evidence stored in the release record:
 | Area | P0 | P1 | P2 | P3 |
 |---|---|---|---|---|
 | Platform | Tenancy, identity and OAuth server, audit trail, CI/CD, IaC, local mode, lean images, release automation, API conventions | Approvals, team modes, notifications, public API used by our UI, Basic and Expert modes | Third-party API clients, webhooks, PWA, sandbox | Multi-tenant onboarding, marketplace, A2A agent card |
-| Ledger | Engine, invariants, reference ledger | All workbook posting sources, FX revaluation, disposals, close workflow | Allocation rules, soft module locks | Multi-entity, intercompany, consolidation |
+| Ledger | Engine, invariants, reference ledger | All workbook posting sources, FX revaluation, disposals, close workflow, director accounts and conversions to share capital (rev 0.3) | Allocation rules, soft module locks | Multi-entity, intercompany, consolidation |
 | Banking | — | Multi-account import, rules, matching, reconciliation, payment files | Bank feeds, payment APIs, card feeds | More banks and countries |
 | Sales / Purchases | — | Quotes, invoices, credit notes, bills, POs, claims, reminders | InvoiceNow send/receive, bill capture, payment links, customer portal, subscriptions | Price lists, vendor portal |
 | Payroll | — | Pay runs with full CPF/SDL/SHG rules, postings | Payslips, CPF file, IR8A/AIS | Leave (or HR integration) |
 | Tax | — | GST F5, threshold monitor, statutory calendar | F7/F8, IRAS API filing, IAF, CIT working paper | XBRL, other countries |
 | Reporting | — | Statements, management reports, exports, KPIs, dashboard | Report builder, scheduled reports, board pack | Consolidated reports, SFRS statements |
-| Planning | — | Budgets, driver forecast, feasibility | Rolling forecast, 13-week cash, cap table | Multi-entity planning |
+| Planning | — | Budgets, driver forecast, feasibility; (rev 0.3) equity register, cap table and round simulator | Rolling forecast, 13-week cash; (rev 0.3) investor updates and portal | Multi-entity planning |
 | AI | — | Ask, explain, simulate; tier-1 and tier-2 proposals; MCP server for first-party clients | Third-party MCP clients, document AI drafts, anomaly review | Practice-level insights, outbound agent connections |
 | Compliance | Control registry, CI checks | Compliance Center, evidence collection, CSA Cyber Essentials readiness | Cyber Trust / ISO 27001 readiness | SOC 2 Type II, ISO 27001 certification, ISO 42001 |
 
@@ -2214,7 +2398,7 @@ P0 is done when all of these hold, with evidence stored in the release record:
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
 | R1 | Calculation error reaches the books | Low | High | Database invariants; differential testing against an independent reference ledger; mutation testing; nightly verification; parity with the proven workbook (§16) |
-| R2 | Scope is too large for 2–3 founders | High | High | Strict phasing; P1 = workbook parity + controls only; buy, not build, for bank feeds, Peppol access point, payment collection and document OCR |
+| R2 | Scope is too large for 2–3 founders | High | High | Strict phasing; P1 = workbook parity + controls only; buy, not build, for bank feeds, Peppol access point, payment collection and document OCR. (rev 0.3) Founders' money, the equity register, evidence and in-app help joined P1 at the founders' request; investor updates and portal, option expense automation, evidence redaction and feature tours stay in P2 |
 | R3 | AI makes or causes a wrong change | Medium | High | No write path; catalogue; per-proposal approval with ledger impact; numeric grounding; evals; kill switch (§9) |
 | R4 | Prompt injection through documents or bank data | Medium | Medium | Untrusted-data handling; catalogue limits; approvals; red-team suite (AI-18, QA-AI-03) |
 | R5 | Insider error or fraud in a team of founders | Low | High | Founder-mode compensating controls (FM-1…FM-8), dual control on money movement, audit trail, accountant review |
@@ -2232,6 +2416,7 @@ P0 is done when all of these hold, with evidence stored in the release record:
 | R17 | (rev 0.2) Local substitutes drift from cloud behaviour, so tests pass locally and fail in the cloud | Medium | Medium | Same interfaces and client libraries; staging runs the same suites against real services; known gaps (Bucket Lock, Model Armor, WAF) have staging controls (§12.8) |
 | R18 | (rev 0.2) A breaking API change hurts integrators | Low | Medium | `/v1` additive-only; `oasdiff` gate; deprecation headers and 6 months' notice (FR-INT-06, QA-API-02) |
 | R19 | (rev 0.2) Basic mode hides something a user needed to see | Low | Medium | Presentation-only modes; safety information always visible; "advanced details" disclosure; Expert features findable from ⌘K (FR-UX-24…26) |
+| R20 | (rev 0.3) Founders' balances are recorded or settled wrongly: personal spending without receipts, pay deferred without a decision, shares issued at an unapproved price or not lodged | Medium | Medium | Director accounts and the pay choice (FR-EQ-01…04); settlement routes with attached resolutions and FM-9; ACRA lodgement task; checks C.2 #21–25; accountant review (FM-7) |
 
 ---
 
@@ -2267,6 +2452,35 @@ answered)
 | 12 | (rev 0.2) Confirm the MCP timing: P1 for first-party clients (Claude Desktop, Claude Code), P2 for third-party clients? | Founders | P1 planning |
 | 13 | (rev 0.2) A GitHub App for release-please and CI (REL-06), owned by the organisation rather than a person? | Founders | P0 |
 | 14 | (rev 0.2) Basic/Expert defaults per role (FR-UX-27): are the proposed defaults right for the founders and the accountant? | Founders + accountant | P1 UX tests |
+| 15 | (rev 0.3) The founders' existing balances (money lent, costs paid personally, any unpaid pay): repay, keep as loans, convert to shares or waive? At what price per share, on what basis? (§8.22) | Founders + accountant + tax agent | P1 (opening balances, FR-GL-06) |
+| 16 | (rev 0.3) Founder pay from go-live, per founder: no salary, salary paid, salary deferred or director's fee? (Decides CPF, IR8A and the pay-run set-up, FR-EQ-04) | Founders + tax agent | P1 payroll set-up |
+| 17 | (rev 0.3) The register of share issues (FR-EQ-08) is P1 while the cap table (FR-PLN-07) is P2. Lift the cap table's holders and share classes into P1 as well, or keep P2? | Founders | P1 planning |
+
+**Recommended defaults (rev 0.3, founder request).** The founders asked for a recommended default
+for every open question, configurable where it is a product setting. These are the defaults the
+platform ships with (FR-ORG-08). The founders, the accountant and the tax agent can change any
+setting later, and the table records why each default was chosen. Rows marked *decision* are
+one-time choices recorded here, not settings.
+
+| # | Recommended default | Why | Applied as |
+|---|---|---|---|
+| 1 | Cognizhi's own books first; keep the multi-tenant design (A6); decide on SaaS after six months of live use (end of P2) | Proves the product on real books before spending on certifications and onboarding | Decision (§18) |
+| 2 | Not GST-registered until the threshold monitor or the tax agent says so; register voluntarily only once InvoiceNow works (FR-AR-12) | Voluntary registrants must use InvoiceNow (§14.2); registration adds quarterly filing work | Setting: GST status, effective-dated (FR-ORG-03); threshold monitor on |
+| 3 | Statement import (CSV or OFX) for every account in P1; one bank API or aggregator for the main account in P2; Stripe for card collection | Import always works; feeds are bought, not built (A4) | Setting per money account: import or feed |
+| 4 | In-house payroll (§8.7) while there are fewer than 10 employees; a provider with journal import beyond that | Keeps the workbook's tested CPF engine; few employees at first | Setting: payroll mode (FR-ORG-06) |
+| 5 | S$2,000 self-approval per document; dual approval above it and always for the FM-1 list | As proposed in FM-2 | Setting, dual-controlled |
+| 6 | 7 years after the FY end | Covers all three statutory periods with a margin; a Bucket Lock can be lengthened later but never shortened | Setting, lengthen-only |
+| 7 | Singapore-only models at go-live (ADR-T2, option A) | No cross-border transfer assessment needed to start | Setting per data class (Owner and DPO) |
+| 8 | CSA Cyber Essentials first, then Cyber Trust; ISO 27001 or SOC 2 only when a customer requires it | The cheapest local mark that fits stage 0 (§14.8) | Decision; frameworks in scope in the Compliance Center |
+| 9 | NFR-COST-01: production ≤ US$400 a month, development and staging ≤ US$120, AI tokens included; alerts at 50%, 80% and 100% | Matches the §12.6 estimate with headroom | Setting: budget alerts and AI token budgets (AI-13) |
+| 10 | Keep "Cognizhi Finance Hub" until P3 | No cost now; the name is configuration | Setting: product name |
+| 11 | Ory Hydra (ADR-T3 as proposed) | A standard, open-source, low-cost server behind an interface | Decision (ADR) |
+| 12 | First-party MCP clients in P1, third-party in P2; MCP stays off until an Owner enables it | Closed by default (AI-35) | Setting: MCP off, client allowlist |
+| 13 | Yes: an organisation-owned GitHub App before P0's CI | Release pull requests then run CI; no personal tokens | Decision; repository set-up |
+| 14 | As proposed in FR-UX-27: founders and Owners start in Basic, accountants in Expert | Owners see the essentials; accountants every lever | Setting per role |
+| 15 | Keep founders' balances as **interest-free loans repayable on demand**, recorded now by a board minute; **convert them to ordinary shares at the price of the first priced round**, at that round. Do not repay them from round or grant money; waive only on the accountant's advice | Keeps each founder's claim, avoids moving ownership at an arbitrary price, and gives investors a clean balance sheet | Settings: default route "keep as loan", default price basis "latest priced round" (FR-EQ-05, FR-EQ-06) |
+| 16 | **No salary**, agreed in writing per founder before go-live and reviewed each financial year, until the company can pay in cash; then salary through payroll. No deferral, no shares instead of pay. Exception: a founder on an Employment Pass must be paid the declared salary [verify] | No CPF or tax on money not received; nothing to unwind later | Setting per director per period (FR-EQ-04), default "No salary" |
+| 17 | The equity register, cap table and round simulator in P1 (§8.23); investor updates and portal, and option expense automation, in P2 | Workbook parity (the workbook had a cap table), and the founders need it before the first round | Decided in §8.23 |
 
 ---
 
@@ -2303,6 +2517,23 @@ answered)
 | release-please | A tool that turns Conventional Commits into version bumps, changelogs, tags and releases |
 | Resource indicator | RFC 8707: the client names the API a token is for, so the token is valid only there (its audience) |
 | SemVer | Semantic Versioning: MAJOR.MINOR.PATCH |
+| Capital contribution | (rev 0.3) Value a shareholder gives the company without receiving shares, recorded in equity |
+| Capitalisation (of a debt) | (rev 0.3) Settling an amount the company owes by allotting shares instead of paying cash |
+| Exempt private company | (rev 0.3) A private company with no corporate shareholder and at most 20 members (Companies Act s4(1)); among other things, outside the s162 ban on loans to directors |
+| Director's account | (rev 0.3) The running balance between the company and one director: money lent, costs paid personally, deferred pay and fees, repayments, conversions (§8.22) |
+| Related party | (rev 0.3) A person who controls or significantly influences the company (directors, major shareholders) and their close family; transactions with them are disclosed |
+| Return of allotment | (rev 0.3) The lodgement with ACRA after a company issues new shares |
+| Sweat equity | (rev 0.3) Shares given for work instead of cash; a share-based payment |
+| Cap table | (rev 0.3) The table of who owns which shares and instruments in the company |
+| Dilution | (rev 0.3) The fall in a holder's ownership percentage when new shares are issued |
+| EROM | (rev 0.3) ACRA's electronic register of members: the legal register of a private company's shareholders |
+| Evidence | (rev 0.3) A file attached to an activity to prove what happened (screenshot, acknowledgement, resolution, statement) |
+| Fully diluted | (rev 0.3) Ownership counted as if every option, SAFE and note had become shares |
+| Liquidation preference | (rev 0.3) A preference shareholder's right to be paid back first, often 1× their investment, on a sale or winding up |
+| Option pool | (rev 0.3) Shares set aside by resolution for employee share options |
+| Pre-money / post-money valuation | (rev 0.3) The company's value before / after the new money of a round |
+| Pro rata right | (rev 0.3) An investor's right to buy enough new shares in later rounds to keep their percentage |
+| SAFE | (rev 0.3) Simple agreement for future equity: money now for shares at the next priced round, usually with a valuation cap or discount |
 
 ---
 
@@ -2342,7 +2573,7 @@ the platform goes beyond the workbook.
 | Budget | Planning → budgets | FR-PLN-01 | By account/dimension, versions |
 | Forecast | Planning → forecast and scenarios | FR-PLN-02/03 | Rolling forecast, AI simulation |
 | Feasibility | Planning → feasibility | FR-PLN-06 | — |
-| Funding | Planning → cap table | FR-PLN-07 | Fixes SAFE conversion and share rounding |
+| Funding | Equity → cap table and round simulator (rev 0.3; was Planning) | FR-EQ-18, FR-EQ-20, FR-EQ-21 (FR-PLN-07 for the funding plan) | Fixes SAFE conversion and share rounding |
 | Settings | Settings | FR-ORG-01…07 | Effective-dated parameters |
 | Accounts | Accounting → chart of accounts | FR-COA-01…05 | Hierarchy, dimensions, protected system accounts |
 | Items | Sales → items | FR-ITM-01 | — |
@@ -2453,6 +2684,12 @@ balances. Dr 6610, Cr 1590.
 | Income tax expense | 8010 | Income tax expense |
 | **New:** unrealised FX, payment-provider clearing, gain/loss on disposal, bad debts | to be assigned in the CoA review | |
 | (rev 0.2) Bank and money accounts; accrued expenses | proposed 10xx range; proposed 2050 (the prototype and the `gl.post_journal` examples use these) | Confirm in the CoA review |
+| (rev 0.3) Director accounts | 2500 | Loan from director / shareholder (workbook code; control account with a sub-ledger per person) |
+| (rev 0.3) Deferred remuneration | proposed 2120 | Deferred remuneration payable (sub-ledger per person) |
+| (rev 0.3) Director advances | 1250 | Staff & director advances (workbook code; presents a director's debit balance, FR-EQ-11) |
+| (rev 0.3) Share capital | 3010 / 3020 | Share capital, ordinary / preference (workbook codes; postings only from the register of share issues, INV-13) |
+| (rev 0.3) Capital contribution | proposed 3300 | Capital contribution (equity) |
+| (rev 0.3) Directors' fees | 6050 | Directors' fees (workbook code) |
 
 ### B.6 GST codes (workbook set; extend per current IRAS guidance [verify])
 
@@ -2470,6 +2707,22 @@ balances. Dr 6610, Cr 1590.
 | EP | No | Purchase | Not reported |
 | OP | No | Purchase | Not reported |
 | NA | No | None | Not reported |
+
+### B.7 Founders' balances and share capital (rev 0.3)
+
+All amounts carry the person as a sub-ledger key on 2500 and 2120 (FR-EQ-01).
+
+| Event | Debit | Credit | Rule |
+|---|---|---|---|
+| Cost a founder paid personally, kept as a loan | Expense (net); 2200 only with a tax invoice addressed to the company | 2500 (gross) | Otherwise no input tax is claimed and the GST is part of the cost |
+| Deferred pay | 2100 (that director's net pay) | 2120 | Posted with the pay run for each director whose choice is "deferred"; 2110 unchanged |
+| Conversion, carrying-amount basis (default) | 2500 or 2120, converted amount | 3010 or 3020, converted amount | n = `RND-SHARE`(amount, price); converted amount = round(n × price, 2); the remainder stays; posting date = the date ACRA registered the allotment, never backdated |
+| Conversion, fair-value basis (accountant's choice) | 2500 or 2120 at the converted amount; a loss when the shares' fair value is higher | 3010 or 3020 at the shares' fair value; a gain when it is lower | IFRIC 19 ¶9; SFRS for Small Entities ¶22.15A–C; gain and loss accounts assigned in the CoA review |
+| Waiver | 2500 or 2120 | 3300, or other income | The accountant's choice, with a reason |
+| Share issue for cash | Bank | 3010 or 3020 | Only from the equity register (INV-13); posting date = effective date |
+| SAFE or note conversion | 2700, converted amount | 3010 or 3020 | Conversion price per the terms (FR-EQ-18); shares with `RND-SHARE`; the remainder stays on 2700 |
+| Month-end presentation | — | — | A person's net debit on 2500 + 2120 shows under 1250 in the balance sheet; no posting |
+| Cash flow | — | — | Conversions and waivers are not cash flows; they are listed as non-cash financing transactions |
 
 ---
 
@@ -2541,6 +2794,17 @@ balances. Dr 6610, Cr 1590.
 | 18 | Close | Month ended more than 15 days ago and not closed | ⚠ |
 | 19 | AI | AI proposals pending approval older than 48 hours | ⚠ |
 | 20 | Documents | Bills or claims above S$X without an attached document | ⚠ |
+| 21 | Founders | (rev 0.3) A director's account is in debit at a month end (FR-EQ-11) | ⚠ |
+| 22 | Founders | (rev 0.3) Share-issue approval not lodged within 14 days of the resolution, or an approved conversion not yet registered by ACRA, or its approval lapsing at the next AGM (FR-EQ-09) | ⏰ |
+| 23 | Founders | (rev 0.3) A director's closing balance not confirmed at the year end (FR-EQ-12) | ⚠ |
+| 24 | Payroll | (rev 0.3) A director's pay deferred without a recorded pay choice (FR-EQ-04) | ✖ |
+| 25 | Founders | (rev 0.3) Share-capital balance differs from the register of share issues (INV-13) | ✖ |
+| 26 | Equity | (rev 0.3) Equity register differs from the latest uploaded ACRA register-of-members extract (FR-EQ-26) | ⚠ |
+| 27 | Equity | (rev 0.3) A holder crossed the controller threshold and the register of controllers is not yet updated (FR-EQ-25) | ⏰ |
+| 28 | Equity | (rev 0.3) Exempt-private-company status changed: re-check directors' debit balances (FR-EQ-11, FR-EQ-25) | ⚠ |
+| 29 | Equity | (rev 0.3) A SAFE or note is past maturity, or a priced round was recorded without its conversions (FR-EQ-18) | ⚠ |
+| 30 | Evidence | (rev 0.3) Completed activities missing recommended evidence (FR-DOC-06) | ⚠ |
+| 31 | Evidence | (rev 0.3) Evidence hash re-verification failed (FR-DOC-07) | ✖ |
 
 ---
 
@@ -2564,6 +2828,9 @@ that user's rights.
 | Vendor bank details | A | — | A | C | — | — | C | — | — | — | — | M | M | — | — | — |
 | Payment batches | V | — | A | C | — | — | C | C (salaries) | R | — | — | V | V | — | — | — |
 | Expense claims | V | — | A | V | V | — | V | — | — | A | C (own) | V | V | — | — | Proposal (draft) |
+| Director accounts, settlements, share issues (rev 0.3) | A | — | A | C/P | V | — | — | V (deferred pay) | R (repayments) | — | V (own) | V | V | V (share issues) | — | Ask only |
+| Cap table, holders, investors, equity transactions (rev 0.3) | A | — | A | C/P | — | — | — | — | — | — | V (own grants) | V | V | V (own holding; all if granted) | M | Scenarios only, if `fh.read.equity` granted |
+| Evidence: add, supersede (rev 0.3) | C | — | C | C | C | C | C | C (payroll) | C | C | C (own) | V | C | — | V | Proposal (`doc.attach`) |
 | Journals | V | — | A | C/P (limit) | — | — | — | — | — | — | — | V | C | — | — | Proposal |
 | Pay runs, employee data | A | — | V | M | — | — | — | C | R (salaries) | — | V (own) | M | M | — | M | Only if enabled (AI-02) |
 | Fixed assets | V | — | A | C/P | V | — | — | — | — | — | — | V | V | — | — | — |
@@ -2606,7 +2873,8 @@ the target permission and, above the limit, the role named. Tier 3 is reserved (
 
 **Excluded permanently** (see §9.6): approvals; payments; payee bank details; users, roles,
 policies, AI settings and catalogue; statutory parameters; period reopen; voids and deletions;
-filings; tenant export; audit trail.
+filings; tenant export; audit trail; (rev 0.3) equity transactions, holder and investor records, and
+director-balance settlements.
 
 ---
 
@@ -2632,6 +2900,8 @@ integrity, C confidentiality, P privacy); **CE/CT** = CSA Cyber Essentials / Cyb
 | CTL-FIN-08 | Payments and payee bank changes are dual-controlled | COSO P8; SOC2 CC6.1 | Self-approval rejection test; nightly check that every released payment has two distinct approvers | CI, N | Approval records |
 | CTL-FIN-09 | Monthly close: checks clean, reconciliations signed, attestation by a non-preparer | COSO P16; SOC2 PI1 | Close cannot complete without them | E (close) | Close record |
 | CTL-FIN-10 | Monthly review of manual journals and unusual entries | ISA 240 expectations; COSO P16 | Report generated; sign-off due date monitored | M | Signed review |
+| CTL-FIN-11 | (rev 0.3) Founders' balances: settlements, conversions and waivers are approved by someone other than the beneficiary (FM-9) with the resolutions attached; share capital changes only through the register of share issues; per-person sub-ledgers agree | COSO P10; SOC2 PI1; Companies Act s63, s63B, s161, s162 | CI: approval-matrix and INV-13 trigger tests; nightly sub-ledger reconciliation; allotment-lodgement monitor | CI, N, E | Approval records, resolutions, lodgement evidence |
+| CTL-FIN-12 | (rev 0.3) Equity register integrity: the cap table is computed only from approved, evidenced equity transactions; register paid-up capital equals 3010 + 3020; the register reconciles to ACRA's register of members | COSO P10; SOC2 PI1; Companies Act (register of members) [verify section] | INV-13 trigger tests; nightly reconciliation; check on each uploaded ACRA extract | CI, N, E | Reconciliation log; transaction evidence |
 
 ### F.2 Audit trail and records
 
@@ -2642,6 +2912,7 @@ integrity, C confidentiality, P privacy); **CE/CT** = CSA Cyber Essentials / Cyb
 | CTL-AUD-03 | Records retained ≥ 7 years after FY end; buckets retention-locked | ISO 5.33; IRAS; GST; Companies Act | Daily: bucket `isLocked=true`, retention ≥ policy; log buckets locked | D | Config snapshot |
 | CTL-AUD-04 | Data Access logs enabled for Cloud SQL, KMS, Storage, Secret Manager; sinks to the locked audit bucket | ISO 8.15, 8.16; SOC2 CC7.2 | Daily config check | D | Config snapshot |
 | CTL-AUD-05 | Exports and sensitive reads are logged | ISO 8.15; PDPA protection | CI test; nightly sample reconciliation | CI, N | Audit events |
+| CTL-AUD-06 | (rev 0.3) Evidence is append-only once its record is approved, hashed in the audit trail and retention-locked | ISO 5.33, 8.15; SOC2 CC7.2 | CI: removing evidence from an approved record fails; nightly hash re-verification (C.2 #31) | CI, N | Verification log |
 
 ### F.3 Access and identity
 
@@ -2769,6 +3040,8 @@ by hand from the CPF Board tables, and the override row stays as the workbook's.
 | Assets (monthly / accumulated / NBV) | Laptop 100 / 700 / 2,900; old phone 50 / 250 / 0; licence 300 / 900 / 0; fit-out 225 / 1,125 / 4,875; server bought before books start 200 / 3,200 / 8,800; 6610 in September 625 |
 | Unrealised FX memo | 240 − 30 = 210 |
 | Hourly cost | (10,000 + 17% × 8,000) ÷ 173.33 |
+| (rev 0.3) Conversion to shares (`RND-SHARE`) | Balance 12,345.67 at S$1.20 a share: 10,288 shares, Dr 2500 12,345.60, Cr 3010 12,345.60, 0.07 stays owed. At S$0.0375 a share: 329,217 shares, converted 12,345.64, 0.03 stays owed |
+| (rev 0.3) SAFE conversion and dilution (FR-EQ-18, FR-EQ-21) | 1,000,000 founder shares; SAFE S$125,000 with a S$2,500,000 pre-money cap and 20% discount; round at S$3.00 a share, new investor S$600,000. Conversion price min(2.50, 2.40) = S$2.40; SAFE 52,083 shares (S$124,999.20, S$0.80 stays on 2700 until settled under the terms); investor 200,000 shares; total 1,252,083. Ownership: founders 79.87%, investor 15.97%, SAFE 4.16% (sum 100.00); founders diluted by 20.13 points |
 
 ---
 
@@ -2959,6 +3232,28 @@ Not re-fetched for this revision unless noted; confirm before relying on them (t
 - UI review: the `ui-ux-pro-max` (uipro) skill's local data sets (styles, products, colours,
   typography, UX guidelines, charts, icons, the `shadcn` stack), queried on 12 Oct 2026.
 
+### I.7 Added in revision 0.3
+
+Checked on 12 Oct 2026; the claims, verdicts and short quotes are in
+[research/founders-money-sources-2026-10-12.md](research/founders-money-sources-2026-10-12.md).
+
+- Singapore Statutes Online: Companies Act 1967 s4(1), s62A, s62B, s63, s63A, s63B, s161, s162,
+  s184A, s186 (current on 12 Oct 2026; a tranche of the Corporate and Accounting Laws (Amendment)
+  Act 2025 commences on 20 Oct 2026, re-check); Income Tax Act 1947 s14R; CPF Act s2, s7.
+- ACRA: "Allotment of shares" (30 Apr 2026); SFRS for Small Entities (2024 edition) ¶2.23,
+  ¶22.15A–C, ¶26.7–26.8.
+- IRAS: IR8A explanatory notes for YA2026 (salary reported when due, paid or not); e-Tax guide
+  "Director's Fees and Bonuses" (30 Jan 2026); e-Tax guide on deductions for employee equity-based
+  remuneration (30 Sep 2025); e-Tax guide on pre-commencement expenses (30 Jan 2026); Advance
+  Ruling Summary 15/2026 (1 Sep 2026); GST pages "Expenses incurred by employee on behalf of the
+  company" (13 Jun 2025) and "Claiming GST incurred before GST registration / incorporation"
+  (3 Jun 2026); "Basics of stamp duty for shares" (14 Aug 2026).
+- CPF Board: contribution due dates and enforcement (5 Aug 2026); directors FAQ (7 Jun 2024).
+- IFRS Foundation: IFRIC 19 ¶3(a), ¶6–9 and BC7; IFRS 2 ¶4, ¶10–11 (2026 editions).
+- Startup SG Founder programme page (20 Aug 2026).
+- Secondary, not Singapore-specific: SeedLegals (UK) on founder loans at funding rounds;
+  AskTheVC and Wallin (US) on deferred founder salary; ACCA Singapore stamp duty notes.
+
 ---
 
 ## Revision history
@@ -2967,3 +3262,4 @@ Not re-fetched for this revision unless noted; confirm before relying on them (t
 |---|---|---|
 | 0.1 | 12 Oct 2026 | Initial draft for founder review |
 | 0.2 | 12 Oct 2026 | Deep review applied ([review](reviews/prd-001-review-2026-10-12.md), REV-01…40). New: Basic and Expert modes (§7.8, founder request); API-first conventions (§8.18.1); MCP security controls and client classes (§9.7, AI-34…47); ADR index (§12.0); ADR-T3 identity and OAuth (§12.2.1); local mode (§12.8, ADR-T4); lean images (§12.9) and automated versioning (§12.10, ADR-T5, accepted); P0 exit criteria (§17.3). Changed: FR-INT-01 to M/P1; MCP to P1 for first-party clients; FR-UX-03/06/09 and §7.4 (separate brand and AI accents, Lucide icons, self-hosted fonts, density values, high contrast); transaction-scoped tenant context (§11.4); the proposal executor and MCP server as their own services (§12.3); single repository layout (§12.4). Added QA, SEC, NFR, risk and control entries listed in the review. Consistency fixes found while writing the skills: MCP limit defaults and the `fh.read.proposals` scope (AI-37, AI-43), personal access tokens default to the `agent` class (FR-INT-02), `RND-CPF-GRAD`, `packs/`, `test/`, `e2e/`, `evals/` and `render` in the layout, the traceability extractor (QA-TRACE-01), mutation tests in `make ci` (QA-ENG-04), Hydra's login and consent paths (ADR-T3), the Owner-wins rule for mode defaults (FR-UX-27). No requirement was renumbered or removed. |
+| 0.3 | 12 Oct 2026 | Founder requests. (1) **Founders' money** (§8.22): a digest of the options (repay, keep as a loan, convert to shares, waive, convert to a SAFE or note; the founder pay choices) and FR-EQ-01…14 (director accounts, "paid personally", pay choice, settlement routes, conversion to share capital, waiver, ACRA steps, non-cash presentation, overdrawn director accounts, year-end confirmation, shares for services, modes); facts checked against official sources on 12 Oct 2026 ([source notes](research/founders-money-sources-2026-10-12.md)), unconfirmed points keep [verify]. (2) **Equity** (§8.23, FR-EQ-15…27): holders and investors, share classes and rights, equity transactions, SAFEs and notes, option pool, cap table issued and fully diluted, round modelling and dilution, investor records, updates and access, statutory links, integrity; a new Equity navigation item; FR-PLN-07 partly superseded. (3) **Evidence** (FR-DOC-05…11 and recommended evidence rules): screenshots and files on every important activity, append-only once approved. (4) **Help** (§7.9, FR-UX-30…36): tooltips and info popovers on every page, an in-app user guide (`docs/user-guide/`), context-aware help, an animated first-run walkthrough, feature tours, practice in the sample company; QA-UI-05/06. (5) **Recommended defaults** for open questions 1–17 (§20) and FR-ORG-08 (defaults ship pre-set and stay configurable). Related: FM-9; FR-APR-01 objects; §4.2 non-goal (company secretarial work); §7.1 (13 navigation items) and §7.8 rows; FR-COA-03; FR-AP-07; FR-TAX-07; CMP-02; the §9.6 never-list and Appendix E; AI-37 `fh.read.equity`; §10.2 rows; `RND-SHARE`; INV-13; §11.4 entities; a §14.2 row; §18; R2 and R20; open questions 15–17; glossary; B.5 rows and B.7; checks C.2 #21–31; Appendix D rows; CTL-FIN-11/12, CTL-AUD-06; G.3 pinned conversions; sources I.7. Fixed the §8 cross-reference to the posting rules (§10.2). No requirement was renumbered or removed. |

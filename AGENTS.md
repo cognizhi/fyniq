@@ -44,7 +44,7 @@ Never invent a command in docs or scripts. If you need a new one, add it to the 
    policy (`RND-*`, `ALLOC-*`, §10.4).
 2. **The database is the backstop.** Balanced entries, immutable posted history, locked periods
    and tenant isolation are enforced by constraints, triggers, grants and row-level security
-   (INV-01…12). Never weaken one to make a test pass. Correct posted history by **reversal**,
+   (INV-01…13). Never weaken one to make a test pass. Correct posted history by **reversal**,
    never by update or delete.
 3. **Two implementations must agree.** The Go engine and the independent Python oracle
    (`oracle/`, written from the rules, not translated from the engine) must match to the cent.
@@ -63,7 +63,8 @@ Never invent a command in docs or scripts. If you need a new one, add it to the 
    audience-bound and never passed through (AI-36).
 7. **Every saved change is audited** in the same transaction (AUD-01), with actor,
    on-behalf-of, reason and before/after values. Logs never contain secrets, tokens, full NRIC
-   or bank numbers (SEC-15).
+   or bank numbers (SEC-15). Important activities carry **evidence** (screenshots, files) under
+   the evidence rules, append-only once approved (FR-DOC-05…07).
 8. **Tenancy on every row.** `organisation_id` everywhere, set per transaction with
    `set_config('app.org_id', …, true)`, and `FORCE ROW LEVEL SECURITY` on every table (§11.4).
 9. **Local mode always works.** Every cloud dependency sits behind an interface with a local
@@ -76,6 +77,8 @@ Never invent a command in docs or scripts. If you need a new one, add it to the 
     AI content**; Lucide icons with text labels (no emoji as icons); every feature tagged
     `basic` or `expert`, and safety information never hidden in Basic mode (§7.8); WCAG 2.2 AA;
     no optimistic updates of ledger figures; the clipboard gets ASCII minus and plain decimals.
+    Every feature has **help**: a help key with tooltip text, a page in `docs/user-guide/` and,
+    on the first-run path, a tour step (§7.9, QA-UI-05).
 12. **Statutory values come from official sources**, as effective-dated packs with a source URL
     and pinned tests (§10.6). A `[verify]` tag in the PRD means: confirm it before you build on it.
 13. **Plain words.** Every user-facing message names the field, says what is wrong and how to
@@ -92,7 +95,8 @@ db/migrations/       goose SQL (P0)          oracle/          Python reference l
 packs/               statutory packs (P1)    compliance/      control registry as code (P0)
 deploy/local/        Compose stack           deploy/docker/   Dockerfiles (P0)
 infra/               OpenTofu (P0)           scripts/         hooks and repo scripts
-docs/prd/            PRD and reviews         docs/design-system/, docs/design/  UI system and prototype
+docs/prd/            PRD, reviews, research  docs/design-system/, docs/design/  UI system and prototype
+docs/user-guide/     in-app user guide (§7.9)
 .claude/skills/      agent skills            .github/workflows/  CI and release-please
 ```
 
@@ -120,7 +124,8 @@ docs/prd/            PRD and reviews         docs/design-system/, docs/design/  
 3. Security checklist and threat model updated if money movement, personal data, permissions,
    the API surface or the AI/MCP surface changed.
 4. Audit events are emitted and verified for every new state change.
-5. Docs are updated (PRD with a `(rev 0.N)` tag, user guide, API reference, runbook, skills).
+5. Docs are updated (PRD with a `(rev 0.N)` tag, user guide in `docs/user-guide/` with its help
+   keys, API reference, runbook, skills).
 6. Conventional Commit with upgrade notes where needed. `make test` passes offline and
    `make up` still starts (from P0). Today, `make check` passes.
 
