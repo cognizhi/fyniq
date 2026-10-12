@@ -1,0 +1,189 @@
+# TEMPLATE FOR P0: a reference for deploy/local/compose.yaml once the services exist.
+# Not wired into any build yet. Today's deploy/local/compose.yaml has only postgres, mailpit
+# and gcs (make deps-up). Rules: PRD-001 §12.8 (ADR-T4), §12.9; skill fyniq-local-dev.
+#
+#   make dev   → core profile with hot reload (web via Vite, Go via air: the *-dev overrides)
+#   make up    → core profile from the production images built by `make images`
+#   COMPOSE_PROFILES=core,obs,partners make up   → add observability and partner mocks
+#
+# Pin every third-party image by digest in the real file (NFR-IMG-03). Ports bind to
+# 127.0.0.1 only, as in today's deploy/local/compose.yaml.
+
+name: fyniq
+
+x-hardened: &hardened          # applied to every service we build (NFR-IMG-02)
+  read_only: true
+  user: "65532:65532"
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: ["/tmp:size=64m"]
+  env_file: [../../.env]       # written by `make setup`; git-ignored
+  restart: unless-stopped
+
+x-fyniq-env: &fyniq-env
+  FYNIQ_ENV: local
+  FYNIQ_DATABASE_URL: postgres://fyniq:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
+  FYNIQ_GCS_ENDPOINT: http://gcs:4443/storage/v1/
+  FYNIQ_KMS_KEYSET_DIR: /keys
+  FYNIQ_SMTP_ADDR: mailpit:1025
+  FYNIQ_AUTH_EMULATOR_HOST: auth:9099
+  FYNIQ_OAUTH_ISSUER: http://localhost:8080/oauth2
+  FYNIQ_AI_MODE: replay           # FYNIQ_AI_LIVE=1 switches to live (synthetic data only)
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel:4317
+
+x-health: &health
+  interval: 5s
+  timeout: 3s
+  retries: 20
+
+services:
+  # ---------------------------------------------------------------- dependencies (core)
+  postgres:
+    image: postgres:18.6-alpine            # match deploy/local/compose.yaml; pin by digest
+    profiles: [core]
+    environment:
+      POSTGRES_DB: fyniq
+      POSTGRES_USER: fyniq
+      POSTGRES_PASSWORD: fyniq-local-only   # local-only throw-away password
+    ports: ["127.0.0.1:${FYNIQ_PG_PORT:-55432}:5432"]   # host port as in deploy/local/compose.yaml
+    volumes: [pgdata:/var/lib/postgresql]
+    healthcheck: { <<: *health, test: ["CMD-SHELL", "pg_isready -U fyniq -d fyniq"] }
+
+  auth:                                 # Identity Platform substitute [verify TOTP support]
+    image: andreysenov/firebase-tools:latest   # replace with a pinned, reviewed image
+    profiles: [core]
+    command: ["firebase", "emulators:start", "--only", "auth", "--project", "fyniq-local"]
+    ports: ["127.0.0.1:9099:9099"]
+    healthcheck: { <<: *health, test: ["CMD-SHELL", "wget -qO- http://localhost:9099/ || exit 1"] }
+
+  hydra:                                # OAuth 2.1 server (ADR-T3)
+    image: oryd/hydra:v2               # pin the exact version and digest
+    profiles: [core]
+    command: ["serve", "all", "--dev"] # --dev allows http on localhost only
+    environment:
+      DSN: postgres://fyniq:fyniq-local-only@postgres:5432/hydra?sslmode=disable
+      URLS_SELF_ISSUER: http://localhost:8080/oauth2
+      URLS_LOGIN: http://localhost:8080/auth/login
+      URLS_CONSENT: http://localhost:8080/auth/consent
+      SECRETS_SYSTEM: local-only-change-me-32-characters
+    depends_on: { postgres: { condition: service_healthy } }
+    healthcheck: { <<: *health, test: ["CMD", "hydra", "version"] }
+
+  gcs:
+    image: fsouza/fake-gcs-server:latest   # pin
+    profiles: [core]
+    command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443"]
+    ports: ["127.0.0.1:${FYNIQ_GCS_PORT:-4443}:4443"]
+    volumes: [gcsdata:/data]
+
+  mailpit:
+    image: axllent/mailpit:latest      # pin
+    profiles: [core]
+    ports: ["127.0.0.1:${FYNIQ_MAIL_UI_PORT:-8025}:8025", "127.0.0.1:${FYNIQ_SMTP_PORT:-1025}:1025"]
+
+  # ---------------------------------------------------------------- our services (core)
+  migrate:
+    <<: *hardened
+    image: fyniq-migrate:local
+    profiles: [core]
+    restart: "no"
+    environment: { <<: *fyniq-env }
+    depends_on: { postgres: { condition: service_healthy } }
+
+  api:
+    <<: *hardened
+    image: fyniq-api:local
+    profiles: [core]
+    environment: { <<: *fyniq-env }
+    volumes: ["../../.data/keys:/keys:ro"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      hydra: { condition: service_healthy }
+    healthcheck: { <<: *health, test: ["CMD", "/app", "healthcheck"] }   # no shell: the binary probes /readyz
+
+  ai:
+    <<: *hardened
+    image: fyniq-ai:local
+    profiles: [core]
+    environment: { <<: *fyniq-env, FYNIQ_DATABASE_URL: "" }   # no database credential at all
+    depends_on: { api: { condition: service_healthy } }
+    healthcheck: { <<: *health, test: ["CMD", "/app", "healthcheck"] }
+
+  mcp:
+    <<: *hardened
+    image: fyniq-mcp:local
+    profiles: [core]
+    environment: { <<: *fyniq-env, FYNIQ_DATABASE_URL: "" }   # reaches data only through the API (§12.3)
+    depends_on: { api: { condition: service_healthy } }
+    healthcheck: { <<: *health, test: ["CMD", "/app", "healthcheck"] }
+
+  worker:
+    <<: *hardened
+    image: fyniq-worker:local
+    profiles: [core]
+    environment: { <<: *fyniq-env }
+    depends_on: { api: { condition: service_healthy } }
+
+  executor:                             # proposal executor: own identity and DB role (§12.3)
+    <<: *hardened
+    image: fyniq-executor:local
+    profiles: [core]
+    environment:
+      <<: *fyniq-env
+      FYNIQ_DATABASE_URL: postgres://fyniq_executor:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
+    depends_on: { api: { condition: service_healthy } }
+
+  web:                                  # `make up`: the image; `make dev` overrides with Vite
+    <<: *hardened
+    image: fyniq-web:local
+    user: "101:101"                     # nginx-unprivileged's user
+    profiles: [core]
+    tmpfs: ["/tmp:size=16m", "/var/cache/nginx:size=16m"]
+
+  caddy:                                # one origin, like the production load balancer
+    image: caddy:2-alpine              # pin
+    profiles: [core]
+    ports: ["127.0.0.1:8080:8080"]
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro"]
+    depends_on: [api, ai, mcp, web, hydra]
+
+  # ---------------------------------------------------------------- obs
+  otel:
+    image: otel/opentelemetry-collector-contrib:latest   # pin
+    profiles: [obs]
+    volumes: ["./otel.yaml:/etc/otelcol-contrib/config.yaml:ro"]
+  jaeger:
+    image: jaegertracing/jaeger:latest                  # pin
+    profiles: [obs]
+    ports: ["127.0.0.1:16686:16686"]
+
+  # ---------------------------------------------------------------- scan
+  clamav:
+    image: clamav/clamav:stable        # pin
+    profiles: [scan]
+    healthcheck: { <<: *health, interval: 30s, test: ["CMD", "clamdcheck.sh"] }
+
+  # ---------------------------------------------------------------- partners
+  peppol-ap:
+    image: stoplight/prism:5           # pin
+    profiles: [partners]
+    command: ["mock", "-h", "0.0.0.0", "/contracts/peppol-ap.yaml"]
+    volumes: ["../../contracts/partners:/contracts:ro"]
+  bank:
+    image: stoplight/prism:5
+    profiles: [partners]
+    command: ["mock", "-h", "0.0.0.0", "/contracts/bank.yaml"]
+    volumes: ["../../contracts/partners:/contracts:ro"]
+  stripe:
+    image: stripe/stripe-mock:latest   # pin
+    profiles: [partners]
+
+  # ---------------------------------------------------------------- pubsub (P2)
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators   # pin
+    profiles: [pubsub]
+    command: ["gcloud", "beta", "emulators", "pubsub", "start", "--host-port=0.0.0.0:8085"]
+
+volumes:
+  pgdata: {}
+  gcsdata: {}

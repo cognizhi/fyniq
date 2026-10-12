@@ -1,15 +1,15 @@
-# Cognizhi Finance Hub Cloud: the single entry point for local work and CI (PRD-001 §12.8).
+# Fyniq: the single entry point for local work and CI (PRD-001 §12.8).
 #
 # Available today: the targets below.
 # Arrives in P0 (command contract, ADR-T4): setup, dev, up, down, seed, reset, test,
-# test-e2e, evals, images, ci. See .claude/skills/fh-local-dev.
+# test-e2e, evals, images, ci. See .claude/skills/fyniq-local-dev.
 
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -euo pipefail -c
 .DEFAULT_GOAL := help
 
 COMPOSE := docker compose -f deploy/local/compose.yaml
-DESIGN := docs/design-system/cognizhi-finance-hub
+DESIGN := docs/design-system/fyniq
 
 .PHONY: help check check-tokens check-config kb-index kb-lint kb-stale hooks lint-commits deps-up deps-down deps-logs prototype
 
@@ -50,9 +50,9 @@ lint-commits: ## Check commit messages in RANGE (default: origin/main..HEAD)
 
 deps-up: ## Start local dependencies: PostgreSQL 18, Mailpit, fake GCS
 	@$(COMPOSE) up -d --wait
-	@echo "PostgreSQL  postgres://fh:fh-local-only@localhost:$${FH_PG_PORT:-55432}/fh"
-	@echo "Mailpit     http://localhost:$${FH_MAIL_UI_PORT:-8025}   (SMTP localhost:$${FH_SMTP_PORT:-1025})"
-	@echo "Fake GCS    http://localhost:$${FH_GCS_PORT:-4443}/storage/v1/b"
+	@echo "PostgreSQL  postgres://fyniq:fyniq-local-only@localhost:$${FYNIQ_PG_PORT:-55432}/fyniq"
+	@echo "Mailpit     http://localhost:$${FYNIQ_MAIL_UI_PORT:-8025}   (SMTP localhost:$${FYNIQ_SMTP_PORT:-1025})"
+	@echo "Fake GCS    http://localhost:$${FYNIQ_GCS_PORT:-4443}/storage/v1/b"
 
 deps-down: ## Stop local dependencies (keeps the database volume)
 	@$(COMPOSE) down

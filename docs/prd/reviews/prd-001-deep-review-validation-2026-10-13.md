@@ -1,5 +1,9 @@
 # PRD-001 deep review: validation and dispositions · 13 Oct 2026
 
+> **Renamed (13 Oct 2026, PRD rev 0.9).** The product called "Cognizhi Finance Hub Cloud" ("FH Cloud",
+> "Finance Hub") in this record is now **Fyniq**, and identifiers prefixed `fh` are now `fyniq`
+> (for example the `fh-*` skills are `fyniq-*`). Links were updated; the text is otherwise as written.
+
 | | |
 |---|---|
 | Review validated | [Deep review of 12 Oct 2026](prd-001-deep-review-2026-10-12.md) (F01–F50, O01–O12, the §8 contradiction table, the §11 scenarios) of PRD-001 revision 0.7 (SHA-256 `dea4422d…5990ea`, commit `9d849a7`) |

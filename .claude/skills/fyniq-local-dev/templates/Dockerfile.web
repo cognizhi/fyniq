@@ -1,0 +1,56 @@
+# syntax=docker/dockerfile:1.7
+#
+# TEMPLATE FOR P0: a reference for deploy/docker/Dockerfile.web. Not wired into any build yet.
+# Used for local (`make up`) and preview environments only; production serves apps/web's
+# static build from Cloud Storage behind Cloud CDN (PRD-001 §12.3, §12.9). Budget ≤ 25 MB.
+
+# ---- build stage ------------------------------------------------------------------------
+# Pin by digest in the real file.
+FROM node:24-alpine AS build
+WORKDIR /src
+# pnpm from corepack, at the version pinned in package.json "packageManager".
+RUN corepack enable
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/web/package.json apps/web/
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+COPY . .
+ARG VERSION=0.0.0-dev
+ARG GIT_SHA=unknown
+# Vite reads VITE_* at build time (About dialog, REL-05).
+ENV VITE_FYNIQ_VERSION=${VERSION} VITE_FYNIQ_COMMIT=${GIT_SHA}
+RUN pnpm --filter web build
+
+# ---- runtime stage ----------------------------------------------------------------------
+# Runs as UID 101 on port 8080; no root needed. Pin by digest in the real file.
+FROM nginxinc/nginx-unprivileged:alpine
+COPY deploy/docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /src/apps/web/dist /usr/share/nginx/html
+EXPOSE 8080
+
+# ---- deploy/docker/nginx.conf (save as that file) ----------------------------------------
+# server {
+#   listen 8080;
+#   root /usr/share/nginx/html;
+#   server_tokens off;
+#
+#   # Strict CSP: self only; no third-party scripts, styles or fonts (fonts are self-hosted).
+#   # API, AI and MCP are on the same origin behind Caddy / the load balancer.
+#   add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'" always;
+#   add_header X-Content-Type-Options "nosniff" always;
+#   add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+#   add_header Permissions-Policy "camera=(self), microphone=(), geolocation=()" always;
+#
+#   # Hashed assets never change: cache for a year.
+#   location /assets/ {
+#     add_header Cache-Control "public, max-age=31536000, immutable" always;
+#     try_files $uri =404;
+#   }
+#
+#   # SPA fallback; index.html must never be cached so new releases load at once.
+#   location / {
+#     add_header Cache-Control "no-cache" always;
+#     try_files $uri /index.html;
+#   }
+# }
+# Note: an add_header inside a location replaces the server-level headers in nginx, so repeat
+# the security headers in each location block (or use an include file) in the real config.

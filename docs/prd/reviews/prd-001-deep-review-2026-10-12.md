@@ -3,11 +3,14 @@
 > made relative; the text is otherwise unchanged. Its findings were validated claim by claim and
 > applied in PRD revision 0.8: see the [validation record](prd-001-deep-review-validation-2026-10-13.md),
 > which records what held, what was overstated or wrong, and what each finding changed.
+>
+> **Renamed (13 Oct 2026, PRD rev 0.9).** The product this review calls "FH" is now **Fyniq**, and the
+> PRD file is now `prd-001-fyniq-platform.md`; links were updated.
 
 # Cognizhi Finance Hub Cloud: deep PRD review and enhancement baseline
 
 **Review date:** 12 October 2026  
-**Document reviewed:** [PRD-001](../prd-001-finance-hub-cloud-platform.md), revision 0.7, 3,920 lines  
+**Document reviewed:** [PRD-001](../prd-001-fyniq-platform.md), revision 0.7, 3,920 lines  
 **Status:** Independent review baseline; recommendations have not been adopted  
 **Repository commit:** 9d849a77c484001b2c5571c979c5188b5a3afe9c  
 **PRD SHA-256 at review:** dea4422df0760bdfd079f2680382d08a0885c8e1c13992e7f66298fdbd5990ea  

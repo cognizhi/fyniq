@@ -12,7 +12,7 @@ status: draft            # accountant review pending (README: statutory pages ar
 ## What it is
 
 When you pay a company cost from your own pocket, lend the company money or leave your pay
-unpaid, the company owes you that amount. Finance Hub keeps it in **your director's account**, so
+unpaid, the company owes you that amount. Fyniq keeps it in **your director's account**, so
 you can always see what the company owes you and where each amount came from.
 
 This page is general information, not tax or legal advice. Your accountant and tax agent confirm
@@ -61,7 +61,7 @@ on money you never received, and investors see a clean balance sheet at the roun
    founder approves it. If every founder benefits, your accountant also reviews it. Attach the
    resolutions and the agreement.
 5. **Converting to shares:** after approval, your company secretary files with ACRA. Attach the
-   ACRA acknowledgement. Finance Hub then posts the conversion on the date ACRA registered it.
+   ACRA acknowledgement. Fyniq then posts the conversion on the date ACRA registered it.
 
 ## Common problems
 

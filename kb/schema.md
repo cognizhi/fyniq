@@ -1,7 +1,7 @@
 # Knowledge-base schema (kb-schema@1)
 
 The single schema for the compiled knowledge base (PRD-001 §9.11, ADR-T6). Two compilers read
-it: an agent in this repository, following the `fh-knowledge-base` skill, and the runtime
+it: an agent in this repository, following the `fyniq-knowledge-base` skill, and the runtime
 `kb-compiler` job (AI-57). Change it only in a reviewed commit, and bump the version in the title
 when the page format changes. A version bump means a full recompile and the knowledge evals
 (QA-AI-06).
@@ -77,7 +77,7 @@ aliases:                                  # other words users type for this topi
 
 | Operation | Command or step | When |
 |---|---|---|
-| Compile | Follow the `fh-knowledge-base` skill: read the changed sources, update or create the affected pages, record each source's hash (`scripts/kb.py hash <path>`) | Whenever a source changes |
+| Compile | Follow the `fyniq-knowledge-base` skill: read the changed sources, update or create the affected pages, record each source's hash (`scripts/kb.py hash <path>`) | Whenever a source changes |
 | Index | `make kb-index` | After every compile or edit |
 | Deterministic lint | `make kb-lint` (part of `make check`; CI fails on errors) | Every change |
 | Semantic lint | The skill's checklist: contradictions, superseded claims, orphans, missing pages and cross-references | Each release; weekly for organisation pages |

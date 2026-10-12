@@ -1,4 +1,4 @@
-# AGENTS.md: coding instructions for Cognizhi Finance Hub Cloud
+# AGENTS.md: coding instructions for Fyniq
 
 These instructions are for every contributor, human or AI coding agent (Claude Code, Codex,
 Copilot, Cursor, …). `CLAUDE.md` imports this file. When the instructions and the PRD disagree,
@@ -6,9 +6,11 @@ the PRD wins; fix whichever is wrong in the same change.
 
 ## What this repository is
 
-A web-hosted accounting, compliance, reporting and planning platform for a Singapore start-up,
-on Google Cloud (`asia-southeast1`). It replaces the `zh-sheet-accounting` Zoho Sheet workbook
-and keeps its accounting rules, statuses, checks and test philosophy.
+**Fyniq**, *Intelligence behind every number*: a web-hosted accounting, compliance, reporting
+and planning platform for a Singapore start-up, on Google Cloud (`asia-southeast1`). It replaces
+the `zh-sheet-accounting` Zoho Sheet workbook and keeps its accounting rules, statuses, checks and
+test philosophy. The line is a promise the code keeps: every figure traces to its source, and AI
+states where each number comes from (golden rules 3 and 5).
 
 **Status: pre-P0.** The repository holds the product spec, the design system, the agent
 skills, the local dependency stack and the release tooling. No application code exists yet.
@@ -16,11 +18,11 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 
 | Read first | Why |
 |---|---|
-| `docs/prd/prd-001-finance-hub-cloud-platform.md` | The requirements (IDs such as `FR-GL-08`, `AI-34`, `DEV-02`) and the architecture decisions (ADR index in §12.0) |
+| `docs/prd/prd-001-fyniq-platform.md` | The requirements (IDs such as `FR-GL-08`, `AI-34`, `DEV-02`) and the architecture decisions (ADR index in §12.0) |
 | `docs/prd/reviews/prd-001-review-2026-10-12.md` | Why revision 0.2 changed what it did (REV-01…40) |
 | `docs/prd/reviews/prd-001-deep-review-validation-2026-10-13.md` | Why revision 0.8 changed what it did: the deep review (F01–F50, O01–O12) validated claim by claim |
-| `docs/design-system/cognizhi-finance-hub/MASTER.md` | How the UI looks and behaves; `pages/*.md` override it per page |
-| `.claude/skills/fh-*/SKILL.md` | Step-by-step recipes for each kind of change (table below) |
+| `docs/design-system/fyniq/MASTER.md` | How the UI looks and behaves; `pages/*.md` override it per page |
+| `.claude/skills/fyniq-*/SKILL.md` | Step-by-step recipes for each kind of change (table below) |
 
 ## Commands
 
@@ -61,7 +63,7 @@ Never invent a command in docs or scripts. If you need a new one, add it to the 
    app. Never add a write, approve, export or admin tool to the AI or MCP surface; the never-list
    in §9.6 is enforced by tests. Figures come only from read tools; know-how comes from the
    compiled knowledge base in `kb/` (§9.11). **Every change to `docs/user-guide/` is compiled,
-   indexed and linted in the same commit** (`fh-knowledge-base` skill; `make check` fails otherwise).
+   indexed and linted in the same commit** (`fyniq-knowledge-base` skill; `make check` fails otherwise).
 6. **Closed by default.** MCP access, integration clients and AI task types are off until an
    Owner enables them with dual control. Agent-class clients are proposal-only (AI-34). Tokens are
    audience-bound and never passed through (AI-36).
@@ -141,23 +143,23 @@ connectors/          connector manifests and code (FR-INT-25)  internal/adapters
 
 | Skill | Use for |
 |---|---|
-| `fh-accounting-domain` | Posting rules, invariants, money and rounding, the balance service, the oracle, imbalances |
-| `fh-sg-statutory` | GST, CPF, SDL, SHG, CIT, InvoiceNow and deadline updates as effective-dated packs |
-| `fh-feature-change` | Adding a module, entity, field, report, check, KPI or permission end to end |
-| `fh-quality-gates` | The test pyramid, every merge gate, differential and property tests, traceability |
-| `fh-bug-fix` | Triage → reproduce → failing test → fix → data correction by approved journal |
-| `fh-api-integrations` | API conventions, contracts, webhooks and events, OAuth client classes, SDKs |
-| `fh-mcp-server` | Exposing tools over MCP safely; the MCP security controls and red-team suite |
-| `fh-ai-proposals` | AI read tools and catalogue task types, dry runs, evals, red-team cases |
-| `fh-security-compliance` | Controls as code, evidence, ASVS, PDPA, incident response |
-| `fh-design-system` | Tokens, themes, components, Basic/Expert mode, accessibility, charts; consulting uipro |
-| `fh-local-dev` | Local mode, the Compose stack, local substitutes, lean images and budgets |
-| `fh-release` | Conventional Commits, release-please, versioning matrix, PRD revisions |
-| `fh-knowledge-base` | Compile, index and lint the knowledge base the AI assistant reads (`kb/`); run it on every change to `docs/user-guide/` |
+| `fyniq-accounting-domain` | Posting rules, invariants, money and rounding, the balance service, the oracle, imbalances |
+| `fyniq-sg-statutory` | GST, CPF, SDL, SHG, CIT, InvoiceNow and deadline updates as effective-dated packs |
+| `fyniq-feature-change` | Adding a module, entity, field, report, check, KPI or permission end to end |
+| `fyniq-quality-gates` | The test pyramid, every merge gate, differential and property tests, traceability |
+| `fyniq-bug-fix` | Triage → reproduce → failing test → fix → data correction by approved journal |
+| `fyniq-api-integrations` | API conventions, contracts, webhooks and events, OAuth client classes, SDKs |
+| `fyniq-mcp-server` | Exposing tools over MCP safely; the MCP security controls and red-team suite |
+| `fyniq-ai-proposals` | AI read tools and catalogue task types, dry runs, evals, red-team cases |
+| `fyniq-security-compliance` | Controls as code, evidence, ASVS, PDPA, incident response |
+| `fyniq-design-system` | Tokens, themes, components, Basic/Expert mode, accessibility, charts; consulting uipro |
+| `fyniq-local-dev` | Local mode, the Compose stack, local substitutes, lean images and budgets |
+| `fyniq-release` | Conventional Commits, release-please, versioning matrix, PRD revisions |
+| `fyniq-knowledge-base` | Compile, index and lint the knowledge base the AI assistant reads (`kb/`); run it on every change to `docs/user-guide/` |
 
 Design skills that ship with the repository (`ui-ux-pro-max`, also called **uipro**;
 `ui-styling`; `design-system`; `design`; `brand`; `banner-design`; `slides`) support
-`fh-design-system`. uipro is a review lens; it never overrides the PRD or MASTER.md.
+`fyniq-design-system`. uipro is a review lens; it never overrides the PRD or MASTER.md.
 
 ## Safety
 

@@ -1,22 +1,22 @@
 # Local dependencies available today (PRD-001 §12.8, ADR-T4). Start with `make deps-up`.
 # P0 grows this into the full stack with profiles (core, obs, scan, partners, pubsub);
-# the target shape is .claude/skills/fh-local-dev/templates/compose.full.example.yaml.
+# the target shape is .claude/skills/fyniq-local-dev/templates/compose.full.example.yaml.
 # Credentials here are for local use only and never valid anywhere else.
-name: finance-hub
+name: fyniq
 
 services:
   postgres:
     image: postgres:18.6-alpine            # same major as Cloud SQL (ADR-D1); pin by digest in P0
     environment:
-      POSTGRES_DB: fh
-      POSTGRES_USER: fh
-      POSTGRES_PASSWORD: fh-local-only
+      POSTGRES_DB: fyniq
+      POSTGRES_USER: fyniq
+      POSTGRES_PASSWORD: fyniq-local-only
     ports:
-      - "127.0.0.1:${FH_PG_PORT:-55432}:5432"   # 55432 avoids clashing with a host PostgreSQL
+      - "127.0.0.1:${FYNIQ_PG_PORT:-55432}:5432"   # 55432 avoids clashing with a host PostgreSQL
     volumes:
       - pgdata:/var/lib/postgresql             # PostgreSQL 18 images keep data under a versioned subdirectory
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fh -d fh"]
+      test: ["CMD-SHELL", "pg_isready -U fyniq -d fyniq"]
       interval: 2s
       timeout: 3s
       retries: 30
@@ -24,14 +24,14 @@ services:
   mailpit:                                    # catches every outgoing email; UI at http://localhost:8025
     image: axllent/mailpit:v1.31
     ports:
-      - "127.0.0.1:${FH_MAIL_UI_PORT:-8025}:8025"
-      - "127.0.0.1:${FH_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${FYNIQ_MAIL_UI_PORT:-8025}:8025"
+      - "127.0.0.1:${FYNIQ_SMTP_PORT:-1025}:1025"
 
   gcs:                                        # Cloud Storage JSON API emulator (Bucket Lock is not emulated)
     image: fsouza/fake-gcs-server:1.56
     command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443", "-backend", "memory"]
     ports:
-      - "127.0.0.1:${FH_GCS_PORT:-4443}:4443"
+      - "127.0.0.1:${FYNIQ_GCS_PORT:-4443}:4443"
 
 volumes:
   pgdata:

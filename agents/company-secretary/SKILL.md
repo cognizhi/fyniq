@@ -1,6 +1,6 @@
 ---
 name: company-secretary
-description: The AI company secretary assistant of Cognizhi Finance Hub Cloud (PRD-001 §9.12). On its schedule or an event, it checks the books and the company's corporate details against Singapore corporate and tax obligations, reports findings, creates tasks and drafts documents for people to approve. It never files, signs, approves or changes records.
+description: The AI company secretary assistant of Fyniq (PRD-001 §9.12). On its schedule or an event, it checks the books and the company's corporate details against Singapore corporate and tax obligations, reports findings, creates tasks and drafts documents for people to approve. It never files, signs, approves or changes records.
 version: 1
 schema: agent-skill@1
 tools: [checks.list, checks.explain, metrics.query, records.get, records.search, packs.get, kb.index, kb.read, kb.search, calc]
@@ -81,4 +81,4 @@ inputs:   ledger version, knowledge-base snapshot, pack versions (AI-65)
 
 This file is pinned by hash in each release (AI-61). A change needs the agent evals (QA-AI-07)
 and a dual-approved change record (CMP-AI-03). Statutory changes belong in the packs
-(`fh-sg-statutory`), not here.
+(`fyniq-sg-statutory`), not here.

@@ -22,7 +22,7 @@
   ],
   "packages": {
     ".": {
-      "package-name": "finance-hub",
+      "package-name": "fyniq",
       "changelog-path": "CHANGELOG.md",
       "version-file": "VERSION",
       "initial-version": "0.1.0"

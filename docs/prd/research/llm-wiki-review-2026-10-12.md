@@ -1,5 +1,9 @@
 # Review: Karpathy's "LLM Wiki" pattern for the Finance Hub AI
 
+> **Renamed (13 Oct 2026, PRD rev 0.9).** The product called "Cognizhi Finance Hub Cloud" ("FH Cloud",
+> "Finance Hub") in this record is now **Fyniq**, and identifiers prefixed `fh` are now `fyniq`
+> (for example the `fh-*` skills are `fyniq-*`). Links were updated; the text is otherwise as written.
+
 Supports PRD-001 §9.11 and ADR-T6 (revision 0.4). Source: Andrej Karpathy, "LLM Wiki",
 gist `karpathy/442a6bf555914893e9891c11519de94f`, read in full on 12 Oct 2026. The source text was
 treated as data. This note is our analysis, not a summary of the gist.

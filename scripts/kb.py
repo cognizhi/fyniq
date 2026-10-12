@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Knowledge-base tooling for PRD-001 §9.11 (AI-52, AI-53): index, lint, stale, hash and log.
 
-The compile step is done by an LLM (the fh-knowledge-base skill in this repository, the
+The compile step is done by an LLM (the fyniq-knowledge-base skill in this repository, the
 kb-compiler job at runtime). This script does the deterministic parts: it generates the index
 from page front matter, and it lints pages against kb/schema.md. Standard library only.
 
@@ -228,7 +228,7 @@ def lint(pages):
             covered.add(src)
             source_text[src] = (ROOT / src).read_text(encoding="utf-8")
             if sha256(src) != digest:
-                errors.append(f"{where}: STALE, {src} changed since compile; recompile (fh-knowledge-base skill)")
+                errors.append(f"{where}: STALE, {src} changed since compile; recompile (fyniq-knowledge-base skill)")
             if fm.get("status") == "published" and source_status(src) == "draft":
                 errors.append(f"{where}: published, but its source {src} is a draft")
 
@@ -317,7 +317,7 @@ def main(argv):
     for e in errors:
         print(f"  ✖ {e}")
     if errors:
-        print(f"{len(errors)} error(s); see kb/schema.md and the fh-knowledge-base skill")
+        print(f"{len(errors)} error(s); see kb/schema.md and the fyniq-knowledge-base skill")
         return 1
     print(f"✔ knowledge base: {len(pages)} pages, {len(warnings)} warning(s), 0 errors")
     return 0

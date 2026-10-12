@@ -1,4 +1,6 @@
-# Cognizhi Finance Hub Cloud
+# Fyniq
+
+*Intelligence behind every number.*
 
 A web-hosted accounting, compliance, reporting and planning platform for a Singapore start-up,
 on Google Cloud. Built for a lean founding team, with the controls a growing company needs.
@@ -22,14 +24,14 @@ on Google Cloud. Built for a lean founding team, with the controls a growing com
 
 | Area | Where |
 |---|---|
-| Product requirements (revision 0.3) | [`docs/prd/prd-001-finance-hub-cloud-platform.md`](docs/prd/prd-001-finance-hub-cloud-platform.md) |
+| Product requirements (revision 0.9) | [`docs/prd/prd-001-fyniq-platform.md`](docs/prd/prd-001-fyniq-platform.md) |
 | Review that produced revision 0.2 | [`docs/prd/reviews/prd-001-review-2026-10-12.md`](docs/prd/reviews/prd-001-review-2026-10-12.md) |
-| Design system (uipro-reviewed; tokens; contrast validator) | [`docs/design-system/cognizhi-finance-hub/`](docs/design-system/cognizhi-finance-hub/) |
+| Design system (uipro-reviewed; tokens; contrast validator) | [`docs/design-system/fyniq/`](docs/design-system/fyniq/) |
 | Clickable UI prototype | [`docs/design/prototype/index.html`](docs/design/prototype/index.html) (open in a browser; try `?mode=expert&theme=dark`) |
 | User guide (source of the in-app help, §7.9) | [`docs/user-guide/`](docs/user-guide/) |
 | Compiled knowledge base the AI assistant reads (§9.11) | [`kb/`](kb/) (index: [`kb/index.md`](kb/index.md)) |
 | Coding instructions | [`AGENTS.md`](AGENTS.md) (and [`CLAUDE.md`](CLAUDE.md) for Claude Code) |
-| Agent skills | [`.claude/skills/`](.claude/skills/) (`fh-*`) |
+| Agent skills | [`.claude/skills/`](.claude/skills/) (`fyniq-*`) |
 | Release tooling | [`release-please-config.json`](release-please-config.json), [`.github/workflows/`](.github/workflows/) |
 
 ## Quick start (today)

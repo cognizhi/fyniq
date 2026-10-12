@@ -4,7 +4,7 @@ type: concept
 title: What the company owes a founder (the director's account)
 summary: Money a founder lent, costs paid personally and unpaid pay are owed to them, tracked per founder in their director's account
 sources:
-  - docs/user-guide/founders-money.md sha256:e5cdae8c67b4c128861edea59e52ebd50836b668f636b471915223b4a31c249a
+  - docs/user-guide/founders-money.md sha256:b2ff34f027f280effc67d5d0c2c074e13386e8313c5a1cb9365a4c074b7f2629
 aliases:
   - director loan
   - money I lent the company
@@ -13,9 +13,9 @@ data_class: general
 taint: trusted
 status: draft
 human_edited: false
-compiled_by: claude-opus-5-5 via Claude Code (fh-knowledge-base skill)
+compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-12
+compiled_at: 2026-10-13
 ---
 
 # What the company owes a founder (the director's account)
@@ -24,7 +24,7 @@ compiled_at: 2026-10-12
 
 - A founder who pays a company cost personally, lends the company money or leaves pay unpaid is
   owed that amount by the company. (src: docs/user-guide/founders-money.md#what-it-is)
-- Finance Hub keeps each founder's amounts in **their director's account**, showing what is owed
+- Fyniq keeps each founder's amounts in **their director's account**, showing what is owed
   and where each amount came from. (src: docs/user-guide/founders-money.md#what-it-is)
 - Answers about it are general information, not tax or legal advice; the accountant and tax
   agent confirm the choice for the founder's situation. (src: docs/user-guide/founders-money.md#what-it-is)

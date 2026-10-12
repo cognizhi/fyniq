@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Finance Hub Prototype</title>
-<meta name="description" content="Static UI prototype of Cognizhi Finance Hub Cloud: shell, Home, Inbox with AI proposal review, Banking, Reports, My claims, the notification centre, announcement banners and the AI company secretary, with Basic/Expert modes, light, dark and high-contrast themes, info tips, the in-app user guide and the first-run tour.">
+<title>Fyniq · Prototype</title>
+<meta name="description" content="Static UI prototype of Fyniq (Intelligence behind every number): shell, Home, Inbox with AI proposal review, Banking, Reports, My claims, the notification centre, announcement banners and the AI company secretary, with Basic/Expert modes, light, dark and high-contrast themes, info tips, the in-app user guide and the first-run tour.">
 <style>
-/* Tokens: copied from docs/design-system/cognizhi-finance-hub/tokens.css (12 Oct 2026).
+/* Tokens: copied from docs/design-system/fyniq/tokens.css (12 Oct 2026).
    The product imports that file; this prototype inlines it so it opens from disk. */
 :root{color-scheme:light;--background:oklch(0.985 0.004 85);--surface-1:oklch(1 0 0);--surface-2:oklch(0.965 0.005 85);--surface-3:oklch(0.935 0.007 85);--overlay-scrim:oklch(0.2 0.02 255 / 0.45);--text-primary:oklch(0.22 0.02 255);--text-secondary:oklch(0.4 0.02 255);--text-muted:oklch(0.5 0.015 255);--border:oklch(0.9 0.008 255);--border-strong:oklch(0.6 0.015 255);--primary:oklch(0.5 0.087 190);--primary-hover:oklch(0.45 0.079 190);--primary-foreground:oklch(1 0 0);--primary-subtle:oklch(0.95 0.025 190);--primary-subtle-foreground:oklch(0.38 0.068 190);--link:oklch(0.47 0.082 190);--ring:oklch(0.5 0.087 190);--ai:oklch(0.5 0.2 295);--ai-foreground:oklch(1 0 0);--ai-subtle:oklch(0.965 0.018 295);--ai-subtle-foreground:oklch(0.42 0.18 295);--ai-border:oklch(0.62 0.14 295);--ai-gradient:linear-gradient(120deg,oklch(0.5 0.2 295),oklch(0.55 0.096 190));--status-good:oklch(0.47 0.12 150);--status-good-subtle:oklch(0.955 0.035 150);--status-warning:oklch(0.5 0.11 70);--status-warning-subtle:oklch(0.965 0.037 85);--status-serious:oklch(0.5 0.14 45);--status-serious-subtle:oklch(0.955 0.024 45);--status-critical:oklch(0.5 0.19 27);--status-critical-subtle:oklch(0.955 0.022 27);--status-neutral:oklch(0.45 0.015 255);--status-neutral-subtle:oklch(0.95 0.005 255);--destructive:oklch(0.52 0.19 27);--destructive-foreground:oklch(1 0 0);--amount-negative:oklch(0.5 0.19 27);--chart-1:#2a78d6;--chart-grid:oklch(0.92 0.004 85);--font-ui:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--font-code:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;--row-height:40px;--radius-s:4px;--radius-m:6px;--radius-l:10px;--shadow-1:0 1px 2px oklch(0.2 0.02 255 / 0.06),0 1px 1px oklch(0.2 0.02 255 / 0.04);--shadow-3:0 12px 32px oklch(0.2 0.02 255 / 0.14);--duration-fast:120ms;--duration-base:180ms;--ease-out:cubic-bezier(0.2,0,0,1)}
 .dark{color-scheme:dark;--background:oklch(0.17 0.02 260);--surface-1:oklch(0.205 0.022 260);--surface-2:oklch(0.24 0.024 260);--surface-3:oklch(0.28 0.026 260);--overlay-scrim:oklch(0.08 0.01 260 / 0.65);--text-primary:oklch(0.95 0.005 260);--text-secondary:oklch(0.82 0.01 260);--text-muted:oklch(0.72 0.012 260);--border:oklch(0.32 0.02 260);--border-strong:oklch(0.56 0.02 260);--primary:oklch(0.74 0.11 190);--primary-hover:oklch(0.8 0.1 190);--primary-foreground:oklch(0.17 0.02 260);--primary-subtle:oklch(0.28 0.045 190);--primary-subtle-foreground:oklch(0.86 0.08 190);--link:oklch(0.78 0.11 190);--ring:oklch(0.78 0.11 190);--ai:oklch(0.74 0.14 295);--ai-foreground:oklch(0.17 0.02 260);--ai-subtle:oklch(0.27 0.06 295);--ai-subtle-foreground:oklch(0.86 0.077 295);--ai-border:oklch(0.6 0.13 295);--ai-gradient:linear-gradient(120deg,oklch(0.42 0.16 295),oklch(0.42 0.074 190));--status-good:oklch(0.8 0.13 150);--status-good-subtle:oklch(0.27 0.05 150);--status-warning:oklch(0.85 0.12 85);--status-warning-subtle:oklch(0.28 0.05 80);--status-serious:oklch(0.8 0.12 50);--status-serious-subtle:oklch(0.28 0.05 45);--status-critical:oklch(0.78 0.128 25);--status-critical-subtle:oklch(0.28 0.06 25);--status-neutral:oklch(0.8 0.01 260);--status-neutral-subtle:oklch(0.28 0.015 260);--destructive:oklch(0.72 0.16 25);--destructive-foreground:oklch(0.17 0.02 260);--amount-negative:oklch(0.78 0.128 25);--chart-1:#3987e5;--chart-grid:oklch(0.3 0.015 260);--shadow-1:0 1px 2px oklch(0 0 0 / 0.4);--shadow-3:0 12px 32px oklch(0 0 0 / 0.55)}
@@ -399,7 +399,7 @@ fieldset.settle input{margin-top:4px}
 
 <div class="app">
   <header class="top">
-    <div class="org"><span class="logo" aria-hidden="true">FH</span><span class="name">Cognizhi Pte Ltd</span></div>
+    <div class="org"><span class="logo" aria-hidden="true">C</span><span class="name">Cognizhi Pte Ltd</span></div>
     <button class="search" id="searchBtn" aria-label="Search and commands (Ctrl+K)"><svg class="i sm" aria-hidden="true"><use href="#i-search"/></svg><span class="lbl">Search, go to, create, ask AI…</span><kbd>Ctrl K</kbd></button>
     <div class="spacer"></div>
     <div class="seg" role="radiogroup" aria-label="Experience mode" id="modeSeg">
@@ -621,7 +621,7 @@ fieldset.settle input{margin-top:4px}
       <div class="card pad" style="max-width:640px;margin-top:16px"><h2>Not in this prototype</h2><p class="secondary" style="margin:0">The prototype covers the shell, Home, Inbox with AI-proposal review, Banking and Reports. The other pages follow the same patterns (PRD §7.3 record pages).</p></div>
     </section>
 
-    <p class="proto-note">Prototype for PRD-001 rev 0.6 · fictional sample data · design system: <span class="mono">docs/design-system/cognizhi-finance-hub/</span> · try <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Ctrl</kbd>+<kbd>J</kbd>, the Basic/Expert toggle, the theme buttons, the info buttons next to figures, Help, the first-run tour, <strong>My claims</strong> (paste a screenshot), the bell and <strong>Company secretary</strong> (Compliance). Review links: <span class="mono">?tour=1</span> replays the tour, <span class="mono">?motion=reduce</span> shows it without animation, <span class="mono">?banner=critical</span> or <span class="mono">?banner=none</span>, <span class="mono">?panel=notifications</span>, <span class="mono">?claim=draft#my-claims</span>. The prototype keeps "tour done" and dismissed banners in browser storage as a stand-in; the product stores them per user on the server (FR-UX-34, FR-NTF-03).</p>
+    <p class="proto-note">Prototype for PRD-001 rev 0.6 · fictional sample data · design system: <span class="mono">docs/design-system/fyniq/</span> · try <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Ctrl</kbd>+<kbd>J</kbd>, the Basic/Expert toggle, the theme buttons, the info buttons next to figures, Help, the first-run tour, <strong>My claims</strong> (paste a screenshot), the bell and <strong>Company secretary</strong> (Compliance). Review links: <span class="mono">?tour=1</span> replays the tour, <span class="mono">?motion=reduce</span> shows it without animation, <span class="mono">?banner=critical</span> or <span class="mono">?banner=none</span>, <span class="mono">?panel=notifications</span>, <span class="mono">?claim=draft#my-claims</span>. The prototype keeps "tour done" and dismissed banners in browser storage as a stand-in; the product stores them per user on the server (FR-UX-34, FR-NTF-03).</p>
   </main>
 </div>
 
@@ -685,8 +685,8 @@ fieldset.settle input{margin-top:4px}
   }
   const infoBtn = (key, about) => `<button class="info" type="button" data-help="${key}" aria-label="About ${about}" aria-expanded="false" aria-controls="pop"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button>`;
   const store = {
-    get(k, d) { try { return localStorage.getItem("fh-proto-" + k) ?? d; } catch { return d; } },
-    set(k, v) { try { localStorage.setItem("fh-proto-" + k, v); } catch {} }
+    get(k, d) { try { return localStorage.getItem("fyniq-proto-" + k) ?? d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("fyniq-proto-" + k, v); } catch {} }
   };
 
   // ---- toast / live announcements (FR-UX-21)
@@ -1030,7 +1030,7 @@ fieldset.settle input{margin-top:4px}
   const stub = (lead) => `<p>${lead}</p><p class="muted">Prototype stub: the full page lives in <span class="mono">docs/user-guide/</span> and ships with each release.</p>`;
   const GUIDE = [
     { id: "getting-started", t: "Getting started", k: "start first home inbox basics day tour", body: () => `
-      <p>Finance Hub keeps the company's books, reminds you of deadlines and tells you what needs you. Most days take a few minutes.</p>
+      <p>Fyniq keeps the company's books, reminds you of deadlines and tells you what needs you, with the intelligence behind every number one click away: each figure opens to its source. Most days take a few minutes.</p>
       <ol>
         <li><strong>Look at Home.</strong> Cash, runway and books health, and the items that need you.</li>
         <li><strong>Clear the Inbox.</strong> Approve, reject or fix. Nothing changes until a person approves it.</li>
@@ -1044,7 +1044,7 @@ fieldset.settle input{margin-top:4px}
     { id: "approvals", t: "Approvals and statuses", k: "approve inbox status chip cannot post review", body: () => stub("Items that need a decision wait in the Inbox. Status chips say what each record needs: review, fix before it can post, or due soon.") },
     { id: "modes", t: "Basic and Expert modes", k: "basic expert toggle mode", body: () => `<p><strong>Basic</strong> shows the essentials in plain words. <strong>Expert</strong> shows every feature your role allows, with debits, credits and account codes. Switching never changes your data or permissions, and warnings, approvals and deadlines show in both.</p>` },
     { id: "founders-money", t: "Founders' money", k: "founder director loan salary shares convert capital waive safe pay", body: () => `
-      <p>When you pay a company cost yourself, lend the company money or go without pay, the company owes you. Finance Hub keeps a running account for each founder, so nothing is lost and the paperwork is ready when you need it.</p>
+      <p>When you pay a company cost yourself, lend the company money or go without pay, the company owes you. Fyniq keeps a running account for each founder, so nothing is lost and the paperwork is ready when you need it.</p>
       <h2>Five ways to settle what the company owes you</h2>
       <div class="table-wrap"><table><thead><tr><th scope="col">Way</th><th scope="col">What happens</th><th scope="col">Good to know</th></tr></thead><tbody>
         <tr><td><strong>Repay</strong></td><td>The company pays you back in cash.<span class="posting" data-only="expert">Dr 2500 · Cr Bank</span></td><td>Not income for you. Repaying founders from a new round's money is rare.</td></tr>
@@ -1185,7 +1185,7 @@ fieldset.settle input{margin-top:4px}
   // ---- announcement banners (FR-NTF-03): info = role status and dismissible; critical = role alert, not dismissible
   const BANNERS = [
     { id: "incident-dbs-feed", sev: "critical", label: "Incident", text: "Bank feeds from DBS are delayed. Balances may be up to 6 hours old; this banner changes when it is fixed.", dismiss: false },
-    { id: "maint-2026-10-18", sev: "info", label: "Announcement", text: "Scheduled maintenance: Sat 18 Oct, 22:00–23:00 SGT. Finance Hub will be read-only during that hour.", dismiss: true }
+    { id: "maint-2026-10-18", sev: "info", label: "Announcement", text: "Scheduled maintenance: Sat 18 Oct, 22:00–23:00 SGT. Fyniq will be read-only during that hour.", dismiss: true }
   ];
   function renderBanners(mode) {
     const list = mode === "none" ? [] : BANNERS.filter(b => (b.sev !== "critical" || mode === "critical") && !(b.dismiss && store.get("banner-" + b.id, "") === "dismissed"));
@@ -1304,7 +1304,7 @@ fieldset.settle input{margin-top:4px}
   const FINDINGS = [
     { cls: "serious", icon: "i-clock", chip: "Due in 49 days", t: "Annual return due 30 Nov 2026", d: "Your company secretary files it in BizFile+. The data pack is ready to review.", rule: "Rule: annual return within 7 months after the financial year end (30 Apr 2026) · s197 · pack sg-acra@2026.2 (sample) · check C.2 #15", ev: "Annual-return data pack (draft)" },
     { cls: "serious", icon: "i-clock", chip: "AGM in 19 days", t: "Financial statements not yet approved", d: "The 5-month route to skip the AGM closed on 30 Sep, so the AGM must be held by 31 Oct 2026, after the directors approve the FY2026 financial statements. A draft resolution is waiting for you.", rule: "Rule: AGM within 6 months after the financial year end; skipping it needs the statements sent within 5 months · s175, s175A · pack sg-acra@2026.2 (sample) · check C.2 #33 · FR-CS-03", ev: "Draft FY2026 financial statements" },
-    { cls: "warning", icon: "i-alert", chip: "Review", t: "Corporate profile differs from the ACRA extract: registered office", d: "Finance Hub has unit #20-02; the ACRA business profile uploaded on 1 Oct 2026 shows #12-01. Correct the record, or lodge the change.", rule: "Check C.2 #34 · FR-CS-01 · compared field by field with the uploaded extract", ev: "ACRA business profile, 1 Oct 2026" },
+    { cls: "warning", icon: "i-alert", chip: "Review", t: "Corporate profile differs from the ACRA extract: registered office", d: "Fyniq has unit #20-02; the ACRA business profile uploaded on 1 Oct 2026 shows #12-01. Correct the record, or lodge the change.", rule: "Check C.2 #34 · FR-CS-01 · compared field by field with the uploaded extract", ev: "ACRA business profile, 1 Oct 2026" },
     { cls: "good", icon: "i-check", chip: "OK", t: "Share capital: ledger = register", d: `S$${fmt(25000000)} in the ledger (3010) equals the register of share issues.`, rule: "INV-13 · FR-EQ-26 · ledger version 2026-10-12T07:58", ev: "Register of share issues" },
     { cls: "good", icon: "i-check", chip: "OK", t: "No director's account in debit", d: "Both directors' balances are owed to them, not by them.", rule: "FR-EQ-11 · check C.2 #21", ev: "Director accounts" }
   ];
