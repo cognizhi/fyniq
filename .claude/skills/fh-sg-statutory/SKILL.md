@@ -101,6 +101,7 @@ packs/sg-cpf/2027.1/
 | SDL | 0.25% of remuneration, min S$2, max S$11.25, all employees |
 | CIT | 17%; SUTE and PTE tiers; YA2026 rebate 50% capped at S$40k incl. a S$2k cash grant (conditions); ECI within 3 months of FY end; Form C-S/C by 30 Nov |
 | Payroll records | Itemised payslips (12 items) within 3 working days; KETs within 14 days; AIS by 1 March from 5 employees; IR21 ≥ 1 month before cessation |
+| Shares and directors' balances (rev 0.3) | Issuing shares needs approval in general meeting (s161; a written resolution for private companies), lodged within 14 days; a private company's allotment takes effect when ACRA updates the register of members, so it cannot be backdated (the 14-day return in s63A is for public companies); shares not paid in cash need the contract or a statement of particulars (s63B); s162 bans loans to directors except in exempt private companies; salary is taxed when due, director's fees when the director becomes entitled; CPF is due at month end on wages due, none on fees voted at a general meeting. Details: PRD §8.22, §14.2 and `docs/prd/research/founders-money-sources-2026-10-12.md` |
 
 ## Pinned payroll seed (Appendix G.2; 2026 rates, from the workbook)
 
