@@ -2,7 +2,7 @@
 
 Source: PRD-001 rev 0.2 §10.2 and Appendix B. Conventions: debit positive, credit negative, in base
 currency; the period is the month of the posting date. "Rate" is the GST rate in force at the
-document date, and only when the organisation is GST-registered at that date and the code is
+document's tax point (ENG-45, PRD rev 0.8), and only when the organisation is GST-registered at that tax point and the code is
 standard-rated (SR, TX, IM). Otherwise it is 0.
 
 When this file and the PRD disagree, the PRD wins. Fix this file in the same pull request.
@@ -83,7 +83,7 @@ Every line on 2500 and 2120 carries the person as a sub-ledger key (FR-EQ-01).
 
 | Event | Debit | Credit | Rule |
 |---|---|---|---|
-| Cost a founder paid personally, kept as a loan | Expense (net); 2200 only with a tax invoice addressed to the company | 2500 (gross) | Otherwise no input tax is claimed and the GST is part of the cost |
+| Cost a founder paid personally, kept as a loan | Expense (net); 2200 only when the claim meets the input-tax eligibility rule (FR-AP-20, PRD rev 0.8) | 2500 (gross) | Otherwise no input tax is claimed and the GST is part of the cost |
 | Money a founder lends | Bank | 2500 | |
 | Deferred pay | 2100 (that director's net pay) | 2120 | With the pay run, for each director whose recorded choice is "deferred"; 2110 unchanged |
 | Director's fee approved | 6050 | 2120 | Paid later from 2120 |
@@ -105,6 +105,8 @@ at S$0.0375 → 329,217 shares, 12,345.64 converted, 0.03 stays.
 
 The document's own rate → the daily rate feed for the document date → the organisation's monthly
 table (average of duplicates, as in the workbook) → error "✖ No exchange rate for this currency".
+(PRD rev 0.8) A duplicate is ⚠ until resolved, and an average never sets a GST amount: input tax on a
+foreign-currency bill is the SGD GST stated on the supplier's tax invoice (ENG-42).
 The rate source is stored on every converted amount (FR-GL-05). Realised FX on settlement goes to
 7030; unrealised revaluation at month end (ENG-41, FR-GL-04).
 

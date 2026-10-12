@@ -18,6 +18,7 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 |---|---|
 | `docs/prd/prd-001-finance-hub-cloud-platform.md` | The requirements (IDs such as `FR-GL-08`, `AI-34`, `DEV-02`) and the architecture decisions (ADR index in §12.0) |
 | `docs/prd/reviews/prd-001-review-2026-10-12.md` | Why revision 0.2 changed what it did (REV-01…40) |
+| `docs/prd/reviews/prd-001-deep-review-validation-2026-10-13.md` | Why revision 0.8 changed what it did: the deep review (F01–F50, O01–O12) validated claim by claim |
 | `docs/design-system/cognizhi-finance-hub/MASTER.md` | How the UI looks and behaves; `pages/*.md` override it per page |
 | `.claude/skills/fh-*/SKILL.md` | Step-by-step recipes for each kind of change (table below) |
 

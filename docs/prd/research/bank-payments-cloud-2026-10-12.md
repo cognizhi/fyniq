@@ -83,3 +83,10 @@ accountant, the tax agent and the bank confirm before reliance.
 - **Accounting standards:** the third-edition Section 23 text of SFRS for Small Entities.
 - **Cloud and AI:** the Cloud Tasks maximum task size (the docs conflict); retry defaults;
   whether Claude Opus 4.6 has an `asia-southeast1` endpoint (ADR-T2, option A).
+
+**Correction (13 Oct 2026, PRD rev 0.8).** The "Claude by cloud" row above, saying that only Claude Sonnet 4.6 has an
+`asia-southeast1` endpoint on Vertex AI was wrong. Google's model pages (updated 9 Oct 2026) and the
+Agent Platform locations page (10 Oct 2026) list `asia-southeast1` for both Claude Opus 4.6 and
+Sonnet 4.6 (and Opus 4.5 and Sonnet 4.5). Google's data-residency table confirms Singapore ML
+processing for Opus 4.6 but not for Sonnet 4.6 [verify]. Opus 4.6's earliest retirement is 5 Feb 2027.
+See the [validation record](../reviews/prd-001-deep-review-validation-2026-10-13.md), F44.

@@ -9,7 +9,8 @@ The platform must **run and pass every merge gate on a laptop or in CI with no c
 no cloud credentials and no production data** (principle 12; ADR-T4 in PRD §12.8). Every cloud
 dependency sits behind a Go interface with two adapters: production and local. Configuration
 (`FH_ENV=local|ci|dev|staging|production`) picks the adapter. Local adapters are compiled only
-into builds tagged `local` (DEV-07).
+into builds tagged `local` (DEV-07): each image has a **release** flavour (staging and production
+only) and a **local** flavour from the same commit and Dockerfile (PRD rev 0.8, ADR-T4).
 
 ## What exists today vs what arrives in P0
 
@@ -70,7 +71,7 @@ The Makefile is the single entry point, and CI calls the same targets (`make ci`
 |---|---|---|
 | `make setup` | Install the pinned toolchain from `mise.toml`; write `.env` from `.env.example`; create Tink keysets in `.data/keys/`; register Hydra clients for the first-party apps; install git hooks (`make hooks`) | ≤ 10 min first run |
 | `make dev` | Start `core` with hot reload (`air` for Go, Vite HMR); run migrations; seed the **sample company**; print the URLs and sample sign-ins | ≤ 60 s on later runs (DEV-01) |
-| `make up` / `make down` | Run the stack from the **production images** (`make images` output), not dev builds / stop it | — |
+| `make up` / `make down` | Run the stack from the **local flavour of the release images** (same Dockerfile, base and hardening, plus the local adapters; PRD rev 0.8), not dev builds / stop it | — |
 | `make seed` / `make reset` | Reload the sample company / wipe `.data/` and the database | — |
 | `make test` | Every merge gate offline: unit, property, DB invariant attacks (Testcontainers), oracle differential, contract, authz matrix, front-end unit and accessibility | ≤ 10 min (NFR-DEVX-02) |
 | `make test-e2e` | Playwright journeys against `make up` (QA-E2E-01) | — |

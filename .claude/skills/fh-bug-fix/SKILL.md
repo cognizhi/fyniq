@@ -45,7 +45,7 @@ only the minimum, masked.
 | Symptom | Check first |
 |---|---|
 | Invoice or bill still open after payment | Matching (FR-BNK-07): reference normalisation (NFKC, NBSP, case); payment posted to 1100/2010; the difference above tolerance (S$1 or 3% FC) |
-| Off by 0.01 | `RND-GST-EXCL` per subtotal vs per line (an organisation setting); `ALLOC-EVEN` remainder in the last period; half-even used instead of half-up |
+| Off by 0.01 | `RND-GST-EXCL` per subtotal vs per line (an organisation setting); `ALLOC-EVEN` not applied cumulatively (PRD rev 0.8); half-even used instead of half-up |
 | CPF off by S$1 | `RND-CPF` (EE rounded down, ER = total − EE); the AW ceiling year to date; the age band changes the month **after** the birthday; the pack version in force for the pay month |
 | Report ≠ trial balance | Something bypassed the balance service (ENG-04); a report run "as at" a different ledger version (FR-RPT-08) |
 | Cannot post / save in a period | The period is locked (INV-03): correct it in an open period, or reopen with dual approval (FR-GL-08) |

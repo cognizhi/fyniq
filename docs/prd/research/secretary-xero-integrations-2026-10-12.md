@@ -75,3 +75,11 @@ Plans: Starter S$39, Standard S$70, Premium S$95 a month including GST; prices r
 the undocumented `*.zoho.sg` endpoints for ZeptoMail and Cliq keep data in Singapore; whether
 ZeptoMail has any inbound feature; Resend's DNS details and the exact wording of its data-location
 statement.
+
+**Correction (13 Oct 2026, PRD rev 0.8).** The 25% controller threshold in the "Not verified" list is
+now confirmed: ACRA's registrable-controllers guidance (page dated 29 Jan 2026) gives significant
+interest as more than 25% of the shares or of the voting power, and significant control as the right
+to appoint or remove directors holding a majority of board votes, more than 25% of member votes, or
+significant influence or control. It also requires a notice to each registrable controller at least
+once a year. The Regulations behind the 7-day and 2-business-day periods remain unverified. See the
+[validation record](../reviews/prd-001-deep-review-validation-2026-10-13.md), F50.

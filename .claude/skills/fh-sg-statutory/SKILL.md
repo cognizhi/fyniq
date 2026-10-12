@@ -103,7 +103,7 @@ in `docs/prd/research/`.
 |---|---|
 | GST | 9% since 1 Jan 2024 (8% in 2023); registration threshold S$1m (retrospective by calendar year; prospective test); voluntary registrants stay ≥ 2 years; F5 due 1 month after the period end |
 | Tax invoices | Within 30 days; simplified up to S$1,000; GST per line or per subtotal, **consistently**; foreign-currency invoices show net, GST and gross in SGD |
-| InvoiceNow | Mandatory for new voluntary registrants from 1 Apr 2026; new compulsory and existing registrants ≤ S$200k from 1 Apr 2028; ≤ S$1m 2029; ≤ S$4m 2030; all others 2031. Covers sales **and** purchases. **Must be live before Cognizhi registers voluntarily.** F5 filing is blocked until every in-scope document has an Access Point acknowledgement. |
+| InvoiceNow | Mandatory for new voluntary registrants from 1 Apr 2026; new compulsory and existing registrants ≤ S$200k from 1 Apr 2028; ≤ S$1m 2029; ≤ S$4m 2030; all others 2031. Covers sales **and** purchases. **Must be live before Cognizhi registers voluntarily.** F5 filing waits until every in-scope return item has an **IRAS acknowledgement ID** (proof of receipt) or a recorded exclusion, with a dual-approved contingency for outages (FR-TAX-10/11, PRD rev 0.8). |
 | CPF 2026 | ≤55: 17/20; 55–60: 16/18; 60–65: 12.5/12.5; 65–70: 9/7.5; >70: 7.5/5 (employer/employee %); OW ceiling S$8,000/month; annual salary ceiling S$102,000; due at month end, pay by the 14th |
 | SDL | 0.25% of remuneration, min S$2, max S$11.25, all employees |
 | CIT | 17%; SUTE and PTE tiers; YA2026 rebate 50% capped at S$40k incl. a S$2k cash grant (conditions); ECI within 3 months of FY end; Form C-S/C by 30 Nov |

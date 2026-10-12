@@ -5,9 +5,10 @@ description: The accounting core of Cognizhi Finance Hub Cloud. Covers how sourc
 
 # Accounting domain: engine, ledger, money
 
-The ledger is the system of record. Every report, KPI, tile, check, export and AI answer reads it
-through **one balance service** (ENG-04). If the ledger is right and nobody bypasses the balance
-service, the reports cannot disagree.
+The ledger is the system of record. Every **ledger figure** in a report, KPI, tile, check, export or
+AI answer comes through **one balance service** (ENG-04). If the ledger is right and nobody bypasses
+the balance service, the reports cannot disagree. Measures from other sources (subscriptions, time,
+the equity register) are named measures that declare their source (FR-KPI-03, PRD rev 0.8).
 
 > **Status:** no code exists yet; P0 builds it. The paths below are the PRD §12.4 layout. Treat
 > them as the contract. When the code lands, keep this skill in step with it.
@@ -22,7 +23,7 @@ document version ──► posting engine (pure) ──► journal_entry + journ
 
 | Rule | Requirement |
 |---|---|
-| The engine is a **pure function**: (document version, parameters in force at the document date, organisation settings) → entries. No clock, randomness or I/O inside rules. | ENG-01 |
+| The engine is a **pure function**: (document version, parameters in force at the document's tax point or pay month (ENG-45), organisation settings) → entries. No clock, randomness or I/O inside rules. | ENG-01 |
 | Posting happens in the **same database transaction** as the document change. | ENG-02 |
 | Every entry records its source (document type, ID, version) and its **rule version**; every line records account, amount, currency, base amount, FX rate and source, dimensions, `posting_date` and `recorded_at`. | ENG-03, §11.4 |
 | One posting path: `post_entry()` in the domain layer. Database triggers are the backstop, not the logic. | §11.4 |
@@ -37,7 +38,7 @@ document version ──► posting engine (pure) ──► journal_entry + journ
 | `internal/money/` | `Money` (cockroachdb/apd v3 decimal + ISO 4217 code), currency minor units, the named rounding and allocation policies |
 | `internal/engine/` | One rule set per source (`banktxn`, `invoice`, `bill`, `payrun`, `asset`, `journal`, `claim`, `fxreval`, …), each versioned |
 | `internal/ledger/` | `post_entry()`, entry and line types, idempotency keys, reversal helpers |
-| `internal/balance/` | The balance service: account × period × dimension-set × currency, "as at" a ledger version (FR-RPT-08) |
+| `internal/balance/` | The balance service: account × period × dimension-set × currency, "as at" a ledger revision (ENG-46, FR-RPT-08) |
 | `internal/params/` | Lookup of the parameter-pack version in force at a tax point or pay month (ENG-31) |
 | `db/migrations/` | Tables, `NUMERIC` precision per column family, the constraints and triggers behind INV-01…06 |
 | `oracle/` | The **independent** Python reference ledger (QA-ENG-01) |
@@ -97,14 +98,16 @@ tests. "Half-up" means half away from zero (PostgreSQL `round()` on `NUMERIC` do
 | `RND-GST-EXCL` | GST = round(net base per GST code × rate, 2), half-up, **per subtotal** by default; per line is an organisation setting, applied consistently |
 | `RND-GST-INCL` | GST = round(gross × rate ÷ (1 + rate), 2), half-up; net = gross − GST |
 | `RND-CPF` | total = round((capped OW + AW) × (ER% + EE%), 0), half-up; EE = round **down** to the dollar; ER = total − EE |
-| `RND-SDL` | clamp(round(remuneration × rate, 2), min, max); 0 when remuneration ≤ 0 |
-| `ALLOC-EVEN` | each period = amount ÷ n rounded **down** to the minor unit; remainder cents to the **last** period; parts sum exactly to the whole |
+| `RND-SDL` | per employee: clamp(round(calendar-month remuneration × rate, 2), min, max); 0 when remuneration ≤ 0. Per employer-month: the payable is the sum, rounded **down** to the dollar (rev 0.8) |
+| `ALLOC-EVEN` | (rev 0.8) cumulative rounding: period k = round(amount × k ÷ n) − round(amount × (k − 1) ÷ n), half away from zero; parts sum exactly to the whole; each period within one minor unit of amount ÷ n. (Superseded: rounded down, remainder to the last period) |
 | `ALLOC-PRORATA` | largest-remainder method by weights; ties broken by stable order |
 | `RND-SHARE` | (rev 0.3) shares for an amount at a price: the largest whole n with round(n × price, 2) ≤ amount, half-up; converted = round(n × price, 2); the remainder stays on the source balance; never fractional shares |
 | `RND-DISPLAY` | display never re-rounds; totals are sums of stored amounts, so reports foot and cross-foot |
 
-`ALLOC-EVEN` is the one **deliberate** difference from the workbook (which used unrounded monthly
-amounts). It is the only tolerated difference in the parity tests (§4.3, QA-MIG-01).
+`ALLOC-EVEN` differs from the workbook (which used unrounded monthly amounts) by less than S$0.01 a
+month. It is one class of the **migration difference register** that the accountant signs
+(FR-MIG-02, QA-MIG-01); the other classes are the deliberate rule changes (CPF graduated and PR rates,
+the AW ceiling, SHG tables, FX revaluation, effective-dated packs) and workbook defects.
 
 ## Invariants: the database enforces them, tests and the nightly job prove them
 
@@ -171,7 +174,7 @@ to the cent on golden data sets and thousands of generated scenarios. See **fh-q
 |---|---|
 | Commit rejected by the INV-01 trigger | Print the entry's lines; sum by currency and base. Usually one leg's validity condition differs, or one leg was rounded and its partner not. |
 | Differential test: `account@period: engine X vs oracle Y` | Find the **first** period that differs, then the smallest scenario that reproduces it (Hypothesis shrinks for you). Decide from the PRD rule which side is wrong; never "fix" the oracle to match the engine. |
-| Off by 0.01 | Which policy? Per-line vs per-subtotal GST (`RND-GST-EXCL`); `ALLOC-EVEN` remainder in the wrong period; half-even instead of half-up in apd. |
+| Off by 0.01 | Which policy? Per-line vs per-subtotal GST (`RND-GST-EXCL`); `ALLOC-EVEN` not applied cumulatively; half-even instead of half-up in apd. |
 | Off by S$1 on CPF | `RND-CPF`: EE rounded down, ER = total − EE; the AW ceiling tracked year to date; the age band changes the month **after** the birthday. |
 | FX difference | The rate cascade (ENG-40): document rate → daily feed → monthly table average → ✖. The rate source is stored on every line. |
 | Report ≠ trial balance | Something bypassed the balance service (ENG-04). Search for SQL that sums `journal_line` outside `internal/balance`. |

@@ -55,14 +55,15 @@ hydra  ──login + consent─────────────────�
 client ◀──access token (aud = MCP resource, ≤ 60 min) + refresh (rotating)── hydra
 client ──tools/call  Authorization: Bearer …──────────────────────▶ mcp      (validate aud, scope,
                                                                             client class, expiry, jti)
-mcp    ──token exchange (RFC 8693, aud = API, scopes ∩ user rights)─▶ hydra
+mcp    ──token exchange (RFC 8693, aud = API, scopes ∩ user rights)─▶ hydra   (open question 40:
+                                                                            not in Hydra Apache-2.0)
 mcp    ──read tool / propose with the exchanged token────────────────▶ api
 ```
 
 | Rule | Value |
 |---|---|
 | Grants | Authorisation code + PKCE (S256) only; no implicit, no password grant |
-| Access token | JWT, audience = the MCP resource URL, ≤ 60 minutes |
+| Access token | JWT, audience = the MCP resource URL, ≤ 60 minutes. (PRD rev 0.8) Revocation within 60 s needs introspection: opaque tokens with introspection, or JWT plus an introspection or deny-list check on every call. Ory's Apache-2.0 build has no RFC 8693 token exchange and no stateless JWTs; the edition and the MCP-to-API delegation are open question 40 (ADR-T3) |
 | Refresh token | Rotates on every use with reuse detection; idle 14 days; absolute 90 days |
 | Revocation | All of a user's tokens within 60 s on role change, deactivation, client removal or kill switch |
 | Sender constraint | DPoP (RFC 9449) when the client supports it [verify client support] |
