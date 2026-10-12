@@ -53,7 +53,7 @@ anything that breaks a user, an integrator or an operator.
 
 **Scopes** (optional; several allowed, `fix(api,web): …`): `ledger`, `engine`, `api`, `web`,
 `ui`, `ai`, `mcp`, `oauth`, `worker`, `executor`, `jobs`, `db`, `infra`, `deploy`, `contracts`,
-`oracle`, `packs`, `compliance`, `security`, `design`, `docs`, `prd`, `skills`, `ci`, `release`,
+`oracle`, `packs`, `compliance`, `security`, `design`, `docs`, `prd`, `kb`, `skills`, `ci`, `release`,
 `deps`. The hook enforces the list; add a scope there and here together.
 
 Pull requests are **squash-merged**, so the PR title becomes the commit subject: CI checks it
@@ -107,6 +107,7 @@ workflows. REL-06 switches it to a GitHub App token once CI exists (open questio
 | Statutory packs | `<pack>@<year>.<n>` with an effective date | Released independently as data (ENG-32/33); see **fh-sg-statutory** |
 | AI catalogue, prompts, tools | `task_version`, `prompt_version`, `tool_version` | Every change passes the evals and a dual-approved change record (CMP-AI-03); MCP tool hashes re-pinned (AI-40) |
 | Images | `vX.Y.Z` + `sha-<git sha>` | Deployed by digest (NFR-IMG-05) |
+| Knowledge base | Pages in `kb/` in git; `kb-schema@N` | Compiled, indexed and linted with every source change (`fh-knowledge-base`); a schema or compiler-model change means a full recompile and the knowledge evals (QA-AI-06) |
 | PRD | Revision `0.N` before go-live, `1.N` after | Revision history row per reviewed change (below) |
 
 ## Upgrade notes (REL-03)

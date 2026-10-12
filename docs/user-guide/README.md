@@ -17,6 +17,9 @@ exist are marked ✔.
 - **What's new** is built from the release notes (`CHANGELOG.md`, written by release-please).
 - **The AI assistant answers "how do I…" from these pages** and links the pages it used
   (FR-UX-33, AI-25). Write so that a single section answers a single question.
+- **After editing a page, recompile the knowledge base** (the `fh-knowledge-base` skill, then
+  `make kb-index` and `make kb-lint`). The assistant reads the compiled pages in `kb/`, not these
+  files, and `make check` fails while a compiled page is stale (PRD §9.11).
 - An accountant reviews any page that states an accounting or statutory rule. Keep `[verify]`
   out of user-facing text: confirm the rule first, or leave the page out of the release.
   Pages marked with `status: draft` in their front matter are not released until reviewed.

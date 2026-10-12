@@ -84,6 +84,11 @@ evals: [contracts/ai/evals/proposals/bank.categorise_lines/*.yaml]
 5. **Test**: golden questions that use the tool, exclusion tests, and red-team cases that plant
    injections in the data it returns.
 
+**Know-how is not a read tool's job.** "How do I…" and policy questions are answered from the
+compiled knowledge base via `kb.index`, `kb.read` and `kb.search` (PRD §9.11, AI-49…58). Pages
+never hold organisation figures, so a question that needs a number still goes to a read tool.
+Changing the knowledge base itself is the **fh-knowledge-base** skill.
+
 ## Adding a catalogue task type
 
 | Step | Rule | Requirement |

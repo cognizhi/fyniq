@@ -27,6 +27,7 @@ on Google Cloud. Built for a lean founding team, with the controls a growing com
 | Design system (uipro-reviewed; tokens; contrast validator) | [`docs/design-system/cognizhi-finance-hub/`](docs/design-system/cognizhi-finance-hub/) |
 | Clickable UI prototype | [`docs/design/prototype/index.html`](docs/design/prototype/index.html) (open in a browser; try `?mode=expert&theme=dark`) |
 | User guide (source of the in-app help, §7.9) | [`docs/user-guide/`](docs/user-guide/) |
+| Compiled knowledge base the AI assistant reads (§9.11) | [`kb/`](kb/) (index: [`kb/index.md`](kb/index.md)) |
 | Coding instructions | [`AGENTS.md`](AGENTS.md) (and [`CLAUDE.md`](CLAUDE.md) for Claude Code) |
 | Agent skills | [`.claude/skills/`](.claude/skills/) (`fh-*`) |
 | Release tooling | [`release-please-config.json`](release-please-config.json), [`.github/workflows/`](.github/workflows/) |
@@ -37,7 +38,7 @@ Needs Docker, GNU Make, Python 3 and git.
 
 ```bash
 make hooks        # Conventional Commit check on every commit
-make check        # design-token contrast in four themes, release configuration
+make check        # design-token contrast in four themes, release configuration, knowledge-base lint
 make deps-up      # PostgreSQL 18 (localhost:55432), Mailpit (localhost:8025), fake GCS (localhost:4443)
 make prototype    # path of the UI prototype
 make deps-down

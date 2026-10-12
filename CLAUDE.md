@@ -14,6 +14,8 @@ The shared coding instructions for every agent and contributor are in `AGENTS.md
   Conventional Commit. Say what you did not verify.
 - **PRD edits:** add new IDs and never renumber; tag changes `(rev 0.N)`; add a row to the
   revision history; mark superseded decisions instead of deleting them (`fh-release` skill).
+- **Changed a knowledge source** (anything in `docs/user-guide/`)? Load `fh-knowledge-base`,
+  recompile the affected pages in `kb/pages/`, then `make kb-index` and `make kb-lint`.
 - **When unsure about a statutory rule, a vendor capability or a spec revision**, keep the
   `[verify]` tag and say so. Do not state it as fact.
 - **The MCP server and AI tools are security boundaries.** Changes there go through

@@ -26,11 +26,12 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 | Command | Does | Status |
 |---|---|---|
 | `make help` | Lists the targets | Today |
-| `make check` | Every check available today: design-token contrast in four themes, release configuration | Today (CI runs it) |
+| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint | Today (CI runs it) |
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
 | `make prototype` | Prints the path of the static UI prototype | Today |
+| `make kb-index` / `kb-lint` / `kb-stale` | Regenerate the knowledge-base index; lint the compiled pages (part of `make check`); list stale pages and uncovered sources (§9.11) | Today |
 | `make setup`, `dev`, `up`, `down`, `seed`, `reset`, `test`, `test-e2e`, `evals`, `images`, `ci` | The local-mode command contract (PRD §12.8): the full stack and every merge gate, offline | **Arrives in P0** |
 
 Never invent a command in docs or scripts. If you need a new one, add it to the Makefile with a
@@ -57,7 +58,9 @@ Never invent a command in docs or scripts. If you need a new one, add it to the 
 5. **AI proposes; humans decide.** AI services and MCP clients hold no write credential. The only
    AI write path is a proposal from the approved catalogue, approved by a named human in the web
    app. Never add a write, approve, export or admin tool to the AI or MCP surface; the never-list
-   in §9.6 is enforced by tests.
+   in §9.6 is enforced by tests. Figures come only from read tools; know-how comes from the
+   compiled knowledge base in `kb/` (§9.11). **Every change to `docs/user-guide/` is compiled,
+   indexed and linted in the same commit** (`fh-knowledge-base` skill; `make check` fails otherwise).
 6. **Closed by default.** MCP access, integration clients and AI task types are off until an
    Owner enables them with dual control. Agent-class clients are proposal-only (AI-34). Tokens are
    audience-bound and never passed through (AI-36).
@@ -96,7 +99,7 @@ packs/               statutory packs (P1)    compliance/      control registry a
 deploy/local/        Compose stack           deploy/docker/   Dockerfiles (P0)
 infra/               OpenTofu (P0)           scripts/         hooks and repo scripts
 docs/prd/            PRD, reviews, research  docs/design-system/, docs/design/  UI system and prototype
-docs/user-guide/     in-app user guide (§7.9)
+docs/user-guide/     in-app user guide (§7.9)  kb/              compiled knowledge base (§9.11)
 .claude/skills/      agent skills            .github/workflows/  CI and release-please
 ```
 
@@ -106,7 +109,7 @@ docs/user-guide/     in-app user guide (§7.9)
   - Types: `feat` `fix` `perf` `refactor` `docs` `test` `build` `ci` `chore` `revert` `deps`.
   - Scopes: `ledger` `engine` `api` `web` `ui` `ai` `mcp` `oauth` `worker` `executor` `jobs` `db`
     `infra` `deploy` `contracts` `oracle` `packs` `compliance` `security` `design` `docs` `prd`
-    `skills` `ci` `release` `deps`. Several are allowed: `fix(api,web): …`.
+    `kb` `skills` `ci` `release` `deps`. Several are allowed: `fix(api,web): …`.
   - A breaking change gets `!` and a `BREAKING CHANGE: …` footer. Anything users, operators or
     integrators must do goes in an `Upgrade notes:` paragraph in the body (REL-03).
 - Work on a branch and open a pull request. The **pull request title** must be a Conventional
@@ -145,6 +148,7 @@ docs/user-guide/     in-app user guide (§7.9)
 | `fh-design-system` | Tokens, themes, components, Basic/Expert mode, accessibility, charts; consulting uipro |
 | `fh-local-dev` | Local mode, the Compose stack, local substitutes, lean images and budgets |
 | `fh-release` | Conventional Commits, release-please, versioning matrix, PRD revisions |
+| `fh-knowledge-base` | Compile, index and lint the knowledge base the AI assistant reads (`kb/`); run it on every change to `docs/user-guide/` |
 
 Design skills that ship with the repository (`ui-ux-pro-max`, also called **uipro**;
 `ui-styling`; `design-system`; `design`; `brand`; `banner-design`; `slides`) support
