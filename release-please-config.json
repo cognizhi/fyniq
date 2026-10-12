@@ -24,7 +24,8 @@
     ".": {
       "package-name": "finance-hub",
       "changelog-path": "CHANGELOG.md",
-      "version-file": "VERSION"
+      "version-file": "VERSION",
+      "initial-version": "0.1.0"
     }
   }
 }
