@@ -67,7 +67,7 @@ same day. Raw sources remain the fallback.
 | Versioning | **Platform** knowledge base: git (diff, rollback by revert, reviewed as a pull request, stamped with the release). **Organisation** knowledge base: append-only page versions in the database (diff; rollback = a new version restoring old content; publishing is approval-gated) |
 | Admin edits | An edit creates a *human-edited* version that a recompile never overwrites silently; lint flags the conflict for a person to resolve. An organisation admin editing a *platform* page creates an overlay for that organisation only |
 | Model or prompt change | Compiler model and prompt version are recorded per page; a change triggers a recompile and the evals before publishing (AI-24, CMP-AI-03) |
-| Search | Index-first, then PostgreSQL full-text search over compiled pages and raw sources. **No pgvector in P1**; revisit when the help evals show misses (users' words differ from the pages'), when the guide is translated, or for P2 search over organisation documents. The gist's own scale note supports this |
+| Search | Index-first, then PostgreSQL full-text search over compiled pages, their aliases and the raw sources. **No vectors, in any phase** (founder decision, revision 0.5; this note first said "no pgvector in P1, revisit later"). The knowledge base is static and compiled, so a miss is fixed by recompiling: a better summary, an alias for the user's wording, a cross-link, a split index or pages per language. The gist's own scale note supports this |
 | Visibility | Compiled pages and the index are not in the normal user interface. Owner and Administrator can view, edit, diff, roll back and recompile; Auditor can view; nobody else |
 
 ## 5. How a question is answered (after the change)

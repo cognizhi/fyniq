@@ -87,8 +87,9 @@ owner; never "fix" a rule in the knowledge base only.
   (AI-59).
 - Owner and Administrator can view, diff, edit, roll back and recompile under Settings → AI →
   Knowledge base (AI-55).
-- **Search** is index-first, then PostgreSQL full-text search. No embeddings unless QA-AI-06
-  shows misses (AI-58).
+- **Search** is index-first, then PostgreSQL full-text search. **No embeddings or vector search,
+  ever** (AI-58). If the knowledge evals show the assistant missing a page, fix the page: a
+  sharper `summary`, `aliases` for the words users actually type, cross-links, or a split index.
 
 ## Never
 
@@ -97,6 +98,7 @@ owner; never "fix" a rule in the knowledge base only.
 - Put an organisation figure, a secret or personal data in a platform page.
 - Copy a statutory value without its source; the assistant re-reads values with `packs.get`.
 - Change `scripts/kb.py` to make a failing page pass. Fix the page or the source.
+- Add embeddings, a vector index or `pgvector` to the knowledge base (AI-58, ADR-T6).
 
 ## Definition of done
 

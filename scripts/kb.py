@@ -209,6 +209,9 @@ def lint(pages):
             errors.append(f"{where}: human_edited must be true or false")
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", fm.get("compiled_at", "")):
             errors.append(f"{where}: compiled_at must be a date (YYYY-MM-DD)")
+        if "aliases" in fm and (not isinstance(fm["aliases"], list) or not fm["aliases"]
+                                or any(len(a) > 60 for a in fm["aliases"])):
+            errors.append(f"{where}: aliases must be a non-empty list of phrases of at most 60 characters")
         if fm.get("status") == "published" and fm.get("taint") == "untrusted":
             errors.append(f"{where}: an untrusted page stays draft until approved (AI-54)")
 
