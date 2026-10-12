@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en-SG" data-mode="basic">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finance Hub Prototype</title>
+<meta name="description" content="Static UI prototype of Cognizhi Finance Hub Cloud: shell, Home, Inbox with AI proposal review, Banking and Reports, with Basic/Expert modes and light, dark and high-contrast themes.">
+<style>
+/* Tokens: copied from docs/design-system/cognizhi-finance-hub/tokens.css (12 Oct 2026).
+   The product imports that file; this prototype inlines it so it opens from disk. */
+:root{color-scheme:light;--background:oklch(0.985 0.004 85);--surface-1:oklch(1 0 0);--surface-2:oklch(0.965 0.005 85);--surface-3:oklch(0.935 0.007 85);--overlay-scrim:oklch(0.2 0.02 255 / 0.45);--text-primary:oklch(0.22 0.02 255);--text-secondary:oklch(0.4 0.02 255);--text-muted:oklch(0.5 0.015 255);--border:oklch(0.9 0.008 255);--border-strong:oklch(0.6 0.015 255);--primary:oklch(0.5 0.087 190);--primary-hover:oklch(0.45 0.079 190);--primary-foreground:oklch(1 0 0);--primary-subtle:oklch(0.95 0.025 190);--primary-subtle-foreground:oklch(0.38 0.068 190);--link:oklch(0.47 0.082 190);--ring:oklch(0.5 0.087 190);--ai:oklch(0.5 0.2 295);--ai-foreground:oklch(1 0 0);--ai-subtle:oklch(0.965 0.018 295);--ai-subtle-foreground:oklch(0.42 0.18 295);--ai-border:oklch(0.62 0.14 295);--ai-gradient:linear-gradient(120deg,oklch(0.5 0.2 295),oklch(0.55 0.096 190));--status-good:oklch(0.47 0.12 150);--status-good-subtle:oklch(0.955 0.035 150);--status-warning:oklch(0.5 0.11 70);--status-warning-subtle:oklch(0.965 0.037 85);--status-serious:oklch(0.5 0.14 45);--status-serious-subtle:oklch(0.955 0.024 45);--status-critical:oklch(0.5 0.19 27);--status-critical-subtle:oklch(0.955 0.022 27);--status-neutral:oklch(0.45 0.015 255);--status-neutral-subtle:oklch(0.95 0.005 255);--destructive:oklch(0.52 0.19 27);--destructive-foreground:oklch(1 0 0);--amount-negative:oklch(0.5 0.19 27);--chart-1:#2a78d6;--chart-grid:oklch(0.92 0.004 85);--font-ui:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--font-code:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;--row-height:40px;--radius-s:4px;--radius-m:6px;--radius-l:10px;--shadow-1:0 1px 2px oklch(0.2 0.02 255 / 0.06),0 1px 1px oklch(0.2 0.02 255 / 0.04);--shadow-3:0 12px 32px oklch(0.2 0.02 255 / 0.14);--duration-fast:120ms;--duration-base:180ms;--ease-out:cubic-bezier(0.2,0,0,1)}
+.dark{color-scheme:dark;--background:oklch(0.17 0.02 260);--surface-1:oklch(0.205 0.022 260);--surface-2:oklch(0.24 0.024 260);--surface-3:oklch(0.28 0.026 260);--overlay-scrim:oklch(0.08 0.01 260 / 0.65);--text-primary:oklch(0.95 0.005 260);--text-secondary:oklch(0.82 0.01 260);--text-muted:oklch(0.72 0.012 260);--border:oklch(0.32 0.02 260);--border-strong:oklch(0.56 0.02 260);--primary:oklch(0.74 0.11 190);--primary-hover:oklch(0.8 0.1 190);--primary-foreground:oklch(0.17 0.02 260);--primary-subtle:oklch(0.28 0.045 190);--primary-subtle-foreground:oklch(0.86 0.08 190);--link:oklch(0.78 0.11 190);--ring:oklch(0.78 0.11 190);--ai:oklch(0.74 0.14 295);--ai-foreground:oklch(0.17 0.02 260);--ai-subtle:oklch(0.27 0.06 295);--ai-subtle-foreground:oklch(0.86 0.077 295);--ai-border:oklch(0.6 0.13 295);--ai-gradient:linear-gradient(120deg,oklch(0.42 0.16 295),oklch(0.42 0.074 190));--status-good:oklch(0.8 0.13 150);--status-good-subtle:oklch(0.27 0.05 150);--status-warning:oklch(0.85 0.12 85);--status-warning-subtle:oklch(0.28 0.05 80);--status-serious:oklch(0.8 0.12 50);--status-serious-subtle:oklch(0.28 0.05 45);--status-critical:oklch(0.78 0.128 25);--status-critical-subtle:oklch(0.28 0.06 25);--status-neutral:oklch(0.8 0.01 260);--status-neutral-subtle:oklch(0.28 0.015 260);--destructive:oklch(0.72 0.16 25);--destructive-foreground:oklch(0.17 0.02 260);--amount-negative:oklch(0.78 0.128 25);--chart-1:#3987e5;--chart-grid:oklch(0.3 0.015 260);--shadow-1:0 1px 2px oklch(0 0 0 / 0.4);--shadow-3:0 12px 32px oklch(0 0 0 / 0.55)}
+[data-contrast="more"]{--text-primary:oklch(0.13 0.01 255);--text-secondary:oklch(0.25 0.015 255);--text-muted:oklch(0.3 0.015 255);--border:oklch(0.55 0.01 255);--border-strong:oklch(0.3 0.01 255);--primary:oklch(0.36 0.065 190);--primary-hover:oklch(0.3 0.055 190);--primary-subtle-foreground:oklch(0.3 0.055 190);--link:oklch(0.34 0.061 190);--ring:oklch(0.3 0.055 190);--ai:oklch(0.38 0.18 295);--ai-subtle-foreground:oklch(0.32 0.16 295);--status-good:oklch(0.34 0.09 150);--status-warning:oklch(0.36 0.08 65);--status-serious:oklch(0.38 0.11 45);--status-critical:oklch(0.38 0.15 27);--status-neutral:oklch(0.3 0.01 255);--destructive:oklch(0.4 0.16 27);--amount-negative:oklch(0.38 0.15 27)}
+.dark[data-contrast="more"]{--background:oklch(0.13 0.015 260);--surface-1:oklch(0.16 0.018 260);--surface-2:oklch(0.19 0.02 260);--surface-3:oklch(0.23 0.022 260);--text-primary:oklch(0.99 0 0);--text-secondary:oklch(0.9 0.008 260);--text-muted:oklch(0.86 0.01 260);--border:oklch(0.5 0.015 260);--border-strong:oklch(0.8 0.01 260);--primary:oklch(0.85 0.1 190);--primary-hover:oklch(0.9 0.08 190);--primary-subtle-foreground:oklch(0.92 0.06 190);--link:oklch(0.86 0.1 190);--ring:oklch(0.88 0.1 190);--ai:oklch(0.84 0.089 295);--ai-subtle-foreground:oklch(0.92 0.043 295);--status-good:oklch(0.88 0.12 150);--status-warning:oklch(0.9 0.108 85);--status-serious:oklch(0.88 0.071 50);--status-critical:oklch(0.86 0.075 25);--status-neutral:oklch(0.9 0.008 260);--destructive:oklch(0.82 0.101 25);--amount-negative:oklch(0.86 0.075 25)}
+[data-density="compact"]{--row-height:32px}
+@media (prefers-reduced-motion:reduce){:root{--duration-fast:0ms;--duration-base:0ms}}
+@media (forced-colors:active){:root{--ring:Highlight}}
+
+/* Base */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--background);color:var(--text-primary);font:400 14px/1.5 var(--font-ui);font-feature-settings:"cv11","ss01";-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--link)}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--radius-s)}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.mono{font-family:var(--font-code);font-size:12.5px}
+.muted{color:var(--text-muted)}
+.secondary{color:var(--text-secondary)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip{position:absolute;left:8px;top:-48px;background:var(--surface-1);padding:8px 12px;border-radius:var(--radius-m);z-index:100;box-shadow:var(--shadow-3)}
+.skip:focus{top:8px}
+svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+svg.i.sm{width:16px;height:16px}
+[data-mode="basic"] [data-only="expert"],[data-mode="expert"] [data-only="basic"]{display:none!important}
+
+/* Shell */
+.app{display:grid;grid-template-columns:240px 1fr;grid-template-rows:56px 1fr;height:100%}
+header.top{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 16px;background:var(--surface-1);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.org{display:flex;align-items:center;gap:10px;font-weight:600;min-width:216px}
+.logo{width:28px;height:28px;border-radius:8px;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;font-weight:700;font-size:13px}
+.search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--radius-m);background:var(--background);color:var(--text-muted);cursor:pointer;text-align:left}
+.search kbd{margin-left:auto}
+kbd{font-family:var(--font-code);font-size:11px;padding:1px 6px;border:1px solid var(--border-strong);border-radius:4px;background:var(--surface-2);color:var(--text-secondary)}
+.spacer{flex:1}
+.seg{display:inline-flex;padding:3px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border)}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:500;color:var(--text-secondary);min-height:28px}
+.seg button[aria-checked="true"]{background:var(--surface-1);color:var(--text-primary);box-shadow:var(--shadow-1)}
+.iconbtn{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:var(--radius-m);border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text-secondary)}
+.iconbtn:hover{background:var(--surface-2)}
+.iconbtn[aria-pressed="true"]{background:var(--primary-subtle);color:var(--primary-subtle-foreground)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;font-weight:600;font-size:12px}
+nav.side{background:var(--surface-1);border-right:1px solid var(--border);padding:12px 8px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+nav.side a{display:flex;align-items:center;gap:10px;padding:0 10px;height:36px;border-radius:var(--radius-m);color:var(--text-secondary);text-decoration:none;font-weight:500}
+nav.side a:hover{background:var(--surface-2);color:var(--text-primary)}
+nav.side a[aria-current="page"]{background:var(--primary-subtle);color:var(--primary-subtle-foreground)}
+nav.side .badge{margin-left:auto;font-size:11px;font-weight:600;padding:0 7px;border-radius:999px;background:var(--surface-3);color:var(--text-primary);line-height:20px}
+nav.side .grow{flex:1}
+nav.side .tag{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--text-muted);border:1px solid var(--border);padding:0 5px;border-radius:4px}
+main{overflow:auto;padding:24px 28px 48px;position:relative;scroll-padding-bottom:88px}
+main:focus{outline:none}
+.page-h{display:flex;align-items:baseline;gap:12px;margin:0 0 4px}
+h1{font-size:22px;line-height:1.3;margin:0;font-weight:600}
+h2{font-size:16px;margin:0 0 12px;font-weight:600}
+.sub{color:var(--text-secondary);margin:0 0 20px}
+
+/* Cards and tiles */
+.card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius-l);box-shadow:var(--shadow-1)}
+.pad{padding:16px}
+.grid12{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.pulse{grid-column:1/-1;position:relative;overflow:hidden;padding:20px 24px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.pulse::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--ai-gradient)}
+.pulse .lbl{color:var(--text-secondary);font-weight:500}
+.pulse .fig{font-size:36px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.tile{padding:14px 16px}
+.tile .lbl{color:var(--text-secondary);font-size:13px;font-weight:500}
+.tile .fig{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .delta{font-size:12.5px;color:var(--text-secondary);display:flex;align-items:center;gap:4px}
+.tile button.drill{all:unset;cursor:pointer;display:block;width:100%}
+.tile button.drill:focus-visible{outline:2px solid var(--ring);outline-offset:4px;border-radius:4px}
+
+/* Status chips and AI badge */
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.chip svg.i{width:14px;height:14px}
+.chip.good{color:var(--status-good);background:var(--status-good-subtle)}
+.chip.warning{color:var(--status-warning);background:var(--status-warning-subtle)}
+.chip.serious{color:var(--status-serious);background:var(--status-serious-subtle)}
+.chip.critical{color:var(--status-critical);background:var(--status-critical-subtle)}
+.chip.neutral{color:var(--status-neutral);background:var(--status-neutral-subtle)}
+.ai-badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:999px;background:var(--ai-subtle);color:var(--ai-subtle-foreground);font-size:11.5px;font-weight:600}
+.ai-badge svg.i{width:13px;height:13px}
+
+/* Lists */
+.list{list-style:none;margin:0;padding:0}
+.list li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-top:1px solid var(--border)}
+.list li:first-child{border-top:0}
+.list .t{font-weight:500}
+.list .s{color:var(--text-muted);font-size:12.5px}
+
+/* Tables */
+table{border-collapse:separate;border-spacing:0;width:100%}
+th,td{padding:0 12px;height:var(--row-height);border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+thead th{position:sticky;top:0;background:var(--surface-2);font-weight:500;color:var(--text-secondary);font-size:12.5px;z-index:1}
+tbody tr:hover td{background:var(--surface-3)}
+th.num,td.num{text-align:right}
+tr.total td{font-weight:600;border-top:1px solid var(--border-strong);background:var(--surface-2)}
+tr.group td{font-weight:600;color:var(--text-secondary);background:var(--surface-1)}
+tr.section td{padding-top:6px;font-size:12.5px;color:var(--text-muted);border-bottom:0;height:auto;padding-bottom:6px}
+[data-amount-colour="on"] .neg{color:var(--amount-negative)}
+.nowrap{white-space:nowrap}
+h1[tabindex="-1"]:focus{outline:none}
+.drill{all:unset;cursor:pointer;border-radius:3px}
+.drill:hover{text-decoration:underline}
+.drill:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius-l);background:var(--surface-1)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--radius-m);border:1px solid var(--border-strong);background:var(--surface-1);cursor:pointer;font-weight:500}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+.btn.primary:hover{background:var(--primary-hover)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.sm{height:30px;padding:0 10px;font-size:13px}
+
+/* Inbox */
+.inbox{display:grid;grid-template-columns:minmax(300px,40%) 1fr;gap:16px;align-items:start}
+.ibx-group{padding:8px 12px 4px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+.ibx-item{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1fr auto;gap:2px 10px;width:100%;padding:10px 12px;border-top:1px solid var(--border);cursor:pointer;border-left:3px solid transparent}
+.ibx-item.ai{border-left-color:var(--ai-border)}
+.ibx-item:hover{background:var(--surface-2)}
+.ibx-item[aria-selected="true"]{background:var(--surface-3)}
+.ibx-item:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.ibx-item .t{font-weight:500}
+.ibx-item .s{grid-column:1/-1;display:flex;gap:8px;align-items:center;color:var(--text-muted);font-size:12.5px}
+.proposal{border-left:3px solid var(--ai-border)}
+.proposal .hd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 16px 0}
+.proposal h2{margin:0;font-size:17px}
+.summary{margin:10px 16px 0;padding:12px 14px;border-radius:var(--radius-m);background:var(--ai-subtle);color:var(--text-primary)}
+.sec{padding:14px 16px 0}
+.sec h3{font-size:13px;margin:0 0 8px;color:var(--text-secondary);font-weight:600}
+.risk{margin:14px 16px 0;padding:10px 12px;border-radius:var(--radius-m);background:var(--status-warning-subtle);color:var(--text-primary);display:flex;gap:8px}
+.risk svg{color:var(--status-warning);margin-top:2px}
+.actions{position:sticky;bottom:0;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:12px 16px;margin-top:16px;border-top:1px solid var(--border);background:var(--surface-1);border-radius:0 0 var(--radius-l) var(--radius-l)}
+.advanced{all:unset;cursor:pointer;color:var(--link);font-weight:500;font-size:13px}
+.advanced:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+/* Banking */
+.line-card{padding:18px}
+.line-card .amt{font-size:24px;font-weight:600}
+.sugg{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:var(--radius-m);margin-top:10px}
+.sugg.ai{border-color:var(--ai-border);background:var(--ai-subtle)}
+.progress{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin:6px 0 18px}
+.progress>span{display:block;height:100%;background:var(--primary);width:30%}
+
+/* Chart */
+.chart svg{width:100%;height:180px;display:block}
+
+/* AI panel */
+aside.ai-panel{position:fixed;top:56px;right:0;bottom:0;width:420px;max-width:100%;background:var(--surface-1);border-left:1px solid var(--border);box-shadow:var(--shadow-3);z-index:30;display:flex;flex-direction:column;transform:translateX(100%);transition:transform var(--duration-base) var(--ease-out);visibility:hidden}
+aside.ai-panel.open{transform:none;visibility:visible}
+.ai-head{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);position:relative}
+.ai-head::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--ai-gradient)}
+.ai-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{padding:10px 12px;border-radius:var(--radius-m);max-width:92%}
+.msg.user{align-self:flex-end;background:var(--surface-3)}
+.msg.ai{background:var(--ai-subtle);border-left:3px solid var(--ai-border)}
+.cite{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:1px 7px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-secondary);margin:6px 4px 0 0;text-decoration:none}
+.ai-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.ai-foot input{flex:1;height:36px;border:1px solid var(--border-strong);border-radius:var(--radius-m);padding:0 10px;background:var(--background)}
+
+/* Palette */
+.scrim{position:fixed;inset:0;background:var(--overlay-scrim);z-index:50;display:none;align-items:flex-start;justify-content:center;padding-top:12vh}
+.scrim.open{display:flex}
+.palette{width:min(640px,calc(100% - 32px));background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius-l);box-shadow:var(--shadow-3);overflow:hidden}
+.palette input{width:100%;height:48px;border:0;border-bottom:1px solid var(--border);padding:0 16px;background:transparent;font-size:15px}
+.palette input:focus{outline:none}
+.palette ul{list-style:none;margin:0;padding:6px;max-height:50vh;overflow:auto}
+.palette li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-m);cursor:pointer}
+.palette li[aria-selected="true"]{background:var(--surface-3)}
+.palette li .grp{margin-left:auto;font-size:11.5px;color:var(--text-muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text-primary);color:var(--background);padding:10px 14px;border-radius:var(--radius-m);box-shadow:var(--shadow-3);z-index:60;opacity:0;pointer-events:none;transition:opacity var(--duration-base)}
+.toast.show{opacity:1}
+
+.proto-note{margin-top:28px;font-size:12.5px;color:var(--text-muted);border-top:1px dashed var(--border);padding-top:12px}
+
+/* Responsive */
+@media (max-width:1023px){
+  .app{grid-template-columns:1fr}
+  nav.side{display:none}
+  .org{min-width:auto}
+  .org .name{display:none}
+  .grid12>*{grid-column:1/-1!important}
+  .inbox{grid-template-columns:1fr}
+}
+@media (max-width:767px){
+  header.top{gap:6px;padding:0 8px}
+  .search span.lbl,.search kbd{display:none}
+  .search{flex:0 0 36px;padding:0;justify-content:center}
+  main{padding:16px}
+  .pulse{grid-template-columns:1fr;gap:12px}
+  .pulse .fig{font-size:28px}
+  .tiles{grid-template-columns:1fr}
+  .seg button{padding:5px 8px}
+  #themeBtns{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-bank" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.9 5.8L20 10.5l-6.1 1.7L12 18l-1.9-5.8L4 10.5l6.1-1.7z"/><path d="M19 3v4M17 5h4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-briefcase" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="org"><span class="logo" aria-hidden="true">FH</span><span class="name">Cognizhi Pte Ltd</span></div>
+    <button class="search" id="searchBtn" aria-label="Search and commands (Ctrl+K)"><svg class="i sm" aria-hidden="true"><use href="#i-search"/></svg><span class="lbl">Search, go to, create, ask AI…</span><kbd>Ctrl K</kbd></button>
+    <div class="spacer"></div>
+    <div class="seg" role="radiogroup" aria-label="Experience mode" id="modeSeg">
+      <button role="radio" aria-checked="true" data-set-mode="basic">Basic</button>
+      <button role="radio" aria-checked="false" data-set-mode="expert" tabindex="-1">Expert</button>
+    </div>
+    <div id="themeBtns" style="display:flex;gap:2px" role="group" aria-label="Theme">
+      <button class="iconbtn" data-theme-btn="light" aria-pressed="true" aria-label="Light theme"><svg class="i" aria-hidden="true"><use href="#i-sun"/></svg></button>
+      <button class="iconbtn" data-theme-btn="dark" aria-pressed="false" aria-label="Dark theme"><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      <button class="iconbtn" id="hcBtn" aria-pressed="false" aria-label="High contrast"><svg class="i" aria-hidden="true"><use href="#i-contrast"/></svg></button>
+    </div>
+    <button class="iconbtn" id="aiBtn" aria-label="Open AI assistant (Ctrl+J)" aria-expanded="false" aria-controls="aiPanel"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg></button>
+    <button class="iconbtn" aria-label="Notifications"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></button>
+    <span class="avatar" aria-label="Signed in as Anthony Yeong" role="img">AY</span>
+  </header>
+
+  <nav class="side" aria-label="Main">
+    <a href="#home" data-view="home"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Home</a>
+    <a href="#inbox" data-view="inbox"><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg>Inbox<span class="badge" aria-label="5 items waiting">5</span></a>
+    <a href="#sales" data-view="sales"><svg class="i" aria-hidden="true"><use href="#i-receipt"/></svg>Sales<span class="badge" aria-label="3 overdue invoices">3</span></a>
+    <a href="#purchases" data-view="purchases"><svg class="i" aria-hidden="true"><use href="#i-cart"/></svg>Purchases</a>
+    <a href="#contacts" data-view="contacts"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg>Contacts</a>
+    <a href="#banking" data-view="banking"><svg class="i" aria-hidden="true"><use href="#i-bank"/></svg>Banking<span class="badge" aria-label="14 lines to categorise">14</span></a>
+    <a href="#payroll" data-view="payroll"><svg class="i" aria-hidden="true"><use href="#i-wallet"/></svg>Payroll</a>
+    <a href="#projects" data-view="projects" data-only="expert"><svg class="i" aria-hidden="true"><use href="#i-briefcase"/></svg>Projects</a>
+    <a href="#accounting" data-view="accounting" data-only="expert"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg>Accounting</a>
+    <a href="#reports" data-view="reports"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg>Reports</a>
+    <a href="#planning" data-view="planning" data-only="expert"><svg class="i" aria-hidden="true"><use href="#i-trend"/></svg>Planning</a>
+    <a href="#compliance" data-view="compliance" data-only="expert"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>Compliance<span class="badge" aria-label="1 deadline due">1</span></a>
+    <div class="grow"></div>
+    <a href="#settings" data-view="settings"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg>Settings</a>
+  </nav>
+
+  <main id="main" tabindex="-1">
+    <!-- HOME -->
+    <section data-page="home">
+      <div class="page-h"><h1 tabindex="-1">Good morning, Anthony</h1></div>
+      <p class="sub">Monday 12 Oct 2026 · Books are current to yesterday</p>
+      <div class="grid12">
+        <div class="card pulse">
+          <div><div class="lbl">Cash today</div><div class="fig">S$412,300.00</div><div class="muted">across 3 accounts</div></div>
+          <div><div class="lbl">Runway</div><div class="fig">14.2 months</div><div class="muted">at 3-month average burn</div></div>
+          <div><div class="lbl">Books health</div><div class="fig" style="font-size:22px;padding-top:8px"><span class="chip warning"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>2 to review</span> <span class="chip critical"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>1 cannot post</span></div><div class="muted">No failed checks in closed periods</div></div>
+        </div>
+        <div class="card" style="grid-column:span 7">
+          <div class="pad" style="padding-bottom:4px;display:flex;align-items:center"><h2 style="margin:0">Needs attention</h2><span class="spacer"></span><a href="#inbox" data-view-link="inbox">Open Inbox (5)</a></div>
+          <ul class="list">
+            <li><span class="chip warning"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Approve</span><span><span class="t">Bill · ABC Cloud Pte Ltd</span><br><span class="s">Self-approved last week; needs a second founder's review (FM-3)</span></span><span class="num">S$1,090.00</span></li>
+            <li><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><span><span class="t">Categorise 4 bank lines</span><br><span class="s">Proposal · tier 1 · expires in 70 h</span></span><span class="num">S$1,953.80</span></li>
+            <li><span class="chip critical"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Cannot post</span><span><span class="t">Invoice INV-0142 · Halcyon Labs</span><br><span class="s">No exchange rate for USD on 3 Oct 2026. Add the rate to post it.</span></span><span class="num">US$6,500.00</span></li>
+            <li><span class="chip serious"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Due 31 Oct</span><span><span class="t">GST F5 return, Jul–Sep 2026</span><br><span class="s">19 days left · draft ready to review</span></span><span class="num">S$6,812.40</span></li>
+            <li><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><span><span class="t">Accrue September audit fee</span><br><span class="s">Proposal · tier 2 · journal</span></span><span class="num">S$4,500.00</span></li>
+          </ul>
+        </div>
+        <div style="grid-column:span 5" class="tiles">
+          <div class="card tile"><button class="drill" aria-label="Burn, 3-month average S$29,050, open breakdown"><div class="lbl">Burn (3-mo avg)</div><div class="fig">S$29,050</div><div class="delta"><svg class="i sm" aria-hidden="true"><use href="#i-up"/></svg>+6.1% vs prior 3 months</div></button></div>
+          <div class="card tile"><button class="drill" aria-label="Revenue month to date S$38,400, open breakdown"><div class="lbl">Revenue MTD</div><div class="fig">S$38,400</div><div class="delta"><svg class="i sm" aria-hidden="true"><use href="#i-up"/></svg>+4.2% vs Sep at same day</div></button></div>
+          <div class="card tile"><button class="drill" aria-label="Owed to us S$64,180, 3 overdue"><div class="lbl">Owed to us</div><div class="fig">S$64,180</div><div class="delta"><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg>3 overdue · S$18,250</div></button></div>
+          <div class="card tile"><button class="drill" aria-label="We owe S$21,940"><div class="lbl">We owe</div><div class="fig">S$21,940</div><div class="delta">7 bills · next due 15 Oct</div></button></div>
+          <div class="card tile" data-only="expert"><button class="drill" aria-label="Gross margin 71.4% in September"><div class="lbl">Gross margin (Sep)</div><div class="fig">71.4%</div><div class="delta"><svg class="i sm" aria-hidden="true"><use href="#i-down"/></svg>−2.3 pts vs Aug</div></button></div>
+          <div class="card tile" data-only="expert"><button class="drill" aria-label="GST payable for Q3 S$6,812.40"><div class="lbl">GST payable (Q3)</div><div class="fig">S$6,812.40</div><div class="delta">F5 due 31 Oct</div></button></div>
+        </div>
+        <div class="card pad chart" style="grid-column:1/-1" data-only="expert">
+          <div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0">Cash, last 13 months</h2><span class="spacer"></span><button class="btn sm" id="tableToggle" aria-pressed="false">Table view</button></div>
+          <p class="muted" id="chartSummary" style="margin:4px 0 8px">Cash fell 8.0% in September to S$412,300; the dashed segment is a projection, not actuals.</p>
+          <div id="cashChart" role="img" aria-labelledby="chartSummary"></div>
+          <div id="cashTable" hidden class="table-wrap" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INBOX -->
+    <section data-page="inbox" hidden>
+      <div class="page-h"><h1 tabindex="-1">Inbox</h1><span class="muted">5 waiting for you</span></div>
+      <p class="sub"><span data-only="expert">Keys: <kbd>J</kbd>/<kbd>K</kbd> move · <kbd>E</kbd> open · <kbd>A</kbd> opens approval · <kbd>R</kbd> reject · single-key shortcuts can be turned off in the command palette.</span><span data-only="basic">Approvals, AI proposals and items that need a fix. Nothing changes until you approve it.</span></p>
+      <div class="inbox">
+        <div class="card" style="overflow:hidden" role="listbox" aria-label="Inbox items" id="ibxList">
+          <div class="ibx-group">AI proposals · 2</div>
+          <button class="ibx-item ai" role="option" aria-selected="true" data-prop="cat"><span class="t">Categorise 4 bank lines</span><span class="num">S$1,953.80</span><span class="s"><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span>Tier 1 · for Anthony · 2 h ago</span></button>
+          <button class="ibx-item ai" role="option" aria-selected="false" data-prop="acc"><span class="t">Accrue September audit fee</span><span class="num">S$4,500.00</span><span class="s"><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span>Tier 2 · journal · 5 h ago</span></button>
+          <div class="ibx-group">Approvals · 1</div>
+          <button class="ibx-item" role="option" aria-selected="false" data-prop="none"><span class="t">Bill · ABC Cloud Pte Ltd</span><span class="num">S$1,090.00</span><span class="s"><span class="chip warning"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Self-approved: review</span></span></button>
+          <div class="ibx-group">Cannot post · 1</div>
+          <button class="ibx-item" role="option" aria-selected="false" data-prop="none"><span class="t">Invoice INV-0142 · Halcyon Labs</span><span class="num">US$6,500.00</span><span class="s"><span class="chip critical"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>No USD rate for 3 Oct</span></span></button>
+          <div class="ibx-group">Deadlines · 1</div>
+          <button class="ibx-item" role="option" aria-selected="false" data-prop="none"><span class="t">GST F5, Jul–Sep 2026</span><span class="num">S$6,812.40</span><span class="s"><span class="chip serious"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Due 31 Oct</span></span></button>
+        </div>
+        <div id="propDetail"></div>
+      </div>
+    </section>
+
+    <!-- BANKING -->
+    <section data-page="banking" hidden>
+      <div class="page-h"><h1 tabindex="-1">Categorise</h1><span class="muted">DBS Business Account · 14 lines</span></div>
+      <div data-only="basic">
+        <p class="sub">One line at a time. Pick a suggestion or change it; nothing posts until you accept.</p>
+        <div class="progress" role="progressbar" aria-label="Lines done" aria-valuenow="4" aria-valuemin="0" aria-valuemax="14"><span></span></div>
+        <div class="card line-card" style="max-width:720px">
+          <div class="muted">9 Oct 2026 · money in</div>
+          <div class="mono" style="margin:4px 0 6px">PAYNOW-ACME ROBOTICS INV0138</div>
+          <div class="amt num" style="text-align:left">S$10,900.00</div>
+          <div class="sugg"><span class="chip good"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Exact match</span><span><strong>Payment for invoice INV-0138</strong><br><span class="muted">Acme Robotics · S$10,900.00 · reference matches</span></span><button class="btn primary">Accept</button></div>
+          <div class="sugg ai"><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><span>Also possible: <strong>customer deposit</strong> for the Q4 retainer<br><span class="muted">Lower confidence (0.31); the reference names INV0138</span></span><button class="btn">Use this</button></div>
+          <div style="display:flex;gap:8px;margin-top:14px"><button class="btn">Change…</button><button class="btn ghost">Skip</button></div>
+        </div>
+      </div>
+      <div data-only="expert">
+        <p class="sub">Grid with paste, <kbd>Ctrl</kbd>+<kbd>D</kbd> fill-down and bulk accept. AI suggestions become a tier-1 proposal you approve.</p>
+        <div class="table-wrap">
+          <table aria-label="Bank lines to categorise">
+            <thead><tr><th scope="col"><span class="sr-only">Select</span></th><th scope="col">Date</th><th scope="col">Description</th><th scope="col" class="num">Amount (SGD)</th><th scope="col">Suggestion</th><th scope="col">Account</th><th scope="col">GST</th><th scope="col">Dept</th><th scope="col">Status</th></tr></thead>
+            <tbody id="bankRows"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary">Accept 4 selected</button><button class="btn">Split…</button><button class="btn">Create rule…</button></div>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section data-page="reports" hidden>
+      <div class="page-h"><h1 tabindex="-1">Profit and loss</h1><span class="muted">September 2026</span></div>
+      <p class="sub"><span data-only="basic">What we earned and spent in September. Select any figure to see where it comes from.</span><span data-only="expert">Compared with August 2026 · ledger version 2026-10-12T09:14 (reproducible) · <a href="#">Export XLSX</a> · <a href="#">PDF</a> · <a href="#">CSV</a></span></p>
+      <div class="table-wrap"><table id="plTable" aria-label="Profit and loss, September 2026"></table></div>
+      <p class="muted" style="margin-top:8px">Copy any figure: the clipboard gets <span class="mono">-20123.75</span>, not the display minus (FR-UX-20).</p>
+    </section>
+
+    <section data-page="other" hidden>
+      <div class="page-h"><h1 tabindex="-1" id="otherTitle">Sales</h1></div>
+      <div class="card pad" style="max-width:640px;margin-top:16px"><h2>Not in this prototype</h2><p class="secondary" style="margin:0">The prototype covers the shell, Home, Inbox with AI-proposal review, Banking and Reports. The other pages follow the same patterns (PRD §7.3 record pages).</p></div>
+    </section>
+
+    <p class="proto-note">Prototype for PRD-001 rev 0.2 · fictional sample data · design system: <span class="mono">docs/design-system/cognizhi-finance-hub/</span> · try <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Ctrl</kbd>+<kbd>J</kbd>, the Basic/Expert toggle and the theme buttons.</p>
+  </main>
+</div>
+
+<aside class="ai-panel" id="aiPanel" aria-label="AI assistant" aria-hidden="true">
+  <div class="ai-head"><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><strong>Assistant</strong><span class="muted" style="font-size:12px">reads within your permissions · proposes, never changes</span><span class="spacer"></span><button class="iconbtn" id="aiClose" aria-label="Close assistant"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="ai-body" aria-live="polite">
+    <div class="msg user">Why did the loss widen in September?</div>
+    <div class="msg ai">
+      <div>The net loss grew by <strong class="num">S$6,250.00</strong> to <strong class="num">S$20,123.75</strong>. Three drivers:</div>
+      <ol style="margin:6px 0 0;padding-left:18px">
+        <li>An audit fee accrual of <span class="num">S$4,500.00</span> (6520).</li>
+        <li>Consulting revenue down <span class="num">S$2,400.00</span>, partly offset by subscriptions up <span class="num">S$1,400.00</span>.</li>
+        <li>Hosting and AI/API costs up <span class="num">S$690.00</span>.</li>
+      </ol>
+      <span data-only="expert" class="muted" style="display:block;margin-top:6px;font-size:12.5px">Source: balance service, P&amp;L by account, Sep vs Aug 2026, ledger version 2026-10-12T09:14.</span>
+      <a class="cite" href="#reports" data-view-link="reports">P&amp;L Sep 2026</a><a class="cite" href="#">6520 ledger lines</a><a class="cite" href="#">Proposal: accrue audit fee</a>
+      <div class="muted" style="font-size:12px;margin-top:6px;display:flex;gap:4px;align-items:center"><svg class="i sm" aria-hidden="true"><use href="#i-check"/></svg>All 6 figures match the ledger (numeric grounding)</div>
+    </div>
+  </div>
+  <form class="ai-foot" onsubmit="return false"><label class="sr-only" for="aiInput">Ask the assistant</label><input id="aiInput" placeholder="Ask about your books…"><button class="btn primary" type="submit">Ask</button></form>
+</aside>
+
+<div class="scrim" id="paletteScrim">
+  <div class="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+    <label class="sr-only" for="palInput">Search commands</label>
+    <input id="palInput" placeholder="Type a command or search…" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="palList">
+    <ul id="palList" role="listbox"></ul>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+(function () {
+  "use strict";
+  const html = document.documentElement;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const MINUS = "−";
+
+  // Money as integer cents: no floating-point money, even in a prototype (ENG-10).
+  function fmt(cents, { sign = true } = {}) {
+    const neg = cents < 0, abs = Math.abs(cents);
+    const whole = Math.floor(abs / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    const s = whole + "." + String(abs % 100).padStart(2, "0");
+    return (neg && sign ? MINUS : "") + s;
+  }
+  const store = {
+    get(k, d) { try { return localStorage.getItem("fh-proto-" + k) ?? d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("fh-proto-" + k, v); } catch {} }
+  };
+
+  // ---- toast / live announcements (FR-UX-21)
+  let toastTimer;
+  function announce(msg) {
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 3500);
+  }
+
+  // ---- experience mode (FR-UX-23)
+  function setMode(mode, quiet) {
+    html.dataset.mode = mode; store.set("mode", mode);
+    $$("#modeSeg [role=radio]").forEach(b => {
+      const on = b.dataset.setMode === mode;
+      b.setAttribute("aria-checked", on); b.tabIndex = on ? 0 : -1;
+    });
+    html.dataset.density = mode === "expert" ? "compact" : "comfortable";
+    if (!quiet) announce(mode === "expert" ? "Expert mode on: every feature your role allows" : "Basic mode on: the essentials");
+    const v = currentView();
+    if ($(`nav.side a[data-view="${v}"]`)?.dataset.only === "expert" && mode === "basic") go("home");
+    renderProposal(); renderPL();
+  }
+  $$("#modeSeg [role=radio]").forEach(b => {
+    b.addEventListener("click", () => setMode(b.dataset.setMode));
+    b.addEventListener("keydown", e => {
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
+        e.preventDefault();
+        const next = html.dataset.mode === "basic" ? "expert" : "basic";
+        setMode(next); $(`#modeSeg [data-set-mode=${next}]`).focus();
+      }
+    });
+  });
+
+  // ---- themes
+  function setTheme(theme) {
+    html.classList.toggle("dark", theme === "dark"); store.set("theme", theme);
+    $$("[data-theme-btn]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeBtn === theme));
+  }
+  function setContrast(on) {
+    if (on) html.dataset.contrast = "more"; else delete html.dataset.contrast;
+    $("#hcBtn").setAttribute("aria-pressed", on); store.set("contrast", on ? "more" : "");
+  }
+  $$("[data-theme-btn]").forEach(b => b.addEventListener("click", () => setTheme(b.dataset.themeBtn)));
+  $("#hcBtn").addEventListener("click", () => setContrast(html.dataset.contrast !== "more"));
+
+  // ---- routing
+  const pages = ["home", "inbox", "banking", "reports"];
+  function currentView() { return (location.hash || "#home").slice(1); }
+  function go(view) { if (location.hash !== "#" + view) location.hash = view; else route(); }
+  function route() {
+    const v = currentView();
+    const page = pages.includes(v) ? v : "other";
+    $$("main > section").forEach(s => s.hidden = s.dataset.page !== page);
+    $$("nav.side a").forEach(a => { if (a.dataset.view === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+    if (page === "other") $("#otherTitle").textContent = v.charAt(0).toUpperCase() + v.slice(1);
+    const h = $(`main > section[data-page="${page}"] h1`); if (h) h.focus({ preventScroll: false });
+  }
+  window.addEventListener("hashchange", route);
+  $$("[data-view-link]").forEach(a => a.addEventListener("click", () => closeAI()));
+
+  // ---- cash chart (single series, one axis, projection dashed)
+  const months = ["Oct 25","Nov","Dec","Jan 26","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct (proj.)"];
+  const cash = [61210000,59880000,58120000,55940000,54460000,52610000,50830000,48990000,47350000,46030000,44815000,41230000,38410000];
+  function drawChart() {
+    const W = 860, H = 180, P = { l: 56, r: 12, t: 10, b: 24 };
+    const max = 65000000, min = 35000000;
+    const x = i => P.l + i * (W - P.l - P.r) / (cash.length - 1);
+    const y = v => P.t + (max - v) * (H - P.t - P.b) / (max - min);
+    let g = "";
+    for (const t of [40000000, 50000000, 60000000]) g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--chart-grid)"/><text x="${P.l - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--text-muted)">${t / 100000}k</text>`;
+    const pts = cash.map((v, i) => `${x(i)},${y(v)}`);
+    const actual = pts.slice(0, 12).join(" "), proj = pts.slice(11).join(" ");
+    let labels = "";
+    [0, 3, 6, 9, 11].forEach(i => labels += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--text-muted)">${months[i]}</text>`);
+    $("#cashChart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${g}<polyline points="${actual}" fill="none" stroke="var(--chart-1)" stroke-width="2"/><polyline points="${proj}" fill="none" stroke="var(--chart-1)" stroke-width="2" stroke-dasharray="5 4"/><circle cx="${x(11)}" cy="${y(cash[11])}" r="4" fill="var(--chart-1)" stroke="var(--surface-1)" stroke-width="2"/>${labels}</svg>`;
+    $("#cashTable").innerHTML = `<table><thead><tr><th scope="col">Month</th><th scope="col" class="num">Cash (SGD)</th></tr></thead><tbody>${cash.map((v, i) => `<tr><td>${months[i]}</td><td class="num">${fmt(v)}</td></tr>`).join("")}</tbody></table>`;
+  }
+  $("#tableToggle").addEventListener("click", e => {
+    const on = e.currentTarget.getAttribute("aria-pressed") !== "true";
+    e.currentTarget.setAttribute("aria-pressed", on);
+    $("#cashTable").hidden = !on; $("#cashChart").hidden = on;
+  });
+
+  // ---- proposals (AI-07): GST 9% extracted from gross with RND-GST-INCL, all in cents
+  const lines = [
+    { d: "02 Oct", desc: "GOOGLE*WORKSPACE COGNIZHI", gross: 30240, acct: "6120 Software subscriptions", plain: "Software" , conf: "0.97" },
+    { d: "03 Oct", desc: "GRAB *RIDE 8812", gross: 2730, acct: "6410 Local travel", plain: "Local travel", conf: "0.91" },
+    { d: "05 Oct", desc: "SINGTEL BILL 8890", gross: 9810, acct: "6130 Telephone and internet", plain: "Phone and internet", conf: "0.95" },
+    { d: "07 Oct", desc: "WEWORK SG OCT", gross: 152600, acct: "6210 Rent and coworking", plain: "Coworking", conf: "0.88" }
+  ];
+  const gstIncl = g => Math.floor((g * 9 * 2 + 109) / (109 * 2)); // round-half-up of g*9/109 for positive cents
+  lines.forEach(l => { l.gst = gstIncl(l.gross); l.net = l.gross - l.gst; });
+  const T = k => lines.reduce((a, l) => a + l[k], 0);
+
+  let selectedProp = "cat";
+  function renderProposal() {
+    const el = $("#propDetail"); if (!el) return;
+    if (selectedProp === "none") {
+      el.innerHTML = `<div class="card pad"><h2>Item detail</h2><p class="secondary" style="margin:0">The prototype shows the AI proposal review in full. Approvals and fixes use the same layout without the AI elements.</p></div>`;
+      return;
+    }
+    if (selectedProp === "acc") {
+      el.innerHTML = `<article class="card proposal" aria-labelledby="pTitle">
+        <div class="hd"><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><span class="chip serious">Tier 2 · posts to the ledger</span><span class="muted" style="font-size:12.5px">gl.post_journal v1 · expires 15 Oct 09:00</span></div>
+        <div style="padding:8px 16px 0"><h2 id="pTitle">Accrue September audit fee</h2></div>
+        <p class="summary">Records S$4,500.00 of audit fees for September that Tan &amp; Co has not billed yet, reversing on 1 Oct 2026.</p>
+        <div class="sec"><h3>Ledger impact · 30 Sep 2026, auto-reverses 1 Oct</h3>
+          <div data-only="basic" class="secondary">Adds S$4,500.00 to September's costs and to what we owe. When the real bill arrives in October, the reversal stops it being counted twice.</div>
+          <div data-only="expert" class="table-wrap"><table><thead><tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody>
+            <tr><td><span class="mono">6520</span> Audit and accounting fees</td><td class="num">4,500.00</td><td></td></tr>
+            <tr><td><span class="mono">2050</span> Accrued expenses</td><td></td><td class="num">4,500.00</td></tr>
+            <tr class="total"><td>Total</td><td class="num">4,500.00</td><td class="num">4,500.00</td></tr></tbody></table></div></div>
+        <div class="sec"><h3>Evidence</h3><a class="cite" href="#">Engagement letter, Tan &amp; Co (FY2026)</a><a class="cite" href="#">No September bill from Tan &amp; Co</a><a class="cite" href="#">Same accrual, Sep 2025</a></div>
+        <div class="risk"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><div><strong>What could go wrong:</strong> if the bill already arrived and was posted, this doubles the expense. Checked: no bill from Tan &amp; Co dated after 1 Sep.</div></div>
+        <div class="actions"><button class="btn">Reject…</button><span class="muted" style="font-size:12.5px;display:flex;gap:6px;align-items:center"><svg class="i sm" aria-hidden="true"><use href="#i-key"/></svg>Passkey required</span><button class="btn primary">Approve journal</button></div>
+      </article>`;
+      return;
+    }
+    const rows = lines.map((l, i) => `<tr><td><input type="checkbox" checked aria-label="Include line ${i + 1}"></td><td class="nowrap">${l.d}</td><td class="mono">${l.desc}</td><td class="num">${fmt(-l.gross)}</td><td><span data-only="basic">${l.plain}</span><span data-only="expert">${l.acct}</span></td><td data-only="expert">TX 9%</td><td class="num muted">${l.conf}</td></tr>`).join("");
+    el.innerHTML = `<article class="card proposal" aria-labelledby="pTitle">
+      <div class="hd"><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><span class="chip neutral">Tier 1 · reversible</span><span class="muted" style="font-size:12.5px">bank.categorise_lines v1 · proposed for Anthony · expires in 70 h</span></div>
+      <div style="padding:8px 16px 0"><h2 id="pTitle">Categorise 4 bank lines</h2></div>
+      <p class="summary">Records 4 payments totalling S$${fmt(T("gross"))} as software, local travel, phone and coworking costs, with S$${fmt(T("gst"))} GST to claim.</p>
+      <div class="sec"><h3>Items (select which to approve)</h3><div class="table-wrap"><table><thead><tr><th><span class="sr-only">Include</span></th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Category</th><th data-only="expert">GST</th><th class="num">Confidence</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+      <div class="sec"><h3>Ledger impact</h3>
+        <div data-only="basic" class="secondary">Money out of DBS Business Account: S$${fmt(T("gross"))}. Costs: S$${fmt(T("net"))}. GST we can claim back: S$${fmt(T("gst"))}. <button class="advanced" data-switch-expert>See debits and credits in Expert mode</button></div>
+        <div data-only="expert" class="table-wrap"><table><thead><tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody>
+          ${lines.map(l => `<tr><td><span class="mono">${l.acct.slice(0, 4)}</span> ${l.acct.slice(5)}</td><td class="num">${fmt(l.net)}</td><td></td></tr>`).join("")}
+          <tr><td><span class="mono">2200</span> GST control</td><td class="num">${fmt(T("gst"))}</td><td></td></tr>
+          <tr><td><span class="mono">1010</span> DBS Business Account</td><td></td><td class="num">${fmt(T("gross"))}</td></tr>
+          <tr class="total"><td>Total</td><td class="num">${fmt(T("net") + T("gst"))}</td><td class="num">${fmt(T("gross"))}</td></tr></tbody></table></div></div>
+      <div class="sec"><h3>Why</h3><div class="secondary">Each line matches a merchant categorised the same way at least 3 times in the last 6 months; WeWork matches the monthly coworking contract.</div><a class="cite" href="#">Bank rule history</a><a class="cite" href="#">WeWork contract</a></div>
+      <div class="actions"><button class="btn">Reject…</button><button class="btn primary">Approve 4 categorisations</button></div>
+    </article>`;
+    $$("[data-switch-expert]", el).forEach(b => b.addEventListener("click", () => setMode("expert")));
+  }
+  $$("#ibxList .ibx-item").forEach(b => b.addEventListener("click", () => {
+    $$("#ibxList .ibx-item").forEach(x => x.setAttribute("aria-selected", x === b));
+    selectedProp = b.dataset.prop; renderProposal();
+  }));
+
+  // ---- bank grid (Expert)
+  const bank = [
+    ["09 Oct", "PAYNOW-ACME ROBOTICS INV0138", 1090000, "Match INV-0138", "1100 Accounts receivable", "—", "—", ["good", "i-check", "Exact match"]],
+    ["08 Oct", "STRIPE PAYOUT 0Q8XK2", 482315, "Stripe clearing", "1150 Stripe clearing", "—", "—", ["good", "i-check", "Rule"]],
+    ["07 Oct", "WEWORK SG OCT", -152600, "AI: coworking", "6210 Rent and coworking", "TX", "Ops", ["neutral", "i-sparkles", "Proposed"]],
+    ["06 Oct", "TRANSFER TO 0712-334455", -500000, "Transfer?", "—", "—", "—", ["warning", "i-alert", "Possible transfer"]],
+    ["05 Oct", "SINGTEL BILL 8890", -9810, "AI: phone", "6130 Telephone and internet", "TX", "Ops", ["neutral", "i-sparkles", "Proposed"]],
+    ["03 Oct", "UNKNOWN MERCHANT 4471", -21800, "—", "", "", "", ["critical", "i-x", "Needs a category"]]
+  ];
+  $("#bankRows").innerHTML = bank.map((r, i) => `<tr><td><input type="checkbox" ${i < 4 ? "checked" : ""} aria-label="Select ${r[1]}"></td><td class="nowrap">${r[0]}</td><td class="mono">${r[1]}</td><td class="num ${r[2] < 0 ? "neg" : ""}">${fmt(r[2])}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td><span class="chip ${r[7][0]}"><svg class="i" aria-hidden="true"><use href="#${r[7][1]}"/></svg>${r[7][2]}</span></td></tr>`).join("");
+
+  // ---- P&L, computed from cents
+  const PL = [
+    ["Revenue", [["4010", "Subscriptions", "Subscription revenue", 3120000, 2980000], ["4020", "Consulting", "Consulting and projects", 960000, 1200000]]],
+    ["Cost of sales", [["5010", "Hosting", "Hosting", 438000, 412000], ["5020", "AI and API usage", "AI and API usage", 729000, 686000]]],
+    ["Operating expenses", [["6010", "Salaries", "Salaries", 3800000, 3800000], ["6020", "Employer CPF", "Employer CPF", 408000, 408000], ["6030", "Skills Development Levy", "Skills levy", 3375, 3375], ["6120", "Software subscriptions", "Software", 124000, 118000], ["6210", "Rent and coworking", "Coworking", 140000, 140000], ["6520", "Audit and accounting fees", "Audit and accounting", 450000, 0]]]
+  ];
+  const explain = { "Revenue": "Money we earned from customers.", "Cost of sales": "Costs of delivering what we sold.", "Operating expenses": "Running the company: people, tools, space." };
+  function renderPL() {
+    const ex = html.dataset.mode === "expert";
+    const sum = (g, k) => g[1].reduce((a, r) => a + r[k], 0);
+    const [rev, cos, opx] = PL;
+    const cell = (v, cls = "") => `<td class="num ${cls} ${v < 0 ? "neg" : ""}"><button class="drill" aria-label="${fmt(v)}, show ledger lines">${fmt(v)}</button></td>`;
+    const varc = (a, b) => ex ? `<td class="num ${a - b < 0 ? "neg" : ""}">${fmt(a - b)}</td>` : "";
+    let h = `<thead><tr><th scope="col">${ex ? "Account" : ""}</th><th scope="col" class="num">Sep 2026</th>${ex ? '<th scope="col" class="num">Aug 2026</th><th scope="col" class="num">Effect on profit</th>' : ""}</tr></thead><tbody>`;
+    const block = (g, sign) => {
+      let s = `<tr class="group"><td colspan="${ex ? 4 : 2}">${g[0]}</td></tr>`;
+      if (!ex) s += `<tr class="section"><td colspan="2">${explain[g[0]]}</td></tr>`;
+      g[1].forEach(r => s += `<tr><td>${ex ? `<span class="mono">${r[0]}</span> ${r[1]}` : r[2]}</td>${cell(r[3])}${ex ? cell(r[4]) : ""}${varc(sign * r[3], sign * r[4])}</tr>`);
+      s += `<tr class="total"><td>Total ${g[0].toLowerCase()}</td>${cell(sum(g, 3))}${ex ? cell(sum(g, 4)) : ""}${varc(sign * sum(g, 3), sign * sum(g, 4))}</tr>`;
+      return s;
+    };
+    const gp3 = sum(rev, 3) - sum(cos, 3), gp4 = sum(rev, 4) - sum(cos, 4);
+    const np3 = gp3 - sum(opx, 3), np4 = gp4 - sum(opx, 4);
+    h += block(rev, 1) + block(cos, -1);
+    h += `<tr class="total"><td>Gross profit${ex ? " · margin " + (Math.round(gp3 * 1000 / sum(rev, 3)) / 10) + "%" : ""}</td>${cell(gp3)}${ex ? cell(gp4) : ""}${varc(gp3, gp4)}</tr>`;
+    h += block(opx, -1);
+    h += `<tr class="total"><td>${np3 < 0 ? "Net loss" : "Net profit"}</td>${cell(np3)}${ex ? cell(np4) : ""}${varc(np3, np4)}</tr></tbody>`;
+    $("#plTable").innerHTML = h;
+  }
+
+  // ---- clipboard fidelity (FR-UX-20): ASCII minus, plain decimals
+  document.addEventListener("copy", e => {
+    const sel = String(window.getSelection() || "");
+    if (!sel || !/[\d]/.test(sel)) return;
+    const clean = sel.replace(/−/g, "-").replace(/(\d),(?=\d{3}\b)/g, "$1");
+    if (clean !== sel) { e.clipboardData.setData("text/plain", clean); e.preventDefault(); announce("Copied as plain numbers"); }
+  });
+
+  // ---- AI panel (Ctrl+J)
+  function openAI() { const p = $("#aiPanel"); p.classList.add("open"); p.setAttribute("aria-hidden", "false"); $("#aiBtn").setAttribute("aria-expanded", "true"); $("#aiInput").focus(); }
+  function closeAI() { const p = $("#aiPanel"); if (!p.classList.contains("open")) return; p.classList.remove("open"); p.setAttribute("aria-hidden", "true"); $("#aiBtn").setAttribute("aria-expanded", "false"); $("#aiBtn").focus(); }
+  $("#aiBtn").addEventListener("click", () => $("#aiPanel").classList.contains("open") ? closeAI() : openAI());
+  $("#aiClose").addEventListener("click", closeAI);
+
+  // ---- command palette (Ctrl+K)
+  let shortcutsOn = store.get("shortcuts", "on") === "on";
+  const cmds = () => [
+    { t: "Go to Home", g: "Go to", run: () => go("home") },
+    { t: "Go to Inbox", g: "Go to", run: () => go("inbox") },
+    { t: "Go to Banking: categorise", g: "Go to", run: () => go("banking") },
+    { t: "Profit and loss", g: "Reports", run: () => go("reports") },
+    { t: "Trial balance", g: "Reports", expert: true, run: () => go("reports") },
+    { t: "New journal", g: "Create", expert: true, run: () => announce("Journals open in the full product") },
+    { t: "New invoice", g: "Create", run: () => announce("Invoices open in the full product") },
+    { t: html.dataset.mode === "basic" ? "Switch to Expert mode" : "Switch to Basic mode", g: "Settings", run: () => setMode(html.dataset.mode === "basic" ? "expert" : "basic") },
+    { t: html.classList.contains("dark") ? "Use light theme" : "Use dark theme", g: "Settings", run: () => setTheme(html.classList.contains("dark") ? "light" : "dark") },
+    { t: (html.dataset.contrast === "more" ? "Turn off" : "Turn on") + " high contrast", g: "Settings", run: () => setContrast(html.dataset.contrast !== "more") },
+    { t: (shortcutsOn ? "Turn off" : "Turn on") + " single-key shortcuts", g: "Settings", run: () => { shortcutsOn = !shortcutsOn; store.set("shortcuts", shortcutsOn ? "on" : "off"); announce("Single-key shortcuts " + (shortcutsOn ? "on" : "off")); } },
+    { t: "Ask AI: why did the loss widen?", g: "Ask AI", run: () => openAI() }
+  ];
+  let palItems = [], palIdx = 0, lastFocus = null;
+  function renderPal() {
+    const q = $("#palInput").value.trim().toLowerCase();
+    palItems = cmds().filter(c => c.t.toLowerCase().includes(q));
+    palIdx = Math.min(palIdx, Math.max(0, palItems.length - 1));
+    $("#palList").innerHTML = palItems.map((c, i) => `<li role="option" id="pal-${i}" aria-selected="${i === palIdx}" data-i="${i}">${c.t}${c.expert && html.dataset.mode === "basic" ? ' <span class="chip neutral" style="height:18px;font-size:11px">Expert</span>' : ""}<span class="grp">${c.g}</span></li>`).join("") || `<li aria-disabled="true" class="muted">No matches</li>`;
+    $("#palInput").setAttribute("aria-activedescendant", palItems.length ? "pal-" + palIdx : "");
+    $$("#palList li[data-i]").forEach(li => li.addEventListener("click", () => runPal(+li.dataset.i)));
+  }
+  function runPal(i) {
+    const c = palItems[i]; if (!c) return; closePal();
+    if (c.expert && html.dataset.mode === "basic") { setMode("expert"); announce("Switched to Expert mode to open " + c.t); }
+    c.run();
+  }
+  function openPal() { lastFocus = document.activeElement; $("#paletteScrim").classList.add("open"); $("#palInput").value = ""; palIdx = 0; renderPal(); $("#palInput").focus(); }
+  function closePal() { $("#paletteScrim").classList.remove("open"); if (lastFocus) lastFocus.focus(); }
+  $("#searchBtn").addEventListener("click", openPal);
+  $("#palInput").addEventListener("input", () => { palIdx = 0; renderPal(); });
+  $("#palInput").addEventListener("keydown", e => {
+    if (e.key === "ArrowDown") { e.preventDefault(); palIdx = Math.min(palIdx + 1, palItems.length - 1); renderPal(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); palIdx = Math.max(palIdx - 1, 0); renderPal(); }
+    else if (e.key === "Enter") { e.preventDefault(); runPal(palIdx); }
+  });
+  $("#paletteScrim").addEventListener("click", e => { if (e.target.id === "paletteScrim") closePal(); });
+
+  // ---- global keys
+  document.addEventListener("keydown", e => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); $("#paletteScrim").classList.contains("open") ? closePal() : openPal(); return; }
+    if (mod && e.key.toLowerCase() === "j") { e.preventDefault(); $("#aiPanel").classList.contains("open") ? closeAI() : openAI(); return; }
+    if (e.key === "Escape") { if ($("#paletteScrim").classList.contains("open")) closePal(); else closeAI(); return; }
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "") || document.activeElement?.isContentEditable;
+    if (typing || mod || e.altKey || !shortcutsOn || html.dataset.mode !== "expert" || currentView() !== "inbox") return;
+    const items = $$("#ibxList .ibx-item"); let i = items.findIndex(x => x.getAttribute("aria-selected") === "true");
+    if (e.key === "j" || e.key === "k") { i = Math.max(0, Math.min(items.length - 1, i + (e.key === "j" ? 1 : -1))); items[i].click(); items[i].focus(); }
+    else if (e.key === "e") { $("#propDetail .actions .btn.primary")?.scrollIntoView({ block: "nearest" }); $("#pTitle")?.focus?.(); }
+    else if (e.key === "a") { const b = $("#propDetail .actions .btn.primary"); if (b) { b.focus(); announce("Approval needs confirmation: press Enter on Approve, or Escape to cancel"); } }
+  });
+
+  // ---- init (respect stored choices, then the OS)
+  const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+  const prefersMore = window.matchMedia?.("(prefers-contrast: more)").matches;
+  const q = new URLSearchParams(location.search); // ?mode=expert&theme=dark&contrast=more for review links
+  setTheme(q.get("theme") || store.get("theme", prefersDark ? "dark" : "light"));
+  setContrast((q.get("contrast") || store.get("contrast", prefersMore ? "more" : "")) === "more");
+  drawChart();
+  setMode(q.get("mode") || store.get("mode", "basic"), true);
+  route();
+})();
+</script>
+</body>
+</html>
