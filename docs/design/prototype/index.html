@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Finance Hub Prototype</title>
-<meta name="description" content="Static UI prototype of Cognizhi Finance Hub Cloud: shell, Home, Inbox with AI proposal review, Banking and Reports, with Basic/Expert modes, light, dark and high-contrast themes, info tips, the in-app user guide and the first-run tour.">
+<meta name="description" content="Static UI prototype of Cognizhi Finance Hub Cloud: shell, Home, Inbox with AI proposal review, Banking, Reports, My claims, the notification centre, announcement banners and the AI company secretary, with Basic/Expert modes, light, dark and high-contrast themes, info tips, the in-app user guide and the first-run tour.">
 <style>
 /* Tokens: copied from docs/design-system/cognizhi-finance-hub/tokens.css (12 Oct 2026).
    The product imports that file; this prototype inlines it so it opens from disk. */
@@ -243,6 +243,92 @@ aside.ai-panel.open{transform:none;visibility:visible}
 .no-anim,.no-anim *{transition:none!important}
 @media (forced-colors:active){.tour-spot{outline:3px solid Highlight}}
 
+
+/* Personal section, notifications, banners (rev 0.6: FR-AP-14, FR-NTF-01, FR-NTF-03) */
+.app{grid-template-rows:56px auto 1fr}
+header.top{grid-row:1}
+.banner-area{grid-column:1/-1;grid-row:2}
+nav.side,main{grid-row:3}
+nav.side .navhead{padding:4px 10px 2px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+nav.side .navsep{height:1px;background:var(--border);margin:8px 6px;flex:none}
+.banner{display:flex;align-items:center;gap:10px;padding:6px 12px 6px 16px;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--text-primary);min-height:40px}
+.banner>svg{flex:none}
+.banner.sev-info{background:var(--primary-subtle)}
+.banner.sev-info>svg{color:var(--primary-subtle-foreground)}
+.banner.sev-critical{background:var(--status-critical-subtle);border-bottom:2px solid var(--status-critical)}
+.banner.sev-critical>svg{color:var(--status-critical)}
+.banner .msg-t{flex:1}
+.banner .iconbtn{width:32px;height:32px}
+#bellBtn{position:relative}
+.bell-count{position:absolute;top:2px;right:1px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--primary);color:var(--primary-foreground);font-size:10.5px;font-weight:700;line-height:16px;text-align:center}
+.bell-count[hidden]{display:none}
+.notif-panel{position:fixed;top:60px;right:12px;z-index:var(--z-popover);width:min(390px,calc(100vw - 24px));max-height:calc(100vh - 80px);display:flex;flex-direction:column;background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius-l);box-shadow:var(--shadow-3)}
+.notif-panel[hidden]{display:none}
+.notif-head{display:flex;align-items:center;gap:6px;padding:10px 10px 10px 16px;border-bottom:1px solid var(--border)}
+.notif-head h2{margin:0;font-size:15px}
+.notif-head h2:focus{outline:none}
+.notif-list{list-style:none;margin:0;padding:0;overflow:auto}
+.notif-list a{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:10px 16px;border-top:1px solid var(--border);color:var(--text-primary);text-decoration:none}
+.notif-list li:first-child a{border-top:0}
+.notif-list a:hover{background:var(--surface-2)}
+.notif-list a:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.notif-list .ic{color:var(--text-secondary);margin-top:2px}
+.notif-list .what{font-size:13.5px}
+.notif-list .unread .what{font-weight:600}
+.notif-list .dot{display:inline-block;width:8px;height:8px;border-radius:4px;background:var(--primary);margin-right:6px;vertical-align:1px}
+.notif-list .when{font-size:12px;color:var(--text-muted);white-space:nowrap}
+.notif-foot{padding:10px 16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-secondary)}
+
+/* My claims (rev 0.6: FR-AP-14, FR-AP-15, FR-DOC-12) */
+.sum3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.claims{display:grid;grid-template-columns:minmax(0,3fr) minmax(340px,2fr);gap:16px;align-items:start}
+.claims tr.has-note td{border-bottom:0;padding-bottom:2px}
+.claims tr.note-row td{padding-top:0}
+.claims tr.note-row:hover td,.claims tr.has-note:hover td{background:transparent}
+.claims td{height:auto;padding-top:9px;padding-bottom:9px;vertical-align:top}
+.sub2{display:block;font-size:12px;color:var(--text-muted);font-weight:400}
+.policy{display:flex;gap:6px;align-items:flex-start;margin-top:4px;font-size:12.5px;color:var(--text-secondary)}
+.policy svg.i{width:15px;height:15px;color:var(--status-warning);margin-top:2px}
+.drop{display:grid;justify-items:center;gap:6px;text-align:center;padding:20px 16px;border:2px dashed var(--border-strong);border-radius:var(--radius-l);background:var(--surface-2);color:var(--text-secondary);cursor:pointer}
+.drop:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.drop.over{border-color:var(--primary);background:var(--primary-subtle)}
+.drop strong{color:var(--text-primary)}
+.row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ai-extract{margin-top:14px;padding:12px 14px;border-left:3px solid var(--ai-border);border-radius:var(--radius-m);background:var(--ai-subtle)}
+.field-grid{display:grid;grid-template-columns:max-content minmax(0,1fr) auto;gap:8px 10px;align-items:center;margin-top:12px}
+.field-grid label{font-weight:500;color:var(--text-secondary);font-size:13px}
+.field-grid input{height:34px;border:1px solid var(--border-strong);border-radius:var(--radius-m);padding:0 10px;background:var(--surface-1);min-width:0}
+.field-grid input.low{border:2px solid var(--status-warning);background:var(--status-warning-subtle)}
+.field-err{grid-column:2/-1;margin:-4px 0 0;font-size:12.5px;color:var(--status-critical)}
+.field-err[hidden]{display:none}
+.conf{font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+fieldset.settle{border:1px solid var(--border);border-radius:var(--radius-m);padding:8px 12px 10px;margin:14px 0 0;background:var(--surface-1)}
+fieldset.settle legend{padding:0 4px;font-weight:600;font-size:13px}
+fieldset.settle label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;cursor:pointer}
+fieldset.settle input{margin-top:4px}
+
+/* AI company secretary (rev 0.6: FR-CS-04, AI-65) */
+.sec-run{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.sec-run .big{font-size:17px;font-weight:600}
+.findings{list-style:none;margin:0;padding:0}
+.findings li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 12px;padding:12px 16px;border-top:1px solid var(--border)}
+.findings li:first-child{border-top:0}
+.findings .ft{font-weight:600}
+.findings .fd,.findings .fr,.findings .fa{grid-column:2}
+.findings .fd{color:var(--text-secondary)}
+.findings .fr{font-size:12px;color:var(--text-muted)}
+.findings .fa{display:flex;gap:14px;align-items:center;font-size:13px;margin-top:2px}
+.ai-draft{border-left:3px solid var(--ai-border)}
+.doc-preview{margin:12px 16px 0;padding:14px 16px;border:1px solid var(--ai-border);border-radius:var(--radius-m);background:var(--ai-subtle);color:var(--text-primary);font-size:13.5px}
+.doc-preview[hidden]{display:none}
+.doc-preview p{margin:0 0 8px}
+.doc-preview .sig{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.doc-preview .sig span{border-top:1px solid var(--border-strong);padding-top:4px;font-size:12.5px;color:var(--text-secondary)}
+.sched{list-style:none;margin:0 0 12px;padding:0}
+.sched li{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 0;border-top:1px solid var(--border)}
+.sched li:first-child{border-top:0}
+.sched li svg{color:var(--text-secondary);margin-top:2px}
+
 /* Responsive */
 @media (max-width:1023px){
   .app{grid-template-columns:1fr}
@@ -253,6 +339,8 @@ aside.ai-panel.open{transform:none;visibility:visible}
   .inbox{grid-template-columns:1fr}
   .help{grid-template-columns:1fr}
   .help-toc{position:static}
+  .claims{grid-template-columns:1fr}
+  .sum3{grid-template-columns:1fr}
 }
 @media (max-width:767px){
   header.top{gap:6px;padding:0 8px}
@@ -301,6 +389,12 @@ aside.ai-panel.open{transform:none;visibility:visible}
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
+  <symbol id="i-receipt-text" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+  <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/><path d="m15 5 3 3"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h5"/><path d="M17.5 17.5 16 16.3V14"/><circle cx="16" cy="16" r="6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
 </svg>
 
 <div class="app">
@@ -319,11 +413,15 @@ aside.ai-panel.open{transform:none;visibility:visible}
     </div>
     <button class="btn ghost sm helpbtn" id="helpBtn" aria-label="Help"><svg class="i sm" aria-hidden="true"><use href="#i-help"/></svg><span class="lbl">Help</span></button>
     <button class="iconbtn" id="aiBtn" aria-label="Open AI assistant (Ctrl+J)" aria-expanded="false" aria-controls="aiPanel"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg></button>
-    <button class="iconbtn" aria-label="Notifications"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></button>
+    <button class="iconbtn" id="bellBtn" aria-label="Notifications, 3 unread" aria-expanded="false" aria-controls="notifPanel"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg><span class="bell-count" id="bellCount" aria-hidden="true">3</span></button>
     <span class="avatar" aria-label="Signed in as Anthony Yeong" role="img">AY</span>
   </header>
+  <div class="banner-area" id="bannerArea"></div>
 
   <nav class="side" aria-label="Main">
+    <span class="navhead">Me</span>
+    <a href="#my-claims" data-view="my-claims"><svg class="i" aria-hidden="true"><use href="#i-receipt-text"/></svg>My claims<span class="badge" aria-label="1 claim returned to fix">1</span></a>
+    <div class="navsep" aria-hidden="true"></div>
     <a href="#home" data-view="home"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Home</a>
     <a href="#inbox" data-view="inbox"><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg>Inbox<span class="badge" aria-label="5 items waiting">5</span></a>
     <a href="#sales" data-view="sales"><svg class="i" aria-hidden="true"><use href="#i-receipt"/></svg>Sales<span class="badge" aria-label="3 overdue invoices">3</span></a>
@@ -335,7 +433,7 @@ aside.ai-panel.open{transform:none;visibility:visible}
     <a href="#accounting" data-view="accounting" data-only="expert"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg>Accounting</a>
     <a href="#reports" data-view="reports"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg>Reports</a>
     <a href="#planning" data-view="planning" data-only="expert"><svg class="i" aria-hidden="true"><use href="#i-trend"/></svg>Planning</a>
-    <a href="#compliance" data-view="compliance" data-only="expert"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>Compliance<span class="badge" aria-label="1 deadline due">1</span></a>
+    <a href="#secretary" data-view="compliance" data-only="expert"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>Compliance<span class="badge" aria-label="1 deadline due">1</span></a>
     <div class="grow"></div>
     <a href="#settings" data-view="settings"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg>Settings</a>
   </nav>
@@ -450,12 +548,80 @@ aside.ai-panel.open{transform:none;visibility:visible}
       </div>
     </section>
 
+    <!-- MY CLAIMS (FR-AP-14, FR-AP-15, FR-DOC-12, FR-EQ-02) -->
+    <section data-page="my-claims" hidden>
+      <div class="page-h"><h1 tabindex="-1">My claims</h1><span class="muted">Anthony Yeong · Director</span></div>
+      <p class="sub"><span data-only="basic">Costs you paid for the company. Paste or drop a receipt and the details are filled in for you; your approver gets the claim in their Inbox.</span><span data-only="expert">Approved claims post to 2150 Expense claims payable and are paid in the next payment batch (FR-BNK-12); a director may keep a claim as a loan to the company instead (2500, FR-EQ-02).</span></p>
+      <div class="sum3" id="claimSum"></div>
+      <div class="claims">
+        <div>
+          <h2>Your claims</h2>
+          <div class="table-wrap"><table id="claimTable"></table></div>
+        </div>
+        <div class="card pad" id="newClaim">
+          <h2>New claim</h2>
+          <div class="drop" id="claimDrop" tabindex="0" role="button" aria-describedby="dropHint">
+            <svg class="i" aria-hidden="true"><use href="#i-upload"/></svg>
+            <strong>Paste a screenshot or drop a receipt here</strong>
+            <span id="dropHint" class="muted" style="font-size:12.5px">Ctrl V to paste · PDF, PNG, JPEG or HEIC up to 25 MB · or forward it to <span class="mono">claims+anthony@in.example.sg</span></span>
+          </div>
+          <div class="row-actions" style="margin-top:10px"><button class="btn sm" type="button" id="claimPick">Choose a file</button><input id="claimFile" type="file" accept="image/*,application/pdf" hidden><button class="btn sm ghost" type="button" id="claimSample">Use a sample receipt</button></div>
+          <div id="claimDraft" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI COMPANY SECRETARY (FR-CS-03, FR-CS-04, AI-61…67) -->
+    <section data-page="secretary" hidden>
+      <div class="page-h"><h1 tabindex="-1">Company secretary</h1><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI assistant</span></div>
+      <p class="sub"><span data-only="basic">Checks the books and the company's records on a schedule and tells you what is due. It never files anything: your company secretary files in BizFile+.</span><span data-only="expert">Scheduled agent <span class="mono">company-secretary</span> v1 (skill hash pinned), running on behalf of Anthony Yeong (Owner). Deterministic checks first; the AI explains findings and drafts documents as tier-1 proposals (§9.12).</span></p>
+      <div class="card pad sec-run" style="margin-bottom:16px">
+        <svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg>
+        <span class="big">Weekly cross-check · Mon 12 Oct 2026 08:00 SGT</span>
+        <span class="muted">next run Mon 19 Oct</span>
+        <span class="spacer"></span>
+        <span><strong>2 things need you this week</strong> · 1 to review · 2 checks OK</span>
+        <span data-only="expert" class="muted" style="flex-basis:100%;font-size:12.5px">Inputs (sample): ledger version 2026-10-12T07:58 · knowledge-base snapshot kb-2026.10.3 · pack sg-acra@2026.2 · 1,840 AI tokens · reproducible (AI-65)</span>
+      </div>
+      <div class="grid12">
+        <div class="card" style="grid-column:span 7;overflow:hidden"><div class="pad" style="padding-bottom:4px"><h2 style="margin:0">Findings</h2></div><ul class="findings" id="secFindings"></ul></div>
+        <div style="grid-column:span 5;display:grid;gap:16px;align-content:start">
+          <div class="card ai-draft">
+            <div class="pad" style="padding-bottom:0">
+              <div class="row-actions"><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI draft</span><span class="muted" style="font-size:12.5px">Tier-1 proposal · drafted Mon 08:02 · expires in 72 h</span></div>
+              <h2 style="margin:10px 0 4px">Directors' resolution: approve the FY2026 financial statements</h2>
+              <p class="secondary" style="margin:0">Filled in from the corporate profile and the closed FY2026 books. Approving keeps it as a document to sign; nothing is filed.</p>
+            </div>
+            <div class="doc-preview" id="draftPreview" role="region" aria-label="Draft resolution, read-only" hidden>
+              <p><strong>COGNIZHI PTE. LTD.</strong> (sample) · UEN 2024XXXXXA</p>
+              <p><strong>Resolution in writing of the directors</strong>, passed under the company's constitution.</p>
+              <p><strong>Approval of financial statements.</strong> RESOLVED THAT the financial statements of the Company for the financial year 2026, together with the directors' statement, be approved, and that any director be authorised to sign the directors' statement on behalf of the Board.</p>
+              <div class="sig"><span>Anthony Yeong, Director</span><span>Lim Wei Jie, Director</span></div>
+              <p class="muted" style="margin:12px 0 0;font-size:12.5px">Draft for signature. Upload the signed copy as evidence (FR-DOC-05). The agent never files with ACRA.</p>
+            </div>
+            <div class="pad row-actions"><button class="btn sm" type="button" id="draftToggle" aria-expanded="false" aria-controls="draftPreview">Review draft</button><span class="spacer"></span><button class="btn sm" type="button" data-proto="Rejecting asks for a reason, which the agent uses to revise the draft (AI-14).">Reject…</button><button class="btn primary sm" type="button" data-proto="Approved: the draft is kept as a document to sign. Nothing was filed.">Approve draft</button></div>
+          </div>
+          <div class="card pad">
+            <h2>Schedule</h2>
+            <ul class="sched">
+              <li><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg><span><strong>Daily, 07:00 SGT</strong><span class="sub2">Deadline and lodgement monitor. Uses the AI only when something changed.</span></span></li>
+              <li><svg class="i sm" aria-hidden="true"><use href="#i-calendar"/></svg><span><strong>Weekly, Monday 08:00 SGT</strong><span class="sub2">Full cross-check with a summary for the directors.</span></span></li>
+              <li><svg class="i sm" aria-hidden="true"><use href="#i-book"/></svg><span><strong>After each month's close</strong><span class="sub2">Books against the registers and the ACRA profile.</span></span></li>
+              <li><svg class="i sm" aria-hidden="true"><use href="#i-alert"/></svg><span><strong>Events</strong><span class="sub2">Share issues, officer or address changes, deadlines 30, 14, 7 and 1 days ahead.</span></span></li>
+            </ul>
+            <div class="row-actions"><button class="btn sm" type="button" data-proto="Schedules are edited in Settings → AI → Agents in the full product.">Edit schedule</button><span data-only="expert" class="muted" style="font-size:12.5px">Runs as: Company secretary agent · 18% of this month's agent budget used</span></div>
+            <div class="callout" style="margin-bottom:0"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><span>The agent never files with ACRA; your company secretary files in BizFile+.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section data-page="other" hidden>
       <div class="page-h"><h1 tabindex="-1" id="otherTitle">Sales</h1></div>
       <div class="card pad" style="max-width:640px;margin-top:16px"><h2>Not in this prototype</h2><p class="secondary" style="margin:0">The prototype covers the shell, Home, Inbox with AI-proposal review, Banking and Reports. The other pages follow the same patterns (PRD §7.3 record pages).</p></div>
     </section>
 
-    <p class="proto-note">Prototype for PRD-001 rev 0.3 · fictional sample data · design system: <span class="mono">docs/design-system/cognizhi-finance-hub/</span> · try <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Ctrl</kbd>+<kbd>J</kbd>, the Basic/Expert toggle, the theme buttons, the info buttons next to figures, Help, and the first-run tour (add <span class="mono">?tour=1</span> to replay it, <span class="mono">?motion=reduce</span> to see it without animation). The prototype keeps "tour done" in browser storage as a stand-in; the product stores it per user on the server (FR-UX-34).</p>
+    <p class="proto-note">Prototype for PRD-001 rev 0.6 · fictional sample data · design system: <span class="mono">docs/design-system/cognizhi-finance-hub/</span> · try <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Ctrl</kbd>+<kbd>J</kbd>, the Basic/Expert toggle, the theme buttons, the info buttons next to figures, Help, the first-run tour, <strong>My claims</strong> (paste a screenshot), the bell and <strong>Company secretary</strong> (Compliance). Review links: <span class="mono">?tour=1</span> replays the tour, <span class="mono">?motion=reduce</span> shows it without animation, <span class="mono">?banner=critical</span> or <span class="mono">?banner=none</span>, <span class="mono">?panel=notifications</span>, <span class="mono">?claim=draft#my-claims</span>. The prototype keeps "tour done" and dismissed banners in browser storage as a stand-in; the product stores them per user on the server (FR-UX-34, FR-NTF-03).</p>
   </main>
 </div>
 
@@ -484,6 +650,11 @@ aside.ai-panel.open{transform:none;visibility:visible}
     <input id="palInput" placeholder="Type a command or search…" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="palList">
     <ul id="palList" role="listbox"></ul>
   </div>
+</div>
+<div class="notif-panel" id="notifPanel" role="dialog" aria-modal="false" aria-labelledby="notifTitle" hidden>
+  <div class="notif-head"><h2 id="notifTitle" tabindex="-1">Notifications</h2><span class="spacer"></span><button class="btn ghost sm" type="button" id="notifRead">Mark all read</button><button class="iconbtn" type="button" id="notifClose" aria-label="Close notifications"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <ul class="notif-list" id="notifList"></ul>
+  <div class="notif-foot">Things that wait for you to act are in your <a href="#inbox" data-notif-link>Inbox</a>. Choose channels and digests in Settings → Notifications.</div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <div class="pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="popTitle" hidden></div>
@@ -563,7 +734,8 @@ aside.ai-panel.open{transform:none;visibility:visible}
   $("#hcBtn").addEventListener("click", () => setContrast(html.dataset.contrast !== "more"));
 
   // ---- routing
-  const pages = ["home", "inbox", "banking", "reports", "help"];
+  const pages = ["home", "inbox", "banking", "reports", "help", "my-claims", "secretary"];
+  const NAV_OF = { secretary: "compliance" }; // pages reached from another nav item
   function currentView() { return (location.hash || "#home").slice(1); }
   function go(view) { if (location.hash !== "#" + view) location.hash = view; else route(); }
   function route() {
@@ -571,7 +743,7 @@ aside.ai-panel.open{transform:none;visibility:visible}
     const v = currentView(), [base, sub] = v.split("/");
     const page = pages.includes(base) ? base : "other";
     $$("main > section").forEach(s => s.hidden = s.dataset.page !== page);
-    $$("nav.side a").forEach(a => { if (a.dataset.view === base) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+    $$("nav.side a").forEach(a => { if (a.dataset.view === (NAV_OF[base] || base)) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     if (page === "other") $("#otherTitle").textContent = base.charAt(0).toUpperCase() + base.slice(1);
     if (page === "help") renderHelp(sub);
     const h = $(`main > section[data-page="${page}"] h1`); if (h) h.focus({ preventScroll: false });
@@ -733,6 +905,10 @@ aside.ai-panel.open{transform:none;visibility:visible}
     { t: "Help: Founders' money", g: "Help", run: () => go("help/founders-money") },
     { t: "Help: Keyboard shortcuts", g: "Help", run: () => go("help/keyboard-shortcuts") },
     { t: "Help: Take the tour", g: "Help", run: () => startTour(0) },
+    { t: "My claims", g: "Go to", run: () => go("my-claims") },
+    { t: "New expense claim", g: "Create", run: () => { go("my-claims"); setTimeout(() => $("#claimDrop").focus(), 0); } },
+    { t: "Notifications", g: "Open", run: () => openNotif() },
+    { t: "Company secretary", g: "Compliance", run: () => go("secretary") },
     { t: "Ask AI: why did the loss widen?", g: "Ask AI", run: () => openAI() }
   ];
   let palItems = [], palIdx = 0, lastFocus = null;
@@ -768,6 +944,7 @@ aside.ai-panel.open{transform:none;visibility:visible}
     if (e.key === "Escape") {
       if (tourOpen()) closeTour();
       else if (popFor) closePop(true);
+      else if (notifOpen()) closeNotif(true);
       else if ($("#paletteScrim").classList.contains("open")) closePal();
       else closeAI();
       return;
@@ -791,7 +968,8 @@ aside.ai-panel.open{transform:none;visibility:visible}
     burn: { t: "Burn", plain: "How much more cash goes out than comes in each month, averaged over 3 months.", exp: "Net burn as defined in FR-KPI-02, from money-account movements; financing (shares, loans) excluded.", page: "glossary" },
     "cannot-post": { t: "Cannot post", plain: "Something is missing, so the record is kept as a draft and stays out of the books. The message says what to add.", exp: "Severity ✖ (ENG-21): the domain validation blocks posting; the record keeps its draft status until it passes.", page: "approvals" },
     "gst-claim": { t: "GST we can claim back", plain: "GST paid on business costs. It is taken off the GST we owe in the next GST return.", exp: "Input tax to 2200 GST control, code TX 9%, extracted from the gross with RND-GST-INCL. Claimable only with a tax invoice addressed to the company.", page: "recording-money" },
-    "net-result": { t: "Net profit or loss", plain: "Revenue minus all costs for the month. A loss is normal for a young company; watch the runway.", exp: "Revenue − cost of sales − operating expenses from posted ledger lines (FR-RPT-01); reproducible at the ledger version shown.", page: "glossary" }
+    "net-result": { t: "Net profit or loss", plain: "Revenue minus all costs for the month. A loss is normal for a young company; watch the runway.", exp: "Revenue − cost of sales − operating expenses from posted ledger lines (FR-RPT-01); reproducible at the ledger version shown.", page: "glossary" },
+    "owed-to-me": { t: "Owed to me", plain: "Your claims that are approved or scheduled for payment but not yet paid to you. A submitted claim counts once it is approved.", exp: "Your balance on 2150 Expense claims payable (claims you keep as a loan go to 2500 instead, FR-EQ-02); paid in the next payment batch (FR-BNK-12).", page: "expense-claims" },
   };
   const pop = $("#pop");
   let popFor = null, popPinned = false, popTimer;
@@ -907,9 +1085,11 @@ aside.ai-panel.open{transform:none;visibility:visible}
         <dt>Return of allotment</dt><dd>The filing with ACRA after the company issues new shares.</dd>
         <dt>Exempt private company</dt><dd>A private company with no corporate shareholder and at most 20 members.</dd>
       </dl>` },
+    { id: "expense-claims", t: "Expense claims", k: "claim receipt reimburse expense my claims paste screenshot", body: () => stub("Paste or drop a receipt on My claims; the details are filled in and you check the highlighted fields. Approved claims are paid in the next payment batch; directors can keep a claim as a loan to the company instead.") },
+    { id: "company-secretary", t: "Company secretary", k: "acra secretary annual return agm compliance agent", body: () => stub("The AI company secretary checks the books and the company's records on a schedule, explains what is due and drafts resolutions for you to approve. It never files: your company secretary files in BizFile+.") },
     { id: "whats-new", t: "What's new", k: "new release changes version", body: () => `<p>Built from the release notes of each version.</p><ul><li><strong>Help and the first-run tour:</strong> info buttons on figures, this user guide and a two-minute walkthrough.</li><li><strong>Founders' money:</strong> director accounts, deferred pay and conversion to share capital.</li></ul>` }
   ];
-  const CONTEXT = { home: "getting-started", inbox: "approvals", banking: "recording-money", reports: "glossary" };
+  const CONTEXT = { home: "getting-started", inbox: "approvals", banking: "recording-money", reports: "glossary", "my-claims": "expense-claims", secretary: "company-secretary" };
   function renderToc(current) {
     const q = $("#helpSearch").value.trim().toLowerCase();
     const shown = GUIDE.filter(g => !q || (g.t + " " + g.k).toLowerCase().includes(q));
@@ -1001,6 +1181,141 @@ aside.ai-panel.open{transform:none;visibility:visible}
   window.addEventListener("resize", () => { positionTour(); placePop(); });
   document.addEventListener("scroll", () => { positionTour(); placePop(); }, true);
 
+
+  // ---- announcement banners (FR-NTF-03): info = role status and dismissible; critical = role alert, not dismissible
+  const BANNERS = [
+    { id: "incident-dbs-feed", sev: "critical", label: "Incident", text: "Bank feeds from DBS are delayed. Balances may be up to 6 hours old; this banner changes when it is fixed.", dismiss: false },
+    { id: "maint-2026-10-18", sev: "info", label: "Announcement", text: "Scheduled maintenance: Sat 18 Oct, 22:00–23:00 SGT. Finance Hub will be read-only during that hour.", dismiss: true }
+  ];
+  function renderBanners(mode) {
+    const list = mode === "none" ? [] : BANNERS.filter(b => (b.sev !== "critical" || mode === "critical") && !(b.dismiss && store.get("banner-" + b.id, "") === "dismissed"));
+    $("#bannerArea").innerHTML = list.map(b => `<div class="banner sev-${b.sev}" role="${b.sev === "critical" ? "alert" : "status"}">${ico(b.sev === "critical" ? "i-alert" : "i-megaphone")}<span class="msg-t"><strong>${b.label}:</strong> ${b.text}</span>${b.dismiss ? `<button class="iconbtn" type="button" data-dismiss="${b.id}" aria-label="Dismiss announcement">${ico("i-close")}</button>` : ""}</div>`).join("");
+  }
+  $("#bannerArea").addEventListener("click", e => {
+    const b = e.target.closest("[data-dismiss]"); if (!b) return;
+    store.set("banner-" + b.dataset.dismiss, "dismissed");
+    b.closest(".banner").remove();
+    $("main > section:not([hidden]) h1")?.focus();
+    announce("Announcement dismissed");
+  });
+
+  // ---- notification centre (FR-NTF-01): what happened; the Inbox holds what waits for you
+  const NOTIFS = [
+    { id: 1, ic: "i-check", what: "Mei Tan approved your Figma claim (US$120.00)", when: "2 h ago", href: "#my-claims", unread: true },
+    { id: 2, ic: "i-alert", what: "Your Kopi & Co claim was returned: add the attendees' names", when: "5 h ago", href: "#my-claims", unread: true },
+    { id: 3, ic: "i-shield", what: "Company secretary weekly check: 2 things need you", when: "Mon 08:00", href: "#secretary", unread: true },
+    { id: 4, ic: "i-clock", what: "GST F5 Jul–Sep 2026 draft is ready to review", when: "Yesterday", href: "#inbox", unread: false },
+    { id: 5, ic: "i-bank", what: "14 new lines imported from DBS Business Account", when: "Yesterday", href: "#banking", unread: false }
+  ];
+  function renderNotifs() {
+    const n = NOTIFS.filter(x => x.unread).length;
+    $("#notifList").innerHTML = NOTIFS.map(x => `<li class="${x.unread ? "unread" : ""}"><a href="${x.href}" data-notif-link><span class="ic">${ico(x.ic)}</span><span class="what">${x.unread ? '<span class="dot" aria-hidden="true"></span><span class="sr-only">Unread: </span>' : ""}${x.what}</span><span class="when">${x.when}</span></a></li>`).join("");
+    $("#bellCount").textContent = n; $("#bellCount").hidden = n === 0;
+    $("#bellBtn").setAttribute("aria-label", n ? `Notifications, ${n} unread` : "Notifications");
+    $("#notifRead").disabled = n === 0;
+  }
+  const notifOpen = () => !$("#notifPanel").hidden;
+  function openNotif() { closePop(false); $("#notifPanel").hidden = false; $("#bellBtn").setAttribute("aria-expanded", "true"); $("#notifTitle").focus(); }
+  function closeNotif(returnFocus) { if (!notifOpen()) return; $("#notifPanel").hidden = true; $("#bellBtn").setAttribute("aria-expanded", "false"); if (returnFocus) $("#bellBtn").focus(); }
+  $("#bellBtn").addEventListener("click", () => notifOpen() ? closeNotif(true) : openNotif());
+  $("#notifClose").addEventListener("click", () => closeNotif(true));
+  $("#notifRead").addEventListener("click", () => { NOTIFS.forEach(x => x.unread = false); renderNotifs(); $("#notifTitle").focus(); announce("All notifications marked as read"); });
+  $("#notifPanel").addEventListener("click", e => { if (e.target.closest("[data-notif-link]")) closeNotif(false); });
+  document.addEventListener("pointerdown", e => { if (notifOpen() && !$("#notifPanel").contains(e.target) && !$("#bellBtn").contains(e.target)) closeNotif(false); });
+
+  // ---- My claims (FR-AP-14): money in integer cents; foreign receipts reimbursed in SGD at the recorded rate
+  const CLAIMS = [
+    { d: "10 Oct", m: "Popular Bookstore", c: "Office supplies", a: "6450 Office supplies", cur: "S$", amt: 1890, st: "draft" },
+    { d: "08 Oct", m: "Grab", c: "Local travel", a: "6410 Local travel", cur: "S$", amt: 2730, st: "submitted" },
+    { d: "06 Oct", m: "Figma", c: "Software", a: "6120 Software subscriptions", cur: "US$", amt: 12000, rate: "1.2920", sgd: 15504, st: "approved" },
+    { d: "03 Oct", m: "Kopi & Co", c: "Meals", a: "6440 Meals and entertainment", cur: "S$", amt: 6480, st: "returned", note: "Meals above S$50 need the attendees' names.", by: "Mei Tan, Controller" },
+    { d: "29 Sep", m: "Challenger", c: "Office equipment", a: "6450 Office supplies", cur: "S$", amt: 12900, st: "scheduled", when: "15 Oct" },
+    { d: "22 Sep", m: "SingPost", c: "Postage", a: "6460 Postage and courier", cur: "S$", amt: 850, st: "paid", when: "25 Sep" }
+  ];
+  const ST = {
+    draft: ["neutral", "i-pencil", () => "Draft"], submitted: ["neutral", "i-clock", () => "Submitted"],
+    approved: ["good", "i-check", () => "Approved"], scheduled: ["neutral", "i-calendar", c => "Pays " + c.when],
+    paid: ["good", "i-check", c => "Paid " + c.when], returned: ["warning", "i-alert", () => "Returned"]
+  };
+  const sgdOf = c => c.sgd ?? c.amt;
+  function renderClaims() {
+    const owed = CLAIMS.filter(c => c.st === "approved" || c.st === "scheduled").reduce((t, c) => t + sgdOf(c), 0);
+    const waiting = CLAIMS.filter(c => c.st === "submitted"), returned = CLAIMS.filter(c => c.st === "returned");
+    $("#claimSum").innerHTML = `
+      <div class="card tile"><div class="lbl">Owed to me</div><div class="fig">S$${fmt(owed)}</div><div class="delta">1 approved · 1 scheduled for 15 Oct</div>${infoBtn("owed-to-me", "what the company owes you")}</div>
+      <div class="card tile"><div class="lbl">Waiting for approval</div><div class="fig">S$${fmt(waiting.reduce((t, c) => t + sgdOf(c), 0))}</div><div class="delta">${waiting.length} claim with Mei Tan</div></div>
+      <div class="card tile"><div class="lbl">Returned to fix</div><div class="fig">${returned.length}</div><div class="delta">Kopi &amp; Co: add the attendees</div></div>`;
+    $("#claimTable").innerHTML = `<thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th data-only="expert">Account</th><th class="num">Amount</th><th>Status</th></tr></thead><tbody>${CLAIMS.map(c => {
+      const [cls, icon, label] = ST[c.st];
+      const fx = c.sgd ? `<span class="sub2">S$${fmt(c.sgd)} at ${c.rate}</span>` : "";
+      const note = c.note ? `<tr class="note-row"><td></td><td colspan="5"><span class="policy">${ico("i-alert")}<span>${c.note} <span class="muted">Returned by ${c.by}. <a href="#" data-proto="Opens the claim to add the attendees and resubmit.">Fix and resubmit</a></span></span></span></td></tr>` : "";
+      return `<tr${c.note ? ' class="has-note"' : ""}><td class="nowrap">${c.d}</td><td>${c.m.replace("&", "&amp;")}</td><td>${c.c}</td><td data-only="expert" class="nowrap"><abbr title="${c.a}" style="text-decoration:none">${c.a.split(" ")[0]}</abbr></td><td class="num">${c.cur}${fmt(c.amt)}${fx}</td><td><span class="chip ${cls}">${ico(icon)}${label(c)}</span></td></tr>${note}`;
+    }).join("")}</tbody>`;
+  }
+  let lowChecked = false;
+  function showDraft(name) {
+    lowChecked = false;
+    const gross = 4260, gst = gstIncl(gross), net = gross - gst; // RND-GST-INCL on the receipt total
+    const f = (id, label, val, conf, low) => `<label for="${id}">${label}</label><input id="${id}" value="${val}"${low ? ` class="low" aria-describedby="${id}-c ${id}-err" aria-invalid="false"` : ` aria-describedby="${id}-c"`}><span class="conf" id="${id}-c">${low ? `<span class="chip warning">${ico("i-alert")}Check: ${conf}% sure</span>` : conf + "% sure"}</span>${low ? `<p class="field-err" id="${id}-err" hidden>Check the GST amount against the receipt, then submit.</p>` : ""}`;
+    const box = $("#claimDraft");
+    box.innerHTML = `<div class="ai-extract">
+        <div class="row-actions"><span class="ai-badge">${ico("i-sparkles")}AI draft</span><strong>From ${name}</strong></div>
+        <p class="muted" style="margin:6px 0 0;font-size:12.5px">Prototype: the file stays on your device and is not read; the fields below are sample data. Fields the AI is unsure of are highlighted.</p>
+        <div class="field-grid">
+          ${f("cf-m", "Merchant", "Kopi &amp; Co", 98)}
+          ${f("cf-d", "Date", "10 Oct 2026", 95)}
+          ${f("cf-a", "Total (SGD)", fmt(gross), 97)}
+          ${f("cf-g", "GST included", fmt(gst), 62, true)}
+          ${f("cf-c", "Category", "Meals", 81)}
+        </div>
+        <span class="posting" data-only="expert" style="margin-top:8px">Dr 6440 Meals ${fmt(net)} · Dr 2200 GST ${fmt(gst)} · Cr 2150 Expense claims payable ${fmt(gross)} (Cr 2500 when kept as a loan)</span>
+      </div>
+      <fieldset class="settle"><legend>How should the company settle this?</legend>
+        <label><input type="radio" name="settle" checked><span>Reimburse me in the next payment batch</span></label>
+        <label><input type="radio" name="settle"><span>Paid personally: keep it as a loan to the company <span class="muted">(directors; adds to Money I put in)</span></span></label>
+      </fieldset>
+      <div class="row-actions" style="margin-top:14px"><button class="btn sm" type="button" data-proto="Saved as a draft on My claims.">Save draft</button><span class="spacer"></span><button class="btn primary sm" type="button" id="claimSubmit">Submit for approval</button></div>`;
+    box.hidden = false;
+    const low = $("#cf-g");
+    const mark = () => { lowChecked = true; low.classList.remove("low"); low.setAttribute("aria-invalid", "false"); $("#cf-g-err").hidden = true; $("#cf-g-c").textContent = "Checked by you"; };
+    low.addEventListener("change", mark); low.addEventListener("blur", () => { if (low.dataset.touched) mark(); }); low.addEventListener("input", () => low.dataset.touched = "1");
+    $("#claimSubmit").addEventListener("click", () => {
+      if (!lowChecked) { $("#cf-g-err").hidden = false; low.setAttribute("aria-invalid", "true"); low.focus(); low.dataset.touched = "1"; return; }
+      announce("Prototype: submitted to Mei Tan for approval; it is now in her Inbox");
+    });
+    $("#cf-m").focus();
+  }
+  const drop = $("#claimDrop");
+  drop.addEventListener("click", () => $("#claimFile").click());
+  drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#claimFile").click(); } });
+  drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); const f = e.dataTransfer?.files?.[0]; showDraft(f ? f.name.replace(/[<>&"]/g, "") : "a dropped file"); });
+  $("#claimPick").addEventListener("click", () => $("#claimFile").click());
+  $("#claimFile").addEventListener("change", e => { const f = e.target.files?.[0]; if (f) showDraft(f.name.replace(/[<>&"]/g, "")); e.target.value = ""; });
+  $("#claimSample").addEventListener("click", () => showDraft("a sample receipt"));
+  document.addEventListener("paste", e => {
+    if (currentView() !== "my-claims") return;
+    const hasFile = Array.from(e.clipboardData?.items || []).some(i => i.kind === "file");
+    if (hasFile) { e.preventDefault(); showDraft("a pasted screenshot"); }
+  });
+
+  // ---- AI company secretary run report (FR-CS-03/04, AI-65)
+  const FINDINGS = [
+    { cls: "serious", icon: "i-clock", chip: "Due in 49 days", t: "Annual return due 30 Nov 2026", d: "Your company secretary files it in BizFile+. The data pack is ready to review.", rule: "Rule: annual return within 7 months after the financial year end (30 Apr 2026) · s197 · pack sg-acra@2026.2 (sample) · check C.2 #15", ev: "Annual-return data pack (draft)" },
+    { cls: "serious", icon: "i-clock", chip: "AGM in 19 days", t: "Financial statements not yet approved", d: "The 5-month route to skip the AGM closed on 30 Sep, so the AGM must be held by 31 Oct 2026, after the directors approve the FY2026 financial statements. A draft resolution is waiting for you.", rule: "Rule: AGM within 6 months after the financial year end; skipping it needs the statements sent within 5 months · s175, s175A · pack sg-acra@2026.2 (sample) · check C.2 #33 · FR-CS-03", ev: "Draft FY2026 financial statements" },
+    { cls: "warning", icon: "i-alert", chip: "Review", t: "Corporate profile differs from the ACRA extract: registered office", d: "Finance Hub has unit #20-02; the ACRA business profile uploaded on 1 Oct 2026 shows #12-01. Correct the record, or lodge the change.", rule: "Check C.2 #34 · FR-CS-01 · compared field by field with the uploaded extract", ev: "ACRA business profile, 1 Oct 2026" },
+    { cls: "good", icon: "i-check", chip: "OK", t: "Share capital: ledger = register", d: `S$${fmt(25000000)} in the ledger (3010) equals the register of share issues.`, rule: "INV-13 · FR-EQ-26 · ledger version 2026-10-12T07:58", ev: "Register of share issues" },
+    { cls: "good", icon: "i-check", chip: "OK", t: "No director's account in debit", d: "Both directors' balances are owed to them, not by them.", rule: "FR-EQ-11 · check C.2 #21", ev: "Director accounts" }
+  ];
+  $("#secFindings").innerHTML = FINDINGS.map(f => `<li><span class="chip ${f.cls}">${ico(f.icon)}${f.chip}</span><span class="ft">${f.t}</span><span class="fd">${f.d}</span><span class="fr" data-only="expert">${f.rule}</span><span class="fa"><a href="#" data-proto="Evidence opens in the record's Evidence panel (FR-DOC-05).">${ico("i-file")} Evidence: ${f.ev}</a></span></li>`).join("");
+  $("#draftToggle").addEventListener("click", e => {
+    const on = e.currentTarget.getAttribute("aria-expanded") !== "true";
+    e.currentTarget.setAttribute("aria-expanded", on); e.currentTarget.textContent = on ? "Hide draft" : "Review draft";
+    $("#draftPreview").hidden = !on;
+  });
+  document.addEventListener("click", e => { const p = e.target.closest?.("[data-proto]"); if (p) { e.preventDefault(); announce(p.dataset.proto); } });
+
   // ---- init (respect stored choices, then the OS)
   const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
   const prefersMore = window.matchMedia?.("(prefers-contrast: more)").matches;
@@ -1008,13 +1323,17 @@ aside.ai-panel.open{transform:none;visibility:visible}
   setTheme(q.get("theme") || store.get("theme", prefersDark ? "dark" : "light"));
   setContrast((q.get("contrast") || store.get("contrast", prefersMore ? "more" : "")) === "more");
   drawChart();
+  renderClaims(); renderNotifs(); renderBanners(q.get("banner"));
   if (q.get("motion") === "reduce") html.dataset.motion = "reduce";
   setMode(q.get("mode") || store.get("mode", "basic"), true);
   route();
   // ?pop=<key> opens one info popover (review links); ?tour=0 suppresses the first-run tour; ?tour=N starts it at step N
-  const popKey = q.get("pop"), tourQ = q.get("tour");
+  // ?banner=critical|none, ?panel=notifications, ?claim=draft: review links for the rev 0.6 screens
+  const popKey = q.get("pop"), tourQ = q.get("tour"), panelQ = q.get("panel"), claimQ = q.get("claim");
+  if (panelQ === "notifications") openNotif();
+  if (claimQ === "draft" && currentView() === "my-claims") showDraft("a sample receipt");
   if (popKey) { const b = $(`.info[data-help="${popKey}"]`); if (b) { b.scrollIntoView({ block: "center" }); openPop(b, true); } }
-  else if (tourQ !== "0" && (tourQ || store.get("tour-done", "") !== "1")) setTimeout(() => startTour((parseInt(tourQ, 10) || 1) - 1), 300);
+  else if (!panelQ && !claimQ && tourQ !== "0" && (tourQ || store.get("tour-done", "") !== "1")) setTimeout(() => startTour((parseInt(tourQ, 10) || 1) - 1), 300);
 })();
 </script>
 </body>
