@@ -8,7 +8,7 @@ Built for a lean founding team, with the controls a growing company needs.**
 | Document | PRD-001 (initial PRD, greenfield) |
 | Product | Cognizhi Finance Hub Cloud ("FH Cloud"; working name) |
 | Status | Draft for founder review |
-| Revision | 0.3 (12 Oct 2026): founders' money (§8.22), equity and investors (§8.23), evidence on every important activity (§8.16), in-app help and first-run walkthrough (§7.9), and recommended defaults for every open question (§20), all at the founders' request. 0.2 applied the [review](reviews/prd-001-review-2026-10-12.md). See the revision history at the end. |
+| Revision | 0.4 (12 Oct 2026): AI context and a compiled, versioned knowledge base (§9.11, ADR-T6), after a review of Karpathy's "LLM Wiki" pattern. 0.3 (12 Oct 2026): founders' money (§8.22), equity and investors (§8.23), evidence on every important activity (§8.16), in-app help and first-run walkthrough (§7.9), and recommended defaults for every open question (§20), all at the founders' request. 0.2 applied the [review](reviews/prd-001-review-2026-10-12.md). See the revision history at the end. |
 | Date | 12 Oct 2026 |
 | Owner | Cognizhi founders |
 | Reviewers | Founders; external accountant / tax agent; security reviewer (later: auditor) |
@@ -79,7 +79,7 @@ limits:
 | Audit trail | Append-only ledger + trigger-captured change log with a per-tenant hash chain, checkpointed hourly and at every period close to a locked (WORM) Cloud Storage bucket, signed with Cloud KMS | Tamper-evident without the operating cost of full event sourcing (§11.5) |
 | Analytics | BigQuery fed by change-data-capture, introduced when reporting volume needs it | Keeps the transactional database lean (§11.7) |
 | Application | **Go** services on Cloud Run (exact decimals with explicit rounding, SQL checked at build time); **React** single-page app with spreadsheet-grade grids; Typst and excelize for exports; OpenTofu for infrastructure (§12) | Lightweight, fast cold starts, cheap at low scale, scales out; one backend language for a small team |
-| AI | Claude on Google Cloud's Agent Platform (formerly Vertex AI) behind our own tool layer; Singapore endpoint by default (ADR-T2); AI holds no write credential; an approval-gated proposal layer is the only write path | "AI must never update data directly" enforced by architecture, not by prompt (§9) |
+| AI | Claude on Google Cloud's Agent Platform (formerly Vertex AI) behind our own tool layer; Singapore endpoint by default (ADR-T2); AI holds no write credential; an approval-gated proposal layer is the only write path; (rev 0.4) know-how from a compiled, versioned knowledge base, figures only from tools (ADR-T6) | "AI must never update data directly" enforced by architecture, not by prompt (§9) |
 | Team model | **Founder mode** by default: 2–3 people hold several roles each, with named compensating controls; **Standard** and **Enterprise** modes enforce full segregation of duties as the team grows | Controls that fit the team today and tighten without re-platforming (§6) |
 | API and integration | **API-first**: the web app uses only the public, versioned OpenAPI 3.1 API, from P1; an **OAuth 2.1 authorisation server (Ory Hydra)** issues tokens to integrations and MCP clients (ADR-T3); webhooks follow the Standard Webhooks specification | Other systems and AI agents get the same surface, contracts and controls as our own UI (§8.18) |
 | MCP | A remote MCP server, **off by default**, with read tools plus `propose` only, audience-bound OAuth tokens, a client allowlist and approvals that happen only in the web app. First-party clients in P1, third-party clients in P2 (§9.7). | "MCP-ready" without opening a write path |
@@ -676,7 +676,7 @@ product: it lives in the repository, ships with each release and is tested like 
 | FR-UX-30 | **Tooltips on every page**: every field label, column header, status chip, stat tile, chart, icon-only control and accounting term has help: a tooltip for a short hint, or an ⓘ info popover (what it is, why it matters, an example, "Learn more" to the guide page). Help **supplements** the visible label and never replaces it. Basic mode words it plainly; Expert mode adds the accounting detail (account, posting, rule ID). WCAG 2.2: shown on hover **and** keyboard focus, dismissible with Esc, hoverable, persistent until dismissed (SC 1.4.13); on touch the ⓘ target is at least 24 × 24 px (SC 2.5.8) and opens on tap | M | P1 |
 | FR-UX-31 | **One help registry**: every help text has a key in the feature registry (FR-UX-29), so the Basic/Expert tag, the tooltip, the guide page and the tour step of a feature are defined in one place. Text is plain English, uses the UI's own names, is reviewed by the accountant where it states an accounting or statutory rule, and is ready for translation (keys, no text in code). A test fails when a field, column, chip, tile or route has no help key (QA-UI-05) | M | P1 |
 | FR-UX-32 | **User guide** for the entire platform, in the app at `/help` (header **Help** button, ⌘K "Help: …", and "Learn more" links): getting started; one page per module and per common task ("How do I record a bill?"); concepts in plain words (money in and out, debits and credits, statuses, Basic and Expert modes, approvals, AI proposals, founders' money); Singapore guides (GST, CPF, filings); keyboard shortcuts; the glossary (§21); **What's new**, built from the release notes. Searchable, deep-linkable, printable, filtered by the user's role and mode. Written in Markdown in `docs/user-guide/`, built into the web app (no external CMS) and versioned with each release; screenshots are regenerated from the end-to-end tests in light and dark themes, so they never go stale | M | P1 |
-| FR-UX-33 | **Context-aware help**: the Help panel opens on the guide page for the current screen (route → page in the registry); the AI assistant answers "how do I…" questions from the user guide with links to the pages it used (the curated knowledge base of AI-25) | S | P1 |
+| FR-UX-33 | **Context-aware help**: the Help panel opens on the guide page for the current screen (route → page in the registry); the AI assistant answers "how do I…" questions from the user guide with links to the pages it used (the curated knowledge base of AI-25; rev 0.4: through the compiled knowledge base, §9.11) | S | P1 |
 | FR-UX-34 | **First-run walkthrough**: on a user's first sign-in, an optional animated tour of the real interface: a spotlight moves to each element with a short caption (≤ 7 steps, about 2 minutes): the Basic/Expert toggle, Home, Inbox, recording money in and out, approving, ⌘K search, the AI panel and Help. Variants per role (founder or owner, accountant, employee, approver, board viewer). Skippable at every step, resumable, replayable from Help ("Take the tour again"); progress is stored per user on the server. The tour **never changes data** and never clicks on the user's behalf. With `prefers-reduced-motion` it shows the same steps without animation. It is fully keyboard-operable (Next, Back, Esc), announces each step to screen readers, moves focus to the step and back to where it started, and never hides the focused element (SC 2.4.11) | M | P1 |
 | FR-UX-35 | **Feature tours and "What's new"**: the first time a user opens a feature, or after a release changes it, a one- to three-step tip offers a short tour; release highlights appear once as a dismissible "What's new" card linked to the guide. Each user can turn tips off | S | P2 |
 | FR-UX-36 | **Practice safely**: tours and guide pages can open the sample company (FR-UX-10) in a separate, clearly labelled organisation, so users can try a task without touching the real books | S | P1 |
@@ -1233,7 +1233,7 @@ stateDiagram-v2
 | AI-09 | Tier 3 task types need two different human approvers (in every team mode) | M | P1 |
 | AI-10 | The proposer of record is the AI; the human who asked may approve tier 1 and tier 2 proposals (the AI is the preparer). The audit trail records originator, requester, approver and executor separately. | M | P1 |
 | AI-11 | Executions are idempotent (proposal ID as key), atomic (one database transaction), and never bypass period locks, approval policies or validations | M | P1 |
-| AI-12 | **AI activity log**: every conversation turn, tool call (inputs, output hash, row counts), model, token usage, cost, proposals and outcomes; visible to the user (own) and Owner/Compliance (all); retained as audit data | M | P1 |
+| AI-12 | **AI activity log**: every conversation turn, tool call (inputs, output hash, row counts), model, token usage, cost, proposals and outcomes; visible to the user (own) and Owner/Compliance (all); retained as audit data; (rev 0.4) the knowledge-base page versions each answer used (AI-51) | M | P1 |
 | AI-13 | **Kill switch**: Owner can disable the assistant, the propose tool, or individual task types instantly; organisation and per-user token budgets with alerts | M | P1 |
 | AI-14 | Rejections carry a reason that is fed back into the conversation so the AI can revise | S | P1 |
 | AI-30 | **Approval of the AI's work does not replace business approval.** An executed proposal creates or changes records that then follow the normal approval policies (e.g. an AI-drafted bill accepted by a bookkeeper still needs the bill approval and payment controls) | M | P1 |
@@ -1336,7 +1336,7 @@ fixation) are part of QA-MCP-01 (§16.2).
 | AI-22 | Over-reliance | AI content is visually marked (accent + "AI" badge); proposals show evidence and impact; approvers see "what could go wrong" notes for tier 2 |
 | AI-23 | Denial of wallet | Token budgets, rate limits, max tool calls per turn, max conversation length with compaction |
 | AI-24 | Supply chain / model change | Model IDs pinned per environment; a model or prompt change runs the eval suite before rollout (QA-AI) |
-| AI-25 | Data poisoning of retrieval sources | Knowledge base (user guide, policies, statutory notes) is curated and versioned; organisation documents are labelled untrusted |
+| AI-25 | Data poisoning of retrieval sources | Knowledge base (user guide, policies, statutory notes) is curated and versioned; organisation documents are labelled untrusted; (rev 0.4) compiled pages inherit taint and data class, P1 compiles trusted sources only, and pages from documents need approval before publishing (AI-54) |
 | (rev 0.2) | External agents and MCP clients (ASI03 identity and privilege abuse, ASI02 tool misuse) | Client classes with agents proposal-only (AI-34); audience-bound, short-lived tokens; no token passthrough; allowlisted clients; MCP red-team suite (AI-35…46, QA-MCP-01) |
 
 ### 9.9 Model and provider
@@ -1357,6 +1357,39 @@ fixation) are part of QA-MCP-01 (§16.2).
 | QA-AI-03 | **Red-team suite**: injection strings in bank descriptions, PDFs and emails; attempts to propose catalogue-excluded actions; attempts to exfiltrate excluded fields. 0 successes required. | M | P1 |
 | QA-AI-04 | Production monitoring: grounding failures, refusals, tool errors, approval and rejection rates per task type, edit-before-approve rate, cost per conversation | S | P1 |
 | QA-AI-05 | User feedback (thumbs up/down with reason) feeds the eval set after review | S | P1 |
+| QA-AI-06 | (rev 0.4) **Knowledge evals**: ≥ 100 golden help and policy questions with the expected guide pages and key facts. Measures answer accuracy, citation correctness (every user-facing citation resolves and supports the claim) and the stale-fallback rate. A knowledge-base publish (a platform release or an organisation publish) and any compiler model or prompt change must pass before going live | M | P1 |
+
+### 9.11 Context and the compiled knowledge base (rev 0.4, ADR-T6)
+
+The assistant does not learn the books or keep a copy of them. For every question the
+orchestrator builds the context fresh from four layers. **Figures always come from tools.**
+**Know-how comes from a compiled knowledge base**: an LLM-maintained, versioned set of Markdown
+pages compiled from trusted sources and navigated through an index. This is Andrej Karpathy's
+"LLM Wiki" pattern, adapted for a regulated, multi-tenant product; the analysis is in
+[research/llm-wiki-review-2026-10-12.md](research/llm-wiki-review-2026-10-12.md).
+
+| Layer | Contents | Source |
+|---|---|---|
+| 1 · Fixed (cached) | Rules, the never-list, tool definitions, glossary, the **reader-filtered knowledge-base index** | Versioned with the release; prompt-cached (AI-27) |
+| 2 · Session | Organisation (FY, currency, GST status, team mode, feature switches), the user's roles, Basic/Expert mode, today's date, current page and selected record ("Ask about this", FR-UX-17) | The app, at the moment of the question |
+| 3 · Live facts | Figures, records, lineage, checks, search results | Read tools on the semantic layer, on behalf of the user (AI-01, AI-03) |
+| 4 · Know-how | How features work, what statuses mean, statutory guides, the organisation's own policies and decisions | Compiled knowledge base, raw sources as the fallback |
+
+| ID | Requirement | Pri | Phase |
+|---|---|---|---|
+| AI-48 | **Context assembly** in the four layers above, built by the orchestrator per question; layer 2 is structured data, never free text from untrusted sources | M | P1 |
+| AI-49 | **One read-tool registry**, shared with MCP (§9.7): `metrics.query` (semantic layer), `records.get` and `records.search`, `lineage.explain`, `checks.list` and `checks.explain`, `packs.get` (statutory values in force on a date), `calc` (calculator, AI-P6), `kb.index`, `kb.read`, `kb.search`; plus `propose` (§9.5). Each tool is versioned and contract-tested (AI-17) | M | P1 |
+| AI-50 | **Two knowledge bases**, laid out by one schema file (`kb/schema.md`) that the repository skill and the runtime compiler both read. **Platform**: compiled from `docs/user-guide/`, the glossary, the checks catalogue and its messages, the help texts of the feature registry, statutory notes from the packs and the release notes; never from the PRD or other internal documents. **Organisation**: pages rendered **deterministically** from settings (approval policies, team mode, recommended-default decisions and their reasons, no LLM), and LLM-compiled pages from admin-written notes and policies; uploaded agreements and minutes from P2 (AI-54). Every page has front matter: key, type, title, one-line summary, sources with SHA-256, data class, taint, compiler model and prompt version, status | M | P1 |
+| AI-51 | **Answering order**: read the index, then `kb.read` for the relevant pages; if a page is stale or missing, `kb.search` over the raw sources; figures and record states only from read tools. User-facing citations resolve to things the user can see (guide page, record, document), never to compiled pages; the AI activity log records the knowledge-base page versions used (AI-12) | M | P1 |
+| AI-52 | **Compile, index, lint** on every source change. *Compile*: in the repository an agent follows the `fh-knowledge-base` skill and a person reviews the diff in the pull request; at runtime the compiler job does it (AI-57). *Index*: regenerated from the pages' front matter by a script, never hand-written, so it cannot drift. *Lint*: a deterministic pass on every change (front matter, source hashes, coverage of every source, links, citations, number grounding) and a semantic pass at each release and weekly for organisation pages (contradictions, superseded claims, orphan pages, missing pages and cross-references). Findings fail CI for the platform knowledge base and become Inbox tasks for the organisation's | M | P1 |
+| AI-53 | **Grounding rules for pages**: no organisation figures, ever; statutory values only with their pack key and effective date, and the assistant re-reads them with `packs.get` before stating them; every claim cites a source section; **every number in a page appears verbatim in one of its cited sources** (deterministic lint) | M | P1 |
+| AI-54 | **Trust and access**: a page inherits the strictest data class and the taint of its sources; the index and the pages are filtered per reader (AI-01, AI-02), so a summary never reveals a page the reader may not open; text derived from untrusted sources is passed as data (AI-18). P1 compiles trusted sources only; from P2, pages from uploaded documents need an Owner's or Administrator's approval before publishing | M | P1 / P2 (documents) |
+| AI-55 | **Visibility and administration**: compiled pages and the index are **not shown in the normal interface** (users see the user guide). Settings → AI → Knowledge base lets the Owner and the Administrator browse the index and pages with their sources, diff any two versions, edit, roll back, recompile and see lint findings; the Auditor can view; all actions are audited (AUD-01) | M | P1 |
+| AI-56 | **Versioning**: the platform knowledge base lives in git (diff; rollback by revert; reviewed as a pull request; stamped with the release version). The organisation knowledge base keeps append-only page versions and numbered snapshots; rollback creates a new version restoring the old content. Publishing an organisation change is an approval object (FR-APR-01); Founder mode allows self-approval with the weekly review (FM-2, FM-3) by default (open question 18). An admin edit creates a **human-edited** version that a recompile never overwrites: lint flags the conflict for a person. An edit to a platform page creates an overlay for that organisation only | M | P1 |
+| AI-57 | **Compiler identity**: the runtime compiler is a Cloud Run job with its own service identity. It reads sources and writes knowledge-base **draft** versions only; it cannot publish, read the ledger or call domain commands. The orchestrator stays without any write grant (CMP-AI-01) | M | P1 |
+| AI-58 | **Search and scale**: index-first while the reader's index fits in 8,000 tokens; above that, a top-level index of sections plus `kb.index(section)`. `kb.search` uses PostgreSQL full-text search (`tsvector`, `pg_trgm`) over compiled pages and raw sources. **No embeddings in P1**; pgvector is reconsidered only if QA-AI-06 shows retrieval misses, for translated guides, or for P2 search over organisation documents | S | P1 |
+| AI-59 | **No automatic filing of answers**: answers carry one user's context and the organisation's figures, so they never become pages by themselves. From P2 the AI may propose a know-how page from a conversation (`kb.propose_page`, tier 1, without figures), which an Owner or Administrator approves | C | P2 |
+| AI-60 | **Conversation memory**: conversations are kept in the AI activity log for their user (AI-12). There is no hidden long-term memory: anything the assistant should remember across conversations becomes a setting or a knowledge-base page that a person approved | M | P1 |
 
 ---
 
@@ -1539,8 +1572,8 @@ instances on PostgreSQL 16+ default to the costlier Enterprise Plus), in `asia-s
 `uuidv7()` and temporal keys, which have drop-in equivalents]
 private IP / Private Service Connect, IAM database authentication through the Cloud SQL
 connectors, pgAudit and Query Insights on. Extensions: `pgcrypto`, `pg_cron`, `pgaudit`,
-`pg_partman` (driven by `pg_cron`), `pgvector` (for help and policy retrieval only, never for
-ledger figures). Firestore may still be used later for non-financial, real-time UI state (e.g.
+`pg_partman` (driven by `pg_cron`), `pgvector` (rev 0.4: not used in P1; enabled only if the
+knowledge evals need it, ADR-T6; never for ledger figures). Firestore may still be used later for non-financial, real-time UI state (e.g.
 presence) if a need appears; no financial data goes there.
 
 **Money representation (ENG-11 made concrete).**
@@ -1592,6 +1625,8 @@ organisation ─┬─ entity (P3) ─┬─ period (open | soft-locked | closed
               ├─ share_class, equity_transaction (append-only), instrument (SAFE | note | option grant),
               │  round_scenario (sandbox), director_balance_movement (origin)  (rev 0.3)
               ├─ setting_value (effective-dated; recommended | changed), user_help_state (tour, tips)  (rev 0.3)
+              ├─ kb_page ── kb_page_version (append-only; human_edited, taint, data class), kb_snapshot,
+              │  kb_lint_finding  (rev 0.4; organisation knowledge base, AI-56)
               └─ audit_event (append-only, hash-chained per organisation)
 ```
 
@@ -1701,6 +1736,7 @@ for Singapore before GST. Re-check versions when P0 starts.
 | ADR-T3 | Identity Platform for sign-in plus Ory Hydra as the OAuth 2.1 server for integrations and MCP | §12.2.1 | Proposed (rev 0.2) |
 | ADR-T4 | Local mode: every cloud dependency has a local substitute behind the same interface | §12.8 | Proposed (rev 0.2) |
 | ADR-T5 | Lean images, Conventional Commits and release-please | §12.9, §12.10 | **Accepted** (rev 0.2; bootstrapped in the repository) |
+| ADR-T6 | AI context and a compiled, versioned knowledge base (index-first; no embeddings in P1) | §12.2.2 | Proposed (rev 0.4) |
 
 From P0, each ADR also gets a file in `docs/adr/` (`NNNN-title.md`: context, decision,
 consequences, status). A superseded decision is marked superseded, never edited away.
@@ -1788,6 +1824,30 @@ critical protocol code. A full identity platform that also covers passkey-first 
 Keycloak, Auth0, Clerk): revisit if passkey-first sign-in is required at launch, since that
 would also remove the in-house WebAuthn work.
 
+#### 12.2.2 Decision (ADR-T6): AI context and a compiled knowledge base (rev 0.4)
+
+**Context.** The assistant needs the organisation's figures (exact, permission-checked, live) and
+know-how about the product, the statutes and the organisation's own policies. Per-question
+retrieval over raw pages re-derives the same synthesis every time and cannot flag contradictions
+between sources before a user meets them.
+
+**Decision.** Figures come only from read tools on the semantic layer (AI-03). Know-how comes
+from a **compiled knowledge base** (§9.11): an LLM compiles trusted sources into versioned,
+interlinked pages, a script generates the index, and deterministic and semantic lint keep it
+honest. The model reads the index first, then 1–3 pages, and falls back to full-text search over
+the raw sources. No embeddings in P1.
+
+**Alternatives.** (1) *Vector RAG with pgvector*: approximate matches, an embedding model with
+its own data-residency question, re-indexing on every release, and weak section-level citations.
+Kept as a later option (AI-58). (2) *Search the raw user guide only*: simplest, but no synthesis
+across guide, glossary, checks and statutory notes, and no early contradiction finding. (3) *Put
+the whole guide in every prompt*: too costly at a few hundred pages.
+
+**Consequences.** A second artifact to maintain, kept honest by the `fh-knowledge-base` skill,
+`make kb-lint` in `make check` and CI staleness failures. Compiled errors could compound, so
+pages are grounded (AI-53), reviewed as diffs, evaluated (QA-AI-06) and versioned. The compiler
+writes; it gets its own identity (AI-57), and CMP-AI-01 names it.
+
 ### 12.3 Reference architecture on Google Cloud (`asia-southeast1`)
 
 ```mermaid
@@ -1833,6 +1893,7 @@ flowchart TB
 | `oauth` (Ory Hydra) | OAuth 2.1 / OIDC server for integrations and MCP clients (ADR-T3) | Cloud Run; stateless; own database on the shared instance |
 | `proposal-executor` | Executes approved proposals under its own service identity and database role; consumes only the `proposal_execution` River queue | **Its own Cloud Run worker pool** (rev 0.2: the draft ran it inside the shared worker, whose identity also processes untrusted integration input) |
 | `worker` | River job consumers: notifications, integrations (Peppol, bank feeds), scheduled postings; webhooks via Pub/Sub from P2 | Cloud Run worker pool |
+| `kb-compiler` (rev 0.4) | Compiles organisation knowledge-base drafts when their sources change; runs the weekly semantic lint (AI-52, AI-57) | Cloud Run job with its own service identity: reads sources, writes knowledge-base drafts only |
 
 Each service is built as a **separate binary and image** from its own `cmd/` entry point
 (§12.9). The AI image therefore contains no domain write code at all, and a compromise of one
@@ -1848,7 +1909,7 @@ The load balancer with Cloud Armor is in production from go-live (≈ US$30 a mo
 | Item | Decision |
 |---|---|
 | Google Cloud projects | `fh-prod`, `fh-staging`, `fh-dev` (sandbox), `fh-audit` (locked log buckets, audit anchors, backup vault; separate admin group), `fh-ci` (Artifact Registry, CI identities); one organisation with organisation policies (resource locations = `asia-southeast1`, no service-account keys, uniform bucket access, restricted public IPs) |
-| Repository | One monorepo (rev 0.2: the single layout; §12.2 refers here): `apps/web` (React SPA), `cmd/` (one entry point per service: `api`, `ai`, `mcp`, `worker`, `executor`, `jobs`, `render`, `migrate`), `internal/` (Go domain, ledger, adapters), `contracts/` (OpenAPI, AsyncAPI event schemas, AI tool schemas), `oracle/` (independent reference ledger, Python), `db/` (migrations), `packs/` (statutory parameter packs as data, §10.6), `test/` (cross-cutting suites: differential, invariants, contract, authorisation, MCP), `e2e/` (Playwright), `evals/` (AI suites), `deploy/local/` (Compose stack, §12.8), `deploy/docker/` (Dockerfiles, §12.9), `infra/` (OpenTofu), `compliance/` (control registry and checks as code), `docs/` (PRD, ADRs, design system, runbooks, post-incident reviews in `docs/postmortems/`), `.claude/skills/` (Appendix H), `AGENTS.md` and `CLAUDE.md` (coding instructions) |
+| Repository | One monorepo (rev 0.2: the single layout; §12.2 refers here): `apps/web` (React SPA), `cmd/` (one entry point per service: `api`, `ai`, `mcp`, `worker`, `executor`, `jobs`, `render`, `migrate`), `internal/` (Go domain, ledger, adapters), `contracts/` (OpenAPI, AsyncAPI event schemas, AI tool schemas), `oracle/` (independent reference ledger, Python), `db/` (migrations), `packs/` (statutory parameter packs as data, §10.6), `test/` (cross-cutting suites: differential, invariants, contract, authorisation, MCP), `e2e/` (Playwright), `evals/` (AI suites), `kb/` (rev 0.4: the platform knowledge base: `schema.md`, generated `index.md`, `log.md`, `pages/`), `deploy/local/` (Compose stack, §12.8), `deploy/docker/` (Dockerfiles, §12.9), `infra/` (OpenTofu), `compliance/` (control registry and checks as code), `docs/` (PRD, ADRs, design system, runbooks, post-incident reviews in `docs/postmortems/`), `.claude/skills/` (Appendix H), `AGENTS.md` and `CLAUDE.md` (coding instructions) |
 | Contracts | OpenAPI 3.1 is the source of truth for the HTTP API; server stubs and the typed web client are generated from it; AI tool schemas are generated from the same types |
 | Database migrations | Versioned SQL migrations (goose; linted by squawk), reviewed like code; expand-and-contract for zero-downtime; every migration tested against a copy of production-shaped data; invariant tests (QA-ENG-05) run after migrations |
 | CI/CD | GitHub Actions with Workload Identity Federation (no keys) → build, test gates (§16), SBOM and provenance → Artifact Registry → deploy to staging → automated E2E and smoke tests → manual approval → production with gradual traffic shifting and automatic rollback on SLO burn |
@@ -2026,6 +2087,7 @@ on pull requests.
 | Statutory parameter packs | `<pack>@<year>.<n>` (e.g. `sg-cpf@2027.1`) with an effective date | `packs/` (data) | Independent releases (ENG-32/33) |
 | AI task catalogue, prompts, tools | `task_version`, `prompt_version`, `tool_version` per entry | `contracts/ai/` | Any change; gated by the evals (CMP-AI-03) |
 | Images | `vX.Y.Z` **and** `sha-<git sha>` tags; deployed by digest | Artifact Registry | Release workflow |
+| Knowledge base (rev 0.4) | Platform pages in git, stamped with the platform version; page format `kb-schema@N`; organisation pages as append-only versions and numbered snapshots (AI-56) | `kb/` (platform); the database (organisation) | Every source change (compile, index, lint); a schema or compiler model change means a full recompile and QA-AI-06 |
 | This PRD | Revision `0.N` before go-live, then `1.N`; revision history at the end | This file | Each reviewed change |
 
 | ID | Requirement | Pri | Phase |
@@ -2169,7 +2231,7 @@ yardstick customers and regulators use. FH Cloud aligns with them by design.
 
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
-| CMP-AI-01 | Control test (CI and nightly): the AI service identities have no write grants in IAM or the database except inserting proposals; every side-effecting tool is absent from the AI tool registry | M | P1 |
+| CMP-AI-01 | Control test (CI and nightly): the AI service identities have no write grants in IAM or the database except inserting proposals; every side-effecting tool is absent from the AI tool registry (rev 0.4: the knowledge-base compiler job may write knowledge-base draft versions only, AI-57) | M | P1 |
 | CMP-AI-02 | AI inventory (models, endpoints, prompts and tool versions, data categories, owners) and DPIA kept current in the Compliance Center | M | P1 |
 | CMP-AI-03 | Model, prompt or tool change requires the eval suite to pass and a dual-approved change record | M | P1 |
 
@@ -2388,7 +2450,7 @@ P0 is done when all of these hold, with evidence stored in the release record:
 | Tax | — | GST F5, threshold monitor, statutory calendar | F7/F8, IRAS API filing, IAF, CIT working paper | XBRL, other countries |
 | Reporting | — | Statements, management reports, exports, KPIs, dashboard | Report builder, scheduled reports, board pack | Consolidated reports, SFRS statements |
 | Planning | — | Budgets, driver forecast, feasibility; (rev 0.3) equity register, cap table and round simulator | Rolling forecast, 13-week cash; (rev 0.3) investor updates and portal | Multi-entity planning |
-| AI | — | Ask, explain, simulate; tier-1 and tier-2 proposals; MCP server for first-party clients | Third-party MCP clients, document AI drafts, anomaly review | Practice-level insights, outbound agent connections |
+| AI | — | Ask, explain, simulate; tier-1 and tier-2 proposals; MCP server for first-party clients; (rev 0.4) compiled knowledge base (platform; organisation from trusted sources) | Third-party MCP clients, document AI drafts, anomaly review; (rev 0.4) knowledge pages from documents, `kb.propose_page` | Practice-level insights, outbound agent connections |
 | Compliance | Control registry, CI checks | Compliance Center, evidence collection, CSA Cyber Essentials readiness | Cyber Trust / ISO 27001 readiness | SOC 2 Type II, ISO 27001 certification, ISO 42001 |
 
 ---
@@ -2417,6 +2479,7 @@ P0 is done when all of these hold, with evidence stored in the release record:
 | R18 | (rev 0.2) A breaking API change hurts integrators | Low | Medium | `/v1` additive-only; `oasdiff` gate; deprecation headers and 6 months' notice (FR-INT-06, QA-API-02) |
 | R19 | (rev 0.2) Basic mode hides something a user needed to see | Low | Medium | Presentation-only modes; safety information always visible; "advanced details" disclosure; Expert features findable from ⌘K (FR-UX-24…26) |
 | R20 | (rev 0.3) Founders' balances are recorded or settled wrongly: personal spending without receipts, pay deferred without a decision, shares issued at an unapproved price or not lodged | Medium | Medium | Director accounts and the pay choice (FR-EQ-01…04); settlement routes with attached resolutions and FM-9; ACRA lodgement task; checks C.2 #21–25; accountant review (FM-7) |
+| R21 | (rev 0.4) The compiled knowledge base is wrong, stale or poisoned, and the assistant repeats it | Medium | Medium | Figures only from tools; grounding lint (AI-53); stale pages fall back to raw sources; trusted sources only in P1; diffs reviewed; QA-AI-06 before publishing; versions and rollback (AI-56) |
 
 ---
 
@@ -2455,8 +2518,9 @@ answered)
 | 15 | (rev 0.3) The founders' existing balances (money lent, costs paid personally, any unpaid pay): repay, keep as loans, convert to shares or waive? At what price per share, on what basis? (§8.22) | Founders + accountant + tax agent | P1 (opening balances, FR-GL-06) |
 | 16 | (rev 0.3) Founder pay from go-live, per founder: no salary, salary paid, salary deferred or director's fee? (Decides CPF, IR8A and the pay-run set-up, FR-EQ-04) | Founders + tax agent | P1 payroll set-up |
 | 17 | (rev 0.3) The register of share issues (FR-EQ-08) is P1 while the cap table (FR-PLN-07) is P2. Lift the cap table's holders and share classes into P1 as well, or keep P2? | Founders | P1 planning |
+| 18 | (rev 0.4) Publishing organisation knowledge-base changes: self-approval with the weekly review in Founder mode, or always a second person? (AI-56) | Founders | P1 build |
 
-**Recommended defaults (rev 0.3, founder request).** The founders asked for a recommended default
+**Recommended defaults (rev 0.3, founder request; row 18 rev 0.4).** The founders asked for a recommended default
 for every open question, configurable where it is a product setting. These are the defaults the
 platform ships with (FR-ORG-08). The founders, the accountant and the tax agent can change any
 setting later, and the table records why each default was chosen. Rows marked *decision* are
@@ -2481,6 +2545,7 @@ one-time choices recorded here, not settings.
 | 15 | Keep founders' balances as **interest-free loans repayable on demand**, recorded now by a board minute; **convert them to ordinary shares at the price of the first priced round**, at that round. Do not repay them from round or grant money; waive only on the accountant's advice | Keeps each founder's claim, avoids moving ownership at an arbitrary price, and gives investors a clean balance sheet | Settings: default route "keep as loan", default price basis "latest priced round" (FR-EQ-05, FR-EQ-06) |
 | 16 | **No salary**, agreed in writing per founder before go-live and reviewed each financial year, until the company can pay in cash; then salary through payroll. No deferral, no shares instead of pay. Exception: a founder on an Employment Pass must be paid the declared salary [verify] | No CPF or tax on money not received; nothing to unwind later | Setting per director per period (FR-EQ-04), default "No salary" |
 | 17 | The equity register, cap table and round simulator in P1 (§8.23); investor updates and portal, and option expense automation, in P2 | Workbook parity (the workbook had a cap table), and the founders need it before the first round | Decided in §8.23 |
+| 18 | Self-approval with the weekly review in Founder mode; a second person in Standard and Enterprise modes | These pages change what the assistant says, not the books; the weekly review catches mistakes without slowing every edit | Setting (approval policy for "knowledge-base change") |
 
 ---
 
@@ -2534,6 +2599,9 @@ one-time choices recorded here, not settings.
 | Pre-money / post-money valuation | (rev 0.3) The company's value before / after the new money of a round |
 | Pro rata right | (rev 0.3) An investor's right to buy enough new shares in later rounds to keep their percentage |
 | SAFE | (rev 0.3) Simple agreement for future equity: money now for shares at the next priced round, usually with a valuation cap or discount |
+| Compiled knowledge base | (rev 0.4) Markdown pages an LLM compiles from trusted sources and keeps current, read by the assistant through an index (§9.11, ADR-T6) |
+| Knowledge-base lint | (rev 0.4) Checks that keep compiled pages honest: sources unchanged, numbers found in sources, citations resolve, no contradictions or orphans |
+| Taint | (rev 0.4) A label saying content came from an untrusted source, so it is treated as data, never as instructions |
 
 ---
 
@@ -2831,6 +2899,7 @@ that user's rights.
 | Director accounts, settlements, share issues (rev 0.3) | A | — | A | C/P | V | — | — | V (deferred pay) | R (repayments) | — | V (own) | V | V | V (share issues) | — | Ask only |
 | Cap table, holders, investors, equity transactions (rev 0.3) | A | — | A | C/P | — | — | — | — | — | — | V (own grants) | V | V | V (own holding; all if granted) | M | Scenarios only, if `fh.read.equity` granted |
 | Evidence: add, supersede (rev 0.3) | C | — | C | C | C | C | C | C (payroll) | C | C | C (own) | V | C | — | V | Proposal (`doc.attach`) |
+| Knowledge base: compiled pages and index (rev 0.4) | V/C (edit, publish) | V/C (edit, publish) | — | — | — | — | — | — | — | — | — | V | — | — | — | Reads, filtered to the user (AI-54) |
 | Journals | V | — | A | C/P (limit) | — | — | — | — | — | — | — | V | C | — | — | Proposal |
 | Pay runs, employee data | A | — | V | M | — | — | — | C | R (salaries) | — | V (own) | M | M | — | M | Only if enabled (AI-02) |
 | Fixed assets | V | — | A | C/P | V | — | — | — | — | — | — | V | V | — | — | — |
@@ -2870,6 +2939,7 @@ the target permission and, above the limit, the role named. Tier 3 is reserved (
 | `ct.update_contact` | Update contact details (not bank details) | 2 | UpdateContact | Excludes bank fields | AR/AP+ |
 | `recur.create_template` | Create a recurring template | 2 | CreateRecurring | Monthly equivalent ≤ S$5,000 | Accountant+ |
 | `plan.propose_budget` | Create a budget version (draft) | 2 | CreateBudgetVersion | Draft; activation separate | Controller |
+| `kb.propose_page` (P2, rev 0.4) | Draft a know-how page for the organisation knowledge base from a conversation, without figures | 1 | ProposeKnowledgePage | Draft only; no organisation figures (AI-53, AI-59) | Owner or Administrator |
 
 **Excluded permanently** (see §9.6): approvals; payments; payee bank details; users, roles,
 policies, AI settings and catalogue; statutory parameters; period reopen; voids and deletions;
@@ -2966,13 +3036,14 @@ integrity, C confidentiality, P privacy); **CE/CT** = CSA Cyber Essentials / Cyb
 
 | ID | Control | Mapping | Automated check | Freq. | Evidence |
 |---|---|---|---|---|---|
-| CTL-AI-01 | AI identities hold no write privilege except proposal insert | AG (bound risks); OWASP LLM06 / ASI02–03 | IAM and database grant tests (CMP-AI-01) | CI, N | Grant snapshot |
+| CTL-AI-01 | AI identities hold no write privilege except proposal insert (and knowledge-base drafts by the compiler job, rev 0.4) | AG (bound risks); OWASP LLM06 / ASI02–03 | IAM and database grant tests (CMP-AI-01) | CI, N | Grant snapshot |
 | CTL-AI-02 | Every executed proposal has a matching human approval with a valid payload hash | AG (human checkpoints); ETA | Nightly reconciliation; alert if any exception (target 0) | N | Reconciliation log |
 | CTL-AI-03 | No automatic approval of AI proposals is configurable | AG | Policy-engine test | CI | Test report |
 | CTL-AI-04 | Catalogue changes dual-approved; excluded task types rejected | AG; ISO 8.32 | Catalogue tests | CI | Change records |
 | CTL-AI-05 | Evals and red-team suite pass before any model, prompt or tool change | AG (testing); IMDA Starter Kit; OWASP LLM01/02/06/09 | CI gate | CI | Eval report |
 | CTL-AI-06 | AI exclusions enforced (no NRIC, bank numbers, payroll unless enabled) | PDPA; OWASP LLM02 | Redaction tests; trace scans (CTL-DP-03) | CI, W | Reports |
 | CTL-AI-07 | Approval-quality metrics reviewed | AG (automation bias) | Monthly report and sign-off | M | Signed review |
+| CTL-AI-08 | (rev 0.4) The knowledge base is grounded and access-filtered: published pages pass lint (no stale sources, every number in a cited source, citations resolve); the index is filtered per reader; human edits are never overwritten by a recompile | AG (data quality); OWASP LLM04 (data and model poisoning) | CI `make kb-lint`; nightly reader-filter test; QA-AI-06 before each publish | CI, N, E | Lint reports; eval reports |
 
 ### F.7a API, integrations and MCP (rev 0.2)
 
@@ -3064,11 +3135,12 @@ equivalent from P0. Create these at repository bootstrap, as plain Markdown usef
 | `fh-release` | Conventional Commits, release-please, versioning matrix, upgrade notes, migrations, deployment and rollback; PRD revision convention | Workbook `cfh-release`; §12.10 |
 | `fh-local-dev` (rev 0.2) | Local mode: the Compose stack, local substitutes, `make` targets, seeding, the clock override, lean images and their budgets | §12.8, §12.9 |
 | `fh-api-integrations` (rev 0.2) | API conventions, OpenAPI and AsyncAPI contracts, idempotency, errors, pagination, webhooks, OAuth client classes, SDK generation | §8.18 |
+| `fh-knowledge-base` (rev 0.4) | Compile, index and lint the knowledge base whenever a source document changes; the schema in `kb/schema.md` | §9.11; ADR-T6 |
 | `fh-mcp-server` (rev 0.2) | Exposing tools over MCP safely: OAuth resource server, scopes, never-list, pinned tool definitions, limits, audit, the MCP red-team suite | §9.7; Appendix F.7a |
 
 **Status (rev 0.2):** all twelve skills, plus `AGENTS.md` and `CLAUDE.md`, were created with this
 revision. They describe the conventions and the command contract that P0 implements, and they are
-updated as the code lands. The design skills already in the repository (`ui-ux-pro-max`,
+updated as the code lands. (rev 0.4) `fh-knowledge-base` was added, making thirteen. The design skills already in the repository (`ui-ux-pro-max`,
 `ui-styling`, `design-system`, `design`, `brand`, `banner-design`, `slides`) are used by
 `fh-design-system`.
 
@@ -3254,6 +3326,12 @@ Checked on 12 Oct 2026; the claims, verdicts and short quotes are in
 - Secondary, not Singapore-specific: SeedLegals (UK) on founder loans at funding rounds;
   AskTheVC and Wallin (US) on deferred founder salary; ACCA Singapore stamp duty notes.
 
+### I.8 Added in revision 0.4
+
+- Andrej Karpathy, "LLM Wiki" (GitHub gist `karpathy/442a6bf555914893e9891c11519de94f`), read on
+  12 Oct 2026; analysis in [research/llm-wiki-review-2026-10-12.md](research/llm-wiki-review-2026-10-12.md).
+- OWASP Top 10 for LLM Applications 2025: LLM04 Data and Model Poisoning [verify numbering].
+
 ---
 
 ## Revision history
@@ -3263,3 +3341,4 @@ Checked on 12 Oct 2026; the claims, verdicts and short quotes are in
 | 0.1 | 12 Oct 2026 | Initial draft for founder review |
 | 0.2 | 12 Oct 2026 | Deep review applied ([review](reviews/prd-001-review-2026-10-12.md), REV-01…40). New: Basic and Expert modes (§7.8, founder request); API-first conventions (§8.18.1); MCP security controls and client classes (§9.7, AI-34…47); ADR index (§12.0); ADR-T3 identity and OAuth (§12.2.1); local mode (§12.8, ADR-T4); lean images (§12.9) and automated versioning (§12.10, ADR-T5, accepted); P0 exit criteria (§17.3). Changed: FR-INT-01 to M/P1; MCP to P1 for first-party clients; FR-UX-03/06/09 and §7.4 (separate brand and AI accents, Lucide icons, self-hosted fonts, density values, high contrast); transaction-scoped tenant context (§11.4); the proposal executor and MCP server as their own services (§12.3); single repository layout (§12.4). Added QA, SEC, NFR, risk and control entries listed in the review. Consistency fixes found while writing the skills: MCP limit defaults and the `fh.read.proposals` scope (AI-37, AI-43), personal access tokens default to the `agent` class (FR-INT-02), `RND-CPF-GRAD`, `packs/`, `test/`, `e2e/`, `evals/` and `render` in the layout, the traceability extractor (QA-TRACE-01), mutation tests in `make ci` (QA-ENG-04), Hydra's login and consent paths (ADR-T3), the Owner-wins rule for mode defaults (FR-UX-27). No requirement was renumbered or removed. |
 | 0.3 | 12 Oct 2026 | Founder requests. (1) **Founders' money** (§8.22): a digest of the options (repay, keep as a loan, convert to shares, waive, convert to a SAFE or note; the founder pay choices) and FR-EQ-01…14 (director accounts, "paid personally", pay choice, settlement routes, conversion to share capital, waiver, ACRA steps, non-cash presentation, overdrawn director accounts, year-end confirmation, shares for services, modes); facts checked against official sources on 12 Oct 2026 ([source notes](research/founders-money-sources-2026-10-12.md)), unconfirmed points keep [verify]. (2) **Equity** (§8.23, FR-EQ-15…27): holders and investors, share classes and rights, equity transactions, SAFEs and notes, option pool, cap table issued and fully diluted, round modelling and dilution, investor records, updates and access, statutory links, integrity; a new Equity navigation item; FR-PLN-07 partly superseded. (3) **Evidence** (FR-DOC-05…11 and recommended evidence rules): screenshots and files on every important activity, append-only once approved. (4) **Help** (§7.9, FR-UX-30…36): tooltips and info popovers on every page, an in-app user guide (`docs/user-guide/`), context-aware help, an animated first-run walkthrough, feature tours, practice in the sample company; QA-UI-05/06. (5) **Recommended defaults** for open questions 1–17 (§20) and FR-ORG-08 (defaults ship pre-set and stay configurable). Related: FM-9; FR-APR-01 objects; §4.2 non-goal (company secretarial work); §7.1 (13 navigation items) and §7.8 rows; FR-COA-03; FR-AP-07; FR-TAX-07; CMP-02; the §9.6 never-list and Appendix E; AI-37 `fh.read.equity`; §10.2 rows; `RND-SHARE`; INV-13; §11.4 entities; a §14.2 row; §18; R2 and R20; open questions 15–17; glossary; B.5 rows and B.7; checks C.2 #21–31; Appendix D rows; CTL-FIN-11/12, CTL-AUD-06; G.3 pinned conversions; sources I.7. Fixed the §8 cross-reference to the posting rules (§10.2). No requirement was renumbered or removed. |
+| 0.4 | 12 Oct 2026 | Founder request: how the assistant gets context, after a review of Karpathy's "LLM Wiki" pattern ([analysis](research/llm-wiki-review-2026-10-12.md)). New §9.11 (AI-48…60): four context layers, one read-tool registry, a compiled knowledge base (platform and organisation) with compile, generated index and lint, grounding and trust rules, admin view and edit, versioning and rollback, a compiler job identity, index-first search without embeddings in P1, no automatic filing of answers, no hidden memory. New ADR-T6 (§12.2.2), QA-AI-06, CTL-AI-08, R21, open question 18 with its recommended default, a `kb-compiler` job, `kb/` in the layout, the `fh-knowledge-base` skill (Appendix H), an Appendix D row, `kb.propose_page` (P2) in Appendix E, glossary entries, sources I.8. Changed: the pgvector line (§11.3), AI-12, AI-25, FR-UX-33, CMP-AI-01, CTL-AI-01, §1, §11.4, §12.4, the §12.10 versioning matrix, §18. Repository: `kb/` (schema, three compiled pages from the founders' money guide, generated index, log), `scripts/kb.py`, `make kb-index`, `kb-lint` (in `make check`) and `kb-stale`, the `kb` commit scope. No requirement was renumbered or removed. |
