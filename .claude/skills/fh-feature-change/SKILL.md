@@ -44,12 +44,12 @@ reads around the balance service.
 | 5 | **Posting rules** (if it touches the ledger) | engine + `oracle/` | Pure function (ENG-01); same transaction as the document (ENG-02); named rounding policy (§10.4); the oracle implements the rule **independently** from the PRD text, not from the Go code. See **fh-accounting-domain** |
 | 6 | **Audit** | same transaction | A typed audit event for every state change (AUD-01) with before/after, actor, on-behalf-of, approval IDs, reason; sensitive values encrypted or keyed-hashed (AUD-02) |
 | 7 | **Permissions** | role matrix, RLS, Appendix D | Add the capability to the matrix (Appendix D); API check **and** RLS; SoD conflicts (§6.3) and Founder-mode compensating controls (§6.4); masking for sensitive fields; extend the authorisation-matrix test (QA-SEC-03) |
-| 8 | **Approvals** (if it changes money, master data or controls) | approval policies | Object type in FR-APR-01; the approver sees the ledger impact and diff (FR-APR-02); payload hash signed (FR-APR-03) |
+| 8 | **Approvals** (if it changes money, master data or controls) | approval policies | Object type in FR-APR-01; the approver sees the ledger impact and diff (FR-APR-02); payload hash signed (FR-APR-03); (rev 0.3) an **evidence rule** for the activity (required / recommended / optional, FR-DOC-06) with a recommended default (FR-ORG-08) |
 | 9 | **AI impact** | `contracts/ai/` | New data → read tool or semantic-layer measure? New write → does a catalogue task type need it (it is off by default, AI-32)? Exclusions (AI-02)? MCP scope (§9.7)? Never-list (§9.6). See **fh-ai-proposals** and **fh-mcp-server** |
 | 10 | **Checks** | checks engine | A new failure mode gets a status and, if it deserves its own line, a check with severity, explanation, drill-down and owner (FR-CTL-01) |
 | 11 | **UI** | `apps/web/` | Generated client only; **tag every route, field group and action `basic` or `expert`** in `src/ui/modes.ts` (FR-UX-29); safety information visible in both modes; tokens only. See **fh-design-system** |
 | 12 | **Tests** | each level | Unit, property, DB invariants, oracle differential, contract, authz matrix, UI component and story, E2E journey; every visible number verified (QA-RPT-01) and every new message triggered (QA-RPT-02); `// req: FR-…` tags (QA-TRACE-01). See **fh-quality-gates** |
-| 13 | **Docs** | user guide, API reference, runbook | Plain words; the API reference comes from the contract; update the PRD requirement row if the scope changed |
+| 13 | **Docs and help** | `docs/user-guide/`, help registry, API reference, runbook | Plain words; (rev 0.3) a **help key** with tooltip text for every field, column, chip and tile, a guide page whose front-matter `key` matches, and a tour step if the feature is on the first-run path (§7.9, QA-UI-05/06); the API reference comes from the contract; update the PRD requirement row if the scope changed |
 | 14 | **Commit** | — | Conventional Commit with scope; upgrade notes in the body if users, operators or integrators must act. See **fh-release** |
 
 Recipes for the common cases are in `references/recipes.md`.
@@ -93,6 +93,7 @@ Recipes for the common cases are in `references/recipes.md`.
 3. Migration squawk-clean and reversible in the expand-and-contract sense.
 4. Audit events emitted and asserted for every new state change (CTL-AUD-01).
 5. Authorisation matrix, RLS and SoD rules extended and green.
-6. Basic/Expert tags set; safety information visible in both modes (QA-UI-04).
+6. Basic/Expert tags set; safety information visible in both modes (QA-UI-04); help keys and the
+   guide page in place (QA-UI-05); evidence rule set for important activities (FR-DOC-06).
 7. `make test` green offline (arrives in P0; today run `make check`).
 8. Docs updated; Conventional Commit with upgrade notes where needed.

@@ -77,6 +77,30 @@ the opening balances. Dr 6610, Cr 1590.
 | Edits of posted documents | Reversal of the previous version's entries + entries of the new version | | The workbook recalculated in place; the platform keeps both (FR-GL-12) |
 | Opening balances | As entered at books start | | Must net to zero (Check C.1 #6) |
 
+## B.7 Founders' balances and share capital (rev 0.3, PRD §8.22)
+
+Every line on 2500 and 2120 carries the person as a sub-ledger key (FR-EQ-01).
+
+| Event | Debit | Credit | Rule |
+|---|---|---|---|
+| Cost a founder paid personally, kept as a loan | Expense (net); 2200 only with a tax invoice addressed to the company | 2500 (gross) | Otherwise no input tax is claimed and the GST is part of the cost |
+| Money a founder lends | Bank | 2500 | |
+| Deferred pay | 2100 (that director's net pay) | 2120 | With the pay run, for each director whose recorded choice is "deferred"; 2110 unchanged |
+| Director's fee approved | 6050 | 2120 | Paid later from 2120 |
+| Repayment | 2500 or 2120 | Bank | Payment batch; FM-1 and FM-9 (never approved by the beneficiary) |
+| Conversion, carrying-amount basis (default) | 2500 or 2120, converted amount | 3010 or 3020, converted amount | n = `RND-SHARE`(amount, price); converted = round(n × price, 2); the remainder stays; posting date = the date ACRA registered the allotment, never backdated; needs the register-of-share-issues record (INV-13) |
+| Conversion, fair-value basis (accountant's choice) | 2500 or 2120 at the converted amount; a loss when the shares' fair value is higher | 3010 or 3020 at fair value; a gain when it is lower | IFRIC 19 ¶9; SFRS for Small Entities ¶22.15A–C; gain and loss accounts still to be assigned |
+| Waiver | 2500 or 2120 | 3300, or other income | The accountant's choice, with a reason |
+| Share issue for cash (FR-EQ-17) | Bank | 3010 or 3020 | Only from the equity register (INV-13); posting date = effective date |
+| SAFE or note received | Bank | 2700 | Classified by the accountant from the terms |
+| SAFE or note conversion (FR-EQ-18) | 2700 converted amount | 3010 or 3020 | Conversion price per the terms; shares with `RND-SHARE`; the remainder stays on 2700 until settled |
+| Option exercise (FR-EQ-19) | Bank (exercise price × shares) | 3010 | Share-based payment reserve movements in P2 (FR-EQ-13) |
+| Month-end presentation | — | — | A person's net debit on 2500 + 2120 shows under 1250; no posting (Check C.2 #21) |
+| Cash flow | — | — | Conversions and waivers are not cash flows; listed as non-cash financing transactions (FR-EQ-10) |
+
+Pinned (Appendix G.3): 12,345.67 at S$1.20 → 10,288 shares, 12,345.60 converted, 0.07 stays;
+at S$0.0375 → 329,217 shares, 12,345.64 converted, 0.03 stays.
+
 ## FX rate cascade (ENG-40)
 
 The document's own rate → the daily rate feed for the document date → the organisation's monthly

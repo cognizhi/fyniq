@@ -81,6 +81,23 @@ The symbols themselves appear only in exports, CSV and plain-text email (FR-UX-0
 - Test: QA-UI-04 asserts identical API requests for the same action in both modes, and that the
   safety information is visible in both.
 
+## Help, tooltips and the tour (§7.9, FR-UX-30…36; rev 0.3)
+
+- **Help supplements labels; it never replaces them.** Short hints are tooltips; anything with
+  an example or a link is an ⓘ info popover (≥ 24 × 24 px target, `aria-expanded`, opens on
+  click/Enter, hover and focus; Esc closes; hoverable; persistent: WCAG 1.4.13).
+- **One registry:** each field, column, chip, tile and route has a help key next to its
+  `basic`/`expert` tag in `src/ui/modes.ts`; the key names the tooltip text, the guide page in
+  `docs/user-guide/` (front-matter `key`) and the tour step. QA-UI-05 fails on a missing key.
+- **Words:** Basic text is plain; Expert text adds the account, posting or rule ID. Use the UI's
+  own names; one idea per tooltip.
+- **First-run tour:** scrim + spotlight + caption card, ≤ 7 steps, Back/Next/Skip, Esc closes,
+  focus moves into the card and returns afterwards, each step announced (`aria-live`), the
+  spotlight never hides the focused element (2.4.11). It never changes data. Brand-teal ring,
+  not AI violet. With `prefers-reduced-motion` the steps jump without animation. Progress is
+  stored per user on the server; "Take the tour again" lives in Help.
+- Patterns and tokens: MASTER.md "Help and onboarding"; the `/help` page: `pages/help.md`.
+
 ## Numbers and money in the UI
 
 - Tabular figures (`font-variant-numeric: tabular-nums`) in every table, total, tile and axis;
@@ -154,4 +171,6 @@ MASTER.md. Do not run `--design-system --persist --force` over the curated MASTE
 4. Component tests, stories and visual snapshots updated (QA-UI-01…03); mode parity (QA-UI-04).
 5. MASTER.md or a page override updated if the change sets a new pattern; prototype updated if
    it shows that screen.
-6. Commit with the `ui` or `design` scope (see **fh-release**).
+6. Help keys, tooltip text and the guide page added (QA-UI-05); tour step updated if the screen
+   is on the first-run path (QA-UI-06).
+7. Commit with the `ui` or `design` scope (see **fh-release**).

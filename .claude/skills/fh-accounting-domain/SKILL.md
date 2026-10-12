@@ -1,6 +1,6 @@
 ---
 name: fh-accounting-domain
-description: The accounting core of Cognizhi Finance Hub Cloud. Covers how source documents (bank transactions, invoices, bills, pay runs, assets, journals, expense claims) become journal entries; the ledger invariants INV-01…12 the database enforces; exact-decimal money (ENG-10…14); the named rounding and allocation policies (RND-*, ALLOC-*); effective-dated parameters; the balance service; and the independent Python oracle. Use it for any work on posting rules, GST, FX, settlements, spreads, deferred revenue, prepayments, depreciation, payroll postings, opening balances, period locks, trial balance, balance sheet or cash-flow checks, or when someone says "the books don't balance", "this number is off by a cent", "add a posting source", "the engine and the oracle disagree" or "why did this post to 7030".
+description: The accounting core of Cognizhi Finance Hub Cloud. Covers how source documents (bank transactions, invoices, bills, pay runs, assets, journals, expense claims, founders' balances and conversions to share capital) become journal entries; the ledger invariants INV-01…13 the database enforces; exact-decimal money (ENG-10…14); the named rounding and allocation policies (RND-*, ALLOC-*); effective-dated parameters; the balance service; and the independent Python oracle. Use it for any work on posting rules, GST, FX, settlements, spreads, deferred revenue, prepayments, depreciation, payroll postings, opening balances, period locks, trial balance, balance sheet or cash-flow checks, or when someone says "the books don't balance", "this number is off by a cent", "add a posting source", "the engine and the oracle disagree" or "why did this post to 7030".
 ---
 
 # Accounting domain: engine, ledger, money
@@ -63,12 +63,15 @@ Appendix B).
 | Expense claim | Expense (net); 2200 | 2150 |
 | FX revaluation (new) | Open FC items or unrealised FX loss | Unrealised FX gain or the items; auto-reverses on day 1 of the next period |
 | Disposal, tax provision, bad debt, provider payout (new) | See references | |
+| Founders' balances (rev 0.3, PRD §8.22): cost paid personally, money lent, deferred pay, conversion to shares, waiver | Expense / Bank / 2100 / 2500 or 2120 | 2500 or 2120 / 3010–3020 / 3300 — see references B.7 |
 
 **System accounts** (protected, FR-COA-03): 1100 AR · 1210 Prepayments · 1590 Accumulated
 depreciation · 2010 AP · 2100 Salaries payable · 2110 CPF & SDL payable · 2150 Expense claims
 payable · 2200 GST control · 2300 Income tax payable · 2400 Deferred revenue · 2999 Suspense ·
 3100 Retained earnings · 6020 Employer CPF · 6030 SDL · 6610 Depreciation · 7030 FX & rounding ·
-8010 Income tax expense. Codes for unrealised FX, provider clearing, disposal gain/loss and bad
+8010 Income tax expense. From rev 0.3 also 2500 Loan from director / shareholder and proposed 2120
+Deferred remuneration payable (both with a sub-ledger per person), 3010/3020 Share capital (posted
+only from the register of share issues) and proposed 3300 Capital contribution. Codes for unrealised FX, provider clearing, disposal gain/loss and bad
 debts are still to be assigned in the CoA review (Appendix B.5).
 
 ## Money and precision (non-negotiable)
@@ -97,6 +100,7 @@ tests. "Half-up" means half away from zero (PostgreSQL `round()` on `NUMERIC` do
 | `RND-SDL` | clamp(round(remuneration × rate, 2), min, max); 0 when remuneration ≤ 0 |
 | `ALLOC-EVEN` | each period = amount ÷ n rounded **down** to the minor unit; remainder cents to the **last** period; parts sum exactly to the whole |
 | `ALLOC-PRORATA` | largest-remainder method by weights; ties broken by stable order |
+| `RND-SHARE` | (rev 0.3) shares for an amount at a price: the largest whole n with round(n × price, 2) ≤ amount, half-up; converted = round(n × price, 2); the remainder stays on the source balance; never fractional shares |
 | `RND-DISPLAY` | display never re-rounds; totals are sums of stored amounts, so reports foot and cross-foot |
 
 `ALLOC-EVEN` is the one **deliberate** difference from the workbook (which used unrounded monthly
@@ -118,6 +122,7 @@ amounts). It is the only tolerated difference in the parity tests (§4.3, QA-MIG
 | INV-10 | Balance sheet balances; P&L and BS include every account | Verified; Checks | An account type or report group mapped to neither statement |
 | INV-11 | Cash flow agrees to money accounts; equity movement reconciles | Verified; Checks | A balance-sheet account without a cash-flow line |
 | INV-12 | Audit chain unbroken and matches its signed anchors | Nightly verification | Out-of-band writes; see **fh-security-compliance** |
+| INV-13 | (rev 0.3) Share capital changes only through the register of share issues (or opening balances); per-person sub-ledgers = 2500 and 2120 | Trigger on the posting source + nightly verification | A manual journal to share capital; a director posting without its person key |
 
 ## Two implementations that must agree, plus a backstop
 

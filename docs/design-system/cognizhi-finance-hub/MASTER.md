@@ -96,7 +96,7 @@ Set by the header theme menu and the command palette; "System" follows `prefers-
 | Rows | 40 px comfortable, 32 px compact (`[data-density="compact"]`) |
 | Breakpoints | 375 / 768 / 1024 / 1440. Below 1024 px the sidebar becomes a drawer; below 768 px, grids become cards and statements scroll horizontally inside their own region with a sticky first column |
 | Targets | ≥ 24 × 24 px pointer targets everywhere (WCAG 2.2 SC 2.5.8); ≥ 44 px on touch in the PWA |
-| Z-index | sticky 10 · header 20 · panel 30 · popover 40 · modal 50 · toast 60 |
+| Z-index | sticky 10 · header 20 · panel 30 · popover 40 · modal 50 · tour 55 · toast 60 (`--z-*` tokens) |
 
 ## 6. Experience modes: Basic and Expert (PRD §7.8)
 
@@ -130,6 +130,8 @@ Set by the header theme menu and the command palette; "System" follows `prefers-
 | Dialog / sheet | Opens from its trigger; Esc closes; confirms before discarding unsaved changes; typed confirmation for bulk voids. |
 | Empty state | Explains what goes here, with the first action and a line illustration (none in reports). |
 | Form field | Visible label, helper text, error below the field, linked with `aria-describedby`; validates on blur; an error summary takes focus after a failed submit. |
+| Info button and popover | Beside a visible label; see §12. |
+| Walkthrough (tour) | Scrim, spotlight and caption card; see §12. |
 
 ## 8. Icons
 
@@ -141,11 +143,13 @@ set is a hard rule.
 ## 9. Motion
 
 - 120 ms (fast) / 180 ms (base) / 240 ms (slow); exits ≈ 70% of entrances; `transform` and
-  `opacity` only.
+  `opacity` only. The walkthrough spotlight is the one exception: it moves with `transform` and
+  resizes with `width`/`height` over 300 ms (`--duration-tour`), one element at a time (§12).
 - Side panels slide from the right; dialogs scale and fade from their trigger; list items do not
   animate on data refresh.
 - Number tickers on the Home pulse card only, never in reports or grids.
-- `prefers-reduced-motion`: every duration is 0 and final states render immediately.
+- `prefers-reduced-motion`, or the user's in-app Reduce motion setting (`[data-motion="reduce"]`):
+  every duration is 0 and final states render immediately.
 - Exactly one "moment": the month-end "Books closed" confirmation (no confetti).
 
 ## 10. Charts
@@ -172,7 +176,45 @@ signed values and arrow icons, not red and green alone. The palette is validated
 - Live counts are announced as contextual phrases in one polite `role="status"` region.
 - Charts: a text summary, a table view, and keyboard-reachable tooltips.
 
-## 12. Anti-patterns (review blockers)
+## 12. Help and onboarding (PRD §7.9)
+
+Help lives on each page, where the question comes up. Four layers, each with one job:
+
+| Layer | Use for | Anatomy | Rules |
+|---|---|---|---|
+| **Tooltip** | The name of an icon-only control, a truncated value, a chart mark | ≤ 80 characters; no links or formatting | Opens on hover **and** keyboard focus; `role="tooltip"` linked with `aria-describedby`; never the only place a label exists |
+| **Info popover** | What a figure, field, column, status or term means, why it matters, an example (FR-UX-30) | Lucide `info` (16 px) in a 24 × 24 px button **beside the visible label**; title, two or three plain sentences, the accounting detail in Expert mode (account, posting, rule ID, `--text-muted` above a divider), "Learn more" to the guide page | Opens on hover or focus (transient) and on click or Enter (pinned); stays open while the pointer is over it; Esc closes and returns focus to the button; an outside click closes it; inserted right after its button, so Tab reaches "Learn more"; `aria-expanded` and `aria-controls`; a non-modal `role="dialog"` labelled by its title; `--z-popover` |
+| **User guide** | Tasks and concepts across the product (FR-UX-32) | `/help`; see `pages/help.md` | Every popover and empty state links to a guide page |
+| **Walkthrough** | A user's first sign-in; replayable from Help (FR-UX-34) | Scrim, spotlight, caption card | Below |
+
+**Content.** Plain English, the UI's own names, sentence case, one idea per sentence. Basic mode
+explains without debits and credits; Expert mode adds the account, the posting and the rule ID.
+Text comes from the help registry key of the feature (FR-UX-31), never hard-coded, and the
+accountant reviews any accounting or statutory statement.
+
+**WCAG 2.2.** Content on hover or focus is dismissible (Esc), hoverable and persistent (SC 1.4.13);
+info buttons are at least 24 × 24 px (SC 2.5.8); popovers and the caption card never cover the
+focused element (SC 2.4.11); every part has a name, role and state (SC 4.1.2).
+
+### Walkthrough anatomy
+
+| Part | Spec |
+|---|---|
+| Scrim | `--overlay-scrim` around the target, drawn as a 9999 px spread shadow on the spotlight. The tour is **non-modal**: pointer events pass through and the page stays usable |
+| Spotlight | The target's box plus 6 px, `--radius-l`, a 2 px `--primary` ring (brand teal, never the AI violet). Moves between steps with `transform` and resizes with `width`/`height` over `--duration-tour` (300 ms, `--ease-out`). In forced-colours mode a 3 px `Highlight` outline replaces the ring and scrim |
+| Caption card | ≤ 340 px, `--surface-1`, `--shadow-3`, `--radius-l`, 16 px padding: "2 of 7", a title (`--fs-md`, 600), one or two sentences, progress dots (decorative, `aria-hidden`), then **Skip tour** (ghost) · **Back** · **Next** (primary; **Done** on the last step). Placed below the target, else above, else beside it; always inside the viewport with an 8 px margin |
+| Layer | `--z-tour` (55): above dialogs, below toasts |
+| Steps | At most 7, about 2 minutes, a variant per role. A step whose target is hidden (mode, breakpoint, feature switch) is skipped |
+| Keyboard and screen readers | Non-modal `role="dialog"` labelled by the title and described by the text. On start, focus moves to the title; Next and Back work as buttons or with ← / → inside the card; Esc closes. Each step is announced in a polite live region ("Step 3 of 7. Your Inbox. …"). On close, focus returns to where the user was, or to the page heading |
+| Reduced motion | `--duration-tour` is 0 under `prefers-reduced-motion` or `[data-motion="reduce"]`: the same steps, no movement |
+| State | Finished or skipped is stored per user on the server; the tour does not start again by itself. "Take the tour again" in Help and ⌘K replays it |
+| Never | Click, type or change data for the user; advance on a timer; block the page; cover the focused element |
+
+The prototype (`docs/design/prototype/index.html`) shows all four layers: `?tour=1` replays the
+tour, `?motion=reduce` removes the motion, `?pop=runway` opens an info popover, and
+`#help/founders-money` opens a guide page.
+
+## 13. Anti-patterns (review blockers)
 
 - Raw colours or Tailwind palette classes in components; one-off shadows or radii.
 - The AI violet used for anything not AI-originated, or the brand teal on AI content.
@@ -183,3 +225,5 @@ signed values and arrow icons, not red and green alone. The palette is validated
 - Dual-axis charts; rainbow scales; series colours for text.
 - Modals for primary navigation; hover-only affordances; toasts for errors that need a fix.
 - Basic mode silently hiding a value that is set on a record.
+- A tooltip or popover as the only label of a control; help text hard-coded instead of a help key;
+  a tour that clicks, types or auto-advances for the user.

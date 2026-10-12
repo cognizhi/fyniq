@@ -22,10 +22,11 @@ on Google Cloud. Built for a lean founding team, with the controls a growing com
 
 | Area | Where |
 |---|---|
-| Product requirements (revision 0.2) | [`docs/prd/prd-001-finance-hub-cloud-platform.md`](docs/prd/prd-001-finance-hub-cloud-platform.md) |
+| Product requirements (revision 0.3) | [`docs/prd/prd-001-finance-hub-cloud-platform.md`](docs/prd/prd-001-finance-hub-cloud-platform.md) |
 | Review that produced revision 0.2 | [`docs/prd/reviews/prd-001-review-2026-10-12.md`](docs/prd/reviews/prd-001-review-2026-10-12.md) |
 | Design system (uipro-reviewed; tokens; contrast validator) | [`docs/design-system/cognizhi-finance-hub/`](docs/design-system/cognizhi-finance-hub/) |
 | Clickable UI prototype | [`docs/design/prototype/index.html`](docs/design/prototype/index.html) (open in a browser; try `?mode=expert&theme=dark`) |
+| User guide (source of the in-app help, §7.9) | [`docs/user-guide/`](docs/user-guide/) |
 | Coding instructions | [`AGENTS.md`](AGENTS.md) (and [`CLAUDE.md`](CLAUDE.md) for Claude Code) |
 | Agent skills | [`.claude/skills/`](.claude/skills/) (`fh-*`) |
 | Release tooling | [`release-please-config.json`](release-please-config.json), [`.github/workflows/`](.github/workflows/) |
