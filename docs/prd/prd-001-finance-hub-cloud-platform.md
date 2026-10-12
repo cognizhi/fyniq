@@ -8,7 +8,7 @@ Built for a lean founding team, with the controls a growing company needs.**
 | Document | PRD-001 (initial PRD, greenfield) |
 | Product | Cognizhi Finance Hub Cloud ("FH Cloud"; working name) |
 | Status | Draft for founder review |
-| Revision | 0.5 (12 Oct 2026): no vectors for the knowledge base, in any phase (AI-58, ADR-T6). 0.4 (12 Oct 2026): AI context and a compiled, versioned knowledge base (§9.11, ADR-T6), after a review of Karpathy's "LLM Wiki" pattern. 0.3 (12 Oct 2026): founders' money (§8.22), equity and investors (§8.23), evidence on every important activity (§8.16), in-app help and first-run walkthrough (§7.9), and recommended defaults for every open question (§20), all at the founders' request. 0.2 applied the [review](reviews/prd-001-review-2026-10-12.md). See the revision history at the end. |
+| Revision | 0.6 (12 Oct 2026): AI company secretary and scheduled agents (§9.12), Xero-parity features (Appendix A.3), My claims, configurable sign-in, email, notifications, banners and chat (§8.24). 0.5 (12 Oct 2026): no vectors for the knowledge base, in any phase (AI-58, ADR-T6). 0.4 (12 Oct 2026): AI context and a compiled, versioned knowledge base (§9.11, ADR-T6), after a review of Karpathy's "LLM Wiki" pattern. 0.3 (12 Oct 2026): founders' money (§8.22), equity and investors (§8.23), evidence on every important activity (§8.16), in-app help and first-run walkthrough (§7.9), and recommended defaults for every open question (§20), all at the founders' request. 0.2 applied the [review](reviews/prd-001-review-2026-10-12.md). See the revision history at the end. |
 | Date | 12 Oct 2026 |
 | Owner | Cognizhi founders |
 | Reviewers | Founders; external accountant / tax agent; security reviewer (later: auditor) |
@@ -394,6 +394,8 @@ payment, reconciliation and administration). A user may hold several roles; the 
 | **Auditor (external)** | Read everything in scope, the audit trail and evidence; export; time-boxed access with an expiry date | Any change; payroll personal data unless explicitly granted |
 | **Tax agent / external accountant** | Accountant rights plus GST and tax working papers; time-boxed | User administration |
 | **Board / investor viewer** | Board pack, dashboards, cap table (as granted) | Transaction-level data unless granted |
+| **Super admin** (rev 0.6) | Installation-wide settings: sign-in providers, email and messaging connections, announcements to everyone, platform health (FR-ADM-06/07) | Read an organisation's books without being a member; act alone once a second Super admin exists |
+| **Company secretary** (rev 0.6) | Corporate profile, registers, equity register, AI company secretary runs and drafts, evidence, filing records (FR-CS-08) | Transactions, payroll or bank detail unless granted |
 | **Compliance officer / DPO** | Compliance Center, control evidence, audit trail, data-subject requests, retention holds | Post or approve transactions |
 | **AI assistant** (non-human principal) | Read within the delegating user's permissions minus AI exclusions (§9.4); create proposals from the approved task catalogue | Execute, approve or reject anything; hold a write credential |
 | **Integration** (service principal) | Narrow, scoped API rights for one integration (bank feed, Peppol access point, Stripe) | Anything outside its scope |
@@ -478,7 +480,7 @@ feature is off, FR-ORG-06):
 | **Home** | Role-aware "Today": cash, runway, books health, to-dos, upcoming deadlines, AI suggestions | — |
 | **Inbox** | Everything waiting for me: approvals, AI proposals, items that cannot post (✖), items to review (⚠), mentions, compliance tasks; the **AI tasks** page (catalogue and proposal history, §9.6) | Count |
 | **Sales** | Quotes and orders, invoices, credit notes, receipts, statements, recurring invoices, items | Overdue count |
-| **Purchases** | Purchase orders, bills, vendor credits, payment batches, expense claims | Due count |
+| **Purchases** | Purchase orders, bills (rev 0.6: bills board and calendar, FR-AP-13), vendor credits, payment batches, expense claims (all users' claims, for approvers and AP) | Due count |
 | **Contacts** | Customers and vendors (one list, filterable by role), balances, activity, bank-detail changes | — |
 | **Banking** | Bank and card accounts, feeds and imports, categorise, match, rules, transfers, reconciliations | Uncategorised count |
 | **Payroll** | Employees, pay runs, CPF/SDL/SHG, payslips, IR8A | Due status |
@@ -487,8 +489,11 @@ feature is off, FR-ORG-06):
 | **Reports** | Financial statements, management reports, tax reports, saved and scheduled reports, board pack | — |
 | **Planning** | Budgets, forecasts and scenarios, 13-week cash, feasibility, funding plan (rev 0.3: the cap table moved to Equity) | — |
 | **Equity** (feature-switched; rev 0.3) | Who owns the company (cap table, issued and fully diluted), shareholders and investors, share classes, share issues and transfers, SAFEs and notes, option pool, round simulator, investor updates (§8.23) | ACRA tasks due |
-| **Compliance** | Statutory calendar, GST returns, filings, Compliance Center (controls and evidence), audit trail explorer | Due count |
+| **Compliance** | Statutory calendar, GST returns, filings, Compliance Center (controls and evidence), audit trail explorer, (rev 0.6) the **AI company secretary** (runs, findings, drafts, schedule; §9.12) | Due count |
 | Settings (footer) | Organisation, users and roles, team mode, approval policies, AI settings and task catalogue, **connected apps** (API and MCP clients, §9.7), integrations and webhooks, statutory parameters | — |
+
+(rev 0.6) **Personal section**, at the top of the sidebar for every user and not counted in the cap:
+**My claims** (FR-AP-14), "Money I put in" for directors (FR-EQ-14) and, from P2, **My payslips**.
 
 The **AI assistant** is not a navigation item. It is a persistent side panel (⌘J / Ctrl+J, and
 the "Ask about this" action of FR-UX-17), available on every page and carrying the page's
@@ -515,7 +520,7 @@ the user switches with one toggle in the header.
 | FR-UX-12 | **Favourites, recent items and saved views** (filters, columns, sort) per user; shareable view links | S | P1 |
 | FR-UX-13 | **Comments and @mentions** on any record, with notifications | S | P1 |
 | FR-UX-14 | **Undo-friendly safety**: nothing is hard-deleted; void with reason; destructive or high-risk actions show their consequences and require confirmation (typed confirmation for bulk voids) | M | P1 |
-| FR-UX-15 | **Notifications**: in-app, email, daily digest; Slack or similar in P2; user-level preferences | S | P1 / P2 |
+| FR-UX-15 | **Notifications**: in-app, email, daily digest; Slack or similar in P2; user-level preferences (rev 0.6: detailed in FR-NTF-01…06) | S | P1 / P2 |
 | FR-UX-16 | **Responsive PWA** for approvals, receipt capture (camera), claims, payslips and dashboards; offline receipt queue | S | P2 |
 | FR-UX-17 | **Contextual AI**: an "Ask about this" action on any record, report or figure opens the assistant with that context attached (§9) | S | P1 |
 | FR-UX-18 | **Multi-entity switcher** in the header, and "all entities" views where the user has access | C | P3 |
@@ -744,6 +749,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-BNK-11 | Suspense handling: unmatched imported lines can post to suspense (2999) with ⚠ until classified; Checks flags a non-zero suspense balance | M | P1 |
 | FR-BNK-12 | **Payment batches**: build from approved bills, claims and pay runs; approve (dual control); export a bank bulk-payment file (GIRO/FAST formats of the banks used [verify]) or initiate via bank API (P2); mark paid when the feed shows the debit | S | P1 (file) / P2 (API) |
 | FR-BNK-13 | Daily cash position across accounts and currencies at the latest rates | S | P1 |
+| FR-BNK-14 | (rev 0.6) **Auto-reconcile, deterministically**: lines that match exactly one open document (same amount and currency, a unique reference and the expected contact), transfers matched on both feeds, and lines hit by a bank rule that an approver marked *auto-apply* are reconciled by the system principal (FR-AUT-02) without a click. A pattern the organisation has coded the same way several times (default 5; Xero calls this "memory") is **offered as a rule to promote**, never applied by itself. Auto-reconciliation runs within limits (amount cap per line and per rule per day; settings with recommended defaults, FR-ORG-08). Everything auto-reconciled appears in an **Auto-reconciled** list with the rule or match that did it, and can be undone while the period is open; a sample enters the weekly review (FM-3). Ambiguous lines stay in the queue. **AI suggestions are never auto-applied** (AI-P4): they stay proposals | M | P1 (imports) / P2 (feeds) |
 
 ### 8.5 Sales and receivables
 
@@ -764,6 +770,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-AR-13 | Online payment: PayNow QR (SGQR) on invoices; card and bank payment links through a licensed provider (e.g. Stripe), with automatic matching of payouts and fees | S | P2 |
 | FR-AR-14 | Customer portal: view and pay invoices, download statements | C | P2 |
 | FR-AR-15 | Subscription revenue schedules (start, end, MRR) feeding deferred revenue and KPIs; contract changes (upgrade, downgrade, cancel) | S | P2 |
+| FR-AR-16 | (rev 0.6) **Send quotes and invoices**: quotes and invoices go out by email with a branded PDF and a secure online view link (FR-AR-06); the customer can **accept or decline a quote online** (name, date and comment recorded as evidence, FR-DOC-05), and an accepted quote converts to an invoice in one action (FR-AR-02); expiring quotes and unpaid invoices get scheduled reminders (FR-AR-08); send status (sent, opened, accepted, paid) shows on the record and in the customer's timeline | M | P1 |
 
 ### 8.6 Purchases, payables and spend
 
@@ -772,7 +779,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-AP-01 | Purchase orders with lines and approval; convert to bill; three-way match (PO, receipt, bill) optional | S | P1 (PO) / P2 (match) |
 | FR-AP-02 | **Bills**: mirror of invoices with expense or asset accounts, prepayment periods, GST input tax codes, attachments; draft → approved → posted → scheduled → paid | M | P1 |
 | FR-AP-03 | Vendor credits and refunds | M | P1 |
-| FR-AP-04 | **Bill capture**: forward to a per-organisation email address or upload/photograph; document AI extracts vendor, dates, number, lines, GST and totals into a draft bill; duplicates flagged | S | P2 |
+| FR-AP-04 | (rev 0.6: part of FR-DOC-12, now P1) **Bill capture**: forward to a per-organisation email address or upload/photograph; document AI extracts vendor, dates, number, lines, GST and totals into a draft bill; duplicates flagged | S | P2 |
 | FR-AP-05 | **Receiving Peppol invoices** (InvoiceNow inbound) into draft bills; the InvoiceNow requirement covers purchase data as well as sales | M with FR-AR-12 | P2 |
 | FR-AP-06 | AP ageing, bills to pay by due date, cash requirement forecast | M | P1 |
 | FR-AP-07 | **Expense claims**: employee submits receipts (mobile), selects category and project, GST captured; approver approves; posts to 2150 Expense claims payable; reimbursed in a payment batch. (rev 0.3) A director may keep a claim as a loan to the company instead (FR-EQ-02) | M | P1 (web) / P2 (PWA) |
@@ -780,6 +787,10 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-AP-09 | Recurring bills | S | P1 |
 | FR-AP-10 | Vendor statement reconciliation | C | P2 |
 | FR-AP-11 | Withholding tax on payments to non-resident service providers (records and S45 form support [verify]) | C | P3 |
+| FR-AP-12 | (rev 0.6) **Automated bill entry**: every captured bill (FR-DOC-12) becomes a draft with supplier, number, dates, currency, lines, GST and totals filled in; **supplier defaults** (account, GST code, dimensions, terms) are suggested from that supplier's approved bills and saved as a supplier rule once a person confirms them; duplicates are blocked (supplier, number, amount, date window); the draft goes into the normal approval policy (AI-30) | M | P1 |
+| FR-AP-13 | (rev 0.6) **Track and pay bills**: a bills board by status (to review, awaiting approval, approved, scheduled, paid, overdue) and a due-date calendar; schedule a bill for a payment date so it joins that day's payment batch (FR-BNK-12); reminders before due dates; early-payment discounts shown; remittance advice emailed to the supplier when paid; supplier statements reconciled (FR-AP-10) | M | P1 |
+| FR-AP-14 | (rev 0.6) **My expense claims**: a dedicated page for **every user** (`/me/claims`, "My claims" in the personal section of the navigation). It shows the user's claims by status (draft, submitted, approved, scheduled, paid, returned) with totals and **what the company owes me**. New claims start from a receipt (paste a screenshot, drag and drop, phone camera in the PWA, or forward it to the user's own capture address, FR-DOC-12): category, project, GST, currency (reimbursed in SGD at the rate cascade, ENG-40), split lines, mileage at the organisation's rate (setting). Policy checks run before submission (FR-AP-15); the user sees the approver's comments, fixes and resubmits, and exports their history. Directors also see "Paid personally → keep as a loan" (FR-EQ-02). A Basic-mode page; approvers handle claims from the Inbox | M | P1 (web) / P2 (PWA camera) |
+| FR-AP-15 | (rev 0.6) **Expense policy**: per category limits, receipt and evidence rules (FR-DOC-06), mileage rate, claim deadline (e.g. within 60 days of the expense), approval routing (FR-APR-01) and duplicate-receipt detection across users; shipped with recommended defaults and configurable (FR-ORG-08); breaches show as ⚠ on the claim with the rule named | S | P1 |
 
 ### 8.7 Payroll (Singapore)
 
@@ -877,6 +888,8 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-KPI-04 | Customer counts for SaaS KPIs come from the subscription schedules (FR-AR-15) or a CRM/billing integration instead of manual input | S | P2 |
 | FR-KPI-05 | Custom dashboards per role and user (FR-VIZ-09) | S | P2 |
 | FR-KPI-06 | Anomaly alerts (e.g. spend in a category 3σ above its trend) as Inbox items | C | P2 |
+| FR-KPI-07 | (rev 0.6) **Industry benchmarks**: KPIs (gross margin, opex ratios by function, DSO, DPO, revenue per employee, burn multiple, growth) shown against industry bands for the organisation's industry code (SSIC) and size, from **benchmark packs**: sourced, licensed and dated data sets kept like statutory packs (§10.6), for example Singapore Department of Statistics industry surveys and published SaaS benchmark reports [verify licences]. Every comparison shows the source, the year and the sample; benchmarks never touch the ledger; the AI may explain a gap (read lane) | S | P2 |
+| FR-KPI-08 | (rev 0.6) **Peer benchmarks** across organisations on the platform (SaaS, P3): opt-in, anonymised, published only for cells with at least 10 organisations, under a PDPA assessment and the data inventory | C | P3 |
 
 ### 8.14 Planning
 
@@ -886,7 +899,8 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-PLN-02 | **Driver-based forecast** (workbook model): scenarios (Base, Best, Worst and custom), horizon 12–60 months, revenue drivers (customers, new customers and growth, churn, ARPA, price increases, services, other revenue, collection pattern), cost drivers (hosting %, AI/API %, contractors %, payment fees %, salary increases, other opex), headcount plan, capex plan, funding plan, scenario levers | M | P1 |
 | FR-PLN-03 | Forecast outputs: monthly P&L and cash, yearly summary, tax estimate (SUTE/PTE), cash-out month, runway, minimum cash, break-even month, average burn, funding gap for the buffer, next-12-month revenue, ending ARR and customers; side-by-side scenario comparison | M | P1 |
 | FR-PLN-04 | **Rolling forecast**: actuals replace forecast months automatically as periods close | S | P2 |
-| FR-PLN-05 | **13-week cash forecast** from open AR and AP (with expected dates from payment behaviour), recurring items, payroll and planned payments | S | P2 |
+| FR-PLN-05 | (rev 0.6: P1, the weekly view of FR-PLN-09) **13-week cash forecast** from open AR and AP (with expected dates from payment behaviour), recurring items, payroll and planned payments | S | P2 |
+| FR-PLN-09 | (rev 0.6) **Short-term cash flow** (the Xero-style 30/60/180-day view): a daily projection for **30, 60, 90 or 180 days** (the user picks; default 60) from today's bank balances, open invoices and bills on their expected dates (from each contact's payment behaviour), recurring documents, scheduled pay runs, CPF, GST and tax due dates, and planned payments. It shows the lowest balance and its date, a buffer line and an alert when the projection falls below it; what-ifs (delay this bill, chase that invoice) are sandboxed and never post. The 13-week view of FR-PLN-05 is the same engine in weekly buckets, so FR-PLN-05 moves to P1 with it | M | P1 |
 | FR-PLN-06 | **Feasibility** calculator (workbook model): NPV, IRR, payback, discounted payback, profitability index, break-even, margin of safety, sensitivity grid, verdict | S | P1 |
 | FR-PLN-07 | **Cap table and funding** (workbook model): holders, share classes, options, SAFEs and notes (cap, discount), next priced round, dilution; fix the workbook limitation (converted SAFE shares and whole-share rounding). (rev 0.3) **Partly superseded**: the register, the cap table and round modelling moved to §8.23 (FR-EQ-15…27) in P1; FR-PLN-07 keeps the funding plan inside forecasts, starting from the current cap table | S | P2 |
 | FR-PLN-08 | Forecasts are sandboxed: they never post to the ledger; AI may run scenarios freely (read lane) | M | P1 |
@@ -908,7 +922,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 |---|---|---|---|
 | FR-DOC-01 | Attach files (PDF, images, email messages) to any record; preview inline; virus-scanned on upload | M | P1 |
 | FR-DOC-02 | Stored encrypted in Cloud Storage with retention locks matching the statutory retention period (§14); deletions only by retention expiry, never by users | M | P1 |
-| FR-DOC-03 | Document inbox (emailed-in documents) with AI extraction into drafts (FR-AP-04) | S | P2 |
+| FR-DOC-03 | (rev 0.6: part of FR-DOC-12) Document inbox (emailed-in documents) with AI extraction into drafts (FR-AP-04) | S | P2 |
 | FR-DOC-04 | Generated documents (invoices, payslips, reports) are stored as issued, with a hash, so a re-issued copy can be proven identical | M | P1 |
 | FR-DOC-05 | (rev 0.3) **Evidence on every important activity**: an **Evidence** panel on every record and on every important activity (the FR-APR-01 approval objects, filings and payments to IRAS, CPF and ACRA, close tasks, reconciliations, equity transactions, investor-record changes, founders' settlements, AI-proposal decisions, access reviews and manual control evidence). Add files by drag-and-drop, file picker, **pasting a screenshot from the clipboard**, phone camera (PWA, P2) or forwarding an email; several files per item, each with an evidence type (e.g. "ACRA acknowledgement", "board resolution", "bank letter", "screenshot"), a short note and the date it relates to | M | P1 |
 | FR-DOC-06 | (rev 0.3) **Evidence rules** per activity type: *required*, *recommended* or *optional*, with the evidence types expected. A missing required item blocks completion (✖, in plain words: what is missing and how to add it); a missing recommended item is ⚠. Recommended rules ship as defaults (table below) and are organisation settings (FR-ORG-08) | M | P1 |
@@ -917,6 +931,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-DOC-09 | (rev 0.3) **Personal data in evidence**: each file carries a data class (general, personal data, bank details, payroll, identity document). Payroll and identity evidence follow payroll permissions (FR-PAY-13); the NRIC pattern scan flags unmasked identifiers; a redaction tool creates a redacted copy and keeps the original restricted (P2) | M | P1 (class) / P2 (redaction) |
 | FR-DOC-10 | (rev 0.3) **Find and export evidence**: search by activity, type, date and uploader; a "missing evidence" list; an evidence pack for a period, a filing, an investor or an audit, with a manifest of file hashes (feeds the auditor pack of FR-RPT-10) | S | P1 (search) / P2 (packs) |
 | FR-DOC-11 | (rev 0.3) **Evidence through the API**: integrations upload with `POST /v1/{collection}/{id}/evidence` (multipart, `Idempotency-Key`, the same scanning and rules). AI and MCP clients never upload directly: they can only propose attaching an existing document (`doc.attach`, tier 1), which a human approves | M | P1 |
+| FR-DOC-12 | (rev 0.6) **Smart document capture**: one pipeline for receipts, bills, sales invoices, statements and contracts. In: upload, drag and drop, paste, an email-in address per organisation and per user, InvoiceNow inbound (FR-AP-05) and the PWA camera (P2). The pipeline classifies each document, extracts fields with a confidence per field (supplier, UEN, GST registration number, number, dates, currency, lines, GST, totals) using the model's PDF and image input (AI-28), checks the IRAS tax-invoice particulars (FR-AR-05), detects duplicates, matches receipts to card and bank lines, and creates **drafts only** (`ap.draft_bill`, `exp.draft_claim`, tier 1). Low-confidence fields are highlighted for the person who reviews the draft. The original is kept as evidence (FR-DOC-05). Extracted text is untrusted data (AI-18). Replaces FR-AP-04 and FR-DOC-03, which become parts of this pipeline | M | P1 (upload, paste, email-in) / P2 (camera, statements) |
 
 **Recommended evidence rules (rev 0.3; defaults, configurable under FR-ORG-08):**
 
@@ -954,7 +969,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-INT-01 | **API-first public REST API** (OpenAPI 3.1) covering every user-facing operation, using the same domain commands, validations and approval policies as the UI. **The web app uses only this API**: there are no private endpoints (QA-API-03). Third-party access opens in P2. (Rev 0.2: was S / P2.) | M | P1 (our UI) / P2 (third parties) |
 | FR-INT-02 | **Client credentials by class** (AI-34): `integration` clients use OAuth 2.1 client credentials with `private_key_jwt`, narrow scopes granted by the Owner with dual control, IP allow-lists where possible, and expiry; developers may use **personal access tokens** (hashed at rest, the same scopes as OAuth clients, expiring ≤ 90 days, shown once, and class `agent` by default because a token may be pasted into an AI tool; the Owner may reclass one as `integration` with dual control); rate limits per client and per organisation; every call audited with the client ID. Tokens come from the OAuth server (ADR-T3). The client-class model itself (AI-34) exists from P1, for MCP. | M | P2 |
 | FR-INT-03 | **MCP server** exposing the AI read tools and the propose tool to MCP clients under the user's own identity and the same proposal-only rule; secured as §9.7 specifies | S | P1 (first-party clients) / P2 (third-party) |
-| FR-INT-04 | Integrations: payment provider (Stripe), Peppol access point, bank feeds, Google Workspace (sign-in, Drive export), Slack (notifications, approvals), CRM or billing system (customers, subscriptions) | S | P2 |
+| FR-INT-04 | Integrations: payment provider (Stripe), Peppol access point, bank feeds, Google Workspace (sign-in, Drive export), Slack (notifications and deep links; rev 0.6: approvals stay in the web app, FR-NTF-04), CRM or billing system (customers, subscriptions) | S | P2 |
 | FR-INT-05 | Import from Xero, QuickBooks Online and Zoho Books (CoA, contacts, open items, balances, history) for SaaS onboarding | C | P3 |
 
 #### 8.18.1 API conventions (rev 0.2)
@@ -1001,7 +1016,7 @@ checked by the contract tests (QA-API-01…03).
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
 | FR-ADM-01 | Invite users by email, assign roles and scopes (entity, department), expiry dates for external users | M | P1 |
-| FR-ADM-02 | Authentication: MFA mandatory for every user (TOTP or passkey); passkeys (WebAuthn) for step-up and approvals; Google sign-in allowed with MFA; SSO (SAML/OIDC) and SCIM in Enterprise mode | M | P1 (TOTP, passkey step-up) / P3 (SSO/SCIM) |
+| FR-ADM-02 | Authentication: MFA mandatory for every user (TOTP or passkey); passkeys (WebAuthn) for step-up and approvals; Google sign-in allowed with MFA; SSO (SAML/OIDC) and SCIM in Enterprise mode (rev 0.6: providers are configurable, including Zoho, FR-ADM-08) | M | P1 (TOTP, passkey step-up) / P3 (SSO/SCIM) |
 | FR-ADM-03 | Session management: idle timeout, absolute timeout, device list, revoke sessions, sign-in alerts | M | P1 |
 | FR-ADM-04 | Team mode, approval policies, AI settings and task catalogue, statutory parameters, integrations — all changes approval-gated and audited | M | P1 |
 | FR-ADM-05 | Tenant usage and cost view (AI tokens, storage, exports) | S | P2 |
@@ -1085,7 +1100,7 @@ effects follow the choice, not the cash:
 | FR-EQ-06 | **Conversion to share capital** (capitalisation), in two steps. **Approve**: choose the person, the balance and amount, the share class, the price per share with its basis (latest priced round, independent valuation, or a price every shareholder approves); shares = `RND-SHARE`, and the remainder stays on the director's account. Attach the shareholders' approval (Companies Act s161; a private company may use a written resolution, s184A), the board resolution, the written conversion agreement and the founder's signed balance confirmation. Record the founder's **capacity** (lender, employee or shareholder). **Effective**: record the lodgement reference and the effective date, which is the filing date once ACRA's electronic register of members shows the allotment (FR-EQ-09); the entry posts on that date and is never backdated: Dr 2500/2120 converted amount, Cr 3010 or 3020. Until then the balance stays a liability and the conversion shows as pending. The accountant picks the measurement basis: carrying amount (the default, when the founder converts as a shareholder) or the shares' fair value with the difference in profit or loss (IFRIC 19 ¶9 and its Singapore equivalents; SFRS for Small Entities ¶22.15A–C); a basis other than the default needs a note | M | P1 |
 | FR-EQ-07 | **Waiver**: Dr 2500/2120; Cr 3300 Capital contribution (equity) when the founder waives as a shareholder, or Cr other income otherwise (the accountant's choice, with a reason). A waived amount the company deducted earlier (pay, fees) is tagged for the tax computation [verify taxability] | M | P1 |
 | FR-EQ-08 | **Register of share issues**: every allotment, for cash or not, with holder, class, number, price, consideration type (cash, debt capitalised, services, SAFE or note conversion), resolution references, the ACRA lodgement reference and the **effective date** (the filing date, once ACRA has updated the electronic register of members). Share-capital accounts accept postings only from this register or opening balances (INV-13). It is the issues part of the equity register (§8.23), from which the cap table is computed | M | P1 |
-| FR-EQ-09 | **ACRA steps**, tracked with their evidence (FH Cloud does not lodge, §4.2, §9.6): (a) the shareholders' approval of the share issue is lodged within 14 days of the resolution (Companies Act s161(5) and s186): a ⏰ statutory-calendar task (FR-TAX-07); the approval lapses at the next AGM (or the date by which it must be held), so a conversion not registered by then needs a new approval (⚠); (b) the return of allotment, lodged with the written conversion agreement or a statement of particulars for shares not paid in cash (s63, s63B): an approved conversion not registered after a configurable number of days (default 14) is ⚠ | M | P1 |
+| FR-EQ-09 | **ACRA steps**, tracked with their evidence (FH Cloud does not lodge, §4.2, §9.6): (a) the shareholders' approval of the share issue is lodged within 14 days of the resolution (Companies Act s161(5) and s186): a ⏰ statutory-calendar task (FR-TAX-07); the approval lapses at the next AGM (or the date by which it must be held), so a conversion not registered by then needs a new approval (⚠); (b) the return of allotment, lodged with the written conversion agreement or a statement of particulars for shares not paid in cash (s63, s63B): an approved conversion not registered after a configurable number of days (default 14, matching ACRA's guidance; the Act sets no deadline for private companies) is ⚠ | M | P1 |
 | FR-EQ-10 | **Presentation**: conversions, waivers and other non-cash movements are left out of the cash flow statement and listed as non-cash financing transactions; the statement of changes in equity shows shares issued for cash and for non-cash consideration separately; a related-party schedule (balances with directors, their pay and fees, conversions, waivers) feeds the notes (FR-RPT-11) | M | P1 |
 | FR-EQ-11 | **Director's account in debit**: a director's net balance (2500 and 2120 together) in debit at a month end raises ⚠ on Checks, and the balance sheet presents it in 1250 Staff & director advances. Exempt-private-company status is an effective-dated organisation attribute (FR-ORG-01); when the company is not exempt, the message cites the Companies Act s162 ban on loans to directors and its exception for advances for company expenses (approved in general meeting, or repaid within 6 months after the next AGM). Losing exempt status (for example when a corporate investor joins) re-runs the check | M | P1 |
 | FR-EQ-12 | **Year-end confirmation**: each director confirms their closing balance in the app (passkey); an unconfirmed balance is ⚠ on the year-end close checklist | S | P1 |
@@ -1105,7 +1120,7 @@ the instruments ACRA does not hold (SAFEs, notes, options) and the evidence, and
 |---|---|---|---|
 | FR-EQ-15 | **Holders and investors**: every shareholder, SAFE or note holder and option holder is a contact with the role *investor* or *shareholder* (Contacts filter): individual or entity, identifiers (protected like employee identifiers, CMP-PD-07), address, contact people, holdings by class, instruments, rights and documents. A change to a holder record is versioned, audited and approved; identity documents are evidence (FR-DOC-05) with the personal-data class | M | P1 |
 | FR-EQ-16 | **Share classes**: ordinary and preference (series), each with structured rights: votes per share, liquidation preference (multiple, participating or not, seniority), dividend rights, conversion ratio, anti-dilution (none, broad-based weighted average, full ratchet), pro-rata and redemption rights; the constitution and shareholders' agreement attached as evidence | M | P1 |
-| FR-EQ-17 | **Equity transactions**, append-only and dated by their effective date: issue for cash (Dr Bank, Cr 3010/3020), issue for non-cash consideration (FR-EQ-06), **transfer** between holders (no entry in the company's books; share duty on the transfer document is the parties' matter, on the higher of price and net asset value [verify rate]), conversion between classes, SAFE or note conversion (FR-EQ-18), option exercise (FR-EQ-19); cancellation, buy-back, capital reduction, split and consolidation are C/P2. Each transaction needs approval (FM-1, FM-9) and evidence (FR-DOC-06) and opens its ACRA tasks (FR-EQ-09; how transfers are lodged [verify]). A wrong transaction is corrected by a reversing transaction, never edited | M | P1 |
+| FR-EQ-17 | **Equity transactions**, append-only and dated by their effective date: issue for cash (Dr Bank, Cr 3010/3020), issue for non-cash consideration (FR-EQ-06), **transfer** between holders (no entry in the company's books; share duty on the transfer document is the parties' matter, on the higher of price and net asset value [verify rate]), conversion between classes, SAFE or note conversion (FR-EQ-18), option exercise (FR-EQ-19); cancellation, buy-back, capital reduction, split and consolidation are C/P2. Each transaction needs approval (FM-1, FM-9) and evidence (FR-DOC-06) and opens its ACRA tasks (FR-EQ-09; a transfer needs a proper instrument of transfer, then the company lodges a notice of transfer, s126, and the transfer takes effect when ACRA updates the register of members; ACRA's guidance expects this within 14 days). A wrong transaction is corrected by a reversing transaction, never edited | M | P1 |
 | FR-EQ-18 | **SAFEs and convertible notes**: holder, amount, date, valuation cap, discount, most-favoured-nation clause, interest and maturity (notes), conversion trigger and the shares they convert into; posted to 2700 (the accountant classifies each instrument as liability or equity from its terms [verify per instrument]). At a priced round the engine computes the conversion price (the lower of the cap price and the discounted round price, as the terms say) and the shares with `RND-SHARE`, and creates the share issues as drafts for approval. Fixes the workbook limitation on converted SAFE shares and whole-share rounding (Appendix A) | M | P1 |
 | FR-EQ-19 | **Option pool and grants**: pool size set by resolution; grants with holder, number, exercise price, grant date, vesting (cliff, monthly, acceleration), expiry; exercises, forfeitures and expiries update the pool. Each employee sees their own grants. Share-based payment expense schedules (FR-EQ-13) and the employee share-gains data for IR8A (Appendix 8B [verify]) follow in P2 | S | P1 (register) / P2 (expense, IR8A) |
 | FR-EQ-20 | **Cap table at any date**, computed from the transactions and never edited directly: by holder and class; **issued** and **fully diluted** (granted options, the unallocated pool, SAFEs and notes as converted at a stated price); ownership and voting percentages; comparison of two dates; drill-down to each transaction and its evidence; XLSX and PDF export. Percentages are computed exactly and shown to 2 decimals (`RND-DISPLAY`); the oracle computes the same table (QA-ENG-02) | M | P1 |
@@ -1113,9 +1128,38 @@ the instruments ACRA does not hold (SAFEs, notes, options) and the evidence, and
 | FR-EQ-22 | **Investor records and obligations**: per investor, the investments (round, instrument, amount, price, date), rights from the agreements (board seat, observer, information rights, pro-rata, consent matters) and documents (subscription agreement, shareholders' agreement, side letters) as evidence. Information rights become calendar tasks (for example quarterly accounts within 45 days) with the delivered pack as evidence | M | P1 (records) / S P2 (obligation tasks) |
 | FR-EQ-23 | **Investor updates**: a monthly or quarterly update built from the board pack (FR-RPT-06): KPIs, cash, runway, highlights, asks; commentary drafted by the AI and edited by a human (`rpt.draft_commentary`); sent to a distribution list as access-controlled links; read status and an archive | S | P2 |
 | FR-EQ-24 | **Investor access**: the Board / investor viewer role sees the investor updates, the board pack and **their own holdings** by default; the full cap table only when an Owner grants it. Employees see only their own option grants | S | P2 |
-| FR-EQ-25 | **Linked statutory checks**: every holder change re-evaluates exempt-private-company status (a corporate holder or a 21st member ends it, FR-EQ-11), and flags any person whose shares or votes cross the controller threshold (more than 25% [verify]) for a register-of-controllers update within 7 days (FR-TAX-07) | M | P1 |
+| FR-EQ-25 | **Linked statutory checks**: every holder change re-evaluates exempt-private-company status (a corporate holder or a 21st member ends it, FR-EQ-11), and flags any person whose shares or votes cross the controller threshold (more than 25% [verify]) for a register-of-controllers update: the company's own register within 7 days, then the central register within 2 business days (ACRA guidance; s386AG–AH) (FR-TAX-07) | M | P1 |
 | FR-EQ-26 | **Integrity**: paid-up capital in the register equals 3010 + 3020 in the ledger (INV-13); the register reconciles to an uploaded ACRA register-of-members extract (business profile), with differences on Checks; equity data is restricted (`fh.read.equity`, never granted by default, AI-37) | M | P1 |
 | FR-EQ-27 | **Basic and Expert** (§7.8): Basic shows "Who owns the company" (ownership chart with a table view, my holding, the latest round) and the round simulator with a few inputs; Expert adds classes and rights, instruments, the option pool, transactions, fully diluted views and reconciliation | S | P1 |
+
+### 8.24 Sign-in, super admin, email, notifications and messaging (rev 0.6, founder request)
+
+Every outside service sits behind a **capability interface with interchangeable adapters**, so a
+provider is a configuration choice, not a code change. The founders use Google and Zoho
+accounts, Zoho ZeptoMail and Resend for email, and may use Slack or Zoho Cliq. All of these are
+adapters; none is hard-wired.
+
+| Capability | Adapters at launch | Local substitute (ADR-T4) | Phase |
+|---|---|---|---|
+| Sign-in | Google; Zoho; any OpenID Connect provider; email and password; SAML in Enterprise mode | Firebase Authentication emulator (mock providers only; real Zoho and Google sign-in are tested in staging) | P1 |
+| Outbound email | Zoho ZeptoMail (renamed Zoho CPaaS in September 2026); Resend; generic SMTP | Mailpit | P1 |
+| Inbound email (capture addresses) | Resend receiving (webhook, then fetch the message); mailbox polling over IMAP (e.g. a Zoho Mail mailbox) | Mailpit plus a local webhook | P1 |
+| Messaging | Slack; Zoho Cliq; generic incoming webhook | Local message sink at `/dev/messages` | P2 |
+
+| ID | Requirement | Pri | Phase |
+|---|---|---|---|
+| FR-INT-20 | **Integration framework**: every external service (sign-in, outbound and inbound email, messaging, payments, bank feeds, the Peppol Access Point, document AI) implements a capability interface; adapters are interchangeable. Settings → Integrations (the Super admin for installation-wide connections, the Owner or Administrator for organisation-level ones) lets them pick an adapter, enter credentials (kept in Secret Manager and write-only in the interface), **test the connection**, see its health, enable or disable it and set a failover order. Changes are audited and dual-controlled (FM-1). Every adapter has a local substitute and contract tests; adding a provider adds an adapter, never a change to the core | M | P1 |
+| FR-ADM-06 | **First-run setup and the super admin**: a new installation opens a setup wizard, and **the first person to complete it becomes the Super admin** and the Owner of the first organisation. The wizard needs a **one-time setup code** created at deployment (printed by `make setup` locally; held in Secret Manager in the cloud) and, optionally, an email address fixed at deployment, so nobody can claim a public installation first. After setup the wizard closes for good. The wizard asks for a second Super admin (recommended) and explains break-glass (FM-8) | M | P0 |
+| FR-ADM-07 | **Super admin scope**: installation-wide settings (sign-in providers, email and messaging connections, announcements to everyone, organisations in P3, platform health). The Super admin is not an organisation role: reading an organisation's books needs membership in it. The last Super admin cannot be removed; Super admin changes are audited, need step-up authentication, and are dual-controlled once a second Super admin exists | M | P1 |
+| FR-ADM-08 | **Configurable sign-in providers**: Google and Zoho out of the box, any OpenID Connect provider by configuration (issuer or discovery URL, client ID, secret in Secret Manager, scopes, claim mapping). **Zoho**: the authorisation-code flow with a client secret (Zoho's discovery document offers no `id_token` response type for the implicit flow); scopes `openid email profile`; **one provider per Zoho data centre**, because each has its own issuer (`https://accounts.zoho.com`, `.eu`, `.in`, `.com.au`, `.jp`, `.sg` and others); users identified by the `sub` claim, not email. A live sign-in per data centre is a P0 exit test, since the issuer format in Zoho's tokens is not confirmed [verify]. email and password optional, SAML in Enterprise mode. Per provider: enabled, allowed email domains, and whether new users may join by domain (**off by default; an invitation is required**). Accounts link only on a verified email. **The platform's own MFA (TOTP or passkey) stays mandatory whatever the provider** ("trust the provider's MFA" is off by default); passkeys remain the step-up for approvals (FR-ADM-02). Every sign-in records the provider used | M | P1 |
+| FR-INT-21 | **Outbound email**: adapters for **Zoho ZeptoMail**, **Resend** and generic **SMTP** (Mailpit locally). A sender address per purpose (notifications, invoices and quotes, reminders, security); a primary provider and a failover; the platform renders its own templates and providers only deliver. The sending domain's SPF, DKIM and DMARC status is shown and checked daily. Provider webhooks are signature-verified and deduplicated, and update each message's status and a suppression list; **the status model allows for providers that never report "delivered"** (ZeptoMail reports opens, clicks, bounces and complaints only; Resend also reports delivered and delayed). Sends are idempotent through the platform's outbox (Resend's `Idempotency-Key` where available; ZeptoMail has none, so the outbox key goes in `client_reference`). There is a test send and each provider's sandbox is used in staging. Each message is logged (recipient, template, status, provider) without storing bodies beyond what the record needs. **Neither provider documents a Singapore region** (ZeptoMail: US, EU, AU, IN, CN, JP; Resend sends from US, EU, São Paulo or Tokyo and keeps account data and logs in the US), so each provider is in the data inventory with a PDPA transfer assessment before use | M | P1 |
+| FR-INT-22 | **Inbound email** for the capture addresses (FR-DOC-12): an inbound adapter receives messages through a provider's webhook, keeps the SPF, DKIM and DMARC results, scans attachments (ClamAV), and stores everything as untrusted documents (AI-18); unknown senders go to a quarantine list for a person to accept. Adapters: Resend receiving (generally available since November 2025; the webhook carries metadata and the message is fetched through the API) or IMAP polling of a mailbox; ZeptoMail is send-only | M | P1 |
+| FR-NTF-01 | **Notification centre** for every user: a bell with the unread count; each notification has a type, a severity, the record it is about and the time; read, unread and archive. **Inbox and notifications differ**: the Inbox holds what waits for the user to act (approvals, tasks, proposals, fixes); notifications say what happened, and an actionable one links to its Inbox item | M | P1 |
+| FR-NTF-02 | **Preferences** per user and event type: channels (in-app always; email; Slack or Cliq when connected), immediate or a daily or weekly digest, quiet hours. Organisation defaults ship with recommended values (FR-ORG-08). Security notifications (new-device sign-in, MFA or role change) cannot be turned off | M | P1 |
+| FR-NTF-03 | **Announcement banners**: the Super admin (for everyone) and the Owner or Administrator (for one organisation) publish a banner with a message and a link, a severity (info, warning, critical), an audience (everyone, roles), a start and an end time, and whether it can be dismissed (critical ones cannot). Banners sit under the header on every page; the platform adds its own for maintenance windows and incidents, and the "What's new" release note (FR-UX-35). Info banners use `role="status"` and only critical ones `role="alert"`; a banner never covers the focused element (SC 2.4.11); dismissals are stored per user on the server; publishing is audited | M | P1 |
+| FR-NTF-04 | **Slack and Zoho Cliq (optional)**: an organisation-level connection per workspace: a private Slack app posting with a bot token (`chat.postMessage`, scope `chat:write`; not incoming webhooks, which are fixed to one channel), or a Zoho Cliq bot posting to channels and users through the Cliq REST API (OAuth scope `ZohoCliq.Webhooks.CREATE`; 50 requests a minute per user, so messages are queued and batched); routing rules send event types to channels (for example approvals to #finance, company-secretary runs to #compliance); users who link their chat account also get direct messages. Messages carry deep links into the web app. **Approvals never happen in chat**: a button opens the web app, where step-up applies (FR-APR-03/04). A content level per connection: **minimal by default** ("2 approvals waiting", no amounts or names) or standard (amounts and counterparties), the latter only after the chat provider is in the data inventory with a PDPA transfer assessment (Slack offers Singapore data residency on its Business+ and Enterprise plans; Cliq documents no Singapore data centre). Failed deliveries fall back to email | S | P2 |
+| FR-NTF-05 | **One event stream**: notifications, digests, banners for incidents, chat messages and webhooks are all produced from the same events (FR-INT-12), so channels are interchangeable; every delivery attempt is logged and retried; each channel has a test message | M | P1 |
+| FR-NTF-06 | **Ask from chat**: linked users ask the assistant read-only questions in Slack or Cliq through the same tools, permissions and exclusions (an `agent`-class client, §9.7); answers follow the connection's content level | C | P3 |
 
 ---
 
@@ -1272,7 +1316,9 @@ policies, the AI catalogue or AI settings; changing statutory parameters; reopen
 voiding or deleting posted records; filing with IRAS, CPF or ACRA; exporting the tenant;
 anything touching the audit trail; (rev 0.3) issuing or transferring shares, changing holders,
 instruments or investor rights, or repaying, converting or waiving a director's balance (the AI
-may still draft a founder's expense claim, `exp.draft_claim`, and run round scenarios).
+may still draft a founder's expense claim, `exp.draft_claim`, and run round scenarios); (rev 0.6)
+filing or lodging anything, changing officers or registers, or marking an obligation as met
+(scheduled agents, AI-66).
 
 **"List of approved tasks" in the UI**: the *AI tasks* page shows (a) the catalogue with each
 task type's tier, limits and status, and (b) the history of every proposal (pending, approved,
@@ -1358,6 +1404,7 @@ fixation) are part of QA-MCP-01 (§16.2).
 | QA-AI-04 | Production monitoring: grounding failures, refusals, tool errors, approval and rejection rates per task type, edit-before-approve rate, cost per conversation | S | P1 |
 | QA-AI-05 | User feedback (thumbs up/down with reason) feeds the eval set after review | S | P1 |
 | QA-AI-06 | (rev 0.4) **Knowledge evals**: ≥ 100 golden help and policy questions with the expected guide pages and key facts. Measures answer accuracy, citation correctness (every user-facing citation resolves and supports the claim) and the stale-fallback rate. A knowledge-base publish (a platform release or an organisation publish) and any compiler model or prompt change must pass before going live. (rev 0.5) A retrieval miss is fixed by recompiling (summary, `aliases`, cross-links), never by adding vectors | M | P1 |
+| QA-AI-07 | (rev 0.6) **Agent evals**: per agent, golden companies with planted problems (for the secretary: an annual return due, financial statements unapproved near their deadline, ledger share capital different from the register, an overdrawn director's account, a new holder above the controller threshold, a share issue with no ACRA acknowledgement). Required: every planted ✖ and ⏰ found, no false "all clear", every draft matches its template, and the red-team cases (injected text in uploaded documents) cause no action | M | P1 |
 
 ### 9.11 Context and the compiled knowledge base (rev 0.4, ADR-T6)
 
@@ -1390,6 +1437,52 @@ pages compiled from trusted sources and navigated through an index. This is Andr
 | AI-58 | **Search and scale**: index-first while the reader's index fits in 8,000 tokens; above that, a top-level index of sections plus `kb.index(section)`. `kb.search` uses PostgreSQL full-text search (`tsvector`, `pg_trgm`) over compiled pages, their `aliases` and the raw sources. (rev 0.5) **No embeddings or vector search, in any phase.** The knowledge base is static, curated and compiled, so a retrieval miss is fixed in the compile step: a better summary, an alias for the user's wording, a cross-link, a split index or pages per language. Any future use of embeddings elsewhere in the platform needs its own ADR | M | P1 |
 | AI-59 | **No automatic filing of answers**: answers carry one user's context and the organisation's figures, so they never become pages by themselves. From P2 the AI may propose a know-how page from a conversation (`kb.propose_page`, tier 1, without figures), which an Owner or Administrator approves | C | P2 |
 | AI-60 | **Conversation memory**: conversations are kept in the AI activity log for their user (AI-12). There is no hidden long-term memory: anything the assistant should remember across conversations becomes a setting or a knowledge-base page that a person approved | M | P1 |
+
+### 9.12 Scheduled agents and the AI company secretary (rev 0.6, founder request)
+
+The founders want compliance to run itself. On a schedule, an agent checks the books and the
+company's details, cross-checks them against Singapore's corporate and tax obligations, and
+prepares what is due. In Singapore the company secretary must be a natural person whose
+principal or only place of residence is in Singapore, and a sole director cannot also be the
+secretary (Companies Act s171; [source notes](research/secretary-xero-integrations-2026-10-12.md)). So the agent is the **AI company secretary assistant**. It checks,
+explains, reminds and drafts; the named human secretary and the directors decide, sign and file.
+The agent follows every AI principle of §9.1: it reads within permissions, and it changes
+nothing except by proposals a person approves.
+
+**Scheduled agents (the framework; the company secretary is the first agent)**
+
+| ID | Requirement | Pri | Phase |
+|---|---|---|---|
+| AI-61 | **Agent skills**: each scheduled agent is defined by a versioned skill file, `agents/<name>/SKILL.md`, holding its instructions, its checklist, the read tools it may call and the outputs it may produce. The file is hash-pinned per release and changes only through a dual-approved change that passes the evals (CMP-AI-03, QA-AI-07), like the task catalogue | M | P1 |
+| AI-62 | **Schedules and triggers**, per organisation and per agent, all configurable with recommended defaults (FR-ORG-08): a cron-style schedule in Singapore time; event triggers (FY end, period close, share issue or transfer, officer or holder change, a filing recorded, a deadline 30, 14, 7 and 1 days ahead); quiet hours; recipients and channels (Inbox and email; Slack from P2); escalation to the Owner 7 days before a deadline; "Run now"; pause | M | P1 |
+| AI-63 | **Identity and permissions**: an agent runs as a named non-human principal (e.g. "Company secretary agent") **on behalf of the Owner who enabled it**, intersected with the agent's permission profile (for the secretary: ledger summaries, the statutory calendar, the equity register, officers and controllers, settings and evidence metadata; no payroll detail unless AI payroll access is on; the AI-02 exclusions always). Agents are off by default; enabling one is an AI-settings change under FM-1 | M | P1 |
+| AI-64 | **Deterministic first**: a run executes the deterministic checks (checks engine, statutory calendar, reconciliations, registers) first. The model is called only to explain findings, cross-check what rules cannot, and draft. When no input changed since the last run, the model step is skipped | M | P1 |
+| AI-65 | **Outputs**: a **run report** (each finding with its status ✔ ⚠ ✖ ⏰, the rule and source it applied, links to the evidence and what to do next), Inbox tasks with an owner and a due date, and **drafts as tier-1 proposals** (documents and reminder emails, sent only after approval). Run reports are append-only and record the ledger version, knowledge-base snapshot and pack versions used, so a run can be reproduced (FR-RPT-08) | M | P1 |
+| AI-66 | **Never**: an agent never files or lodges with ACRA, IRAS or CPF, signs, approves, changes officers, registers, holders or settings, sends anything outside the organisation without approval, or marks an obligation as met. It reports, creates tasks and proposes drafts only (§9.6) | M | P1 |
+| AI-67 | **Budgets and failure**: a token budget per run and per month, a cap on tool calls, and the Owner's instant pause (AI-13). A failed, skipped or late run is itself ⚠ on Checks, and the deterministic deadline monitor (CMP-02) keeps running when the agent is paused or over budget | M | P1 |
+
+**The AI company secretary**
+
+| ID | Requirement | Pri | Phase |
+|---|---|---|---|
+| FR-CS-01 | **Corporate profile** as effective-dated records: UEN, name, registered office, industry code (SSIC), FY end; directors, secretary and auditors with appointment and cessation dates; registrable controllers; nominee directors. It is reconciled to the ACRA business profile: an uploaded extract in P1, and from P2 fetched through ACRA's API Marketplace (Entity Information Query and Business Profile API; Corppass account, quota-based; **read-only, ACRA offers no filing API**). The registers of directors, secretaries and auditors are kept by ACRA, so the profile mirrors them. A change opens its lodgement checklist with the deadline from the ACRA pack (FR-CS-02): 14 days for officers, their particulars and the registered office (s173A, s143) | M | P1 |
+| FR-CS-02 | **ACRA pack**: corporate deadlines and rules as an effective-dated pack `sg-acra@<year>.<n>`, sourced and dual-approved like the statutory packs (§10.6). It covers AGM and financial-statement timing (including the private-company route that dispenses with the AGM), the annual return, changes of officers, address and controllers, share-issue approvals and their lapse, exempt-private-company solvency and XBRL filing categories, and audit-exemption criteria. The rules were checked against the Act and ACRA on 12 Oct 2026 ([source notes](research/secretary-xero-integrations-2026-10-12.md)); points where the Act and ACRA's guidance differ (e.g. a 14-day expectation for returns of allotment and share transfers that the Act does not state) are stored as guidance with their source | M | P1 |
+| FR-CS-03 | **Cross-checks** the agent runs, each also a check in Appendix C so it works without the agent: books closed for the FY; financial statements approved by the directors, and their dates; the deadlines for sending or laying them; annual-return consistency (ledger share capital = equity register = ACRA; officers and registered office = ACRA profile); exempt-private-company status and solvency indicators (net assets, runway); the audit-exemption classifier; directors' accounts in debit (FR-EQ-11); share-issue approvals about to lapse (FR-EQ-09); controller changes (FR-EQ-25); the GST threshold monitor (FR-TAX-05); ECI and Form C-S status; CPF and IR8A; filings without their acknowledgement (FR-DOC-06); unconfirmed related-party balances (FR-EQ-12) | M | P1 |
+| FR-CS-04 | **Company secretary workspace** (Compliance → Company secretary): the latest run report, open findings, the obligations calendar, drafts awaiting approval, the history of runs with "new since last run", and the schedule settings. Basic mode shows a plain summary ("2 things need you this week"); Expert mode adds every finding with its rule and source | M | P1 |
+| FR-CS-05 | **Document drafts** from templates filled from the records: directors' resolutions (approve the financial statements, allot shares, appoint or remove an officer, change the registered office), members' written resolutions, AGM notice and minutes, or the papers for dispensing with the AGM. Drafts are proposals; once signed and uploaded they become evidence (FR-DOC-05). Signed minutes and written resolutions go in the minute book (minutes within one month, s188), and the agent reminds until they do. Members' written resolutions follow s184A–G (ordinary: a majority; special: at least 75% of total voting rights) and cannot be used for a resolution that needs special notice; general meetings need 14 days' notice (s177) | S | P1 |
+| FR-CS-06 | **The named human secretary**: the corporate profile records the appointed company secretary (a person, internal or from a corporate secretarial firm, with the Company secretary role below); the agent addresses its findings to them and to the directors. No secretary recorded 6 months after incorporation is ✖ (ACRA guidance; the office may not stay vacant for more than 6 months, s171(4A)), and so is a sole director recorded as the secretary (s171(1E)) | M | P1 |
+| FR-CS-07 | **Annual-return pack**: the officers, members, share capital and financial-statement figures the annual return asks for, assembled by filing category for the secretary to file in BizFile+; XBRL readiness with FR-TAX-08 | S | P2 |
+| FR-CS-08 | **Company secretary role**: an internal or external user who sees the corporate profile, registers, equity register, AI company secretary runs and drafts, uploads evidence and records filings; no transaction, payroll or bank detail unless granted; external access is time-boxed (FR-ADM-01) | M | P1 |
+
+**Recommended default schedule** (settings under FR-ORG-08):
+
+| When | What | Model used? |
+|---|---|---|
+| Daily, 07:00 SGT | Deadline and lodgement monitor (deterministic) | Only if something changed |
+| Weekly, Monday 08:00 SGT | Full cross-check (FR-CS-03) with a summary for the directors | Yes |
+| After each month's close | Books-to-registers consistency; new findings | Yes |
+| FY end + 1 month | FY-end pack: financial statements route, AGM or dispensation, annual return, ECI | Yes |
+| Events | Share issue or transfer, officer, address or controller change, filing recorded, deadline 30/14/7/1 days ahead | Only for drafts |
 
 ---
 
@@ -1625,6 +1718,10 @@ organisation ─┬─ entity (P3) ─┬─ period (open | soft-locked | closed
               ├─ share_class, equity_transaction (append-only), instrument (SAFE | note | option grant),
               │  round_scenario (sandbox), director_balance_movement (origin)  (rev 0.3)
               ├─ setting_value (effective-dated; recommended | changed), user_help_state (tour, tips)  (rev 0.3)
+              ├─ integration_connection (adapter, secret reference, health), outbound_message (status),
+              │  notification, notification_preference, announcement, announcement_dismissal  (rev 0.6)
+              ├─ corporate_officer, registrable_controller, agent_definition (pinned skill), agent_schedule,
+              │  agent_run (append-only report)  (rev 0.6)
               ├─ kb_page ── kb_page_version (append-only; human_edited, taint, data class), kb_snapshot,
               │  kb_lint_finding  (rev 0.4; organisation knowledge base, AI-56)
               └─ audit_event (append-only, hash-chained per organisation)
@@ -1776,7 +1873,7 @@ consequences, status). A superseded decision is marked superseded, never edited 
 | Database migrations | **goose** (SQL files embedded in a `migrate` binary, run as a Cloud Run job under the migration identity, SEC-03) + **squawk** to lint migrations for locking and destructive changes in CI | Plain SQL, reviewable; expand-and-contract enforced by lint | Atlas; tern |
 | Feature flags | **OpenFeature** SDK with a database-backed provider (per-organisation flags, audited changes) | Vendor-neutral API; no SaaS dependency | flagd; a commercial flag service |
 | Global search (FR-UX-02) | PostgreSQL full-text search (`tsvector`) plus `pg_trgm` for fuzzy matching of names and references, with RLS | No extra search engine to run | OpenSearch (only if search volume demands it) |
-| Email | A provider interface; production provider chosen at P1 (SPF, DKIM and DMARC aligned for the sending domain); **Mailpit** locally | Deliverability and testability | — |
+| Email | A provider interface; (rev 0.6) **Zoho ZeptoMail and Resend adapters plus SMTP**, primary and failover (FR-INT-21); SPF, DKIM and DMARC aligned for the sending domain; **Mailpit** locally | Deliverability and testability | — |
 | Malware scanning (FR-DOC-01) | **ClamAV** as a Cloud Run service scanning uploads before they are attached; files stay quarantined until clean | Open source; no file leaves Singapore | A Security Command Center or commercial scanning API |
 | Edge for local and preview | **Caddy** as a single-origin reverse proxy for the web app, `/api` and `/mcp` | Same origin, cookies and CSP as production behind the load balancer | nginx |
 | Independent oracle | **Python** reference ledger (port and extend the workbook's `tests/reference.py`; Hypothesis for generated scenarios) | A second implementation in a different language from the engine (QA-ENG-01) | — |
@@ -1910,7 +2007,7 @@ The load balancer with Cloud Armor is in production from go-live (≈ US$30 a mo
 | Item | Decision |
 |---|---|
 | Google Cloud projects | `fh-prod`, `fh-staging`, `fh-dev` (sandbox), `fh-audit` (locked log buckets, audit anchors, backup vault; separate admin group), `fh-ci` (Artifact Registry, CI identities); one organisation with organisation policies (resource locations = `asia-southeast1`, no service-account keys, uniform bucket access, restricted public IPs) |
-| Repository | One monorepo (rev 0.2: the single layout; §12.2 refers here): `apps/web` (React SPA), `cmd/` (one entry point per service: `api`, `ai`, `mcp`, `worker`, `executor`, `jobs`, `render`, `migrate`), `internal/` (Go domain, ledger, adapters), `contracts/` (OpenAPI, AsyncAPI event schemas, AI tool schemas), `oracle/` (independent reference ledger, Python), `db/` (migrations), `packs/` (statutory parameter packs as data, §10.6), `test/` (cross-cutting suites: differential, invariants, contract, authorisation, MCP), `e2e/` (Playwright), `evals/` (AI suites), `kb/` (rev 0.4: the platform knowledge base: `schema.md`, generated `index.md`, `log.md`, `pages/`), `deploy/local/` (Compose stack, §12.8), `deploy/docker/` (Dockerfiles, §12.9), `infra/` (OpenTofu), `compliance/` (control registry and checks as code), `docs/` (PRD, ADRs, design system, runbooks, post-incident reviews in `docs/postmortems/`), `.claude/skills/` (Appendix H), `AGENTS.md` and `CLAUDE.md` (coding instructions) |
+| Repository | One monorepo (rev 0.2: the single layout; §12.2 refers here): `apps/web` (React SPA), `cmd/` (one entry point per service: `api`, `ai`, `mcp`, `worker`, `executor`, `jobs`, `render`, `migrate`), `internal/` (Go domain, ledger, adapters), `contracts/` (OpenAPI, AsyncAPI event schemas, AI tool schemas), `oracle/` (independent reference ledger, Python), `db/` (migrations), `packs/` (statutory parameter packs as data, §10.6), `test/` (cross-cutting suites: differential, invariants, contract, authorisation, MCP), `e2e/` (Playwright), `evals/` (AI suites), `agents/` (rev 0.6: scheduled-agent skills, e.g. `agents/company-secretary/SKILL.md`), `kb/` (rev 0.4: the platform knowledge base: `schema.md`, generated `index.md`, `log.md`, `pages/`), `deploy/local/` (Compose stack, §12.8), `deploy/docker/` (Dockerfiles, §12.9), `infra/` (OpenTofu), `compliance/` (control registry and checks as code), `docs/` (PRD, ADRs, design system, runbooks, post-incident reviews in `docs/postmortems/`), `.claude/skills/` (Appendix H), `AGENTS.md` and `CLAUDE.md` (coding instructions) |
 | Contracts | OpenAPI 3.1 is the source of truth for the HTTP API; server stubs and the typed web client are generated from it; AI tool schemas are generated from the same types |
 | Database migrations | Versioned SQL migrations (goose; linted by squawk), reviewed like code; expand-and-contract for zero-downtime; every migration tested against a copy of production-shaped data; invariant tests (QA-ENG-05) run after migrations |
 | CI/CD | GitHub Actions with Workload Identity Federation (no keys) → build, test gates (§16), SBOM and provenance → Artifact Registry → deploy to staging → automated E2E and smoke tests → manual approval → production with gradual traffic shifting and automatic rollback on SLO burn |
@@ -2017,6 +2114,7 @@ staging|production`). Local adapters are compiled only into non-production build
 | Pub/Sub (P2) | Google Pub/Sub emulator | Same client library |
 | Load balancer, Cloud Armor, CDN | **Caddy**: one origin for the web app, `/api`, `/ai`, `/mcp` and `/oauth2` | Same cookie and CSP behaviour; WAF rules tested in staging |
 | Email provider | **Mailpit** (inbox UI at `localhost:8025`) | Templates and links checked end to end |
+| (rev 0.6) Slack, Zoho Cliq | A local message sink (`/dev/messages`) that shows what would be posted, with the same payloads | Routing and content level checked end to end |
 | Malware scanning | Stub that rejects the EICAR test file; `clamav` profile for the real engine | — |
 | Peppol access point, bank APIs, payment provider | **Prism** mock servers from the partners' OpenAPI documents in `contracts/partners/`; `stripe-mock` | Contract-level; partner sandboxes are used in staging |
 | Observability | `obs` profile: OpenTelemetry Collector and Jaeger | Same OTel instrumentation |
@@ -2193,6 +2291,7 @@ build requirements.
 | **Corporate income tax** | 17%; SUTE (first 3 YAs: 75% of first S$100k, 50% of next S$100k; conditions apply); PTE (75% of first S$10k, 50% of next S$190k); YA2026 rebate 50% capped at S$40k incl. a S$2k cash grant that needs a non-shareholder local employee; ECI within 3 months of FY end (waived if revenue ≤ S$5m and ECI nil); Form C-S (revenue ≤ S$5m), C-S Lite (≤ S$200k), Form C otherwise; filing by 30 Nov (15 Dec when filed via ASR+ software, YA2023–2027) (IRAS, Aug–Sep 2026) | YA-keyed tax pack; tax-adjustment tags on accounts; capital allowance register; tax computation working paper; form selector (FR-TAX-06) | Pinned tax computations per YA; CI fails if the current YA's pack is missing or unsourced; deadline alerts at 30 and 7 days |
 | **ACRA** | Annual return within 7 months of FY end; AGM within 6 months unless exempt; from 20 Oct 2026 the annual return confirms officer and member particulars; XBRL: solvent exempt private companies file a solvency declaration, simplified XBRL if revenue and assets ≤ S$500k, full XBRL otherwise; XBRL Taxonomy 2026 from 25 Feb 2026; audit exemption for small companies (2 of 3: revenue ≤ S$10m, assets ≤ S$10m, ≤ 50 employees, two consecutive years) **under review**; SFRS for Small Entities 3rd edition from 1 Jan 2027; register of controllers updated within 7 days (ACRA, 2025–2026) | Statutory calendar; filing-category and audit-exemption classifiers with configurable thresholds; FS templates per framework edition; BizFinx data pack, then XBRL (FR-TAX-07/08) | Classifier boundary tests; XBRL validated against the taxonomy (P3) |
 | **Share issues and directors' balances** (rev 0.3) | Issuing shares needs the company's prior approval in general meeting (s161; a private company may pass it as a written resolution, s184A), lodged with ACRA within 14 days (s161(5), s186); the approval lapses at the next AGM; shares issued without it are void. In a private company the allotment takes effect on the date the return of allotment is filed, once ACRA has updated the electronic register of members, and backdating is generally not allowed (the 14-day return deadline in s63A is for public companies); shares not paid in cash need the written contract, or a statement of particulars, lodged with the return (s63B). Shares have no par value (s62A). Loans to directors are banned except in exempt private companies and for approved advances for company expenses (s162). Share duty applies to transfers; secondary sources say none on new issues [verify]. Founder pay: salary is taxed in the year it is due, paid or not; director's fees when the director becomes entitled; CPF is due at the month end on wages due; no CPF on fees voted at a general meeting or on shares in kind. Re-check the Companies Act after the amendments commencing 20 Oct 2026 (SSO, ACRA 30 Apr 2026, IRAS and CPF Board 2024–2026) | Director accounts with origin per movement, founder pay choice, settlement routes, register of share issues with effective dates, exempt-private-company attribute (FR-EQ-01…14, §8.22) | Lodgement and lapse monitor (C.2 #22); director-debit check citing s162 when not exempt (C.2 #21); pay-choice gate (C.2 #24); share capital only from the register (INV-13, C.2 #25) |
+| **Company secretary and corporate changes** (rev 0.6) | A company secretary within 6 months (ACRA guidance); a natural person whose principal or only residence is in Singapore; not the sole director; the office never vacant more than 6 months (s171). AGM within 6 months after FY end; a private company may dispense by sending the financial statements to members within 5 months, by all members' resolution, or when dormant and exempt (s175, s175A). Annual return within 7 months after FY end; fee S$60; late penalty S$300 (up to 3 months) or S$600; from 20 Oct 2026 it confirms ACRA's records of officers, members and the registered office and asks about a CEO (s197). Changes of officers, their particulars and the registered office within 14 days (s173A, s143). Registrable controllers: own register within 7 days, central register within 2 business days; nominee directors: 30 days, then 7 days, then 2 business days. Minutes within one month (s188). ACRA offers read-only APIs, no filing API (SSO and ACRA, Jan–Oct 2026; [source notes](research/secretary-xero-integrations-2026-10-12.md)) | ACRA pack (FR-CS-02); corporate profile (FR-CS-01); AI company secretary (§9.12) | Checks C.2 #15, #32–35; QA-AI-07 scenarios per rule |
 | **CPF** | 2026 rates by age band (≤55: 17/20; 55–60: 16/18; 60–65: 12.5/12.5; 65–70: 9/7.5; >70: 7.5/5 employer/employee); age band changes from the first day of the month after the birthday; OW ceiling S$8,000 a month; annual salary ceiling S$102,000 (AW ceiling = S$102,000 − OW subject to CPF); graduated rates for wages S$50–750; first/second-year PR tables; total rounded to the dollar, employee share rounded down; **due at month end, pay by the 14th** of the next month to avoid interest; payment via EZPay or One-Stop Payroll, no public API (CPF Board, Oct 2026) | Effective-dated CPF pack keyed by residency, PR year, age band and wage band; year-to-date AW ceiling tracking; CPF submission file (FR-PAY-02/09) | Hand-pinned golden payslips for every band, the graduated range, the AW ceiling and birthday transitions; CPF-not-paid alert on the 10th; January CI fails if the year's tables are missing |
 | **SDL, SHG, levies** | SDL 0.25% of remuneration, min S$2, max S$11.25, all employees incl. foreigners; SHG funds (CDAC, ECF, MBMF, SINDA) tiered amounts remitted with CPF; S Pass levy S$650 a month from 1 Sep 2025 (CPF Board, MOM) | SDL and SHG tables; levy as an expense (FR-PAY-03/04/05) | Pinned tests |
 | **MOM employment records** | Itemised payslips with 12 items within 3 working days; key employment terms (17 items) within 14 days; employment records kept 2 years (and 1 year after an employee leaves) (MOM) | Payslip and KET templates; payslips delivered through the MFA-protected portal or an expiring link (FR-PAY-08) | Payslip schema test for the 12 items |
@@ -2443,16 +2542,16 @@ P0 is done when all of these hold, with evidence stored in the release record:
 
 | Area | P0 | P1 | P2 | P3 |
 |---|---|---|---|---|
-| Platform | Tenancy, identity and OAuth server, audit trail, CI/CD, IaC, local mode, lean images, release automation, API conventions | Approvals, team modes, notifications, public API used by our UI, Basic and Expert modes | Third-party API clients, webhooks, PWA, sandbox | Multi-tenant onboarding, marketplace, A2A agent card |
+| Platform | Tenancy, identity and OAuth server, audit trail, CI/CD, IaC, local mode, lean images, release automation, API conventions | Approvals, team modes, notifications, public API used by our UI, Basic and Expert modes; (rev 0.6) Google and Zoho sign-in, first-run Super admin, ZeptoMail and Resend email, notification centre, announcement banners | Third-party API clients, webhooks, PWA, sandbox; (rev 0.6) Slack and Zoho Cliq | Multi-tenant onboarding, marketplace, A2A agent card |
 | Ledger | Engine, invariants, reference ledger | All workbook posting sources, FX revaluation, disposals, close workflow, director accounts and conversions to share capital (rev 0.3) | Allocation rules, soft module locks | Multi-entity, intercompany, consolidation |
-| Banking | — | Multi-account import, rules, matching, reconciliation, payment files | Bank feeds, payment APIs, card feeds | More banks and countries |
-| Sales / Purchases | — | Quotes, invoices, credit notes, bills, POs, claims, reminders | InvoiceNow send/receive, bill capture, payment links, customer portal, subscriptions | Price lists, vendor portal |
+| Banking | — | Multi-account import, rules, matching, reconciliation, payment files; (rev 0.6) deterministic auto-reconcile | Bank feeds, payment APIs, card feeds | More banks and countries |
+| Sales / Purchases | — | Quotes, invoices, credit notes, bills, POs, claims, reminders; (rev 0.6) online quote acceptance, smart document capture, automated bill entry, bills board, My claims, expense policy | InvoiceNow send/receive, capture by phone camera, payment links, customer portal, subscriptions | Price lists, vendor portal |
 | Payroll | — | Pay runs with full CPF/SDL/SHG rules, postings | Payslips, CPF file, IR8A/AIS | Leave (or HR integration) |
 | Tax | — | GST F5, threshold monitor, statutory calendar | F7/F8, IRAS API filing, IAF, CIT working paper | XBRL, other countries |
-| Reporting | — | Statements, management reports, exports, KPIs, dashboard | Report builder, scheduled reports, board pack | Consolidated reports, SFRS statements |
-| Planning | — | Budgets, driver forecast, feasibility; (rev 0.3) equity register, cap table and round simulator | Rolling forecast, 13-week cash; (rev 0.3) investor updates and portal | Multi-entity planning |
+| Reporting | — | Statements, management reports, exports, KPIs, dashboard | Report builder, scheduled reports, board pack; (rev 0.6) industry benchmarks | Consolidated reports, SFRS statements |
+| Planning | — | Budgets, driver forecast, feasibility; (rev 0.3) equity register, cap table and round simulator; (rev 0.6) 30/60/90/180-day and 13-week cash flow | Rolling forecast, 13-week cash; (rev 0.3) investor updates and portal | Multi-entity planning |
 | AI | — | Ask, explain, simulate; tier-1 and tier-2 proposals; MCP server for first-party clients; (rev 0.4) compiled knowledge base (platform; organisation from trusted sources) | Third-party MCP clients, document AI drafts, anomaly review; (rev 0.4) knowledge pages from documents, `kb.propose_page` | Practice-level insights, outbound agent connections |
-| Compliance | Control registry, CI checks | Compliance Center, evidence collection, CSA Cyber Essentials readiness | Cyber Trust / ISO 27001 readiness | SOC 2 Type II, ISO 27001 certification, ISO 42001 |
+| Compliance | Control registry, CI checks | Compliance Center, evidence collection, CSA Cyber Essentials readiness; (rev 0.6) AI company secretary (scheduled checks, findings, drafts) | Cyber Trust / ISO 27001 readiness | SOC 2 Type II, ISO 27001 certification, ISO 42001 |
 
 ---
 
@@ -2461,7 +2560,7 @@ P0 is done when all of these hold, with evidence stored in the release record:
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
 | R1 | Calculation error reaches the books | Low | High | Database invariants; differential testing against an independent reference ledger; mutation testing; nightly verification; parity with the proven workbook (§16) |
-| R2 | Scope is too large for 2–3 founders | High | High | Strict phasing; P1 = workbook parity + controls only; buy, not build, for bank feeds, Peppol access point, payment collection and document OCR. (rev 0.3) Founders' money, the equity register, evidence and in-app help joined P1 at the founders' request; investor updates and portal, option expense automation, evidence redaction and feature tours stay in P2 |
+| R2 | Scope is too large for 2–3 founders | High | High | Strict phasing; P1 = workbook parity + controls only; buy, not build, for bank feeds, Peppol access point, payment collection and document OCR. (rev 0.3) Founders' money, the equity register, evidence and in-app help joined P1 at the founders' request; investor updates and portal, option expense automation, evidence redaction and feature tours stay in P2. (rev 0.6) P1 also gains Xero-parity items (auto-reconcile, document capture, bill automation, short-term cash flow, My claims), the AI company secretary, configurable sign-in and email, notifications and banners; benchmarks and Slack/Cliq are P2 |
 | R3 | AI makes or causes a wrong change | Medium | High | No write path; catalogue; per-proposal approval with ledger impact; numeric grounding; evals; kill switch (§9) |
 | R4 | Prompt injection through documents or bank data | Medium | Medium | Untrusted-data handling; catalogue limits; approvals; red-team suite (AI-18, QA-AI-03) |
 | R5 | Insider error or fraud in a team of founders | Low | High | Founder-mode compensating controls (FM-1…FM-8), dual control on money movement, audit trail, accountant review |
@@ -2481,6 +2580,7 @@ P0 is done when all of these hold, with evidence stored in the release record:
 | R19 | (rev 0.2) Basic mode hides something a user needed to see | Low | Medium | Presentation-only modes; safety information always visible; "advanced details" disclosure; Expert features findable from ⌘K (FR-UX-24…26) |
 | R20 | (rev 0.3) Founders' balances are recorded or settled wrongly: personal spending without receipts, pay deferred without a decision, shares issued at an unapproved price or not lodged | Medium | Medium | Director accounts and the pay choice (FR-EQ-01…04); settlement routes with attached resolutions and FM-9; ACRA lodgement task; checks C.2 #21–25; accountant review (FM-7) |
 | R21 | (rev 0.4) The compiled knowledge base is wrong, stale or poisoned, and the assistant repeats it | Medium | Medium | Figures only from tools; grounding lint (AI-53); stale pages fall back to raw sources; trusted sources only in P1; diffs reviewed; QA-AI-06 before publishing; versions and rollback (AI-56) |
+| R22 | (rev 0.6) People rely on the AI company secretary and a filing is missed or wrong | Medium | High | The agent never marks an obligation met; a named human secretary (FR-CS-06); the deterministic deadline monitor runs without the AI (AI-67, CMP-02); escalation to the Owner; QA-AI-07 |
 
 ---
 
@@ -2520,8 +2620,12 @@ answered)
 | 16 | (rev 0.3) Founder pay from go-live, per founder: no salary, salary paid, salary deferred or director's fee? (Decides CPF, IR8A and the pay-run set-up, FR-EQ-04) | Founders + tax agent | P1 payroll set-up |
 | 17 | (rev 0.3) The register of share issues (FR-EQ-08) is P1 while the cap table (FR-PLN-07) is P2. Lift the cap table's holders and share classes into P1 as well, or keep P2? | Founders | P1 planning |
 | 18 | (rev 0.4) Publishing organisation knowledge-base changes: self-approval with the weekly review in Founder mode, or always a second person? (AI-56) | Founders | P1 build |
+| 19 | (rev 0.6) Who is the named company secretary: a founder who lives in Singapore and is not the sole director, or a corporate secretarial firm? (FR-CS-06) | Founders | P1 build |
+| 20 | (rev 0.6) Which email provider is primary, which is the failover, and which data centres? (FR-INT-21; neither has a documented Singapore region) | Founders + DPO | P1 build |
+| 21 | (rev 0.6) Which Zoho data centre holds the founders' Zoho accounts, and should email-and-password sign-in be offered at all? (FR-ADM-08) | Founders | P0 (identity work) |
+| 22 | (rev 0.6) Slack, Zoho Cliq or neither for notifications? (FR-NTF-04) | Founders | P2 planning |
 
-**Recommended defaults (rev 0.3, founder request; row 18 rev 0.4).** The founders asked for a recommended default
+**Recommended defaults (rev 0.3, founder request; row 18 rev 0.4; rows 19–22 rev 0.6).** The founders asked for a recommended default
 for every open question, configurable where it is a product setting. These are the defaults the
 platform ships with (FR-ORG-08). The founders, the accountant and the tax agent can change any
 setting later, and the table records why each default was chosen. Rows marked *decision* are
@@ -2547,6 +2651,10 @@ one-time choices recorded here, not settings.
 | 16 | **No salary**, agreed in writing per founder before go-live and reviewed each financial year, until the company can pay in cash; then salary through payroll. No deferral, no shares instead of pay. Exception: a founder on an Employment Pass must be paid the declared salary [verify] | No CPF or tax on money not received; nothing to unwind later | Setting per director per period (FR-EQ-04), default "No salary" |
 | 17 | The equity register, cap table and round simulator in P1 (§8.23); investor updates and portal, and option expense automation, in P2 | Workbook parity (the workbook had a cap table), and the founders need it before the first round | Decided in §8.23 |
 | 18 | Self-approval with the weekly review in Founder mode; a second person in Standard and Enterprise modes | These pages change what the assistant says, not the books; the weekly review catches mistakes without slowing every edit | Setting (approval policy for "knowledge-base change") |
+| 19 | A corporate secretarial firm, given the Company secretary role with time-boxed access; a founder can take over later if one lives in Singapore and is not the sole director | It meets s171 without relying on one founder; the AI company secretary does the routine checks either way | Decision; recorded in the corporate profile (FR-CS-06) |
+| 20 | **ZeptoMail primary**, in the Zoho data centre nearest Singapore that the account allows; **Resend as failover**, sending from Tokyo; **Resend receiving for the capture addresses**; each only after its PDPA transfer assessment | ZeptoMail keeps mail with the founders' existing Zoho provider; Resend adds delivered events, idempotency keys and inbound mail. Resend keeps account data in the US, hence failover and inbound only | Settings: primary and failover providers, inbound adapter (FR-INT-20/21/22) |
+| 21 | Google and Zoho sign-in on; Zoho configured for the founders' data centre only; email and password **off**; the platform's MFA on for everyone | Fewer passwords to protect; each extra Zoho data centre is a separate provider to test | Settings: sign-in providers (FR-ADM-08) |
+| 22 | Neither until P2; then the tool the team already uses daily (Zoho Cliq if the team lives in Zoho), with the minimal content level | Email and the in-app centre cover P1; minimal content keeps finance data out of chat | Settings: messaging connection and content level (FR-NTF-04) |
 
 ---
 
@@ -2603,6 +2711,12 @@ one-time choices recorded here, not settings.
 | Compiled knowledge base | (rev 0.4) Markdown pages an LLM compiles from trusted sources and keeps current, read by the assistant through an index (§9.11, ADR-T6) |
 | Knowledge-base lint | (rev 0.4) Checks that keep compiled pages honest: sources unchanged, numbers found in sources, citations resolve, no contradictions or orphans |
 | Taint | (rev 0.4) A label saying content came from an untrusted source, so it is treated as data, never as instructions |
+| AI company secretary | (rev 0.6) A scheduled agent that checks the books and company details against corporate and tax obligations, reports, and drafts documents; the named human secretary files (§9.12) |
+| Agent skill | (rev 0.6) The versioned instruction file that defines a scheduled agent: checklist, allowed tools and outputs (`agents/<name>/SKILL.md`) |
+| Auto-reconcile | (rev 0.6) Reconciling a bank line without a click, by a deterministic exact match or an approved auto-apply rule; never by an AI suggestion (FR-BNK-14) |
+| Benchmark pack | (rev 0.6) A sourced, licensed and dated set of industry figures used for comparison only (FR-KPI-07) |
+| OpenID Connect (OIDC) | (rev 0.6) The standard sign-in protocol behind "Sign in with Google" and "Sign in with Zoho" |
+| Super admin | (rev 0.6) The installation-wide administrator; the first user to complete setup (FR-ADM-06) |
 
 ---
 
@@ -2674,6 +2788,37 @@ the platform goes beyond the workbook.
 | `CFH_ClearAllData` | Sandbox reset for the sample company only |
 | `CFH_LogChange` | Audit trail (§11.5) |
 | `CFH_SelfTest` | Health endpoint and nightly verification (QA-PROD-01) |
+
+### A.3 Xero (Singapore) feature comparison (rev 0.6)
+
+From Xero's Singapore pages, read on 12 Oct 2026 (Starter S$39, Standard S$70, Premium S$95 a
+month; [source notes](research/secretary-xero-integrations-2026-10-12.md)). FH Cloud is a platform for one company, not a
+subscription tier, so nothing below is gated by plan.
+
+| Xero feature | Xero SG | FH Cloud | Phase | Difference, on purpose |
+|---|---|---|---|---|
+| Quotes and invoices: online, Pay now, reminders, repeating, view tracking | All plans | FR-AR-01/02/03/06/07/08, FR-AR-16 | P1 | Online quote acceptance with the customer's acceptance kept as evidence |
+| InvoiceNow (Peppol) | Yes | FR-AR-12, FR-AP-05 | P2 (before voluntary GST registration) | — |
+| Multi-currency | Premium only | FR-BNK-01, ENG-40…43, FR-GL-04/05 | P1 | Included; month-end revaluation with automatic reversal |
+| Bank feeds | Yes | FR-BNK-02 (imports), FR-BNK-03 (feeds) | P1 / P2 | Imports first; feeds through a licensed provider |
+| Suggested matches, bank rules, bulk reconcile | Yes | FR-BNK-05/06/07 | P1 | Rules back-tested against history |
+| JAX auto-reconcile (rule, match, memory, prediction) | Standard and Premium | FR-BNK-14 | P1 | **Deterministic only**: exact matches and approved auto-apply rules; "memory" is offered as a rule a person promotes; AI predictions stay proposals (AI-P4) |
+| Short-term cash-flow forecast (30 / 60 / 180 days by plan) | Yes | FR-PLN-09 (30/60/90/180), FR-PLN-05 (13 weeks) | P1 | Includes CPF, GST and tax due dates and scheduled pay runs |
+| Industry benchmarking (anonymised Xero customer data, 9 metrics) | Premium | FR-KPI-07 (sourced benchmark packs), FR-KPI-08 (opt-in peers) | P2 / P3 | Sources and sample shown; no other customers' data until P3, opt-in only |
+| Hubdoc / smart document capture | All plans | FR-DOC-12 | P1 (upload, paste, email-in) / P2 (camera) | One pipeline for receipts, bills, invoices and statements; drafts only |
+| Bills: planned payment dates, repeating, approvals, batch payment files | Yes | FR-AP-02/09/12/13, FR-BNK-12 | P1 | Learned supplier defaults; remittance advice; dual-controlled release |
+| Expenses (Xero Me: receipts, mileage, approvals) | Add-on | FR-AP-07, FR-AP-14 (My claims), FR-AP-15 | P1 (web) / P2 (PWA) | Included for every user; directors can keep a claim as a loan (FR-EQ-02) |
+| Purchase orders | Yes | FR-AP-01 | P1 | — |
+| Inventory | Yes | Non-goal (§4.2) | — | Revisit if Cognizhi sells goods |
+| Fixed assets | Yes | FR-FA-01… | P1 | — |
+| Projects | Add-on | FR-PRJ (feature-switched) | P1 | — |
+| Payroll | Partner apps only in SG | FR-PAY-01…13 | P1 | In-house CPF, SDL and SHG engine (open question 4) |
+| GST F5 filed to IRAS | Yes | FR-TAX-02/03 | P1 (record) / P2 (API) | Reconciled to the GST control account; F7 and F8 |
+| Corporate tax | Listed | FR-TAX-06 (working paper for the tax agent) | P2 | — |
+| JAX chat (questions on data, how-to, creates invoices and quotes on request) | All plans (beta) | §9 assistant, §9.11 knowledge base | P1 | Figures cited from tools; anything it creates is a proposal a person approves |
+| JAX roadmap: agents, Bill Protection, Payment Follow Ups, Cash Flow Actions, Claude integration | Announced Jul 2026 | §9.12 scheduled agents, FR-CT-03 and check C.2 #11, FR-AR-08, FR-PLN-09, §9.7 MCP | P1–P2 | Agents report and draft; they never execute on their own |
+| Corporate secretarial | — | AI company secretary (§9.12) | P1 | Not offered by Xero |
+| Mobile, analytics, app marketplace, files | Yes | PWA (P2), dashboards (§8.13), public API and MCP (§8.18, §9.7), documents (§8.16) | P1–P3 | — |
 
 ---
 
@@ -2874,6 +3019,13 @@ All amounts carry the person as a sub-ledger key on 2500 and 2120 (FR-EQ-01).
 | 29 | Equity | (rev 0.3) A SAFE or note is past maturity, or a priced round was recorded without its conversions (FR-EQ-18) | ⚠ |
 | 30 | Evidence | (rev 0.3) Completed activities missing recommended evidence (FR-DOC-06) | ⚠ |
 | 31 | Evidence | (rev 0.3) Evidence hash re-verification failed (FR-DOC-07) | ✖ |
+| 32 | Corporate | (rev 0.6) No company secretary recorded 6 months after incorporation (FR-CS-06) | ✖ |
+| 33 | Corporate | (rev 0.6) Financial statements not approved and their deadline (AGM, or sending to members) within 30 days (FR-CS-03) | ⏰ |
+| 34 | Corporate | (rev 0.6) Corporate profile differs from the latest uploaded ACRA business-profile extract (FR-CS-01) | ⚠ |
+| 35 | Corporate | (rev 0.6) An officer, registered-office or controller change without its lodgement evidence by the deadline (FR-CS-01) | ⏰ |
+| 36 | AI | (rev 0.6) A scheduled agent run failed, was skipped or is late (AI-67) | ⚠ |
+| 37 | Email | (rev 0.6) The sending domain fails SPF, DKIM or DMARC alignment, or bounces or complaints exceed the threshold (FR-INT-21) | ⚠ |
+| 38 | Integrations | (rev 0.6) An integration connection is failing its health check, or its credentials expire within 14 days (FR-INT-20) | ⚠ |
 
 ---
 
@@ -2901,6 +3053,10 @@ that user's rights.
 | Cap table, holders, investors, equity transactions (rev 0.3) | A | — | A | C/P | — | — | — | — | — | — | V (own grants) | V | V | V (own holding; all if granted) | M | Scenarios only, if `fh.read.equity` granted |
 | Evidence: add, supersede (rev 0.3) | C | — | C | C | C | C | C | C (payroll) | C | C | C (own) | V | C | — | V | Proposal (`doc.attach`) |
 | Knowledge base: compiled pages and index (rev 0.4) | V/C (edit, publish) | V/C (edit, publish) | — | — | — | — | — | — | — | — | — | V | — | — | — | Reads, filtered to the user (AI-54) |
+| AI company secretary: enable, schedule, runs and drafts (rev 0.6) | A + second approver (enable); C (schedule) | C (schedule) | V | V | — | — | — | — | — | — | — | V | V | V (summaries) | — | Runs as the agent principal (AI-63) |
+| Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6) | A + second approver | C | V | — | — | — | — | — | — | — | — | V | — | — | V | — |
+| Announcements to the organisation (rev 0.6) | C/A | C | — | — | — | — | — | — | — | — | — | V | — | — | — | — |
+| Own notifications and preferences (rev 0.6) | C | C | C | C | C | C | C | C | C | C | C | C | C | C | C | — |
 | Journals | V | — | A | C/P (limit) | — | — | — | — | — | — | — | V | C | — | — | Proposal |
 | Pay runs, employee data | A | — | V | M | — | — | — | C | R (salaries) | — | V (own) | M | M | — | M | Only if enabled (AI-02) |
 | Fixed assets | V | — | A | C/P | V | — | — | — | — | — | — | V | V | — | — | — |
@@ -2913,6 +3069,14 @@ that user's rights.
 | Tenant export | A + second approver | C | — | — | — | — | — | — | — | — | — | — | — | — | V | — |
 | Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2) | A + second approver | C | V | — | — | — | — | — | — | — | — | V | — | — | V | — |
 | Own MCP connection (opt in, consent, revoke) (rev 0.2) | C | C | C | C | C | C | C | C | C | C | — | — | C | — | C | — |
+
+(rev 0.6) The **Super admin** (FR-ADM-06/07) is an installation role outside this matrix: it manages
+sign-in providers, installation-wide email and messaging connections and announcements to
+everyone, and sees an organisation's data only as a member.
+
+(rev 0.6) The **Company secretary** role (FR-CS-08) has the Board viewer's rights, plus C on the
+corporate profile, registers and evidence, V on the equity register and the AI company secretary
+runs, and A on the `sec.*` drafts; no transactions, payroll or bank detail unless granted.
 
 ---
 
@@ -2941,6 +3105,9 @@ the target permission and, above the limit, the role named. Tier 3 is reserved (
 | `recur.create_template` | Create a recurring template | 2 | CreateRecurring | Monthly equivalent ≤ S$5,000 | Accountant+ |
 | `plan.propose_budget` | Create a budget version (draft) | 2 | CreateBudgetVersion | Draft; activation separate | Controller |
 | `kb.propose_page` (P2, rev 0.4) | Draft a know-how page for the organisation knowledge base from a conversation, without figures | 1 | ProposeKnowledgePage | Draft only; no organisation figures (AI-53, AI-59) | Owner or Administrator |
+| `sec.create_task` (rev 0.6) | Create a compliance task with an owner and a due date from a finding | 1 | CreateComplianceTask | From an agent run; deduplicated per finding | Owner, Company secretary |
+| `sec.draft_document` (rev 0.6) | Draft a resolution, notice, minutes or the annual-return pack from templates (FR-CS-05, FR-CS-07) | 1 | DraftCorporateDocument | Draft only; never filed or signed | Owner, Company secretary |
+| `sec.draft_reminder` (rev 0.6) | Draft a reminder to a director, the secretary or the accountant about an obligation | 1 | DraftReminder | Sent only after approval | Owner, Company secretary |
 
 **Excluded permanently** (see §9.6): approvals; payments; payee bank details; users, roles,
 policies, AI settings and catalogue; statutory parameters; period reopen; voids and deletions;
@@ -2995,6 +3162,7 @@ integrity, C confidentiality, P privacy); **CE/CT** = CSA Cyber Essentials / Cyb
 | CTL-IAM-04 | No service-account keys; Workload Identity Federation for CI | ISO 8.2, 8.5; SOC2 CC6.1 | Org policy `iam.disableServiceAccountKeyCreation` enforced; daily drift | D | Policy snapshot |
 | CTL-IAM-05 | Tenant isolation by row-level security | ISO 8.3; SOC2 C1, CC6.1; ASVS V8 | CI cross-tenant attack tests | CI | Test report |
 | CTL-IAM-06 | Authorisation matrix holds for every role and endpoint | ISO 5.15; SOC2 CC6.1; ASVS V8 (L3) | QA-SEC-03 | CI | Test report |
+| CTL-IAM-07 | (rev 0.6) First-run setup is completed once, with the deployment's one-time setup code; Super admin changes need step-up and, with two Super admins, dual control; sign-ins through any provider still require the platform's MFA | ISO 5.15–5.18, 8.5; SOC2 CC6.1–6.3 | CI: setup-wizard tests (no code, reused code, second run); provider sign-in tests with MFA; nightly count of Super admins ≥ 1 | CI, N | Test reports; audit events |
 
 ### F.4 Change, development and supply chain
 
@@ -3045,6 +3213,7 @@ integrity, C confidentiality, P privacy); **CE/CT** = CSA Cyber Essentials / Cyb
 | CTL-AI-06 | AI exclusions enforced (no NRIC, bank numbers, payroll unless enabled) | PDPA; OWASP LLM02 | Redaction tests; trace scans (CTL-DP-03) | CI, W | Reports |
 | CTL-AI-07 | Approval-quality metrics reviewed | AG (automation bias) | Monthly report and sign-off | M | Signed review |
 | CTL-AI-08 | (rev 0.4) The knowledge base is grounded and access-filtered: published pages pass lint (no stale sources, every number in a cited source, citations resolve); the index is filtered per reader; human edits are never overwritten by a recompile | AG (data quality); OWASP LLM04 (data and model poisoning) | CI `make kb-lint`; nightly reader-filter test; QA-AI-06 before each publish | CI, N, E | Lint reports; eval reports |
+| CTL-AI-09 | (rev 0.6) Scheduled agents stay inside their skill: tool calls only from the pinned allowlist, outputs only reports, tasks and proposals, schedule and enablement changes audited and dual-controlled, runs reproducible | AG (bound autonomy); OWASP LLM06 (excessive agency) | CI: skill hash pinned and the never-list test per agent; nightly check that every run's tool calls are in its allowlist | CI, N | Run reports; pinned hashes |
 
 ### F.7a API, integrations and MCP (rev 0.2)
 
@@ -3333,6 +3502,19 @@ Checked on 12 Oct 2026; the claims, verdicts and short quotes are in
   12 Oct 2026; analysis in [research/llm-wiki-review-2026-10-12.md](research/llm-wiki-review-2026-10-12.md).
 - OWASP Top 10 for LLM Applications 2025: LLM04 Data and Model Poisoning [verify numbering].
 
+### I.9 Added in revision 0.6
+
+Checked on 12 Oct 2026; claims, verdicts and quotes in [secretary-xero-integrations-2026-10-12.md](research/secretary-xero-integrations-2026-10-12.md):
+Companies Act 1967 on SSO (s28, s63, s126, s143, s161, s171, s173A, s175, s175A, s177, s184A–G,
+s186, s188, s196A, s197, s199, s201, s205C, s386AG–AL, Thirteenth Schedule); ACRA pages on AGMs,
+annual returns, penalties, registers, XBRL categories, the API Marketplace and the Corporate and
+Accounting Laws (Amendment) Act 2025 commencement (6 Oct 2026); xero.com/sg feature and pricing
+pages and Xero media releases (29 Jun and 9 Jul 2026); Google Cloud Identity Platform OIDC,
+multi-tenancy and TOTP pages; Zoho Accounts OpenID Connect and multi-DC pages; Zoho ZeptoMail
+(Zoho CPaaS) API, SMTP, webhook, domain and data-centre pages; Resend idempotency, webhook, region
+and inbound pages; Slack messaging, distribution and data-residency pages; Zoho Cliq REST API and
+webhook-token pages.
+
 ---
 
 ## Revision history
@@ -3344,3 +3526,4 @@ Checked on 12 Oct 2026; the claims, verdicts and short quotes are in
 | 0.3 | 12 Oct 2026 | Founder requests. (1) **Founders' money** (§8.22): a digest of the options (repay, keep as a loan, convert to shares, waive, convert to a SAFE or note; the founder pay choices) and FR-EQ-01…14 (director accounts, "paid personally", pay choice, settlement routes, conversion to share capital, waiver, ACRA steps, non-cash presentation, overdrawn director accounts, year-end confirmation, shares for services, modes); facts checked against official sources on 12 Oct 2026 ([source notes](research/founders-money-sources-2026-10-12.md)), unconfirmed points keep [verify]. (2) **Equity** (§8.23, FR-EQ-15…27): holders and investors, share classes and rights, equity transactions, SAFEs and notes, option pool, cap table issued and fully diluted, round modelling and dilution, investor records, updates and access, statutory links, integrity; a new Equity navigation item; FR-PLN-07 partly superseded. (3) **Evidence** (FR-DOC-05…11 and recommended evidence rules): screenshots and files on every important activity, append-only once approved. (4) **Help** (§7.9, FR-UX-30…36): tooltips and info popovers on every page, an in-app user guide (`docs/user-guide/`), context-aware help, an animated first-run walkthrough, feature tours, practice in the sample company; QA-UI-05/06. (5) **Recommended defaults** for open questions 1–17 (§20) and FR-ORG-08 (defaults ship pre-set and stay configurable). Related: FM-9; FR-APR-01 objects; §4.2 non-goal (company secretarial work); §7.1 (13 navigation items) and §7.8 rows; FR-COA-03; FR-AP-07; FR-TAX-07; CMP-02; the §9.6 never-list and Appendix E; AI-37 `fh.read.equity`; §10.2 rows; `RND-SHARE`; INV-13; §11.4 entities; a §14.2 row; §18; R2 and R20; open questions 15–17; glossary; B.5 rows and B.7; checks C.2 #21–31; Appendix D rows; CTL-FIN-11/12, CTL-AUD-06; G.3 pinned conversions; sources I.7. Fixed the §8 cross-reference to the posting rules (§10.2). No requirement was renumbered or removed. |
 | 0.4 | 12 Oct 2026 | Founder request: how the assistant gets context, after a review of Karpathy's "LLM Wiki" pattern ([analysis](research/llm-wiki-review-2026-10-12.md)). New §9.11 (AI-48…60): four context layers, one read-tool registry, a compiled knowledge base (platform and organisation) with compile, generated index and lint, grounding and trust rules, admin view and edit, versioning and rollback, a compiler job identity, index-first search without embeddings in P1, no automatic filing of answers, no hidden memory. New ADR-T6 (§12.2.2), QA-AI-06, CTL-AI-08, R21, open question 18 with its recommended default, a `kb-compiler` job, `kb/` in the layout, the `fh-knowledge-base` skill (Appendix H), an Appendix D row, `kb.propose_page` (P2) in Appendix E, glossary entries, sources I.8. Changed: the pgvector line (§11.3), AI-12, AI-25, FR-UX-33, CMP-AI-01, CTL-AI-01, §1, §11.4, §12.4, the §12.10 versioning matrix, §18. Repository: `kb/` (schema, three compiled pages from the founders' money guide, generated index, log), `scripts/kb.py`, `make kb-index`, `kb-lint` (in `make check`) and `kb-stale`, the `kb` commit scope. No requirement was renumbered or removed. |
 | 0.5 | 12 Oct 2026 | Founder decision: no vectors for the static, compiled knowledge base. AI-58 now rules out embeddings and vector search in every phase (was "no embeddings in P1", now M); retrieval misses are fixed in the compile step, with a new optional `aliases` front-matter field (`kb/schema.md`). `pgvector` removed from the database extensions (§11.3); ADR-T6 rejects vector RAG; QA-AI-06 updated. Any future use of embeddings elsewhere needs its own ADR. No requirement was renumbered or removed. |
+| 0.6 | 12 Oct 2026 | Founder requests, researched against the Companies Act, ACRA, Xero and vendor documentation ([source notes](research/secretary-xero-integrations-2026-10-12.md)). New: §9.12 scheduled agents (AI-61…67) and the AI company secretary (FR-CS-01…08) with its skill file `agents/company-secretary/SKILL.md`, a recommended schedule and `sec.*` drafts; §8.24 integration framework (FR-INT-20…22), first-run Super admin (FR-ADM-06/07), configurable Google, Zoho and OIDC sign-in (FR-ADM-08), ZeptoMail, Resend and SMTP email, inbound capture, notification centre, preferences, announcement banners, Slack and Zoho Cliq (FR-NTF-01…06); Xero-parity items: online quote acceptance (FR-AR-16), deterministic auto-reconcile (FR-BNK-14), automated bill entry and bill tracking (FR-AP-12/13), **My claims for every user** (FR-AP-14), expense policy (FR-AP-15), 30/60/90/180-day cash flow (FR-PLN-09; FR-PLN-05 to P1), industry and peer benchmarks (FR-KPI-07/08), smart document capture (FR-DOC-12; FR-AP-04 and FR-DOC-03 folded in); Appendix A.3 Xero comparison; §14.2 company-secretary row; Super admin and Company secretary roles; personal navigation section; QA-AI-07, CTL-AI-09, CTL-IAM-07, R22, checks C.2 #32–38, Appendix D and E rows, open questions 19–22 with recommended defaults, glossary, §11.4, §12.4, §12.8, §18 and R2. No requirement was renumbered or removed. |
