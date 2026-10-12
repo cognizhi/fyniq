@@ -11,14 +11,14 @@ SHELL := /usr/bin/env bash
 COMPOSE := docker compose -f deploy/local/compose.yaml
 DESIGN := docs/design-system/cognizhi-finance-hub
 
-.PHONY: help check check-tokens check-config hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help check check-tokens check-config kb-index kb-lint kb-stale hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo
 	@echo "  Arriving in P0: setup dev up down seed reset test test-e2e evals images ci"
 
-check: check-tokens check-config ## Run every check available today (CI runs this)
+check: check-tokens check-config kb-lint ## Run every check available today (CI runs this)
 
 check-tokens: ## Design tokens meet WCAG contrast in all four themes (QA-UI-03)
 	@python3 $(DESIGN)/scripts/check_contrast.py
@@ -32,6 +32,15 @@ check-config: ## Release configuration is valid and VERSION matches the manifest
 	 [[ "$$v" == "$$m" ]] || { echo "VERSION ($$v) differs from .release-please-manifest.json ($$m)"; exit 1; }; \
 	 echo "✔ release config valid; version $$v"
 	@bash -n scripts/hooks/commit-msg scripts/check-commits.sh && echo "✔ hook scripts parse"
+
+kb-index: ## Regenerate kb/index.md from the knowledge-base pages (AI-52)
+	@python3 scripts/kb.py index
+
+kb-lint: ## Lint the compiled knowledge base: stale sources, citations, grounded numbers, index (AI-52/53)
+	@python3 scripts/kb.py lint
+
+kb-stale: ## List knowledge-base pages whose sources changed, and sources no page covers
+	@python3 scripts/kb.py stale
 
 hooks: ## Install the git hooks (Conventional Commit check on every commit)
 	@git config core.hooksPath scripts/hooks && echo "✔ hooks installed from scripts/hooks"
