@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Finance Hub Prototype</title>
-<meta name="description" content="Static UI prototype of Cognizhi Finance Hub Cloud: shell, Home, Inbox with AI proposal review, Banking and Reports, with Basic/Expert modes and light, dark and high-contrast themes.">
+<meta name="description" content="Static UI prototype of Cognizhi Finance Hub Cloud: shell, Home, Inbox with AI proposal review, Banking and Reports, with Basic/Expert modes, light, dark and high-contrast themes, info tips, the in-app user guide and the first-run tour.">
 <style>
 /* Tokens: copied from docs/design-system/cognizhi-finance-hub/tokens.css (12 Oct 2026).
    The product imports that file; this prototype inlines it so it opens from disk. */
@@ -14,6 +14,9 @@
 .dark[data-contrast="more"]{--background:oklch(0.13 0.015 260);--surface-1:oklch(0.16 0.018 260);--surface-2:oklch(0.19 0.02 260);--surface-3:oklch(0.23 0.022 260);--text-primary:oklch(0.99 0 0);--text-secondary:oklch(0.9 0.008 260);--text-muted:oklch(0.86 0.01 260);--border:oklch(0.5 0.015 260);--border-strong:oklch(0.8 0.01 260);--primary:oklch(0.85 0.1 190);--primary-hover:oklch(0.9 0.08 190);--primary-subtle-foreground:oklch(0.92 0.06 190);--link:oklch(0.86 0.1 190);--ring:oklch(0.88 0.1 190);--ai:oklch(0.84 0.089 295);--ai-subtle-foreground:oklch(0.92 0.043 295);--status-good:oklch(0.88 0.12 150);--status-warning:oklch(0.9 0.108 85);--status-serious:oklch(0.88 0.071 50);--status-critical:oklch(0.86 0.075 25);--status-neutral:oklch(0.9 0.008 260);--destructive:oklch(0.82 0.101 25);--amount-negative:oklch(0.86 0.075 25)}
 [data-density="compact"]{--row-height:32px}
 @media (prefers-reduced-motion:reduce){:root{--duration-fast:0ms;--duration-base:0ms}}
+:root{--duration-slow:240ms;--duration-tour:300ms;--z-popover:40;--z-tour:55}
+@media (prefers-reduced-motion:reduce){:root{--duration-slow:0ms;--duration-tour:0ms}}
+[data-motion="reduce"]{--duration-fast:0ms;--duration-base:0ms;--duration-slow:0ms;--duration-tour:0ms}
 @media (forced-colors:active){:root{--ring:Highlight}}
 
 /* Base */
@@ -122,6 +125,7 @@ h1[tabindex="-1"]:focus{outline:none}
 .btn.primary:hover{background:var(--primary-hover)}
 .btn.ghost{border-color:transparent;background:transparent}
 .btn.sm{height:30px;padding:0 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 
 /* Inbox */
 .inbox{display:grid;grid-template-columns:minmax(300px,40%) 1fr;gap:16px;align-items:start}
@@ -184,6 +188,61 @@ aside.ai-panel.open{transform:none;visibility:visible}
 
 .proto-note{margin-top:28px;font-size:12.5px;color:var(--text-muted);border-top:1px dashed var(--border);padding-top:12px}
 
+/* Help: info buttons and popovers (FR-UX-30) */
+.info{display:inline-grid;place-items:center;width:24px;height:24px;margin-left:2px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--text-muted);cursor:pointer;vertical-align:middle;flex:none}
+.info:hover,.info[aria-expanded="true"]{background:var(--surface-3);color:var(--text-primary)}
+.info svg.i{width:16px;height:16px}
+.lbl-row{display:flex;align-items:center;gap:2px}
+.chipwrap{display:inline-flex;align-items:center;gap:2px}
+.tile{position:relative}
+.tile>.info{position:absolute;top:8px;right:8px}
+.tile .lbl{padding-right:24px}
+.pop{position:fixed;top:0;left:0;z-index:var(--z-popover);width:min(320px,calc(100vw - 16px));padding:12px 14px;background:var(--surface-1);color:var(--text-primary);border:1px solid var(--border-strong);border-radius:var(--radius-l);box-shadow:var(--shadow-3);font-size:13px;line-height:1.5;font-weight:400;text-align:left;white-space:normal;letter-spacing:0;text-transform:none}
+.pop[hidden]{display:none}
+.pop h3{font-size:13.5px;margin:0 0 4px;font-weight:600;color:var(--text-primary)}
+.pop p{margin:0 0 8px;color:var(--text-secondary)}
+.pop .exp{font-size:12.5px;color:var(--text-muted);border-top:1px solid var(--border);padding-top:8px}
+.pop a{font-weight:500}
+
+/* Help: user guide (FR-UX-32) */
+.helpbtn{color:var(--text-secondary)}
+.help{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}
+.help-toc{padding:12px;position:sticky;top:0}
+.help-toc input{width:100%;height:36px;border:1px solid var(--border-strong);border-radius:var(--radius-m);padding:0 10px;background:var(--background)}
+.help-toc ul{list-style:none;margin:10px 0 12px;padding:0}
+.help-toc a{display:block;padding:6px 10px;border-radius:var(--radius-m);color:var(--text-secondary);text-decoration:none;font-weight:500}
+.help-toc a:hover{background:var(--surface-2);color:var(--text-primary)}
+.help-toc a[aria-current="page"]{background:var(--primary-subtle);color:var(--primary-subtle-foreground)}
+.help-page{padding:20px 24px 24px;max-width:880px}
+.help-page h2{font-size:17px;margin:22px 0 8px}
+.help-page p,.help-page li{max-width:75ch}
+.help-page li{margin:4px 0}
+.help-page td,.help-page th{height:auto;padding:8px 12px;vertical-align:top}
+.help-page .table-wrap{margin:8px 0}
+.help-page dt{font-weight:600;margin-top:10px}
+.help-page dd{margin:2px 0 0;color:var(--text-secondary);max-width:75ch}
+.eyebrow{margin:0 0 2px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+.posting{display:block;margin-top:2px;font-family:var(--font-code);font-size:12px;color:var(--text-muted)}
+.callout{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:12px 0;border-radius:var(--radius-m);border-left:3px solid var(--primary);background:var(--primary-subtle);color:var(--text-primary)}
+.callout>svg{color:var(--primary-subtle-foreground);margin-top:2px}
+.callout.verify{border-left-color:var(--status-warning);background:var(--status-warning-subtle)}
+.callout.verify>svg{color:var(--status-warning)}
+
+/* Help: first-run walkthrough (FR-UX-34) */
+.tour-spot{position:fixed;left:0;top:0;width:0;height:0;z-index:var(--z-tour);border-radius:var(--radius-l);box-shadow:0 0 0 2px var(--primary),0 0 0 9999px var(--overlay-scrim);pointer-events:none;transition:transform var(--duration-tour) var(--ease-out),width var(--duration-tour) var(--ease-out),height var(--duration-tour) var(--ease-out)}
+.tour-card{position:fixed;left:0;top:0;z-index:calc(var(--z-tour) + 1);width:min(340px,calc(100vw - 16px));padding:16px;background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius-l);box-shadow:var(--shadow-3);transition:transform var(--duration-tour) var(--ease-out)}
+.tour-spot[hidden],.tour-card[hidden]{display:none}
+.tour-count{margin:0 0 4px;font-size:12px;font-weight:500;color:var(--text-muted)}
+.tour-card h2{font-size:16px;margin:0 0 6px}
+.tour-card h2:focus{outline:none}
+.tour-card p{margin:0;color:var(--text-secondary)}
+.tour-dots{display:flex;gap:4px;margin-top:12px}
+.tour-dots span{width:6px;height:6px;border-radius:3px;background:var(--border-strong)}
+.tour-dots span.on{width:16px;background:var(--primary)}
+.tour-actions{display:flex;gap:8px;align-items:center;margin-top:14px}
+.no-anim,.no-anim *{transition:none!important}
+@media (forced-colors:active){.tour-spot{outline:3px solid Highlight}}
+
 /* Responsive */
 @media (max-width:1023px){
   .app{grid-template-columns:1fr}
@@ -192,6 +251,8 @@ aside.ai-panel.open{transform:none;visibility:visible}
   .org .name{display:none}
   .grid12>*{grid-column:1/-1!important}
   .inbox{grid-template-columns:1fr}
+  .help{grid-template-columns:1fr}
+  .help-toc{position:static}
 }
 @media (max-width:767px){
   header.top{gap:6px;padding:0 8px}
@@ -203,6 +264,7 @@ aside.ai-panel.open{transform:none;visibility:visible}
   .tiles{grid-template-columns:1fr}
   .seg button{padding:5px 8px}
   #themeBtns{display:none}
+  .helpbtn .lbl{display:none}
 }
 </style>
 </head>
@@ -236,6 +298,8 @@ aside.ai-panel.open{transform:none;visibility:visible}
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
 </svg>
 
@@ -253,6 +317,7 @@ aside.ai-panel.open{transform:none;visibility:visible}
       <button class="iconbtn" data-theme-btn="dark" aria-pressed="false" aria-label="Dark theme"><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg></button>
       <button class="iconbtn" id="hcBtn" aria-pressed="false" aria-label="High contrast"><svg class="i" aria-hidden="true"><use href="#i-contrast"/></svg></button>
     </div>
+    <button class="btn ghost sm helpbtn" id="helpBtn" aria-label="Help"><svg class="i sm" aria-hidden="true"><use href="#i-help"/></svg><span class="lbl">Help</span></button>
     <button class="iconbtn" id="aiBtn" aria-label="Open AI assistant (Ctrl+J)" aria-expanded="false" aria-controls="aiPanel"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg></button>
     <button class="iconbtn" aria-label="Notifications"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></button>
     <span class="avatar" aria-label="Signed in as Anthony Yeong" role="img">AY</span>
@@ -282,22 +347,22 @@ aside.ai-panel.open{transform:none;visibility:visible}
       <p class="sub">Monday 12 Oct 2026 · Books are current to yesterday</p>
       <div class="grid12">
         <div class="card pulse">
-          <div><div class="lbl">Cash today</div><div class="fig">S$412,300.00</div><div class="muted">across 3 accounts</div></div>
-          <div><div class="lbl">Runway</div><div class="fig">14.2 months</div><div class="muted">at 3-month average burn</div></div>
-          <div><div class="lbl">Books health</div><div class="fig" style="font-size:22px;padding-top:8px"><span class="chip warning"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>2 to review</span> <span class="chip critical"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>1 cannot post</span></div><div class="muted">No failed checks in closed periods</div></div>
+          <div><div class="lbl lbl-row">Cash today<button class="info" type="button" data-help="cash" aria-label="About cash today" aria-expanded="false" aria-controls="pop"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button></div><div class="fig">S$412,300.00</div><div class="muted">across 3 accounts</div></div>
+          <div><div class="lbl lbl-row">Runway<button class="info" type="button" data-help="runway" aria-label="About runway" aria-expanded="false" aria-controls="pop"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button></div><div class="fig">14.2 months</div><div class="muted">at 3-month average burn</div></div>
+          <div><div class="lbl lbl-row">Books health<button class="info" type="button" data-help="health" aria-label="About books health" aria-expanded="false" aria-controls="pop"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button></div><div class="fig" style="font-size:22px;padding-top:8px"><span class="chip warning"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>2 to review</span> <span class="chip critical"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>1 cannot post</span></div><div class="muted">No failed checks in closed periods</div></div>
         </div>
         <div class="card" style="grid-column:span 7">
           <div class="pad" style="padding-bottom:4px;display:flex;align-items:center"><h2 style="margin:0">Needs attention</h2><span class="spacer"></span><a href="#inbox" data-view-link="inbox">Open Inbox (5)</a></div>
           <ul class="list">
             <li><span class="chip warning"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Approve</span><span><span class="t">Bill · ABC Cloud Pte Ltd</span><br><span class="s">Self-approved last week; needs a second founder's review (FM-3)</span></span><span class="num">S$1,090.00</span></li>
             <li><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><span><span class="t">Categorise 4 bank lines</span><br><span class="s">Proposal · tier 1 · expires in 70 h</span></span><span class="num">S$1,953.80</span></li>
-            <li><span class="chip critical"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Cannot post</span><span><span class="t">Invoice INV-0142 · Halcyon Labs</span><br><span class="s">No exchange rate for USD on 3 Oct 2026. Add the rate to post it.</span></span><span class="num">US$6,500.00</span></li>
+            <li><span class="chipwrap"><span class="chip critical"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Cannot post</span><button class="info" type="button" data-help="cannot-post" aria-label="About the Cannot post status" aria-expanded="false" aria-controls="pop"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button></span><span><span class="t">Invoice INV-0142 · Halcyon Labs</span><br><span class="s">No exchange rate for USD on 3 Oct 2026. Add the rate to post it.</span></span><span class="num">US$6,500.00</span></li>
             <li><span class="chip serious"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Due 31 Oct</span><span><span class="t">GST F5 return, Jul–Sep 2026</span><br><span class="s">19 days left · draft ready to review</span></span><span class="num">S$6,812.40</span></li>
             <li><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><span><span class="t">Accrue September audit fee</span><br><span class="s">Proposal · tier 2 · journal</span></span><span class="num">S$4,500.00</span></li>
           </ul>
         </div>
         <div style="grid-column:span 5" class="tiles">
-          <div class="card tile"><button class="drill" aria-label="Burn, 3-month average S$29,050, open breakdown"><div class="lbl">Burn (3-mo avg)</div><div class="fig">S$29,050</div><div class="delta"><svg class="i sm" aria-hidden="true"><use href="#i-up"/></svg>+6.1% vs prior 3 months</div></button></div>
+          <div class="card tile"><button class="drill" aria-label="Burn, 3-month average S$29,050, open breakdown"><div class="lbl">Burn (3-mo avg)</div><div class="fig">S$29,050</div><div class="delta"><svg class="i sm" aria-hidden="true"><use href="#i-up"/></svg>+6.1% vs prior 3 months</div></button><button class="info" type="button" data-help="burn" aria-label="About burn" aria-expanded="false" aria-controls="pop"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button></div>
           <div class="card tile"><button class="drill" aria-label="Revenue month to date S$38,400, open breakdown"><div class="lbl">Revenue MTD</div><div class="fig">S$38,400</div><div class="delta"><svg class="i sm" aria-hidden="true"><use href="#i-up"/></svg>+4.2% vs Sep at same day</div></button></div>
           <div class="card tile"><button class="drill" aria-label="Owed to us S$64,180, 3 overdue"><div class="lbl">Owed to us</div><div class="fig">S$64,180</div><div class="delta"><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg>3 overdue · S$18,250</div></button></div>
           <div class="card tile"><button class="drill" aria-label="We owe S$21,940"><div class="lbl">We owe</div><div class="fig">S$21,940</div><div class="delta">7 bills · next due 15 Oct</div></button></div>
@@ -368,12 +433,29 @@ aside.ai-panel.open{transform:none;visibility:visible}
       <p class="muted" style="margin-top:8px">Copy any figure: the clipboard gets <span class="mono">-20123.75</span>, not the display minus (FR-UX-20).</p>
     </section>
 
+    <!-- HELP (FR-UX-32) -->
+    <section data-page="help" hidden>
+      <p class="eyebrow">Help · user guide</p>
+      <div class="page-h"><h1 tabindex="-1" id="helpTitle">Getting started</h1></div>
+      <p class="sub">Written for <span data-only="basic">Basic mode: plain words, no debits and credits</span><span data-only="expert">Expert mode: with the accounts and rules behind each step</span>. Every page has a link here from the info buttons.</p>
+      <div class="help">
+        <nav class="card help-toc" aria-label="User guide pages">
+          <label class="sr-only" for="helpSearch">Search the user guide</label>
+          <input id="helpSearch" type="search" placeholder="Search the guide…" autocomplete="off">
+          <ul id="helpToc"></ul>
+          <p id="helpNone" class="muted" hidden style="margin:0 0 12px;padding:0 10px">No pages match.</p>
+          <button class="btn sm" id="tourAgain" type="button">Take the tour again</button>
+        </nav>
+        <article class="card help-page" id="helpPage" aria-labelledby="helpTitle"></article>
+      </div>
+    </section>
+
     <section data-page="other" hidden>
       <div class="page-h"><h1 tabindex="-1" id="otherTitle">Sales</h1></div>
       <div class="card pad" style="max-width:640px;margin-top:16px"><h2>Not in this prototype</h2><p class="secondary" style="margin:0">The prototype covers the shell, Home, Inbox with AI-proposal review, Banking and Reports. The other pages follow the same patterns (PRD §7.3 record pages).</p></div>
     </section>
 
-    <p class="proto-note">Prototype for PRD-001 rev 0.2 · fictional sample data · design system: <span class="mono">docs/design-system/cognizhi-finance-hub/</span> · try <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Ctrl</kbd>+<kbd>J</kbd>, the Basic/Expert toggle and the theme buttons.</p>
+    <p class="proto-note">Prototype for PRD-001 rev 0.3 · fictional sample data · design system: <span class="mono">docs/design-system/cognizhi-finance-hub/</span> · try <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Ctrl</kbd>+<kbd>J</kbd>, the Basic/Expert toggle, the theme buttons, the info buttons next to figures, Help, and the first-run tour (add <span class="mono">?tour=1</span> to replay it, <span class="mono">?motion=reduce</span> to see it without animation). The prototype keeps "tour done" in browser storage as a stand-in; the product stores it per user on the server (FR-UX-34).</p>
   </main>
 </div>
 
@@ -404,6 +486,16 @@ aside.ai-panel.open{transform:none;visibility:visible}
   </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<div class="pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="popTitle" hidden></div>
+<div class="tour-spot" id="tourSpot" aria-hidden="true" hidden></div>
+<div class="tour-card" id="tourCard" role="dialog" aria-modal="false" aria-labelledby="tourTitle" aria-describedby="tourText" hidden>
+  <p class="tour-count" id="tourCount">1 of 7</p>
+  <h2 id="tourTitle" tabindex="-1">Welcome</h2>
+  <p id="tourText"></p>
+  <div class="tour-dots" id="tourDots" aria-hidden="true"></div>
+  <div class="tour-actions"><button class="btn ghost sm" type="button" data-tour="skip">Skip tour</button><span class="spacer"></span><button class="btn sm" type="button" data-tour="back">Back</button><button class="btn primary sm" type="button" data-tour="next">Next</button></div>
+</div>
+<div class="sr-only" id="tourLive" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 (function () {
@@ -420,6 +512,7 @@ aside.ai-panel.open{transform:none;visibility:visible}
     const s = whole + "." + String(abs % 100).padStart(2, "0");
     return (neg && sign ? MINUS : "") + s;
   }
+  const infoBtn = (key, about) => `<button class="info" type="button" data-help="${key}" aria-label="About ${about}" aria-expanded="false" aria-controls="pop"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button>`;
   const store = {
     get(k, d) { try { return localStorage.getItem("fh-proto-" + k) ?? d; } catch { return d; } },
     set(k, v) { try { localStorage.setItem("fh-proto-" + k, v); } catch {} }
@@ -434,6 +527,7 @@ aside.ai-panel.open{transform:none;visibility:visible}
 
   // ---- experience mode (FR-UX-23)
   function setMode(mode, quiet) {
+    closePop(false);
     html.dataset.mode = mode; store.set("mode", mode);
     $$("#modeSeg [role=radio]").forEach(b => {
       const on = b.dataset.setMode === mode;
@@ -469,15 +563,17 @@ aside.ai-panel.open{transform:none;visibility:visible}
   $("#hcBtn").addEventListener("click", () => setContrast(html.dataset.contrast !== "more"));
 
   // ---- routing
-  const pages = ["home", "inbox", "banking", "reports"];
+  const pages = ["home", "inbox", "banking", "reports", "help"];
   function currentView() { return (location.hash || "#home").slice(1); }
   function go(view) { if (location.hash !== "#" + view) location.hash = view; else route(); }
   function route() {
-    const v = currentView();
-    const page = pages.includes(v) ? v : "other";
+    closePop(false);
+    const v = currentView(), [base, sub] = v.split("/");
+    const page = pages.includes(base) ? base : "other";
     $$("main > section").forEach(s => s.hidden = s.dataset.page !== page);
-    $$("nav.side a").forEach(a => { if (a.dataset.view === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
-    if (page === "other") $("#otherTitle").textContent = v.charAt(0).toUpperCase() + v.slice(1);
+    $$("nav.side a").forEach(a => { if (a.dataset.view === base) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+    if (page === "other") $("#otherTitle").textContent = base.charAt(0).toUpperCase() + base.slice(1);
+    if (page === "help") renderHelp(sub);
     const h = $(`main > section[data-page="${page}"] h1`); if (h) h.focus({ preventScroll: false });
   }
   window.addEventListener("hashchange", route);
@@ -546,9 +642,9 @@ aside.ai-panel.open{transform:none;visibility:visible}
       <div class="hd"><span class="ai-badge"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>AI</span><span class="chip neutral">Tier 1 · reversible</span><span class="muted" style="font-size:12.5px">bank.categorise_lines v1 · proposed for Anthony · expires in 70 h</span></div>
       <div style="padding:8px 16px 0"><h2 id="pTitle">Categorise 4 bank lines</h2></div>
       <p class="summary">Records 4 payments totalling S$${fmt(T("gross"))} as software, local travel, phone and coworking costs, with S$${fmt(T("gst"))} GST to claim.</p>
-      <div class="sec"><h3>Items (select which to approve)</h3><div class="table-wrap"><table><thead><tr><th><span class="sr-only">Include</span></th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Category</th><th data-only="expert">GST</th><th class="num">Confidence</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+      <div class="sec"><h3>Items (select which to approve)</h3><div class="table-wrap"><table><thead><tr><th><span class="sr-only">Include</span></th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Category</th><th data-only="expert"><span class="lbl-row">GST${infoBtn("gst-claim", "GST we can claim back")}</span></th><th class="num">Confidence</th></tr></thead><tbody>${rows}</tbody></table></div></div>
       <div class="sec"><h3>Ledger impact</h3>
-        <div data-only="basic" class="secondary">Money out of DBS Business Account: S$${fmt(T("gross"))}. Costs: S$${fmt(T("net"))}. GST we can claim back: S$${fmt(T("gst"))}. <button class="advanced" data-switch-expert>See debits and credits in Expert mode</button></div>
+        <div data-only="basic" class="secondary">Money out of DBS Business Account: S$${fmt(T("gross"))}. Costs: S$${fmt(T("net"))}. GST we can claim back: S$${fmt(T("gst"))}${infoBtn("gst-claim", "GST we can claim back")}. <button class="advanced" data-switch-expert>See debits and credits in Expert mode</button></div>
         <div data-only="expert" class="table-wrap"><table><thead><tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody>
           ${lines.map(l => `<tr><td><span class="mono">${l.acct.slice(0, 4)}</span> ${l.acct.slice(5)}</td><td class="num">${fmt(l.net)}</td><td></td></tr>`).join("")}
           <tr><td><span class="mono">2200</span> GST control</td><td class="num">${fmt(T("gst"))}</td><td></td></tr>
@@ -601,7 +697,7 @@ aside.ai-panel.open{transform:none;visibility:visible}
     h += block(rev, 1) + block(cos, -1);
     h += `<tr class="total"><td>Gross profit${ex ? " · margin " + (Math.round(gp3 * 1000 / sum(rev, 3)) / 10) + "%" : ""}</td>${cell(gp3)}${ex ? cell(gp4) : ""}${varc(gp3, gp4)}</tr>`;
     h += block(opx, -1);
-    h += `<tr class="total"><td>${np3 < 0 ? "Net loss" : "Net profit"}</td>${cell(np3)}${ex ? cell(np4) : ""}${varc(np3, np4)}</tr></tbody>`;
+    h += `<tr class="total"><td><span class="lbl-row">${np3 < 0 ? "Net loss" : "Net profit"}${infoBtn("net-result", np3 < 0 ? "net loss" : "net profit")}</span></td>${cell(np3)}${ex ? cell(np4) : ""}${varc(np3, np4)}</tr></tbody>`;
     $("#plTable").innerHTML = h;
   }
 
@@ -633,6 +729,10 @@ aside.ai-panel.open{transform:none;visibility:visible}
     { t: html.classList.contains("dark") ? "Use light theme" : "Use dark theme", g: "Settings", run: () => setTheme(html.classList.contains("dark") ? "light" : "dark") },
     { t: (html.dataset.contrast === "more" ? "Turn off" : "Turn on") + " high contrast", g: "Settings", run: () => setContrast(html.dataset.contrast !== "more") },
     { t: (shortcutsOn ? "Turn off" : "Turn on") + " single-key shortcuts", g: "Settings", run: () => { shortcutsOn = !shortcutsOn; store.set("shortcuts", shortcutsOn ? "on" : "off"); announce("Single-key shortcuts " + (shortcutsOn ? "on" : "off")); } },
+    { t: "Help: Getting started", g: "Help", run: () => go("help/getting-started") },
+    { t: "Help: Founders' money", g: "Help", run: () => go("help/founders-money") },
+    { t: "Help: Keyboard shortcuts", g: "Help", run: () => go("help/keyboard-shortcuts") },
+    { t: "Help: Take the tour", g: "Help", run: () => startTour(0) },
     { t: "Ask AI: why did the loss widen?", g: "Ask AI", run: () => openAI() }
   ];
   let palItems = [], palIdx = 0, lastFocus = null;
@@ -665,7 +765,16 @@ aside.ai-panel.open{transform:none;visibility:visible}
     const mod = e.ctrlKey || e.metaKey;
     if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); $("#paletteScrim").classList.contains("open") ? closePal() : openPal(); return; }
     if (mod && e.key.toLowerCase() === "j") { e.preventDefault(); $("#aiPanel").classList.contains("open") ? closeAI() : openAI(); return; }
-    if (e.key === "Escape") { if ($("#paletteScrim").classList.contains("open")) closePal(); else closeAI(); return; }
+    if (e.key === "Escape") {
+      if (tourOpen()) closeTour();
+      else if (popFor) closePop(true);
+      else if ($("#paletteScrim").classList.contains("open")) closePal();
+      else closeAI();
+      return;
+    }
+    if (tourOpen() && $("#tourCard").contains(document.activeElement) && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+      e.preventDefault(); stepTour(e.key === "ArrowRight" ? 1 : -1); return;
+    }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "") || document.activeElement?.isContentEditable;
     if (typing || mod || e.altKey || !shortcutsOn || html.dataset.mode !== "expert" || currentView() !== "inbox") return;
     const items = $$("#ibxList .ibx-item"); let i = items.findIndex(x => x.getAttribute("aria-selected") === "true");
@@ -674,6 +783,224 @@ aside.ai-panel.open{transform:none;visibility:visible}
     else if (e.key === "a") { const b = $("#propDetail .actions .btn.primary"); if (b) { b.focus(); announce("Approval needs confirmation: press Enter on Approve, or Escape to cancel"); } }
   });
 
+  // ---- info popovers (FR-UX-30): hover or focus opens, click pins, Esc and outside click close
+  const HELP = {
+    cash: { t: "Cash today", plain: "Money in the company's bank and card accounts right now, from the latest bank feed or statement.", exp: "Sum of the money accounts at today's date in SGD; foreign-currency balances at today's rate (RND-FX).", page: "getting-started" },
+    runway: { t: "Runway", plain: "How many months the cash would last if spending stays like the last 3 months and no new money comes in.", exp: "Cash ÷ average monthly net burn over the last 3 closed months (FR-KPI-02); blank when there is no burn.", page: "glossary" },
+    health: { t: "Books health", plain: "Checks run on every change. Review the items marked to review; fix the ones that cannot post.", exp: "Results of the Appendix C checks; a month cannot close while any check fails (FR-GL-07).", page: "approvals" },
+    burn: { t: "Burn", plain: "How much more cash goes out than comes in each month, averaged over 3 months.", exp: "Net burn as defined in FR-KPI-02, from money-account movements; financing (shares, loans) excluded.", page: "glossary" },
+    "cannot-post": { t: "Cannot post", plain: "Something is missing, so the record is kept as a draft and stays out of the books. The message says what to add.", exp: "Severity ✖ (ENG-21): the domain validation blocks posting; the record keeps its draft status until it passes.", page: "approvals" },
+    "gst-claim": { t: "GST we can claim back", plain: "GST paid on business costs. It is taken off the GST we owe in the next GST return.", exp: "Input tax to 2200 GST control, code TX 9%, extracted from the gross with RND-GST-INCL. Claimable only with a tax invoice addressed to the company.", page: "recording-money" },
+    "net-result": { t: "Net profit or loss", plain: "Revenue minus all costs for the month. A loss is normal for a young company; watch the runway.", exp: "Revenue − cost of sales − operating expenses from posted ledger lines (FR-RPT-01); reproducible at the ledger version shown.", page: "glossary" }
+  };
+  const pop = $("#pop");
+  let popFor = null, popPinned = false, popTimer;
+  function placePop() {
+    if (!popFor) return;
+    const r = popFor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    let top = r.bottom + 8;
+    if (top + h > innerHeight - 8 && r.top - 8 - h > 8) top = r.top - 8 - h;
+    const left = Math.min(Math.max(8, r.left - 12), innerWidth - w - 8);
+    pop.style.top = top + "px"; pop.style.left = left + "px";
+  }
+  function openPop(btn, pinned) {
+    clearTimeout(popTimer);
+    if (popFor && popFor !== btn) closePop(false);
+    const h = HELP[btn.dataset.help]; if (!h) return;
+    if (popFor !== btn) {
+      pop.innerHTML = `<h3 id="popTitle">${h.t}</h3><p>${h.plain}</p>${html.dataset.mode === "expert" ? `<p class="exp">${h.exp}</p>` : ""}<a href="#help/${h.page}" data-pop-link>Learn more in the user guide</a>`;
+      btn.after(pop); // right after its button, so Tab reaches the link next
+    }
+    popFor = btn; popPinned = popPinned || !!pinned;
+    pop.hidden = false; btn.setAttribute("aria-expanded", "true"); placePop();
+  }
+  function closePop(returnFocus) {
+    clearTimeout(popTimer);
+    if (!popFor) return;
+    const b = popFor; popFor = null; popPinned = false;
+    pop.hidden = true; b.setAttribute("aria-expanded", "false");
+    if (returnFocus && document.contains(b)) b.focus();
+  }
+  function laterClose() {
+    clearTimeout(popTimer);
+    popTimer = setTimeout(() => {
+      if (!popFor || popPinned) return;
+      if (pop.matches(":hover") || popFor.matches(":hover") || pop.contains(document.activeElement) || document.activeElement === popFor) return;
+      closePop(false);
+    }, 150);
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest?.(".info");
+    if (b) { e.stopPropagation(); if (popFor === b && popPinned) closePop(false); else openPop(b, true); return; }
+    if (e.target.closest?.("[data-pop-link]")) closePop(false);
+  });
+  document.addEventListener("mouseover", e => {
+    const b = e.target.closest?.(".info");
+    if (b && !(popPinned && popFor !== b)) openPop(b, false);
+    else if (e.target.closest?.("#pop")) clearTimeout(popTimer);
+  });
+  document.addEventListener("mouseout", e => { if (e.target.closest?.(".info, #pop")) laterClose(); });
+  document.addEventListener("focusin", e => {
+    const b = e.target.closest?.(".info");
+    if (b) openPop(b, false);
+    else if (popFor && !pop.contains(e.target)) { if (popPinned) closePop(false); else laterClose(); }
+  });
+  document.addEventListener("pointerdown", e => { if (popFor && !pop.contains(e.target) && !popFor.contains(e.target)) closePop(false); });
+
+  // ---- user guide (FR-UX-32): Markdown pages in the product; here, a few pages inline
+  const ico = (id) => `<svg class="i" aria-hidden="true"><use href="#${id}"/></svg>`;
+  const stub = (lead) => `<p>${lead}</p><p class="muted">Prototype stub: the full page lives in <span class="mono">docs/user-guide/</span> and ships with each release.</p>`;
+  const GUIDE = [
+    { id: "getting-started", t: "Getting started", k: "start first home inbox basics day tour", body: () => `
+      <p>Finance Hub keeps the company's books, reminds you of deadlines and tells you what needs you. Most days take a few minutes.</p>
+      <ol>
+        <li><strong>Look at Home.</strong> Cash, runway and books health, and the items that need you.</li>
+        <li><strong>Clear the Inbox.</strong> Approve, reject or fix. Nothing changes until a person approves it.</li>
+        <li><strong>Categorise bank lines</strong> in Banking: pick a suggestion or a category.</li>
+        <li><strong>Check Reports</strong> at the month end.</li>
+        <li><strong>Ask the assistant</strong> (<kbd>Ctrl</kbd>+<kbd>J</kbd>) when something is unclear. It answers with its sources and can only propose changes.</li>
+      </ol>
+      <div class="callout" role="note">${ico("i-help")}<div><strong>New here?</strong> The two-minute tour shows where everything is. <button class="btn sm" type="button" data-start-tour style="margin-left:6px">Take the tour</button></div></div>
+      <p>Figures and terms have an info button (<svg class="i sm" aria-hidden="true" style="vertical-align:-3px"><use href="#i-info"/></svg>) that explains them. <span data-only="basic">Switch to Expert mode in the header when you want every feature your role allows.</span><span data-only="expert">In Expert mode the tips also show the account and the rule behind each figure.</span></p>` },
+    { id: "recording-money", t: "Recording money in and out", k: "bank categorise bill invoice gst receipt", body: () => stub("Money moves through Banking: each bank line is matched to an invoice or a bill, or given a category. GST on costs can be claimed only with a tax invoice addressed to the company.") },
+    { id: "approvals", t: "Approvals and statuses", k: "approve inbox status chip cannot post review", body: () => stub("Items that need a decision wait in the Inbox. Status chips say what each record needs: review, fix before it can post, or due soon.") },
+    { id: "modes", t: "Basic and Expert modes", k: "basic expert toggle mode", body: () => `<p><strong>Basic</strong> shows the essentials in plain words. <strong>Expert</strong> shows every feature your role allows, with debits, credits and account codes. Switching never changes your data or permissions, and warnings, approvals and deadlines show in both.</p>` },
+    { id: "founders-money", t: "Founders' money", k: "founder director loan salary shares convert capital waive safe pay", body: () => `
+      <p>When you pay a company cost yourself, lend the company money or go without pay, the company owes you. Finance Hub keeps a running account for each founder, so nothing is lost and the paperwork is ready when you need it.</p>
+      <h2>Five ways to settle what the company owes you</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Way</th><th scope="col">What happens</th><th scope="col">Good to know</th></tr></thead><tbody>
+        <tr><td><strong>Repay</strong></td><td>The company pays you back in cash.<span class="posting" data-only="expert">Dr 2500 · Cr Bank</span></td><td>Not income for you. Repaying founders from a new round's money is rare.</td></tr>
+        <tr><td><strong>Keep as a loan</strong></td><td>The balance stays owed, interest-free and repayable on demand.<span class="posting" data-only="expert">No entry; 2500 stays</span></td><td>Write the terms in a short board minute.</td></tr>
+        <tr><td><strong>Convert to shares</strong></td><td>The company issues you new shares instead of paying cash.<span class="posting" data-only="expert">Dr 2500 · Cr 3010 Share capital, on the date ACRA registers the allotment</span></td><td>Needs the shareholders' approval. The shares exist only once ACRA has registered them, and that date cannot be backdated.</td></tr>
+        <tr><td><strong>Waive</strong></td><td>You forgive the balance and get nothing back.<span class="posting" data-only="expert">Dr 2500 · Cr 3300 Capital contribution</span></td><td>Simple, but you give up your claim and every shareholder gains.</td></tr>
+        <tr><td><strong>Convert to a SAFE or note</strong></td><td>The balance becomes an instrument that turns into shares at the next priced round.<span class="posting" data-only="expert">Dr 2500 · Cr 2700</span></td><td>Common at seed stage; it adds to the dilution the round must model.</td></tr>
+      </tbody></table></div>
+      <div class="callout" role="note">${ico("i-check")}<div><strong>Recommended default:</strong> keep founder balances as interest-free loans, written down in a board minute, until the first priced round; then convert them to shares at the round price. You can change the default in Settings.</div></div>
+      <h2>Your pay</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Choice</th><th scope="col">What it means</th></tr></thead><tbody>
+        <tr><td><strong>No salary</strong>, agreed in writing before the period</td><td>Nothing to post, no CPF, nothing to convert later.</td></tr>
+        <tr><td><strong>Salary paid</strong></td><td>A normal pay run.</td></tr>
+        <tr><td><strong>Salary deferred</strong></td><td>CPF and income tax fall due on the salary even though no cash was paid.<span class="posting" data-only="expert">Net pay moves from 2100 to 2120 per founder</span></td></tr>
+        <tr><td><strong>Director's fee</strong></td><td>Approved by the shareholders; no CPF on fees voted at a general meeting.</td></tr>
+        <tr><td><strong>Shares instead of pay</strong></td><td>Taxed as income at the shares' value, with no cash to pay the tax.</td></tr>
+      </tbody></table></div>
+      <div class="callout" role="note">${ico("i-check")}<div><strong>Recommended default:</strong> no founder salary, agreed in writing before each financial year, until the company can pay in cash. Avoid deferring salary.</div></div>
+      <div class="callout verify" role="note">${ico("i-alert")}<div><strong>Check first:</strong> a founder who holds an Employment Pass must be paid the salary declared to MOM, so "no salary" does not fit them (to be confirmed with MOM).</div></div>
+      <h2>Things to watch</h2>
+      <ul>
+        <li>Ask for receipts in the company's name: GST on an invoice in your own name cannot be claimed.</li>
+        <li>Do not let your account go overdrawn. That is a loan from the company to you, which the law restricts once the company is no longer an exempt private company.</li>
+        <li>Shares exist only from the date ACRA registers them; there is no backdating.</li>
+      </ul>
+      <p class="muted">General information, not tax or legal advice: your accountant confirms before you act. Source: PRD-001 §8.22.</p>` },
+    { id: "keyboard-shortcuts", t: "Keyboard shortcuts", k: "keys keyboard shortcut ctrl", body: () => `
+      <div class="table-wrap"><table><thead><tr><th scope="col">Keys</th><th scope="col">Does</th><th scope="col">Mode</th></tr></thead><tbody>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>Search, go to, create, help</td><td>Both</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>J</kbd></td><td>Open or close the AI assistant</td><td>Both</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Close the tour, a tip, the palette or the assistant</td><td>Both</td></tr>
+        <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>E</kbd>, <kbd>A</kbd></td><td>Inbox: move, open, open the approval</td><td>Expert; can be turned off</td></tr>
+      </tbody></table></div>` },
+    { id: "glossary", t: "Glossary", k: "glossary term runway burn gst net loss allotment", body: () => `<dl>
+        <dt>Runway</dt><dd>Months of cash left at the recent rate of spending.</dd>
+        <dt>Burn</dt><dd>Cash going out minus cash coming in, per month.</dd>
+        <dt>Net profit or loss</dt><dd>Revenue minus all costs for the period.</dd>
+        <dt>Return of allotment</dt><dd>The filing with ACRA after the company issues new shares.</dd>
+        <dt>Exempt private company</dt><dd>A private company with no corporate shareholder and at most 20 members.</dd>
+      </dl>` },
+    { id: "whats-new", t: "What's new", k: "new release changes version", body: () => `<p>Built from the release notes of each version.</p><ul><li><strong>Help and the first-run tour:</strong> info buttons on figures, this user guide and a two-minute walkthrough.</li><li><strong>Founders' money:</strong> director accounts, deferred pay and conversion to share capital.</li></ul>` }
+  ];
+  const CONTEXT = { home: "getting-started", inbox: "approvals", banking: "recording-money", reports: "glossary" };
+  function renderToc(current) {
+    const q = $("#helpSearch").value.trim().toLowerCase();
+    const shown = GUIDE.filter(g => !q || (g.t + " " + g.k).toLowerCase().includes(q));
+    $("#helpToc").innerHTML = shown.map(g => `<li><a href="#help/${g.id}"${g.id === current ? ' aria-current="page"' : ""}>${g.t}</a></li>`).join("");
+    $("#helpNone").hidden = shown.length > 0;
+  }
+  function renderHelp(id) {
+    const g = GUIDE.find(x => x.id === id) || GUIDE[0];
+    $("#helpTitle").textContent = g.t;
+    $("#helpPage").innerHTML = g.body();
+    renderToc(g.id);
+  }
+  $("#helpSearch").addEventListener("input", () => renderToc((currentView().split("/")[1]) || GUIDE[0].id));
+  $("#helpBtn").addEventListener("click", () => go("help/" + (CONTEXT[currentView().split("/")[0]] || "getting-started")));
+  $("#tourAgain").addEventListener("click", () => startTour(0));
+  $("#helpPage").addEventListener("click", e => { if (e.target.closest("[data-start-tour]")) startTour(0); });
+
+  // ---- first-run walkthrough (FR-UX-34): spotlight + caption, never changes data
+  const TOUR = [
+    { sel: "#modeSeg", t: "Basic or Expert: your choice", d: "Basic shows the essentials. Expert shows every feature your role allows. Switch any time; nothing you entered is lost." },
+    { sel: ".pulse", t: "Today at a glance", d: "Cash, runway and books health. The info buttons explain each figure." },
+    { sel: 'nav.side a[data-view="inbox"]', t: "Your Inbox", d: "Approvals, AI proposals and anything that needs a fix. Nothing changes until a person approves it." },
+    { sel: 'nav.side a[data-view="banking"]', t: "Record money in and out", d: "Bank lines arrive in Banking. Pick a suggestion or a category; nothing posts until you accept." },
+    { sel: "#searchBtn", t: "Find anything", d: "Press Ctrl K to search, jump to a page or create a record." },
+    { sel: "#aiBtn", t: "Ask the assistant", d: "Ask about your books. Answers cite their sources, and the AI can only propose changes for you to approve." },
+    { sel: "#helpBtn", t: "Help is always here", d: "The user guide, this tour and the keyboard shortcuts live under Help." }
+  ];
+  const spot = $("#tourSpot"), card = $("#tourCard");
+  let tourIdx = -1, tourSteps = [], tourReturn = null;
+  const tourOpen = () => tourIdx >= 0;
+  function shown(el) { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
+  function positionTour() {
+    if (!tourOpen()) return;
+    const r = $(tourSteps[tourIdx].sel).getBoundingClientRect(), pad = 6, gap = 12;
+    const x = r.left - pad, y = r.top - pad, w = r.width + pad * 2, h = r.height + pad * 2;
+    spot.style.transform = `translate(${x}px, ${y}px)`; spot.style.width = w + "px"; spot.style.height = h + "px";
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    let top, left = x;
+    if (y + h + gap + ch <= innerHeight - 8) top = y + h + gap;
+    else if (y - gap - ch >= 8) top = y - gap - ch;
+    else { top = Math.min(Math.max(8, y), innerHeight - ch - 8); left = x + w + gap + cw <= innerWidth - 8 ? x + w + gap : x - gap - cw; }
+    left = Math.min(Math.max(8, left), innerWidth - cw - 8);
+    card.style.transform = `translate(${left}px, ${top}px)`;
+  }
+  function showStep(first) {
+    const s = tourSteps[tourIdx], n = tourSteps.length;
+    $(s.sel).scrollIntoView({ block: "nearest" });
+    $("#tourCount").textContent = `${tourIdx + 1} of ${n}`;
+    $("#tourTitle").textContent = s.t; $("#tourText").textContent = s.d;
+    $("#tourDots").innerHTML = tourSteps.map((_, i) => `<span${i === tourIdx ? ' class="on"' : ""}></span>`).join("");
+    $('[data-tour="back"]').disabled = tourIdx === 0;
+    $('[data-tour="next"]').textContent = tourIdx === n - 1 ? "Done" : "Next";
+    positionTour();
+    if (first) $("#tourTitle").focus();
+    else $("#tourLive").textContent = `Step ${tourIdx + 1} of ${n}. ${s.t}. ${s.d}`;
+  }
+  function startTour(at) {
+    tourReturn = document.activeElement;
+    closePop(false); closeAI();
+    if ($("#paletteScrim").classList.contains("open")) closePal();
+    if (currentView() !== "home") { history.replaceState(null, "", "#home"); route(); }
+    tourSteps = TOUR.filter(s => shown($(s.sel)));
+    if (!tourSteps.length) return;
+    tourIdx = Math.min(Math.max(0, at || 0), tourSteps.length - 1);
+    spot.classList.add("no-anim"); card.classList.add("no-anim");
+    spot.hidden = false; card.hidden = false;
+    showStep(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => { spot.classList.remove("no-anim"); card.classList.remove("no-anim"); }));
+  }
+  function stepTour(d) {
+    const i = tourIdx + d;
+    if (i < 0) return;
+    if (i >= tourSteps.length) { closeTour(); return; }
+    tourIdx = i; showStep(false);
+  }
+  function closeTour() {
+    if (!tourOpen()) return;
+    const finished = tourIdx === tourSteps.length - 1;
+    tourIdx = -1; spot.hidden = true; card.hidden = true; $("#tourLive").textContent = "";
+    store.set("tour-done", "1");
+    const back = tourReturn && document.contains(tourReturn) && shown(tourReturn) ? tourReturn : $("main > section:not([hidden]) h1");
+    back?.focus();
+    announce(finished ? "Tour finished. Take it again any time from Help." : "Tour closed. Take it again any time from Help.");
+  }
+  card.addEventListener("click", e => {
+    const a = e.target.closest("[data-tour]"); if (!a) return;
+    if (a.dataset.tour === "next") stepTour(1); else if (a.dataset.tour === "back") stepTour(-1); else closeTour();
+  });
+  window.addEventListener("resize", () => { positionTour(); placePop(); });
+  document.addEventListener("scroll", () => { positionTour(); placePop(); }, true);
+
   // ---- init (respect stored choices, then the OS)
   const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
   const prefersMore = window.matchMedia?.("(prefers-contrast: more)").matches;
@@ -681,8 +1008,13 @@ aside.ai-panel.open{transform:none;visibility:visible}
   setTheme(q.get("theme") || store.get("theme", prefersDark ? "dark" : "light"));
   setContrast((q.get("contrast") || store.get("contrast", prefersMore ? "more" : "")) === "more");
   drawChart();
+  if (q.get("motion") === "reduce") html.dataset.motion = "reduce";
   setMode(q.get("mode") || store.get("mode", "basic"), true);
   route();
+  // ?pop=<key> opens one info popover (review links); ?tour=0 suppresses the first-run tour; ?tour=N starts it at step N
+  const popKey = q.get("pop"), tourQ = q.get("tour");
+  if (popKey) { const b = $(`.info[data-help="${popKey}"]`); if (b) { b.scrollIntoView({ block: "center" }); openPop(b, true); } }
+  else if (tourQ !== "0" && (tourQ || store.get("tour-done", "") !== "1")) setTimeout(() => startTour((parseInt(tourQ, 10) || 1) - 1), 300);
 })();
 </script>
 </body>

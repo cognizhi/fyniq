@@ -134,6 +134,7 @@
   --duration-fast: 120ms;
   --duration-base: 180ms;
   --duration-slow: 240ms;
+  --duration-tour: 300ms;  /* walkthrough spotlight only (MASTER §12) */
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
@@ -143,6 +144,7 @@
   --z-panel: 30;
   --z-popover: 40;
   --z-modal: 50;
+  --z-tour: 55;
   --z-toast: 60;
 }
 
@@ -286,7 +288,16 @@
     --duration-fast: 0ms;
     --duration-base: 0ms;
     --duration-slow: 0ms;
+    --duration-tour: 0ms;
   }
+}
+
+/* The user's in-app "Reduce motion" setting does the same as the OS preference */
+[data-motion="reduce"] {
+  --duration-fast: 0ms;
+  --duration-base: 0ms;
+  --duration-slow: 0ms;
+  --duration-tour: 0ms;
 }
 
 /* Tailwind CSS 4 mapping (apps/web/src/styles/globals.css imports this file) */
