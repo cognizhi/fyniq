@@ -1,0 +1,44 @@
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Secrets and local config (never commit)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.claude/settings.local.json
+.claude/worktrees/
+
+# Build output
+dist/
+build/
+bin/
+coverage/
+*.out
+*.test
+
+# Node / web
+node_modules/
+.pnpm-store/
+.vite/
+playwright-report/
+test-results/
+storybook-static/
+
+# Go
+vendor/
+
+# Python (oracle, scripts)
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Local data
+.data/
+*.local.yaml

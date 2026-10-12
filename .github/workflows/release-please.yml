@@ -1,0 +1,37 @@
+# Opens and updates the release pull request from Conventional Commits on main;
+# merging that pull request tags vX.Y.Z and publishes a GitHub release (PRD-001 §12.10).
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      # googleapis/release-please-action v5.0.0, pinned by commit (SEC-28)
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+        id: release
+        with:
+          # REL-06: switch to a GitHub App token once CI exists, so CI runs on release PRs:
+          # token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+
+  # P0 adds a job here, gated on needs.release-please.outputs.release_created,
+  # that builds, signs and publishes the images tagged vX.Y.Z and sha-<git sha> (§12.9).

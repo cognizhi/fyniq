@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Conventional Commits check (PRD-001 REL-01). Used as a git commit-msg hook
+# (`make hooks`) and by CI on pull-request titles and commit messages.
+# Usage: scripts/hooks/commit-msg <file-containing-the-message>
+set -euo pipefail
+
+msg_file="${1:?usage: commit-msg <message-file>}"
+subject="$(grep -v '^#' "$msg_file" | head -n 1)"
+
+types='feat|fix|perf|refactor|docs|test|build|ci|chore|revert|deps'
+scopes='ledger|engine|api|web|ui|ai|mcp|oauth|worker|executor|jobs|db|infra|deploy|contracts|oracle|packs|compliance|security|design|docs|prd|skills|ci|release|deps|main'
+
+# Git-generated subjects that are allowed as they are
+if [[ "$subject" =~ ^(Merge\ |Revert\ \"|fixup!\ |squash!\ |amend!\ ) ]]; then
+  exit 0
+fi
+
+pattern="^(${types})(\((${scopes})(,(${scopes}))*\))?!?: [^ ].{0,98}$"
+if [[ "$subject" =~ $pattern ]]; then
+  exit 0
+fi
+
+cat >&2 <<MSG
+✖ Commit subject is not a Conventional Commit:
+
+    $subject
+
+Expected:  <type>(<scope>)<!>: <summary in the imperative, ≤ 100 characters>
+  types:   ${types//|/, }
+  scopes:  ${scopes//|/, }   (optional; several allowed: fix(api,web): …)
+  !        marks a breaking change; also add a "BREAKING CHANGE: …" footer
+Examples:  feat(ledger): post FX revaluation with automatic reversal
+           fix(web): keep the draft when switching to Expert mode
+           docs(prd): apply review findings (rev 0.2)
+See AGENTS.md § Commits and .claude/skills/fh-release.
+MSG
+exit 1
