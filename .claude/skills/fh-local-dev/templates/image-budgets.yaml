@@ -1,0 +1,41 @@
+# TEMPLATE FOR P0: a reference for deploy/docker/image-budgets.yaml. Not wired into any build yet.
+# Source of truth for NFR-IMG-04: `make images` fails when a compressed image exceeds its
+# budget. Change a budget only by a reviewed pull request that explains why (PRD-001 §12.9).
+#
+# Sizes are compressed (as pushed to Artifact Registry), in megabytes.
+
+defaults:
+  base: gcr.io/distroless/static-debian12:nonroot   # pin by digest in deploy/docker/
+  user: 65532
+  read_only_rootfs: true
+  shell: false
+
+images:
+  api:      { budget_mb: 30, dockerfile: Dockerfile.go-service, build_args: { SERVICE: api } }
+  ai:       { budget_mb: 30, dockerfile: Dockerfile.go-service, build_args: { SERVICE: ai } }
+  mcp:      { budget_mb: 30, dockerfile: Dockerfile.go-service, build_args: { SERVICE: mcp } }
+  worker:   { budget_mb: 30, dockerfile: Dockerfile.go-service, build_args: { SERVICE: worker } }
+  executor: { budget_mb: 30, dockerfile: Dockerfile.go-service, build_args: { SERVICE: executor } }
+  jobs:     { budget_mb: 30, dockerfile: Dockerfile.go-service, build_args: { SERVICE: jobs } }
+  migrate:  { budget_mb: 30, dockerfile: Dockerfile.go-service, build_args: { SERVICE: migrate } }
+  render:
+    budget_mb: 90
+    dockerfile: Dockerfile.render          # Go binary + pinned Typst + self-hosted fonts
+    base: gcr.io/distroless/cc-debian12:nonroot
+  web:
+    budget_mb: 25
+    dockerfile: Dockerfile.web             # local and preview only; production uses GCS + CDN
+    base: nginxinc/nginx-unprivileged:alpine
+    user: 101
+  oauth:
+    budget_mb: null                        # upstream Ory Hydra, pinned by digest; not rebuilt
+    upstream: oryd/hydra
+
+checks:                                    # QA-IMG-01
+  - size_within_budget
+  - runs_as_non_root
+  - no_shell                               # /bin/sh absent
+  - base_pinned_by_digest
+  - no_local_adapter_symbols               # DEV-07: e.g. `go version -m` shows no `local` build tag
+  - sbom_present                           # NFR-IMG-05
+  - no_unwaived_critical_or_high_vulns

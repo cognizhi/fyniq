@@ -1,0 +1,51 @@
+# TEMPLATE FOR P0: a reference for deploy/local/Caddyfile. Not wired into any build yet.
+# One origin for the web app, /api, /ai, /mcp and /oauth2, so cookies, CSP and CORS behave
+# as they do behind the production load balancer (PRD-001 §12.3, §12.8).
+# localhost is a secure context, so passkeys (WebAuthn) work over plain http here.
+
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+	handle /ai/* {
+		reverse_proxy ai:8080 {
+			flush_interval -1          # stream model responses (SSE) without buffering
+		}
+	}
+	# MCP streamable HTTP. The mcp service itself validates Origin (AI-39).
+	handle /mcp* {
+		reverse_proxy mcp:8080 {
+			flush_interval -1
+		}
+	}
+	# Protected-resource metadata for MCP discovery (RFC 9728).
+	handle /.well-known/oauth-protected-resource* {
+		reverse_proxy mcp:8080
+	}
+	handle_path /oauth2/* {
+		reverse_proxy hydra:4444
+	}
+	handle /.well-known/openid-configuration {
+		reverse_proxy hydra:4444
+	}
+	# Hydra's login and consent pages are served by our API (ADR-T3).
+	handle /auth/* {
+		reverse_proxy api:8080
+	}
+	# Everything else is the SPA (nginx image in `make up`, Vite in `make dev`).
+	handle {
+		reverse_proxy web:8080
+	}
+
+	header {
+		Strict-Transport-Security "max-age=0"   # local only; production sets HSTS (SEC-10)
+		-Server
+	}
+}

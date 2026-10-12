@@ -1,0 +1,64 @@
+# syntax=docker/dockerfile:1.7
+#
+# TEMPLATE FOR P0: a reference for deploy/docker/Dockerfile.go-service. It is not wired into
+# any build yet. Rules: PRD-001 §12.9 and NFR-IMG-01…07; budget ≤ 30 MB compressed per
+# service (image-budgets.yaml).
+#
+# One Dockerfile builds every Go service. Each service is its own binary and image:
+#   docker build -f deploy/docker/Dockerfile.go-service \
+#     --build-arg SERVICE=api --build-arg VERSION=0.3.0 --build-arg GIT_SHA=$(git rev-parse HEAD) \
+#     -t fh-api:0.3.0 .
+# Services: api, ai, mcp, worker, executor, jobs, migrate (cmd/<service>).
+
+# ---- build stage ------------------------------------------------------------------------
+# Pin by digest in the real file (NFR-IMG-03), e.g. golang:1.27-bookworm@sha256:<digest>.
+FROM golang:1.27-bookworm AS build
+
+WORKDIR /src
+
+# Download modules in their own layer so code changes do not invalidate the module cache.
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+
+COPY . .
+
+ARG SERVICE
+ARG VERSION=0.0.0-dev
+ARG GIT_SHA=unknown
+# Reproducible builds (NFR-IMG-07): the same commit gives the same binary and digest.
+ARG SOURCE_DATE_EPOCH=0
+
+# CGO_ENABLED=0  → a fully static binary that runs on distroless/static (no libc).
+# -trimpath      → no local file paths in the binary (reproducible, no path leaks).
+# -s -w          → strip the symbol table and DWARF debug data (smaller image).
+# -X …           → stamp the version and commit for /version (NFR-IMG-06, REL-05). We stamp
+#                  explicitly and set -buildvcs=false because .git is excluded by .dockerignore.
+# -tags timetzdata → embed the time-zone database; distroless/static has none.
+# The `local` build tag is NOT set: local adapters must never reach this image (DEV-07).
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    test -n "${SERVICE}" && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -buildvcs=false -tags timetzdata \
+      -ldflags "-s -w -buildid= \
+        -X github.com/cognizhi/finance-hub/internal/version.Version=${VERSION} \
+        -X github.com/cognizhi/finance-hub/internal/version.Commit=${GIT_SHA}" \
+      -o /out/app ./cmd/${SERVICE}
+
+# ---- runtime stage ----------------------------------------------------------------------
+# ≈ 2 MB: CA certificates, /etc/passwd with the nonroot user, no shell, no package manager.
+# Pin by digest in the real file.
+FROM gcr.io/distroless/static-debian12:nonroot
+
+# Only the binary is copied: no source, no toolchain (NFR-IMG-01).
+COPY --from=build /out/app /app
+
+# UID/GID 65532 = "nonroot" in distroless (NFR-IMG-02). Run with a read-only root
+# filesystem and no capabilities; Cloud Run and Compose set those at deploy time.
+USER 65532:65532
+
+# Cloud Run sends traffic to $PORT (8080 by default).
+EXPOSE 8080
+
+# Exec form: there is no shell to interpret a string command.
+ENTRYPOINT ["/app"]
