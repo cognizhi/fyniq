@@ -22,7 +22,7 @@ enforced by architecture (no write credential, a separate executor identity), no
 | `contracts/ai/prompts/` | Versioned system prompts (`prompt_version`) |
 | `contracts/ai/evals/` | Golden questions (QA-AI-01), proposal scenarios (QA-AI-02), red-team corpus (QA-AI-03), replay cassettes |
 | `cmd/ai` | The ai-orchestrator: tool loop, Agent Platform calls, numeric grounding; **no database write role** |
-| `cmd/executor` | The proposal executor: its own Cloud Run worker pool, service account and database role (§12.3) |
+| `cmd/executor` | The proposal executor: its own Cloud Run service at min instances 0, its own Cloud Tasks queue, service account and database role (§12.3, ADR-T7) |
 | `internal/semantic/` | Named measures and dimensions compiled to SQL by platform code (AI-03) |
 
 **One source, three outputs.** Each tool and task YAML generates: (1) the tool definition the
@@ -92,7 +92,8 @@ Changing the knowledge base itself is the **fh-knowledge-base** skill.
 ## Scheduled agents (rev 0.6, PRD §9.12, AI-61…67)
 
 A scheduled agent is a **skill file** in `agents/<name>/SKILL.md`. The first one is
-`company-secretary`.
+`company-secretary`. Runs are started by the Scheduler tick or an event as **Cloud Run jobs**
+(ADR-T7), never by an always-on process.
 - **The front matter declares** the version, the tool allowlist, the outputs and the
   permission profile.
 - **It runs on a configurable schedule and on events,** as a named principal on behalf of the
@@ -133,8 +134,9 @@ hash); `execution`; `expires_at`.
 
 ## The executor
 
-- Runs only approved proposals, from the `proposal_execution` River queue, in **its own worker
-  pool and identity** (rev 0.2 fix: never the shared worker that handles integration input).
+- Runs only approved proposals, delivered by **its own Cloud Tasks queue** (River locally), in
+  **its own service and identity**, accepting only that queue's OIDC token (rev 0.7, ADR-T7; rev
+  0.2 fix: never the shared worker that handles integration input).
 - Re-validates against current data, checks `base_versions` (stale → `Stale`), refuses any
   payload whose hash differs from the approved hash (AI-P5), and executes **as the approving
   human** with the AI recorded as originator.

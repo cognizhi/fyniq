@@ -70,8 +70,10 @@ Never invent a command in docs or scripts. If you need a new one, add it to the 
    the evidence rules, append-only once approved (FR-DOC-05…07).
 8. **Tenancy on every row.** `organisation_id` everywhere, set per transaction with
    `set_config('app.org_id', …, true)`, and `FORCE ROW LEVEL SECURITY` on every table (§11.4).
-9. **Local mode always works.** Every cloud dependency sits behind an interface with a local
-   adapter. `make test` passes offline. Local adapters never reach staging or production
+9. **Local mode always works; the cloud is an adapter.** Every cloud dependency sits behind a
+   port with a local adapter, and cloud SDKs are imported only in `internal/adapters/<provider>/`
+   (ADR-T8). Outside services are connectors (`connectors/`). Background work goes through the
+   outbox and Cloud Tasks, so nothing has to stay running (ADR-T7). `make test` passes offline. Local adapters never reach staging or production
    (DEV-07, SEC-16). Never copy production data to a laptop (DEV-08).
 10. **Lean, hardened images.** Static Go binaries on `distroless/static:nonroot`, non-root,
     read-only root filesystem, no shell, base images pinned by digest, within the size budget
@@ -101,6 +103,7 @@ infra/               OpenTofu (P0)           scripts/         hooks and repo scr
 docs/prd/            PRD, reviews, research  docs/design-system/, docs/design/  UI system and prototype
 docs/user-guide/     in-app user guide (§7.9)  kb/              compiled knowledge base (§9.11)
 agents/              scheduled-agent skills (§9.12), e.g. agents/company-secretary/SKILL.md
+connectors/          connector manifests and code (FR-INT-25)  internal/adapters/  cloud adapters (ADR-T8)
 .claude/skills/      agent skills            .github/workflows/  CI and release-please
 ```
 

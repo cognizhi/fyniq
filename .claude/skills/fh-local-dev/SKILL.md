@@ -34,7 +34,7 @@ never put a real secret in a committed file (SEC-12).
 | Secret Manager | `.env` from `make setup` (git-ignored); `.env.example` committed | Same `Secrets` interface |
 | Claude on Agent Platform | **Replay** (default): recorded cassettes keyed by prompt, tools and model version. **Live** (`FH_AI_LIVE=1`): the Claude API with a developer key, or a developer's own GCP project, on **synthetic data only** | CI runs the eval gates live before any model or prompt change |
 | Model Armor | Stub that flags the red-team corpus | Real service tested in staging |
-| Cloud Scheduler → Cloud Run jobs | River periodic jobs; the same schedule table generates the Scheduler config | One definition |
+| Cloud Tasks, Cloud Scheduler → Cloud Run jobs (rev 0.7, ADR-T7) | **River** as the local adapter of the queue port: the same outbox, an in-process consumer, and periodic jobs that call the same tick and handlers | One schedule definition, the same handlers |
 | Pub/Sub (P2) | Pub/Sub emulator | Same client library |
 | Load balancer, Cloud Armor, CDN | Caddy, one origin (`templates/Caddyfile.example`) | Same cookies and CSP; WAF tested in staging |
 | Email provider | Mailpit (`http://localhost:8025`) | Templates and links end to end |

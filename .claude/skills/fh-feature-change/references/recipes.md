@@ -93,7 +93,7 @@ Example: `fh.invoice.paid.v1`.
 |---|---|---|
 | Requirement | FR-INT-12, FR-AUT-04 | Event name, trigger, payload, who may subscribe |
 | Schema | `contracts/events/` (AsyncAPI 3) | CloudEvents 1.0 envelope; `type: fh.invoice.paid.v1`; payload is IDs and safe fields (never NRIC, bank numbers, salaries) |
-| Emission | transactional outbox | Written in the **same transaction** as the change; delivered by the worker (River) |
+| Emission | transactional outbox | Written in the **same transaction** as the change; delivered by a named Cloud Task to a handler or Cloud Run job (River locally), idempotent on the outbox ID (ADR-T7) |
 | Webhook delivery | worker | Standard Webhooks signature (HMAC-SHA256, timestamp, `webhook-id`), retries for 3 days, dead-letter view, endpoint verification |
 | Permissions | subscription scopes | A subscriber only receives events for data its client may read |
 | Versioning | §12.10 | A breaking payload change creates `.v2`; `.v1` keeps flowing until its sunset |

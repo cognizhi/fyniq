@@ -49,11 +49,13 @@ From P0, `make setup && make dev` starts the whole platform with the sample comp
 
 ## Architecture in one paragraph
 
-Go services on Cloud Run; a React single-page app; PostgreSQL 18 on Cloud SQL as the system of
+Go services on Cloud Run that scale to zero, with background work through an outbox and Cloud Tasks; a React single-page app; PostgreSQL 18 on Cloud SQL as the system of
 record, with the ledger invariants enforced in the database; an append-only, hash-chained audit
 trail anchored to locked storage; Claude on Google Cloud's Agent Platform behind our own tool
 layer, with an approval-gated proposal layer as the only AI write path; Ory Hydra as the OAuth 2.1
-server for integrations and MCP clients; OpenTofu for infrastructure; lean distroless images.
+server for integrations and MCP clients; outside services as installable connectors; every cloud
+service behind a port, so AWS and Azure stay open; OpenTofu for infrastructure; lean distroless
+images.
 Details and the decision records are in PRD §11–§12.
 
 ## Contributing

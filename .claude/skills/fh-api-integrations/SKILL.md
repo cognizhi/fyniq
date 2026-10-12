@@ -126,6 +126,22 @@ To add a provider:
 Chat messages carry deep links only: **approvals never happen in chat** (FR-NTF-04). The
 platform's own MFA applies whatever the sign-in provider.
 
+**Connectors (rev 0.7, FR-INT-25…28).** Package every adapter as a connector in `connectors/<id>/`.
+
+The manifest declares:
+- id, version, capabilities, config JSON Schema and secrets;
+- provider scopes and the FH scopes it receives;
+- outbound data classes and processing regions;
+- webhooks, health check, test action, local substitute and minimum platform version.
+
+The lifecycle is install → configure → test → enable → upgrade (the manifest diff needs
+re-consent) → disable → uninstall (revoke, delete secrets, keep the audit).
+
+A connector uses only the domain commands the UI uses, the never-list binds it, and it runs as
+its own principal. Bank and payment-provider connectors are **read-only** (FR-BNK-15,
+FR-PSP-01). Parse money from raw JSON as exact decimals, never as floats (HitPay sends JSON
+numbers). Every OAuth or SSO connection can be enabled or disabled on its own.
+
 ## Clients, scopes and classes
 
 | Class (AI-34) | Who | Auth | Writes |
