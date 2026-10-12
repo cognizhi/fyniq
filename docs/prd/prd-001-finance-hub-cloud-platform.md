@@ -8,7 +8,7 @@ Built for a lean founding team, with the controls a growing company needs.**
 | Document | PRD-001 (initial PRD, greenfield) |
 | Product | Cognizhi Finance Hub Cloud ("FH Cloud"; working name) |
 | Status | Draft for founder review |
-| Revision | 0.6 (12 Oct 2026): AI company secretary and scheduled agents (§9.12), Xero-parity features (Appendix A.3), My claims, configurable sign-in, email, notifications, banners and chat (§8.24). 0.5 (12 Oct 2026): no vectors for the knowledge base, in any phase (AI-58, ADR-T6). 0.4 (12 Oct 2026): AI context and a compiled, versioned knowledge base (§9.11, ADR-T6), after a review of Karpathy's "LLM Wiki" pattern. 0.3 (12 Oct 2026): founders' money (§8.22), equity and investors (§8.23), evidence on every important activity (§8.16), in-app help and first-run walkthrough (§7.9), and recommended defaults for every open question (§20), all at the founders' request. 0.2 applied the [review](reviews/prd-001-review-2026-10-12.md). See the revision history at the end. |
+| Revision | 0.7 (12 Oct 2026): bank data sync (DBS first), payment providers, template editor, ticketing, mileage and employee claims, project time and costs, connectors, scale to zero (ADR-T7) and portability to AWS and Azure (ADR-T8), company logo; Zoho in the US data centre. 0.6 (12 Oct 2026): AI company secretary and scheduled agents (§9.12), Xero-parity features (Appendix A.3), My claims, configurable sign-in, email, notifications, banners and chat (§8.24). 0.5 (12 Oct 2026): no vectors for the knowledge base, in any phase (AI-58, ADR-T6). 0.4 (12 Oct 2026): AI context and a compiled, versioned knowledge base (§9.11, ADR-T6), after a review of Karpathy's "LLM Wiki" pattern. 0.3 (12 Oct 2026): founders' money (§8.22), equity and investors (§8.23), evidence on every important activity (§8.16), in-app help and first-run walkthrough (§7.9), and recommended defaults for every open question (§20), all at the founders' request. 0.2 applied the [review](reviews/prd-001-review-2026-10-12.md). See the revision history at the end. |
 | Date | 12 Oct 2026 |
 | Owner | Cognizhi founders |
 | Reviewers | Founders; external accountant / tax agent; security reviewer (later: auditor) |
@@ -705,6 +705,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-ORG-06 | Organisation-level feature switches (payroll, projects, multi-currency, AI assistant, portals) so the UI shows only what is used | S | P1 |
 | FR-ORG-07 | Data region and retention settings visible to the Owner (read-only where fixed by the platform) | S | P1 |
 | FR-ORG-08 | (rev 0.3) **Recommended defaults, configurable**: every policy the founders were asked to decide (§20, recommended defaults) and every evidence rule (FR-DOC-06) ships set to the recommended value, with a one-line reason and a link to the guide. Settings show **Recommended** or **Changed from recommended**, offer "Reset to recommended", are effective-dated and audited, and need dual approval where FM-1 applies (thresholds, retention, AI and MCP settings, approval policies) | M | P1 |
+| FR-ORG-09 | (rev 0.7) **Company logo and brand, applied everywhere at once**: the Owner or Administrator uploads the logo (SVG or PNG; light and dark variants; a square icon for the browser tab and app icon) and, optionally, an accent colour. The change **takes effect immediately** in the app header, the sign-in page, emails, the default theme of document templates (§8.25), PDF reports and board packs, and the customer portal, with a preview of each before saving. The accent colour applies to documents and emails only and is chosen from contrast-checked options; the app itself keeps the design-system colours and the rule that violet marks AI content. Documents already issued keep the logo they were issued with (FR-DOC-04). Changes are versioned and audited | M | P1 |
 
 ### 8.2 Chart of accounts and dimensions
 
@@ -738,7 +739,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 |---|---|---|---|
 | FR-BNK-01 | Bank, card, wallet, payment-gateway and cash accounts in any currency | M | P1 |
 | FR-BNK-02 | **Statement import** for several accounts at once: CSV/XLSX with a saved column mapping per bank (signed amount or in/out columns), OFX/QFX, CAMT.053, MT940, PDF statements via document AI (P2) | M | P1 (CSV/XLSX/OFX) / P2 |
-| FR-BNK-03 | **Bank feeds** through bank APIs or a licensed aggregator for the Singapore banks Cognizhi uses (DBS, OCBC, UOB, and neo-banks such as Aspire, Airwallex, Wise) [verify available APIs and partners] | S | P2 |
+| FR-BNK-03 | (rev 0.7: detailed in FR-BNK-15…18; no credential-sharing aggregators) **Bank feeds** through bank APIs or a licensed aggregator for the Singapore banks Cognizhi uses (DBS, OCBC, UOB, and neo-banks such as Aspire, Airwallex, Wise) [verify available APIs and partners] | S | P2 |
 | FR-BNK-04 | **Duplicate detection** across imports and feeds, including a transfer already recorded from the other account (workbook behaviour), using date, amount, reference and a fingerprint | M | P1 |
 | FR-BNK-05 | **Bank rules**: conditions (description contains/regex, amount range, account, counterparty) → category, contact, GST code, dimensions, reference; ordered, testable against history ("this rule would have matched 23 lines") | M | P1 |
 | FR-BNK-06 | **Categorise** screen: queue of unreconciled lines with suggested matches (open invoices and bills by amount, reference and contact), rule hits and AI suggestions; accept, edit, split, or transfer; bulk accept | M | P1 |
@@ -750,6 +751,10 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-BNK-12 | **Payment batches**: build from approved bills, claims and pay runs; approve (dual control); export a bank bulk-payment file (GIRO/FAST formats of the banks used [verify]) or initiate via bank API (P2); mark paid when the feed shows the debit | S | P1 (file) / P2 (API) |
 | FR-BNK-13 | Daily cash position across accounts and currencies at the latest rates | S | P1 |
 | FR-BNK-14 | (rev 0.6) **Auto-reconcile, deterministically**: lines that match exactly one open document (same amount and currency, a unique reference and the expected contact), transfers matched on both feeds, and lines hit by a bank rule that an approver marked *auto-apply* are reconciled by the system principal (FR-AUT-02) without a click. A pattern the organisation has coded the same way several times (default 5; Xero calls this "memory") is **offered as a rule to promote**, never applied by itself. Auto-reconciliation runs within limits (amount cap per line and per rule per day; settings with recommended defaults, FR-ORG-08). Everything auto-reconciled appears in an **Auto-reconciled** list with the rule or match that did it, and can be undone while the period is open; a sample enters the weekly review (FM-3). Ambiguous lines stay in the queue. **AI suggestions are never auto-applied** (AI-P4): they stay proposals | M | P1 (imports) / P2 (feeds) |
+| FR-BNK-15 | (rev 0.7) **Bank data connectors** (FR-INT-25) behind one model (account, balance, transaction with bank reference, booking and value dates, counterparty, amount, currency, running balance). Five kinds of source: **file import** (MT940 SWIFT and SAP, CSV, camt.053, OFX; FR-BNK-02); **bank reports by email** (scheduled daily reports and incoming-funds alerts sent to the organisation's bank-ingest address, FR-INT-22); **bank APIs** (DBS RAPID, UOB API Services, OCBC credit notifications); **account APIs of EMIs and neo-banks** (Wise, Airwallex; Aspire where offered); **host-to-host files** (DBS IDEAL Connect over SFTP with MT940 and MT942). **No credential-sharing or screen-scraping aggregators.** Bank connectors are **read-only**: payments still go out as approved files (FR-BNK-12) until an API payment connector is added under the same approvals ([source notes](research/bank-payments-cloud-2026-10-12.md)) | M | P1 (files, email, Wise and Airwallex APIs) / P2 (bank APIs, host-to-host) |
+| FR-BNK-16 | (rev 0.7) **Sync schedule and completeness**: pulls run on the Scheduler tick (ADR-T7) and pushed notifications are accepted on signed webhooks. Every statement is checked for **continuity** (each opening balance equals the previous closing balance; MT940 `:60F:` and `:62F:`); gaps are flagged; duplicates are removed (FR-BNK-04). Each account shows its last sync and the date it is complete to; a stale account is ⚠ (check C.2 #43). An incoming-funds **alert** is a *pending* signal that speeds up matching; only statement data becomes reconciled bank lines | M | P1 |
+| FR-BNK-17 | (rev 0.7) **DBS, in two phases.** **Phase 1 (P1, no extra bank fee):** DBS IDEAL's free scheduled daily account report and real-time incoming-funds alerts, emailed to the bank-ingest address; MT940 (SWIFT) or CSV exports uploaded or emailed; the monthly e-statement ties out the closing balance. **Phase 2 (P2):** **DBS RAPID** (balance enquiry, account-data enquiry, inward credit notification), applied for through the relationship manager, about 4–6 weeks, fees quoted by DBS; or **IDEAL Connect** over SFTP (MT940 daily, MT942 intraday). Phase 2 needs PGP keys in Secret Manager and KMS, a static egress IP (Cloud NAT) for the bank's allowlist, and an HTTPS endpoint for notifications [verify Singapore RAPID security and whether notifications are pushed or polled] | M | P1 / P2 |
+| FR-BNK-18 | (rev 0.7) **Wise and Airwallex**: read-only API keys (scoped where offered), balance statements and transactions (Wise offers camt.053 and MT940 statements for Singapore profiles), and signed balance webhooks; sandboxes used in staging | S | P1 |
 
 ### 8.5 Sales and receivables
 
@@ -760,7 +765,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-AR-03 | **Invoices**: number, date, customer, lines (item, description, quantity, unit price, discount %, account, GST code, dimensions) or a single amount, currency and rate, terms and due date, service period (deferred revenue), attachments, notes; draft → approved (optional policy) → posted → sent → part-paid → paid / overdue | M | P1 |
 | FR-AR-04 | **Credit notes** linked to invoices (full or partial), and standalone; refunds | M | P1 |
 | FR-AR-05 | Tax invoice layout meets IRAS particulars (supplier name, address, GST no., invoice no. and date, customer, description, amount before GST, rate, GST, total; net, GST and gross in SGD for foreign-currency invoices; issued within 30 days; simplified invoices up to S$1,000) | M | P1 |
-| FR-AR-06 | Branded PDF templates (several per organisation), sent by email from the platform with tracking (sent, opened), and a secure online view link | M | P1 |
+| FR-AR-06 | (rev 0.7: templates from the editor, §8.25) Branded PDF templates (several per organisation), sent by email from the platform with tracking (sent, opened), and a secure online view link | M | P1 |
 | FR-AR-07 | Recurring invoices (weekly to yearly), auto-draft or auto-send, month-end date handling | S | P1 |
 | FR-AR-08 | **Automated reminders** on a schedule per customer group, with templates; statement of account by date range (workbook Statement logic: brought-forward balance, documents, payments, FX and rounding, ageing that adds to the balance) | S | P1 |
 | FR-AR-09 | Customer deposits and retainers applied to invoices | S | P1 |
@@ -771,6 +776,12 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-AR-14 | Customer portal: view and pay invoices, download statements | C | P2 |
 | FR-AR-15 | Subscription revenue schedules (start, end, MRR) feeding deferred revenue and KPIs; contract changes (upgrade, downgrade, cancel) | S | P2 |
 | FR-AR-16 | (rev 0.6) **Send quotes and invoices**: quotes and invoices go out by email with a branded PDF and a secure online view link (FR-AR-06); the customer can **accept or decline a quote online** (name, date and comment recorded as evidence, FR-DOC-05), and an accepted quote converts to an invoice in one action (FR-AR-02); expiring quotes and unpaid invoices get scheduled reminders (FR-AR-08); send status (sent, opened, accepted, paid) shows on the record and in the customer's timeline | M | P1 |
+| FR-PSP-01 | (rev 0.7) **Payment-provider connectors** (Stripe, HitPay; others later, FR-INT-25) read charges, refunds, disputes, fees and payouts through the provider's API and signed webhooks (Stripe: `Stripe-Signature` HMAC; HitPay: `Hitpay-Signature` v2), deduplicated by event ID. **Amounts are never floats**: Stripe sends integer minor units; HitPay sends JSON numbers, which are parsed from the raw text as exact decimals (ENG-10) ([source notes](research/bank-payments-cloud-2026-10-12.md)) | M | P1 |
+| FR-PSP-02 | (rev 0.7) **Model A: FH invoices, the provider collects.** An invoice carries a payment link or a PayNow QR from the provider (FR-AR-13). The payment event marks the invoice *paid, settlement pending*; posting: Dr provider clearing (gross) · Cr AR; the fee: Dr payment fees · Cr clearing; the payout: Dr Bank · Cr clearing | M | P2 |
+| FR-PSP-03 | (rev 0.7) **Model B: the product bills at the provider** (Stripe Billing subscriptions or HitPay recurring billing as the system of record for self-serve customers). FH mirrors customers, subscriptions and the provider's invoices read-only, books revenue gross with its service period (deferred revenue and MRR, FR-AR-15, FR-KPI-04), and posts per transaction or as a daily summary per currency (setting). The provider's invoices must meet the IRAS tax-invoice particulars when Cognizhi is GST-registered (FR-AR-05) | M | P1 |
+| FR-PSP-04 | (rev 0.7) **Refunds and disputes**: a refund creates a credit note (Model A) or mirrors the provider's (Model B); a dispute moves the funds and the dispute fee to a disputes clearing account until it is won or lost; both reverse cleanly in the clearing account | M | P1 |
+| FR-PSP-05 | (rev 0.7) **Fees and their GST**: fees are expensed per transaction from the provider's data. Input GST is claimed only where the provider charges GST and issues a tax invoice: Stripe charges GST on certain fees with a monthly tax invoice; whether processing fees and HitPay's fees carry GST is not confirmed [verify] | M | P1 |
+| FR-PSP-06 | (rev 0.7) **Payout reconciliation**: each payout is matched to its bank line (FR-BNK-15) and broken down into the charges, refunds, disputes and fees it settles (Stripe's itemised payout-reconciliation report; HitPay's charges per payout). The clearing account must net to zero per settled payout (check C.2 #42); exact matches auto-reconcile (FR-BNK-14) | M | P1 |
 
 ### 8.6 Purchases, payables and spend
 
@@ -791,6 +802,9 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-AP-13 | (rev 0.6) **Track and pay bills**: a bills board by status (to review, awaiting approval, approved, scheduled, paid, overdue) and a due-date calendar; schedule a bill for a payment date so it joins that day's payment batch (FR-BNK-12); reminders before due dates; early-payment discounts shown; remittance advice emailed to the supplier when paid; supplier statements reconciled (FR-AP-10) | M | P1 |
 | FR-AP-14 | (rev 0.6) **My expense claims**: a dedicated page for **every user** (`/me/claims`, "My claims" in the personal section of the navigation). It shows the user's claims by status (draft, submitted, approved, scheduled, paid, returned) with totals and **what the company owes me**. New claims start from a receipt (paste a screenshot, drag and drop, phone camera in the PWA, or forward it to the user's own capture address, FR-DOC-12): category, project, GST, currency (reimbursed in SGD at the rate cascade, ENG-40), split lines, mileage at the organisation's rate (setting). Policy checks run before submission (FR-AP-15); the user sees the approver's comments, fixes and resubmits, and exports their history. Directors also see "Paid personally → keep as a loan" (FR-EQ-02). A Basic-mode page; approvers handle claims from the Inbox | M | P1 (web) / P2 (PWA camera) |
 | FR-AP-15 | (rev 0.6) **Expense policy**: per category limits, receipt and evidence rules (FR-DOC-06), mileage rate, claim deadline (e.g. within 60 days of the expense), approval routing (FR-APR-01) and duplicate-receipt detection across users; shipped with recommended defaults and configurable (FR-ORG-08); breaches show as ⚠ on the claim with the rule named | S | P1 |
+| FR-AP-16 | (rev 0.7) **Mileage claims**: trip date, purpose, project, from and to (an address or a saved place), distance, one-way or return, vehicle type. The distance is typed in, or computed by a maps service when the organisation enables one (the addresses then go to that provider, so it is off by default and in the data inventory). Amount = distance × the organisation's **rate per km for the vehicle type**, effective-dated (a policy setting, not a statutory rate), rounded with `RND-MILEAGE`. IRAS prescribes no per-km rate; the rate must be **reasonable**, and reimbursing business mileage in a private car is not taxable, while private mileage is. No input GST: there is no tax invoice, and GST on motor-car expenses is disallowed (GST Regulations, reg. 27). A monthly mileage log per user; a map screenshot is optional evidence | M | P1 |
+| FR-AP-17 | (rev 0.7) **Employee claims processing**: claim types (receipt, mileage, per diem (C), settlement of a cash advance); routing by amount and category to the line manager, then finance (FR-APR-01; no self-approval in Standard mode); reimbursement in a payment batch (FR-BNK-12) or as a **non-wage reimbursement line in the pay run** (reimbursements of actual business expenses incurred for official purposes are not taxable and are not CPF wages; amounts above the actual spend, or above a reasonable mileage rate, are); **cash advances** paid to an employee (Dr 1250, Cr Bank) and settled by claims, with the balance refunded or deducted; foreign-currency claims reimbursed in SGD at the rate cascade (ENG-40), the difference to 7030; a claim deadline (FR-AP-15). A **fixed allowance** is not a claim: it is taxable pay, goes through payroll and is reported in the IR8A; non-taxable reimbursements are not reported | M | P1 |
+| FR-AP-18 | (rev 0.7) **Company-card spend**: card lines arrive by import or feed (FR-AP-08); the cardholder attaches the receipt, category and project from My claims; personal spend on a company card becomes an amount the employee owes (repaid, or deducted with consent) | S | P1 (import) / P2 (feed) |
 
 ### 8.7 Payroll (Singapore)
 
@@ -845,7 +859,16 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 | FR-PRJ-01 | Projects (a dimension with attributes: customer, budget, dates, status, billing method) | S | P1 |
 | FR-PRJ-02 | Timesheets: date, person, project, task, hours, billable flag and rate; cost at hourly cost (default includes employer CPF up to the ceiling, as in the workbook) | S | P1 |
 | FR-PRJ-03 | Project profitability: revenue, direct costs, staff time cost, margin, unbilled time, budget use, health status | S | P1 |
-| FR-PRJ-04 | Invoice unbilled time and expenses | S | P2 |
+| FR-PRJ-04 | Invoice unbilled time and expenses (rev 0.7: P1, with FR-PRJ-10) | S | P2 |
+| FR-PRJ-05 | (rev 0.7) **Time entry**: a weekly timesheet grid and a start/stop timer (web; PWA in P2), by project and task, billable flag and note; reminders for missing days; entries lock once approved or invoiced, and corrections are reversing entries | M | P1 |
+| FR-PRJ-06 | (rev 0.7) **Rates**: a **cost rate** per person, effective-dated, defaulting to monthly payroll cost (salary + employer CPF + SDL) ÷ standard hours (the workbook's hourly cost), overridable; **billing rates** per project, role, person or customer, effective-dated, in the project's currency | M | P1 |
+| FR-PRJ-07 | (rev 0.7) **Timesheet approval** by the project manager (FR-APR-01 object); nobody approves their own time in Standard mode | M | P1 |
+| FR-PRJ-08 | (rev 0.7) **Costs on projects**: bills, claims, mileage, card spend and journals carry the project dimension; billable expenses with an optional markup; purchase orders per project | M | P1 |
+| FR-PRJ-09 | (rev 0.7) **Budgets**: hours and money per task; burn and forecast at completion; alerts at 80% and 100% (settings) | S | P1 |
+| FR-PRJ-10 | (rev 0.7) **Billing methods**: time and materials (approved unbilled time and billable expenses become an invoice; the AI may draft it, `ar.draft_invoice`), fixed fee by milestone, retainer drawn down, and internal or non-billable projects | M | P1 |
+| FR-PRJ-11 | (rev 0.7) **Revenue over time for fixed-fee projects**, when the accountant elects it: progress by cost-to-cost, contract asset and contract liability, a monthly journal proposed for approval. Basis: SFRS(I) 15 ¶35 (over time when, for example, the customer consumes the benefit as the work is done) and the input method of B18–B19 (excluding costs such as waste that do not show progress); SFRS for Small Entities (2024 edition) §23.14 and §23.22 (percentage of completion). The SFRS for Small Entities third edition applies from periods starting 1 Jan 2027 and moves revenue to a simplified five-step model, so the method is re-confirmed then [verify the third-edition text] | S | P2 |
+| FR-PRJ-12 | (rev 0.7) **Project reports**: profitability per project, customer and person (revenue − time at cost − direct costs), utilisation (billable ÷ available hours), realisation (billed ÷ standard value), unbilled work, budget burn; drill to time entries and costs. Time at cost is a management view: salaries are already in the ledger through payroll, so time itself never posts | M | P1 |
+
 
 ### 8.11 Tax and statutory
 
@@ -957,7 +980,7 @@ feature to the requirement that replaces it. Posting rules are in §10.2 and App
 
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
-| FR-AUT-01 | Scheduler for recurring documents, depreciation, auto-reversals, FX revaluation, reminders, scheduled reports, statutory reminders, nightly verification | M | P1 |
+| FR-AUT-01 | Scheduler for recurring documents, depreciation, auto-reversals, FX revaluation, reminders, scheduled reports, statutory reminders, nightly verification (rev 0.7: a Cloud Scheduler tick and Cloud Tasks, so nothing has to stay running; ADR-T7) | M | P1 |
 | FR-AUT-02 | Every automated posting runs under a named system principal with its own audit identity, and respects period locks and approval policies | M | P1 |
 | FR-AUT-03 | Workflow rules ("when a bill over S$5,000 is created, notify X") configurable without code | C | P2 |
 | FR-AUT-04 | Outbound webhooks for document and ledger events (signed, retried, logged), as specified in FR-INT-12 | S | P2 |
@@ -1145,13 +1168,14 @@ adapters; none is hard-wired.
 | Outbound email | Zoho ZeptoMail (renamed Zoho CPaaS in September 2026); Resend; generic SMTP | Mailpit | P1 |
 | Inbound email (capture addresses) | Resend receiving (webhook, then fetch the message); mailbox polling over IMAP (e.g. a Zoho Mail mailbox) | Mailpit plus a local webhook | P1 |
 | Messaging | Slack; Zoho Cliq; generic incoming webhook | Local message sink at `/dev/messages` | P2 |
+| (rev 0.7) Ticketing | Jira Cloud; Linear; GitHub Issues; Zoho Desk or Zoho Projects; ServiceNow (P3); generic webhook | Local ticket sink at `/dev/tickets` | P2 |
 
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
-| FR-INT-20 | **Integration framework**: every external service (sign-in, outbound and inbound email, messaging, payments, bank feeds, the Peppol Access Point, document AI) implements a capability interface; adapters are interchangeable. Settings → Integrations (the Super admin for installation-wide connections, the Owner or Administrator for organisation-level ones) lets them pick an adapter, enter credentials (kept in Secret Manager and write-only in the interface), **test the connection**, see its health, enable or disable it and set a failover order. Changes are audited and dual-controlled (FM-1). Every adapter has a local substitute and contract tests; adding a provider adds an adapter, never a change to the core | M | P1 |
+| FR-INT-20 | **Integration framework**: every external service (sign-in, outbound and inbound email, messaging, payments, bank feeds, the Peppol Access Point, document AI) implements a capability interface; adapters are interchangeable. Settings → Integrations (the Super admin for installation-wide connections, the Owner or Administrator for organisation-level ones) lets them pick an adapter, enter credentials (kept in Secret Manager and write-only in the interface), **test the connection**, see its health, enable or disable it and set a failover order. Changes are audited and dual-controlled (FM-1). (rev 0.7) **Every OAuth or SSO connection can be enabled or disabled on its own**: sign-in providers (FR-ADM-08), integration connections (email, chat, ticketing, payment providers, bank data), OAuth clients and MCP access (FR-INT-02, AI-35); disabling one stops its traffic at once and keeps its configuration for re-enabling. Every adapter has a local substitute and contract tests; adding a provider adds an adapter, never a change to the core. (rev 0.7) Adapters are packaged and installed as **connectors** (FR-INT-25…28) | M | P1 |
 | FR-ADM-06 | **First-run setup and the super admin**: a new installation opens a setup wizard, and **the first person to complete it becomes the Super admin** and the Owner of the first organisation. The wizard needs a **one-time setup code** created at deployment (printed by `make setup` locally; held in Secret Manager in the cloud) and, optionally, an email address fixed at deployment, so nobody can claim a public installation first. After setup the wizard closes for good. The wizard asks for a second Super admin (recommended) and explains break-glass (FM-8) | M | P0 |
 | FR-ADM-07 | **Super admin scope**: installation-wide settings (sign-in providers, email and messaging connections, announcements to everyone, organisations in P3, platform health). The Super admin is not an organisation role: reading an organisation's books needs membership in it. The last Super admin cannot be removed; Super admin changes are audited, need step-up authentication, and are dual-controlled once a second Super admin exists | M | P1 |
-| FR-ADM-08 | **Configurable sign-in providers**: Google and Zoho out of the box, any OpenID Connect provider by configuration (issuer or discovery URL, client ID, secret in Secret Manager, scopes, claim mapping). **Zoho**: the authorisation-code flow with a client secret (Zoho's discovery document offers no `id_token` response type for the implicit flow); scopes `openid email profile`; **one provider per Zoho data centre**, because each has its own issuer (`https://accounts.zoho.com`, `.eu`, `.in`, `.com.au`, `.jp`, `.sg` and others); users identified by the `sub` claim, not email. A live sign-in per data centre is a P0 exit test, since the issuer format in Zoho's tokens is not confirmed [verify]. email and password optional, SAML in Enterprise mode. Per provider: enabled, allowed email domains, and whether new users may join by domain (**off by default; an invitation is required**). Accounts link only on a verified email. **The platform's own MFA (TOTP or passkey) stays mandatory whatever the provider** ("trust the provider's MFA" is off by default); passkeys remain the step-up for approvals (FR-ADM-02). Every sign-in records the provider used | M | P1 |
+| FR-ADM-08 | **Configurable sign-in providers**: Google and Zoho out of the box, any OpenID Connect provider by configuration (issuer or discovery URL, client ID, secret in Secret Manager, scopes, claim mapping). **Zoho**: the authorisation-code flow with a client secret (Zoho's discovery document offers no `id_token` response type for the implicit flow); scopes `openid email profile`; **one provider per Zoho data centre**, because each has its own issuer (`https://accounts.zoho.com`, `.eu`, `.in`, `.com.au`, `.jp`, `.sg` and others); users identified by the `sub` claim, not email. A live sign-in per data centre is a P0 exit test, since the issuer format in Zoho's tokens is not confirmed [verify]. (rev 0.7) The founders' Zoho accounts are in the **US data centre**, so one Zoho provider is configured, with issuer `https://accounts.zoho.com`. Email and password optional, SAML in Enterprise mode. (rev 0.7) **Every sign-in method (Google, Zoho, each OIDC or SAML provider, email and password) can be enabled or disabled on its own** by the Super admin: disabling blocks new sign-ins through it and, if chosen, ends its sessions; the platform refuses to disable the last method a Super admin can sign in with; changes are audited and dual-controlled. Per provider: allowed email domains, and whether new users may join by domain (**off by default; an invitation is required**). Accounts link only on a verified email. **The platform's own MFA (TOTP or passkey) stays mandatory whatever the provider** ("trust the provider's MFA" is off by default); passkeys remain the step-up for approvals (FR-ADM-02). Every sign-in records the provider used | M | P1 |
 | FR-INT-21 | **Outbound email**: adapters for **Zoho ZeptoMail**, **Resend** and generic **SMTP** (Mailpit locally). A sender address per purpose (notifications, invoices and quotes, reminders, security); a primary provider and a failover; the platform renders its own templates and providers only deliver. The sending domain's SPF, DKIM and DMARC status is shown and checked daily. Provider webhooks are signature-verified and deduplicated, and update each message's status and a suppression list; **the status model allows for providers that never report "delivered"** (ZeptoMail reports opens, clicks, bounces and complaints only; Resend also reports delivered and delayed). Sends are idempotent through the platform's outbox (Resend's `Idempotency-Key` where available; ZeptoMail has none, so the outbox key goes in `client_reference`). There is a test send and each provider's sandbox is used in staging. Each message is logged (recipient, template, status, provider) without storing bodies beyond what the record needs. **Neither provider documents a Singapore region** (ZeptoMail: US, EU, AU, IN, CN, JP; Resend sends from US, EU, São Paulo or Tokyo and keeps account data and logs in the US), so each provider is in the data inventory with a PDPA transfer assessment before use | M | P1 |
 | FR-INT-22 | **Inbound email** for the capture addresses (FR-DOC-12): an inbound adapter receives messages through a provider's webhook, keeps the SPF, DKIM and DMARC results, scans attachments (ClamAV), and stores everything as untrusted documents (AI-18); unknown senders go to a quarantine list for a person to accept. Adapters: Resend receiving (generally available since November 2025; the webhook carries metadata and the message is fetched through the API) or IMAP polling of a mailbox; ZeptoMail is send-only | M | P1 |
 | FR-NTF-01 | **Notification centre** for every user: a bell with the unread count; each notification has a type, a severity, the record it is about and the time; read, unread and archive. **Inbox and notifications differ**: the Inbox holds what waits for the user to act (approvals, tasks, proposals, fixes); notifications say what happened, and an actionable one links to its Inbox item | M | P1 |
@@ -1159,7 +1183,31 @@ adapters; none is hard-wired.
 | FR-NTF-03 | **Announcement banners**: the Super admin (for everyone) and the Owner or Administrator (for one organisation) publish a banner with a message and a link, a severity (info, warning, critical), an audience (everyone, roles), a start and an end time, and whether it can be dismissed (critical ones cannot). Banners sit under the header on every page; the platform adds its own for maintenance windows and incidents, and the "What's new" release note (FR-UX-35). Info banners use `role="status"` and only critical ones `role="alert"`; a banner never covers the focused element (SC 2.4.11); dismissals are stored per user on the server; publishing is audited | M | P1 |
 | FR-NTF-04 | **Slack and Zoho Cliq (optional)**: an organisation-level connection per workspace: a private Slack app posting with a bot token (`chat.postMessage`, scope `chat:write`; not incoming webhooks, which are fixed to one channel), or a Zoho Cliq bot posting to channels and users through the Cliq REST API (OAuth scope `ZohoCliq.Webhooks.CREATE`; 50 requests a minute per user, so messages are queued and batched); routing rules send event types to channels (for example approvals to #finance, company-secretary runs to #compliance); users who link their chat account also get direct messages. Messages carry deep links into the web app. **Approvals never happen in chat**: a button opens the web app, where step-up applies (FR-APR-03/04). A content level per connection: **minimal by default** ("2 approvals waiting", no amounts or names) or standard (amounts and counterparties), the latter only after the chat provider is in the data inventory with a PDPA transfer assessment (Slack offers Singapore data residency on its Business+ and Enterprise plans; Cliq documents no Singapore data centre). Failed deliveries fall back to email | S | P2 |
 | FR-NTF-05 | **One event stream**: notifications, digests, banners for incidents, chat messages and webhooks are all produced from the same events (FR-INT-12), so channels are interchangeable; every delivery attempt is logged and retried; each channel has a test message | M | P1 |
+| FR-INT-23 | (rev 0.7) **Ticketing connections**: create a ticket from any task, check, finding of the AI company secretary, security alert or "Report a problem", by hand or by routing rules (event type → project, issue type, priority, labels; user mapping by verified email). The ticket links back to the item and the item stores the ticket key and URL. The provider's webhooks (signature-verified) sync status and comments back; closing a ticket may close a **task**, but never approves anything, marks a statutory obligation met or changes a financial record. Content level minimal by default (no amounts or personal data), deduplicated per finding, retried, enabled or disabled per connection. **Jira Cloud**: REST API v3 (`POST /rest/api/3/issue`, descriptions in Atlassian Document Format), an OAuth 2.0 (3LO) app or a scoped API token (tokens expire in 1–365 days, so the connector warns before expiry), webhooks signed in `X-Hub-Signature` and deduplicated on `X-Atlassian-Webhook-Identifier` (webhooks registered by REST expire after 30 days and are renewed by the connector), `Retry-After` honoured; Atlassian offers Singapore data residency on Standard plans and above. Linear (GraphQL), Zoho Desk (OAuth with an `orgId` header, per-region domains) and GitHub Issues follow the same connector contract | S | P2 |
+| FR-INT-24 | (rev 0.7) **Inbound from ticketing**: a ticketing system (or any integration) can create and update **tasks** through the public API with a narrow scope (`fh.write.tasks`); it can never create or change financial records | S | P2 |
+| FR-INT-25 | (rev 0.7) **Connectors**: every external integration is a **connector**, an adapter packaged with a manifest: id, name, publisher, version, the capabilities it implements (sign-in, outbound or inbound email, messaging, ticketing, payment provider, bank data, e-invoicing, document AI), a configuration schema (JSON Schema), the secrets it needs, the scopes it asks of the provider and the FH scopes it receives, the data classes it sends out, its processing regions, the webhooks it registers, a health check, a test action, its local substitute and the minimum platform version. Connectors ship in a **connector catalogue** with each release | M | P1 |
+| FR-INT-26 | (rev 0.7) **Connector lifecycle**, per organisation (or installation-wide for the Super admin): **install → configure → test → enable → upgrade → disable → uninstall**. An upgrade shows the manifest diff, and new scopes or data classes need the Owner's consent again. Uninstalling revokes tokens at the provider where it can, deletes the secrets, and keeps the audit history. Every step is audited and dual-controlled (FR-INT-20) | M | P1 |
+| FR-INT-27 | (rev 0.7) **Connector rules**: a connector uses only the domain commands and read APIs the UI uses (no private write path); the never-list binds it (§9.6, AI-66); it runs as its own principal with its own audit identity, rate limits and circuit breaker; when it fails, core work continues (for example, chat falls back to email) | M | P1 |
+| FR-INT-28 | (rev 0.7) **Third-party connectors**: out-of-process, built on the public API, events and an `integration`-class OAuth client, described by the same manifest and listed after review. In-process plug-ins (for example WebAssembly) are an option for later (ADR-T8), not a commitment | C | P3 |
 | FR-NTF-06 | **Ask from chat**: linked users ask the assistant read-only questions in Slack or Cliq through the same tools, permissions and exclusions (an `agent`-class client, §9.7); answers follow the connection's content level | C | P3 |
+
+### 8.25 Document templates and the template editor (rev 0.7, founder request)
+
+Invoices, quotes and other documents customers see are rendered from **templates** that people
+edit in a visual editor, simple by default and complete when needed. Templates are versioned
+like code: every published version is kept, diffable and restorable, and every issued document
+records the version that rendered it.
+
+| ID | Requirement | Pri | Phase |
+|---|---|---|---|
+| FR-TPL-01 | **Visual, block-based editor**: blocks for the header and logo, our and the customer's details, document details, the line-item table, totals and GST summary, payment details (bank, PayNow QR, payment link), notes and terms, signature or stamp image, footer, and free text or image blocks. Drag to reorder; per-block settings (show, alignment, labels). Theme: logo, colours (contrast checked), a self-hosted font, A4 or Letter, margins. **Live preview** with sample data or any real document. Basic mode offers a theme, logo, colours and texts; Expert mode adds layout, columns and conditions | M | P1 |
+| FR-TPL-02 | **Fields and conditions** from a typed catalogue (customer name, due date, amount due, SGD equivalents, and so on), with formats for dates and money; conditional blocks from a fixed list (GST-registered, foreign currency, overdue, discount present, PayNow available); a column chooser for the line table. No free code in the visual editor | M | P1 |
+| FR-TPL-03 | **Compliance guard**: for tax invoices, simplified tax invoices and credit notes, the IRAS particulars (FR-AR-05) are **locked blocks** that cannot be removed or hidden; publishing renders test documents and fails if a particular is missing. InvoiceNow documents are structured data and are not affected by the PDF template | M | P1 |
+| FR-TPL-04 | **Versioning**: saving makes a draft; **publishing** makes an immutable numbered version (who, when, note). Any two versions can be compared side by side (visual diff plus a list of changed settings); **rollback** republishes an earlier version as a new one. Every issued document stores the template version and a hash (FR-DOC-04), so a reprint is identical. Publishing is an approval object (FR-APR-01; Founder mode: self-approval with the weekly review) | M | P1 |
+| FR-TPL-05 | **Document types**: invoice, quote, credit note, receipt, customer statement, reminder letter, remittance advice, purchase order and, in P2, payslip; plus **email templates** (subject and body with the same fields). A default template per type, and per-customer overrides | M | P1 |
+| FR-TPL-06 | **Code mode for experts**: templates compile to Typst (§12.2); an expert may edit the Typst source in a sandbox (no network, only the template's own assets, time and memory limits; Typst fetches `@preview` packages from the network on demand, so the `render` service ships the allowed packages with its image and blocks downloads; data goes in as a JSON file, not as `sys.inputs` strings). Code changes are versioned and approved like any other, and the output stays PDF/UA-1 (tagged headings, reading order, alternative text for the logo) | S | P2 |
+| FR-TPL-07 | **Starter gallery and portability**: 3–4 starter templates built with the design system; export and import as a versioned bundle (JSON plus assets) | S | P1 |
+| FR-TPL-08 | **Languages**: labels per language and a language per customer | C | P3 |
 
 ---
 
@@ -1454,12 +1502,12 @@ nothing except by proposals a person approves.
 | ID | Requirement | Pri | Phase |
 |---|---|---|---|
 | AI-61 | **Agent skills**: each scheduled agent is defined by a versioned skill file, `agents/<name>/SKILL.md`, holding its instructions, its checklist, the read tools it may call and the outputs it may produce. The file is hash-pinned per release and changes only through a dual-approved change that passes the evals (CMP-AI-03, QA-AI-07), like the task catalogue | M | P1 |
-| AI-62 | **Schedules and triggers**, per organisation and per agent, all configurable with recommended defaults (FR-ORG-08): a cron-style schedule in Singapore time; event triggers (FY end, period close, share issue or transfer, officer or holder change, a filing recorded, a deadline 30, 14, 7 and 1 days ahead); quiet hours; recipients and channels (Inbox and email; Slack from P2); escalation to the Owner 7 days before a deadline; "Run now"; pause | M | P1 |
+| AI-62 | **Schedules and triggers**, per organisation and per agent, all configurable with recommended defaults (FR-ORG-08): a cron-style schedule in Singapore time; event triggers (FY end, period close, share issue or transfer, officer or holder change, a filing recorded, a deadline 30, 14, 7 and 1 days ahead); quiet hours; recipients and channels (Inbox and email; Slack from P2); escalation to the Owner 7 days before a deadline; "Run now"; pause. (rev 0.7) Schedules live in the database: the Scheduler tick finds the due runs and enqueues each as a named Cloud Task at its exact time, and every finished run enqueues its next slot, so there is no Scheduler job per schedule and nothing runs between ticks (ADR-T7) | M | P1 |
 | AI-63 | **Identity and permissions**: an agent runs as a named non-human principal (e.g. "Company secretary agent") **on behalf of the Owner who enabled it**, intersected with the agent's permission profile (for the secretary: ledger summaries, the statutory calendar, the equity register, officers and controllers, settings and evidence metadata; no payroll detail unless AI payroll access is on; the AI-02 exclusions always). Agents are off by default; enabling one is an AI-settings change under FM-1 | M | P1 |
 | AI-64 | **Deterministic first**: a run executes the deterministic checks (checks engine, statutory calendar, reconciliations, registers) first. The model is called only to explain findings, cross-check what rules cannot, and draft. When no input changed since the last run, the model step is skipped | M | P1 |
 | AI-65 | **Outputs**: a **run report** (each finding with its status ✔ ⚠ ✖ ⏰, the rule and source it applied, links to the evidence and what to do next), Inbox tasks with an owner and a due date, and **drafts as tier-1 proposals** (documents and reminder emails, sent only after approval). Run reports are append-only and record the ledger version, knowledge-base snapshot and pack versions used, so a run can be reproduced (FR-RPT-08) | M | P1 |
 | AI-66 | **Never**: an agent never files or lodges with ACRA, IRAS or CPF, signs, approves, changes officers, registers, holders or settings, sends anything outside the organisation without approval, or marks an obligation as met. It reports, creates tasks and proposes drafts only (§9.6) | M | P1 |
-| AI-67 | **Budgets and failure**: a token budget per run and per month, a cap on tool calls, and the Owner's instant pause (AI-13). A failed, skipped or late run is itself ⚠ on Checks, and the deterministic deadline monitor (CMP-02) keeps running when the agent is paused or over budget | M | P1 |
+| AI-67 | **Budgets and failure**: a token budget per run and per month, a cap on tool calls, and the Owner's instant pause (AI-13). A failed, skipped or late run is itself ⚠ on Checks, and the deterministic deadline monitor (CMP-02) keeps running when the agent is paused or over budget. (rev 0.7) Because nothing runs between ticks, the tick is also the **watchdog**: it compares expected and actual runs and raises the ⚠ | M | P1 |
 
 **The AI company secretary**
 
@@ -1546,6 +1594,9 @@ Appendix B. Debit is positive and credit negative in base currency, as in the wo
 | **New (rev 0.3):** Waiver (FR-EQ-07) | 2500 or 2120 | 3300 Capital contribution, or other income | The accountant's choice, with a reason |
 | **New (rev 0.3):** Share issue for cash (FR-EQ-17) | Bank | 3010 or 3020 | Only from the equity register (INV-13), on the effective date |
 | **New (rev 0.3):** SAFE or note received; converted (FR-EQ-18) | Bank; then 2700 (converted amount) | 2700; then 3010 or 3020 | `RND-SHARE`; the remainder stays on 2700 until settled under the terms |
+| **New (rev 0.7):** Mileage claim (FR-AP-16) | Travel (mileage) expense, by project | 2150 Expense claims payable | `RND-MILEAGE`; no GST |
+| **New (rev 0.7):** Cash advance to an employee; settled by claims (FR-AP-17) | 1250 Staff & director advances; then the claim's expense lines | Bank; then 1250 | The unsettled balance is refunded or deducted; ⚠ when older than the claim deadline |
+| **New (rev 0.7):** Payment-provider sale, fee and payout (FR-PSP-02…06) | Provider clearing (gross); fees expense and input GST when invoiced; Bank (net payout) | Revenue or AR (gross); provider clearing (fees, payout) | Clearing nets to zero per payout (FR-PSP-06) |
 | **Changed:** Edits of posted documents | Reversal of the previous version's entries + entries of the new version | | Workbook recalculated in place; the platform keeps history (FR-GL-12) |
 
 ### 10.3 Money and precision
@@ -1574,6 +1625,7 @@ by the entries they produce. "Half-up" means half away from zero.
 | `ALLOC-EVEN` | Splitting an amount into n periods (spreads, deferrals, depreciation): each period = amount ÷ n rounded down to the minor unit; the remainder cents go to the **last** period, so the parts always sum exactly to the whole | **Changed**: the workbook used unrounded monthly amounts; the ledger posts whole cents |
 | `ALLOC-PRORATA` | Splitting by weights (allocations, partial payments across documents): largest-remainder method; ties broken by stable order | New |
 | `RND-SHARE` | (rev 0.3) Shares allotted for an amount at a price per share: the largest whole number of shares n for which round(n × price, 2) ≤ amount (half-up); converted amount = round(n × price, 2); the remainder stays on the source balance. No fractional shares | New (FR-EQ-06); pinned in Appendix G.3 |
+| `RND-MILEAGE` | (rev 0.7) Mileage amount = round(distance in km, to 0.1 km, half-up) × rate, then round to the cent, half-up, per trip | New (FR-AP-16) |
 | `RND-DISPLAY` | Display never re-rounds stored amounts; totals are sums of stored amounts, so every report foots and cross-foots exactly | New |
 
 ### 10.5 Statuses and validation
@@ -1669,6 +1721,13 @@ connectors, pgAudit and Query Insights on. Extensions: `pgcrypto`, `pg_cron`, `p
 vectors (ADR-T6), and ledger figures never would. Firestore may still be used later for non-financial, real-time UI state (e.g.
 presence) if a need appears; no financial data goes there.
 
+(rev 0.7) **Accessed through a storage port** (ADR-T8): the domain never sees SQL; `sqlc` and
+`pgx` live inside the PostgreSQL adapter. The portability target is **any PostgreSQL-compatible
+managed service** (Cloud SQL, AlloyDB, Amazon RDS or Aurora PostgreSQL, Azure Database for
+PostgreSQL, self-hosted), because the invariants (constraints, triggers, row-level security,
+`NUMERIC`) are the safety model and stay in the database. Another engine is possible only with
+an adapter that passes the same invariant and attack suites (QA-ENG-05), so it is not promised.
+
 **Money representation (ENG-11 made concrete).**
 
 | Column family | Type | Constraint |
@@ -1718,6 +1777,8 @@ organisation ─┬─ entity (P3) ─┬─ period (open | soft-locked | closed
               ├─ share_class, equity_transaction (append-only), instrument (SAFE | note | option grant),
               │  round_scenario (sandbox), director_balance_movement (origin)  (rev 0.3)
               ├─ setting_value (effective-dated; recommended | changed), user_help_state (tour, tips)  (rev 0.3)
+              ├─ document_template ── template_version (immutable; hash), time_entry, cost_rate, billing_rate,
+              │  mileage_trip, cash_advance, provider_transaction ── payout, bank_connection ── sync_run  (rev 0.7)
               ├─ integration_connection (adapter, secret reference, health), outbound_message (status),
               │  notification, notification_preference, announcement, announcement_dismissal  (rev 0.6)
               ├─ corporate_officer, registrable_controller, agent_definition (pinned skill), agent_schedule,
@@ -1829,11 +1890,13 @@ for Singapore before GST. Re-check versions when P0 starts.
 |---|---|---|---|
 | ADR-D1 | PostgreSQL 18 on Cloud SQL as the system of record | §11.3 | Proposed |
 | ADR-T1 | Recommended stack (Go, React, AG Grid, Typst, OpenTofu, …) | §12.2 | Proposed |
-| ADR-T2 | AI models and data residency | §12.5 | Proposed (open question 7) |
+| ADR-T2 | AI models and data residency | §12.5 | Proposed (open question 7; rev 0.7: only Claude Sonnet 4.6 is confirmed on the `asia-southeast1` endpoint; Option A's Opus 4.6 there [verify]) |
 | ADR-T3 | Identity Platform for sign-in plus Ory Hydra as the OAuth 2.1 server for integrations and MCP | §12.2.1 | Proposed (rev 0.2) |
 | ADR-T4 | Local mode: every cloud dependency has a local substitute behind the same interface | §12.8 | Proposed (rev 0.2) |
 | ADR-T5 | Lean images, Conventional Commits and release-please | §12.9, §12.10 | **Accepted** (rev 0.2; bootstrapped in the repository) |
 | ADR-T6 | AI context and a compiled, versioned knowledge base (index-first; no vectors, rev 0.5) | §12.2.2 | Proposed (rev 0.4; rev 0.5) |
+| ADR-T7 | Scale to zero: transactional outbox, Cloud Tasks and a Cloud Scheduler tick; long work as run-to-completion jobs | §12.11 | Proposed (rev 0.7) |
+| ADR-T8 | Portability by ports, adapters and connectors: PostgreSQL-compatible, GCP first, AWS and Azure named | §12.12 | Proposed (rev 0.7) |
 
 From P0, each ADR also gets a file in `docs/adr/` (`NNNN-title.md`: context, decision,
 consequences, status). A superseded decision is marked superseded, never edited away.
@@ -1855,8 +1918,8 @@ consequences, status). A superseded decision is marked superseded, never edited 
 |---|---|---|---|
 | Backend language | **Go 1.27** (standard-library HTTP routing or chi; **huma** for OpenAPI 3.1) | No implicit numeric coercion, explicit errors, static binary of roughly 10–30 MB, fastest cold start and lowest memory on Cloud Run; v1+ SDKs for Claude (`anthropic-sdk-go` with Vertex/Agent Platform support), Google GenAI and the **official MCP Go SDK** (v1.8, co-maintained with Google) | TypeScript on Node 24/26 LTS (Node 26 becomes LTS on 28 Oct 2026; Hono, Kysely, dinero.js v2): shares types with React, but its XLSX libraries are stale and key libraries are still 0.x or release candidates |
 | Money arithmetic | **cockroachdb/apd v3** (arbitrary-precision decimal with explicit context and rounding) + PostgreSQL `NUMERIC` with fixed scale (§11.3) | Precision and rounding explicit on every operation; maps cleanly to pgx | shopspring/decimal |
-| Data access | **sqlc + pgx v5** | SQL is the source of truth and is checked against the schema at build time; no ORM magic in money code | — |
-| Background work | **River** (PostgreSQL-backed job queue: jobs enqueued in the same transaction as the change, so no lost or phantom jobs) on a Cloud Run worker pool; **Cloud Run jobs** for heavy batches (exports, imports, nightly verification); **Cloud Scheduler** for timing; **Pub/Sub** added in P2 for integration fan-out and webhooks | Transactional outbox without extra infrastructure | Cloud Tasks + Pub/Sub only |
+| Data access | **sqlc + pgx v5**, inside the PostgreSQL storage adapter (rev 0.7, ADR-T8) | SQL is the source of truth and is checked against the schema at build time; no ORM magic in money code | — |
+| Background work | (rev 0.7, ADR-T7: **scale to zero**) A **transactional outbox** in PostgreSQL (written in the same transaction as the change, so no lost or phantom jobs), dispatched by **Cloud Tasks** to Cloud Run services at min instances 0, with a **Cloud Scheduler tick** as the timer and safety net; River stays as the queue adapter for local mode and always-on self-hosting. *Rev 0.2 text, superseded:* **River** (PostgreSQL-backed job queue: jobs enqueued in the same transaction as the change, so no lost or phantom jobs) on a Cloud Run worker pool; **Cloud Run jobs** for heavy batches (exports, imports, nightly verification); **Cloud Scheduler** for timing; **Pub/Sub** added in P2 for integration fan-out and webhooks | Transactional outbox without extra infrastructure | Cloud Tasks + Pub/Sub only |
 | Database | **Cloud SQL for PostgreSQL 18, Enterprise edition** (§11.3) | Cheapest managed PostgreSQL with HA | AlloyDB at scale |
 | Web front end | **React 19 + Vite 8 single-page app**, **TanStack Router + Query**, React Compiler | Behind a login, so no SEO or server rendering is needed; static hosting removes a server tier to patch and secure | Next.js 16 (adds a Node server tier); SvelteKit 3 / SolidStart 2 (thinner grid and component ecosystems) |
 | UI kit and theming | **shadcn/ui on Base UI** + **Tailwind CSS 4** with CSS-variable design tokens for light/dark; **cmdk** command palette; **Inter** with tabular figures | Accessible primitives; components we own; theme tokens in one place | React Aria Components (strongest accessibility); Mantine 9 |
@@ -1964,12 +2027,14 @@ flowchart TB
   API --> SQL[(Cloud SQL PostgreSQL 18<br/>regional HA, private IP)]
   AIO -->|read API, propose| API
   AIO --> VX["Agent Platform (formerly Vertex AI)<br/>Claude models + Model Armor"]
-  API -->|jobs enqueued in the same transaction| Q[(River job tables<br/>in PostgreSQL)]
-  Q --> WRK[Cloud Run worker pool<br/>notifications, integrations,<br/>scheduled postings]
-  Q --> EXE[Cloud Run worker pool: proposal-executor<br/>own service account and DB role]
+  API -->|outbox row in the same transaction| OB[(Outbox table<br/>in PostgreSQL)]
+  API -->|after commit: named task| CT[Cloud Tasks queues<br/>one per worker class]
+  SCH[Cloud Scheduler tick<br/>due schedules, outbox sweep, watchdog] --> API
+  CT -->|OIDC push| WRK[Cloud Run: worker<br/>min instances 0<br/>notifications, connectors, postings, agents]
+  CT -->|own queue, own OIDC| EXE[Cloud Run: proposal-executor<br/>min instances 0, own identity and DB role]
   EXE --> SQL
   WRK -.->|P2| PUB[Pub/Sub<br/>webhooks, integration fan-out]
-  SCH[Cloud Scheduler] --> JOB[Cloud Run jobs<br/>imports, exports, nightly verification,<br/>audit anchoring, retention purge]
+  CT --> JOB[Cloud Run jobs<br/>imports, exports, nightly verification,<br/>audit anchoring, retention purge]
   JOB --> SQL
   JOB --> DOCS[(Cloud Storage<br/>documents, exports,<br/>retention-locked audit anchors)]
   API --> DOCS
@@ -1985,18 +2050,18 @@ flowchart TB
 | Component | Responsibility | Scaling |
 |---|---|---|
 | Web app | Single-page application served from Cloud Storage via Cloud CDN | Static; global edge |
-| `api` service | Authentication, authorisation, domain commands (the only write path), read API, semantic layer, approval engine, proposal service | Cloud Run autoscaling; min instances 1 in production for latency |
+| `api` service | Authentication, authorisation, domain commands (the only write path), read API, semantic layer, approval engine, proposal service; (rev 0.7) writes outbox rows and enqueues their Cloud Tasks; serves the Scheduler tick | Cloud Run autoscaling; (rev 0.7) **min instances 0**: no cost when nobody uses it; the first request after idle pays a cold start (a small static Go binary; target in NFR-PERF) |
 | `ai-orchestrator` | Chat and agent tool loop, Agent Platform (Claude) calls, numeric grounding, AI activity log (via `api`) | Cloud Run; separate service identity with no database write role |
 | `mcp` | MCP endpoint (§9.7): validates audience-bound tokens, exchanges them for API tokens, serves the shared tool registry | Cloud Run; its own identity with **no database access at all**; it reaches data only through the API |
 | `oauth` (Ory Hydra) | OAuth 2.1 / OIDC server for integrations and MCP clients (ADR-T3) | Cloud Run; stateless; own database on the shared instance |
-| `proposal-executor` | Executes approved proposals under its own service identity and database role; consumes only the `proposal_execution` River queue | **Its own Cloud Run worker pool** (rev 0.2: the draft ran it inside the shared worker, whose identity also processes untrusted integration input) |
-| `worker` | River job consumers: notifications, integrations (Peppol, bank feeds), scheduled postings; webhooks via Pub/Sub from P2 | Cloud Run worker pool |
+| `proposal-executor` | Executes approved proposals under its own service identity and database role; (rev 0.7) invoked only by its own Cloud Tasks queue, whose OIDC token it alone accepts (previously the `proposal_execution` River queue) | **Its own Cloud Run worker pool** (rev 0.2: the draft ran it inside the shared worker, whose identity also processes untrusted integration input) |
+| `worker` | (rev 0.7) HTTP handlers invoked by Cloud Tasks: notifications, connectors (Peppol, bank data, payment providers, chat, ticketing), scheduled postings, scheduled agent runs (§9.12); webhooks via Pub/Sub from P2 | (rev 0.7) Cloud Run service, **min instances 0**; long runs hand over to Cloud Run jobs |
 | `kb-compiler` (rev 0.4) | Compiles organisation knowledge-base drafts when their sources change; runs the weekly semantic lint (AI-52, AI-57) | Cloud Run job with its own service identity: reads sources, writes knowledge-base drafts only |
 
 Each service is built as a **separate binary and image** from its own `cmd/` entry point
 (§12.9). The AI image therefore contains no domain write code at all, and a compromise of one
 image does not carry another service's code paths.
-| Jobs | Imports, exports, nightly verification, audit anchoring, retention purge | Cloud Run jobs triggered by Cloud Scheduler or River |
+| Jobs | Imports, exports, nightly verification, audit anchoring, retention purge | Cloud Run jobs triggered by Cloud Tasks or the Scheduler tick (rev 0.7) |
 | Database | System of record (§11) | Vertical; read replica for heavy reads when needed |
 | Storage | Documents, generated files, exports (signed URLs), audit anchors (Bucket Lock) | Managed |
 
@@ -2007,7 +2072,7 @@ The load balancer with Cloud Armor is in production from go-live (≈ US$30 a mo
 | Item | Decision |
 |---|---|
 | Google Cloud projects | `fh-prod`, `fh-staging`, `fh-dev` (sandbox), `fh-audit` (locked log buckets, audit anchors, backup vault; separate admin group), `fh-ci` (Artifact Registry, CI identities); one organisation with organisation policies (resource locations = `asia-southeast1`, no service-account keys, uniform bucket access, restricted public IPs) |
-| Repository | One monorepo (rev 0.2: the single layout; §12.2 refers here): `apps/web` (React SPA), `cmd/` (one entry point per service: `api`, `ai`, `mcp`, `worker`, `executor`, `jobs`, `render`, `migrate`), `internal/` (Go domain, ledger, adapters), `contracts/` (OpenAPI, AsyncAPI event schemas, AI tool schemas), `oracle/` (independent reference ledger, Python), `db/` (migrations), `packs/` (statutory parameter packs as data, §10.6), `test/` (cross-cutting suites: differential, invariants, contract, authorisation, MCP), `e2e/` (Playwright), `evals/` (AI suites), `agents/` (rev 0.6: scheduled-agent skills, e.g. `agents/company-secretary/SKILL.md`), `kb/` (rev 0.4: the platform knowledge base: `schema.md`, generated `index.md`, `log.md`, `pages/`), `deploy/local/` (Compose stack, §12.8), `deploy/docker/` (Dockerfiles, §12.9), `infra/` (OpenTofu), `compliance/` (control registry and checks as code), `docs/` (PRD, ADRs, design system, runbooks, post-incident reviews in `docs/postmortems/`), `.claude/skills/` (Appendix H), `AGENTS.md` and `CLAUDE.md` (coding instructions) |
+| Repository | One monorepo (rev 0.2: the single layout; §12.2 refers here): `apps/web` (React SPA), `cmd/` (one entry point per service: `api`, `ai`, `mcp`, `worker`, `executor`, `jobs`, `render`, `migrate`), `internal/` (Go domain, ledger, adapters), `contracts/` (OpenAPI, AsyncAPI event schemas, AI tool schemas), `oracle/` (independent reference ledger, Python), `db/` (migrations), `packs/` (statutory parameter packs as data, §10.6), `test/` (cross-cutting suites: differential, invariants, contract, authorisation, MCP), `e2e/` (Playwright), `evals/` (AI suites), `connectors/` (rev 0.7: connector manifests and code, FR-INT-25), `internal/adapters/<provider>/` (rev 0.7: the only place cloud SDKs are imported, NFR-PORT-03), `agents/` (rev 0.6: scheduled-agent skills, e.g. `agents/company-secretary/SKILL.md`), `kb/` (rev 0.4: the platform knowledge base: `schema.md`, generated `index.md`, `log.md`, `pages/`), `deploy/local/` (Compose stack, §12.8), `deploy/docker/` (Dockerfiles, §12.9), `infra/` (OpenTofu), `compliance/` (control registry and checks as code), `docs/` (PRD, ADRs, design system, runbooks, post-incident reviews in `docs/postmortems/`), `.claude/skills/` (Appendix H), `AGENTS.md` and `CLAUDE.md` (coding instructions) |
 | Contracts | OpenAPI 3.1 is the source of truth for the HTTP API; server stubs and the typed web client are generated from it; AI tool schemas are generated from the same types |
 | Database migrations | Versioned SQL migrations (goose; linted by squawk), reviewed like code; expand-and-contract for zero-downtime; every migration tested against a copy of production-shaped data; invariant tests (QA-ENG-05) run after migrations |
 | CI/CD | GitHub Actions with Workload Identity Federation (no keys) → build, test gates (§16), SBOM and provenance → Artifact Registry → deploy to staging → automated E2E and smoke tests → manual approval → production with gradual traffic shifting and automatic rollback on SLO burn |
@@ -2058,7 +2123,7 @@ of transactions a year).
 
 | Item | Development / staging | Production at go-live |
 |---|---|---|
-| Cloud Run (API, AI orchestrator, worker pool, jobs) | $0–7 (scale to zero) | $25–50 (1 warm instance for the API ≈ $18) |
+| Cloud Run (API, AI orchestrator, worker pool, jobs) | $0–7 (scale to zero) | $25–50 (1 warm instance for the API ≈ $18); (rev 0.7) lower: every service at min instances 0 and no worker pools (ADR-T7), so idle compute is $0 |
 | Cloud SQL Enterprise | $36–69 (shared-core or 1 vCPU zonal; no SLA needed) | **1 vCPU / 3.75 GiB with HA ≈ $138**; 2 vCPU / 8 GiB with HA ≈ $283 when needed |
 | Database storage, backups, PITR logs | $5–8 | $15–40 |
 | Load balancer + Cloud Armor Standard (+ CDN) | — | $30–35 |
@@ -2110,7 +2175,7 @@ staging|production`). Local adapters are compiled only into non-production build
 | Secret Manager | `.env` generated by `make setup` (git-ignored); `.env.example` committed | Same `Secrets` interface |
 | Claude on Agent Platform | **Replay mode** (default): recorded model responses ("cassettes") keyed by prompt, tools and model version, for deterministic tests. **Live mode** (opt-in, `FH_AI_LIVE=1`): the Claude API with a developer key, or a developer's own Google Cloud project; **synthetic sample data only, never real organisation data** | The eval gates (QA-AI-01…03) run in live mode in CI on the sample company before any model or prompt change |
 | Model Armor | A local screening stub that flags the red-team corpus patterns | Real Model Armor is tested in staging |
-| Cloud Scheduler → Cloud Run jobs | River periodic jobs in the worker; the same schedule table generates the production Scheduler configuration | One schedule definition |
+| Cloud Tasks, Cloud Scheduler → Cloud Run jobs | (rev 0.7) **River** as the local adapter of the queue port: the same outbox, an in-process consumer and periodic jobs that call the same tick and handlers | One schedule definition and the same handlers in both |
 | Pub/Sub (P2) | Google Pub/Sub emulator | Same client library |
 | Load balancer, Cloud Armor, CDN | **Caddy**: one origin for the web app, `/api`, `/ai`, `/mcp` and `/oauth2` | Same cookie and CSP behaviour; WAF rules tested in staging |
 | Email provider | **Mailpit** (inbox UI at `localhost:8025`) | Templates and links checked end to end |
@@ -2199,6 +2264,94 @@ on pull requests.
 | REL-06 | release-please runs with a GitHub App token (not the default `GITHUB_TOKEN`) once CI exists, so CI runs on release pull requests | S | P0 |
 
 ---
+
+### 12.11 Decision (ADR-T7): scale to zero, and how background work runs (rev 0.7)
+
+**Context.** The platform serves a small team; nobody uses it at night or at weekends, so it
+should cost nothing then. Cloud Run scales to zero by default, but **only a request wakes it**,
+and under request-based billing the CPU is throttled outside requests. An always-on queue
+consumer (River on a worker pool, rev 0.2) breaks this: Cloud Run worker pools are billed for
+every instance even when idle ([source notes](research/bank-payments-cloud-2026-10-12.md)).
+
+**Decision.**
+1. **Transactional outbox.** A change writes its background work as an outbox row in the same
+   database transaction (keeping River's guarantee: no lost or phantom jobs).
+2. **Cloud Tasks.** After commit, the API enqueues a Cloud Task **named after the outbox row**
+   (Cloud Tasks deduplicates named tasks for up to 24 hours), one queue per worker class, with an
+   OIDC token for that class's service. The `proposal-executor` has its own queue and accepts
+   only its own queue's token.
+3. **Short work** (under about 5 minutes: notifications, connector calls, postings) runs in HTTP
+   handlers on Cloud Run services at **min instances 0**, with the request held open for the
+   whole run and an explicit dispatch deadline (Cloud Tasks allows 15 seconds to 30 minutes).
+4. **Long work** (agent runs, imports, exports, compiles, nightly verification) runs as **Cloud
+   Run jobs** (task timeout up to 7 days), started by a task. This is the pattern that ports to
+   AWS (ECS RunTask on Fargate) and Azure (Container Apps jobs), which cannot hold long requests
+   open (Lambda stops at 15 minutes; Container Apps ingress at 240 seconds).
+5. **One Cloud Scheduler tick** (every 5 minutes by default; a setting) wakes the API to:
+   enqueue due schedules (agents, recurring documents, bank pulls) as tasks at their exact time
+   (Cloud Tasks accepts times up to 30 days ahead); sweep the outbox for rows never enqueued; and
+   act as the **watchdog** for late or failed runs. A finished scheduled run also enqueues its
+   next slot. A few fixed Scheduler jobs (the tick, nightly verification, audit anchoring) stay
+   well inside the 5,000-jobs-per-region quota and cost cents ($0.10 per job a month, 3 free per
+   billing account).
+6. **Scheduling never depends on the database's own scheduler.** `pg_cron` may run maintenance,
+   but anything the business relies on is triggered by the tick, because a paused serverless
+   database skips its own cron jobs.
+
+**What stays on.** The database. Cloud SQL has no idle auto-stop (a manual stop still charges for
+storage and the IP address), so it is the always-on cost floor. Hydra shares it. Everything else
+scales to zero. The first request after idle pays a cold start: a small static Go binary, kept
+within NFR-PERF.
+
+**Alternatives.** River on an always-on worker pool (simpler, but always billed; kept as the
+local and self-hosted adapter); Pub/Sub push subscriptions (no per-task scheduling or naming,
+added in P2 for fan-out only); Cloud Workflows (more moving parts than needed).
+
+**Consequences.** Every handler is idempotent on the outbox ID. A worker class is a queue plus a
+service or job with its own identity, which keeps the separation of duties of §12.3.
+
+### 12.12 Decision (ADR-T8): portability by ports, adapters and connectors (rev 0.7)
+
+**Context.** The founders want the solution open to AWS and Azure for the long run, the
+database reached through an adapter, and integrations installable as connectors.
+
+**Decision.** The domain depends only on **ports** (interfaces). Each port has a **GCP adapter**
+(built and run in production), a **local adapter** (ADR-T4) and **named AWS and Azure
+equivalents**, built when a deployment needs them. Cloud SDKs appear only in
+`internal/adapters/<provider>/` (NFR-PORT-03). Outside services are **connectors** (FR-INT-25).
+
+| Port | GCP (production) | AWS | Azure | Local |
+|---|---|---|---|---|
+| Compute (services) | Cloud Run, min instances 0 | ECS on Fargate (App Runner is closed to new customers) | Container Apps, min replicas 0 | Docker Compose |
+| Long runs | Cloud Run jobs | ECS RunTask (Fargate) | Container Apps jobs | Compose one-off containers |
+| Queue and timer | Cloud Tasks + Cloud Scheduler tick | EventBridge Scheduler (one-time and cron) + ECS RunTask; SQS for short delays | Storage Queues or Service Bus scheduled messages + Container Apps jobs | River |
+| Database | Cloud SQL for PostgreSQL | Aurora or RDS for PostgreSQL (Aurora can pause at 0 capacity) | Azure Database for PostgreSQL Flexible Server | PostgreSQL container |
+| WORM storage | Cloud Storage with Bucket Lock | S3 Object Lock | Blob immutable storage (locked policy) | fake-gcs-server |
+| Keys and secrets | Cloud KMS, Secret Manager | AWS KMS, Secrets Manager | Key Vault | Tink keyset, `.env.local` |
+| Sign-in | Identity Platform (ADR-T3) | Cognito, or Ory Kratos + Hydra | Entra External ID, or Ory Kratos + Hydra | Firebase Authentication emulator |
+| AI endpoint | Claude on Vertex AI (ADR-T2) | Claude on Amazon Bedrock | Claude in Microsoft Foundry | Replayed responses |
+| Telemetry | OpenTelemetry → Cloud Logging, Monitoring, Trace | OpenTelemetry → CloudWatch | OpenTelemetry → Azure Monitor | Console |
+
+All four database extensions (`pgcrypto`, `pgaudit`, `pg_partman`, `pg_cron`) are available on
+RDS, Aurora and Azure Flexible Server for PostgreSQL 16–17 (Azure needs them in
+`shared_preload_libraries`). Singapore regions exist on all three clouds (`asia-southeast1`,
+`ap-southeast-1`, Southeast Asia).
+
+**The two hard ties, stated plainly.**
+1. **Identity**: Identity Platform is GCP-only. A portable path exists (Ory Kratos + Hydra or
+   Keycloak, Apache-2.0; Zitadel is now AGPL-3.0), and ADR-T3 stays open on it.
+2. **Claude in Singapore**: on Vertex AI only Claude Sonnet 4.6 has an `asia-southeast1`
+   endpoint; on Bedrock in Singapore only Claude Sonnet 5 runs in-region (newer models go through
+   the global profile); Microsoft Foundry offers Claude only as Global or US Data Zone. Data
+   residency on another cloud would change ADR-T2's options.
+
+**Alternatives.** Kubernetes everywhere (portable, but always-on cost and operations work a
+small team should not carry); a multi-cloud abstraction framework (adds a dependency in the
+critical path).
+
+**Consequences.** Each port has a conformance suite run against every adapter; the local adapters
+prove the domain is cloud-free (DEV-07); a second cloud is a P3 rehearsal (NFR-PORT-06), not a P1
+cost.
 
 ## 13. Security
 
@@ -2423,6 +2576,13 @@ agentic-AI addendum; every January: CPF and SHG tables, CIT rebate.
 | NFR-DEVX-03 | Feedback loop | Go change → restarted service; web change → hot module reload | ≤ 3 s |
 | NFR-IMG-01…07 | Images | Size budgets and hardening (§12.9) | ≤ 30 MB per Go service image |
 | NFR-API-01 | API usability | Every endpoint has a description, an example request and response, its permission and error codes in the OpenAPI document | 100%, checked by a linter (Spectral) in CI |
+| NFR-PORT-01 | (rev 0.7) Storage port | The domain depends on repository interfaces; SQL lives only in the PostgreSQL adapter | Architecture test fails the build on SQL or `pgx` imports outside the adapter |
+| NFR-PORT-02 | (rev 0.7) PostgreSQL compatibility | Runs on Cloud SQL, AlloyDB, Aurora or RDS for PostgreSQL, Azure Flexible Server and self-hosted PostgreSQL 17+ | Only extensions available on all of them; the invariant and attack suites pass on each target before it is supported |
+| NFR-PORT-03 | (rev 0.7) No cloud SDK in the domain | Cloud SDKs are imported only in `internal/adapters/<provider>/` | A dependency lint (depguard-style) fails the build |
+| NFR-PORT-04 | (rev 0.7) Adapter conformance | Every port has a conformance suite | Runs against the local and GCP adapters in CI, and against AWS or Azure adapters when they exist |
+| NFR-PORT-05 | (rev 0.7) Infrastructure as code per cloud | OpenTofu modules per cloud behind the same variables | `tofu validate` and policy checks per module |
+| NFR-PORT-06 | (rev 0.7) Portability rehearsal | A staging deployment on a second cloud passes the suites | P3, when a customer or the founders need it |
+| NFR-COST-02 | (rev 0.7) Idle cost | With nobody using it, only the database, storage, keys and the Scheduler tick are billed | Monthly bill review; a cost alert when compute is billed while idle |
 | NFR-COST-01 | Cost | Infrastructure cost at Cognizhi's own scale | Budget in §12 |
 | NFR-BROWSER-01 | Browsers | Last two versions of Chrome, Edge, Safari, Firefox; iOS Safari and Android Chrome for the PWA | P1 |
 
@@ -2542,10 +2702,10 @@ P0 is done when all of these hold, with evidence stored in the release record:
 
 | Area | P0 | P1 | P2 | P3 |
 |---|---|---|---|---|
-| Platform | Tenancy, identity and OAuth server, audit trail, CI/CD, IaC, local mode, lean images, release automation, API conventions | Approvals, team modes, notifications, public API used by our UI, Basic and Expert modes; (rev 0.6) Google and Zoho sign-in, first-run Super admin, ZeptoMail and Resend email, notification centre, announcement banners | Third-party API clients, webhooks, PWA, sandbox; (rev 0.6) Slack and Zoho Cliq | Multi-tenant onboarding, marketplace, A2A agent card |
+| Platform | Tenancy, identity and OAuth server, audit trail, CI/CD, IaC, local mode, lean images, release automation, API conventions; (rev 0.7) storage and cloud ports, outbox with Cloud Tasks (scale to zero) | Approvals, team modes, notifications, public API used by our UI, Basic and Expert modes; (rev 0.6) Google and Zoho sign-in, first-run Super admin, ZeptoMail and Resend email, notification centre, announcement banners; (rev 0.7) connector catalogue and lifecycle, company logo and brand | Third-party API clients, webhooks, PWA, sandbox; (rev 0.6) Slack and Zoho Cliq; (rev 0.7) ticketing connectors (Jira and others) | Multi-tenant onboarding, marketplace, A2A agent card |
 | Ledger | Engine, invariants, reference ledger | All workbook posting sources, FX revaluation, disposals, close workflow, director accounts and conversions to share capital (rev 0.3) | Allocation rules, soft module locks | Multi-entity, intercompany, consolidation |
-| Banking | — | Multi-account import, rules, matching, reconciliation, payment files; (rev 0.6) deterministic auto-reconcile | Bank feeds, payment APIs, card feeds | More banks and countries |
-| Sales / Purchases | — | Quotes, invoices, credit notes, bills, POs, claims, reminders; (rev 0.6) online quote acceptance, smart document capture, automated bill entry, bills board, My claims, expense policy | InvoiceNow send/receive, capture by phone camera, payment links, customer portal, subscriptions | Price lists, vendor portal |
+| Banking | — | Multi-account import, rules, matching, reconciliation, payment files; (rev 0.6) deterministic auto-reconcile; (rev 0.7) DBS reports by email, MT940, Wise and Airwallex APIs | Bank feeds (rev 0.7: DBS RAPID or IDEAL Connect, UOB), payment APIs, card feeds | More banks and countries |
+| Sales / Purchases | — | Quotes, invoices, credit notes, bills, POs, claims, reminders; (rev 0.6) online quote acceptance, smart document capture, automated bill entry, bills board, My claims, expense policy; (rev 0.7) Stripe and HitPay connectors (read), template editor, mileage and employee claims, project time and costs | InvoiceNow send/receive, capture by phone camera, payment links, customer portal, subscriptions | Price lists, vendor portal |
 | Payroll | — | Pay runs with full CPF/SDL/SHG rules, postings | Payslips, CPF file, IR8A/AIS | Leave (or HR integration) |
 | Tax | — | GST F5, threshold monitor, statutory calendar | F7/F8, IRAS API filing, IAF, CIT working paper | XBRL, other countries |
 | Reporting | — | Statements, management reports, exports, KPIs, dashboard | Report builder, scheduled reports, board pack; (rev 0.6) industry benchmarks | Consolidated reports, SFRS statements |
@@ -2560,13 +2720,13 @@ P0 is done when all of these hold, with evidence stored in the release record:
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
 | R1 | Calculation error reaches the books | Low | High | Database invariants; differential testing against an independent reference ledger; mutation testing; nightly verification; parity with the proven workbook (§16) |
-| R2 | Scope is too large for 2–3 founders | High | High | Strict phasing; P1 = workbook parity + controls only; buy, not build, for bank feeds, Peppol access point, payment collection and document OCR. (rev 0.3) Founders' money, the equity register, evidence and in-app help joined P1 at the founders' request; investor updates and portal, option expense automation, evidence redaction and feature tours stay in P2. (rev 0.6) P1 also gains Xero-parity items (auto-reconcile, document capture, bill automation, short-term cash flow, My claims), the AI company secretary, configurable sign-in and email, notifications and banners; benchmarks and Slack/Cliq are P2 |
+| R2 | Scope is too large for 2–3 founders | High | High | Strict phasing; P1 = workbook parity + controls only; buy, not build, for bank feeds, Peppol access point, payment collection and document OCR. (rev 0.3) Founders' money, the equity register, evidence and in-app help joined P1 at the founders' request; investor updates and portal, option expense automation, evidence redaction and feature tours stay in P2. (rev 0.6) P1 also gains Xero-parity items (auto-reconcile, document capture, bill automation, short-term cash flow, My claims), the AI company secretary, configurable sign-in and email, notifications and banners; benchmarks and Slack/Cliq are P2. (rev 0.7) P1 also gains connectors, scale-to-zero background work, bank data by email and EMI APIs, payment-provider reconciliation, the template editor, mileage claims and project time; DBS RAPID, ticketing and Model A payment links are P2 |
 | R3 | AI makes or causes a wrong change | Medium | High | No write path; catalogue; per-proposal approval with ledger impact; numeric grounding; evals; kill switch (§9) |
 | R4 | Prompt injection through documents or bank data | Medium | Medium | Untrusted-data handling; catalogue limits; approvals; red-team suite (AI-18, QA-AI-03) |
 | R5 | Insider error or fraud in a team of founders | Low | High | Founder-mode compensating controls (FM-1…FM-8), dual control on money movement, audit trail, accountant review |
 | R6 | Statutory rules change (GST, CPF, InvoiceNow, IRAS APIs) | High (yearly) | Medium | Effective-dated packs, pinned tests, compliance calendar, yearly review routine (carry over the `cfh-sg-compliance-update` practice) |
 | R7 | Data breach of payroll or personal data | Low | High | Encryption, masking, least privilege, monitoring, breach runbook, PDPA programme (§13, §14) |
-| R8 | Vendor lock-in to Google Cloud or one AI provider | Medium | Medium | PostgreSQL and containers are portable; IaC; AI behind a provider interface (AI-29) |
+| R8 | Vendor lock-in to Google Cloud or one AI provider | Medium | Medium | PostgreSQL and containers are portable; IaC; AI behind a provider interface (AI-29); (rev 0.7) ports and adapters for every cloud service, no cloud SDK outside the adapters (NFR-PORT-01…06, ADR-T8); identity (ADR-T3) and the Claude endpoint are the hardest ties and are tracked there |
 | R9 | Cloud cost creep (AI tokens, BigQuery, logging) | Medium | Low–Medium | Budgets and alerts; token budgets; BigQuery only when needed; log sampling with full retention for audit logs only |
 | R10 | Integrations unavailable (bank APIs, IRAS APIs) for a small company | Medium | Medium | File-based fallbacks (statement import, payment files, manual filing) remain first-class |
 | R11 | Key-person dependency on the founder who builds it | Medium | High | Everything as code, docs, agent skills (Appendix H), runbooks, managed services over self-hosted |
@@ -2622,10 +2782,12 @@ answered)
 | 18 | (rev 0.4) Publishing organisation knowledge-base changes: self-approval with the weekly review in Founder mode, or always a second person? (AI-56) | Founders | P1 build |
 | 19 | (rev 0.6) Who is the named company secretary: a founder who lives in Singapore and is not the sole director, or a corporate secretarial firm? (FR-CS-06) | Founders | P1 build |
 | 20 | (rev 0.6) Which email provider is primary, which is the failover, and which data centres? (FR-INT-21; neither has a documented Singapore region) | Founders + DPO | P1 build |
-| 21 | (rev 0.6) Which Zoho data centre holds the founders' Zoho accounts, and should email-and-password sign-in be offered at all? (FR-ADM-08) | Founders | P0 (identity work) |
+| 21 | (rev 0.6) Which Zoho data centre holds the founders' Zoho accounts, and should email-and-password sign-in be offered at all? (FR-ADM-08) **Answered (rev 0.7): the US data centre.** | Founders | P0 (identity work) |
 | 22 | (rev 0.6) Slack, Zoho Cliq or neither for notifications? (FR-NTF-04) | Founders | P2 planning |
+| 23 | (rev 0.7) Do customers pay through a provider, and which model: the product bills at Stripe or HitPay (Model B), FH invoices with a payment link (Model A), or both? (FR-PSP, J.4) | Founders | P1 build |
+| 24 | (rev 0.7) When should DBS move from emailed reports and exports (phase 1, free) to RAPID or IDEAL Connect (phase 2, quoted by DBS)? (FR-BNK-17) | Founders | P2 planning |
 
-**Recommended defaults (rev 0.3, founder request; row 18 rev 0.4; rows 19–22 rev 0.6).** The founders asked for a recommended default
+**Recommended defaults (rev 0.3, founder request; row 18 rev 0.4; rows 19–22 rev 0.6; rows 23–24 rev 0.7).** The founders asked for a recommended default
 for every open question, configurable where it is a product setting. These are the defaults the
 platform ships with (FR-ORG-08). The founders, the accountant and the tax agent can change any
 setting later, and the table records why each default was chosen. Rows marked *decision* are
@@ -2652,9 +2814,11 @@ one-time choices recorded here, not settings.
 | 17 | The equity register, cap table and round simulator in P1 (§8.23); investor updates and portal, and option expense automation, in P2 | Workbook parity (the workbook had a cap table), and the founders need it before the first round | Decided in §8.23 |
 | 18 | Self-approval with the weekly review in Founder mode; a second person in Standard and Enterprise modes | These pages change what the assistant says, not the books; the weekly review catches mistakes without slowing every edit | Setting (approval policy for "knowledge-base change") |
 | 19 | A corporate secretarial firm, given the Company secretary role with time-boxed access; a founder can take over later if one lives in Singapore and is not the sole director | It meets s171 without relying on one founder; the AI company secretary does the routine checks either way | Decision; recorded in the corporate profile (FR-CS-06) |
-| 20 | **ZeptoMail primary**, in the Zoho data centre nearest Singapore that the account allows; **Resend as failover**, sending from Tokyo; **Resend receiving for the capture addresses**; each only after its PDPA transfer assessment | ZeptoMail keeps mail with the founders' existing Zoho provider; Resend adds delivered events, idempotency keys and inbound mail. Resend keeps account data in the US, hence failover and inbound only | Settings: primary and failover providers, inbound adapter (FR-INT-20/21/22) |
-| 21 | Google and Zoho sign-in on; Zoho configured for the founders' data centre only; email and password **off**; the platform's MFA on for everyone | Fewer passwords to protect; each extra Zoho data centre is a separate provider to test | Settings: sign-in providers (FR-ADM-08) |
+| 20 | **ZeptoMail primary**, in the founders' Zoho data centre (**US**, rev 0.7), recorded in the data inventory as a transfer outside Singapore with its PDPA assessment; **Resend as failover**, sending from Tokyo; **Resend receiving for the capture addresses**; each only after its PDPA transfer assessment | ZeptoMail keeps mail with the founders' existing Zoho provider; Resend adds delivered events, idempotency keys and inbound mail. Resend keeps account data in the US, hence failover and inbound only | Settings: primary and failover providers, inbound adapter (FR-INT-20/21/22) |
+| 21 | Google and Zoho sign-in on; Zoho configured for the **US data centre** only (`https://accounts.zoho.com`, rev 0.7); email and password **off**; the platform's MFA on for everyone | Fewer passwords to protect; each extra Zoho data centre is a separate provider to test | Settings: sign-in providers (FR-ADM-08) |
 | 22 | Neither until P2; then the tool the team already uses daily (Zoho Cliq if the team lives in Zoho), with the minimal content level | Email and the in-app centre cover P1; minimal content keeps finance data out of chat | Settings: messaging connection and content level (FR-NTF-04) |
+| 23 | **Stripe Billing for self-serve subscriptions (Model B)**; **HitPay PayNow QR or a free static PayNow QR on B2B invoices (Model A, P2)**; both connectors read-only from P1 | Stripe Billing is the usual system of record for card subscriptions; HitPay's PayNow fee (0.65% + S$0.30) is about half of Stripe's (1.3%) | Settings: payment connectors and model (FR-PSP-01…03) |
+| 24 | Stay on phase 1 until reconciling by emailed reports costs more than about 15 minutes a day, or same-day cash visibility matters; then ask the relationship manager for a RAPID quote | Phase 1 costs nothing extra; RAPID fees and terms are known only from a quote | Decision; the connector switch is a setting (FR-BNK-17) |
 
 ---
 
@@ -2717,6 +2881,11 @@ one-time choices recorded here, not settings.
 | Benchmark pack | (rev 0.6) A sourced, licensed and dated set of industry figures used for comparison only (FR-KPI-07) |
 | OpenID Connect (OIDC) | (rev 0.6) The standard sign-in protocol behind "Sign in with Google" and "Sign in with Zoho" |
 | Super admin | (rev 0.6) The installation-wide administrator; the first user to complete setup (FR-ADM-06) |
+| Clearing account | (rev 0.7) A holding account between a payment provider and the bank: gross sales in, fees and payouts out; it must net to zero per payout |
+| Connector | (rev 0.7) A packaged adapter for an outside service, with a manifest, installed and enabled per organisation (FR-INT-25) |
+| MT940 / camt.053 | (rev 0.7) Standard bank-statement file formats (SWIFT and ISO 20022) |
+| Outbox | (rev 0.7) A table where a change records the work it causes, in the same database transaction, so background work is never lost (ADR-T7) |
+| Scale to zero | (rev 0.7) Running no compute at all while nobody uses the platform; the first request starts it again |
 
 ---
 
@@ -3026,6 +3195,11 @@ All amounts carry the person as a sub-ledger key on 2500 and 2120 (FR-EQ-01).
 | 36 | AI | (rev 0.6) A scheduled agent run failed, was skipped or is late (AI-67) | ⚠ |
 | 37 | Email | (rev 0.6) The sending domain fails SPF, DKIM or DMARC alignment, or bounces or complaints exceed the threshold (FR-INT-21) | ⚠ |
 | 38 | Integrations | (rev 0.6) An integration connection is failing its health check, or its credentials expire within 14 days (FR-INT-20) | ⚠ |
+| 39 | Claims | (rev 0.7) A cash advance not settled by the claim deadline (FR-AP-17) | ⚠ |
+| 40 | Projects | (rev 0.7) Approved time not invoiced 30 days after the period end on a time-and-materials project (FR-PRJ-10) | ⚠ |
+| 41 | Projects | (rev 0.7) Missing or unapproved timesheets for a closed week (FR-PRJ-05/07) | ⚠ |
+| 42 | Payments | (rev 0.7) A payment-provider clearing account does not net to zero for a settled payout (FR-PSP-06) | ✖ |
+| 43 | Banking | (rev 0.7) Bank data sync failed or is older than its schedule allows (FR-BNK-15) | ⚠ |
 
 ---
 
@@ -3057,6 +3231,9 @@ that user's rights.
 | Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6) | A + second approver | C | V | — | — | — | — | — | — | — | — | V | — | — | V | — |
 | Announcements to the organisation (rev 0.6) | C/A | C | — | — | — | — | — | — | — | — | — | V | — | — | — | — |
 | Own notifications and preferences (rev 0.6) | C | C | C | C | C | C | C | C | C | C | C | C | C | C | C | — |
+| Document templates: edit, publish (rev 0.7) | A | — | A | C | — | C | C | — | — | — | — | V | — | — | — | — |
+| Timesheets and project time (rev 0.7) | V | — | A | V | — | V | — | — | — | A (project manager) | C (own) | V | V | — | — | Proposal (draft invoice) |
+| Bank data, payment-provider and ticketing connections (rev 0.7) | A + second approver | C | V | — | — | — | — | — | — | — | — | V | — | — | V | — |
 | Journals | V | — | A | C/P (limit) | — | — | — | — | — | — | — | V | C | — | — | Proposal |
 | Pay runs, employee data | A | — | V | M | — | — | — | C | R (salaries) | — | V (own) | M | M | — | M | Only if enabled (AI-02) |
 | Fixed assets | V | — | A | C/P | V | — | — | — | — | — | — | V | V | — | — | — |
@@ -3515,6 +3692,219 @@ multi-tenancy and TOTP pages; Zoho Accounts OpenID Connect and multi-DC pages; Z
 and inbound pages; Slack messaging, distribution and data-residency pages; Zoho Cliq REST API and
 webhook-token pages.
 
+### I.10 Added in revision 0.7
+
+Checked on 12 Oct 2026; details in [bank-payments-cloud-2026-10-12.md](research/bank-payments-cloud-2026-10-12.md): DBS IDEAL, RAPID and SME pricing
+pages and guide (22 Sep 2026); UOB API Services; OCBC transaction banking; Xero and QuickBooks
+bank-feed pages; Wise and Airwallex developer docs and pricing; MAS SGFinDex and API resources;
+Stripe Singapore pricing, support, API, reporting and webhook docs; HitPay pricing, OpenAPI and
+event docs; Atlassian developer and data-residency docs; Linear, Zoho Desk and GitHub API docs;
+IRAS employer tax-treatment and GST motor-vehicle pages; CPF Board reimbursements page; Typst
+documentation and changelogs; AASB 15 (for SFRS(I) 15), SFRS for Small Entities 2024 and ACRA's
+third-edition announcement; Google Cloud Tasks, Cloud Run, Cloud Scheduler and Cloud SQL docs;
+AWS EventBridge Scheduler, Lambda, SQS, ECS, App Runner, RDS and Aurora docs; Microsoft Container
+Apps, Service Bus, PostgreSQL Flexible Server and Blob storage docs; Anthropic, Google and AWS
+pages on Claude availability; Ory, Keycloak and Zitadel licences; Cognito and Entra External ID.
+
+---
+
+## Appendix J · Use cases (rev 0.7)
+
+Each use case names its actor, trigger, main flow, the exceptions that matter, the effect on the
+books, and the requirements it exercises. They double as acceptance scenarios for UAT and the
+end-to-end suite (QA-E2E). Amounts are illustrative.
+
+### J.1 Employee expense and mileage claims
+
+**UC-EXP-01 · An employee claims a taxi fare paid out of pocket**
+- **Actor and trigger:** Mei (employee) took a taxi to a client; she has the e-receipt in her email.
+- **Flow:**
+  1. She opens **My claims** and pastes a screenshot of the receipt.
+  2. Document capture drafts the claim: merchant, date, S$27.30, category Local travel, GST
+     not claimable (no tax invoice to the company). The low-confidence field is highlighted.
+  3. She picks the project "Acme rollout", checks the fields, and submits.
+  4. Policy checks pass (FR-AP-15); her line manager approves from the Inbox; finance approves.
+  5. The claim joins the next payment batch; the remittance email tells her when it is paid.
+- **Exceptions:** a duplicate receipt across users is blocked; a claim above the category limit
+  shows ⚠ with the rule and still needs an extra approver.
+- **Books:** Dr Travel (local) 27.30 · Cr 2150 Expense claims payable; on payment Dr 2150 ·
+  Cr Bank.
+- **Requirements:** FR-AP-14, FR-AP-15, FR-AP-17, FR-DOC-12, FR-BNK-12.
+
+**UC-EXP-02 · An employee claims mileage for a client visit**
+- **Actor and trigger:** Raj drove his own car from the office to a client and back.
+- **Flow:**
+  1. In **My claims → Mileage** he picks saved places (Office, Client HQ), "return", vehicle
+     "car"; he types 18.4 km (or the maps service computes it, if enabled).
+  2. The amount is 18.4 × the car rate in force on the trip date (a policy setting), rounded
+     with `RND-MILEAGE`; no GST.
+  3. He adds the purpose and project, and submits; approvals as in UC-EXP-01.
+- **Exceptions:** a trip older than the claim deadline needs finance's approval with a reason.
+- **Books:** Dr Travel (mileage) · Cr 2150. Not taxable and not CPF wages at a reasonable rate; no input GST (FR-AP-16, FR-AP-17).
+- **Requirements:** FR-AP-16, FR-AP-17, `RND-MILEAGE`.
+
+**UC-EXP-03 · An overseas trip with a cash advance and foreign-currency receipts**
+- **Actor and trigger:** Anthony travels to Jakarta; finance advances S$800.
+- **Flow:**
+  1. Finance records the advance: Dr 1250 Staff & director advances · Cr Bank 800.
+  2. During the trip he snaps receipts in IDR; each line converts at the rate cascade (ENG-40).
+  3. On return he submits the claims and marks them as settling the advance.
+  4. The claims total S$742.15; S$57.85 stays on 1250 and he refunds it by bank transfer,
+     which the bank sync matches.
+- **Exceptions:** if the claims exceed the advance, the excess is reimbursed in the next
+  payment batch; an advance unsettled after the claim deadline shows ⚠ (check C.2 #39).
+- **Books:** Dr expenses 742.15 · Cr 1250; refund Dr Bank 57.85 · Cr 1250.
+- **Requirements:** FR-AP-17, ENG-40, FR-BNK-07.
+
+**UC-EXP-04 · A claim returned for a policy breach**
+- **Flow:**
+  1. A S$64.80 meal claim lacks attendees (a policy rule for meals above S$50).
+  2. The approver returns it with a comment; Mei sees ⚠ and the comment in My claims.
+  3. She adds the attendees and resubmits; the audit trail keeps both versions.
+- **Requirements:** FR-AP-14, FR-AP-15, FR-GL-12.
+
+### J.2 Project time and costs
+
+**UC-PRJ-01 · A consultant logs time and the project manager approves it**
+- **Flow:**
+  1. Priya starts the timer on "Acme rollout · Data migration" and stops it after 2 h 15 min;
+     she fills the rest of the week in the timesheet grid.
+  2. On Friday the reminder catches a missing day; she adds it and submits the week.
+  3. The project manager approves; the entries lock.
+- **Exceptions:** a correction after approval is a reversing entry plus a new one, re-approved.
+- **Books:** none; time at cost is a management view (FR-PRJ-12).
+- **Requirements:** FR-PRJ-05, FR-PRJ-07.
+
+**UC-PRJ-02 · Invoicing a time-and-materials project**
+- **Flow:**
+  1. At month end the AR specialist opens **Unbilled** for Acme: 62.5 approved hours at the
+     project's billing rates, plus a S$420 billable expense with a 10% markup.
+  2. The AI drafts the invoice (a tier-1 proposal); the AR specialist reviews and posts it.
+  3. The time entries and the expense are marked invoiced and locked.
+- **Exceptions:** approved time still unbilled 30 days after the period end shows ⚠
+  (check C.2 #40).
+- **Books:** Dr 1100 AR · Cr Revenue (services) and 2200 GST control (if registered).
+- **Requirements:** FR-PRJ-04, FR-PRJ-06, FR-PRJ-10, `ar.draft_invoice`.
+
+**UC-PRJ-03 · A fixed-fee project with milestones**
+- **Flow:**
+  1. A S$30,000 project has three milestones; each accepted milestone is invoiced.
+  2. If the accountant elects revenue over time, a monthly journal recognises revenue by
+     cost-to-cost progress, with a contract asset or liability for the difference, proposed for
+     approval (FR-PRJ-11, P2).
+- **Requirements:** FR-PRJ-10, FR-PRJ-11.
+
+**UC-PRJ-04 · The project manager reviews budget and profitability**
+- **Flow:**
+  1. The project page shows 340 of 400 budgeted hours used (85%: ⚠ at 80%), the forecast at
+     completion, and margin = revenue − time at cost − direct costs.
+  2. Drill-down opens the time entries and bills behind each figure.
+- **Requirements:** FR-PRJ-09, FR-PRJ-12, FR-UX-04.
+
+### J.3 Bank data sync and reconciliation (DBS first)
+
+**UC-BNK-01 · Daily DBS sync without any bank API (phase 1)**
+- **Actor and trigger:** nobody; DBS IDEAL emails the scheduled daily account report at 07:00,
+  and incoming-funds alerts arrive during the day.
+- **Flow:**
+  1. The inbound connector receives the report at the bank-ingest address, checks SPF, DKIM and
+     DMARC and that the sender is DBS, and scans the attachment (FR-INT-22).
+  2. The importer parses the transactions, checks continuity (opening balance = previous
+     closing balance) and removes duplicates (FR-BNK-16).
+  3. Auto-reconcile clears exact matches and approved rules (FR-BNK-14); the rest wait in
+     Categorise with suggestions.
+  4. At month end the bookkeeper uploads the MT940 export or the e-statement, and the closing
+     balances tie out; a different person signs off the reconciliation (FR-BNK-10, FM-5).
+- **Exceptions:** a missing day or a broken balance chain shows ⚠ with the gap; a report from an
+  unexpected sender is quarantined.
+- **Requirements:** FR-BNK-15…17, FR-BNK-04, FR-BNK-10, FR-BNK-14.
+
+**UC-BNK-02 · An incoming-funds alert speeds up matching**
+- **Flow:**
+  1. A DBS alert says S$10,900 arrived from "ACME ROBOTICS".
+  2. The platform records a *pending* signal, finds invoice INV-0138 for that amount and
+     customer, and shows "likely paid" on the invoice and on Home.
+  3. Next morning's report brings the statement line; auto-reconcile matches it to INV-0138.
+- **Books:** none from the alert; Dr Bank · Cr 1100 AR when the statement line is matched.
+- **Requirements:** FR-BNK-16, FR-BNK-07, FR-BNK-14.
+
+**UC-BNK-03 · Moving DBS to RAPID (phase 2)**
+- **Flow:**
+  1. The Owner sends the relationship manager the written enquiry: the Singapore RAPID API
+     list, push or poll, fees, test access, IP and PGP requirements.
+  2. The bank agreements are signed with a board resolution, attached as evidence.
+  3. The Super admin installs the DBS RAPID connector: PGP keys in Secret Manager and KMS, the
+     static egress IP given to DBS, the notification endpoint registered. The connector is
+     tested against DBS's test environment, then enabled.
+  4. Sync switches from emailed reports to API pulls and pushes; the e-statement tie-out stays.
+- **Requirements:** FR-BNK-17, FR-INT-25…27, FR-DOC-05.
+
+**UC-BNK-04 · A Wise or Airwallex account syncs itself**
+- **Flow:**
+  1. The Owner creates a read-only API key in Wise or Airwallex and installs the connector.
+  2. Balances and transactions sync on the tick; balance webhooks prompt an early sync.
+- **Requirements:** FR-BNK-18, FR-BNK-15.
+
+### J.4 Customers paying through Stripe or HitPay
+
+**Does an integration make sense?** Yes, once customers pay by card or subscribe. Without one,
+the bank shows only **net payouts in lump sums**. Then nobody knows the gross revenue per
+customer, the fees and any GST on them, refunds, disputes, which invoice each payment settled,
+or MRR. With it, every payout breaks down into its charges, refunds and fees, the clearing
+account proves it nets to zero, and subscription revenue gets its service period. Fees
+(12 Oct 2026; [source notes](research/bank-payments-cloud-2026-10-12.md)):
+- **Stripe:** domestic cards 3.4% + S$0.50, PayNow 1.3%, Stripe Billing 0.7% of billing volume.
+- **HitPay:** PayNow QR 0.65% + S$0.30 (0.9% under S$100), domestic cards 2.8% + S$0.50, no
+  monthly fee.
+
+So a sensible default is **Stripe Billing for self-serve product subscriptions (Model B)** and
+**HitPay or a free static PayNow QR for B2B invoices (Model A)** (open question 23). At a
+handful of payments a month, matching by hand from the provider's payout report is workable;
+the connector pays off as volume grows (a judgement, not a measured threshold).
+
+**UC-PSP-01 · A customer subscribes to the product through Stripe Billing (Model B)**
+- **Flow:**
+  1. A customer subscribes at S$49 a month; Stripe Billing charges the card and issues its
+     invoice.
+  2. The Stripe connector receives the signed events and mirrors the customer, subscription and
+     invoice.
+  3. FH posts Dr Stripe clearing 49.00 · Cr Revenue (or deferred revenue for the service
+     period), and the fee Dr Payment fees · Cr Stripe clearing.
+  4. Days later the payout arrives; bank sync brings the line, and the itemised payout report
+     links it to every charge, refund and fee inside it. Auto-reconcile matches Dr Bank ·
+     Cr Stripe clearing, and the clearing account nets to zero.
+  5. MRR, churn and ARPA come from the mirrored subscriptions (FR-KPI-04).
+- **Exceptions:** an unknown event type is parked with ⚠; a payout that does not net to zero is
+  ✖ (check C.2 #42).
+- **Requirements:** FR-PSP-01, FR-PSP-03, FR-PSP-05, FR-PSP-06, FR-BNK-14/15.
+
+**UC-PSP-02 · A B2B customer pays an invoice by PayNow through HitPay (Model A)**
+- **Flow:**
+  1. Invoice INV-0150 (S$5,450) carries a HitPay PayNow QR.
+  2. The customer pays; the connector marks the invoice *paid, settlement pending*:
+     Dr HitPay clearing 5,450.00 · Cr AR; the fee (0.65% + S$0.30 = S$35.73) Dr Payment fees ·
+     Cr HitPay clearing.
+  3. Next day the payout of S$5,414.27 lands; bank sync matches it and the clearing account
+     nets to zero.
+- **Requirements:** FR-PSP-02, FR-PSP-06, FR-AR-13.
+
+**UC-PSP-03 · A refund and a dispute**
+- **Flow:**
+  1. A customer is refunded S$49: a credit note (Model A) or the mirrored Stripe credit note
+     (Model B), against the clearing account.
+  2. Another customer disputes a charge: the amount and the dispute fee move to a disputes
+     clearing account; if the dispute is lost, they go to revenue reversal and an expense; if won,
+     they come back.
+- **Requirements:** FR-PSP-04.
+
+**UC-PSP-04 · Month end: provider fees and their GST**
+- **Flow:**
+  1. Fees were expensed per transaction.
+  2. Where the provider charges GST and issues a monthly tax invoice (Stripe does for certain
+     fees), the invoice is captured (FR-DOC-12) and the input GST is claimed; otherwise the fees
+     carry no claimable GST.
+- **Requirements:** FR-PSP-05, FR-DOC-12.
+
 ---
 
 ## Revision history
@@ -3527,3 +3917,4 @@ webhook-token pages.
 | 0.4 | 12 Oct 2026 | Founder request: how the assistant gets context, after a review of Karpathy's "LLM Wiki" pattern ([analysis](research/llm-wiki-review-2026-10-12.md)). New §9.11 (AI-48…60): four context layers, one read-tool registry, a compiled knowledge base (platform and organisation) with compile, generated index and lint, grounding and trust rules, admin view and edit, versioning and rollback, a compiler job identity, index-first search without embeddings in P1, no automatic filing of answers, no hidden memory. New ADR-T6 (§12.2.2), QA-AI-06, CTL-AI-08, R21, open question 18 with its recommended default, a `kb-compiler` job, `kb/` in the layout, the `fh-knowledge-base` skill (Appendix H), an Appendix D row, `kb.propose_page` (P2) in Appendix E, glossary entries, sources I.8. Changed: the pgvector line (§11.3), AI-12, AI-25, FR-UX-33, CMP-AI-01, CTL-AI-01, §1, §11.4, §12.4, the §12.10 versioning matrix, §18. Repository: `kb/` (schema, three compiled pages from the founders' money guide, generated index, log), `scripts/kb.py`, `make kb-index`, `kb-lint` (in `make check`) and `kb-stale`, the `kb` commit scope. No requirement was renumbered or removed. |
 | 0.5 | 12 Oct 2026 | Founder decision: no vectors for the static, compiled knowledge base. AI-58 now rules out embeddings and vector search in every phase (was "no embeddings in P1", now M); retrieval misses are fixed in the compile step, with a new optional `aliases` front-matter field (`kb/schema.md`). `pgvector` removed from the database extensions (§11.3); ADR-T6 rejects vector RAG; QA-AI-06 updated. Any future use of embeddings elsewhere needs its own ADR. No requirement was renumbered or removed. |
 | 0.6 | 12 Oct 2026 | Founder requests, researched against the Companies Act, ACRA, Xero and vendor documentation ([source notes](research/secretary-xero-integrations-2026-10-12.md)). New: §9.12 scheduled agents (AI-61…67) and the AI company secretary (FR-CS-01…08) with its skill file `agents/company-secretary/SKILL.md`, a recommended schedule and `sec.*` drafts; §8.24 integration framework (FR-INT-20…22), first-run Super admin (FR-ADM-06/07), configurable Google, Zoho and OIDC sign-in (FR-ADM-08), ZeptoMail, Resend and SMTP email, inbound capture, notification centre, preferences, announcement banners, Slack and Zoho Cliq (FR-NTF-01…06); Xero-parity items: online quote acceptance (FR-AR-16), deterministic auto-reconcile (FR-BNK-14), automated bill entry and bill tracking (FR-AP-12/13), **My claims for every user** (FR-AP-14), expense policy (FR-AP-15), 30/60/90/180-day cash flow (FR-PLN-09; FR-PLN-05 to P1), industry and peer benchmarks (FR-KPI-07/08), smart document capture (FR-DOC-12; FR-AP-04 and FR-DOC-03 folded in); Appendix A.3 Xero comparison; §14.2 company-secretary row; Super admin and Company secretary roles; personal navigation section; QA-AI-07, CTL-AI-09, CTL-IAM-07, R22, checks C.2 #32–38, Appendix D and E rows, open questions 19–22 with recommended defaults, glossary, §11.4, §12.4, §12.8, §18 and R2. No requirement was renumbered or removed. |
+| 0.7 | 12 Oct 2026 | Founder requests, researched against DBS, UOB, OCBC, Wise and Airwallex, Stripe and HitPay, Atlassian, IRAS and CPF, Typst, accounting standards and the GCP, AWS and Azure documentation ([source notes](research/bank-payments-cloud-2026-10-12.md)). New: bank data connectors and the DBS two-phase plan (FR-BNK-15…18; no credential-sharing aggregators); payment-provider connectors and Models A and B (FR-PSP-01…06); document templates and the versioned template editor (§8.25, FR-TPL-01…08); ticketing connectors (FR-INT-23/24); connectors with manifest and lifecycle (FR-INT-25…28); mileage claims, employee claims processing and company-card spend (FR-AP-16…18; `RND-MILEAGE`); project time, rates, approval, costs, budgets, billing, revenue over time and reports (FR-PRJ-05…12; FR-PRJ-04 to P1); company logo and brand (FR-ORG-09); every sign-in and OAuth connection switchable (FR-ADM-08, FR-INT-20); the founders' Zoho accounts are in the US data centre (open question 21 answered); ADR-T7 (outbox, Cloud Tasks, Scheduler tick, Cloud Run jobs; every service at min instances 0; River kept locally) and ADR-T8 (ports, adapters and connectors; PostgreSQL-compatible storage port; AWS and Azure equivalents; identity and Claude-in-Singapore as the hard ties); NFR-PORT-01…06 and NFR-COST-02; Appendix J use cases (claims, projects, bank sync, payment providers); open questions 23–24 with defaults; checks C.2 #39–43; posting rows; Appendix D rows; glossary. Changed: §11.3 (storage port note), §12.2 background work and data access rows, §12.3 diagram and services, §12.6, §12.8, FR-AUT-01, AI-62, AI-67, FR-AP-04/06, FR-BNK-03, FR-DOC-03, FR-PLN-05, ADR-T2 note, R2, R8, §18. No requirement was renumbered or removed. |
