@@ -24,8 +24,9 @@ help: ## List the available targets
 
 check: check-tokens check-config kb-lint spec-check design-check ## Run every check available today (CI runs this)
 
-check-tokens: ## Design tokens meet WCAG contrast in all four themes (QA-UI-03)
+check-tokens: ## Design tokens (Fyniq and Nemura) meet WCAG contrast in all four themes (QA-UI-03)
 	@python3 $(DESIGN)/scripts/check_contrast.py
+	@python3 $(DESIGN)/scripts/check_contrast.py --tokens docs/design-system/nemura/tokens.css
 
 check-config: ## Release configuration is valid and VERSION matches the manifest
 	@python3 -m json.tool release-please-config.json > /dev/null

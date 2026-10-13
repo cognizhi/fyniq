@@ -1,0 +1,38 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@700&amp;family=Funnel+Sans:wght@500&amp;display=swap">
+<style>
+  html, body { margin: 0; background: var(--background); }
+  .cover { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--background); font-family: "Funnel Sans", ui-sans-serif, system-ui, sans-serif; }
+  .rail { position: absolute; left: 512px; top: 0; width: 56px; height: 288px; background: linear-gradient(180deg, var(--nav-bg), var(--nav-bg-2)); }
+  .pill { position: absolute; left: 520px; top: 120px; width: 40px; height: 40px; border-radius: 12px; background: var(--nav-active-bg); box-shadow: 0 6px 16px -6px rgba(0,0,0,.5); }
+  .tile { position: absolute; width: 168px; height: 104px; border-radius: 18px; box-shadow: 0 14px 28px -16px var(--shadow-tint), inset 0 1px 0 rgba(255,255,255,.75); }
+  .disc { position: absolute; left: 16px; top: 16px; width: 36px; height: 36px; border-radius: 11px; box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
+  .t1 { left: 600px; top: 32px; background: linear-gradient(155deg, var(--surface-1) 0%, var(--tile-marigold) 70%); --shadow-tint: var(--tile-marigold-deep); }
+  .t2 { left: 784px; top: 32px; background: linear-gradient(155deg, var(--surface-1) 0%, var(--tile-mint) 70%); --shadow-tint: var(--tile-mint-deep); }
+  .t3 { left: 600px; top: 152px; background: linear-gradient(155deg, var(--surface-1) 0%, var(--tile-sky) 70%); --shadow-tint: var(--tile-sky-deep); }
+  .t4 { left: 784px; top: 152px; background: linear-gradient(155deg, var(--surface-1) 0%, var(--tile-blush) 70%); --shadow-tint: var(--tile-blush-deep); }
+  .t1 .disc { background: var(--tile-marigold-deep); } .t2 .disc { background: var(--tile-mint-deep); }
+  .t3 .disc { background: var(--tile-sky-deep); } .t4 .disc { background: var(--tile-blush-deep); }
+  .text { position: absolute; left: 40px; bottom: 36px; width: 440px; }
+  .name { margin: 0; font-family: "Funnel Display", "Funnel Sans", sans-serif; font-size: 112px; line-height: 0.9; font-weight: 700; letter-spacing: -0.05em; color: var(--text-primary); }
+  .sub { margin: 14px 0 0; font-size: 15px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="cover" aria-hidden="true">
+  <div class="rail"></div><div class="pill"></div>
+  <div class="tile t1"><div class="disc"></div></div>
+  <div class="tile t2"><div class="disc"></div></div>
+  <div class="tile t3"><div class="disc"></div></div>
+  <div class="tile t4"><div class="disc"></div></div>
+  <div class="text">
+    <p class="name">nemura</p>
+    <p class="sub">People, leave, pay and letters. Professional, modern, easy.</p>
+  </div>
+</div>
+</body>
+</html>

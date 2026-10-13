@@ -63,6 +63,21 @@ PAIRS = [
     ("ai-border", "surface-1", UI),
 ]
 
+# Pairs checked only when a tokens file defines both tokens (Nemura's rail, colour blocks and ink
+# outlines, docs/design-system/nemura/tokens.css); Fyniq's file defines none of them.
+OPTIONAL_PAIRS = [
+    ("nav-fg", "nav-bg", TEXT),
+    ("nav-muted", "nav-bg", TEXT),
+    ("nav-fg", "nav-bg-2", TEXT),
+    ("nav-muted", "nav-bg-2", TEXT),
+    ("nav-active-fg", "nav-active-bg", TEXT),
+    ("nav-active-bg", "nav-bg", UI),
+    *[("tile-fg", f"tile-{t}", TEXT) for t in ("marigold", "mint", "sky", "blush", "sand")],
+    *[("tile-icon-fg", f"tile-{t}-deep", UI) for t in ("marigold", "mint", "sky", "blush", "sand")],
+    ("ink", "background", UI),
+    ("ink", "surface-1", UI),
+]
+
 TARGET = {(TEXT, False): 4.5, (TEXT, True): 7.0, (UI, False): 3.0, (UI, True): 3.0}
 
 
@@ -224,7 +239,8 @@ def main() -> int:
             if not in_gamut:
                 warnings += 1
                 print(f"   WARN  {name} is outside sRGB; browsers gamut-map it (value clipped here)")
-        for fg, bg, kind in PAIRS:
+        optional = [p for p in OPTIONAL_PAIRS if p[0] in tokens and p[1] in tokens]
+        for fg, bg, kind in PAIRS + optional:
             if fg not in colours or bg not in colours:
                 failures += 1
                 print(f"   FAIL  {fg} on {bg}: token missing")

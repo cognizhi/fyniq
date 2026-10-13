@@ -1,0 +1,251 @@
+/* ============================================================================================
+   Nemura — component layer (docs/design-system/nemura/MASTER.md)
+
+   kit/nemura-ui.css = Nemura's tokens (docs/design-system/nemura/tokens.css) + the shared
+   structure (kit/ui.css) + this file. The shared structure gives layout, responsiveness and
+   accessibility; this file gives Nemura its look: professional and modern, with depth. Cool slate
+   surfaces, a deep navy rail with a raised current page, glossy primary buttons, elevated cards,
+   soft-tinted tiles with a deeper icon disc, layered shadows with a top highlight. `nm-` classes
+   are Nemura-only. Colours come from tokens only; gradients only move a tile towards
+   --tile-glow, which keeps text contrast at or above the checked values.
+   ============================================================================================ */
+
+/* ---------- Base ------------------------------------------------------------------------- */
+.fy-device { font-feature-settings: normal; letter-spacing: 0.002em; --tile-glow: oklch(1 0 0); }
+.fy-device[data-theme="dark"], .fy-device[data-theme="dark-hc"] { --tile-glow: oklch(0.36 0.03 262); }
+.fy-h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.75rem; letter-spacing: -0.022em; line-height: 1.15; }
+.fy-h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.3125rem; letter-spacing: -0.012em; line-height: 1.25; }
+.fy-h3 { font-weight: 650; font-size: var(--fs-md); }
+@container device (min-width: 1024px) { .fy-h1 { font-size: 2.125rem; } }
+.fy-eyebrow { letter-spacing: 0.08em; font-weight: 650; color: var(--text-muted); }
+.fy-num, .fy-tile__value { font-variant-numeric: tabular-nums; }
+
+/* ---------- Shell: white top bar, navy rail, navy tab bar -------------------------------- */
+.fy-top { background: color-mix(in oklch, var(--surface-1) 88%, transparent); border-bottom: 1px solid var(--border); box-shadow: var(--shadow-1); }
+.fy-brand { font-family: var(--font-display); font-weight: 750; font-size: 21px; letter-spacing: -0.035em; }
+.fy-brand__mark { width: 30px; height: 30px; border-radius: 9px; color: var(--primary-foreground); font-family: var(--font-display); font-size: 17px; font-weight: 800;
+                  background: linear-gradient(160deg, color-mix(in oklch, var(--primary) 70%, var(--tile-glow)), var(--primary));
+                  box-shadow: var(--highlight), 0 4px 10px -3px color-mix(in oklch, var(--primary) 60%, transparent); }
+.fy-side { background: linear-gradient(180deg, var(--nav-bg), var(--nav-bg-2)) !important; border-right: 0 !important; color: var(--nav-fg);
+           box-shadow: inset -1px 0 0 color-mix(in oklch, var(--nav-fg) 8%, transparent); }
+.fy-side .fy-brand { color: var(--nav-fg); }
+.fy-nav__group { color: var(--nav-muted); }
+.fy-nav__item { color: var(--nav-muted); font-weight: 550; border-radius: var(--radius-m);
+                transition: background-color var(--duration-fast), color var(--duration-fast), box-shadow var(--duration-fast); }
+.fy-nav__item:hover { background: color-mix(in oklch, var(--nav-fg) 9%, transparent); color: var(--nav-fg); }
+.fy-nav__item[aria-current="page"] { background: var(--nav-active-bg); color: var(--nav-active-fg); font-weight: 650;
+                                      box-shadow: var(--highlight), 0 6px 16px -6px oklch(0 0 0 / 0.5); }
+.fy-side__foot { border-top-color: color-mix(in oklch, var(--nav-fg) 12%, transparent); }
+.fy-side .fy-badge { background: var(--primary); color: var(--primary-foreground); box-shadow: 0 0 0 2px var(--nav-bg); }
+.fy-bottom { background: linear-gradient(180deg, var(--nav-bg), var(--nav-bg-2)); border-top: 0; box-shadow: 0 -8px 24px -12px oklch(0 0 0 / 0.35); }
+.fy-bottom__item { color: var(--nav-muted); font-weight: 600; font-size: 11.5px; }
+.fy-bottom__item:hover { color: var(--nav-fg); }
+.fy-bottom__item[aria-current="page"] { color: var(--nav-fg); font-weight: 700; }
+.fy-bottom__item[aria-current="page"] .fy-i { color: var(--nav-active-fg); }
+.fy-bottom__item[aria-current="page"]::before { background: var(--nav-active-bg); width: 56px; height: 32px; top: 8px; z-index: 0;
+                                                 box-shadow: var(--highlight), 0 6px 14px -6px oklch(0 0 0 / 0.55); }
+.fy-bottom__item > * { position: relative; z-index: 1; }
+.fy-search { border-radius: var(--radius-m); background: var(--surface-2); box-shadow: inset 0 1px 2px oklch(0.25 0.04 262 / 0.06); }
+.fy-org { white-space: nowrap; }
+.fy-ask { font-weight: 650; box-shadow: var(--shadow-1), var(--highlight); }
+.nm-more { white-space: nowrap; font-weight: 650; font-size: var(--fs-sm); }
+
+/* Workspace switch (PRD-002 NM-UX-03): Finance | People, for people who have both */
+.nm-workspace { display: inline-flex; padding: 3px; gap: 2px; border-radius: var(--radius-m); background: var(--surface-3);
+                box-shadow: inset 0 1px 2px oklch(0.25 0.04 262 / 0.1); }
+.nm-workspace a { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--space-3); border-radius: 9px;
+                  color: var(--text-secondary); font-weight: 650; font-size: var(--fs-sm); }
+.nm-workspace a:hover { text-decoration: none; color: var(--text-primary); }
+.nm-workspace a[aria-current="page"] { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow-1), var(--highlight); }
+
+/* ---------- Controls: glossy primary, raised secondary ----------------------------------- */
+.fy-btn { border-radius: var(--radius-m); height: 40px; font-weight: 650; padding: 0 var(--space-4);
+          transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), background-color var(--duration-fast); }
+.fy-btn--primary { background: linear-gradient(180deg, color-mix(in oklch, var(--primary) 82%, var(--tile-glow)), var(--primary));
+                   border: 1px solid color-mix(in oklch, var(--primary) 70%, black);
+                   box-shadow: var(--highlight), 0 1px 2px oklch(0.25 0.04 262 / 0.2), 0 6px 14px -6px color-mix(in oklch, var(--primary) 65%, transparent); }
+.fy-btn--primary:hover { background: linear-gradient(180deg, color-mix(in oklch, var(--primary-hover) 85%, var(--tile-glow)), var(--primary-hover)); transform: translateY(-1px); }
+.fy-btn--primary:active { transform: translateY(0); box-shadow: inset 0 2px 4px oklch(0 0 0 / 0.2); }
+.fy-btn--secondary { background: linear-gradient(180deg, var(--surface-1), var(--surface-2)); border: 1px solid var(--border-strong); box-shadow: var(--shadow-1), var(--highlight); }
+.fy-btn--secondary:hover { transform: translateY(-1px); box-shadow: var(--shadow-2), var(--highlight); }
+.fy-btn--sm { height: 32px; padding: 0 var(--space-3); border-radius: 10px; }
+.fy-btn--lg { height: 48px; padding: 0 var(--space-6); font-size: var(--fs-md); }
+.fy-iconbtn { border-radius: 10px; }
+.fy-input, .fy-select, .fy-textarea { height: 44px; border-radius: var(--radius-m); box-shadow: inset 0 1px 2px oklch(0.25 0.04 262 / 0.06); }
+.fy-inputgroup { border-radius: var(--radius-m); }
+.fy-segmented { border-radius: var(--radius-m); padding: 3px; box-shadow: inset 0 1px 2px oklch(0.25 0.04 262 / 0.08); }
+.fy-segmented button { border-radius: 9px; font-weight: 650; }
+.fy-segmented button[aria-checked="true"], .fy-segmented button[aria-pressed="true"], .fy-segmented button[aria-selected="true"] { box-shadow: var(--shadow-1), var(--highlight); }
+.fy-tabs [aria-selected="true"]::after, .fy-tabs [aria-current="page"]::after { height: 3px; border-radius: 3px; }
+.fy-tabs button, .fy-tabs a { font-weight: 650; }
+
+/* ---------- Surfaces: elevated cards ------------------------------------------------------ */
+.fy-card { border: 1px solid var(--border); box-shadow: var(--shadow-2), var(--highlight); }
+.fy-card--flat { box-shadow: none; }
+.fy-banner { box-shadow: var(--shadow-1); }
+.fy-chip { font-weight: 650; }
+.fy-badge { font-weight: 750; }
+.fy-avatar { font-family: var(--font-display); font-weight: 700; color: var(--tile-icon-fg);
+             background: linear-gradient(160deg, color-mix(in oklch, var(--tile-sky-deep) 70%, var(--tile-glow)), var(--tile-sky-deep));
+             box-shadow: var(--highlight), 0 2px 6px -2px color-mix(in oklch, var(--tile-sky-deep) 60%, transparent); }
+.fy-tile { border-radius: var(--radius-l); box-shadow: var(--shadow-2), var(--highlight); }
+.fy-tile__value { font-family: var(--font-display); font-weight: 700; }
+.fy-table th { font-family: var(--font-display); font-weight: 650; }
+.fy-progress { height: 10px; box-shadow: inset 0 1px 2px oklch(0.25 0.04 262 / 0.12); }
+
+.nm-card--bold { border-color: color-mix(in oklch, var(--border) 50%, var(--border-strong)); box-shadow: var(--shadow-3), var(--highlight); }
+
+/* ---------- Hero: a greeting that says what matters today -------------------------------- */
+.nm-hero { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) 0; }
+.nm-hero__title { font-family: var(--font-display); font-weight: 700; font-size: 2rem; line-height: 1.08; letter-spacing: -0.028em; text-wrap: balance; }
+.nm-hero__sub { font-size: var(--fs-md); color: var(--text-secondary); max-width: 62ch; }
+@container device (min-width: 1024px) { .nm-hero__title { font-size: 2.625rem; } }
+
+/* ---------- Action tiles: soft tints with depth -------------------------------------------- */
+.nm-tiles { display: grid; gap: var(--space-3); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@container device (min-width: 600px) { .nm-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); } }
+.nm-tiles--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@container device (min-width: 1024px) { .nm-tiles--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.nm-tile { --tile: var(--tile-sand); --deep: var(--tile-sand-deep);
+           position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-4); min-height: 132px;
+           padding: var(--space-4); border-radius: var(--radius-l); color: var(--tile-fg);
+           background: linear-gradient(155deg, color-mix(in oklch, var(--tile) 45%, var(--tile-glow)) 0%, var(--tile) 70%);
+           border: 1px solid color-mix(in oklch, var(--deep) 18%, transparent);
+           box-shadow: var(--highlight), 0 1px 2px oklch(0.25 0.04 262 / 0.06), 0 14px 28px -16px color-mix(in oklch, var(--deep) 55%, transparent);
+           transition: transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out); }
+.nm-tile:hover { text-decoration: none; transform: translateY(-3px);
+                 box-shadow: var(--highlight), 0 2px 4px oklch(0.25 0.04 262 / 0.08), 0 22px 36px -16px color-mix(in oklch, var(--deep) 65%, transparent); }
+.nm-tile:active { transform: translateY(0); }
+.nm-tile--marigold { --tile: var(--tile-marigold); --deep: var(--tile-marigold-deep); }
+.nm-tile--mint { --tile: var(--tile-mint); --deep: var(--tile-mint-deep); }
+.nm-tile--sky { --tile: var(--tile-sky); --deep: var(--tile-sky-deep); }
+.nm-tile--blush { --tile: var(--tile-blush); --deep: var(--tile-blush-deep); }
+.nm-tile--sand { --tile: var(--tile-sand); --deep: var(--tile-sand-deep); }
+.nm-tile__icon, .nm-icon { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex: none; color: var(--tile-icon-fg);
+                           background: linear-gradient(155deg, color-mix(in oklch, var(--deep, var(--tile-sand-deep)) 72%, var(--tile-glow)), var(--deep, var(--tile-sand-deep)));
+                           box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.35), 0 6px 12px -4px color-mix(in oklch, var(--deep, var(--tile-sand-deep)) 60%, transparent); }
+.nm-tile__icon .fy-i, .nm-icon .fy-i { width: 20px; height: 20px; }
+.nm-icon--marigold { --deep: var(--tile-marigold-deep); }
+.nm-icon--mint { --deep: var(--tile-mint-deep); }
+.nm-icon--sky { --deep: var(--tile-sky-deep); }
+.nm-icon--blush { --deep: var(--tile-blush-deep); }
+.nm-tile__title { font-family: var(--font-display); font-weight: 700; font-size: 1.125rem; line-height: 1.2; letter-spacing: -0.01em; }
+.nm-tile__meta { font-size: var(--fs-sm); font-weight: 550; opacity: 0.85; }
+.nm-tile__count { position: absolute; top: var(--space-3); right: var(--space-3); min-width: 26px; height: 26px; padding: 0 8px; border-radius: var(--radius-pill);
+                  display: inline-grid; place-items: center; background: var(--surface-1); color: var(--text-primary); font-weight: 750; font-size: var(--fs-sm);
+                  box-shadow: var(--shadow-1), var(--highlight); }
+
+/* ---------- Big figures ------------------------------------------------------------------ */
+.nm-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nm-stat__value { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-3xl); line-height: 1; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+.nm-stat__value small { font-size: var(--fs-lg); letter-spacing: 0; font-weight: 600; color: var(--text-secondary); margin-left: 4px; }
+.nm-stat__label { font-weight: 650; }
+.nm-stat__sub { font-size: var(--fs-sm); color: var(--text-secondary); }
+.nm-stat--md .nm-stat__value { font-size: var(--fs-2xl); }
+.nm-stats { display: grid; gap: var(--space-4); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@container device (min-width: 1024px) { .nm-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Leave balance bar: used, booked, left */
+.nm-bar { display: flex; height: 12px; border-radius: var(--radius-pill); overflow: hidden; background: var(--surface-3);
+          box-shadow: inset 0 1px 3px oklch(0.25 0.04 262 / 0.18); }
+.nm-bar > span { display: block; height: 100%; box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.25); }
+.nm-bar__used { background: linear-gradient(180deg, color-mix(in oklch, var(--tile-sky-deep) 80%, var(--tile-glow)), var(--tile-sky-deep)); }
+.nm-bar__booked { background: linear-gradient(180deg, color-mix(in oklch, var(--tile-marigold-deep) 75%, var(--tile-glow)), var(--tile-marigold-deep)); }
+
+/* ---------- Leave types: a dot and a word, never colour alone ---------------------------- */
+.nm-type { display: inline-flex; align-items: center; gap: 6px; font-weight: 650; font-size: var(--fs-sm); }
+.nm-type::before { content: ""; width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--tile-sand-deep);
+                   box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.4), 0 1px 2px oklch(0.25 0.04 262 / 0.25); }
+.nm-type--annual::before { background: var(--tile-sky-deep); }
+.nm-type--sick::before { background: var(--tile-blush-deep); }
+.nm-type--family::before { background: var(--tile-mint-deep); }
+.nm-type--holiday::before { background: var(--tile-marigold-deep); }
+.nm-type--unpaid::before { background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--border-strong); }
+
+/* ---------- Month calendar (team leave) -------------------------------------------------- */
+.nm-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius-l); overflow: hidden;
+          background: var(--surface-1); box-shadow: var(--shadow-2); }
+.nm-cal__dow { padding: var(--space-2); font-weight: 650; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em;
+               color: var(--text-muted); background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.nm-cal__day { min-height: 76px; padding: 6px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); min-width: 0; }
+.nm-cal__day:nth-child(7n) { border-right: 0; }
+.nm-cal__n { font-weight: 650; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.nm-cal__day--out { background: var(--surface-2); }
+.nm-cal__day--out .nm-cal__n { color: var(--text-muted); }
+.nm-cal__day--weekend { background: color-mix(in oklch, var(--surface-2) 55%, var(--surface-1)); }
+.nm-cal__day--today .nm-cal__n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: var(--primary-foreground);
+                                 background: linear-gradient(160deg, color-mix(in oklch, var(--primary) 75%, var(--tile-glow)), var(--primary)); box-shadow: var(--highlight); }
+.nm-cal__ev { --deep: var(--tile-sand-deep); --tile: var(--tile-sand);
+              display: block; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 650; line-height: 1.35; color: var(--tile-fg);
+              background: var(--tile); border: 1px solid color-mix(in oklch, var(--deep) 30%, transparent);
+              box-shadow: inset 2px 0 0 var(--deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nm-cal__ev--annual { --deep: var(--tile-sky-deep); --tile: var(--tile-sky); }
+.nm-cal__ev--sick { --deep: var(--tile-blush-deep); --tile: var(--tile-blush); }
+.nm-cal__ev--family { --deep: var(--tile-mint-deep); --tile: var(--tile-mint); }
+.nm-cal__ev--holiday { --deep: var(--tile-marigold-deep); --tile: var(--tile-marigold); }
+@container device (max-width: 599.98px) { .nm-cal__day { min-height: 52px; padding: 4px; } .nm-cal__ev { font-size: 0; height: 6px; padding: 0; border-radius: 3px; background: var(--deep); } }
+
+/* ---------- Board (hiring pipeline): columns side by side when wide, stacked when narrow ---- */
+.nm-board { display: grid; gap: var(--space-3); grid-template-columns: minmax(0, 1fr); }
+@container device (min-width: 600px) { .nm-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container device (min-width: 1024px) { .nm-board { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.nm-col { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-l); background: var(--surface-2);
+          box-shadow: inset 0 1px 3px oklch(0.25 0.04 262 / 0.08); min-width: 0; }
+.nm-col__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); font-weight: 700; }
+.nm-person { display: flex; flex-direction: column; gap: 6px; padding: var(--space-3); border-radius: var(--radius-m); background: var(--surface-1);
+             border: 1px solid var(--border); color: inherit; box-shadow: var(--shadow-1), var(--highlight);
+             transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast); }
+.nm-person:hover { text-decoration: none; transform: translateY(-2px); box-shadow: var(--shadow-2), var(--highlight); }
+.nm-person__name { font-weight: 700; }
+.nm-person__meta { font-size: var(--fs-sm); color: var(--text-secondary); }
+
+/* ---------- Progress ring (goals) -------------------------------------------------------- */
+.nm-ring { --value: 0; --ring: var(--primary); width: 64px; height: 64px; border-radius: 50%; flex: none; display: grid; place-items: center;
+           background: conic-gradient(var(--ring) calc(var(--value) * 1%), var(--surface-3) 0);
+           box-shadow: 0 6px 14px -6px color-mix(in oklch, var(--ring) 55%, transparent); }
+.nm-ring > span { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-1);
+                  box-shadow: inset 0 2px 4px oklch(0.25 0.04 262 / 0.12);
+                  font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.nm-ring--good { --ring: var(--status-good); }
+.nm-ring--warning { --ring: var(--status-warning); }
+
+/* ---------- Paper: letters and payslips, lifted off the page ----------------------------- */
+.nm-paper { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-m); box-shadow: var(--shadow-3);
+            padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); font-size: var(--fs-md); line-height: 1.6; }
+.nm-paper__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); padding-bottom: var(--space-4);
+                  border-bottom: 2px solid var(--primary); flex-wrap: wrap; }
+.nm-paper__org { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; }
+.nm-field { display: inline; padding: 1px 5px; border-radius: 5px; background: var(--primary-subtle); color: var(--primary-subtle-foreground);
+            font-weight: 600; font-family: var(--font-code); font-size: 0.86em; box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 25%, transparent); }
+.nm-paper__sign { display: flex; flex-direction: column; gap: 2px; padding-top: var(--space-6); }
+@container device (max-width: 599.98px) { .nm-paper { padding: var(--space-4); font-size: var(--fs-base); } }
+
+/* ---------- Request rows: what I asked for and where it is ------------------------------- */
+.nm-track { display: flex; align-items: center; gap: 4px; }
+.nm-track > span { width: 22px; height: 6px; border-radius: var(--radius-pill); background: var(--surface-3); box-shadow: inset 0 1px 1px oklch(0.25 0.04 262 / 0.12); }
+.nm-track > span.is-done { background: var(--tile-sky-deep); box-shadow: none; }
+.nm-track > span.is-now { background: var(--tile-marigold-deep); box-shadow: none; }
+
+/* ---------- Pill filters ----------------------------------------------------------------- */
+.nm-pills { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.nm-pill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 var(--space-3); border-radius: var(--radius-pill);
+           border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); font-weight: 600; font-size: var(--fs-sm);
+           box-shadow: var(--shadow-1), var(--highlight); }
+.nm-pill[aria-pressed="true"], .nm-pill[aria-current="page"] { background: linear-gradient(180deg, color-mix(in oklch, var(--nav-bg) 82%, var(--tile-glow)), var(--nav-bg));
+                                                               color: var(--nav-fg); border-color: var(--nav-bg); }
+.nm-pill:hover { text-decoration: none; }
+
+/* ---------- Section headings with a counter ---------------------------------------------- */
+.nm-section { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.nm-section__title { font-family: var(--font-display); font-weight: 700; font-size: 1.3125rem; letter-spacing: -0.015em; }
+
+/* ---------- Sign-in (standalone Nemura) -------------------------------------------------- */
+.nm-signin { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr); background: var(--background); }
+.nm-signin__art { display: none; padding: var(--space-8); color: var(--nav-fg); flex-direction: column; justify-content: space-between; gap: var(--space-6);
+                  background: radial-gradient(120% 80% at 85% 10%, color-mix(in oklch, var(--primary) 45%, var(--nav-bg)) 0%, transparent 60%),
+                              linear-gradient(180deg, var(--nav-bg), var(--nav-bg-2)); }
+.nm-signin__art .fy-brand { color: var(--nav-fg); }
+.nm-signin__big { font-family: var(--font-display); font-weight: 700; font-size: 3.25rem; line-height: 1; letter-spacing: -0.035em; }
+.nm-signin__main { display: grid; place-items: center; padding: var(--space-6) var(--space-4); }
+.nm-signin__card { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: var(--space-5); }
+@container device (min-width: 1024px) { .nm-signin { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .nm-signin__art { display: flex; } }

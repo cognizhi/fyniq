@@ -1,0 +1,435 @@
+/*
+ * Nemura — design tokens (PRD-002 §19, NM-UX-01)
+ *
+ * Nemura is Cognizhi's people platform. It shares Fyniq's semantic token NAMES, so the shared
+ * component structure (docs/design/screens/kit/ui.css) works unchanged, but not its look:
+ * professional and modern, with depth. Cool slate surfaces, deep navy text and navigation, an
+ * ocean-blue action colour, soft-tinted tiles with a deeper icon disc, layered shadows and a top
+ * highlight so cards, tiles and buttons sit slightly above the page. Typefaces: Funnel Display for
+ * headings and figures, Funnel Sans for text, Spline Sans Mono for IDs (SIL OFL, tabular figures).
+ *
+ * AI violet (--ai*) is the suite-wide marker for AI content in Fyniq and Nemura alike: never an
+ * action colour, always with the "AI" badge. Nemura's blue (hue 245) is kept well away from it.
+ *
+ * Contrast is validated by docs/design-system/fyniq/scripts/check_contrast.py --tokens
+ * docs/design-system/nemura/tokens.css (QA-UI-03; `make check-tokens`), including the
+ * Nemura-only pairs (navigation, tiles, icon discs). Gradients in the kit only lighten a tile
+ * towards white, so text keeps at least the contrast checked here.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces: cool slate, white cards */
+  --background: oklch(0.972 0.006 255);
+  --surface-1: oklch(1 0 0);
+  --surface-2: oklch(0.962 0.008 255);
+  --surface-3: oklch(0.93 0.012 255);
+  --overlay-scrim: oklch(0.22 0.04 262 / 0.5);
+
+  /* Text: deep navy */
+  --text-primary: oklch(0.22 0.035 262);
+  --text-secondary: oklch(0.41 0.03 262);
+  --text-muted: oklch(0.5 0.025 262);
+  --text-on-accent: oklch(1 0 0);
+
+  /* Lines: --border is decorative; --border-strong bounds controls (3:1); --ink is the darkest line */
+  --border: oklch(0.905 0.012 255);
+  --border-strong: oklch(0.6 0.025 262);
+  --ink: oklch(0.22 0.035 262);
+
+  /* Brand: ocean blue — primary actions, links, selection, focus */
+  --primary: oklch(0.52 0.131 245);
+  --primary-hover: oklch(0.46 0.116 245);
+  --primary-foreground: oklch(1 0 0);
+  --primary-subtle: oklch(0.95 0.025 240);
+  --primary-subtle-foreground: oklch(0.42 0.107 245);
+  --link: oklch(0.49 0.123 245);
+  --ring: oklch(0.52 0.131 245);
+
+  /* AI: violet — ONLY for AI-originated content, always with an "AI" label (suite-wide) */
+  --ai: oklch(0.5 0.2 295);
+  --ai-foreground: oklch(1 0 0);
+  --ai-subtle: oklch(0.965 0.018 295);
+  --ai-subtle-foreground: oklch(0.42 0.18 295);
+  --ai-border: oklch(0.62 0.14 295);
+  --ai-gradient: linear-gradient(120deg, oklch(0.5 0.2 295), oklch(0.5 0.15 255));
+
+  /* Status chips: text on subtle background, always icon + label */
+  --status-good: oklch(0.46 0.114 155);
+  --status-good-subtle: oklch(0.95 0.035 155);
+  --status-warning: oklch(0.49 0.105 70);
+  --status-warning-subtle: oklch(0.96 0.04 88);
+  --status-serious: oklch(0.49 0.13 45);
+  --status-serious-subtle: oklch(0.955 0.022 45);
+  --status-critical: oklch(0.49 0.19 27);
+  --status-critical-subtle: oklch(0.955 0.022 27);
+  --status-neutral: oklch(0.45 0.025 262);
+  --status-neutral-subtle: oklch(0.95 0.008 255);
+
+  --destructive: oklch(0.5 0.19 27);
+  --destructive-foreground: oklch(1 0 0);
+
+  --amount-positive: oklch(0.46 0.114 155);
+  --amount-negative: oklch(0.49 0.19 27);
+
+  /* Navigation: deep navy rail; the current page is a raised white pill */
+  --nav-bg: oklch(0.24 0.05 264);
+  --nav-bg-2: oklch(0.2 0.045 266);
+  --nav-fg: oklch(0.96 0.01 255);
+  --nav-muted: oklch(0.8 0.03 258);
+  --nav-active-bg: oklch(0.985 0.004 255);
+  --nav-active-fg: oklch(0.24 0.05 264);
+
+  /* Tiles for the things people do most: soft tints, navy text, a deeper icon disc */
+  --tile-fg: oklch(0.22 0.035 262);
+  --tile-icon-fg: oklch(1 0 0);
+  --tile-marigold: oklch(0.94 0.06 85);
+  --tile-mint: oklch(0.94 0.045 165);
+  --tile-sky: oklch(0.94 0.03 240);
+  --tile-blush: oklch(0.94 0.028 15);
+  --tile-sand: oklch(0.95 0.01 255);
+  --tile-marigold-deep: oklch(0.6 0.13 65);
+  --tile-mint-deep: oklch(0.55 0.11 165);
+  --tile-sky-deep: oklch(0.52 0.131 245);
+  --tile-blush-deep: oklch(0.56 0.16 15);
+  --tile-sand-deep: oklch(0.45 0.04 262);
+
+  /* Charts and calendars: the validated dataviz palette (same as Fyniq) */
+  --chart-surface: #fcfcfd;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #6250d6;
+  --chart-8: #e34948;
+  --chart-other: #8a8984;
+  --seq-100: #cde2fb;
+  --seq-250: #86b6ef;
+  --seq-400: #3987e5;
+  --seq-550: #1c5cab;
+  --seq-700: #0d366b;
+  --div-negative: #e34948;
+  --div-midpoint: #f0efec;
+  --div-positive: #2a78d6;
+  --viz-status-good: #0ca30c;
+  --viz-status-warning: #fab219;
+  --viz-status-serious: #ec835a;
+  --viz-status-critical: #d03b3b;
+  --chart-grid: oklch(0.92 0.008 255);
+
+  /* Typography (SIL OFL). Funnel Display for headings and big figures; Funnel Sans for text */
+  --font-ui: "Funnel Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Funnel Display", "Funnel Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-code: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
+  --fs-xs: 0.75rem;     /* 12px: captions */
+  --fs-sm: 0.8125rem;   /* 13px: dense tables */
+  --fs-base: 0.9375rem; /* 15px: UI body */
+  --fs-md: 1rem;        /* 16px: forms, reading text, mobile body */
+  --fs-lg: 1.1875rem;   /* 19px: section titles */
+  --fs-xl: 1.75rem;     /* 28px: page titles (display) */
+  --fs-2xl: 2.25rem;    /* 36px: stat tiles */
+  --fs-3xl: 3.25rem;    /* 52px: hero figures (leave balance, next pay day) */
+
+  /* Space (4px grid) and density */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --row-height: 44px;
+  --header-height: 64px;
+  --sidebar-width: 248px;
+  --sidebar-collapsed: 72px;
+  --panel-width: 420px;
+  --rail-width: 88px;
+  --bottom-bar-height: 72px;
+  --touch-target: 44px;
+
+  /* Shape and depth: rounded, layered shadows with a top highlight */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 18px;
+  --radius-pill: 999px;
+  --border-bold: 1px;
+  --highlight: inset 0 1px 0 oklch(1 0 0 / 0.75);
+  --shadow-1: 0 1px 2px oklch(0.25 0.04 262 / 0.06), 0 1px 1px oklch(0.25 0.04 262 / 0.04);
+  --shadow-2: 0 1px 2px oklch(0.25 0.04 262 / 0.06), 0 8px 24px -8px oklch(0.25 0.04 262 / 0.16);
+  --shadow-3: 0 2px 6px oklch(0.25 0.04 262 / 0.08), 0 28px 56px -16px oklch(0.25 0.04 262 / 0.3);
+  --shadow-raised: 0 1px 1px oklch(0.25 0.04 262 / 0.05), 0 4px 8px -2px oklch(0.25 0.04 262 / 0.08), 0 14px 28px -10px oklch(0.25 0.04 262 / 0.18);
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --duration-tour: 300ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --rise: 10px;
+  --stagger: 30ms;
+
+  /* Layers */
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-panel: 30;
+  --z-popover: 40;
+  --z-modal: 50;
+  --z-tour: 55;
+  --z-toast: 60;
+}
+
+[data-density="compact"] {
+  --row-height: 36px;
+  --fs-base: 0.875rem;
+}
+
+/* Dark: deep navy, its own steps; tiles become deep tints with light text */
+.dark {
+  color-scheme: dark;
+
+  --background: oklch(0.16 0.02 262);
+  --surface-1: oklch(0.205 0.024 262);
+  --surface-2: oklch(0.24 0.026 262);
+  --surface-3: oklch(0.285 0.028 262);
+  --overlay-scrim: oklch(0.08 0.02 262 / 0.65);
+
+  --text-primary: oklch(0.96 0.008 255);
+  --text-secondary: oklch(0.83 0.015 255);
+  --text-muted: oklch(0.73 0.018 255);
+  --text-on-accent: oklch(0.16 0.02 262);
+
+  --border: oklch(0.32 0.025 262);
+  --border-strong: oklch(0.6 0.025 258);
+  --ink: oklch(0.88 0.012 255);
+
+  --primary: oklch(0.74 0.12 240);
+  --primary-hover: oklch(0.8 0.1 240);
+  --primary-foreground: oklch(0.16 0.02 262);
+  --primary-subtle: oklch(0.3 0.06 248);
+  --primary-subtle-foreground: oklch(0.87 0.07 240);
+  --link: oklch(0.78 0.11 240);
+  --ring: oklch(0.78 0.11 240);
+
+  --ai: oklch(0.74 0.14 295);
+  --ai-foreground: oklch(0.16 0.02 262);
+  --ai-subtle: oklch(0.27 0.06 295);
+  --ai-subtle-foreground: oklch(0.86 0.077 295);
+  --ai-border: oklch(0.6 0.13 295);
+  --ai-gradient: linear-gradient(120deg, oklch(0.42 0.16 295), oklch(0.4 0.12 255));
+
+  --status-good: oklch(0.8 0.13 155);
+  --status-good-subtle: oklch(0.27 0.05 155);
+  --status-warning: oklch(0.85 0.12 85);
+  --status-warning-subtle: oklch(0.28 0.05 80);
+  --status-serious: oklch(0.8 0.12 50);
+  --status-serious-subtle: oklch(0.28 0.05 45);
+  --status-critical: oklch(0.78 0.128 25);
+  --status-critical-subtle: oklch(0.28 0.06 25);
+  --status-neutral: oklch(0.8 0.015 255);
+  --status-neutral-subtle: oklch(0.28 0.02 262);
+
+  --destructive: oklch(0.72 0.16 25);
+  --destructive-foreground: oklch(0.16 0.02 262);
+
+  --amount-positive: oklch(0.8 0.13 155);
+  --amount-negative: oklch(0.78 0.128 25);
+
+  --nav-bg: oklch(0.13 0.025 264);
+  --nav-bg-2: oklch(0.11 0.02 266);
+  --nav-fg: oklch(0.95 0.01 255);
+  --nav-muted: oklch(0.76 0.025 258);
+  --nav-active-bg: oklch(0.74 0.12 240);
+  --nav-active-fg: oklch(0.14 0.025 264);
+
+  --tile-fg: oklch(0.96 0.008 255);
+  --tile-icon-fg: oklch(0.16 0.02 262);
+  --tile-marigold: oklch(0.31 0.055 75);
+  --tile-mint: oklch(0.3 0.045 165);
+  --tile-sky: oklch(0.3 0.06 248);
+  --tile-blush: oklch(0.3 0.055 15);
+  --tile-sand: oklch(0.28 0.022 262);
+  --tile-marigold-deep: oklch(0.82 0.12 80);
+  --tile-mint-deep: oklch(0.8 0.1 165);
+  --tile-sky-deep: oklch(0.8 0.1 240);
+  --tile-blush-deep: oklch(0.82 0.09 15);
+  --tile-sand-deep: oklch(0.8 0.02 255);
+
+  --chart-surface: #1a1b1f;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+  --chart-other: #8a8984;
+  --div-midpoint: #36383d;
+  --div-negative: #e66767;
+  --div-positive: #3987e5;
+  --chart-grid: oklch(0.32 0.02 262);
+
+  --highlight: inset 0 1px 0 oklch(1 0 0 / 0.07);
+  --shadow-1: 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-2: 0 1px 2px oklch(0 0 0 / 0.4), 0 10px 28px -8px oklch(0 0 0 / 0.55);
+  --shadow-3: 0 2px 6px oklch(0 0 0 / 0.4), 0 28px 56px -16px oklch(0 0 0 / 0.7);
+  --shadow-raised: 0 1px 1px oklch(0 0 0 / 0.35), 0 6px 12px -4px oklch(0 0 0 / 0.45), 0 18px 32px -12px oklch(0 0 0 / 0.6);
+}
+
+/* High contrast: 7:1 text */
+[data-contrast="more"] {
+  --text-primary: oklch(0.14 0.03 262);
+  --text-secondary: oklch(0.25 0.03 262);
+  --text-muted: oklch(0.3 0.03 262);
+  --border: oklch(0.55 0.02 262);
+  --border-strong: oklch(0.3 0.025 262);
+  --ink: oklch(0.14 0.03 262);
+  --primary: oklch(0.4 0.102 245);
+  --primary-hover: oklch(0.34 0.088 245);
+  --primary-subtle-foreground: oklch(0.33 0.086 245);
+  --link: oklch(0.37 0.095 245);
+  --ring: oklch(0.34 0.088 245);
+  --ai: oklch(0.38 0.18 295);
+  --ai-subtle-foreground: oklch(0.32 0.16 295);
+  --status-good: oklch(0.34 0.086 155);
+  --status-warning: oklch(0.36 0.08 65);
+  --status-serious: oklch(0.37 0.11 45);
+  --status-critical: oklch(0.38 0.15 27);
+  --status-neutral: oklch(0.3 0.025 262);
+  --destructive: oklch(0.4 0.16 27);
+  --amount-positive: oklch(0.34 0.086 155);
+  --amount-negative: oklch(0.38 0.15 27);
+  --nav-bg: oklch(0.16 0.04 264);
+  --nav-bg-2: oklch(0.14 0.035 266);
+  --nav-fg: oklch(0.99 0.004 255);
+  --nav-muted: oklch(0.9 0.015 255);
+  --nav-active-fg: oklch(0.16 0.04 264);
+  --tile-fg: oklch(0.14 0.03 262);
+  --tile-marigold-deep: oklch(0.5 0.11 65);
+  --tile-mint-deep: oklch(0.45 0.09 165);
+  --tile-sky-deep: oklch(0.42 0.107 245);
+  --tile-blush-deep: oklch(0.46 0.15 15);
+  --tile-sand-deep: oklch(0.36 0.04 262);
+}
+
+.dark[data-contrast="more"] {
+  --background: oklch(0.12 0.015 262);
+  --surface-1: oklch(0.155 0.018 262);
+  --surface-2: oklch(0.19 0.02 262);
+  --surface-3: oklch(0.23 0.022 262);
+  --text-primary: oklch(0.99 0 0);
+  --text-secondary: oklch(0.92 0.008 255);
+  --text-muted: oklch(0.88 0.01 255);
+  --border: oklch(0.5 0.02 262);
+  --border-strong: oklch(0.82 0.012 255);
+  --ink: oklch(0.95 0.008 255);
+  --primary: oklch(0.86 0.075 240);
+  --primary-hover: oklch(0.9 0.052 240);
+  --primary-subtle-foreground: oklch(0.93 0.035 240);
+  --link: oklch(0.87 0.07 240);
+  --ring: oklch(0.89 0.06 240);
+  --ai: oklch(0.84 0.089 295);
+  --ai-subtle-foreground: oklch(0.92 0.043 295);
+  --status-good: oklch(0.88 0.12 155);
+  --status-warning: oklch(0.9 0.108 85);
+  --status-serious: oklch(0.88 0.071 50);
+  --status-critical: oklch(0.86 0.075 25);
+  --status-neutral: oklch(0.9 0.01 255);
+  --destructive: oklch(0.82 0.101 25);
+  --amount-positive: oklch(0.88 0.12 155);
+  --amount-negative: oklch(0.86 0.075 25);
+  --nav-bg: oklch(0.08 0.015 264);
+  --nav-bg-2: oklch(0.07 0.012 266);
+  --nav-fg: oklch(0.99 0 0);
+  --nav-muted: oklch(0.92 0.01 255);
+  --nav-active-bg: oklch(0.86 0.075 240);
+  --nav-active-fg: oklch(0.1 0.02 264);
+  --tile-fg: oklch(0.99 0 0);
+  --tile-icon-fg: oklch(0.1 0.02 262);
+  --tile-marigold: oklch(0.24 0.045 75);
+  --tile-mint: oklch(0.24 0.04 165);
+  --tile-sky: oklch(0.24 0.05 248);
+  --tile-blush: oklch(0.24 0.045 15);
+  --tile-sand: oklch(0.22 0.02 262);
+  --tile-marigold-deep: oklch(0.88 0.09 82);
+  --tile-mint-deep: oklch(0.86 0.08 165);
+  --tile-sky-deep: oklch(0.86 0.07 240);
+  --tile-blush-deep: oklch(0.88 0.06 15);
+  --tile-sand-deep: oklch(0.86 0.015 255);
+}
+
+@media (forced-colors: active) {
+  :root {
+    --ring: Highlight;
+    --border-strong: CanvasText;
+    --ink: CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+    --duration-tour: 0ms;
+  }
+}
+
+[data-motion="reduce"],
+[data-motion="off"] {
+  --duration-fast: 0ms;
+  --duration-base: 0ms;
+  --duration-slow: 0ms;
+  --duration-tour: 0ms;
+  --stagger: 0ms;
+}
+
+/* Tailwind CSS 4 mapping (apps/nemura-web/src/styles/globals.css imports this file) */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--surface-1);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--surface-1);
+  --color-popover-foreground: var(--text-primary);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--surface-3);
+  --color-accent-foreground: var(--text-primary);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--text-primary);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--border-strong);
+  --color-ring: var(--ring);
+  --color-ai: var(--ai);
+  --color-ai-foreground: var(--ai-foreground);
+  --color-ai-subtle: var(--ai-subtle);
+  --color-ai-subtle-foreground: var(--ai-subtle-foreground);
+  --color-ink: var(--ink);
+  --color-tile-marigold: var(--tile-marigold);
+  --color-tile-mint: var(--tile-mint);
+  --color-tile-sky: var(--tile-sky);
+  --color-tile-blush: var(--tile-blush);
+  --color-tile-sand: var(--tile-sand);
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-base: var(--fs-base);
+  --text-md: var(--fs-md);
+  --text-lg: var(--fs-lg);
+  --text-xl: var(--fs-xl);
+  --text-2xl: var(--fs-2xl);
+  --text-3xl: var(--fs-3xl);
+  --font-sans: var(--font-ui);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-code);
+  --radius-sm: var(--radius-s);
+  --radius-md: var(--radius-m);
+  --radius-lg: var(--radius-l);
+}
