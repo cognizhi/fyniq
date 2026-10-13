@@ -17,6 +17,13 @@ One fragment serves all five: it is **responsive by CSS**, never five copies. Re
 
 ## 1. The fragment
 
+Two products share this kit (PRD-002 ADR-N6). A canvas's `product` in `inventory.json` picks the tokens, kit,
+fonts and shell: **Fyniq** (default; `kit/fyniq-ui.css`) or **Nemura** (`kit/nemura-ui.css` = Nemura's tokens +
+`kit/ui.css` + `kit/nemura.css`). Nemura fragments use the same `fy-` structure plus `nm-` components
+(`docs/design-system/nemura/MASTER.md` §6), and set `persona` (`employee` | `hr` | `admin`) and `integrated`
+(shows the Finance | People switch). A Fyniq fragment may set `workspace: true` for the same switch.
+Nemura pages never show company financial figures (PRD-002 NM-ROLE-02).
+
 ```html
 <!-- fyniq-screen {"nav": "banking", "title": "Categorise", "mode": "basic",
                    "heights": {"compact": 1800, "medium": 1300, "expanded": 1000}} -->

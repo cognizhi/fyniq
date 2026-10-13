@@ -21,9 +21,11 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 | Read first | Why |
 |---|---|
 | `docs/prd/prd-001-fyniq-platform.md` | The requirements (IDs such as `FR-GL-08`, `AI-34`, `DEV-02`) and the architecture decisions (ADR index in §12.0) |
+| `docs/prd/prd-002-nemura-people.md` | **Nemura**, the optional people platform (its own image, database and sign-in; linked to Fyniq by one sign-in and the Finance \| People switch): records, leave, payroll, self-service, letters, later hiring, performance and onboarding (IDs such as `NM-LV-03`); Fyniq's side is PRD-001 §8.26 |
 | `docs/prd/reviews/prd-001-review-2026-10-12.md` | Why revision 0.2 changed what it did (REV-01…40) |
 | `docs/prd/reviews/prd-001-deep-review-validation-2026-10-13.md` | Why revision 0.8 changed what it did: the deep review (F01–F50, O01–O12) validated claim by claim |
 | `docs/design-system/fyniq/MASTER.md` | How the UI looks and behaves; `pages/*.md` override it per page |
+| `docs/design-system/nemura/MASTER.md` | Nemura's own look: professional, modern, with depth (tokens, type, components); behaviour follows Fyniq's MASTER |
 | `openspec/specs/` | The PRD's requirements as OpenSpec specs, one capability per file (`openspec list --specs`); derived from the PRD, which stays the source of truth |
 | `docs/design/screens/` | Every screen: the inventory, the kit and the fragments behind the Claude Design canvases (URLs in `canvases.json`) |
 | `.claude/skills/fyniq-*/SKILL.md` | Step-by-step recipes for each kind of change (table below) |
@@ -112,7 +114,8 @@ infra/               OpenTofu (P0)           scripts/         hooks and repo scr
 docs/prd/            PRD, reviews, research  docs/design-system/, docs/design/  UI system and prototype
 docs/user-guide/     in-app user guide (§7.9)  kb/              compiled knowledge base (§9.11)
 openspec/            specs derived from the PRD  docs/design/screens/  screen inventory, kit, canvases (§7.10)
-agents/              scheduled-agent skills (§9.12), e.g. agents/company-secretary/SKILL.md
+agents/              scheduled-agent skills (§9.12), e.g. agents/company-secretary/SKILL.md, agents/people-assistant/SKILL.md
+cmd/nemura/, apps/nemura-web/   Nemura's own image and web app (PRD-002 ADR-N1; arrives with Nemura's P1)
 connectors/          connector manifests and code (FR-INT-25)  internal/adapters/  cloud adapters (ADR-T8)
 .claude/skills/      agent skills            .github/workflows/  CI and release-please
 ```

@@ -93,6 +93,14 @@ iframes, icons as inline SVG. Stylesheets under `project/` load by relative path
 (`kit/fyniq-ui.css`). Do not render, screenshot or re-read a canvas to "verify" it: the user
 reviews it in Claude Design.
 
+## Nemura (PRD-002)
+
+Nemura's canvases (`nemura-me`, `nemura-team`, `nemura-setup`) have `"product": "nemura"` in `inventory.json`:
+they build with `kit/nemura-ui.css`, Funnel Display, Funnel Sans and Spline Sans Mono, and Nemura's shell
+(`persona`, `integrated` settings). Their design system is its own artifact (`design_system_nemura` in
+`canvases.json`; `build.py ds nemura`, sources in `ds-nemura/`). `make check-tokens` validates both token
+files. Nemura's register entries are under `nemura` in `sample-data.json`, same clock.
+
 ## Design-system artifact
 
 The **Fyniq** design system (URL in `canvases.json`) holds `tokens.json` (60 colours × 4 themes,
