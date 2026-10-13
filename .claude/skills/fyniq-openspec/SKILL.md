@@ -1,0 +1,120 @@
+---
+name: fyniq-openspec
+description: Turn a Fyniq PRD into OpenSpec specs and screen designs, and keep both in step with the PRD — the PRD → OpenSpec conversion recipe (capability map in openspec/sources/<prd>.json, requirement and scenario format, the 500-character rule, cited sections, acceptance scenarios, the drift lock), every OpenSpec 1.14 CLI command and the twelve /opsx workflows (propose, explore, new, continue, ff, apply, update, verify, sync, archive, bulk-archive, onboard), scripts/prdspec.py (extract, map, packet, show, coverage, stale, stamp), and designing every screen in Claude Design at the five device frames in light and dark (docs/design/screens, build.py, the Fyniq design system, uipro). Use whenever a new PRD or PRD revision arrives, when someone says "convert the PRD", "openspec", "opsx", "spec this", "update the specs", "the specs are stale", "design the screens", "add a screen", "show it on a phone, foldable or tablet", "put it in Claude Design", when make spec-check or design-check fails, or before implementing any requirement with /opsx:apply.
+---
+
+# PRDs, OpenSpec specs and screen designs
+
+**The PRD is the source of truth.** `docs/prd/prd-NNN-*.md` is where requirements are written and
+approved (PRD revision convention: **fyniq-release**). `openspec/specs/` holds the same
+requirements as OpenSpec specs, derived from the PRD, so agents can read one capability at a time
+and plan work with the `/opsx` workflows. Every screen the PRD implies is designed in Claude Design
+from `docs/design/screens/`. Three checks keep the three in step:
+
+| Check | Fails when |
+|---|---|
+| `openspec validate --specs --strict` | A spec breaks the OpenSpec format (missing scenario, no SHALL/MUST, description over 500 characters) |
+| `python3 scripts/prdspec.py coverage` | A PRD anchor has no requirement or scenario, appears twice, sits in the wrong capability, or has a wrong `Source:` line |
+| `python3 scripts/prdspec.py stale` | A PRD row changed after it was converted (the lock in `openspec/sources/<prd>.lock.json`) |
+| `python3 docs/design/screens/build.py check` | A screen fragment breaks the canvas format or the design rules |
+
+`make spec-check` runs the first three, `make design-check` the last; `make check` runs both.
+
+## Decisions (13 Oct 2026, the founders)
+
+- Requirements live in **main specs** (`openspec/specs/<domain>/<capability>/spec.md`), not in
+  changes. Main specs are the **approved** requirements, built or not; each carries its Priority
+  and Phase. A requirement is built when its tests carry `// req: <ID>` (QA-TRACE-01).
+- The PRD stays authoritative. A requirement proposed through `/opsx` first gets a PRD row and ID.
+- All twelve OPSX workflows are enabled (global OpenSpec profile `custom`).
+- Screens: every screen in `docs/design/screens/inventory.json`, hi-fi, at five frames (desktop
+  1440, tablet 834, foldable open 690, phone 390, foldable folded 344) in light and dark, on one
+  Claude Design canvas per area, using the **Fyniq** design system.
+
+## Every tool, and when to use it
+
+| Tool | Use it to | Reference |
+|---|---|---|
+| `openspec` CLI 1.14.1 | List, show, validate, archive specs and changes; status and instructions for a change; schemas; config | `references/cli.md` (every command and flag) |
+| `/opsx:explore` | Think through a requirement or an open question before writing anything | `openspec-explore` skill |
+| `/opsx:propose` | One-step change: proposal, delta specs, design, tasks | `openspec-propose` |
+| `/opsx:new`, `/opsx:continue`, `/opsx:ff` | Step-by-step change: create it, then the next artifact, or fast-forward through all | `openspec-new-change`, `-continue-change`, `-ff-change` |
+| `/opsx:update` | Revise a change's artifacts and keep them coherent | `openspec-update-change` |
+| `/opsx:apply` | Implement a change's tasks | `openspec-apply-change` |
+| `/opsx:verify` | Check the implementation against the change before archiving | `openspec-verify-change` |
+| `/opsx:sync` | Merge a change's delta specs into main specs without archiving | `openspec-sync-specs` |
+| `/opsx:archive`, `/opsx:bulk-archive` | Merge deltas into main specs and move the change(s) to `changes/archive/` | `openspec-archive-change`, `-bulk-archive-change` |
+| `/opsx:onboard` | A narrated first cycle for a new contributor | `openspec-onboard` |
+| `scripts/prdspec.py` | Extract PRD anchors, map them to capabilities, print a conversion packet, check coverage and drift, stamp the lock | `references/conversion.md` |
+| `docs/design/screens/build.py` | Build the kit, lint fragments, build canvases and the design system | `references/design.md`, `docs/design/screens/AUTHORING.md` |
+| Claude Design (the Artifact tool) | Publish canvases (Design type) and the Fyniq design system | `references/design.md` |
+| uipro (`ui-ux-pro-max`) | Review lens for every new pattern; record what you adopt in MASTER.md | **fyniq-design-system** |
+
+The `openspec-*` skills and `/opsx:*` commands are generated by `openspec init`/`openspec update`;
+never edit them by hand. After upgrading the CLI run `openspec update` and check `git diff`.
+
+## Recipe A: a new PRD (prd-00N)
+
+1. **Read** the PRD's requirement tables and the current inventory: `openspec list --specs`, then
+   `openspec show <spec> --type spec --json --no-scenarios` for related capabilities. Reuse an
+   existing capability path rather than inventing a near-duplicate.
+2. **Map**: copy `openspec/sources/prd-001.json` to `openspec/sources/prd-00N.json`, set `doc` and
+   `prd`, write `rules` (regex on the anchor and/or `section`, first match wins), `sections` (ID-less
+   tables and text that state behaviour: posting rules, matrices, use cases, pinned figures),
+   `excluded` (withdrawn or superseded IDs, with the reason), `scenario_patterns` (acceptance-
+   scenario IDs), `check_sections`, `task_sections`. Run
+   `python3 scripts/prdspec.py --source openspec/sources/prd-00N.json map` until nothing is unmapped.
+3. **Decide the route.** A PRD that only adds capabilities, or a first PRD: write main specs
+   directly (as PRD-001 was). A PRD that changes existing capabilities: create a change
+   (`openspec new change prd-00N-<slug>`), with ADDED/MODIFIED/REMOVED deltas, a proposal citing
+   the PRD, a design for its ADRs, and tasks; archive it when the PRD revision is approved.
+4. **Convert** one capability at a time from its packet
+   (`python3 scripts/prdspec.py packet <capability>`), following `references/conversion.md`.
+   Work in the main session, even for a large PRD: do not fan out to subagents (they burn tokens
+   and outlast the prompt cache; AGENTS.md "Working as an AI agent").
+5. **Design** every screen the PRD adds or changes (Recipe C).
+6. **Check and stamp**: `openspec validate --specs --strict`, `prdspec.py coverage --summary`, then
+   `prdspec.py stamp --all` (or the anchors you converted), `make check`.
+7. **Commit** in the same change as the PRD: `docs(prd,specs): …` (scopes in **fyniq-release**).
+
+## Recipe B: a PRD revision
+
+1. `python3 scripts/prdspec.py stale` lists every row that changed, was added or was removed.
+2. For each: `prdspec.py show <anchor>`, then edit the requirement in its main spec (keep the header
+   text; a renamed requirement goes through a change with RENAMED). New anchors: extend the map
+   first. Withdrawn: add to `excluded` with the reason and delete the requirement.
+3. A revision that changes many requirements at once may go through a change
+   (`/opsx:new` → deltas → `/opsx:sync` or archive) so the review sees one diff.
+4. Re-check the screens that show the changed requirements (`inventory.json` lists requirement IDs).
+5. `prdspec.py stamp <anchors>`; `make check`; commit with the PRD edit.
+
+## Recipe C: design the screens
+
+Follow `references/design.md` and `docs/design/screens/AUTHORING.md`. In short: add or update the
+screen's row in `inventory.json` (requirement IDs, phase, roles, mode, content); write the
+fragment `src/<File>.html` with the kit classes; consult uipro for any new pattern;
+`build.py check <File>`; `build.py canvas <area> --ds <Fyniq design system URL>`; publish the
+canvas with the Artifact tool; record the canvas URL in `docs/design/screens/canvases.json`.
+Every screen is responsive (compact, medium, expanded), themed (light, dark, high contrast) and
+uses the motion catalogue (FR-UX-37, FR-UX-38).
+
+## Recipe D: build a requirement with /opsx
+
+1. `/opsx:propose implement <IDs>`: the change cites the requirement IDs and the screens. Because
+   the requirements are already approved in main specs, a pure build change sets
+   `skip_specs: true` in its `.openspec.yaml` (no behaviour change to the spec) and its tasks name
+   the tests (`// req: <ID>`) that prove each requirement.
+2. `/opsx:apply` → `/opsx:verify` → `/opsx:archive` (with `--skip-specs` when there are no deltas).
+3. If building reveals that a requirement is wrong, stop: change the PRD (Recipe B) first.
+
+## Gotchas
+
+- A `### Requirement:` header is matched by text when a delta MODIFIES it: never reword a header in
+  a main spec casually; it breaks future deltas.
+- The `Source:` line counts toward the 500-character description limit; keep descriptions to about
+  450 characters and move every clause into a scenario.
+- Scenarios need exactly four `#` (`#### Scenario:`); three fails silently.
+- `openspec list` lists changes; `openspec list --specs` lists specs.
+- `openspec show` of a nested spec takes the full path (`organisation/settings`) and `--type spec`.
+- `openspec validate` without `--strict` passes warnings that `make spec-check` fails.
+- The OpenSpec CLI collects anonymous telemetry; CI and scripts set `OPENSPEC_TELEMETRY=0`.

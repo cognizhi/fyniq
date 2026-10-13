@@ -53,7 +53,7 @@ anything that breaks a user, an integrator or an operator.
 
 **Scopes** (optional; several allowed, `fix(api,web): …`): `ledger`, `engine`, `api`, `web`,
 `ui`, `ai`, `mcp`, `oauth`, `worker`, `executor`, `jobs`, `db`, `infra`, `deploy`, `contracts`,
-`oracle`, `packs`, `compliance`, `security`, `design`, `docs`, `prd`, `kb`, `skills`, `ci`, `release`,
+`oracle`, `packs`, `compliance`, `security`, `design`, `docs`, `prd`, `kb`, `specs`, `skills`, `ci`, `release`,
 `deps`. The hook enforces the list; add a scope there and here together.
 
 Pull requests are **squash-merged**, so the PR title becomes the commit subject: CI checks it
@@ -135,7 +135,9 @@ release.
 - Never silently edit a past decision: mark the ADR **superseded** in the §12.0 index and add a
   new ADR (and its `docs/adr/` file from P0).
 - Record a review as `docs/prd/reviews/prd-001-review-<date>.md` with finding IDs, and link it.
-- PRD-only changes use `docs(prd): …`; they do not bump the platform version.
+- (rev 0.10) Update the derived OpenSpec specs and screens in the same commit: `python3 scripts/prdspec.py stale`
+  lists the rows to reconvert; then `prdspec.py stamp` and `make check` (**fyniq-openspec**).
+- PRD-only changes use `docs(prd): …` (`docs(prd,specs): …` with their specs); they do not bump the platform version.
 
 ## Release checklist
 

@@ -2,7 +2,9 @@
 
 These instructions are for every contributor, human or AI coding agent (Claude Code, Codex,
 Copilot, Cursor, …). `CLAUDE.md` imports this file. When the instructions and the PRD disagree,
-the PRD wins; fix whichever is wrong in the same change.
+the PRD wins; fix whichever is wrong in the same change. The OpenSpec specs in `openspec/` and the
+screen designs in `docs/design/screens/` are derived from the PRD: a PRD change updates them in the
+same commit (`fyniq-openspec` skill; `make check` fails on drift).
 
 ## What this repository is
 
@@ -22,6 +24,8 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 | `docs/prd/reviews/prd-001-review-2026-10-12.md` | Why revision 0.2 changed what it did (REV-01…40) |
 | `docs/prd/reviews/prd-001-deep-review-validation-2026-10-13.md` | Why revision 0.8 changed what it did: the deep review (F01–F50, O01–O12) validated claim by claim |
 | `docs/design-system/fyniq/MASTER.md` | How the UI looks and behaves; `pages/*.md` override it per page |
+| `openspec/specs/` | The PRD's requirements as OpenSpec specs, one capability per file (`openspec list --specs`); derived from the PRD, which stays the source of truth |
+| `docs/design/screens/` | Every screen: the inventory, the kit and the fragments behind the Claude Design canvases (URLs in `canvases.json`) |
 | `.claude/skills/fyniq-*/SKILL.md` | Step-by-step recipes for each kind of change (table below) |
 
 ## Commands
@@ -29,12 +33,14 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 | Command | Does | Status |
 |---|---|---|
 | `make help` | Lists the targets | Today |
-| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint | Today (CI runs it) |
+| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the screen inventory and fragments | Today (CI runs it) |
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
 | `make prototype` | Prints the path of the static UI prototype | Today |
 | `make kb-index` / `kb-lint` / `kb-stale` | Regenerate the knowledge-base index; lint the compiled pages (part of `make check`); list stale pages and uncovered sources (§9.11) | Today |
+| `make spec-check` / `spec-map` / `spec-stale` | OpenSpec specs valid (strict), covering every PRD anchor once and matching the PRD rows (part of `make check`); the PRD → capability map; PRD rows changed since conversion | Today |
+| `make design-kit` / `design-check` / `design-status` | Regenerate the screen kit stylesheet; lint the screen inventory and fragments (part of `make check`); screens designed per canvas | Today |
 | `make setup`, `dev`, `up`, `down`, `seed`, `reset`, `test`, `test-e2e`, `evals`, `images`, `ci` | The local-mode command contract (PRD §12.8): the full stack and every merge gate, offline | **Arrives in P0** |
 
 Never invent a command in docs or scripts. If you need a new one, add it to the Makefile with a
@@ -105,6 +111,7 @@ deploy/local/        Compose stack           deploy/docker/   Dockerfiles (P0)
 infra/               OpenTofu (P0)           scripts/         hooks and repo scripts
 docs/prd/            PRD, reviews, research  docs/design-system/, docs/design/  UI system and prototype
 docs/user-guide/     in-app user guide (§7.9)  kb/              compiled knowledge base (§9.11)
+openspec/            specs derived from the PRD  docs/design/screens/  screen inventory, kit, canvases (§7.10)
 agents/              scheduled-agent skills (§9.12), e.g. agents/company-secretary/SKILL.md
 connectors/          connector manifests and code (FR-INT-25)  internal/adapters/  cloud adapters (ADR-T8)
 .claude/skills/      agent skills            .github/workflows/  CI and release-please
@@ -116,7 +123,7 @@ connectors/          connector manifests and code (FR-INT-25)  internal/adapters
   - Types: `feat` `fix` `perf` `refactor` `docs` `test` `build` `ci` `chore` `revert` `deps`.
   - Scopes: `ledger` `engine` `api` `web` `ui` `ai` `mcp` `oauth` `worker` `executor` `jobs` `db`
     `infra` `deploy` `contracts` `oracle` `packs` `compliance` `security` `design` `docs` `prd`
-    `kb` `skills` `ci` `release` `deps`. Several are allowed: `fix(api,web): …`.
+    `kb` `specs` `skills` `ci` `release` `deps`. Several are allowed: `fix(api,web): …`.
   - A breaking change gets `!` and a `BREAKING CHANGE: …` footer. Anything users, operators or
     integrators must do goes in an `Upgrade notes:` paragraph in the body (REL-03).
 - Work on a branch and open a pull request. The **pull request title** must be a Conventional
@@ -156,10 +163,28 @@ connectors/          connector manifests and code (FR-INT-25)  internal/adapters
 | `fyniq-local-dev` | Local mode, the Compose stack, local substitutes, lean images and budgets |
 | `fyniq-release` | Conventional Commits, release-please, versioning matrix, PRD revisions |
 | `fyniq-knowledge-base` | Compile, index and lint the knowledge base the AI assistant reads (`kb/`); run it on every change to `docs/user-guide/` |
+| `fyniq-openspec` | Convert a PRD or PRD revision into OpenSpec specs and keep them in step; design every new or changed screen in Claude Design (five frames, light and dark); the OpenSpec CLI and the twelve `/opsx` workflows |
+
+The twelve `openspec-*` skills and the `/opsx:*` commands (propose, explore, new, continue, ff,
+apply, update, verify, sync, archive, bulk-archive, onboard) are generated by `openspec init` and
+`openspec update`; never edit them by hand.
 
 Design skills that ship with the repository (`ui-ux-pro-max`, also called **uipro**;
 `ui-styling`; `design-system`; `design`; `brand`; `banner-design`; `slides`) support
 `fyniq-design-system`. uipro is a review lens; it never overrides the PRD or MASTER.md.
+
+## Working as an AI agent: sub-agents
+
+Sub-agents burn tokens fast. Each one (Claude Code's Agent and Workflow tools, Codex tasks or any
+parallel agent) builds its own context from scratch. While it runs, the main session sits idle,
+and after five minutes its prompt cache expires, so the next turn pays to re-read everything.
+
+- Do the work in the main session by default: conversions, screen batches, PRD revisions and
+  reviews included.
+- Start a sub-agent only for a self-contained task that finishes in **under about five
+  minutes**, such as one broad search whose conclusion is all you need.
+- Never fan out long work to save wall-clock time. If a task would really benefit from parallel
+  agents, say so, give a rough cost and let the person decide.
 
 ## Safety
 

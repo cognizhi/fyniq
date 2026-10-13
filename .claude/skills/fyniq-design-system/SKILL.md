@@ -13,11 +13,12 @@ The requirements are in PRD-001 §7 (rev 0.2). How they look and behave is in th
 | `docs/design-system/fyniq/pages/<page>.md` | Page overrides (`home`, `inbox`, `banking-categorise`, `reports`). **A page file wins over MASTER for that page**; anything it does not mention follows MASTER |
 | `docs/design-system/fyniq/tokens.css` | OKLCH semantic tokens for `:root`, `.dark`, `[data-contrast="more"]`, `.dark[data-contrast="more"]`, mapped to Tailwind 4 with `@theme inline` |
 | `docs/design-system/fyniq/scripts/check_contrast.py` | Contrast validator for every required token pair in all four themes (QA-UI-03); `make check-tokens` |
-| `docs/design/prototype/index.html` | Clickable static prototype (shell, Home, Inbox with AI-proposal review, Banking, Reports). Open with `make prototype`; review links accept `?mode=expert&theme=dark&contrast=more` |
+| `docs/design/screens/` | **The visual reference** (rev 0.10): every screen in `inventory.json`, as fragments in `src/` built by `build.py` onto Claude Design canvases (one per area, URLs in `canvases.json`) at five frames in light and dark. `AUTHORING.md` is the how-to; `kit/ui.css` the component layer. Recipe: **fyniq-openspec** `references/design.md` |
+| `docs/design/prototype/index.html` | Superseded early prototype (shell, Home, Inbox, Banking, Reports); kept for its tour and popover demos |
 
-From P0 the web app (`apps/web`) imports `tokens.css`; until then the prototype inlines a copy.
-When you change a token, change `tokens.css` first, run `make check-tokens`, then update the
-prototype's copy.
+From P0 the web app (`apps/web`) imports `tokens.css`; until then the screen kit is generated from it.
+When you change a token, change `tokens.css` first, run `make check-tokens`, then `make design-kit`
+and republish the canvases and the Fyniq design system (fyniq-openspec `references/design.md`).
 
 ## Order of work for any screen
 
@@ -28,7 +29,9 @@ prototype's copy.
    TanStack Table for statements; ECharts for charts.
 5. Write the states: loading (skeleton after 300 ms), empty (teaching), error (with recovery),
    permission-denied, locked period.
-6. Accessibility pass (below), both themes, high contrast, forced colours, 375 px width.
+6. Accessibility pass (below), both themes, high contrast, forced colours, and every device class
+   down to the 344 px folded foldable.
+6a. Design it on the canvas first (fyniq-openspec `references/design.md`) and get it reviewed there.
 7. Tests: component (Vitest), story with axe (Storybook), visual snapshot in both themes,
    mode-parity test (QA-UI-01…04).
 
@@ -113,9 +116,19 @@ The symbols themselves appear only in exports, CSV and plain-text email (FR-UX-0
 ## Density, layout, motion
 
 Comfortable 40 px rows (default) and Compact 32 px (`[data-density="compact"]`); 56 px header;
-240/64 px sidebar; 420 px side-peek and AI panel; breakpoints 375/768/1024/1440; pointer targets
-≥ 24 × 24 px. Motion 120/180/240 ms on `transform` and `opacity` only; nothing animates under
-`prefers-reduced-motion`; number tickers only on the Home pulse card.
+240/64 px sidebar; 420 px side-peek and AI panel; pointer targets ≥ 24 × 24 px, touch ≥ 44 × 44 px.
+
+**Device classes** (PRD §7.10, FR-UX-37; MASTER §5.1), mobile-first: **compact** < 600 px (top bar +
+bottom bar of five; one column; tables become cards; panels full screen), **medium** 600–1023 px
+(navigation rail; list and detail side by side; panels as sheets), **expanded** ≥ 1024 px (sidebar,
+collapsed below 1280; docked panels). Design and review every screen at the five reference frames:
+desktop 1440 × 900, tablet 834 × 1194, foldable open 690 × 840, phone 390 × 844, foldable folded
+344 × 882 (the narrowest target). On a hinge-spanning device two panes split at the hinge.
+
+**Motion** (FR-UX-38; MASTER §9): only the catalogue (page enter, panel and sheet, dialog, list
+stagger, skeleton, status change, pulse ticker, books closed), 120/180/240 ms on `transform` and
+`opacity`. The Administrator's organisation switch (`[data-motion="off"]`), the user's Reduce
+motion (`[data-motion="reduce"]`) and `prefers-reduced-motion` all render final states at once.
 
 ## Accessibility checklist (WCAG 2.2 AA; NFR-A11Y-01…05)
 
