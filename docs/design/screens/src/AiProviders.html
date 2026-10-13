@@ -1,4 +1,4 @@
-<!-- fyniq-screen {"nav": "settings", "title": "AI providers", "mode": "expert", "heights": {"compact": 4750, "medium": 3450, "expanded": 2000}} -->
+<!-- fyniq-screen {"nav": "settings", "title": "AI providers", "mode": "expert", "heights": {"compact": 5300, "medium": 4000, "expanded": 2000}} -->
 <div class="fy-page fy-enter">
   <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/ai">AI</a><i data-icon="chevron-right"></i><span aria-current="page">Providers</span></nav>
   <div class="fy-pagehead">
@@ -17,7 +17,7 @@
     <i data-icon="users" class="fy-i--20"></i>
     <div class="fy-banner__text">
       <span class="fy-strong">OpenAI API is waiting for Arjun Rao</span>
-      <span class="fy-small fy-secondary">Mei Lin Tan added it at 08:55 for the knowledge-base compiler, for know-how only. It processes in the United States; the transfer assessment is attached. Nothing goes to OpenAI until Arjun approves and the model passes its evals.</span>
+      <span class="fy-small fy-secondary">Mei Lin Tan added it at 08:55 for the knowledge-base compiler, for know-how only. It processes in the United States; the transfer assessment is attached. No company data goes to OpenAI until Arjun approves and the model passes its evals.</span>
       <div class="fy-row fy-row--wrap" style="margin-top: var(--space-2)">
         <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#settings/ai/providers/openai">Open the connection</a>
       </div>
@@ -43,28 +43,28 @@
           </thead>
           <tbody class="fy-stagger">
             <tr>
-              <td data-card="title"><a href="#settings/ai/providers/claude-agent-platform">Claude on Agent Platform</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">Google Cloud · Singapore (asia-southeast1) · Claude Opus 4.6, Claude Sonnet 4.6</span></td>
+              <td data-card="title"><a href="#settings/ai/providers/claude-agent-platform">Claude on Agent Platform</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">Google Cloud · Singapore (asia-southeast1) · Claude Opus 4.6, Claude Sonnet 4.6 · list read at 06:00</span></td>
               <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On</span></td>
               <td data-card="hide" class="fy-from-expanded fy-small">Usage-based · Google Cloud invoice</td>
               <td data-card="meta" class="fy-small">Know-how, business figures, personal data; payroll only with AI payroll access</td>
               <td data-card="amount" class="fy-num">119.72</td>
             </tr>
             <tr>
-              <td data-card="title"><a href="#settings/ai/providers/gemini-agent-platform">Gemini on Agent Platform</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">Google Cloud · Singapore (asia-southeast1) · Gemini 2.5 Flash</span></td>
+              <td data-card="title"><a href="#settings/ai/providers/gemini-agent-platform">Gemini on Agent Platform</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">Google Cloud · Singapore (asia-southeast1) · Gemini 2.5 Flash · list read at 06:00</span></td>
               <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On since 6 Oct</span></td>
               <td data-card="hide" class="fy-from-expanded fy-small">Usage-based · Google Cloud invoice</td>
               <td data-card="meta" class="fy-small">Know-how, business figures, personal data</td>
               <td data-card="amount" class="fy-num">1.14</td>
             </tr>
             <tr>
-              <td data-card="title"><a href="#settings/ai/providers/openai">OpenAI API</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">OpenAI · United States · GPT-5, not yet qualified</span></td>
+              <td data-card="title"><a href="#settings/ai/providers/openai">OpenAI API</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">OpenAI · United States · GPT-5 picked from 84 listed at 08:53, not yet qualified</span></td>
               <td data-card="status"><span class="fy-chip fy-chip--warning fy-wrap"><i data-icon="hourglass"></i>Waiting for Arjun Rao</span></td>
               <td data-card="hide" class="fy-from-expanded fy-small">Usage-based · OpenAI invoice in USD</td>
               <td data-card="meta" class="fy-small">Know-how only</td>
               <td data-card="amount" class="fy-num">0.00</td>
             </tr>
             <tr>
-              <td data-card="title"><a href="#settings/ai/providers/openrouter">OpenRouter</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">OpenAI-compatible · zero data retention routing · 2 models, not qualified</span></td>
+              <td data-card="title"><a href="#settings/ai/providers/openrouter">OpenRouter</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">OpenAI-compatible · zero data retention routing · 2 models picked, with OpenRouter's own prices, not qualified · list read at 06:00</span></td>
               <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft, off</span></td>
               <td data-card="hide" class="fy-from-expanded fy-small">Prepaid credits, US$50.00</td>
               <td data-card="meta" class="fy-small">Know-how only</td>
@@ -202,7 +202,18 @@
 
       <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="dual-title">
         <div class="fy-row"><i data-icon="users" class="fy-i--20"></i><h2 class="fy-h3" id="dual-title">Two people for every change</h2></div>
-        <p class="fy-small fy-secondary">Adding, changing or turning on a connection, and adding a model to it, needs you and a second Owner. A model serves no agent until it passes that agent's evals.</p>
+        <p class="fy-small fy-secondary">Adding, changing or turning on a connection, and allowing one of the models its provider lists, needs you and a second Owner. A model serves no agent until it passes that agent's evals.</p>
+      </section>
+
+      <section class="fy-card" aria-labelledby="lists-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="lists-title">Model lists</h2><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="refresh-cw"></i>Refresh all</button></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Fyniq has no built-in list of models. Each connection's models come from its provider, read with that connection's own key or grant: every day at 06:00, when a key is stored, and when you refresh. No company data is sent.</p>
+          <p class="fy-small"><span class="fy-strong">Last read:</span> today at 06:00 for 3 connections, and at 08:53 for OpenAI API.</p>
+          <p class="fy-small"><span class="fy-strong">Prices:</span> Google's billing catalogue for Agent Platform, OpenRouter's own list, and Fyniq's model price list for OpenAI.</p>
+          <div class="fy-row" style="gap: var(--space-2)"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nothing to do</span><span class="fy-small fy-secondary">No model on a route is retiring or has left its provider's list.</span></div>
+          <p class="fy-small fy-muted">A model on a route that retires within 30 days or leaves its provider's list shows on Checks, and its route moves to the next step.</p>
+        </div>
       </section>
 
       <section class="fy-card" aria-labelledby="hist-title">

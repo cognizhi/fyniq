@@ -5605,11 +5605,15 @@
     "AI-72",
     "AI-73",
     "AI-75",
-    "AI-70"
+    "AI-70",
+    "AI-80",
+    "AI-81",
+    "AI-82"
    ],
    "purpose": "See every model-provider connection, its status, billing mode and the data it may receive; add one from an adapter or preset.",
    "content": [
     "Connections: name, provider, region, models, status (on, waiting for second approver, draft), billing mode, data classes allowed, cost this month",
+    "Model lists (AI-80, AI-81): no built-in list; each connection's models come from its provider with its own key or grant, read at 06:00, when a key is stored and on Refresh all; price sources; models on routes retiring or unlisted (C.2 #55)",
     "Data-class policy: know-how, business figures, personal data, payroll and restricted, with the connections each may reach; personal data and payroll only in Singapore or self-hosted by default",
     "Add a connection: Anthropic API, Agent Platform (Claude, Gemini), OpenAI API, OpenAI-compatible presets (Moonshot Kimi, xAI Grok, OpenRouter, LiteLLM gateway, vLLM, Ollama, LM Studio)",
     "Billing modes explained: usage-based, subscription or commitment, a person's own plan (P2); consumer-plan sign-in not supported",
@@ -5618,7 +5622,8 @@
    "states": [
     "connection waiting for second approver",
     "draft connection",
-    "no connection but the default"
+    "no connection but the default",
+    "model on a route retiring or no longer listed"
    ]
   },
   {
@@ -5643,14 +5648,17 @@
     "AI-73",
     "AI-75",
     "AI-78",
-    "AI-79"
+    "AI-79",
+    "AI-80",
+    "AI-81",
+    "AI-82"
    ],
    "purpose": "Configure one provider connection: endpoint, credentials, allowed models, billing, limits and its data-handling declaration with evidence.",
    "content": [
     "Lifecycle: configure, approve (Owner plus second approver), qualify, route, on; off by default",
     "Endpoint, region and authentication (API key, service account, OAuth grant, none for a private endpoint); credential write-only, shown once then masked; egress allow-list",
-    "Model allow-list of pinned versions with capabilities and qualification result; moving aliases need weekly re-qualification",
-    "Billing mode and price table (usage-based, subscription or commitment with quota and reset; own plan P2), budget with 80% alert and 100% stop",
+    "Models from the provider's own list (AI-80): when it was read and how many, Refresh from the provider; the allow-list of pinned versions picked from that list (no typed model names) with list state, capabilities still to prove and qualification; other listed models to search and allow; moving aliases need weekly re-qualification",
+    "Billing mode and prices with their source (provider's list, Google's billing catalogue, Fyniq's model price list or an Owner-entered price, AI-82); usage-based, subscription or commitment with quota and reset, own plan P2; budget with 80% alert and 100% stop",
     "Data handling: where prompts are processed, retention, training use, sub-processors, evidence (terms, DPA), PDPA transfer assessment; data classes allowed",
     "Limits: timeouts, retries, request and token rate limits; default parameters",
     "Agents that use or would use it; audit history"
@@ -5659,7 +5667,10 @@
     "awaiting second approver",
     "on",
     "qualification pending",
-    "credential being replaced"
+    "credential being replaced",
+    "model list unavailable: cannot be enabled (AI_MODEL_LIST_UNAVAILABLE)",
+    "model list stale for 3 days",
+    "allowed model retired or no longer listed"
    ]
   },
   {
@@ -5684,14 +5695,15 @@
     "AI-76",
     "AI-78",
     "AI-26",
-    "AI-27"
+    "AI-27",
+    "AI-81"
    ],
    "purpose": "See which provider and model each agent runs on, its fallbacks, the data it handles and whether each step is qualified.",
    "content": [
     "Region preset (A Singapore only, B global, C by data class)",
     "One row per agent: assistant, document capture, bank categorisation and matching, proposal drafting, commentary, knowledge-base compiler, company secretary agent, eval runner; first choice and fallbacks; data classes; status; cost this month",
-    "Route needs attention (C.2 #55): fell back more than its daily threshold, moving alias not re-qualified, within 20% of budget",
-    "Qualification results per model version and agent (golden figures, red team, extraction, categorisation, knowledge evals)",
+    "Route needs attention (C.2 #55): fell back more than its daily threshold, moving alias not re-qualified, within 20% of budget, a model retiring within 30 days or no longer listed, a stale model list",
+    "Qualification results per model version and agent (golden figures, red team, extraction, categorisation, knowledge evals); optional automatic qualification of newly listed models (AI-81)",
     "How failover works: only to a step that meets the data classes and capabilities, else stop with an error code"
    ],
    "states": [
@@ -5717,12 +5729,13 @@
     "AI-74",
     "AI-76",
     "AI-75",
-    "AI-77"
+    "AI-77",
+    "AI-80"
    ],
    "purpose": "Choose the provider and model an agent runs on, and its fallbacks, within the data classes and capabilities it needs.",
    "content": [
     "Data classes and capabilities the agent needs (read-only)",
-    "Ordered steps: connection, model, region, qualification, capability match; move up and down with buttons",
+    "Ordered steps: connection, model (chosen from the models the providers list and the connection allows, AI-80), region, qualification, capability match; move up and down with buttons",
     "Adding a step that the data-class policy does not allow is refused with the reason, the fix and an error code",
     "Fallback threshold per day; budget with 80% alert and 100% stop",
     "Who must approve: Owner or Administrator; a change that widens where data goes needs the Owner and a second approver"
@@ -5753,14 +5766,15 @@
     "AI-77",
     "AI-73",
     "AI-13",
-    "QA-AI-04"
+    "QA-AI-04",
+    "AI-82"
    ],
    "purpose": "See what the AI used and cost, by agent, connection, model and person, against the budgets.",
    "content": [
     "Month to date: cost and tokens against the organisation budgets, fallbacks and errors",
     "Daily cost chart with a table view",
     "By agent: tokens, cost, budget bar (80% alert, 100% stop)",
-    "By connection and model: tokens by kind, cost; quota and reset for subscription connections",
+    "By connection and model: tokens by kind, cost; quota and reset for subscription connections; each price's source (AI-82)",
     "By person (assistant): tokens against the per-person budget",
     "Checking provider invoices: usage-based connections are billed by the provider and entered as bills; September usage to compare"
    ],
@@ -5790,11 +5804,13 @@
    "requirements": [
     "AI-73",
     "AI-75",
-    "AI-02"
+    "AI-02",
+    "AI-80"
    ],
    "purpose": "Let one person run their own assistant chats on their own provider plan, where the provider allows it and an Owner has turned it on.",
    "content": [
     "Connected plan, account and what it is used for (only your own chats in Fyniq; never scheduled agents, connected apps or other people)",
+    "The plan's models are listed with your own grant (AI-80); a plan whose sign-in cannot list models cannot be connected",
     "Data classes your plan may receive, set by the Owner; exclusions always apply",
     "When your plan runs out: the assistant tells you and asks before it uses the organisation's connection",
     "Not supported: consumer plans reserved for the provider's apps, reused chat sessions or cookies",

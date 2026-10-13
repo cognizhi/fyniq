@@ -37,6 +37,11 @@ Source: PRD-001 §9.9 · Priority M · Phase P1
 - **THEN** Options A, B and C are available as presets over the provider connections
 - **AND** Option A stays the default route at go-live and for personal and payroll data
 
+#### Scenario: Presets pin from the discovered list
+- **WHEN** a preset is applied to a route
+- **THEN** it names a provider, a region and a model line, and pins the newest active, qualified model of that line from the connection's discovered list (AI-80)
+- **AND** no model ID is compiled into code or seed data
+
 ### Requirement: AI-27 Structured outputs, thinking, caching and streaming
 The system SHALL use structured outputs and strict tool schemas for every tool and for proposal payloads, adaptive thinking with effort tuned per route, prompt caching of the stable system prompt and tool definitions, and streaming responses to the UI.
 

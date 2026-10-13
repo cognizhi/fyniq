@@ -759,7 +759,7 @@ Source: PRD-001 §C.2
 - **THEN** the check passes
 
 ### Requirement: C.2 #55 Model route needs attention
-The system SHALL flag for review an agent's route that fell back more often than its daily threshold, runs on a moving model alias not re-qualified this week, or is within 20% of its budget or quota (AI-76…AI-78).
+The system SHALL flag for review an agent's route that fell back more often than its daily threshold, runs on a moving model alias not re-qualified this week, is within 20% of its budget or quota, or names a model that is retiring within 30 days, retired or no longer listed, and a connection whose model list has not been read for 3 days (AI-76…AI-78, AI-80, AI-81).
 
 Source: PRD-001 §C.2
 
@@ -775,3 +775,14 @@ Source: PRD-001 §C.2
 - **WHEN** a route is within 20% of its budget or quota
 - **THEN** the check flags it for review
 
+#### Scenario: Model retiring soon
+- **WHEN** a model on a route is deprecated and its retirement date is within 30 days
+- **THEN** the check flags it for review
+
+#### Scenario: Model retired or no longer listed
+- **WHEN** a model on a route is retired or no longer listed by its provider
+- **THEN** the check flags it for review, and the route runs on its next step
+
+#### Scenario: Stale model list
+- **WHEN** a connection with a stored credential has had no successful model-list read for 3 days
+- **THEN** the check flags it for review

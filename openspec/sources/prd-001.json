@@ -211,7 +211,7 @@
       "capability": "ai/model-and-provider"
     },
     {
-      "match": "AI-7\\d",
+      "match": "AI-(7\\d|8[0-2])",
       "capability": "ai/model-providers"
     },
     {

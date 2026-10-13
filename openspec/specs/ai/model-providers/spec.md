@@ -1,7 +1,7 @@
 # ai/model-providers Specification
 
 ## Purpose
-Let the assistant and every agent run on models from several providers, each connection with its own configuration, billing mode and data-handling declaration, and each agent on its own route, without changing the AI write path. Derived from PRD-001 §9.9.1 (rev 0.12).
+Let the assistant and every agent run on models from several providers, each connection with its own configuration, billing mode and data-handling declaration, and each agent on its own route, with each connection's models read from the provider's own list, without changing the AI write path. Derived from PRD-001 §9.9.1 (rev 0.12, model lists rev 0.13).
 
 ## Requirements
 
@@ -51,7 +51,7 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 
 #### Scenario: What a connection holds
 - **WHEN** a connection is configured
-- **THEN** it has a base URL and region, an authentication method (API key, cloud service account, OAuth grant, or none for a private self-hosted endpoint), an allow-list of pinned model versions, default parameters, timeouts, retries, rate limits, a billing mode and quota, a data-handling declaration with evidence, and an enabled flag
+- **THEN** it has a base URL and region, an authentication method (API key, cloud service account, OAuth grant, or none for a private self-hosted endpoint), an allow-list of pinned model versions picked from the models the provider lists (AI-80), default parameters, timeouts, retries, rate limits, a billing mode and quota, a data-handling declaration with evidence, and an enabled flag
 
 #### Scenario: Off by default and dual-controlled
 - **WHEN** a connection is created, changed or enabled, or a model is added to its allow-list
@@ -61,6 +61,11 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **GIVEN** a model added to a connection
 - **WHEN** it has not passed qualification (AI-78)
 - **THEN** it serves no agent
+
+#### Scenario: Allow-list picked from the provider's list
+- **WHEN** an Owner adds a model to a connection's allow-list
+- **THEN** they pick it from the models the provider lists for that connection, and no one can type a model ID
+- **AND** a model the provider retires or stops listing leaves the allow-list by itself (AI-81)
 
 ### Requirement: AI-73 Billing modes
 The system SHALL support usage-based and subscription or commitment billing per connection, a user's own plan as a P2 option where the provider allows it, and SHALL refuse consumer-plan tokens reserved for the provider's own apps.
@@ -86,6 +91,11 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1 (a, b); P2 (c)
 - **GIVEN** a provider OAuth grant that lets a subscriber spend their plan in third-party apps, and the Owner has enabled it with a second approver
 - **WHEN** a user links their plan
 - **THEN** it serves only that user's interactive assistant, never scheduled agents, MCP clients or excluded data classes
+
+#### Scenario: A plan's models come from the user's grant (P2)
+- **WHEN** a user links their own plan
+- **THEN** its models are listed with the user's grant (AI-80)
+- **AND** a plan whose grant cannot list models cannot be connected
 
 #### Scenario: Consumer-app tokens refused
 - **WHEN** someone tries to connect consumer-plan credentials whose terms reserve them for the provider's own apps, or a chat session or cookie
@@ -190,6 +200,10 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **WHEN** it is allowed on a route
 - **THEN** it is re-qualified at least weekly, and the route shows ⚠ until it passes
 
+#### Scenario: Aliases recognised from the list
+- **WHEN** the provider's model list marks a name as an alias of another model
+- **THEN** the route treats it as a moving alias without anyone having to say so
+
 ### Requirement: AI-79 Credentials and network
 Provider credentials SHALL be kept in Secret Manager, write-only and rotated, never logged or exposed, and calls SHALL leave only through an egress allow-list per connection.
 
@@ -206,3 +220,76 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 #### Scenario: Local mode
 - **WHEN** Fyniq runs in local mode
 - **THEN** it uses a deterministic stub or an OpenAI-compatible server on the machine, never a cloud provider key (DEV-07)
+
+### Requirement: AI-80 Model lists come from the provider
+The system SHALL ship no list of models: each connection's models SHALL come from the provider's own list endpoint, read with the connection's credential of any kind, and a connection whose credential cannot list models SHALL NOT be enabled.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: Listed with the connection's own credential
+- **GIVEN** a connection authenticated by an API key, a cloud service account, a subscription or commitment grant, or (P2) a user's plan grant
+- **WHEN** its models are listed
+- **THEN** the adapter calls the provider's list endpoint with that credential (for example Anthropic and OpenAI `GET /v1/models`, Agent Platform `publishers.models.list`, OpenRouter `GET /api/v1/models`, xAI `GET /v1/language-models`, or `GET /v1/models` on Kimi, LiteLLM, vLLM, LM Studio and Ollama)
+
+#### Scenario: When the list is read
+- **WHEN** a credential is stored, a connection is tested or enabled, at 06:00 SGT each day for every connection with a stored credential, when a call fails because the provider no longer knows the model, or when an Owner or Administrator chooses Refresh from provider
+- **THEN** the list is read without sending company data, and stored with its time and the models added and removed, as an audited system event
+
+#### Scenario: No list, no connection
+- **GIVEN** a credential that cannot list models
+- **WHEN** someone tries to enable the connection
+- **THEN** it is refused with `AI_MODEL_LIST_UNAVAILABLE`, and there is no manual model entry
+
+#### Scenario: Region and account confirmed by a probe
+- **GIVEN** a list that does not say whether a model is enabled for the account or offered in the connection's region
+- **WHEN** the model would be offered
+- **THEN** the adapter first confirms it with a minimal probe request on synthetic text
+
+#### Scenario: Reported capabilities are hints
+- **WHEN** the list reports a model's limits or capabilities
+- **THEN** they are shown and used as hints, and the conformance suite still proves each capability (AI-71)
+
+### Requirement: AI-81 The list keeps itself current
+Each listed model SHALL show its state, and a retired or unlisted model SHALL leave allow-lists and routes by itself; the last good list SHALL stay in use when a read fails; newly listed models MAY be qualified automatically.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: Model states
+- **WHEN** a connection's models are shown
+- **THEN** each is new (first listed in the last 7 days), available, deprecated with its retirement date where the provider gives one, not offered in this region, or no longer listed
+
+#### Scenario: Retired or unlisted model
+- **WHEN** a model on an allow-list is retired or no longer listed
+- **THEN** it leaves the allow-list and every route step that names it is skipped, so the agent runs on its next step (AI-76)
+- **AND** Checks shows ⚠ (C.2 #55), and its history and past runs stay
+
+#### Scenario: A read fails
+- **WHEN** reading the list fails
+- **THEN** the last good list stays in use
+- **AND** after 3 days without a successful read, Checks shows ⚠ (C.2 #55)
+
+#### Scenario: Automatic qualification
+- **GIVEN** automatic qualification is on for the connection (off by default)
+- **WHEN** a model is newly listed
+- **THEN** it is queued for the evals of every agent whose route uses that connection, on synthetic fixtures within the eval runner's budget, and the results appear on the connection
+- **AND** adding it to the allow-list or to a route stays a human decision
+
+### Requirement: AI-82 Prices come from a named source
+Each model's price SHALL record its source, in order: the provider's list, Google's billing catalogue, Fyniq's sourced model price list, or an Owner-entered price with a second approver; a model with no price SHALL NOT serve a route on a usage-based connection.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: Price sources
+- **WHEN** a model's price is needed
+- **THEN** it comes from the provider's list (OpenRouter, xAI or a LiteLLM gateway's `/model/info`), else Google's Cloud Billing Catalog for Agent Platform, else Fyniq's model price list (effective-dated, with the provider's pricing-page URL and the date it was checked), else a price the Owner entered with a second approver, labelled "entered by"
+- **AND** the source is shown with the price
+
+#### Scenario: No price, no usage-based route
+- **GIVEN** a usage-based connection
+- **WHEN** a model has no price from any source
+- **THEN** it cannot serve a route, because its cost could not be budgeted (AI-77)
+- **AND** subscription, commitment and self-hosted connections need no per-token price
+
+#### Scenario: Price version kept per request
+- **WHEN** a request's cost is computed
+- **THEN** it keeps the price version it used, and the provider's invoice stays the record
