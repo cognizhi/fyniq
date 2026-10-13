@@ -3,8 +3,9 @@ schema: spec-driven
 # Project context: constraints an agent cannot infer from the code. Every /opsx workflow reads it.
 context: |
   Fyniq is an accounting, compliance, reporting and planning platform for a Singapore start-up
-  (PRD-001, docs/prd/prd-001-fyniq-platform.md). The PRD is the source of truth: openspec/specs/ is
-  derived from it (scripts/prdspec.py, openspec/sources/prd-001.json and its lock). A new or changed
+  (PRD-001, docs/prd/prd-001-fyniq-platform.md), with Nemura, its optional people platform (PRD-002,
+  docs/prd/prd-002-nemura-people.md; specs under openspec/specs/people/). The PRDs are the source of truth:
+  openspec/specs/ is derived from them (scripts/prdspec.py, openspec/sources/prd-00N.json and their locks). A new or changed
   requirement first gets a PRD row and ID (never renumber; tag (rev 0.N)); then its spec changes.
   Main specs hold the APPROVED requirements, built or not; each carries "Source: PRD-001 §x ·
   Priority M|S|C · Phase P0–P3". A requirement is built when tests carry "// req: <ID>".

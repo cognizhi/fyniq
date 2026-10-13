@@ -1,0 +1,65 @@
+<!-- fyniq-screen {"nav": "my-leave", "title": "Apply for leave", "mode": "basic", "persona": "employee", "heights": {"compact": 1800, "medium": 1400, "expanded": 1300}} -->
+<div class="fy-page fy-page--narrow fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#me/leave">My leave</a><i data-icon="chevron-right"></i><span aria-current="page">Apply</span></nav>
+  <div class="fy-stack fy-stack--2">
+    <h1 class="fy-h1">Apply for leave</h1>
+    <p class="fy-secondary">Wei Jie Ong approves it. Sarah Koh is told.</p>
+  </div>
+
+  <section class="fy-stack fy-stack--3" aria-labelledby="type-title">
+    <h2 class="nm-section__title" id="type-title">What kind of leave?</h2>
+    <div class="nm-tiles nm-tiles--4" role="radiogroup" aria-labelledby="type-title">
+      <button class="nm-tile nm-tile--sky" type="button" role="radio" aria-checked="true" style="min-height: 112px; text-align: left; outline: 3px solid var(--primary); outline-offset: 3px"><span class="nm-tile__icon"><i data-icon="tree-palm"></i></span><span class="fy-stack" style="gap: 2px"><span class="nm-tile__title">Annual</span><span class="nm-tile__meta">3.5 days free</span></span></button>
+      <button class="nm-tile nm-tile--blush" type="button" role="radio" aria-checked="false" style="min-height: 112px; text-align: left"><span class="nm-tile__icon"><i data-icon="heart-pulse"></i></span><span class="fy-stack" style="gap: 2px"><span class="nm-tile__title">Sick</span><span class="nm-tile__meta">12 days left</span></span></button>
+      <button class="nm-tile nm-tile--sand" type="button" role="radio" aria-checked="false" style="min-height: 112px; text-align: left"><span class="nm-tile__icon"><i data-icon="cake"></i></span><span class="fy-stack" style="gap: 2px"><span class="nm-tile__title">Birthday</span><span class="nm-tile__meta">1 day left</span></span></button>
+      <button class="nm-tile nm-tile--sand" type="button" role="radio" aria-checked="false" style="min-height: 112px; text-align: left"><span class="nm-tile__icon"><i data-icon="layout-grid"></i></span><span class="fy-stack" style="gap: 2px"><span class="nm-tile__title">Other</span><span class="nm-tile__meta">Unpaid, compassionate…</span></span></button>
+    </div>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="when-title">
+    <h2 class="nm-section__title" id="when-title">When?</h2>
+    <div class="fy-form fy-form--2">
+      <div class="fy-field">
+        <label class="fy-label" for="lv-from">First day</label>
+        <input class="fy-input" id="lv-from" type="text" value="Mon 28 Dec 2026">
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="lv-to">Last day</label>
+        <input class="fy-input" id="lv-to" type="text" value="Wed 30 Dec 2026">
+      </div>
+      <div class="fy-field">
+        <span class="fy-label" id="half-first">First day</span>
+        <div class="fy-segmented" role="radiogroup" aria-labelledby="half-first"><button type="button" role="radio" aria-checked="true">Full day</button><button type="button" role="radio" aria-checked="false">Afternoon only</button></div>
+      </div>
+      <div class="fy-field">
+        <span class="fy-label" id="half-last">Last day</span>
+        <div class="fy-segmented" role="radiogroup" aria-labelledby="half-last"><button type="button" role="radio" aria-checked="true">Full day</button><button type="button" role="radio" aria-checked="false">Morning only</button></div>
+      </div>
+    </div>
+    <div class="fy-grid fy-grid--2">
+      <div class="nm-stat"><span class="nm-stat__value">3<small>days</small></span><span class="nm-stat__sub">Mon 28 to Wed 30 Dec. Christmas Day (Fri 25 Dec) and the weekend are not counted.</span></div>
+      <div class="nm-stat"><span class="nm-stat__value">0.5<small>day free after</small></span><span class="nm-stat__sub">If your November request is approved too. Up to 5 days carry into 2027.</span></div>
+    </div>
+    <div class="fy-banner fy-banner--good" role="status">
+      <i data-icon="users" class="fy-i--20"></i>
+      <div class="fy-banner__text">
+        <span class="fy-strong">No one else in Engineering is away then</span>
+        <span class="fy-small fy-secondary">Wei Jie Ong is in. Chen Yu's last day is Mon 30 Nov.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="note-title">
+    <h2 class="nm-section__title" id="note-title">Anything to add?</h2>
+    <div class="fy-field">
+      <label class="fy-label" for="lv-note">Note for Wei Jie <span class="fy-muted">(optional)</span></label>
+      <textarea class="fy-textarea" id="lv-note" rows="2">Family trip to Japan. Back on Mon 4 Jan 2027.</textarea>
+    </div>
+    <p class="fy-small fy-muted">Annual leave needs no document. For sick leave you add a photo of the medical certificate.</p>
+  </section>
+
+  <div class="fy-actionbar">
+    <a class="fy-btn fy-btn--ghost" href="#me/leave">Cancel</a>
+    <button class="fy-btn fy-btn--primary fy-btn--lg" type="button"><i data-icon="send"></i>Send to Wei Jie</button>
+  </div>
+</div>

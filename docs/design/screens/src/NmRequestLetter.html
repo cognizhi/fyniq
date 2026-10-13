@@ -1,0 +1,64 @@
+<!-- fyniq-screen {"nav": "my-requests", "title": "Ask for a letter", "mode": "basic", "persona": "employee", "heights": {"compact": 1900, "medium": 1650, "expanded": 1150}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#me/requests">My requests</a><i data-icon="chevron-right"></i><span aria-current="page">Ask for a letter</span></nav>
+  <div class="fy-stack fy-stack--2">
+    <h1 class="fy-h1">Ask for a letter</h1>
+    <p class="fy-secondary">Pick the letter, say who it is for, and check it before you ask.</p>
+  </div>
+
+  <section class="fy-stack fy-stack--3" aria-labelledby="kind-title">
+    <h2 class="nm-section__title" id="kind-title">Which letter?</h2>
+    <div class="nm-tiles nm-tiles--4" role="radiogroup" aria-labelledby="kind-title">
+      <button class="nm-tile nm-tile--sky" type="button" role="radio" aria-checked="true" style="min-height: 120px; text-align: left; outline: 3px solid var(--primary); outline-offset: 3px"><span class="nm-tile__icon"><i data-icon="plane"></i></span><span class="fy-stack" style="gap: 2px"><span class="nm-tile__title">For a visa</span><span class="nm-tile__meta">Ready at once</span></span></button>
+      <button class="nm-tile nm-tile--sand" type="button" role="radio" aria-checked="false" style="min-height: 120px; text-align: left"><span class="nm-tile__icon"><i data-icon="landmark"></i></span><span class="fy-stack" style="gap: 2px"><span class="nm-tile__title">For a bank or landlord</span><span class="nm-tile__meta">1 working day</span></span></button>
+      <button class="nm-tile nm-tile--sand" type="button" role="radio" aria-checked="false" style="min-height: 120px; text-align: left"><span class="nm-tile__icon"><i data-icon="file-badge"></i></span><span class="fy-stack" style="gap: 2px"><span class="nm-tile__title">Salary certificate</span><span class="nm-tile__meta">1 working day</span></span></button>
+      <button class="nm-tile nm-tile--sand" type="button" role="radio" aria-checked="false" style="min-height: 120px; text-align: left"><span class="nm-tile__icon"><i data-icon="message-circle"></i></span><span class="fy-stack" style="gap: 2px"><span class="nm-tile__title">Something else</span><span class="nm-tile__meta">Tell Sarah what you need</span></span></button>
+    </div>
+  </section>
+
+  <div class="fy-split">
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="det-title">
+      <h2 class="nm-section__title" id="det-title">The details</h2>
+      <div class="fy-field">
+        <label class="fy-label" for="lt-country">Country you are visiting</label>
+        <input class="fy-input" id="lt-country" type="text" value="Japan">
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="lt-dates">Travel dates</label>
+        <input class="fy-input" id="lt-dates" type="text" value="26 Dec 2026 to 3 Jan 2027">
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="lt-to">Address it to</label>
+        <input class="fy-input" id="lt-to" type="text" value="The Embassy of Japan in Singapore">
+      </div>
+      <div class="fy-field">
+        <span class="fy-label" id="sal-label">Show your salary?</span>
+        <div class="fy-segmented" role="radiogroup" aria-labelledby="sal-label" aria-describedby="sal-help"><button type="button" role="radio" aria-checked="true">No</button><button type="button" role="radio" aria-checked="false">Yes</button></div>
+        <span class="fy-help" id="sal-help">Without salary this letter is ready at once. With salary, Sarah checks it first.</span>
+      </div>
+      <div class="fy-actionbar">
+        <a class="fy-btn fy-btn--ghost" href="#me/requests">Cancel</a>
+        <button class="fy-btn fy-btn--primary fy-btn--lg" type="button"><i data-icon="file-check"></i>Get my letter</button>
+      </div>
+    </section>
+
+    <section class="fy-stack fy-stack--3" aria-labelledby="prev-title">
+      <h2 class="nm-section__title" id="prev-title">Preview</h2>
+      <article class="nm-paper" aria-label="Letter preview">
+        <header class="nm-paper__head">
+          <span class="nm-paper__org">Cognizhi Pte Ltd</span>
+          <span class="fy-small fy-secondary">13 October 2026</span>
+        </header>
+        <p>The Embassy of Japan in Singapore</p>
+        <p class="fy-strong">Confirmation of employment</p>
+        <p>This is to confirm that <span class="nm-field">Daniel Lim</span> has been employed by Cognizhi Pte Ltd as <span class="nm-field">Senior software engineer</span> since <span class="nm-field">3 February 2025</span>, on a permanent, full-time contract.</p>
+        <p>He will travel to <span class="nm-field">Japan</span> from <span class="nm-field">26 December 2026</span> to <span class="nm-field">3 January 2027</span> on leave, and will return to his role afterwards.</p>
+        <div class="nm-paper__sign">
+          <span class="fy-strong">Mei Lin Tan</span>
+          <span class="fy-small fy-secondary">Director, Cognizhi Pte Ltd · signed with a passkey</span>
+        </div>
+        <footer class="fy-small fy-muted">The reference is added when the letter is issued.</footer>
+      </article>
+    </section>
+  </div>
+</div>

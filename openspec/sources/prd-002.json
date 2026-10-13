@@ -1,0 +1,92 @@
+{
+  "doc": "PRD-002",
+  "prd": "docs/prd/prd-002-nemura-people.md",
+  "rules": [
+    {
+      "match": "NM-(ARC|NFR)-\\d+",
+      "capability": "people/platform"
+    },
+    {
+      "match": "NM-(FEAT|PACK)-\\d+",
+      "capability": "people/features-and-packs"
+    },
+    {
+      "match": "NM-PPL-\\d+",
+      "capability": "people/records"
+    },
+    {
+      "match": "NM-LV-\\d+",
+      "capability": "people/leave"
+    },
+    {
+      "match": "NM-PAY-\\d+",
+      "capability": "people/payroll"
+    },
+    {
+      "match": "NM-ESS-\\d+",
+      "capability": "people/self-service"
+    },
+    {
+      "match": "NM-LTR-\\d+",
+      "capability": "people/letters"
+    },
+    {
+      "match": "NM-REC-\\d+",
+      "capability": "people/recruitment"
+    },
+    {
+      "match": "NM-PRF-\\d+",
+      "capability": "people/performance"
+    },
+    {
+      "match": "NM-ONB-\\d+",
+      "capability": "people/onboarding"
+    },
+    {
+      "match": "NM-TIM-\\d+",
+      "capability": "people/time"
+    },
+    {
+      "match": "NM-INT-\\d+",
+      "capability": "people/fyniq-integration"
+    },
+    {
+      "match": "NM-EXT-\\d+",
+      "capability": "people/external-systems"
+    },
+    {
+      "match": "NM-AI-\\d+",
+      "capability": "people/assistant"
+    },
+    {
+      "section": "D",
+      "capability": "people/assistant"
+    },
+    {
+      "match": "NM-(UX|ROLE)-\\d+",
+      "capability": "people/experience"
+    },
+    {
+      "match": "NM-SEC-\\d+",
+      "capability": "people/security"
+    },
+    {
+      "section": "N.1",
+      "capability": "people/checks"
+    }
+  ],
+  "sections": {
+    "4": "people/platform",
+    "A": "people/features-and-packs",
+    "B": "people/experience",
+    "E": "people/fyniq-integration"
+  },
+  "excluded": {},
+  "scenario_patterns": [],
+  "check_sections": [
+    "N.1"
+  ],
+  "task_sections": [
+    "D"
+  ]
+}

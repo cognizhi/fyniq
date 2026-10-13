@@ -1,0 +1,77 @@
+<!-- fyniq-screen {"nav": "my-requests", "title": "My requests", "mode": "basic", "persona": "employee", "heights": {"compact": 1150, "medium": 900, "expanded": 950}} -->
+<div class="fy-page fy-page--narrow fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">My requests</h1>
+      <p class="fy-secondary">Everything you asked the company for, and where it is.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <a class="fy-btn fy-btn--primary" href="#me/requests/new"><i data-icon="plus"></i>New request</a>
+    </div>
+  </div>
+
+  <div class="nm-pills" role="group" aria-label="Show">
+    <button class="nm-pill" type="button" aria-pressed="true">Open 2</button>
+    <button class="nm-pill" type="button" aria-pressed="false">Ready 1</button>
+    <button class="nm-pill" type="button" aria-pressed="false">Done</button>
+  </div>
+
+  <section class="fy-card" aria-labelledby="open-title">
+    <div class="fy-card__head"><h2 class="fy-h2" id="open-title">Open</h2></div>
+    <ul class="fy-list">
+      <li class="fy-list__item" style="align-items: flex-start">
+        <span class="fy-list__icon"><i data-icon="landmark" class="fy-i--20"></i></span>
+        <span class="fy-list__main">
+          <span class="fy-list__title fy-wrap">Employment letter for a bank, with salary</span>
+          <span class="nm-track" aria-label="Step 2 of 3: with HR"><span class="is-done"></span><span class="is-now"></span><span></span></span>
+          <span class="fy-list__meta">Asked Mon 12 Oct 17:05 · Sarah Koh checks it, Mei Lin Tan signs it · due Wed 14 Oct</span>
+        </span>
+      </li>
+      <li class="fy-list__item" style="align-items: flex-start">
+        <span class="fy-list__icon"><i data-icon="tree-palm" class="fy-i--20"></i></span>
+        <span class="fy-list__main">
+          <span class="fy-list__title fy-wrap">Annual leave, Tue 10 – Fri 13 Nov (4 days)</span>
+          <span class="nm-track" aria-label="Step 2 of 3: with your manager"><span class="is-done"></span><span class="is-now"></span><span></span></span>
+          <span class="fy-list__meta">Sent Mon 12 Oct 18:40 · with Wei Jie Ong</span>
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="fy-card" aria-labelledby="ready-title">
+    <div class="fy-card__head"><h2 class="fy-h2" id="ready-title">Ready</h2></div>
+    <ul class="fy-list">
+      <li class="fy-list__item" style="align-items: flex-start">
+        <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-check" class="fy-i--20"></i></span>
+        <span class="fy-list__main">
+          <span class="fy-list__title fy-wrap">Salary certificate</span>
+          <span class="fy-list__meta">Signed by Mei Lin Tan on Fri 9 Oct 11:20 · <span class="fy-mono">NL-2026-0041</span></span>
+          <span class="fy-row fy-row--wrap" style="gap: var(--space-2); margin-top: var(--space-1)">
+            <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#me/requests/nl-2026-0041"><i data-icon="download"></i>Download PDF</a>
+            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="send"></i>Email me a link</button>
+          </span>
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="fy-card" aria-labelledby="done-title">
+    <div class="fy-card__head"><h2 class="fy-h2" id="done-title">Done recently</h2></div>
+    <ul class="fy-list">
+      <li class="fy-list__item" style="align-items: flex-start">
+        <span class="fy-list__icon"><i data-icon="message-circle" class="fy-i--20"></i></span>
+        <span class="fy-list__main">
+          <span class="fy-list__title fy-wrap">"Can I take my birthday leave in December?"</span>
+          <span class="fy-list__meta">Sarah Koh replied Fri 2 Oct: yes, any working day in 2026.</span>
+        </span>
+      </li>
+      <li class="fy-list__item" style="align-items: flex-start">
+        <span class="fy-list__icon"><i data-icon="id-card" class="fy-i--20"></i></span>
+        <span class="fy-list__main">
+          <span class="fy-list__title fy-wrap">New home address</span>
+          <span class="fy-list__meta">Changed by you on Mon 21 Sep; no approval needed.</span>
+        </span>
+      </li>
+    </ul>
+  </section>
+</div>

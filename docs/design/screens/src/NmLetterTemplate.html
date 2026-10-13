@@ -1,0 +1,56 @@
+<!-- fyniq-screen {"nav": "letters", "title": "Letter template", "mode": "expert", "persona": "hr", "heights": {"compact": 1650, "medium": 1400, "expanded": 1000}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#people/letters">Letters</a><i data-icon="chevron-right"></i><a href="#people/letters/templates">Templates</a><i data-icon="chevron-right"></i><span aria-current="page">For a bank or landlord</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <div class="fy-row fy-row--wrap" style="gap: var(--space-3)"><h1 class="fy-h1">For a bank or landlord</h1><span class="fy-chip fy-chip--warning"><i data-icon="hourglass"></i>Version 4 waiting for approval</span></div>
+      <p class="fy-secondary">Version 3 is in use, approved by Mei Lin Tan on Mon 5 Oct.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="rotate-ccw"></i>Versions</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Send for approval</button>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="rules-title">
+      <h2 class="fy-h2" id="rules-title">Rules</h2>
+      <div class="fy-field">
+        <label class="fy-label" for="tp-who">Who may ask for it</label>
+        <select class="fy-select" id="tp-who"><option>Every employee, for themselves</option></select>
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="tp-sign">Signed by</label>
+        <select class="fy-select" id="tp-sign"><option>A director (Mei Lin Tan or Arjun Rao)</option></select>
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="tp-due">Ready within</label>
+        <select class="fy-select" id="tp-due"><option>1 working day</option></select>
+      </div>
+      <div class="fy-field">
+        <span class="fy-label" id="tp-auto">Issue automatically</span>
+        <div class="fy-segmented" role="radiogroup" aria-labelledby="tp-auto" aria-describedby="tp-auto-help"><button type="button" role="radio" aria-checked="true">No</button><button type="button" role="radio" aria-checked="false" aria-disabled="true">Yes</button></div>
+        <span class="fy-help" id="tp-auto-help">Not possible: this letter can show salary, so a person checks it.</span>
+      </div>
+      <div class="fy-field">
+        <span class="fy-label">Merge fields</span>
+        <div class="fy-row fy-row--wrap" style="gap: 6px">
+          <span class="nm-field">person.name</span><span class="nm-field">person.job_title</span><span class="nm-field">person.start_date</span><span class="nm-field">pay.basic_monthly</span><span class="nm-field">company.uen</span><span class="nm-field">request.addressee</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="fy-stack fy-stack--3" aria-labelledby="text-title">
+      <h2 class="nm-section__title" id="text-title">Letter</h2>
+      <article class="nm-paper" aria-label="Template text with merge fields">
+        <header class="nm-paper__head"><span class="nm-paper__org">Cognizhi Pte Ltd</span><span class="fy-small fy-secondary">Date of issue</span></header>
+        <p><span class="nm-field">request.addressee</span></p>
+        <p>This is to confirm that <span class="nm-field">person.name</span> has been employed by Cognizhi Pte Ltd as <span class="nm-field">person.job_title</span> since <span class="nm-field">person.start_date</span>, on a permanent, full-time contract<span class="fy-strong">, with a basic monthly salary of <span class="nm-field">pay.basic_monthly</span></span>.</p>
+        <p>Please contact the people team at people@cognizhi.com with any questions.</p>
+        <div class="nm-paper__sign"><span class="fy-strong">Signer's name</span><span class="fy-small fy-secondary">Director, Cognizhi Pte Ltd</span></div>
+        <footer class="fy-small fy-muted" style="background: var(--status-warning-subtle); padding: var(--space-2) var(--space-3); border-radius: var(--radius-s)">New in version 4: <span class="fy-strong">UEN <span class="nm-field">company.uen</span></span> in the footer</footer>
+      </article>
+      <p class="fy-small fy-muted">The salary sentence appears only when the employee asks for it. Templates use Fyniq's template engine.</p>
+    </section>
+  </div>
+</div>

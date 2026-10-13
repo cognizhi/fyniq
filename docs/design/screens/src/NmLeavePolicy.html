@@ -1,0 +1,50 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Leave policy", "mode": "expert", "persona": "admin", "integrated": true, "heights": {"compact": 1350, "medium": 1050, "expanded": 900}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><span aria-current="page">Leave policy</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Leave policy</h1>
+      <p class="fy-secondary">Cognizhi's rules, on top of the Singapore pack. Nothing can go below the law.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--secondary" type="button">Discard</button>
+      <button class="fy-btn fy-btn--primary" type="button" aria-disabled="true">Save from 1 Jan 2027</button>
+    </div>
+  </div>
+
+  <section class="fy-card" aria-label="Leave types">
+    <table class="fy-table fy-table--cards">
+      <thead><tr><th scope="col">Leave type</th><th scope="col">Cognizhi</th><th scope="col" class="fy-from-medium">The law</th><th scope="col">Compared with the law</th></tr></thead>
+      <tbody>
+        <tr><td data-card="title"><span class="nm-type nm-type--annual">Annual</span></td><td data-card="meta">14 days from the start, prorated; carry up to 5 days to 31 Mar</td><td data-card="hide" class="fy-from-medium fy-small">7 to 14 by years of service</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="arrow-up"></i>Better</span></td></tr>
+        <tr><td data-card="title"><span class="nm-type nm-type--sick">Sick</span></td><td data-card="meta">Paid from the first day: 14 outpatient, 60 hospitalisation</td><td data-card="hide" class="fy-from-medium fy-small">After 3 months' service</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="arrow-up"></i>Better</span></td></tr>
+        <tr><td data-card="title"><span class="nm-type">Birthday</span></td><td data-card="meta">1 day a year</td><td data-card="hide" class="fy-from-medium fy-small">None</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="plus"></i>Extra</span></td></tr>
+        <tr><td data-card="title"><span class="nm-type nm-type--family">Childcare, maternity, paternity, shared parental</span></td><td data-card="meta">As the law</td><td data-card="hide" class="fy-from-medium fy-small">From the pack</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="equal"></i>Same</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="edit-title">
+    <h2 class="fy-h2" id="edit-title">Change for 2027: annual leave</h2>
+    <div class="fy-form fy-form--2">
+      <div class="fy-field">
+        <label class="fy-label" for="lp-y1">Days in the first year</label>
+        <input class="fy-input fy-num" id="lp-y1" value="14" readonly="readonly">
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="lp-y3">Days from the third year</label>
+        <input class="fy-input fy-num" id="lp-y3" value="8" aria-invalid="true" aria-describedby="lp-y3-error">
+        <span class="fy-error" id="lp-y3-error"><i data-icon="circle-x"></i>8 days is below the law for people with 3 or more years' service (9 days from the third year, rising to 14). Use 14, or at least the law's scale. (NM_POLICY_BELOW_STATUTE)</span>
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="lp-cf">Carry forward, at most</label>
+        <input class="fy-input fy-num" id="lp-cf" value="5" readonly="readonly">
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="lp-exp">Carried days expire</label>
+        <input class="fy-input" id="lp-exp" value="31 March" readonly="readonly">
+      </div>
+    </div>
+    <p class="fy-small fy-muted">A change applies from the date you choose and needs Arjun Rao to approve it. People see their new balance from that date.</p>
+  </section>
+</div>

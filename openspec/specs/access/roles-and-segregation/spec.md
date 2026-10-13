@@ -1289,6 +1289,23 @@ Source: PRD-001 §D
 - **WHEN** a role acts on tenant export
 - **THEN** the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent, the Board viewer and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: People and HR link
+In Standard mode, each role SHALL hold only the rights over the People and HR settings (the Nemura link and external HR or payroll systems; FR-PPL-01) that the permission matrix gives it; imported payroll journals are approved under Journals.
+
+Source: PRD-001 §D
+
+#### Scenario: Approve with a second approver
+- **WHEN** a role acts on the People and HR settings
+- **THEN** the Owner can approve, with a second approver (A + second approver)
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on the People and HR settings
+- **THEN** the Administrator can create or prepare (C)
+
+#### Scenario: View
+- **WHEN** a role acts on the People and HR settings
+- **THEN** the Finance controller, the Accountant, the Payroll administrator, the Auditor and the Compliance officer / DPO can view (V)
+
 ### Requirement: Permission matrix: AI providers and model routes
 In Standard mode, each role SHALL hold only the rights over AI providers and model routes (connections, credentials, billing, data-class policy, per-agent routes; AI-72…AI-75) that the permission matrix gives it.
 

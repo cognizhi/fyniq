@@ -45,6 +45,25 @@
   {
    "id": "ai-models",
    "title": "Fyniq · AI providers and model routes"
+  },
+  {
+   "id": "nemura-me",
+   "title": "Nemura · Self-service",
+   "product": "nemura"
+  },
+  {
+   "id": "nemura-team",
+   "title": "Nemura · People team",
+   "product": "nemura"
+  },
+  {
+   "id": "nemura-setup",
+   "title": "Nemura · Hiring, performance and setup",
+   "product": "nemura"
+  },
+  {
+   "id": "people-link",
+   "title": "Fyniq · People and HR link"
   }
  ],
  "screens": [
@@ -5820,6 +5839,884 @@
     "not enabled by the Owner",
     "connected",
     "plan limit reached"
+   ]
+  },
+  {
+   "id": "nm-sign-in",
+   "file": "NmSignIn",
+   "title": "Sign in to Nemura",
+   "canvas": "nemura-me",
+   "module": "Sign-in",
+   "route": "/sign-in",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Everyone"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ARC-01",
+    "NM-INT-02",
+    "NM-UX-02"
+   ],
+   "purpose": "Sign in to Nemura on its own, or with the same account as Fyniq when the company links them.",
+   "content": [
+    "Continue with Google, email and password, or the company's OpenID Connect provider",
+    "Passkey",
+    "Linked companies: one account for Fyniq and Nemura",
+    "Marigold art panel on expanded screens"
+   ],
+   "states": [
+    "standalone",
+    "linked to Fyniq",
+    "wrong password"
+   ]
+  },
+  {
+   "id": "nm-my-home",
+   "file": "NmMyHome",
+   "title": "My home",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me",
+   "kind": "dashboard",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ESS-01",
+    "NM-ROLE-02",
+    "NM-AI-02",
+    "NM-UX-02",
+    "NM-ESS-05"
+   ],
+   "purpose": "Everything an employee does most, one tap away: leave, payslip, letters, claims, details, questions.",
+   "content": [
+    "Greeting with what matters today",
+    "Six action tiles",
+    "Leave balance with the waiting request",
+    "Next pay day",
+    "Requests and their step",
+    "Next public holiday",
+    "People assistant answering a balance question (AI panel)"
+   ],
+   "states": [
+    "request waiting",
+    "letter ready",
+    "first sign-in tour"
+   ]
+  },
+  {
+   "id": "nm-apply-leave",
+   "file": "NmApplyLeave",
+   "title": "Apply for leave",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me/leave/new",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-LV-03",
+    "NM-LV-01",
+    "NM-LV-02",
+    "NM-LV-04",
+    "NM-PACK-03"
+   ],
+   "purpose": "Ask for leave in under a minute, seeing the balance after the request and who else is away.",
+   "content": [
+    "Leave type picker as colour blocks",
+    "Dates with half days; public holidays and rest days excluded",
+    "Balance after this request",
+    "Team clash",
+    "Note and attachment",
+    "Who approves it"
+   ],
+   "states": [
+    "over the balance",
+    "clash with a teammate",
+    "certificate needed"
+   ]
+  },
+  {
+   "id": "nm-my-leave",
+   "file": "NmMyLeave",
+   "title": "My leave",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me/leave",
+   "kind": "detail",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-LV-02",
+    "NM-LV-01",
+    "NM-LV-05",
+    "NM-PACK-05",
+    "NM-LV-10"
+   ],
+   "purpose": "An employee's balances, upcoming and past leave, and the public holidays ahead.",
+   "content": [
+    "Big balance per type with bar (taken, waiting, left)",
+    "Upcoming and waiting requests",
+    "History",
+    "Public holidays ahead",
+    "Flexible-work arrangement"
+   ],
+   "states": [
+    "request waiting",
+    "nothing booked"
+   ]
+  },
+  {
+   "id": "nm-my-pay",
+   "file": "NmMyPay",
+   "title": "My pay",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me/pay",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ESS-02",
+    "NM-PAY-04",
+    "NM-UX-05",
+    "NM-SEC-02"
+   ],
+   "purpose": "An employee's payslips and tax forms, and nothing else's figures.",
+   "content": [
+    "Next pay day",
+    "Latest payslip summary",
+    "Payslips by month with view, print and download",
+    "IR8A or AIS form for the year when ready"
+   ],
+   "states": [
+    "payslip published",
+    "form not ready"
+   ]
+  },
+  {
+   "id": "nm-payslip",
+   "file": "NmPayslip",
+   "title": "Payslip",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me/pay/2026-09",
+   "kind": "detail",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-PAY-04",
+    "NM-UX-05",
+    "NM-PAY-01",
+    "FR-PAY-08"
+   ],
+   "purpose": "An itemised payslip with the items MOM requires, ready to print.",
+   "content": [
+    "Paper view on the letterhead",
+    "Employer and employee, pay period and date",
+    "Basic pay, allowances, overtime, deductions, CPF and SHG",
+    "Net pay and payment date",
+    "Print and download"
+   ],
+   "states": [
+    "printed in black and white"
+   ]
+  },
+  {
+   "id": "nm-request-letter",
+   "file": "NmRequestLetter",
+   "title": "Ask for a letter",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me/requests/letter",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-LTR-01",
+    "NM-LTR-04",
+    "NM-ESS-04",
+    "NM-LTR-03"
+   ],
+   "purpose": "Ask for a standard letter, choose what it shows, and see when it will be ready.",
+   "content": [
+    "Letter types as tiles",
+    "Purpose and addressee",
+    "Include salary or not",
+    "Preview",
+    "When it will be ready and who signs it"
+   ],
+   "states": [
+    "issued automatically",
+    "needs HR"
+   ]
+  },
+  {
+   "id": "nm-my-requests",
+   "file": "NmMyRequests",
+   "title": "My requests",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me/requests",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ESS-04",
+    "NM-ESS-03",
+    "NM-LTR-03",
+    "NM-LV-10"
+   ],
+   "purpose": "Where every request is: letters, leave, details changes and flexible work.",
+   "content": [
+    "Requests with their step and due date",
+    "Ready letters to download",
+    "Details change waiting for HR",
+    "A question to HR"
+   ],
+   "states": [
+    "ready",
+    "with HR",
+    "refused with reason"
+   ]
+  },
+  {
+   "id": "nm-ask",
+   "file": "NmAsk",
+   "title": "Ask a question",
+   "canvas": "nemura-me",
+   "module": "Self-service",
+   "route": "/me/ask",
+   "kind": "detail",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-AI-02",
+    "NM-AI-03",
+    "NM-AI-04",
+    "NM-AI-01",
+    "NM-ESS-04"
+   ],
+   "purpose": "Ask the people assistant about leave, pay or a policy, with cited answers and a way to ask HR instead.",
+   "content": [
+    "What it can and cannot do",
+    "Common questions",
+    "Conversation with cited answers (AI badge)",
+    "Ask Sarah instead (a request to HR)",
+    "Composer"
+   ],
+   "states": [
+    "rule to confirm with HR",
+    "question outside the person's rights"
+   ]
+  },
+  {
+   "id": "nm-people-home",
+   "file": "NmPeopleHome",
+   "title": "People home",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people",
+   "kind": "dashboard",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ROLE-02",
+    "NM-LV-04",
+    "NM-LTR-03",
+    "NM-PPL-03",
+    "NM-ONB-01",
+    "NM-PAY-03",
+    "NM-LV-10"
+   ],
+   "purpose": "The people team's landing page: today's requests, who is away, joiners and leavers, the pay calendar and checks, with no company financial figures.",
+   "content": [
+    "Greeting and today's count",
+    "Tiles: leave to approve, letters to issue, joiners, checks",
+    "Who is away and working from home",
+    "Joiners and leavers",
+    "Payroll calendar (dates, not totals)",
+    "Flexible-work replies due",
+    "Checks"
+   ],
+   "states": [
+    "nothing waiting",
+    "check to review"
+   ]
+  },
+  {
+   "id": "nm-people",
+   "file": "NmPeople",
+   "title": "People",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people/directory",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-PPL-01",
+    "NM-PPL-06",
+    "NM-PPL-02",
+    "NM-PPL-03"
+   ],
+   "purpose": "Everyone in the company, with status, team, manager and pass, restricted fields masked.",
+   "content": [
+    "Filters by team, status and worksite",
+    "People as rows (cards on phones)",
+    "Status: active, joining, leaving",
+    "Pass and expiry",
+    "Add a person"
+   ],
+   "states": [
+    "joining",
+    "leaving"
+   ]
+  },
+  {
+   "id": "nm-person",
+   "file": "NmPerson",
+   "title": "Person",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people/:id",
+   "kind": "detail",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-PPL-01",
+    "NM-PPL-02",
+    "NM-PPL-03",
+    "NM-PPL-05",
+    "NM-LV-02",
+    "NM-ONB-03",
+    "NM-PAY-06"
+   ],
+   "purpose": "One person's record: job and history, leave, documents, pass and the leaving plan.",
+   "content": [
+    "Header with status and manager",
+    "Job history (effective-dated)",
+    "Restricted fields masked with reveal",
+    "Leave balances",
+    "Documents",
+    "Work pass",
+    "Leaving plan (Chen Yu)"
+   ],
+   "states": [
+    "restricted field revealed",
+    "leaving"
+   ]
+  },
+  {
+   "id": "nm-team-leave",
+   "file": "NmTeamLeave",
+   "title": "Leave",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people/leave",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator",
+    "Owner",
+    "Line manager"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-LV-04",
+    "NM-LV-05",
+    "NM-LV-06",
+    "NM-LV-03",
+    "NM-PACK-05"
+   ],
+   "purpose": "Approve leave and see the month at a glance.",
+   "content": [
+    "Requests waiting with balance after and clash",
+    "Approve or refuse with a reason",
+    "Certificate to verify",
+    "Month calendar with leave types and holidays",
+    "The calendar as a list"
+   ],
+   "states": [
+    "clash",
+    "certificate to verify"
+   ]
+  },
+  {
+   "id": "nm-letters",
+   "file": "NmLetters",
+   "title": "Letters",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people/letters",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-LTR-03",
+    "NM-LTR-01",
+    "NM-LTR-04",
+    "NM-LTR-05",
+    "NM-AI-02"
+   ],
+   "purpose": "Issue letters people asked for, and see what was issued.",
+   "content": [
+    "Letters to issue with due dates",
+    "Filled letter preview with an AI draft note",
+    "Check and send for signature",
+    "Issued letters with references",
+    "Letter types and who may request them"
+   ],
+   "states": [
+    "waiting for signature",
+    "issued automatically"
+   ]
+  },
+  {
+   "id": "nm-letter-template",
+   "file": "NmLetterTemplate",
+   "title": "Letter template",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people/letters/templates/:id",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-LTR-02",
+    "NM-LTR-01",
+    "FR-TPL-01",
+    "NM-UX-05"
+   ],
+   "purpose": "Edit a letter template with merge fields and a live preview; changes are versioned and approved.",
+   "content": [
+    "Fields: who may request, signer, due time, issue automatically",
+    "Text with merge fields",
+    "Preview on the letterhead",
+    "Version history and approval"
+   ],
+   "states": [
+    "unsaved changes",
+    "waiting for approval"
+   ]
+  },
+  {
+   "id": "nm-onboarding",
+   "file": "NmOnboarding",
+   "title": "Joiners and leavers",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people/onboarding",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "HR officer",
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ONB-01",
+    "NM-ONB-03",
+    "NM-LTR-06",
+    "NM-ONB-02",
+    "NM-PAY-06"
+   ],
+   "purpose": "Plans for the next joiner and the next leaver, with what is due and who does it.",
+   "content": [
+    "Joanne Lee's plan (starts Mon 2 Nov): tasks by owner and due date, KETs",
+    "Chen Yu's leaving plan (last day Mon 30 Nov): final pay, leave, IR21, access, letter"
+   ],
+   "states": [
+    "task overdue",
+    "plan complete"
+   ]
+  },
+  {
+   "id": "nm-payroll-hr",
+   "file": "NmPayroll",
+   "title": "Payroll",
+   "canvas": "nemura-team",
+   "module": "People team",
+   "route": "/people/payroll",
+   "kind": "dashboard",
+   "phase": "P1",
+   "roles": [
+    "Payroll administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-PAY-02",
+    "NM-PAY-03",
+    "NM-PAY-05",
+    "NM-INT-03",
+    "NM-PAY-04",
+    "NM-ROLE-04"
+   ],
+   "purpose": "The month's pay run from the people side: inputs, dates, approval and the hand-off to Fyniq.",
+   "content": [
+    "Calendar: cut-off, approval, pay day",
+    "Inputs collected with their sources",
+    "Prepare, then the Owner approves",
+    "Hand-off to Fyniq: posting and salary batch",
+    "Previous runs with their posting references"
+   ],
+   "states": [
+    "waiting for approval",
+    "posting refused"
+   ]
+  },
+  {
+   "id": "nm-hiring",
+   "file": "NmHiring",
+   "title": "Hiring",
+   "canvas": "nemura-setup",
+   "module": "Hiring and performance",
+   "route": "/people/hiring/:role",
+   "kind": "board",
+   "phase": "P2",
+   "roles": [
+    "Recruiter",
+    "HR officer",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-REC-04",
+    "NM-REC-02",
+    "NM-REC-03",
+    "NM-REC-05",
+    "NM-AI-05"
+   ],
+   "purpose": "A role's pipeline on a board, with the advertising timer and fair-wording check.",
+   "content": [
+    "Role header: replaces Chen Yu, posted Mon 5 Oct",
+    "Fair Consideration Framework: 14 days to Mon 19 Oct",
+    "Board: applied, screening, interview, offer, hired",
+    "Candidate cards with next step",
+    "Move with a menu (no drag-only)"
+   ],
+   "states": [
+    "offer blocked by the advertising timer",
+    "retention due"
+   ]
+  },
+  {
+   "id": "nm-goals",
+   "file": "NmGoals",
+   "title": "Goals and reviews",
+   "canvas": "nemura-setup",
+   "module": "Hiring and performance",
+   "route": "/me/goals",
+   "kind": "detail",
+   "phase": "P2",
+   "roles": [
+    "Employee",
+    "Line manager"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-PRF-01",
+    "NM-PRF-02",
+    "NM-PRF-03",
+    "NM-PRF-04"
+   ],
+   "purpose": "A person's goals with progress, the company goal they support, and the next review.",
+   "content": [
+    "Goals with rings and key results",
+    "Company goal (no financial figures)",
+    "Check-ins",
+    "H2 2026 review dates"
+   ],
+   "states": [
+    "review open",
+    "goal at risk"
+   ]
+  },
+  {
+   "id": "nm-features",
+   "file": "NmFeatures",
+   "title": "Features",
+   "canvas": "nemura-setup",
+   "module": "Setup",
+   "route": "/settings/features",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-FEAT-01",
+    "NM-FEAT-02",
+    "NM-FEAT-03",
+    "NM-FEAT-04",
+    "NM-EXT-01"
+   ],
+   "purpose": "Turn Nemura's features on or off, or use another system for one.",
+   "content": [
+    "Each feature: on, off or another system; when and by whom",
+    "Dependencies",
+    "Payroll needs two Owners",
+    "Claims stay in Fyniq"
+   ],
+   "states": [
+    "dependency refused",
+    "waiting for second approver"
+   ]
+  },
+  {
+   "id": "nm-country-pack",
+   "file": "NmCountryPack",
+   "title": "Singapore pack",
+   "canvas": "nemura-setup",
+   "module": "Setup",
+   "route": "/settings/packs/sg",
+   "kind": "detail",
+   "phase": "P1",
+   "roles": [
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-PACK-01",
+    "NM-PACK-02",
+    "NM-PACK-05",
+    "NM-PACK-06",
+    "NM-PACK-03"
+   ],
+   "purpose": "The law and calendars Nemura uses for Singapore, each with its source and status.",
+   "content": [
+    "Pack version and acceptance",
+    "Rules by topic with source and effective date",
+    "Values to confirm",
+    "Public holidays 2026 and 2027",
+    "Worksites using the pack"
+   ],
+   "states": [
+    "new version to review",
+    "value to confirm"
+   ]
+  },
+  {
+   "id": "nm-leave-policy",
+   "file": "NmLeavePolicy",
+   "title": "Leave policy",
+   "canvas": "nemura-setup",
+   "module": "Setup",
+   "route": "/settings/leave-policy",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-PACK-04",
+    "NM-LV-01",
+    "NM-LV-02"
+   ],
+   "purpose": "Company leave rules on top of the law; anything below the statutory minimum is refused.",
+   "content": [
+    "Leave types with entitlement, carry-forward, waiting period",
+    "Better than the law marked",
+    "Below-the-law error with the rule",
+    "Effective date and approval"
+   ],
+   "states": [
+    "below the statutory minimum",
+    "saved"
+   ]
+  },
+  {
+   "id": "nm-fyniq-link",
+   "file": "NmFyniqLink",
+   "title": "Fyniq link",
+   "canvas": "nemura-setup",
+   "module": "Setup",
+   "route": "/settings/fyniq",
+   "kind": "detail",
+   "phase": "P1",
+   "roles": [
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-ARC-04",
+    "NM-INT-01",
+    "NM-INT-02",
+    "NM-INT-04",
+    "NM-INT-05",
+    "NM-ROLE-01"
+   ],
+   "purpose": "How Nemura and Fyniq work together for this company: sign-in, sync, data shared and health.",
+   "content": [
+    "Linked by, approved by, since",
+    "One sign-in and the workspace switch",
+    "What goes each way (Appendix E)",
+    "Last sync, waiting and failed events, retry",
+    "Unlink"
+   ],
+   "states": [
+    "sync failing",
+    "unlinked"
+   ]
+  },
+  {
+   "id": "nm-assistant",
+   "file": "NmAssistant",
+   "title": "People assistant",
+   "canvas": "nemura-setup",
+   "module": "Setup",
+   "route": "/settings/assistant",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-AI-01",
+    "NM-AI-02",
+    "NM-AI-03",
+    "NM-AI-04",
+    "NM-AI-05"
+   ],
+   "purpose": "What the people assistant may do, which knowledge it uses, and where its model runs.",
+   "content": [
+    "Skills on and off",
+    "Task types (proposals) and approvers",
+    "Knowledge: pack, handbook, guide",
+    "Model route for personal and payroll data: Singapore",
+    "Never-list"
+   ],
+   "states": [
+    "skill off",
+    "route not allowed for payroll data"
+   ]
+  },
+  {
+   "id": "people-hr-settings",
+   "file": "PeopleHrSettings",
+   "title": "People and HR",
+   "canvas": "people-link",
+   "module": "Settings",
+   "route": "/settings/people",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PPL-01",
+    "FR-PPL-02",
+    "FR-PPL-03",
+    "FR-PPL-06",
+    "FR-PPL-08"
+   ],
+   "purpose": "Fyniq's view of the people side: which system holds each feature, one sign-in, and the link's health.",
+   "content": [
+    "Per feature: Nemura, another system or none",
+    "Nemura link: one sign-in and the Finance | People switch",
+    "Employee projection",
+    "Health and retry"
+   ],
+   "states": [
+    "linked to Nemura",
+    "external payroll",
+    "link failing"
+   ]
+  },
+  {
+   "id": "hr-import",
+   "file": "HrPayrollImport",
+   "title": "Import a payroll journal",
+   "canvas": "people-link",
+   "module": "Settings",
+   "route": "/settings/people/import",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Controller",
+    "Accountant",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PPL-05",
+    "NM-EXT-02",
+    "NM-EXT-03",
+    "FR-INT-27"
+   ],
+   "purpose": "Bring an external payroll system's journal in as a draft, mapped to accounts, with a preview.",
+   "content": [
+    "Source: file import or connector",
+    "Column mapping to accounts and departments",
+    "Preview of the draft journal",
+    "Idempotent re-import with changes",
+    "Approve under Journals"
+   ],
+   "states": [
+    "mapping incomplete",
+    "re-import with changes"
    ]
   }
  ]

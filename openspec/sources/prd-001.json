@@ -3,6 +3,10 @@
   "prd": "docs/prd/prd-001-fyniq-platform.md",
   "rules": [
     {
+      "match": "FR-PPL-\\d+",
+      "capability": "integrations/people-platform"
+    },
+    {
       "match": "G4-02[24]",
       "capability": "ledger/posting-rules"
     },
@@ -386,13 +390,15 @@
     "9.3": "ai/proposals",
     "9.7": "ai/mcp-and-agents",
     "9.8": "ai/guardrails",
-    "7.5": "experience/visualisation"
+    "7.5": "experience/visualisation",
+    "8.26": "integrations/people-platform"
   },
   "excluded": {
     "FR-PRJ-04": "Superseded by FR-PRJ-10 (rev 0.8)",
     "AI-29": "Superseded by AI-70…AI-79 (rev 0.12)",
     "FR-PRJ-03": "Superseded by FR-PRJ-12 (rev 0.11)",
-    "FR-DOC-03": "Superseded by FR-DOC-12 (rev 0.11)"
+    "FR-DOC-03": "Superseded by FR-DOC-12 (rev 0.11)",
+    "FR-PAY-12": "Superseded by PRD-002 NM-LV-08 (rev 0.15)"
   },
   "scenario_patterns": [
     "G4-\\d{3}",

@@ -350,15 +350,6 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 - **THEN** it is a blocking error (✖): an instalment of S$1,500 is over 25% of S$4,000
 - **AND** recovery in three instalments of S$1,000 passes
 
-### Requirement: FR-PAY-12 Leave balances
-The system SHALL keep leave balances (annual, sick, etc.) for unpaid-leave calculations.
-
-Source: PRD-001 §8.7 · Priority C · Phase P3 (or integrate an HR system)
-
-#### Scenario: Unpaid leave uses the leave balances
-- **WHEN** unpaid leave is calculated for an employee
-- **THEN** it uses the employee's recorded leave balances (annual, sick and others)
-
 ### Requirement: FR-PAY-13 Payroll data is restricted
 Payroll data, including data derived from it, SHALL be visible only to Payroll administrators and Owners by default.
 

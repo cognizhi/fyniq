@@ -1,0 +1,49 @@
+<!-- fyniq-screen {"nav": "my-pay", "title": "My pay", "mode": "basic", "persona": "employee", "heights": {"compact": 1400, "medium": 1000, "expanded": 1000}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">My pay</h1>
+      <p class="fy-secondary">Only you, and the people who run payroll, can see this page.</p>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--2">
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3 nm-card--bold" aria-labelledby="next-title" style="background: var(--tile-mint); color: var(--tile-fg)">
+      <h2 class="fy-h3" id="next-title">Next pay day</h2>
+      <div class="nm-stat"><span class="nm-stat__value">Wed 28 Oct</span><span class="nm-stat__sub" style="color: inherit">15 days from today. Your payslip is here on the same day.</span></div>
+    </section>
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="last-title">
+      <div class="fy-row fy-row--between"><h2 class="fy-h3" id="last-title">September 2026</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid Mon 28 Sep</span></div>
+      <div class="nm-stat nm-stat--md"><span class="nm-stat__value">S$6,077.00</span><span class="nm-stat__label">Net pay to your bank</span></div>
+      <dl class="fy-dl">
+        <div><dt>Basic salary</dt><dd class="fy-num">7,600.00</dd></div>
+        <div><dt>Your CPF</dt><dd class="fy-num">−1,520.00</dd></div>
+        <div><dt>CDAC fund</dt><dd class="fy-num">−3.00</dd></div>
+        <div><dt>Overtime</dt><dd>None</dd></div>
+      </dl>
+      <div class="fy-row fy-row--wrap">
+        <a class="fy-btn fy-btn--primary fy-btn--sm" href="#me/pay/2026-09"><i data-icon="eye"></i>Open payslip</a>
+        <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="download"></i>PDF</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="fy-card" aria-labelledby="slips-title">
+    <div class="fy-card__head"><h2 class="fy-h2" id="slips-title">Payslips</h2><span class="fy-small fy-muted">Kept for you as long as the law asks, even after you leave</span></div>
+    <table class="fy-table fy-table--cards">
+      <thead><tr><th scope="col">Month</th><th scope="col">Paid on</th><th scope="col" class="fy-num" style="text-align: right">Net pay (S$)</th><th scope="col"><span class="fy-sr">Actions</span></th></tr></thead>
+      <tbody>
+        <tr><td data-card="title"><a href="#me/pay/2026-09">September 2026</a></td><td data-card="meta">Mon 28 Sep</td><td data-card="amount" class="fy-num">6,077.00</td><td data-card="hide"><button class="fy-iconbtn" type="button" aria-label="Download September 2026 payslip"><i data-icon="download"></i></button></td></tr>
+        <tr><td data-card="title"><a href="#me/pay/2026-08">August 2026</a></td><td data-card="meta">Fri 28 Aug</td><td data-card="amount" class="fy-num">6,077.00</td><td data-card="hide"><button class="fy-iconbtn" type="button" aria-label="Download August 2026 payslip"><i data-icon="download"></i></button></td></tr>
+        <tr><td data-card="title"><a href="#me/pay/2026-07">July 2026</a></td><td data-card="meta">Tue 28 Jul</td><td data-card="amount" class="fy-num">6,077.00</td><td data-card="hide"><button class="fy-iconbtn" type="button" aria-label="Download July 2026 payslip"><i data-icon="download"></i></button></td></tr>
+      </tbody>
+    </table>
+    <div class="fy-card__foot"><a class="fy-small" href="#me/pay/all">All payslips since February 2025</a></div>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="tax-title">
+    <h2 class="fy-h3" id="tax-title">Tax forms</h2>
+    <p class="fy-small fy-secondary">Your 2025 income was sent to IRAS on Fri 27 Feb 2026, so it is already in your tax return. Your 2026 form will be here by 1 March 2027.</p>
+    <a class="fy-small" href="#me/pay/ir8a-2025">Form IR8A for 2025</a>
+  </section>
+</div>

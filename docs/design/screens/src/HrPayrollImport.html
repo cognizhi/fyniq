@@ -1,0 +1,58 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Import a payroll journal", "mode": "expert", "heights": {"compact": 1450, "medium": 1150, "expanded": 850}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/people">People and HR</a><i data-icon="chevron-right"></i><span aria-current="page">Import a payroll journal</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Import a payroll journal</h1>
+      <p class="fy-secondary">For a company that runs payroll in another system. The journal arrives as a draft for a Controller or Accountant to approve.</p>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="status">
+    <i data-icon="info" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Trying it out: nothing will post</span>
+      <span class="fy-small fy-secondary">Cognizhi's payroll lives in Nemura, so this import is a preview with an example file.</span>
+    </div>
+  </div>
+
+  <ol class="fy-steps fy-steps--wrap" aria-label="Import steps">
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Source</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">2</span>Match the columns</li>
+    <li class="fy-step"><span class="fy-step__n">3</span>Preview the draft</li>
+    <li class="fy-step"><span class="fy-step__n">4</span>Approve under Journals</li>
+  </ol>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="map-title">
+      <div class="fy-card__head"><h2 class="fy-h3" id="map-title">Match the columns</h2><span class="fy-small fy-muted">example-payroll-october-2026.csv · 9 rows</span></div>
+      <table class="fy-table fy-table--cards">
+        <thead><tr><th scope="col">Column in the file</th><th scope="col">Account</th><th scope="col" class="fy-from-medium">Team</th></tr></thead>
+        <tbody>
+          <tr><td data-card="title">Gross salary</td><td data-card="meta"><span class="fy-mono">6010</span> Salaries</td><td data-card="hide" class="fy-from-medium">From the file's team column</td></tr>
+          <tr><td data-card="title">Employer CPF</td><td data-card="meta"><span class="fy-mono">6020</span> Employer CPF</td><td data-card="hide" class="fy-from-medium">From the file's team column</td></tr>
+          <tr><td data-card="title">SDL</td><td data-card="meta"><span class="fy-mono">6030</span> SDL</td><td data-card="hide" class="fy-from-medium">–</td></tr>
+          <tr><td data-card="title">Net pay</td><td data-card="meta"><span class="fy-mono">2100</span> Salaries payable</td><td data-card="hide" class="fy-from-medium">–</td></tr>
+          <tr><td data-card="title">CPF and SDL to pay</td><td data-card="meta"><span class="fy-mono">2110</span> CPF &amp; SDL payable</td><td data-card="hide" class="fy-from-medium">–</td></tr>
+          <tr><td data-card="title">Employee name</td><td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="eye-off"></i>Not kept</span></td><td data-card="hide" class="fy-from-medium">The ledger holds totals only</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Source and rules">
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="src-title">
+        <h2 class="fy-h3" id="src-title">Source</h2>
+        <div class="fy-segmented" role="radiogroup" aria-labelledby="src-title" style="align-self: flex-start"><button type="button" role="radio" aria-checked="true">File</button><button type="button" role="radio" aria-checked="false">Connector</button></div>
+        <p class="fy-small fy-secondary">A CSV or the provider's payroll journal export. A connector for a Singapore payroll provider comes once its API is confirmed.</p>
+      </section>
+      <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="rule-title">
+        <h2 class="fy-h3" id="rule-title">Rules</h2>
+        <ul class="fy-stack fy-stack--2 fy-small fy-secondary">
+          <li>The journal is a draft until a Controller or Accountant approves it, because Fyniq can't see the other system's approval.</li>
+          <li>Importing the same month again shows what changes before anything is replaced.</li>
+          <li>No names or per-person pay reach the ledger.</li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+</div>

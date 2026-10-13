@@ -1,0 +1,48 @@
+<!-- fyniq-screen {"nav": "me", "title": "Ask a question", "mode": "basic", "persona": "employee", "heights": {"compact": 1500, "medium": 1050, "expanded": 1000}} -->
+<div class="fy-page fy-page--narrow fy-enter">
+  <section class="nm-hero" aria-labelledby="ask-title">
+    <h1 class="nm-hero__title" id="ask-title">Ask about leave, pay or a policy</h1>
+    <p class="nm-hero__sub">The people assistant answers from your own records and Cognizhi's policies. It cannot approve or change anything. For anything else, ask Sarah.</p>
+  </section>
+
+  <div class="nm-pills" role="group" aria-label="Common questions">
+    <button class="nm-pill" type="button" aria-pressed="false">When is the next pay day?</button>
+    <button class="nm-pill" type="button" aria-pressed="false">How does sick leave work?</button>
+    <button class="nm-pill" type="button" aria-pressed="false">What's on my payslip?</button>
+  </div>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-label="Conversation" aria-live="polite">
+    <div class="fy-msg fy-msg--user"><p>If my November leave is approved, how much annual leave will I have left?</p></div>
+    <div class="fy-msg fy-msg--ai">
+      <span class="fy-ai-badge" style="align-self: flex-start"><i data-icon="sparkles"></i>AI</span>
+      <p class="fy-ai-text"><span class="fy-fact">3.5 days</span>. You have <span class="fy-fact">7.5 days</span> left now: <span class="fy-fact">14</span> for 2026, minus <span class="fy-fact">6.5</span> taken. Your request for Tue 10 to Fri 13 Nov uses <span class="fy-fact">4 days</span>; Monday 9 November is the Deepavali holiday, so it is not counted.</p>
+      <div class="fy-row fy-row--wrap" style="gap: 6px">
+        <a class="fy-tag" href="#me/leave"><i data-icon="tree-palm"></i>My leave</a>
+        <a class="fy-tag" href="#help/packs/sg/holidays"><i data-icon="calendar-days"></i>Singapore holidays 2026</a>
+      </div>
+    </div>
+    <div class="fy-msg fy-msg--user"><p>Can I carry more than 5 days into next year?</p></div>
+    <div class="fy-msg fy-msg--ai">
+      <span class="fy-ai-badge" style="align-self: flex-start"><i data-icon="sparkles"></i>AI</span>
+      <p class="fy-ai-text">Not under the current policy. Cognizhi carries up to <span class="fy-fact">5 days</span> of annual leave into 2027, to be used by <span class="fy-fact">31 March 2027</span>. Days above that lapse on 31 December.</p>
+      <p class="fy-ai-text">This is a company choice: the Employment Act doesn't set a carry-forward rule. Sarah can tell you whether an exception is possible.</p>
+      <div class="fy-row fy-row--wrap" style="gap: 6px">
+        <a class="fy-tag" href="#help/policies/leave"><i data-icon="book-open-text"></i>Leave policy, carry forward</a>
+      </div>
+      <div class="fy-row fy-row--wrap" style="gap: var(--space-2)">
+        <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="send"></i>Ask Sarah instead</button>
+        <button class="fy-iconbtn" type="button" aria-label="Helpful"><i data-icon="thumbs-up"></i></button>
+        <button class="fy-iconbtn" type="button" aria-label="Not helpful, tell us why"><i data-icon="thumbs-down"></i></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="fy-stack fy-stack--2">
+    <label class="fy-sr" for="ask-input">Ask the people assistant</label>
+    <div class="fy-inputgroup">
+      <input class="fy-input" id="ask-input" placeholder="Ask about leave, pay or a policy…">
+      <button class="fy-iconbtn" type="button" aria-label="Send"><i data-icon="send" class="fy-i--20"></i></button>
+    </div>
+    <span class="fy-small fy-muted">Uses only your own records and the company's policies, in Singapore.</span>
+  </div>
+</div>

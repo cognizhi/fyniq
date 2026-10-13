@@ -28,6 +28,12 @@ Source: PRD-001 §8.3 · Priority M · Phase P1
 - **WHEN** an employee's date of birth is recorded
 - **THEN** it determines the employee's CPF age band
 
+#### Scenario: Records held in Nemura or an external system
+- **GIVEN** people records live in Nemura or an external HR system (FR-PPL-01)
+- **WHEN** Fyniq stores an employee
+- **THEN** it keeps only the employee projection of FR-PPL-06, and those fields are held in the other system
+- **AND** the hourly cost-rate override stays in Fyniq
+
 ### Requirement: FR-EMP-02 Departments mapped to accounts and dimensions
 The system SHALL map each department to salary accounts and dimensions.
 

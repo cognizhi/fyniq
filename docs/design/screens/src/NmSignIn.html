@@ -1,0 +1,39 @@
+<!-- fyniq-screen {"layout": "bare", "title": "Sign in", "mode": "basic", "persona": "employee", "heights": {"compact": 1000, "medium": 1000, "expanded": 900}} -->
+<div class="nm-signin">
+  <aside class="nm-signin__art" aria-label="About Nemura">
+    <span class="fy-brand"><span class="fy-brand__mark" aria-hidden="true">n</span><span>nemura</span></span>
+    <p class="nm-signin__big">Your leave, your pay, your letters. One place.</p>
+    <ul class="fy-stack fy-stack--3" aria-label="What you can do">
+      <li class="fy-row" style="gap: var(--space-3)"><span class="nm-tile__icon"><i data-icon="tree-palm"></i></span><span class="fy-strong">Apply for leave in under a minute</span></li>
+      <li class="fy-row" style="gap: var(--space-3)"><span class="nm-tile__icon"><i data-icon="wallet"></i></span><span class="fy-strong">Every payslip, ready to print</span></li>
+      <li class="fy-row" style="gap: var(--space-3)"><span class="nm-tile__icon"><i data-icon="mail"></i></span><span class="fy-strong">Letters for the bank, a landlord or a visa</span></li>
+    </ul>
+  </aside>
+  <main class="nm-signin__main" id="main">
+    <div class="nm-signin__card">
+      <a class="fy-brand" href="#sign-in" aria-label="Nemura"><span class="fy-brand__mark" aria-hidden="true">n</span><span>nemura</span></a>
+      <div class="fy-stack fy-stack--2">
+        <h1 class="fy-h1">Sign in</h1>
+        <p class="fy-secondary">Cognizhi Pte Ltd uses one account for Nemura and Fyniq. Sign in once for both.</p>
+      </div>
+      <div class="fy-stack fy-stack--3">
+        <button class="fy-btn fy-btn--secondary fy-btn--lg fy-btn--block" type="button"><i data-icon="globe"></i>Continue with Google</button>
+        <button class="fy-btn fy-btn--secondary fy-btn--lg fy-btn--block" type="button"><i data-icon="key-round"></i>Use a passkey</button>
+      </div>
+      <div class="fy-row" style="gap: var(--space-3)"><span style="flex: 1; height: 2px; background: var(--border)"></span><span class="fy-small fy-muted">or with your email</span><span style="flex: 1; height: 2px; background: var(--border)"></span></div>
+      <div class="fy-stack fy-stack--3">
+        <div class="fy-field">
+          <label class="fy-label" for="si-email">Work email</label>
+          <input class="fy-input" id="si-email" type="email" autocomplete="username" value="daniel@cognizhi.com">
+        </div>
+        <div class="fy-field">
+          <label class="fy-label" for="si-pw">Password</label>
+          <input class="fy-input" id="si-pw" type="password" autocomplete="current-password" aria-describedby="si-pw-help">
+          <span class="fy-help" id="si-pw-help"><a href="#sign-in/reset">Forgot your password?</a></span>
+        </div>
+        <button class="fy-btn fy-btn--primary fy-btn--lg fy-btn--block" type="button">Sign in</button>
+      </div>
+      <p class="fy-small fy-muted">New here? Your company sends you an invitation. Nemura never asks for your NRIC to sign in.</p>
+    </div>
+  </main>
+</div>
