@@ -1,0 +1,108 @@
+<!-- fyniq-screen {"nav": "reports", "title": "Who owes us", "mode": "expert", "heights": {"compact": 2700, "medium": 2350, "expanded": 1500}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#reports">Reports</a><i data-icon="chevron-right"></i><span>Management</span></nav>
+      <h1 class="fy-h1">Who owes us</h1>
+      <p class="fy-secondary">Unpaid invoices by how late they are, at 13 Oct 2026, 09:12 · SGD</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="message-square"></i>Ask about this</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export</button>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Report">
+    <button type="button" role="tab" aria-selected="true">Who owes us</button>
+    <button type="button" role="tab" aria-selected="false">Whom we owe</button>
+    <button type="button" role="tab" aria-selected="false">Sales by customer and item</button>
+    <button type="button" role="tab" aria-selected="false">Spend by supplier</button>
+    <button type="button" role="tab" aria-selected="false">Top expenses</button>
+    <button type="button" role="tab" aria-selected="false" class="fy-expert-only">Deferrals</button>
+    <button type="button" role="tab" aria-selected="false" class="fy-expert-only">Contribution margin</button>
+  </div>
+
+  <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+    <div class="fy-field" style="flex: 1 1 140px; max-width: 200px"><label class="fy-label" for="ag-at">As at</label><input class="fy-input" id="ag-at" value="13 Oct 2026" readonly="readonly"></div>
+    <div class="fy-field" style="flex: 1 1 140px; max-width: 200px"><label class="fy-label" for="ag-cur">Currency</label><select class="fy-select" id="ag-cur"><option>All currencies</option><option>SGD</option><option>USD</option></select></div>
+    <div class="fy-field fy-expert-only" style="flex: 1 1 140px; max-width: 220px"><label class="fy-label" for="ag-disp">Disputes</label><select class="fy-select" id="ag-disp"><option>Show both, separately</option><option>Disputed only</option><option>Undisputed only</option></select></div>
+    <div class="fy-field" style="flex: 0 0 auto"><span class="fy-label" id="ag-by">Group by</span><div class="fy-segmented" role="radiogroup" aria-labelledby="ag-by"><button type="button" role="radio" aria-checked="true">Customer</button><button type="button" role="radio" aria-checked="false">Invoice</button></div></div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="ag-sum">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ag-sum">S$48,250.00 owed to us</h2>
+          <div class="fy-segmented" role="radiogroup" aria-label="Show ageing as"><button type="button" role="radio" aria-checked="true">Chart</button><button type="button" role="radio" aria-checked="false">Table</button></div></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <svg class="fy-chart fy-only-compact" viewBox="0 0 320 20" role="img" aria-label="Of S$48,250.00 owed to us, S$36,850.00 is not yet due and S$11,400.00 is 1 to 30 days late; nothing is older."><rect class="fy-bar fy-seq2" x="0" y="0" width="242.9" height="20" rx="3"></rect><rect class="fy-bar fy-seq3" x="244.9" y="0" width="75.1" height="20" rx="3"></rect></svg><svg class="fy-chart fy-from-medium" viewBox="0 0 640 20" role="img" aria-label="Of S$48,250.00 owed to us, S$36,850.00 is not yet due and S$11,400.00 is 1 to 30 days late; nothing is older."><rect class="fy-bar fy-seq2" x="0" y="0" width="487.3" height="20" rx="3"></rect><rect class="fy-bar fy-seq3" x="489.3" y="0" width="150.7" height="20" rx="3"></rect></svg>
+          <div class="fy-row fy-row--wrap" style="gap: var(--space-4)"><a class="fy-stack fy-stack--2" href="#reports/ageing?bucket=cur" style="color: inherit; min-width: 104px"><span class="fy-small fy-secondary"><span class="fy-legend__key" style="background: var(--seq-250)"></span>Current</span><span class="fy-num fy-strong">36,850.00</span></a><a class="fy-stack fy-stack--2" href="#reports/ageing?bucket=b30" style="color: inherit; min-width: 104px"><span class="fy-small fy-secondary"><span class="fy-legend__key" style="background: var(--seq-400)"></span>1–30 days</span><span class="fy-num fy-strong">11,400.00</span></a><a class="fy-stack fy-stack--2" href="#reports/ageing?bucket=b60" style="color: inherit; min-width: 104px"><span class="fy-small fy-secondary"><span class="fy-legend__key" style="background: var(--seq-550)"></span>31–60 days</span><span class="fy-num fy-strong">0.00</span></a><a class="fy-stack fy-stack--2" href="#reports/ageing?bucket=b90" style="color: inherit; min-width: 104px"><span class="fy-small fy-secondary"><span class="fy-legend__key" style="background: var(--seq-700)"></span>61–90 days</span><span class="fy-num fy-strong">0.00</span></a><a class="fy-stack fy-stack--2" href="#reports/ageing?bucket=b90p" style="color: inherit; min-width: 104px"><span class="fy-small fy-secondary"><span class="fy-legend__key" style="background: var(--seq-700)"></span>Over 90 days</span><span class="fy-num fy-strong">0.00</span></a></div>
+          <p class="fy-small fy-muted">Darker means later. S$11,400.00 is past due across 3 invoices; none is disputed. Kopi Labs paid S$2,180.00 on 12 Oct; until that bank line is matched, INV-0136 still counts here.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="ag-tbl" class="fy-stack fy-stack--3">
+        <h2 class="fy-h3" id="ag-tbl">By customer and currency</h2>
+        <div class="fy-tablewrap">
+          <table class="fy-table fy-table--compact fy-statement">
+            <caption class="fy-sr">Receivables ageing by customer at 13 October 2026, SGD</caption>
+            <thead><tr><th scope="col" style="min-width: 210px">Customer</th>
+              <th scope="col" class="fy-num">Current</th><th scope="col" class="fy-num">1–30 days</th><th scope="col" class="fy-num">31–60 days</th><th scope="col" class="fy-num">61–90 days</th><th scope="col" class="fy-num">Over 90 days</th><th scope="col" class="fy-num">Total SGD</th></tr></thead>
+            <tbody><tr><td style="min-width: 210px"><span class="fy-stack" style="gap: 2px; padding: 4px 0"><span class="fy-row fy-row--wrap" style="gap: 6px"><a href="#contacts/acme" style="color: inherit" class="fy-strong">Acme Analytics Pte Ltd</a></span><span class="fy-small fy-muted">INV-0146, INV-0150</span></span></td>
+<td class="fy-num"><a href="#reports/ageing/acme?bucket=cur" style="color: inherit">17,222.00</a></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num fy-strong"><a href="#reports/ageing/acme" style="color: inherit">17,222.00</a></td></tr><tr><td style="min-width: 210px"><span class="fy-stack" style="gap: 2px; padding: 4px 0"><span class="fy-row fy-row--wrap" style="gap: 6px"><a href="#contacts/lumen" style="color: inherit" class="fy-strong">Lumen Health Pte Ltd</a></span><span class="fy-small fy-muted">INV-0141</span></span></td>
+<td class="fy-num"><a href="#reports/ageing/lumen?bucket=cur" style="color: inherit">13,080.00</a></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num fy-strong"><a href="#reports/ageing/lumen" style="color: inherit">13,080.00</a></td></tr><tr><td style="min-width: 210px"><span class="fy-stack" style="gap: 2px; padding: 4px 0"><span class="fy-row fy-row--wrap" style="gap: 6px"><a href="#contacts/orbital" style="color: inherit" class="fy-strong">Orbital Freight Asia Pte Ltd</a><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Overdue</span></span><span class="fy-small fy-muted">INV-0144, INV-0139 · <span class="fy-mono">USD</span> <span class="fy-expert-only">US$3,804.10</span></span></span></td>
+<td class="fy-num"><a href="#reports/ageing/orbital?bucket=cur" style="color: inherit">4,913.00</a></td><td class="fy-num"><a href="#reports/ageing/orbital?bucket=b30" style="color: inherit">4,860.00</a></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num fy-strong"><a href="#reports/ageing/orbital" style="color: inherit">9,773.00</a></td></tr><tr><td style="min-width: 210px"><span class="fy-stack" style="gap: 2px; padding: 4px 0"><span class="fy-row fy-row--wrap" style="gap: 6px"><a href="#contacts/harbourfront" style="color: inherit" class="fy-strong">Harbourfront Dental Group</a><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Overdue</span></span><span class="fy-small fy-muted">INV-0138</span></span></td>
+<td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><a href="#reports/ageing/harbourfront?bucket=b30" style="color: inherit">4,360.00</a></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num fy-strong"><a href="#reports/ageing/harbourfront" style="color: inherit">4,360.00</a></td></tr><tr><td style="min-width: 210px"><span class="fy-stack" style="gap: 2px; padding: 4px 0"><span class="fy-row fy-row--wrap" style="gap: 6px"><a href="#contacts/kopi" style="color: inherit" class="fy-strong">Kopi Labs Pte Ltd</a><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Overdue</span></span><span class="fy-small fy-muted">INV-0143, INV-0136</span></span></td>
+<td class="fy-num"><a href="#reports/ageing/kopi?bucket=cur" style="color: inherit">1,635.00</a></td><td class="fy-num"><a href="#reports/ageing/kopi?bucket=b30" style="color: inherit">2,180.00</a></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num"><span class="fy-muted">–</span></td><td class="fy-num fy-strong"><a href="#reports/ageing/kopi" style="color: inherit">3,815.00</a></td></tr></tbody>
+            <tfoot><tr><td>Total</td><td class="fy-num"><a href="#reports/ageing?bucket=cur" style="color: inherit">36,850.00</a></td><td class="fy-num"><a href="#reports/ageing?bucket=b30" style="color: inherit">11,400.00</a></td><td class="fy-num"><a href="#reports/ageing?bucket=b60" style="color: inherit">0.00</a></td><td class="fy-num"><a href="#reports/ageing?bucket=b90" style="color: inherit">0.00</a></td><td class="fy-num"><a href="#reports/ageing?bucket=b90p" style="color: inherit">0.00</a></td><td class="fy-num"><a href="#reports/ageing" style="color: inherit">48,250.00</a></td></tr></tfoot>
+          </table>
+        </div>
+        <p class="fy-small fy-muted">USD invoices show their SGD value at the rate on the invoice date; the exposure card shows what today’s rate does to them.</p>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Exposure, credits and bills">
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="fx-title">
+        <h2 class="fy-h3" id="fx-title">Currency exposure</h2>
+        <div class="fy-row fy-row--between"><span class="fy-secondary">Open in USD</span><a class="fy-num fy-strong" href="#reports/fx" style="color: inherit">US$7,450.00</a></div>
+        <div class="fy-row fy-row--between"><span class="fy-secondary">Booked at</span><span class="fy-num">S$9,650.00</span></div>
+        <div class="fy-row fy-row--between"><span class="fy-secondary">Unrealised gain or loss today</span><a class="fy-num" href="#reports/fx" style="color: inherit">−41.70</a></div>
+        <p class="fy-small fy-muted">A 1% fall in the US dollar would cut what Orbital Freight Asia owes us by about S$49.13. Nothing posts until the month-end revaluation.</p>
+      </section>
+
+      <section class="fy-card" aria-labelledby="cr-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="cr-title">Credits not yet applied</h2><span class="fy-badge fy-badge--quiet">1</span></div>
+        <ul class="fy-list"><li><a class="fy-list__item" href="#sales/credit-notes/cn-0012">
+          <span class="fy-list__main"><span class="fy-list__title">CN-0012 · Harbourfront Dental Group</span><span class="fy-list__meta">Service credit for 4 Sep downtime · apply it to INV-0138</span></span>
+          <span class="fy-num">260.00</span></a></li></ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ap-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ap-title">Bills to pay, by due date</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nothing overdue</span></div>
+        <div class="fy-row fy-row--between fy-small fy-muted" style="padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--border)"><span>Supplier and bill</span><span class="fy-right">Amount<br>cash needed</span></div>
+        <ul class="fy-list"><li><a class="fy-list__item" href="#purchases/bills/bill-0920" style="padding-top: 10px; padding-bottom: 10px">
+  <span class="fy-list__main"><span class="fy-list__title">Ho & Partners LLP</span><span class="fy-row fy-row--wrap" style="gap: 6px"><span class="fy-small fy-muted">BILL-0920 · due 15 Oct</span><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>This week</span></span></span>
+  <span class="fy-stack fy-right" style="gap: 2px"><span class="fy-num fy-strong">2,398.00</span><span class="fy-num fy-small fy-muted">2,398.00</span></span></a></li><li><a class="fy-list__item" href="#purchases/bills/bill-0924" style="padding-top: 10px; padding-bottom: 10px">
+  <span class="fy-list__main"><span class="fy-list__title">Grab for Business</span><span class="fy-row fy-row--wrap" style="gap: 6px"><span class="fy-small fy-muted">BILL-0924 · due 16 Oct</span><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>This week</span></span></span>
+  <span class="fy-stack fy-right" style="gap: 2px"><span class="fy-num fy-strong">667.52</span><span class="fy-num fy-small fy-muted">3,065.52</span></span></a></li><li><a class="fy-list__item" href="#purchases/bills/bill-0918" style="padding-top: 10px; padding-bottom: 10px">
+  <span class="fy-list__main"><span class="fy-list__title">Amazon Web Services</span><span class="fy-row fy-row--wrap" style="gap: 6px"><span class="fy-small fy-muted">BILL-0918 · due 20 Oct</span><span class="fy-chip fy-chip--warning"><i data-icon="stamp"></i>Approval</span></span></span>
+  <span class="fy-stack fy-right" style="gap: 2px"><span class="fy-num fy-strong">2,861.40</span><span class="fy-num fy-small fy-muted">5,926.92</span></span></a></li><li><a class="fy-list__item" href="#purchases/bills/bill-0921" style="padding-top: 10px; padding-bottom: 10px">
+  <span class="fy-list__main"><span class="fy-list__title">WeWork Singapore</span><span class="fy-row fy-row--wrap" style="gap: 6px"><span class="fy-small fy-muted">BILL-0921 · due 31 Oct</span></span></span>
+  <span class="fy-stack fy-right" style="gap: 2px"><span class="fy-num fy-strong">5,955.75</span><span class="fy-num fy-small fy-muted">11,882.67</span></span></a></li><li><a class="fy-list__item" href="#purchases/bills/bill-0922" style="padding-top: 10px; padding-bottom: 10px">
+  <span class="fy-list__main"><span class="fy-list__title">Google Workspace</span><span class="fy-row fy-row--wrap" style="gap: 6px"><span class="fy-small fy-muted">BILL-0922 · due 1 Nov</span></span></span>
+  <span class="fy-stack fy-right" style="gap: 2px"><span class="fy-num fy-strong">403.20</span><span class="fy-num fy-small fy-muted">12,285.87</span></span></a></li><li><a class="fy-list__item" href="#purchases/bills/bill-0923" style="padding-top: 10px; padding-bottom: 10px">
+  <span class="fy-list__main"><span class="fy-list__title">Figma</span><span class="fy-row fy-row--wrap" style="gap: 6px"><span class="fy-small fy-muted">BILL-0923 · due 3 Nov</span></span></span>
+  <span class="fy-stack fy-right" style="gap: 2px"><span class="fy-num fy-strong">216.00</span><span class="fy-num fy-small fy-muted">12,501.87</span></span></a></li><li><a class="fy-list__item" href="#purchases/bills/bill-0925" style="padding-top: 10px; padding-bottom: 10px">
+  <span class="fy-list__main"><span class="fy-list__title">SP Group</span><span class="fy-row fy-row--wrap" style="gap: 6px"><span class="fy-small fy-muted">BILL-0925 · due 9 Nov</span></span></span>
+  <span class="fy-stack fy-right" style="gap: 2px"><span class="fy-num fy-strong">368.53</span><span class="fy-num fy-small fy-muted">12,870.40</span></span></a></li></ul>
+        <div class="fy-row fy-row--between" style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border-strong)"><span class="fy-strong">We owe suppliers</span><span class="fy-num fy-strong"><a href="#reports/ageing?view=payables" style="color: inherit">12,870.40</a></span></div>
+        <div class="fy-card__foot fy-small fy-muted">Cash needed adds each bill to the ones due before it: S$3,065.52 by Friday.</div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="message-square"></i>Ask</button>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export</button>
+  </div>
+</div>

@@ -1,0 +1,408 @@
+{
+  "doc": "PRD-001",
+  "prd": "docs/prd/prd-001-fyniq-platform.md",
+  "rules": [
+    {
+      "match": "G4-02[24]",
+      "capability": "ledger/posting-rules"
+    },
+    {
+      "match": "UX-T\\d+",
+      "capability": "experience/navigation"
+    },
+    {
+      "match": "(RND|ALLOC)-.*",
+      "capability": "ledger/money-and-rounding"
+    },
+    {
+      "section": "C.1",
+      "capability": "controls/checks"
+    },
+    {
+      "section": "C.2",
+      "capability": "controls/platform-checks"
+    },
+    {
+      "section": "E",
+      "capability": "ai/task-catalogue"
+    },
+    {
+      "match": "FR-ORG-.*",
+      "capability": "organisation/settings"
+    },
+    {
+      "match": "FR-ENT-.*",
+      "capability": "organisation/multi-entity"
+    },
+    {
+      "match": "SOD-.*",
+      "capability": "access/roles-and-segregation"
+    },
+    {
+      "match": "FM-.*",
+      "capability": "access/team-modes"
+    },
+    {
+      "match": "FR-APR-.*",
+      "capability": "access/approvals"
+    },
+    {
+      "match": "FR-ADM-.*",
+      "capability": "access/users-and-sign-in"
+    },
+    {
+      "match": "FR-UX-(0[1-9]|1\\d|2[0-2])",
+      "capability": "experience/navigation"
+    },
+    {
+      "match": "FR-UX-2[3-9]",
+      "capability": "experience/modes"
+    },
+    {
+      "match": "FR-UX-3[0-6]",
+      "capability": "experience/help"
+    },
+    {
+      "match": "FR-UX-3[78]",
+      "capability": "experience/devices-and-motion"
+    },
+    {
+      "match": "FR-VIZ-.*",
+      "capability": "experience/visualisation"
+    },
+    {
+      "match": "NFR-(A11Y|L10N|PERF-UI)-.*",
+      "capability": "experience/accessibility-and-performance"
+    },
+    {
+      "match": "FR-(COA|DIM)-.*",
+      "capability": "ledger/chart-of-accounts"
+    },
+    {
+      "match": "FR-CT-.*",
+      "capability": "master-data/contacts"
+    },
+    {
+      "match": "FR-ITM-.*",
+      "capability": "master-data/items"
+    },
+    {
+      "match": "FR-EMP-.*",
+      "capability": "payroll/employees"
+    },
+    {
+      "match": "FR-BNK-.*",
+      "capability": "banking/bank-transactions"
+    },
+    {
+      "match": "FR-PSP-.*",
+      "capability": "banking/payment-providers"
+    },
+    {
+      "match": "FR-AR-.*",
+      "capability": "sales/receivables"
+    },
+    {
+      "match": "FR-AP-(0[78]|1[4-8])",
+      "capability": "purchases/expense-claims"
+    },
+    {
+      "match": "FR-AP-.*",
+      "capability": "purchases/payables"
+    },
+    {
+      "match": "FR-PAY-.*",
+      "capability": "payroll/pay-runs"
+    },
+    {
+      "match": "FR-GL-.*",
+      "capability": "ledger/general-ledger"
+    },
+    {
+      "match": "FR-FA-.*",
+      "capability": "ledger/fixed-assets"
+    },
+    {
+      "match": "FR-PRJ-.*",
+      "capability": "projects/time-and-costs"
+    },
+    {
+      "match": "FR-TAX-.*",
+      "capability": "tax/gst-and-filings"
+    },
+    {
+      "match": "FR-RPT-.*",
+      "capability": "reporting/reports"
+    },
+    {
+      "match": "FR-KPI-.*",
+      "capability": "reporting/dashboards-and-kpis"
+    },
+    {
+      "match": "FR-PLN-.*",
+      "capability": "planning/budgets-and-forecasts"
+    },
+    {
+      "match": "FR-CTL-.*",
+      "capability": "controls/checks"
+    },
+    {
+      "match": "FR-DOC-.*",
+      "capability": "documents/attachments-and-evidence"
+    },
+    {
+      "match": "FR-TPL-.*",
+      "capability": "documents/templates"
+    },
+    {
+      "match": "FR-AUT-.*",
+      "capability": "automation/rules-and-schedules"
+    },
+    {
+      "match": "FR-INT-2[12]",
+      "capability": "communication/email-and-notifications"
+    },
+    {
+      "match": "FR-NTF-.*",
+      "capability": "communication/email-and-notifications"
+    },
+    {
+      "match": "FR-INT-(20|2[3-8])",
+      "capability": "integrations/connectors"
+    },
+    {
+      "match": "FR-INT-.*",
+      "capability": "integrations/public-api"
+    },
+    {
+      "match": "FR-MIG-.*",
+      "capability": "data/migration"
+    },
+    {
+      "match": "FR-EQ-(0\\d|1[0-4])",
+      "capability": "equity/founders-money"
+    },
+    {
+      "match": "FR-EQ-.*",
+      "capability": "equity/cap-table-and-investors"
+    },
+    {
+      "match": "FR-CS-.*",
+      "capability": "governance/company-secretary"
+    },
+    {
+      "match": "AI-(0[1-5]|68)",
+      "capability": "ai/data-access"
+    },
+    {
+      "match": "AI-(0[6-9]|1[0-4]|3[0-3])",
+      "capability": "ai/proposals"
+    },
+    {
+      "match": "AI-(1[5-7]|3[4-9]|4[0-7])",
+      "capability": "ai/mcp-and-agents"
+    },
+    {
+      "match": "AI-(1[89]|2[0-5]|69)",
+      "capability": "ai/guardrails"
+    },
+    {
+      "match": "AI-2[6-9]",
+      "capability": "ai/model-and-provider"
+    },
+    {
+      "match": "AI-7\\d",
+      "capability": "ai/model-providers"
+    },
+    {
+      "match": "AI-(4[89]|5\\d|60)",
+      "capability": "ai/knowledge-base"
+    },
+    {
+      "match": "AI-6[1-7]",
+      "capability": "ai/scheduled-agents"
+    },
+    {
+      "match": "QA-AI-.*",
+      "capability": "ai/evaluation"
+    },
+    {
+      "section": "10.1",
+      "capability": "ledger/posting-engine"
+    },
+    {
+      "section": "10.3",
+      "capability": "ledger/money-and-rounding"
+    },
+    {
+      "section": "10.5",
+      "capability": "ledger/validation"
+    },
+    {
+      "section": "10.6",
+      "capability": "tax/statutory-parameters"
+    },
+    {
+      "section": "10.8",
+      "capability": "ledger/multi-currency"
+    },
+    {
+      "match": "INV-.*",
+      "capability": "ledger/invariants"
+    },
+    {
+      "match": "AUD-.*",
+      "capability": "data/audit-trail"
+    },
+    {
+      "match": "DR-.*",
+      "capability": "data/backup-and-recovery"
+    },
+    {
+      "match": "DEV-.*",
+      "capability": "platform/local-mode"
+    },
+    {
+      "match": "NFR-IMG-.*",
+      "capability": "platform/container-images"
+    },
+    {
+      "match": "REL-.*",
+      "capability": "platform/release-and-versioning"
+    },
+    {
+      "section": "13.1",
+      "capability": "security/identity-and-access"
+    },
+    {
+      "section": "13.2",
+      "capability": "security/data-protection"
+    },
+    {
+      "section": "13.3",
+      "capability": "security/application-security"
+    },
+    {
+      "section": "13.4",
+      "capability": "security/detection-and-response"
+    },
+    {
+      "match": "CMP-PD-.*",
+      "capability": "compliance/pdpa"
+    },
+    {
+      "match": "CMP-AI-.*",
+      "capability": "compliance/ai-governance"
+    },
+    {
+      "match": "CMP-\\d+",
+      "capability": "compliance/compliance-center"
+    },
+    {
+      "match": "NFR-(PERF|SCALE|AVAIL|API|BROWSER)-.*",
+      "capability": "platform/performance-and-scale"
+    },
+    {
+      "match": "NFR-(DR|RET|OBS)-.*",
+      "capability": "platform/operations"
+    },
+    {
+      "match": "NFR-(PORT|COST)-.*",
+      "capability": "platform/portability-and-cost"
+    },
+    {
+      "match": "NFR-(MAINT|DEVX)-.*",
+      "capability": "platform/local-mode"
+    },
+    {
+      "match": "CTL-(FIN|AUD|STAT)-.*",
+      "capability": "compliance/financial-controls"
+    },
+    {
+      "match": "CTL-(IAM|CHG|DP|RES)-.*",
+      "capability": "compliance/technology-controls"
+    },
+    {
+      "match": "CTL-(AI|API|MCP)-.*",
+      "capability": "compliance/ai-and-api-controls"
+    },
+    {
+      "match": "QA-(ENG|RPT|MIG|PROD|REL)-.*",
+      "capability": "quality/calculation-correctness"
+    },
+    {
+      "match": "QA-.*",
+      "capability": "quality/test-gates"
+    }
+  ],
+  "sections": {
+    "6.2": "access/roles-and-segregation",
+    "D": "access/roles-and-segregation",
+    "6.4": "access/team-modes",
+    "7.1": "experience/navigation",
+    "7.3": "experience/navigation",
+    "7.7": "experience/navigation",
+    "7.4": "experience/visual-design",
+    "7.8": "experience/modes",
+    "7.10": "experience/devices-and-motion",
+    "8.16": "documents/attachments-and-evidence",
+    "8.22": "equity/founders-money",
+    "8.24": "communication/email-and-notifications",
+    "9.1": "ai/proposals",
+    "9.5": "ai/proposals",
+    "9.6": "ai/task-catalogue",
+    "9.11": "ai/knowledge-base",
+    "10.2": "ledger/posting-rules",
+    "B.1": "ledger/posting-rules",
+    "B.2": "ledger/posting-rules",
+    "B.3": "ledger/posting-rules",
+    "B.4": "ledger/posting-rules",
+    "B.5": "ledger/posting-rules",
+    "B.6": "ledger/posting-rules",
+    "B.7": "ledger/posting-rules",
+    "11.4": "data/data-model",
+    "11.5": "data/audit-trail",
+    "11.6": "data/data-model",
+    "11.9": "data/backup-and-recovery",
+    "12.8": "platform/local-mode",
+    "12.9": "platform/container-images",
+    "12.10": "platform/release-and-versioning",
+    "12.11": "platform/background-work",
+    "12.12": "platform/portability-and-cost",
+    "14.2": "compliance/singapore-statutory",
+    "17.1": "data/migration",
+    "G.1": "quality/calculation-correctness",
+    "G.2": "payroll/pay-runs",
+    "G.3": "quality/calculation-correctness",
+    "J.1": "purchases/expense-claims",
+    "J.2": "projects/time-and-costs",
+    "J.3": "banking/bank-transactions",
+    "J.4": "banking/payment-providers",
+    "9.12": "ai/scheduled-agents",
+    "11.8": "data/backup-and-recovery",
+    "14.1": "compliance/compliance-center",
+    "10.4": "ledger/money-and-rounding",
+    "B": "ledger/posting-rules",
+    "9.3": "ai/proposals",
+    "9.7": "ai/mcp-and-agents",
+    "9.8": "ai/guardrails",
+    "7.5": "experience/visualisation"
+  },
+  "excluded": {
+    "FR-PRJ-04": "Superseded by FR-PRJ-10 (rev 0.8)",
+    "AI-29": "Superseded by AI-70…AI-79 (rev 0.12)",
+    "FR-PRJ-03": "Superseded by FR-PRJ-12 (rev 0.11)",
+    "FR-DOC-03": "Superseded by FR-DOC-12 (rev 0.11)"
+  },
+  "scenario_patterns": [
+    "G4-\\d{3}",
+    "UX-T\\d+"
+  ],
+  "check_sections": [
+    "C.1",
+    "C.2"
+  ],
+  "task_sections": [
+    "E"
+  ]
+}

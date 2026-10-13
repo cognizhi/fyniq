@@ -1,0 +1,171 @@
+<!-- fyniq-screen {"nav": "equity", "title": "Option pool", "mode": "expert", "heights": {"compact": 2450, "medium": 1800, "expanded": 1350}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Equity</span>
+      <h1 class="fy-h1">Option pool and grants</h1>
+      <p class="fy-secondary">ESOP 2026: 1,000,000 options set aside by the shareholders' resolution of 20 Jan 2026.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="file-text"></i>Plan rules</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>New grant</button>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Equity views">
+    <a href="#equity">Cap table</a>
+    <a href="#equity/holders">Holders</a>
+    <a href="#equity/classes">Classes</a>
+    <a href="#equity/transactions">Transactions</a>
+    <a href="#equity/instruments">SAFEs and notes</a>
+    <a href="#equity/options" aria-current="page">Option pool</a>
+  </nav>
+
+  <section class="fy-card" aria-labelledby="op-pool-title">
+    <div class="fy-card__head"><h2 class="fy-h3" id="op-pool-title">The pool</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>575,000 available</span></div>
+    <div class="fy-card__body fy-stack fy-stack--3">
+      <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 20px; border-radius: 4px" role="img" aria-label="Of 1,000,000 options: 40,000 vested, 385,000 unvested, 575,000 available.">
+        <rect class="fy-bar fy-c1" x="0" y="0" width="37" height="10"></rect>
+        <rect class="fy-bar fy-c3" x="40" y="0" width="382" height="10"></rect>
+        <rect class="fy-bar fy-cother" x="425" y="0" width="575" height="10"></rect>
+      </svg>
+      <div class="fy-legend">
+        <span><i class="fy-legend__key fy-swatch-1"></i>Vested <span class="fy-num fy-strong">40,000</span></span>
+        <span><i class="fy-legend__key fy-swatch-3"></i>Unvested <span class="fy-num fy-strong">385,000</span></span>
+        <span><i class="fy-legend__key fy-swatch-other"></i>Available <span class="fy-num fy-strong">575,000</span></span>
+      </div>
+      <dl class="fy-dl fy-dl--3" style="margin-top: var(--space-2)">
+        <div><dt>Size by resolution</dt><dd class="fy-num">1,000,000</dd></div>
+        <div><dt>Granted, all time</dt><dd class="fy-num">470,000</dd></div>
+        <div><dt>Forfeited, back in the pool</dt><dd class="fy-num">45,000</dd></div>
+        <div><dt>Exercised</dt><dd><span class="fy-num">0</span> <span class="fy-small fy-muted">(15,000 at ACRA)</span></dd></div>
+        <div><dt>Expired</dt><dd class="fy-num">0</dd></div>
+        <div><dt>Outstanding</dt><dd class="fy-num">425,000</dd></div>
+      </dl>
+      <p class="fy-small fy-muted">1,000,000 − 470,000 granted + 45,000 forfeited − 0 exercised − 0 expired = <span class="fy-num">575,000</span> available. A grant larger than that is refused until the shareholders enlarge the pool.</p>
+    </div>
+  </section>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="op-grants-title">
+      <div class="fy-card__head"><h2 class="fy-h3" id="op-grants-title">Grants</h2><span class="fy-badge fy-badge--quiet">7</span></div>
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr>
+            <th scope="col">Holder</th><th scope="col" class="fy-num">Options</th><th scope="col" class="fy-num fy-from-expanded">Price</th>
+            <th scope="col" class="fy-from-expanded">Vesting</th><th scope="col" class="fy-from-expanded">Expiry</th><th scope="col" class="fy-num">Vested</th><th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody class="fy-stagger">
+          <tr>
+            <td data-card="title"><a href="#equity/holders/daniel-lim">Daniel Lim</a><div class="fy-small fy-muted">Granted 1 Feb 2026<span class="fy-only-compact"> · 25,000 vested</span></div></td>
+            <td data-card="amount" class="fy-num">100,000</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.10</td>
+            <td data-card="hide" class="fy-small fy-from-expanded">4 years monthly, 1-year cliff from 1 Oct 2025; double-trigger acceleration</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Jan 2036</td>
+            <td data-card="hide" class="fy-num">25,000</td>
+            <td data-card="status"><a class="fy-chip fy-chip--neutral" href="#equity/transactions/new?draft=eq-0006"><i data-icon="pencil-line"></i>Exercise drafted</a></td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#equity/holders/priya-nair">Priya Nair</a><div class="fy-small fy-muted">Granted 1 Feb 2026<span class="fy-only-compact"> · 0 vested</span></div></td>
+            <td data-card="amount" class="fy-num">100,000</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.10</td>
+            <td data-card="hide" class="fy-small fy-from-expanded">4 years monthly, cliff 1 Nov 2026</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Jan 2036</td>
+            <td data-card="hide" class="fy-num">0</td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>Cliff 1 Nov</span></td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#equity/holders/wei-jie-ong">Wei Jie Ong</a><div class="fy-small fy-muted">Granted 1 Feb 2026<span class="fy-only-compact"> · 0 vested</span></div></td>
+            <td data-card="amount" class="fy-num">80,000</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.10</td>
+            <td data-card="hide" class="fy-small fy-from-expanded">4 years monthly, cliff 5 Jan 2027</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Jan 2036</td>
+            <td data-card="hide" class="fy-num">0</td>
+            <td data-card="hide"></td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#equity/holders/sarah-koh">Sarah Koh</a><div class="fy-small fy-muted">Granted 1 Aug 2026<span class="fy-only-compact"> · 0 vested</span></div></td>
+            <td data-card="amount" class="fy-num">50,000</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.25</td>
+            <td data-card="hide" class="fy-small fy-from-expanded">4 years monthly, cliff 1 Aug 2027</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Jul 2036</td>
+            <td data-card="hide" class="fy-num">0</td>
+            <td data-card="hide"></td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#equity/holders/hafiz-rahman">Hafiz Rahman</a><div class="fy-small fy-muted">Granted 1 Sep 2026, on joining<span class="fy-only-compact"> · 0 vested</span></div></td>
+            <td data-card="amount" class="fy-num">50,000</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.25</td>
+            <td data-card="hide" class="fy-small fy-from-expanded">4 years monthly, cliff 1 Sep 2027</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Aug 2036</td>
+            <td data-card="hide" class="fy-num">0</td>
+            <td data-card="hide"></td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#equity/holders/chen-yu">Chen Yu</a><div class="fy-small fy-muted">Granted 1 Sep 2026 · leaving 30 Nov, before the cliff<span class="fy-only-compact"> · 0 vested</span></div></td>
+            <td data-card="amount" class="fy-num">30,000</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.25</td>
+            <td data-card="hide" class="fy-small fy-from-expanded">4 years monthly, cliff 1 Sep 2027</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Aug 2036</td>
+            <td data-card="hide" class="fy-num">0</td>
+            <td data-card="hide"><span class="fy-chip fy-chip--neutral fy-wrap"><i data-icon="calendar-clock"></i>Lapses 30 Nov</span></td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#equity/holders/nurul-aziz">Nurul Aziz</a><div class="fy-small fy-muted">Left 31 Jul 2026 · 45,000 forfeited<span class="fy-only-compact"> · 15,000 vested</span></div></td>
+            <td data-card="amount" class="fy-num">15,000</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.10</td>
+            <td data-card="hide" class="fy-small fy-from-expanded">Vested at the cliff, 1 Jul 2026; 90 days to exercise after leaving</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">29 Oct 2026</td>
+            <td data-card="hide" class="fy-num">15,000</td>
+            <td data-card="status"><a class="fy-chip fy-chip--info" href="#equity/transactions/eq-0005"><i data-icon="landmark"></i>Exercised, at ACRA</a></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td data-card="title">Outstanding<span class="fy-only-compact fy-muted" style="font-weight: 400"> · 40,000 vested</span></td><td data-card="amount" class="fy-num">425,000</td><td data-card="hide" class="fy-from-expanded"></td><td data-card="hide" class="fy-from-expanded"></td><td data-card="hide" class="fy-from-expanded"></td>
+            <td data-card="hide" class="fy-num">40,000</td><td data-card="hide"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Coming up">
+      <section class="fy-card" aria-labelledby="op-next-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="op-next-title">Coming up</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="calendar-clock" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Nurul Aziz's window closes</span><span class="fy-list__meta" style="white-space: normal">29 Oct · already exercised on 8 Oct</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Done</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="calendar-range" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Priya Nair's cliff</span><span class="fy-list__meta">1 Nov · 25,000 vest</span></span>
+            <span class="fy-muted fy-small">19 days</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="calendar-range" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Daniel Lim, monthly</span><span class="fy-list__meta">1 Nov · 2,083 vest</span></span>
+            <span class="fy-muted fy-small">19 days</span>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><p class="fy-small fy-muted">A grant within 30 days of expiry with vested options left shows a deadline here and in the holder's own view.</p></div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="op-later-title">
+        <div class="fy-row"><h2 class="fy-h3 fy-grow" id="op-later-title">Expense and IR8A</h2><span class="fy-tag">Coming in P2</span></div>
+        <p class="fy-small fy-secondary">Share-based payment expense schedules from each grant's fair value, and the employee share data for IR8A Appendix 8B, are planned for a later release. The grants recorded now are what they will use.</p>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="op-own-title">
+        <div class="fy-row"><i data-icon="eye" class="fy-muted"></i><h2 class="fy-h3" id="op-own-title">What employees see</h2></div>
+        <p class="fy-small fy-secondary">Each employee sees only their own grant, vesting and exercises under My payslips and option grants. Nobody else's.</p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>New grant</button>
+  </div>
+</div>

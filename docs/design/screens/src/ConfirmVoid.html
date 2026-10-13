@@ -1,0 +1,54 @@
+<!-- fyniq-screen {"nav": "sales", "title": "INV-0150", "mode": "expert", "heights": {"compact": 500, "medium": 400, "expanded": 450}} -->
+<div class="fy-page" aria-hidden="true">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-breadcrumb">Sales › Invoices</span>
+      <h1 class="fy-h1">INV-0150 · Acme Analytics Pte Ltd</h1>
+      <div class="fy-row"><span class="fy-chip fy-chip--info"><i data-icon="send"></i>Sent</span><span class="fy-num fy-strong">S$5,450.00</span><span class="fy-small fy-muted">Due 11 Nov 2026</span></div>
+    </div>
+  </div>
+  <div class="fy-card fy-card--pad"><span class="fy-skel fy-skel--block"></span></div>
+</div>
+<div class="fy-scrim">
+  <section class="fy-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cv-title" aria-describedby="cv-what">
+    <div class="fy-grabber" aria-hidden="true"></div>
+    <div class="fy-dialog__head">
+      <span class="fy-list__icon fy-list__icon--critical"><i data-icon="ban" class="fy-i--20"></i></span>
+      <div class="fy-grow fy-stack fy-stack--2">
+        <h2 class="fy-h2" id="cv-title">Void INV-0150?</h2>
+        <p class="fy-secondary" id="cv-what">Voiding posts a reversal dated 13 Oct 2026. The original invoice stays in history, marked void, and Acme Analytics's balance drops by S$5,450.00.</p>
+      </div>
+      <button class="fy-iconbtn" type="button" aria-label="Close"><i data-icon="x"></i></button>
+    </div>
+    <div class="fy-dialog__body">
+      <div class="fy-plain fy-basic-only"><i data-icon="info"></i><span>This removes S$5,000.00 of sales and S$450.00 of GST from October. Nothing is deleted.</span></div>
+      <div class="fy-expert-only fy-stack fy-stack--2">
+        <span class="fy-eyebrow">Reversal that will post</span>
+        <div class="fy-tablewrap">
+          <table class="fy-table fy-table--compact fy-ledger">
+            <thead><tr><th scope="col">Account</th><th scope="col" class="fy-num">Debit</th><th scope="col" class="fy-num">Credit</th></tr></thead>
+            <tbody>
+              <tr><td><span class="fy-acct">4020</span>Services revenue</td><td class="fy-num">5,000.00</td><td class="fy-num"></td></tr>
+              <tr><td><span class="fy-acct">2200</span>GST control</td><td class="fy-num">450.00</td><td class="fy-num"></td></tr>
+              <tr><td><span class="fy-acct">1100</span>Accounts receivable</td><td class="fy-num"></td><td class="fy-num">5,450.00</td></tr>
+            </tbody>
+            <tfoot><tr><td>Total</td><td class="fy-num">5,450.00</td><td class="fy-num">5,450.00</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="cv-reason">Reason <span class="fy-req" aria-hidden="true">*</span></label>
+        <select class="fy-select" id="cv-reason" aria-describedby="cv-reason-help"><option>Issued to the wrong company: Acme’s Malaysian entity should be billed</option></select>
+        <span class="fy-help" id="cv-reason-help">Recorded in the audit trail with your name. Required.</span>
+      </div>
+      <div class="fy-banner fy-banner--info">
+        <i data-icon="users" class="fy-i--20"></i>
+        <div class="fy-banner__text"><strong>Needs a second founder</strong><span>Founder mode: voids need Arjun Rao's approval (FM-1). Nothing changes until he approves with his passkey.</span></div>
+      </div>
+    </div>
+    <div class="fy-dialog__foot">
+      <button class="fy-btn fy-btn--ghost" type="button">Keep the invoice</button>
+      <button class="fy-btn fy-btn--destructive" type="button"><i data-icon="ban"></i>Ask Arjun to approve the void</button>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,101 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Schedules", "mode": "expert", "heights": {"compact": 1600, "medium": 1250, "expanded": 950}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><span>Schedules</span></nav>
+      <h1 class="fy-h1">Prepayment and deferral schedules</h1>
+      <p class="fy-secondary">Costs and income spread over the months they belong to. Each month posts only once that month is reached.</p>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Schedule views">
+    <button type="button" role="tab" aria-selected="true">Schedules<span class="fy-badge fy-badge--quiet">5</span></button>
+    <button type="button" role="tab" aria-selected="false">Roll-forward<span class="fy-tag fy-tag--expert">P2</span></button>
+  </div>
+
+  <div class="fy-grid fy-grid--2 fy-stagger">
+    <a class="fy-tile" href="#accounting/ledger/1210"><span class="fy-tile__label">Prepayments still to expense<span class="fy-expert-only"> · 1210</span></span><span class="fy-tile__value fy-num">2,585.60<small>SGD</small></span><span class="fy-tile__meta">3 schedules · ties to the ledger at 30 Sep</span></a>
+    <a class="fy-tile" href="#accounting/ledger/2400"><span class="fy-tile__label">Income still to earn<span class="fy-expert-only"> · 2400</span></span><span class="fy-tile__value fy-num">31,000.00<small>SGD</small></span><span class="fy-tile__meta">2 schedules · ties to the ledger at 30 Sep</span></a>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-tablewrap">
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr>
+            <th scope="col">Schedule</th>
+            <th scope="col" class="fy-from-medium">Source</th>
+            <th scope="col" class="fy-num fy-from-medium">Total</th>
+            <th scope="col" class="fy-from-expanded">Months</th>
+            <th scope="col" class="fy-num fy-from-expanded">Recognised</th>
+            <th scope="col" class="fy-num">Remaining</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="fy-group"><td colspan="6">Prepaid costs</td></tr>
+          <tr aria-selected="true">
+            <td data-card="title"><a href="#accounting/schedules/sch-0012">Directors' and officers' insurance</a></td>
+            <td data-card="meta" class="fy-from-medium"><a class="fy-mono" href="#purchases/bill-0866">BILL-0866</a></td>
+            <td data-card="hide" class="fy-num fy-from-medium">3,400.00</td>
+            <td data-card="hide" class="fy-from-expanded">Apr 2026–Mar 2027 · 6 of 12</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">1,700.00</td>
+            <td data-card="amount" class="fy-num">1,700.00</td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#accounting/schedules/sch-0009">Figma, annual licence</a></td>
+            <td data-card="meta" class="fy-from-medium"><a class="fy-mono" href="#purchases/bill-0844">BILL-0844</a></td>
+            <td data-card="hide" class="fy-num fy-from-medium">2,160.00</td>
+            <td data-card="hide" class="fy-from-expanded">Jan–Dec 2026 · 9 of 12</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">1,620.00</td>
+            <td data-card="amount" class="fy-num">540.00</td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#accounting/schedules/sch-0008">Google Workspace, annual plan</a></td>
+            <td data-card="meta" class="fy-from-medium"><a class="fy-mono" href="#purchases/bill-0841">BILL-0841</a></td>
+            <td data-card="hide" class="fy-num fy-from-medium">1,382.40</td>
+            <td data-card="hide" class="fy-from-expanded">Jan–Dec 2026 · 9 of 12</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">1,036.80</td>
+            <td data-card="amount" class="fy-num">345.60</td>
+          </tr>
+          <tr class="fy-group"><td colspan="6">Income received in advance</td></tr>
+          <tr>
+            <td data-card="title"><a href="#accounting/schedules/sch-0011">Acme Analytics, annual platform fee</a></td>
+            <td data-card="meta" class="fy-from-medium"><a class="fy-mono" href="#sales/inv-0118">INV-0118</a></td>
+            <td data-card="hide" class="fy-num fy-from-medium">36,000.00</td>
+            <td data-card="hide" class="fy-from-expanded">Jul 2026–Jun 2027 · 3 of 12</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">9,000.00</td>
+            <td data-card="amount" class="fy-num">27,000.00</td>
+          </tr>
+          <tr>
+            <td data-card="title"><a href="#accounting/schedules/sch-0013">Kopi Labs, support plan</a></td>
+            <td data-card="meta" class="fy-from-medium"><a class="fy-mono" href="#sales/inv-0122">INV-0122</a></td>
+            <td data-card="hide" class="fy-num fy-from-medium">4,800.00</td>
+            <td data-card="hide" class="fy-from-expanded">Aug 2026–Jul 2027 · 2 of 12</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">800.00</td>
+            <td data-card="amount" class="fy-num">4,000.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="fy-card" aria-labelledby="sc-peek">
+      <div class="fy-card__head"><div class="fy-stack fy-stack--2"><span class="fy-eyebrow">SCH-0012 · from BILL-0866</span><h2 class="fy-h3" id="sc-peek">Directors' and officers' insurance</h2></div></div>
+      <table class="fy-table fy-table--compact">
+        <thead><tr><th scope="col">Month</th><th scope="col" class="fy-num">Amount</th><th scope="col">Posted</th></tr></thead>
+        <tbody>
+          <tr><td>Apr 2026</td><td class="fy-num">283.33</td><td><a class="fy-mono" href="#accounting/journals/jnl-0161">JNL-0161</a></td></tr>
+          <tr><td>May 2026</td><td class="fy-num">283.34</td><td><a class="fy-mono" href="#accounting/journals/jnl-0178">JNL-0178</a></td></tr>
+          <tr><td>Jun 2026</td><td class="fy-num">283.33</td><td><a class="fy-mono" href="#accounting/journals/jnl-0193">JNL-0193</a></td></tr>
+          <tr><td>Jul 2026</td><td class="fy-num">283.33</td><td><a class="fy-mono" href="#accounting/journals/jnl-0207">JNL-0207</a></td></tr>
+          <tr><td>Aug 2026</td><td class="fy-num">283.34</td><td><a class="fy-mono" href="#accounting/journals/jnl-0226">JNL-0226</a></td></tr>
+          <tr><td>Sep 2026</td><td class="fy-num">283.33</td><td><a class="fy-mono" href="#accounting/journals/jnl-0246">JNL-0246</a></td></tr>
+          <tr><td class="fy-muted">Oct 2026</td><td class="fy-num fy-muted">283.33</td><td><span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>Future</span></td></tr>
+          <tr><td class="fy-muted">Nov 2026–Mar 2027</td><td class="fy-num fy-muted">1,416.67</td><td><span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>Future</span></td></tr>
+        </tbody>
+      </table>
+      <div class="fy-card__body">
+        <p class="fy-small fy-muted">Months are rounded on the running total, so they differ by a cent and the 12 months add up to exactly 3,400.00<span class="fy-expert-only"> (<span class="fy-mono">ALLOC-EVEN</span>)</span>. Each posts Dr <span class="fy-acct">6410</span>Insurance, Cr <span class="fy-acct">1210</span>Prepayments.</p>
+      </div>
+    </aside>
+  </div>
+</div>

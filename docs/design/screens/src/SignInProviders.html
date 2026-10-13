@@ -1,0 +1,179 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Sign-in providers", "mode": "expert", "heights": {"compact": 3120, "medium": 2500, "expanded": 1680}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#admin">Installation</a><i data-icon="chevron-right"></i><span>Sign-in</span></nav>
+      <h1 class="fy-h1">Sign-in providers</h1>
+      <p class="fy-secondary">Choose how people sign in to every organisation on this installation.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="plus"></i>Add OpenID Connect provider</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info">
+    <i data-icon="shield-check" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Fyniq’s own second step is always required</span>
+      <span class="fy-small fy-secondary">Whichever provider someone uses, they still confirm with a passkey or an authenticator code. Passkeys stay the step-up for approvals.</span>
+    </div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="prov-title">
+    <div class="fy-card__head"><h2 class="fy-h3" id="prov-title">Providers</h2><span class="fy-small fy-muted fy-from-medium">2 of 4 on · last 30 days</span></div>
+    <table class="fy-table fy-table--cards">
+      <thead><tr><th scope="col">Provider</th><th scope="col" class="fy-from-expanded">Issuer</th><th scope="col" class="fy-num fy-from-expanded">Sign-ins</th><th scope="col">Status</th><th scope="col"><span class="fy-sr">On or off</span></th></tr></thead>
+      <tbody class="fy-stagger">
+        <tr>
+          <td data-card="title"><span class="fy-row fy-row--top"><span class="fy-org__logo" aria-hidden="true">G</span><span class="fy-stack fy-stack--2" style="gap: 0">Google<span class="fy-until-expanded fy-muted" style="font-weight: 400"><span class="fy-mono fy-small" style="word-break: break-all">https://accounts.google.com</span></span></span></span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-mono" style="word-break: break-all">https://accounts.google.com</span></td>
+          <td class="fy-num fy-from-expanded" data-card="hide">412</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Last method for a Super admin</span></td>
+          <td data-card="status"><button class="fy-switch" type="button" role="switch" aria-checked="true" aria-disabled="true" style="opacity: 0.55; cursor: not-allowed" aria-label="Google sign-in, on. Can’t be turned off: it is the only way Mei Lin Tan, a Super admin, signs in"></button></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-row fy-row--top"><span class="fy-org__logo" aria-hidden="true">Z</span><span class="fy-stack fy-stack--2" style="gap: 0">Zoho · US data centre<span class="fy-until-expanded fy-muted" style="font-weight: 400"><span class="fy-mono fy-small" style="word-break: break-all">https://accounts.zoho.com</span></span></span></span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-mono" style="word-break: break-all">https://accounts.zoho.com</span></td>
+          <td class="fy-num fy-from-expanded" data-card="hide">96</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On · tested 2 Oct</span></td>
+          <td data-card="status"><button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Zoho, US data centre, on"></button></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-row fy-row--top"><span class="fy-org__logo" aria-hidden="true"><i data-icon="building"></i></span><span class="fy-stack fy-stack--2" style="gap: 0">Ho &amp; Partners SSO<span class="fy-until-expanded fy-muted" style="font-weight: 400"><span class="fy-mono fy-small" style="word-break: break-all">https://login.hopartners.sg</span></span></span></span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-mono" style="word-break: break-all">https://login.hopartners.sg</span></td>
+          <td class="fy-num fy-from-expanded" data-card="hide">14</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Off · test failed</span></td>
+          <td data-card="status"><button class="fy-switch" type="button" role="switch" aria-checked="false" aria-label="Ho and Partners SSO, off"></button></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-row fy-row--top"><span class="fy-org__logo" aria-hidden="true"><i data-icon="key-round"></i></span><span class="fy-stack fy-stack--2" style="gap: 0">Email and password<span class="fy-until-expanded fy-muted" style="font-weight: 400"><span class="fy-small">Fyniq accounts</span></span></span></span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-muted">Fyniq accounts</span></td>
+          <td class="fy-num fy-from-expanded" data-card="hide">–</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-pause"></i>Off</span></td>
+          <td data-card="status"><button class="fy-switch" type="button" role="switch" aria-checked="false" aria-label="Email and password, off"></button></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-row fy-row--top"><span class="fy-org__logo" aria-hidden="true"><i data-icon="shield"></i></span><span class="fy-stack fy-stack--2" style="gap: 0"><span class="fy-muted">SAML</span><span class="fy-until-expanded fy-muted" style="font-weight: 400"><span class="fy-small">Enterprise mode</span></span></span></span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-muted">Enterprise mode</span></td>
+          <td class="fy-num fy-from-expanded" data-card="hide">–</td>
+          <td data-card="meta"><span class="fy-tag fy-tag--expert">P3</span></td>
+          <td data-card="status"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="fy-card__foot fy-row--wrap">
+      <i data-icon="info" class="fy-muted"></i>
+      <span class="fy-small fy-secondary fy-grow">Turning a provider off blocks new sign-ins at once and keeps its settings. Zoho needs one provider per data centre.</span>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Add a Zoho data centre</button>
+    </div>
+  </section>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="cfg-title">
+      <div class="fy-card__head">
+        <span class="fy-org__logo" aria-hidden="true"><i data-icon="building"></i></span>
+        <h2 class="fy-h3" id="cfg-title">Ho &amp; Partners SSO · OpenID Connect</h2>
+        <span class="fy-chip fy-chip--neutral fy-from-medium"><i data-icon="circle-pause"></i>Off</span>
+      </div>
+      <div class="fy-card__body fy-stack">
+        <div class="fy-banner fy-banner--critical" role="alert">
+          <i data-icon="circle-x" class="fy-i--20"></i>
+          <div class="fy-banner__text">
+            <span class="fy-strong">Test sign-in failed at 09:06</span>
+            <span class="fy-small fy-secondary">The provider’s TLS certificate expired on 11 Oct 2026, so Fyniq refused the connection. Ask Ho &amp; Partners to renew it, then test again. Only the reason is shown, never the provider’s response.</span>
+          </div>
+        </div>
+
+        <div class="fy-form fy-form--2">
+          <div class="fy-field fy-field--full">
+            <label class="fy-label" for="oidc-disc">Discovery URL <span class="fy-req" aria-hidden="true">*</span></label>
+            <input class="fy-input fy-mono" id="oidc-disc" value="https://login.hopartners.sg/.well-known/openid-configuration" readonly="readonly">
+            <span class="fy-help">Fyniq reads the issuer, endpoints and keys from here. Private and internal addresses are refused.</span>
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="oidc-client">Client ID <span class="fy-req" aria-hidden="true">*</span></label>
+            <input class="fy-input fy-mono" id="oidc-client" value="fyniq-cognizhi" readonly="readonly">
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="oidc-secret">Client secret<button class="fy-info" type="button" aria-label="About write-only secrets" aria-expanded="false"><i data-icon="info"></i></button></label>
+            <input class="fy-input" id="oidc-secret" placeholder="Set on 2 Oct 2026 · enter a new one to replace it" aria-describedby="oidc-secret-help">
+            <span class="fy-help" id="oidc-secret-help">Write-only: kept in Secret Manager and never shown again.</span>
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="oidc-scopes">Scopes</label>
+            <input class="fy-input fy-mono" id="oidc-scopes" value="openid email profile" readonly="readonly">
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="oidc-sub">Identify people by</label>
+            <input class="fy-input fy-mono" id="oidc-sub" value="issuer + sub" readonly="readonly" aria-describedby="oidc-sub-help">
+            <span class="fy-help" id="oidc-sub-help">Never by email: a matching email alone does not link accounts.</span>
+          </div>
+        </div>
+
+        <fieldset class="fy-fieldset">
+          <legend>Claim mapping</legend>
+          <table class="fy-table fy-table--compact">
+            <thead><tr><th scope="col">Fyniq field</th><th scope="col">Provider claim</th></tr></thead>
+            <tbody>
+              <tr><td>Email (verified only)</td><td><span class="fy-mono">email</span> + <span class="fy-mono">email_verified</span></td></tr>
+              <tr><td>Display name</td><td><span class="fy-mono">name</span></td></tr>
+              <tr><td>Given and family name</td><td><span class="fy-mono">given_name</span>, <span class="fy-mono">family_name</span></td></tr>
+            </tbody>
+          </table>
+        </fieldset>
+
+        <div class="fy-divider"></div>
+
+        <div class="fy-stack fy-stack--3">
+          <h3 class="fy-h3">Who may use it</h3>
+          <div class="fy-field">
+            <label class="fy-label" for="oidc-domains">Allowed email domains</label>
+            <input class="fy-input fy-mono" id="oidc-domains" value="hopartners.sg" readonly="readonly">
+          </div>
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="join-l" aria-describedby="join-d"></button>
+            <span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong" id="join-l">New people may join by domain</span><span class="fy-small fy-secondary" id="join-d">Off: people need an invitation, even with an allowed domain. Recommended.</span></span>
+          </div>
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="trust-l" aria-describedby="trust-d"></button>
+            <span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong" id="trust-l">Trust the provider’s MFA</span><span class="fy-small fy-secondary" id="trust-d">Off: people still confirm with Fyniq’s passkey or code. Leave off unless an audit asks otherwise.</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="fy-card__foot fy-row--wrap fy-from-medium">
+        <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="play"></i>Test sign-in</button>
+        <span class="fy-spacer"></span>
+        <span class="fy-small fy-muted">Needs your passkey</span>
+        <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Save changes</button>
+      </div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Rules and recent changes">
+      <section class="fy-card" aria-labelledby="rules-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="rules-title">Rules that always apply</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="lock" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2 fy-grow" style="gap: 2px"><span class="fy-strong fy-small">The last method stays on</span><span class="fy-small fy-secondary">Fyniq refuses to turn off the last way a Super admin can sign in.</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="link" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2 fy-grow" style="gap: 2px"><span class="fy-strong fy-small">Linking needs step-up</span><span class="fy-small fy-secondary">A new provider joins an account only after a passkey or code check, and everyone is notified.</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="users" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2 fy-grow" style="gap: 2px"><span class="fy-strong fy-small">Two people for each change</span><span class="fy-small fy-secondary">Once a second Super admin exists, every change here waits for their approval. Until Arjun Rao accepts, changes apply after your step-up.</span></span></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="chg-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="chg-title">Recent changes</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#admin/audit">Audit log</a></div>
+        <div class="fy-card__body">
+          <div class="fy-timeline" role="list">
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot"><i data-icon="circle-pause"></i></span><span class="fy-small fy-strong">Ho &amp; Partners SSO turned off</span><span class="fy-small fy-muted">Mei Lin Tan · 12 Oct, 17:40 · its 2 sessions ended</span></div>
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot"><i data-icon="circle-x"></i></span><span class="fy-small fy-strong">Test sign-in failed</span><span class="fy-small fy-muted">Ho &amp; Partners SSO · 12 Oct, 17:32 · certificate expired</span></div>
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-small fy-strong">Zoho, US data centre added and tested</span><span class="fy-small fy-muted">Mei Lin Tan · 2 Oct, 10:05</span></div>
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-small fy-strong">Google turned on at first-run setup</span><span class="fy-small fy-muted">Mei Lin Tan · 2 Oct, 09:41</span></div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button">Test sign-in</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Save changes</button>
+  </div>
+</div>

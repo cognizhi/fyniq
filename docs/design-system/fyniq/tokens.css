@@ -121,6 +121,9 @@
   --sidebar-width: 240px;
   --sidebar-collapsed: 64px;
   --panel-width: 420px;  /* side-peek and AI panel */
+  --rail-width: 80px;    /* navigation rail, medium class (MASTER §5.1) */
+  --bottom-bar-height: 64px; /* bottom navigation, compact class */
+  --touch-target: 44px;  /* minimum target on touch screens (FR-UX-37) */
 
   /* Shape and elevation */
   --radius-s: 4px;   /* chips, inputs */
@@ -137,6 +140,8 @@
   --duration-tour: 300ms;  /* walkthrough spotlight only (MASTER §12) */
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --rise: 8px;           /* page and list entry offset (MASTER §9) */
+  --stagger: 30ms;       /* per row, at most 8 rows */
 
   /* Layers */
   --z-sticky: 10;
@@ -292,12 +297,15 @@
   }
 }
 
-/* The user's in-app "Reduce motion" setting does the same as the OS preference */
-[data-motion="reduce"] {
+/* The user's "Reduce motion" setting and the organisation's motion switch set to Off
+   (FR-UX-38) do the same as the OS preference */
+[data-motion="reduce"],
+[data-motion="off"] {
   --duration-fast: 0ms;
   --duration-base: 0ms;
   --duration-slow: 0ms;
   --duration-tour: 0ms;
+  --stagger: 0ms;
 }
 
 /* Tailwind CSS 4 mapping (apps/web/src/styles/globals.css imports this file) */

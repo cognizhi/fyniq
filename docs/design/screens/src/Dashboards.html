@@ -1,0 +1,307 @@
+<!-- fyniq-screen {"nav": "reports", "title": "Dashboard", "mode": "basic", "heights": {"compact": 3200, "medium": 3450, "expanded": 1850}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Dashboard</span>
+      <h1 class="fy-h1">Company overview</h1>
+      <p class="fy-secondary">Your workbook’s 16 numbers and 4 charts, live from the books. Select any figure to see where it comes from.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="share-2"></i>Share</button>
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="layout-dashboard"></i>Customise</button>
+    </div>
+  </div>
+
+  <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+    <div class="fy-field" style="flex: 1 1 160px; max-width: 240px"><label class="fy-label" for="db-board">Dashboard</label><select class="fy-select" id="db-board"><option>Company overview</option><option>Board (read only)</option><option>Finance team</option></select></div>
+    <div class="fy-field" style="flex: 1 1 160px; max-width: 220px"><label class="fy-label" for="db-period">Month</label><select class="fy-select" id="db-period"><option>September 2026</option><option>August 2026</option><option>Q3 2026</option></select></div>
+    <p class="fy-small fy-muted" style="align-self: flex-end; padding-bottom: 10px">September is provisional until the close is finished. Cash, owed and books health are as at today, 09:12.</p>
+  </div>
+
+  <section aria-labelledby="tiles-title" class="fy-stack fy-stack--3">
+    <h2 class="fy-sr" id="tiles-title">Key numbers</h2>
+    <div class="fy-grid fy-grid--tiles fy-stagger fy-from-medium">
+      <div class="fy-tile">
+  <span class="fy-tile__label">Cash in the bank<button class="fy-info" type="button" aria-label="About cash in the bank" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#banking" style="color: var(--text-primary)">412,380.15<small>SGD</small></a>
+  <span class="fy-tile__meta"><span class="fy-delta fy-delta--down"><i data-icon="arrow-down-right"></i>−9,412.60</span>since last Tuesday</span><span class="fy-tile__meta"><i data-icon="clock"></i>4 accounts · 09:12</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Burn<button class="fy-info" type="button" aria-label="About burn" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/cash-runway" style="color: var(--text-primary)">38,214<small>a month</small></a>
+  <span class="fy-tile__meta">Average net cash out, Jul–Sep</span><span class="fy-tile__meta"><i data-icon="clock"></i>Sep close pending</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Runway<button class="fy-info" type="button" aria-label="About runway" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/cash-runway" style="color: var(--text-primary)">10.8<small>months</small></a>
+  <span class="fy-tile__meta">Cash ÷ burn, at today’s burn</span><span class="fy-tile__meta"><i data-icon="clock"></i>09:12</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Forecast cash-out<button class="fy-info" type="button" aria-label="About forecast cash-out" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#planning/forecast/base" style="color: var(--text-primary)">Nov 2027</a>
+  <span class="fy-tile__meta">Base scenario, without the unconfirmed seed round</span><span class="fy-tile__meta"><i data-icon="clock"></i>Base saved 9 Oct</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Revenue, September<button class="fy-info" type="button" aria-label="About revenue" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/pl" style="color: var(--text-primary)">86,240.00<small>SGD</small></a>
+  <span class="fy-tile__meta"><span class="fy-delta fy-delta--up"><i data-icon="arrow-up-right"></i>+3.8%</span>vs August</span><span class="fy-tile__meta"><i data-icon="clock"></i>provisional</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Gross margin, September<button class="fy-info" type="button" aria-label="About gross margin" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/pl#gross-margin" style="color: var(--text-primary)">83.6%</a>
+  <span class="fy-tile__meta"><span class="fy-delta fy-delta--flat"><i data-icon="arrow-down-right"></i>−0.2 pts</span>vs August</span><span class="fy-tile__meta"><i data-icon="clock"></i>provisional</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Net profit, year to date<button class="fy-info" type="button" aria-label="About net profit" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/pl?period=ytd" style="color: var(--text-primary)">−185,963.91<small>SGD</small></a>
+  <span class="fy-tile__meta">A loss over Jan–Sep, 9 months</span><span class="fy-tile__meta"><i data-icon="clock"></i>provisional</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Books health</span>
+  <a class="fy-tile__value" href="#compliance/checks" style="color: var(--text-primary)"><span class="fy-row fy-row--wrap" style="gap: 4px; font-size: var(--fs-base); letter-spacing: 0"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>1 can’t post</span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>3 to review</span><span class="fy-chip fy-chip--warning fy-chip--outline"><i data-icon="triangle-alert"></i>1 not assessed</span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>85 OK</span></span></a>
+  <span class="fy-tile__meta"><a href="#compliance/checks">Open all checks</a></span><span class="fy-tile__meta"><i data-icon="clock"></i>09:12</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Revenue vs budget, September<button class="fy-info" type="button" aria-label="About revenue vs budget" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/pl?compare=budget" style="color: var(--text-primary)">+2,240.00<small>SGD</small></a>
+  <span class="fy-tile__meta"><span class="fy-delta fy-delta--up"><i data-icon="arrow-up-right"></i>+2.7%</span>86,240.00 vs 84,000.00</span><span class="fy-tile__meta"><i data-icon="clock"></i>FY2026 Revised</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Costs vs budget, September<button class="fy-info" type="button" aria-label="About costs vs budget" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/pl?compare=budget" style="color: var(--text-primary)">+1,667.00<small>SGD</small></a>
+  <span class="fy-tile__meta"><span class="fy-delta fy-delta--up"><i data-icon="arrow-up-right"></i>+1.6%</span>over: 109,067.00 vs 107,400.00</span><span class="fy-tile__meta"><i data-icon="clock"></i>FY2026 Revised</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Customers owe us<button class="fy-info" type="button" aria-label="About customers owe us" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/ageing" style="color: var(--text-primary)">48,250.00<small>SGD</small></a>
+  <span class="fy-tile__meta"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>3 overdue</span>S$11,400.00 past due</span><span class="fy-tile__meta"><i data-icon="clock"></i>09:12</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">We owe suppliers<button class="fy-info" type="button" aria-label="About we owe suppliers" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/ageing?view=payables" style="color: var(--text-primary)">12,870.40<small>SGD</small></a>
+  <span class="fy-tile__meta">2 bills due this week</span><span class="fy-tile__meta"><i data-icon="clock"></i>09:12</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Pipeline<button class="fy-info" type="button" aria-label="About pipeline" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#settings/integrations" style="color: var(--text-primary)">—</a>
+  <span class="fy-tile__meta">No CRM is connected, so there is nothing to add up. <a href="#settings/integrations">Connect one</a></span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Unbilled time<button class="fy-info" type="button" aria-label="About unbilled time" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/projects#unbilled" style="color: var(--text-primary)">12,270.00<small>SGD</small></a>
+  <span class="fy-tile__meta">62.5 h on Acme data platform</span><span class="fy-tile__meta"><i data-icon="clock"></i>yesterday 18:00</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Recurring due<button class="fy-info" type="button" aria-label="About recurring due" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#sales/recurring" style="color: var(--text-primary)">18,802.50<small>SGD</small></a>
+  <span class="fy-tile__meta">3 recurring invoices by 12 Nov</span><span class="fy-tile__meta"><i data-icon="clock"></i>09:12</span>
+</div><div class="fy-tile">
+  <span class="fy-tile__label">Unrealised FX<button class="fy-info" type="button" aria-label="About unrealised FX" aria-expanded="false"><i data-icon="info"></i></button></span>
+  <a class="fy-tile__value" href="#reports/fx" style="color: var(--text-primary)">+126.67<small>SGD</small></a>
+  <span class="fy-tile__meta">On US$22,220.00 in Wise and Airwallex, September revaluation (draft)</span><span class="fy-tile__meta"><i data-icon="clock"></i>30 Sep</span>
+</div>
+    </div>
+    <div class="fy-card fy-only-compact">
+      <ul class="fy-list fy-stagger">
+        <li><a class="fy-list__item" href="#banking"><span class="fy-list__main"><span class="fy-list__title">Cash in the bank</span><span class="fy-list__meta">4 accounts · −9,412.60 since last Tuesday</span></span><span class="fy-num fy-strong">S$412,380.15</span></a></li><li><a class="fy-list__item" href="#reports/cash-runway"><span class="fy-list__main"><span class="fy-list__title">Burn</span><span class="fy-list__meta">A month, average Jul–Sep</span></span><span class="fy-num fy-strong">S$38,214</span></a></li><li><a class="fy-list__item" href="#reports/cash-runway"><span class="fy-list__main"><span class="fy-list__title">Runway</span><span class="fy-list__meta">At today’s burn</span></span><span class="fy-num fy-strong">10.8 months</span></a></li><li><a class="fy-list__item" href="#planning/forecast/base"><span class="fy-list__main"><span class="fy-list__title">Forecast cash-out</span><span class="fy-list__meta">Base, without the unconfirmed seed round</span></span><span class="fy-num fy-strong">Nov 2027</span></a></li><li><a class="fy-list__item" href="#reports/pl"><span class="fy-list__main"><span class="fy-list__title">Revenue, September</span><span class="fy-list__meta">+3.8% vs August · provisional</span></span><span class="fy-num fy-strong">S$86,240.00</span></a></li><li><a class="fy-list__item" href="#reports/pl"><span class="fy-list__main"><span class="fy-list__title">Gross margin, September</span><span class="fy-list__meta">−0.2 pts vs August</span></span><span class="fy-num fy-strong">83.6%</span></a></li><li><a class="fy-list__item" href="#reports/pl?period=ytd"><span class="fy-list__main"><span class="fy-list__title">Net profit, year to date</span><span class="fy-list__meta">A loss over Jan–Sep</span></span><span class="fy-num fy-strong">−185,963.91</span></a></li><li><a class="fy-list__item" href="#compliance/checks"><span class="fy-list__main"><span class="fy-list__title">Books health</span><span class="fy-row fy-row--wrap" style="gap: 4px"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>1 can’t post</span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>3 to review</span><span class="fy-chip fy-chip--warning fy-chip--outline"><i data-icon="triangle-alert"></i>1 not assessed</span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>85 OK</span></span></span><i data-icon="chevron-right" class="fy-muted"></i></a></li><li><a class="fy-list__item" href="#reports/pl?compare=budget"><span class="fy-list__main"><span class="fy-list__title">Revenue vs budget</span><span class="fy-list__meta">+2.7% in September</span></span><span class="fy-num fy-strong">+2,240.00</span></a></li><li><a class="fy-list__item" href="#reports/pl?compare=budget"><span class="fy-list__main"><span class="fy-list__title">Costs vs budget</span><span class="fy-list__meta">+1.6% over in September</span></span><span class="fy-num fy-strong">+1,667.00</span></a></li><li><a class="fy-list__item" href="#reports/ageing"><span class="fy-list__main"><span class="fy-list__title">Customers owe us</span><span class="fy-list__meta">3 overdue · S$11,400.00 past due</span></span><span class="fy-num fy-strong">S$48,250.00</span></a></li><li><a class="fy-list__item" href="#reports/ageing?view=payables"><span class="fy-list__main"><span class="fy-list__title">We owe suppliers</span><span class="fy-list__meta">2 bills due this week</span></span><span class="fy-num fy-strong">S$12,870.40</span></a></li><li><a class="fy-list__item" href="#settings/integrations"><span class="fy-list__main"><span class="fy-list__title">Pipeline</span><span class="fy-list__meta">No CRM connected yet</span></span><span class="fy-num fy-strong">—</span></a></li><li><a class="fy-list__item" href="#reports/projects#unbilled"><span class="fy-list__main"><span class="fy-list__title">Unbilled time</span><span class="fy-list__meta">62.5 h on Acme data platform</span></span><span class="fy-num fy-strong">S$12,270.00</span></a></li><li><a class="fy-list__item" href="#sales/recurring"><span class="fy-list__main"><span class="fy-list__title">Recurring due</span><span class="fy-list__meta">3 recurring invoices by 12 Nov</span></span><span class="fy-num fy-strong">S$18,802.50</span></a></li><li><a class="fy-list__item" href="#reports/fx"><span class="fy-list__main"><span class="fy-list__title">Unrealised FX</span><span class="fy-list__meta">On US$22,220.00 held at 30 Sep, draft revaluation</span></span><span class="fy-num fy-strong">+126.67</span></a></li>
+      </ul>
+      <p class="fy-card__foot fy-small fy-muted"><i data-icon="clock"></i>Updated 09:12 · September is provisional</p>
+    </div>
+  </section>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+<section class="fy-card" aria-labelledby="ch-rev">
+  <div class="fy-card__head"><h2 class="fy-h3" id="ch-rev">Revenue vs budget, 2026</h2><div class="fy-segmented" role="radiogroup" aria-label="Show revenue vs budget, 2026 as"><button type="button" role="radio" aria-checked="true">Chart</button><button type="button" role="radio" aria-checked="false">Table</button></div><button class="fy-iconbtn" type="button" aria-label="Export revenue vs budget, 2026: PNG, XLSX or CSV"><i data-icon="download"></i></button></div>
+  <div class="fy-card__body fy-stack fy-stack--3">
+    <div class="fy-legend"><span><span class="fy-legend__key fy-swatch-1"></span>Actual</span><span><span class="fy-legend__key fy-swatch-2"></span>Budget (FY2026 Revised)</span></div>
+    <svg class="fy-chart fy-only-compact" viewBox="0 0 320 180" role="img" aria-label="Revenue beat budget in every month from January to September; September revenue was S$86,240.00 against a budget of S$84,000.00.">
+<line class="axis" x1="34" y1="154" x2="314" y2="154"></line>
+<text x="0" y="158">0</text>
+<line class="grid" x1="34" y1="82" x2="314" y2="82"></line>
+<text x="0" y="86">50k</text>
+<line class="grid" x1="34" y1="10" x2="314" y2="10"></line>
+<text x="0" y="14">100k</text>
+<path class="fy-bar fy-c1" d="M38.6,154 L38.6,81.9 Q38.6,78.9 41.6,78.9 L45.6,78.9 Q48.6,78.9 48.6,81.9 L48.6,154 Z"></path>
+<path class="fy-bar fy-c2" d="M50.6,154 L50.6,85 Q50.6,82 53.6,82 L57.6,82 Q60.6,82 60.6,85 L60.6,154 Z"></path>
+<text x="49.6" y="174" text-anchor="middle">Jan</text>
+<path class="fy-bar fy-c1" d="M69.7,154 L69.7,76.9 Q69.7,73.9 72.7,73.9 L76.7,73.9 Q79.7,73.9 79.7,76.9 L79.7,154 Z"></path>
+<path class="fy-bar fy-c2" d="M81.7,154 L81.7,79.2 Q81.7,76.2 84.7,76.2 L88.7,76.2 Q91.7,76.2 91.7,79.2 L91.7,154 Z"></path>
+<path class="fy-bar fy-c1" d="M100.8,154 L100.8,71.7 Q100.8,68.7 103.8,68.7 L107.8,68.7 Q110.8,68.7 110.8,71.7 L110.8,154 Z"></path>
+<path class="fy-bar fy-c2" d="M112.8,154 L112.8,73.5 Q112.8,70.5 115.8,70.5 L119.8,70.5 Q122.8,70.5 122.8,73.5 L122.8,154 Z"></path>
+<text x="111.8" y="174" text-anchor="middle">Mar</text>
+<path class="fy-bar fy-c1" d="M131.9,154 L131.9,66.5 Q131.9,63.5 134.9,63.5 L138.9,63.5 Q141.9,63.5 141.9,66.5 L141.9,154 Z"></path>
+<path class="fy-bar fy-c2" d="M143.9,154 L143.9,67.7 Q143.9,64.7 146.9,64.7 L150.9,64.7 Q153.9,64.7 153.9,67.7 L153.9,154 Z"></path>
+<path class="fy-bar fy-c1" d="M163,154 L163,59.9 Q163,56.9 166,56.9 L170,56.9 Q173,56.9 173,59.9 L173,154 Z"></path>
+<path class="fy-bar fy-c2" d="M175,154 L175,62 Q175,59 178,59 L182,59 Q185,59 185,62 L185,154 Z"></path>
+<text x="174" y="174" text-anchor="middle">May</text>
+<path class="fy-bar fy-c1" d="M194.1,154 L194.1,52 Q194.1,49 197.1,49 L201.1,49 Q204.1,49 204.1,52 L204.1,154 Z"></path>
+<path class="fy-bar fy-c2" d="M206.1,154 L206.1,56.2 Q206.1,53.2 209.1,53.2 L213.1,53.2 Q216.1,53.2 216.1,56.2 L216.1,154 Z"></path>
+<path class="fy-bar fy-c1" d="M225.2,154 L225.2,41.1 Q225.2,38.1 228.2,38.1 L232.2,38.1 Q235.2,38.1 235.2,41.1 L235.2,154 Z"></path>
+<path class="fy-bar fy-c2" d="M237.2,154 L237.2,47.6 Q237.2,44.6 240.2,44.6 L244.2,44.6 Q247.2,44.6 247.2,47.6 L247.2,154 Z"></path>
+<text x="236.2" y="174" text-anchor="middle">Jul</text>
+<path class="fy-bar fy-c1" d="M256.3,154 L256.3,37.3 Q256.3,34.3 259.3,34.3 L263.3,34.3 Q266.3,34.3 266.3,37.3 L266.3,154 Z"></path>
+<path class="fy-bar fy-c2" d="M268.3,154 L268.3,41.8 Q268.3,38.8 271.3,38.8 L275.3,38.8 Q278.3,38.8 278.3,41.8 L278.3,154 Z"></path>
+<path class="fy-bar fy-c1" d="M287.4,154 L287.4,32.8 Q287.4,29.8 290.4,29.8 L294.4,29.8 Q297.4,29.8 297.4,32.8 L297.4,154 Z"></path>
+<path class="fy-bar fy-c2" d="M299.4,154 L299.4,36 Q299.4,33 302.4,33 L306.4,33 Q309.4,33 309.4,36 L309.4,154 Z"></path>
+<text x="298.4" y="174" text-anchor="middle">Sep</text>
+</svg><svg class="fy-chart fy-from-medium" viewBox="0 0 640 190" role="img" aria-label="Revenue beat budget in every month from January to September; September revenue was S$86,240.00 against a budget of S$84,000.00.">
+<line class="axis" x1="38" y1="164" x2="634" y2="164"></line>
+<text x="0" y="168">0</text>
+<line class="grid" x1="38" y1="125.5" x2="634" y2="125.5"></line>
+<text x="0" y="129.5">25k</text>
+<line class="grid" x1="38" y1="87" x2="634" y2="87"></line>
+<text x="0" y="91">50k</text>
+<line class="grid" x1="38" y1="48.5" x2="634" y2="48.5"></line>
+<text x="0" y="52.5">75k</text>
+<line class="grid" x1="38" y1="10" x2="634" y2="10"></line>
+<text x="0" y="14">100k</text>
+<path class="fy-bar fy-c1" d="M56.1,164 L56.1,86.6 Q56.1,83.6 59.1,83.6 L67.1,83.6 Q70.1,83.6 70.1,86.6 L70.1,164 Z"></path>
+<path class="fy-bar fy-c2" d="M72.1,164 L72.1,90 Q72.1,87 75.1,87 L83.1,87 Q86.1,87 86.1,90 L86.1,164 Z"></path>
+<text x="71.1" y="184" text-anchor="middle">Jan</text>
+<path class="fy-bar fy-c1" d="M122.3,164 L122.3,81.3 Q122.3,78.3 125.3,78.3 L133.3,78.3 Q136.3,78.3 136.3,81.3 L136.3,164 Z"></path>
+<path class="fy-bar fy-c2" d="M138.3,164 L138.3,83.8 Q138.3,80.8 141.3,80.8 L149.3,80.8 Q152.3,80.8 152.3,83.8 L152.3,164 Z"></path>
+<text x="137.3" y="184" text-anchor="middle">Feb</text>
+<path class="fy-bar fy-c1" d="M188.6,164 L188.6,75.8 Q188.6,72.8 191.6,72.8 L199.6,72.8 Q202.6,72.8 202.6,75.8 L202.6,164 Z"></path>
+<path class="fy-bar fy-c2" d="M204.6,164 L204.6,77.7 Q204.6,74.7 207.6,74.7 L215.6,74.7 Q218.6,74.7 218.6,77.7 L218.6,164 Z"></path>
+<text x="203.6" y="184" text-anchor="middle">Mar</text>
+<path class="fy-bar fy-c1" d="M254.8,164 L254.8,70.2 Q254.8,67.2 257.8,67.2 L265.8,67.2 Q268.8,67.2 268.8,70.2 L268.8,164 Z"></path>
+<path class="fy-bar fy-c2" d="M270.8,164 L270.8,71.5 Q270.8,68.5 273.8,68.5 L281.8,68.5 Q284.8,68.5 284.8,71.5 L284.8,164 Z"></path>
+<text x="269.8" y="184" text-anchor="middle">Apr</text>
+<path class="fy-bar fy-c1" d="M321,164 L321,63.2 Q321,60.2 324,60.2 L332,60.2 Q335,60.2 335,63.2 L335,164 Z"></path>
+<path class="fy-bar fy-c2" d="M337,164 L337,65.4 Q337,62.4 340,62.4 L348,62.4 Q351,62.4 351,65.4 L351,164 Z"></path>
+<text x="336" y="184" text-anchor="middle">May</text>
+<path class="fy-bar fy-c1" d="M387.2,164 L387.2,54.7 Q387.2,51.7 390.2,51.7 L398.2,51.7 Q401.2,51.7 401.2,54.7 L401.2,164 Z"></path>
+<path class="fy-bar fy-c2" d="M403.2,164 L403.2,59.2 Q403.2,56.2 406.2,56.2 L414.2,56.2 Q417.2,56.2 417.2,59.2 L417.2,164 Z"></path>
+<text x="402.2" y="184" text-anchor="middle">Jun</text>
+<path class="fy-bar fy-c1" d="M453.4,164 L453.4,43.1 Q453.4,40.1 456.4,40.1 L464.4,40.1 Q467.4,40.1 467.4,43.1 L467.4,164 Z"></path>
+<path class="fy-bar fy-c2" d="M469.4,164 L469.4,50 Q469.4,47 472.4,47 L480.4,47 Q483.4,47 483.4,50 L483.4,164 Z"></path>
+<text x="468.4" y="184" text-anchor="middle">Jul</text>
+<path class="fy-bar fy-c1" d="M519.7,164 L519.7,39 Q519.7,36 522.7,36 L530.7,36 Q533.7,36 533.7,39 L533.7,164 Z"></path>
+<path class="fy-bar fy-c2" d="M535.7,164 L535.7,43.8 Q535.7,40.8 538.7,40.8 L546.7,40.8 Q549.7,40.8 549.7,43.8 L549.7,164 Z"></path>
+<text x="534.7" y="184" text-anchor="middle">Aug</text>
+<path class="fy-bar fy-c1" d="M585.9,164 L585.9,34.2 Q585.9,31.2 588.9,31.2 L596.9,31.2 Q599.9,31.2 599.9,34.2 L599.9,164 Z"></path>
+<path class="fy-bar fy-c2" d="M601.9,164 L601.9,37.6 Q601.9,34.6 604.9,34.6 L612.9,34.6 Q615.9,34.6 615.9,37.6 L615.9,164 Z"></path>
+<text x="600.9" y="184" text-anchor="middle">Sep</text>
+<text x="592.9" y="26.2" text-anchor="middle">86.2k</text>
+</svg>
+    <p class="fy-small fy-muted">Select a month to open its profit and loss.</p>
+  </div>
+</section>
+
+<section class="fy-card" aria-labelledby="ch-cash">
+  <div class="fy-card__head"><h2 class="fy-h3" id="ch-cash">Cash, next 13 weeks</h2><div class="fy-segmented" role="radiogroup" aria-label="Show cash, next 13 weeks as"><button type="button" role="radio" aria-checked="true">Chart</button><button type="button" role="radio" aria-checked="false">Table</button></div><button class="fy-iconbtn" type="button" aria-label="Export cash, next 13 weeks: PNG, XLSX or CSV"><i data-icon="download"></i></button></div>
+  <div class="fy-card__body fy-stack fy-stack--3">
+    <p class="fy-small fy-muted">Projected week-end balances from open invoices, bills, pay runs, CPF and GST. Nothing here posts.</p>
+    <svg class="fy-chart fy-only-compact" viewBox="0 0 320 180" role="img" aria-label="Projected cash dips below the S$300,000 buffer after the November and December pay runs; the lowest week-end balance is S$275,313.55 on 3 Jan.">
+<line class="axis" x1="34" y1="154" x2="312" y2="154"></line>
+<text x="0" y="158">250k</text>
+<line class="grid" x1="34" y1="82" x2="312" y2="82"></line>
+<text x="0" y="86">350k</text>
+<line class="grid" x1="34" y1="10" x2="312" y2="10"></line>
+<text x="0" y="14">450k</text>
+<line x1="34" y1="118" x2="312" y2="118" style="stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 4 4"></line><text x="40" y="113">Buffer 300k</text>
+<path class="fy-area fy-c1" d="M36,154 L36,37.1 L57.1,51.1 L78.2,50.7 L99.2,93.8 L120.3,73 L141.4,83 L162.5,90.3 L183.5,129.2 L204.6,88.2 L225.7,85.1 L246.8,98.7 L267.8,130.3 L288.9,135.8 L310,89.7 L310,154 Z"></path>
+<polyline class="fy-line fy-c1" points="36,37.1 57.1,51.1 78.2,50.7 99.2,93.8 120.3,73 141.4,83 162.5,90.3 183.5,129.2 204.6,88.2 225.7,85.1 246.8,98.7 267.8,130.3 288.9,135.8 310,89.7"></polyline>
+<circle class="fy-c1" cx="310" cy="89.7" r="4" style="stroke: var(--surface-1); stroke-width: 2"></circle>
+<circle class="fy-c1" cx="288.9" cy="135.8" r="4" style="stroke: var(--surface-1); stroke-width: 2"></circle><text x="288.9" y="151.8" text-anchor="end">Low 275.3k</text>
+<text x="36" y="174" text-anchor="start">Today</text>
+<text x="183.5" y="174" text-anchor="middle">29 Nov</text>
+<text x="310" y="174" text-anchor="end">10 Jan</text>
+</svg><svg class="fy-chart fy-from-medium" viewBox="0 0 640 190" role="img" aria-label="Projected cash dips below the S$300,000 buffer after the November and December pay runs; the lowest week-end balance is S$275,313.55 on 3 Jan.">
+<line class="axis" x1="38" y1="164" x2="632" y2="164"></line>
+<text x="0" y="168">250k</text>
+<line class="grid" x1="38" y1="125.5" x2="632" y2="125.5"></line>
+<text x="0" y="129.5">300k</text>
+<line class="grid" x1="38" y1="87" x2="632" y2="87"></line>
+<text x="0" y="91">350k</text>
+<line class="grid" x1="38" y1="48.5" x2="632" y2="48.5"></line>
+<text x="0" y="52.5">400k</text>
+<line class="grid" x1="38" y1="10" x2="632" y2="10"></line>
+<text x="0" y="14">450k</text>
+<line x1="38" y1="125.5" x2="632" y2="125.5" style="stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 4 4"></line><text x="46" y="120.5">Buffer 300k</text>
+<path class="fy-area fy-c1" d="M40,164 L40,39 L85.4,53.9 L130.8,53.5 L176.2,99.7 L221.5,77.4 L266.9,88.1 L312.3,95.9 L357.7,137.5 L403.1,93.7 L448.5,90.4 L493.8,104.8 L539.2,138.7 L584.6,144.5 L630,95.3 L630,164 Z"></path>
+<polyline class="fy-line fy-c1" points="40,39 85.4,53.9 130.8,53.5 176.2,99.7 221.5,77.4 266.9,88.1 312.3,95.9 357.7,137.5 403.1,93.7 448.5,90.4 493.8,104.8 539.2,138.7 584.6,144.5 630,95.3"></polyline>
+<circle class="fy-c1" cx="630" cy="95.3" r="4" style="stroke: var(--surface-1); stroke-width: 2"></circle>
+<circle class="fy-c1" cx="584.6" cy="144.5" r="4" style="stroke: var(--surface-1); stroke-width: 2"></circle><text x="584.6" y="160.5" text-anchor="middle">Low 275.3k</text>
+<text x="40" y="184" text-anchor="start">Today</text>
+<text x="176.2" y="184" text-anchor="middle">1 Nov</text>
+<text x="357.7" y="184" text-anchor="middle">29 Nov</text>
+<text x="539.2" y="184" text-anchor="middle">27 Dec</text>
+<text x="630" y="184" text-anchor="end">10 Jan</text>
+</svg>
+    <p class="fy-small fy-muted"><a href="#planning/cash">Open the cash forecast</a> to test a what-if.</p>
+  </div>
+</section></div>
+    <aside class="fy-stack fy-stack--6" aria-label="September cash and spending">
+<section class="fy-card" aria-labelledby="ch-bridge">
+  <div class="fy-card__head"><h2 class="fy-h3" id="ch-bridge">Cash in and out, September</h2><div class="fy-segmented" role="radiogroup" aria-label="Show cash in and out, september as"><button type="button" role="radio" aria-checked="true">Chart</button><button type="button" role="radio" aria-checked="false">Table</button></div><button class="fy-iconbtn" type="button" aria-label="Export cash in and out, september: PNG, XLSX or CSV"><i data-icon="download"></i></button></div>
+  <div class="fy-card__body fy-stack fy-stack--3">
+    
+    <svg class="fy-chart" style="max-width: 480px" viewBox="0 0 320 232" role="img" aria-label="Cash fell by S$18,405.00 in September: S$88,906.40 came in from customers and S$70,627.50 went on pay and CPF.">
+<line class="grid" x1="74" y1="2" x2="74" y2="212"></line>
+<text x="74" y="226" text-anchor="middle">−25k</text>
+<line class="axis" x1="115.2" y1="2" x2="115.2" y2="212"></line>
+<text x="115.2" y="226" text-anchor="middle">0</text>
+<line class="grid" x1="197.6" y1="2" x2="197.6" y2="212"></line>
+<text x="197.6" y="226" text-anchor="middle">50k</text>
+<line class="grid" x1="280" y1="2" x2="280" y2="212"></line>
+<text x="280" y="226" text-anchor="middle">100k</text>
+<text x="0" y="21">Customers</text>
+<rect class="fy-bar fy-divpos" x="115.2" y="10" width="146.5" height="14" rx="2"></rect>
+<text x="265.7" y="21">+88.9k</text>
+<line class="grid" x1="261.7" y1="24" x2="261.7" y2="36"></line>
+<text x="0" y="47">Pay, CPF</text>
+<rect class="fy-bar fy-divneg" x="145.3" y="36" width="116.4" height="14" rx="2"></rect>
+<text x="141.3" y="47" text-anchor="end">−70.6k</text>
+<line class="grid" x1="145.3" y1="50" x2="145.3" y2="62"></line>
+<text x="0" y="73">Rent</text>
+<rect class="fy-bar fy-divneg" x="133.7" y="62" width="11.6" height="14" rx="2"></rect>
+<text x="129.7" y="73" text-anchor="end">−7.1k</text>
+<line class="grid" x1="133.7" y1="76" x2="133.7" y2="88"></line>
+<text x="0" y="99">Cloud, AI</text>
+<rect class="fy-bar fy-divneg" x="119" y="88" width="14.7" height="14" rx="2"></rect>
+<text x="115" y="99" text-anchor="end">−8.9k</text>
+<line class="grid" x1="119" y1="102" x2="119" y2="114"></line>
+<text x="0" y="125">Suppliers</text>
+<rect class="fy-bar fy-divneg" x="89.7" y="114" width="29.3" height="14" rx="2"></rect>
+<text x="123" y="125">−17.8k</text>
+<line class="grid" x1="89.7" y1="128" x2="89.7" y2="140"></line>
+<text x="0" y="151">Equipment</text>
+<rect class="fy-bar fy-divneg" x="84.5" y="140" width="5.2" height="14" rx="2"></rect>
+<text x="93.7" y="151">−3.2k</text>
+<line class="grid" x1="84.5" y1="154" x2="84.5" y2="166"></line>
+<text x="0" y="177">Int., FX</text>
+<rect class="fy-bar fy-divpos" x="84.5" y="166" width="1.5" height="14" rx="2"></rect>
+<text x="90" y="177">+226</text>
+<line class="grid" x1="84.9" y1="180" x2="84.9" y2="192"></line>
+<text x="0" y="203">Net change</text>
+<rect class="fy-bar fy-cother" x="84.9" y="192" width="30.3" height="14" rx="2"></rect>
+<text x="119.2" y="203">−18.4k</text>
+</svg>
+    <p class="fy-small fy-muted">From S$445,891.20 on 1 Sep to S$427,486.20 on 30 Sep. Grey is the net change; blue adds cash, red takes it away, and every bar carries its sign.</p>
+  </div>
+</section>
+
+<section class="fy-card" aria-labelledby="ch-spend">
+  <div class="fy-card__head"><h2 class="fy-h3" id="ch-spend">Spending, September</h2><div class="fy-segmented" role="radiogroup" aria-label="Show spending, september as"><button type="button" role="radio" aria-checked="true">Chart</button><button type="button" role="radio" aria-checked="false">Table</button></div><button class="fy-iconbtn" type="button" aria-label="Export spending, september: PNG, XLSX or CSV"><i data-icon="download"></i></button></div>
+  <div class="fy-card__body fy-stack fy-stack--3">
+    
+    <svg class="fy-chart" style="max-width: 480px" viewBox="0 0 320 214" role="img" aria-label="People were S$48,947.50 of S$109,067.00 spent in September, about 45%; contract staff were next.">
+<line class="axis" x1="118" y1="2" x2="118" y2="212"></line>
+<text x="0" y="21">People</text>
+<path class="fy-bar fy-c1" d="M118,10 L257.1,10 Q260.1,10 260.1,13 L260.1,21 Q260.1,24 257.1,24 L118,24 Z"></path>
+<text x="266.1" y="21">48.9k</text>
+<text x="0" y="47">Contract staff</text>
+<path class="fy-bar fy-c1" d="M118,36 L181.8,36 Q184.8,36 184.8,39 L184.8,47 Q184.8,50 181.8,50 L118,50 Z"></path>
+<text x="190.8" y="47">23.0k</text>
+<text x="0" y="73">Sales and marketing</text>
+<path class="fy-bar fy-c1" d="M118,62 L143.6,62 Q146.6,62 146.6,65 L146.6,73 Q146.6,76 143.6,76 L118,76 Z"></path>
+<text x="152.6" y="73">9.8k</text>
+<text x="0" y="99">Cloud and AI</text>
+<path class="fy-bar fy-c1" d="M118,88 L134.0,88 Q137.0,88 137.0,91 L137.0,99 Q137.0,102 134.0,102 L118,102 Z"></path>
+<text x="143.0" y="99">6.5k</text>
+<text x="0" y="125">Premises</text>
+<path class="fy-bar fy-c1" d="M118,114 L133.8,114 Q136.8,114 136.8,117 L136.8,125 Q136.8,128 133.8,128 L118,128 Z"></path>
+<text x="142.8" y="125">6.5k</text>
+<text x="0" y="151">Delivery contractors</text>
+<path class="fy-bar fy-c1" d="M118,140 L133.6,140 Q136.6,140 136.6,143 L136.6,151 Q136.6,154 133.6,154 L118,154 Z"></path>
+<text x="142.6" y="151">6.4k</text>
+<text x="0" y="177">Accounting fees</text>
+<path class="fy-bar fy-c1" d="M118,166 L121.4,166 Q124.4,166 124.4,169 L124.4,177 Q124.4,180 121.4,180 L118,180 Z"></path>
+<text x="130.4" y="177">2.2k</text>
+<text x="0" y="203">Other</text>
+<path class="fy-bar fy-c1" d="M118,192 L131.4,192 Q134.4,192 134.4,195 L134.4,203 Q134.4,206 131.4,206 L118,206 Z"></path>
+<text x="140.4" y="203">5.6k</text>
+</svg>
+    <p class="fy-small fy-muted">Total S$109,067.00, SGD. Select a bar to see its bills and pay runs.</p>
+  </div>
+</section></aside>
+  </div>
+</div>

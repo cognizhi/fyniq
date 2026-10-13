@@ -1,0 +1,185 @@
+<!-- fyniq-screen {"nav": "equity", "title": "New transaction", "mode": "expert", "heights": {"compact": 3950, "medium": 2750, "expanded": 2200}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#equity">Equity</a><i data-icon="chevron-right"></i><a href="#equity/transactions">Transactions</a><i data-icon="chevron-right"></i><span>New</span></nav>
+
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Draft <span class="fy-mono">EQ-0006</span> · saved 08:42</span>
+      <h1 class="fy-h1">Record an option exercise</h1>
+      <p class="fy-secondary">Daniel Lim is exercising 25,000 vested options from ESOP 2026.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button">Save draft</button>
+      <button class="fy-btn fy-btn--primary" type="button" aria-disabled="true" aria-describedby="et-block"><i data-icon="send"></i>Submit for approval</button>
+    </div>
+  </div>
+
+  <ol class="fy-steps" aria-label="Steps">
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Type</li>
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Shares</li>
+    <li class="fy-step"><span class="fy-step__n">3</span>Evidence</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">4</span>Check and submit</li>
+  </ol>
+
+  <div class="fy-banner fy-banner--critical" role="alert" id="et-block">
+    <i data-icon="circle-x" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">The board resolution is missing (EQ-EVD-01)</span>
+      <span class="fy-small">An option exercise needs the signed board resolution that allots the shares. Upload it under Evidence, then submit.</span>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#et-evidence">Fix it</a>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="et-txn-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="et-txn-title">Transaction</h2><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="square-pen"></i>Edit</button></div>
+        <div class="fy-card__body">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="et-type">Type</label>
+              <input class="fy-input" id="et-type" value="Option exercise" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="et-holder">Holder</label>
+              <input class="fy-input" id="et-holder" value="Daniel Lim (employee)" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="et-grant">Grant</label>
+              <input class="fy-input" id="et-grant" value="ESOP 2026 · 100,000 at S$0.10" readonly="readonly">
+              <span class="fy-help">25,000 vested on 1 Oct 2026; all 25,000 exercised</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="et-class">Class</label>
+              <input class="fy-input" id="et-class" value="Ordinary" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="et-number">Number of shares</label>
+              <input class="fy-input fy-num" id="et-number" value="25,000" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="et-price">Price per share (exercise price)</label>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="et-price" value="0.10" readonly="readonly"></div>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="et-cons">Consideration</label>
+              <input class="fy-input" id="et-cons" value="Cash · S$2,500.00" readonly="readonly">
+              <span class="fy-help">25,000 × S$0.10. Not received yet; match the bank line when it arrives.</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="et-auth">Shareholders' approval</label>
+              <input class="fy-input" id="et-auth" value="AGM 26 Jun 2026, general authority" readonly="readonly">
+              <span class="fy-help">Lapses at the next AGM, by 30 Jun 2027</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="et-evidence">
+        <div class="fy-card__head"><h2 class="fy-h3" id="et-evidence">Evidence</h2><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>1 missing</span></div>
+        <ul class="fy-list fy-stagger">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Exercise notice signed by Daniel Lim</span><span class="fy-list__meta">Required · uploaded 12 Oct · PDF</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Added</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Shareholders' approval to issue shares</span><span class="fy-list__meta">Required · AGM resolution of 26 Jun 2026, lodged 3 Jul</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Linked</span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--critical"><i data-icon="file-x" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Board resolution allotting the shares</span><span class="fy-error"><i data-icon="circle-x"></i>Required. Upload the resolution signed by both directors.</span></span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="upload"></i>Upload</button>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="banknote" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Payment of S$2,500.00</span><span class="fy-list__meta" style="white-space: normal">Required before it takes effect · from the bank line</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="circle-dashed"></i>Later</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="landmark" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">ACRA acknowledgement of the return of allotment</span><span class="fy-list__meta" style="white-space: normal">Required before it takes effect · after you lodge</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="circle-dashed"></i>Later</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="et-ledger-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="et-ledger-title">Ledger impact</h2><span class="fy-small fy-muted">Preview, nothing posted</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-plain fy-basic-only"><i data-icon="info" class="fy-muted"></i><span class="fy-small">When Daniel pays S$2,500.00 it is held for him. It becomes share capital on the day ACRA registers the shares.</span></div>
+          <div class="fy-expert-only fy-stack fy-stack--3">
+            <span class="fy-small fy-strong">1. On the bank date, when the payment is matched</span>
+            <table class="fy-table fy-table--compact fy-ledger">
+              <thead><tr><th scope="col">Account</th><th scope="col">Debit</th><th scope="col">Credit</th></tr></thead>
+              <tbody>
+                <tr><td>DBS Business Multi-Currency</td><td class="fy-num">2,500.00</td><td class="fy-num"></td></tr>
+                <tr><td>Share application monies, Daniel Lim</td><td class="fy-num"></td><td class="fy-num">2,500.00</td></tr>
+              </tbody>
+              <tfoot><tr><td>Total</td><td class="fy-num">2,500.00</td><td class="fy-num">2,500.00</td></tr></tfoot>
+            </table>
+            <span class="fy-small fy-strong">2. On the effective date, from the register</span>
+            <table class="fy-table fy-table--compact fy-ledger">
+              <thead><tr><th scope="col">Account</th><th scope="col">Debit</th><th scope="col">Credit</th></tr></thead>
+              <tbody>
+                <tr><td>Share application monies, Daniel Lim</td><td class="fy-num">2,500.00</td><td class="fy-num"></td></tr>
+                <tr><td><span class="fy-acct">3010</span>Share capital, ordinary</td><td class="fy-num"></td><td class="fy-num">2,500.00</td></tr>
+              </tbody>
+              <tfoot><tr><td>Total</td><td class="fy-num">2,500.00</td><td class="fy-num">2,500.00</td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="et-eff-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="et-eff-title">Effects on the cap table</h2></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Holder</th><th scope="col" class="fy-num">Before</th><th scope="col" class="fy-num">After</th><th scope="col" class="fy-num">Issued %</th></tr></thead>
+          <tbody>
+            <tr><td data-card="title">Mei Lin Tan</td><td data-card="hide" class="fy-num">4,500,000</td><td data-card="hide" class="fy-num">4,500,000</td><td data-card="amount" class="fy-num">50.00 → 49.86</td></tr>
+            <tr><td data-card="title">Arjun Rao</td><td data-card="hide" class="fy-num">4,500,000</td><td data-card="hide" class="fy-num">4,500,000</td><td data-card="amount" class="fy-num">50.00 → 49.86</td></tr>
+            <tr><td data-card="title">Daniel Lim<span class="fy-only-compact fy-muted" style="font-weight: 400"> +25,000 shares</span></td><td data-card="hide" class="fy-num">0</td><td data-card="hide" class="fy-num">25,000</td><td data-card="amount" class="fy-num">0.00 → 0.28</td></tr>
+          </tbody>
+          <tfoot><tr><td data-card="title">Issued shares<span class="fy-only-compact fy-muted" style="font-weight: 400"> 9,000,000 → 9,025,000</span></td><td data-card="hide" class="fy-num">9,000,000</td><td data-card="hide" class="fy-num">9,025,000</td><td data-card="amount" class="fy-num">100.00</td></tr></tfoot>
+        </table>
+        <div class="fy-card__body fy-stack fy-stack--3" style="border-top: 1px solid var(--border)">
+          <p class="fy-small fy-muted">Fully diluted is unchanged at 10,666,666: 25,000 options become 25,000 shares. EQ-0005 (15,000 shares, at ACRA) is not counted until it is registered.</p>
+          <ul class="fy-stack fy-stack--2">
+            <li class="fy-row fy-row--top"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>No change</span><span class="fy-small fy-secondary">Controllers: Mei Lin Tan and Arjun Rao stay above 25%; Daniel Lim stays below. No register of controllers update is needed.</span></li>
+            <li class="fy-row fy-row--top"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Still exempt</span><span class="fy-small fy-secondary">Exempt private company: 3 members after this, 4 with EQ-0005, all individuals.</span></li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Approval and ACRA tasks">
+      <section class="fy-card" aria-labelledby="et-appr-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="et-appr-title">Approval</h2></div>
+        <div class="fy-card__body">
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="send"></i></span><span class="fy-strong">You submit</span><span class="fy-small fy-muted">Mei Lin Tan, Owner</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="user-check"></i></span><span class="fy-strong">Arjun Rao approves</span><span class="fy-small fy-muted">Share issues always need a second founder, whatever the amount. Both confirm with a passkey.</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="list-checks"></i></span><span class="fy-strong">ACRA tasks are created</span><span class="fy-small fy-muted">Return of allotment, then the register update that sets the effective date</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="et-pool-title">
+        <h2 class="fy-h3" id="et-pool-title">Daniel Lim's grant after this</h2>
+        <dl class="fy-dl">
+          <div><dt>Options left</dt><dd class="fy-num">75,000</dd></div>
+          <div><dt>Vested and unexercised</dt><dd class="fy-num">0</dd></div>
+          <div><dt>Next vesting</dt><dd>2,083 on 1 Nov 2026</dd></div>
+          <div><dt>Payroll and tax</dt><dd>Exercise details feed IR8A Appendix 8B from P2</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+    <button class="fy-btn fy-btn--primary" type="button" aria-disabled="true" aria-describedby="et-block">Submit</button>
+  </div>
+</div>

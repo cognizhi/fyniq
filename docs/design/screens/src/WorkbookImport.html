@@ -1,0 +1,147 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Import workbook", "mode": "expert", "heights": {"compact": 4100, "medium": 3000, "expanded": 1650}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/data">Data and export</a><i data-icon="chevron-right"></i><span aria-current="page">Import from the workbook</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Import from the workbook</h1>
+      <p class="fy-secondary">Run 3 of the zh-sheet-accounting workbook, frozen at 31 Dec 2025. Nothing is saved to the books until you commit, and the trial balance must match to the cent.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button">Cancel import</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Send register to Grace Ho</button>
+    </div>
+  </div>
+
+  <ol class="fy-steps" aria-label="Import steps">
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Upload</li>
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Check sheets</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">3</span>Reconcile</li>
+    <li class="fy-step"><span class="fy-step__n">4</span>Commit</li>
+  </ol>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">The trial balance differs in 16 account-months, all explained by 4 register items</span>
+      <span class="fy-small">Commit unlocks when the accountant signs off the migration difference register. Item R2 needs her decision first.</span>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <div class="fy-grid fy-grid--tiles">
+        <div class="fy-tile"><span class="fy-tile__label">Account-months compared</span><span class="fy-tile__value fy-num">1,462</span><span class="fy-tile__meta">86 accounts × 17 months</span></div>
+        <div class="fy-tile"><span class="fy-tile__label">Match to the cent</span><span class="fy-tile__value fy-num">1,446</span><span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>98.9%</span></span></div>
+        <div class="fy-tile"><span class="fy-tile__label">Differ, explained</span><span class="fy-tile__value fy-num">16</span><span class="fy-tile__meta">In register items R1, R3, R4</span></div>
+        <div class="fy-tile"><span class="fy-tile__label">Unexplained</span><span class="fy-tile__value fy-num">0</span><span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>None</span></span></div>
+      </div>
+
+      <section class="fy-card" aria-labelledby="tb-title">
+        <div class="fy-card__head" style="flex-wrap: wrap">
+          <h2 class="fy-h3" id="tb-title">Trial balance: workbook and Fyniq</h2>
+          <label class="fy-sr" for="tb-month">Month</label>
+          <select class="fy-select" id="tb-month" style="width: auto; height: 32px; font-size: var(--fs-sm)"><option>Nov 2025</option><option>Dec 2025 (year end)</option><option>Oct 2025</option></select>
+          <button class="fy-filter" type="button" aria-pressed="true">Differences only · 6</button>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Account</th><th scope="col" class="fy-num">Workbook (S$)</th><th scope="col" class="fy-num">Fyniq (S$)</th><th scope="col" class="fy-num">Difference</th><th scope="col">Item</th></tr></thead>
+          <tbody>
+            <tr><td data-card="title"><span class="fy-mono fy-muted fy-expert-only" style="margin-right: 6px">1030</span>Wise (USD), in SGD</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Workbook </span>19,940.12</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Fyniq </span>19,873.40</td><td class="fy-num" data-card="amount"><a href="#accounting/gl/1100?m=2025-11">−66.72</a></td><td data-card="status"><span class="fy-tag">R3</span></td></tr>
+            <tr><td data-card="title"><span class="fy-mono fy-muted fy-expert-only" style="margin-right: 6px">7030</span>FX &amp; rounding differences</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Workbook </span>0.00</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Fyniq </span>66.72</td><td class="fy-num" data-card="amount"><a href="#accounting/gl/7030?m=2025-11">66.72</a></td><td data-card="status"><span class="fy-tag">R3</span></td></tr>
+            <tr><td data-card="title"><span class="fy-mono fy-muted fy-expert-only" style="margin-right: 6px">1590</span>Accumulated depreciation</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Workbook </span>−5,980.10</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Fyniq </span>−5,980.13</td><td class="fy-num" data-card="amount"><a href="#accounting/gl/1510?m=2025-11">−0.03</a></td><td data-card="status"><span class="fy-tag">R1</span></td></tr>
+            <tr><td data-card="title"><span class="fy-mono fy-muted fy-expert-only" style="margin-right: 6px">6610</span>Depreciation expense</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Workbook </span>427.15</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Fyniq </span>427.18</td><td class="fy-num" data-card="amount"><a href="#accounting/gl/6210?m=2025-11">0.03</a></td><td data-card="status"><span class="fy-tag">R1</span></td></tr>
+            <tr><td data-card="title"><span class="fy-mono fy-muted fy-expert-only" style="margin-right: 6px">6120</span>Software subscriptions</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Workbook </span>3,214.60</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Fyniq </span>2,802.40</td><td class="fy-num" data-card="amount"><a href="#accounting/gl/6110?m=2025-11">−412.20</a></td><td data-card="status"><span class="fy-tag">R4</span></td></tr>
+            <tr><td data-card="title"><span class="fy-mono fy-muted fy-expert-only" style="margin-right: 6px">2010</span>Accounts payable</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Workbook </span>−9,874.50</td><td class="fy-num" data-card="meta"><span class="fy-only-compact">Fyniq </span>−9,462.30</td><td class="fy-num" data-card="amount"><a href="#accounting/gl/2010?m=2025-11">412.20</a></td><td data-card="status"><span class="fy-tag">R4</span></td></tr>
+          </tbody>
+          <tfoot><tr><td data-card="title">Net difference, Nov 2025</td><td class="fy-num" data-card="hide"></td><td class="fy-num" data-card="hide"></td><td class="fy-num" data-card="amount">0.00</td><td data-card="hide"></td></tr></tfoot>
+        </table>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Difference = Fyniq − workbook. Credits show as negative. Select a figure to open its ledger lines.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="reg-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="reg-title">Migration difference register</h2>
+          <button class="fy-info" type="button" aria-label="About the migration difference register" aria-expanded="false"><i data-icon="info"></i></button>
+          <span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Sign-off: Grace Ho</span>
+        </div>
+        <ul class="fy-list fy-stagger">
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-tag" style="margin-top: 2px">R1</span>
+            <span class="fy-list__main"><span class="fy-strong">Cent allocation of spreads and depreciation</span><span class="fy-small fy-muted">Class (a) · 10 account-months · S$0.11 in total<span class="fy-expert-only"> · re-derived with ALLOC-EVEN</span></span><span style="align-self: flex-start; margin-top: 4px" class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Explained</span></span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-tag" style="margin-top: 2px">R2</span>
+            <span class="fy-list__main"><span class="fy-strong">CPF rounding of the employee share</span><span class="fy-small fy-muted">Class (b), deliberate rule change · The workbook rounded each share to the dollar; Fyniq rounds the total and drops the cents of the employee share, as the CPF Board does. S$1.00 a month on 2 payslips, Sep–Dec 2025. Imported as paid; nothing posted.</span><span style="align-self: flex-start; margin-top: 4px" class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Needs decision</span><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" style="align-self: flex-start; margin-top: 6px">Record the decision</button></span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-tag" style="margin-top: 2px">R3</span>
+            <span class="fy-list__main"><span class="fy-strong">Month-end FX revaluation of USD accounts</span><span class="fy-small fy-muted">Class (b) · Oct and Nov 2025, 4 account-months; the workbook revalued at year end only. Dec matches.</span><span style="align-self: flex-start; margin-top: 4px" class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Explained</span></span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-tag" style="margin-top: 2px">R4</span>
+            <span class="fy-list__main"><span class="fy-strong">Figma bill entered twice in the workbook</span><span class="fy-small fy-muted">Class (c), workbook defect · Nov 2025, S$412.20, 2 account-months. Imported once; the workbook's Checks did not catch it.</span><span style="align-self: flex-start; margin-top: 4px" class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Explained</span></span>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">The workbook's Checks status is reproduced except where an item explains it. Commit records the signed register as evidence.</span></div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Earlier steps">
+      <section class="fy-card" aria-labelledby="up-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="up-title">1 · Upload</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Done</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--top">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-spreadsheet" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow" style="gap: 2px">
+              <span class="fy-strong" style="overflow-wrap: anywhere">zh-sheet-accounting-2025-12-31.xlsx</span>
+              <span class="fy-small fy-muted">Published copy · 15 sheets · uploaded 5 Jan 2026 by Mei Lin Tan</span>
+              <span class="fy-small fy-muted fy-expert-only">SHA-256 <span class="fy-mono">9f2c 07ab … 41e8</span></span>
+            </div>
+          </div>
+          <p class="fy-small fy-secondary">Workbook Checks exported with the file: 0 errors. Run 2 found 2 errors, fixed in the workbook before this run.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="val-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="val-title">2 · Check sheets</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>0 errors</span></div>
+        <table class="fy-table fy-table--compact">
+          <thead><tr><th scope="col">Sheet</th><th scope="col" class="fy-num">Rows</th><th scope="col">Result</th></tr></thead>
+          <tbody>
+            <tr><td>Settings, Accounts</td><td class="fy-num">87</td><td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td></tr>
+            <tr><td>Contacts</td><td class="fy-num">41</td><td><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>2</span></td></tr>
+            <tr><td>Employees</td><td class="fy-num">6</td><td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td></tr>
+            <tr><td>Items, Lists</td><td class="fy-num">226</td><td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td></tr>
+            <tr><td>Transactions</td><td class="fy-num">2,946</td><td><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>3</span></td></tr>
+            <tr><td>Invoices, Bills</td><td class="fy-num">214</td><td><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1</span></td></tr>
+            <tr><td>Journal</td><td class="fy-num">184</td><td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td></tr>
+            <tr><td>Payroll</td><td class="fy-num">48</td><td><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1</span></td></tr>
+            <tr><td>Assets</td><td class="fy-num">14</td><td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td></tr>
+            <tr><td>Budget, Forecast drivers, Funding</td><td class="fy-num">26</td><td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td></tr>
+          </tbody>
+          <tfoot><tr><td>15 sheets</td><td class="fy-num">3,792</td><td><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>7</span></td></tr></tfoot>
+        </table>
+        <div class="fy-card__foot"><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/import/run-3/report"><i data-icon="file-text"></i>Full validation report</a></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="csv-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="csv-title">Other imports</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Import one kind of record from CSV or XLSX with a template. Every import runs as a dry run first.</p>
+          <div class="fy-field">
+            <label class="fy-label" for="csv-kind">Records</label>
+            <select class="fy-select" id="csv-kind"><option>Contacts</option><option>Items</option><option>Bank rules</option><option>Opening balances</option></select>
+          </div>
+          <div class="fy-row fy-row--wrap">
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="download"></i>Template</button>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="upload"></i>Upload for a dry run</button>
+          </div>
+          <div class="fy-row fy-row--wrap fy-small fy-muted"><span class="fy-tag"><i data-icon="calendar-clock"></i>Later (P3)</span>From Xero, QuickBooks Online or Zoho Books</div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Send register to Grace Ho</button>
+  </div>
+</div>

@@ -1,0 +1,165 @@
+<!-- fyniq-screen {"layout": "bare", "title": "Customer portal", "mode": "basic", "heights": {"compact": 2450, "medium": 1850, "expanded": 1250}} -->
+<div class="fy-bare" style="align-items: start">
+  <main class="fy-bare__card fy-enter" style="max-width: 1080px">
+    <header class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+      <span class="fy-org__logo" style="width: 40px; height: 40px; font-size: 18px; border-radius: 10px" aria-hidden="true">C</span>
+      <div class="fy-stack fy-grow" style="gap: 0">
+        <span class="fy-strong">Cognizhi Pte Ltd</span>
+        <span class="fy-small fy-muted">Customer portal</span>
+      </div>
+      <span class="fy-small fy-muted fy-from-medium">ap@orbitalfreight.asia</span>
+      <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#portal/sign-out"><i data-icon="log-out"></i>Sign out</a>
+    </header>
+
+    <div class="fy-pagehead">
+      <div class="fy-pagehead__text">
+        <span class="fy-eyebrow">Orbital Freight Asia Pte Ltd</span>
+        <h1 class="fy-h1">Your account with Cognizhi</h1>
+        <p class="fy-secondary">Invoices, payments and statements in one place. Customer since Jan 2025.</p>
+      </div>
+      <div class="fy-pagehead__actions fy-from-medium">
+        <a class="fy-btn fy-btn--primary fy-btn--lg" href="#portal/pay/inv-0139"><i data-icon="credit-card"></i>Pay overdue S$4,860.00</a>
+      </div>
+    </div>
+
+    <div class="fy-banner fy-banner--warning" role="status">
+      <i data-icon="clock-alert" class="fy-i--20"></i>
+      <div class="fy-banner__text">
+        <span class="fy-strong">INV-0139 is 10 days overdue</span>
+        <span class="fy-small">S$4,860.00 is still due after your part-payment of S$3,860.00 on 6 Oct 2026. It was due on 3 Oct 2026.</span>
+      </div>
+    </div>
+
+    <div class="fy-grid fy-grid--3">
+      <div class="fy-tile">
+        <span class="fy-tile__label"><i data-icon="clock-alert"></i>Overdue</span>
+        <span class="fy-tile__value fy-num">4,860.00<small>SGD</small></span>
+        <span class="fy-tile__meta"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>1 invoice</span>10 days late</span>
+      </div>
+      <div class="fy-tile">
+        <span class="fy-tile__label"><i data-icon="calendar-clock"></i>Due next</span>
+        <span class="fy-tile__value fy-num">3,804.10<small>USD</small></span>
+        <span class="fy-tile__meta">INV-0144 · due 4 Nov 2026 · about S$4,913.00</span>
+      </div>
+      <div class="fy-tile">
+        <span class="fy-tile__label"><i data-icon="circle-check"></i>Paid since 1 Jul</span>
+        <span class="fy-tile__value fy-num">12,580.00<small>SGD</small></span>
+        <span class="fy-tile__meta">and US$3,804.10 · 3 payments</span>
+      </div>
+    </div>
+
+    <div class="fy-split">
+      <div class="fy-stack fy-stack--6">
+        <section class="fy-card" aria-labelledby="open-title">
+          <div class="fy-card__head"><h2 class="fy-h3" id="open-title">Open invoices</h2><span class="fy-badge fy-badge--quiet">2</span></div>
+          <table class="fy-table fy-table--cards">
+            <thead><tr><th scope="col">Invoice</th><th scope="col" class="fy-from-expanded">Issued</th><th scope="col">Due</th><th scope="col" class="fy-num" style="text-align: right">Balance due</th><th scope="col">Status</th><th scope="col"><span class="fy-sr">Action</span></th></tr></thead>
+            <tbody class="fy-stagger">
+              <tr>
+                <td data-card="title" style="padding-top: 8px; padding-bottom: 8px"><a class="fy-mono" href="#portal/inv-0139">INV-0139</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">of S$8,720.00 · part-paid</span></td>
+                <td data-card="hide" class="fy-from-expanded">3 Sep 2026</td>
+                <td data-card="meta"><span class="fy-only-compact">Due </span>3 Oct 2026</td>
+                <td class="fy-num fy-strong" data-card="amount">S$4,860.00</td>
+                <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>10 days late</span></td>
+                <td data-card="meta"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#portal/pay/inv-0139">Pay</a></td>
+              </tr>
+              <tr>
+                <td data-card="title" style="padding-top: 8px; padding-bottom: 8px"><a class="fy-mono" href="#portal/inv-0144">INV-0144</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">about S$4,913.00 at 1.2915</span></td>
+                <td data-card="hide" class="fy-from-expanded">5 Oct 2026</td>
+                <td data-card="meta"><span class="fy-only-compact">Due </span>4 Nov 2026</td>
+                <td class="fy-num fy-strong" data-card="amount">US$3,804.10</td>
+                <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>Due in 22 days</span></td>
+                <td data-card="meta"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#portal/pay/inv-0144">Pay</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="fy-card__foot fy-small fy-muted"><i data-icon="info"></i><span>Pay by PayNow, card or bank transfer. Each currency is paid separately.</span></div>
+        </section>
+
+        <section class="fy-card" aria-labelledby="paid-title">
+          <div class="fy-card__head"><h2 class="fy-h3" id="paid-title">Paid</h2><span class="fy-small fy-muted">Since 1 Jul 2026</span></div>
+          <table class="fy-table fy-table--cards">
+            <thead><tr><th scope="col">Payment</th><th scope="col">Paid on</th><th scope="col" class="fy-from-expanded">Method</th><th scope="col" class="fy-num" style="text-align: right">Amount</th><th scope="col"><span class="fy-sr">Receipt</span></th></tr></thead>
+            <tbody>
+              <tr>
+                <td data-card="title">INV-0135</td>
+                <td data-card="meta">1 Oct 2026</td>
+                <td data-card="hide" class="fy-from-expanded">Bank transfer (USD)</td>
+                <td class="fy-num" data-card="amount">US$3,804.10</td>
+                <td data-card="status"><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#portal/receipt/2" aria-label="Download receipt for INV-0135"><i data-icon="download"></i>Receipt</a></td>
+              </tr>
+              <tr>
+                <td data-card="title">INV-0139, part-payment</td>
+                <td data-card="meta">25 Sep 2026</td>
+                <td data-card="hide" class="fy-from-expanded">Bank transfer</td>
+                <td class="fy-num" data-card="amount">S$3,860.00</td>
+                <td data-card="status"><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#portal/receipt/1" aria-label="Download receipt for the INV-0139 part-payment"><i data-icon="download"></i>Receipt</a></td>
+              </tr>
+              <tr>
+                <td data-card="title">INV-0134</td>
+                <td data-card="meta">2 Sep 2026</td>
+                <td data-card="hide" class="fy-from-expanded">PayNow</td>
+                <td class="fy-num" data-card="amount">S$8,720.00</td>
+                <td data-card="status"><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#portal/receipt/3" aria-label="Download receipt for INV-0134"><i data-icon="download"></i>Receipt</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <aside class="fy-stack" aria-label="Statements and help">
+        <section class="fy-card" aria-labelledby="stmt-title">
+          <div class="fy-card__head"><h2 class="fy-h3" id="stmt-title">Statement</h2><i data-icon="file-text" class="fy-muted"></i></div>
+          <div class="fy-card__body fy-stack fy-stack--3">
+            <div class="fy-row fy-row--wrap fy-row--top" style="gap: var(--space-3)">
+              <div class="fy-field" style="flex: 1 1 120px">
+                <label class="fy-label" for="st-from">From</label>
+                <input class="fy-input" id="st-from" value="1 Jul 2026" readonly="readonly">
+              </div>
+              <div class="fy-field" style="flex: 1 1 120px">
+                <label class="fy-label" for="st-to">To</label>
+                <input class="fy-input" id="st-to" value="13 Oct 2026" readonly="readonly">
+              </div>
+            </div>
+            <div class="fy-row fy-row--wrap fy-row--between">
+              <span class="fy-label" id="st-fmt">Format</span>
+              <div class="fy-segmented" role="radiogroup" aria-labelledby="st-fmt">
+                <button type="button" role="radio" aria-checked="true">PDF</button>
+                <button type="button" role="radio" aria-checked="false">CSV</button>
+              </div>
+            </div>
+            <span class="fy-help">Every invoice, payment and credit in the period, with the balance in each currency.</span>
+            <button class="fy-btn fy-btn--secondary fy-btn--block" type="button"><i data-icon="download"></i>Download statement</button>
+          </div>
+        </section>
+
+        <section class="fy-card" aria-labelledby="help-title">
+          <div class="fy-card__head"><h2 class="fy-h3" id="help-title">Questions about an invoice?</h2></div>
+          <div class="fy-card__body fy-stack fy-stack--2">
+            <span class="fy-small fy-secondary">Cognizhi's finance team answers within one working day.</span>
+            <a class="fy-small" href="mailto:finance@cognizhi.com"><i data-icon="mail"></i> finance@cognizhi.com</a>
+          </div>
+        </section>
+
+        <section class="fy-card fy-card--sunken" aria-labelledby="empty-title">
+          <div class="fy-card__head"><h2 class="fy-eyebrow" id="empty-title">When nothing is due</h2></div>
+          <div class="fy-empty" style="padding: var(--space-5) var(--space-4)">
+            <span class="fy-empty__art" style="width: 56px; height: 56px; border-radius: 16px"><i data-icon="circle-check" class="fy-i--24"></i></span>
+            <span class="fy-strong">You're all paid up</span>
+            <p class="fy-small">Nothing is due to Cognizhi. New invoices appear here as soon as they are issued.</p>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <footer class="fy-row fy-row--wrap fy-small fy-muted" style="justify-content: center; text-align: center; gap: var(--space-2) var(--space-4); padding-bottom: var(--space-4)">
+      <span class="fy-row" style="gap: 6px"><span class="fy-brand__mark" style="width: 18px; height: 18px; font-size: 11px; border-radius: 5px" aria-hidden="true">f</span>Sent with Fyniq</span>
+      <span>Payments go straight to Cognizhi through a licensed provider</span>
+      <a href="#portal/privacy">Privacy</a>
+    </footer>
+
+    <div class="fy-actionbar fy-actionbar--editor fy-only-compact">
+      <a class="fy-btn fy-btn--primary fy-btn--lg" href="#portal/pay/inv-0139"><i data-icon="credit-card"></i>Pay overdue S$4,860.00</a>
+    </div>
+  </main>
+</div>

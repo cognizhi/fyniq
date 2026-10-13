@@ -1,0 +1,161 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Connected apps", "mode": "basic", "heights": {"compact": 2860, "medium": 2420, "expanded": 1720}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><span>Connected apps</span></nav>
+      <h1 class="fy-h1">Connected apps</h1>
+      <p class="fy-secondary">AI apps and integrations that can reach Cognizhi’s books. They read only what you allow and can only propose changes; people approve everything in Fyniq.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#settings/ai/activity"><i data-icon="scroll-text"></i>AI activity log</a>
+      <a class="fy-btn fy-btn--primary" href="#auth/consent"><i data-icon="plug"></i>Connect an app</a>
+    </div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="access-title">
+    <div class="fy-card__head"><h2 class="fy-h3" id="access-title">Access for AI apps</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On</span></div>
+    <div class="fy-grid fy-grid--2" style="gap: 0">
+      <div class="fy-row fy-row--top" style="gap: var(--space-3); padding: var(--space-4)">
+        <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="org-l" aria-describedby="org-d"></button>
+        <div class="fy-stack fy-stack--2" style="gap: 4px">
+          <span class="fy-strong" id="org-l">AI apps for Cognizhi Pte Ltd<button class="fy-info" type="button" aria-label="About AI app access" aria-expanded="false"><i data-icon="info"></i></button></span>
+          <span class="fy-small fy-secondary" id="org-d">On since 2 Oct 2026: turned on by Mei Lin Tan, approved by Arjun Rao. Turning it off disconnects every AI app within 60 seconds. Turning it back on needs a second Owner.</span>
+        </div>
+      </div>
+      <div class="fy-row fy-row--top" style="gap: var(--space-3); padding: var(--space-4)">
+        <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="me-l" aria-describedby="me-d"></button>
+        <div class="fy-stack fy-stack--2" style="gap: 4px">
+          <span class="fy-strong" id="me-l">Let apps act for me</span>
+          <span class="fy-small fy-secondary" id="me-d">You opted in on 2 Oct. Each person decides for themselves; an app gets no more than that person may see.</span>
+        </div>
+      </div>
+    </div>
+    <div class="fy-card__foot"><i data-icon="shield-check" class="fy-muted"></i><span class="fy-small fy-secondary">Every AI app is proposal-only: it can’t approve, pay, file, export or change settings, whatever it asks for.</span></div>
+  </section>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="alert-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="alert-title">Alerts</h2><span class="fy-badge fy-badge--quiet">2</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="map-pin" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <span class="fy-strong fy-small">Claude Code connected from a new place</span>
+              <span class="fy-small fy-secondary">Arjun Rao · 12 Oct, 22:10 · Bangkok <span class="fy-mono fy-expert-only">203.0.113.24</span></span>
+              <div class="fy-row fy-row--wrap"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Arjun confirmed it</button><button class="fy-btn fy-btn--destructive fy-btn--sm" type="button">Revoke</button></div>
+            </div>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="ban" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <span class="fy-strong fy-small">Payroll access refused 3 times</span>
+              <span class="fy-small fy-secondary">Claude Code asked to read payroll for Arjun Rao on 12 Oct. Payroll needs AI payroll access and an Owner’s grant, so it was refused. <span class="fy-mono fy-expert-only">fyniq.read.payroll</span></span>
+              <div class="fy-row"><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/ai/activity?denied=1">See the requests</a></div>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="conn-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="conn-title">Connections</h2>
+          <div class="fy-segmented" role="radiogroup" aria-label="Show connections">
+            <button type="button" role="radio" aria-checked="false">Mine</button>
+            <button type="button" role="radio" aria-checked="true">Everyone’s</button>
+          </div>
+        </div>
+        <ul class="fy-list fy-stagger">
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--brand"><i data-icon="monitor" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <div class="fy-row fy-row--between fy-row--wrap"><span class="fy-strong">Claude Desktop <span class="fy-muted fy-small" style="font-weight: 400">1.4.2</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></div>
+              <span class="fy-small fy-secondary">Mei Lin Tan (you) · last used today, 08:52 · consent renews by 31 Dec 2026</span>
+              <div class="fy-chipset">
+                <span class="fy-tag">Read reports</span><span class="fy-tag">Read sales</span><span class="fy-tag">Read banking</span><span class="fy-tag">Proposal status</span><span class="fy-tag">Propose: categorise bank lines</span>
+              </div>
+              <span class="fy-mono fy-small fy-muted fy-expert-only" style="word-break: break-all">fyniq.read.reports fyniq.read.sales fyniq.read.banking fyniq.read.proposals fyniq.propose.bank.categorise_lines</span>
+              <div class="fy-row"><button class="fy-btn fy-btn--destructive fy-btn--sm" type="button"><i data-icon="unplug"></i>Revoke</button><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/ai/activity?client=claude-desktop">See activity</a></div>
+            </div>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--brand"><i data-icon="square-terminal" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <div class="fy-row fy-row--between fy-row--wrap"><span class="fy-strong">Claude Code <span class="fy-muted fy-small" style="font-weight: 400">2.3.0</span></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>New place</span></div>
+              <span class="fy-small fy-secondary">Arjun Rao · last used 12 Oct, 22:10 from Bangkok · consent renews by 4 Jan 2027</span>
+              <div class="fy-chipset">
+                <span class="fy-tag">Read reports</span><span class="fy-tag">Read banking</span><span class="fy-tag">Read accounting</span><span class="fy-tag">Proposal status</span>
+              </div>
+              <span class="fy-mono fy-small fy-muted fy-expert-only" style="word-break: break-all">fyniq.read.reports fyniq.read.banking fyniq.read.accounting fyniq.read.proposals</span>
+              <div class="fy-row"><button class="fy-btn fy-btn--destructive fy-btn--sm" type="button"><i data-icon="unplug"></i>Revoke</button><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/ai/activity?client=claude-code">See activity</a></div>
+            </div>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon"><i data-icon="square-terminal" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <div class="fy-row fy-row--between fy-row--wrap"><span class="fy-strong">Claude Code <span class="fy-muted fy-small" style="font-weight: 400">2.3.0</span></span><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Expires in 4 days</span></div>
+              <span class="fy-small fy-secondary">Mei Lin Tan (you) · not used since 3 Oct · the sign-in ends on 17 Oct after 14 idle days</span>
+              <div class="fy-chipset"><span class="fy-tag">Read reports</span></div>
+              <div class="fy-row"><button class="fy-btn fy-btn--destructive fy-btn--sm" type="button"><i data-icon="unplug"></i>Revoke now</button><span class="fy-small fy-muted">Or use it once to keep it.</span></div>
+            </div>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon"><i data-icon="monitor" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <div class="fy-row fy-row--between fy-row--wrap"><span class="fy-strong fy-muted">Claude Desktop</span><span class="fy-chip fy-chip--neutral"><i data-icon="ban"></i>Revoked</span></div>
+              <span class="fy-small fy-secondary">Grace Ho · revoked by Grace Ho on 9 Oct, 16:20 · all its tokens ended within 60 seconds</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="allow-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="allow-title">Allowed apps</h2><span class="fy-small fy-muted fy-from-medium">Only these can connect</span></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">App</th><th scope="col">Kind<button class="fy-info" type="button" aria-label="About app kinds" aria-expanded="false"><i data-icon="info"></i></button></th><th scope="col" class="fy-from-expanded">Most it may ask for</th><th scope="col" class="fy-num">People</th><th scope="col">On</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-card="title">Claude Desktop<span class="fy-small fy-muted" style="display: block; font-weight: 400"><i data-icon="badge-check"></i> Anthropic, verified · pre-registered</span></td>
+              <td data-card="meta"><span class="fy-chip fy-chip--outline"><i data-icon="bot"></i>AI app · proposals only</span> <span class="fy-mono fy-muted fy-expert-only">agent</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Read areas you allow; propose catalogue tasks</td>
+              <td data-card="meta" class="fy-num">2 · 1 revoked</td>
+              <td data-card="status"><button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Claude Desktop allowed. Turn off to disconnect it for everyone within 60 seconds"></button></td>
+            </tr>
+            <tr>
+              <td data-card="title">Claude Code<span class="fy-small fy-muted" style="display: block; font-weight: 400"><i data-icon="badge-check"></i> Anthropic, verified · pre-registered</span></td>
+              <td data-card="meta"><span class="fy-chip fy-chip--outline"><i data-icon="bot"></i>AI app · proposals only</span> <span class="fy-mono fy-muted fy-expert-only">agent</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Read areas you allow; propose catalogue tasks</td>
+              <td data-card="meta" class="fy-num">2</td>
+              <td data-card="status"><button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Claude Code allowed. Turn off to disconnect it for everyone within 60 seconds"></button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot fy-row--wrap"><i data-icon="info" class="fy-muted"></i><span class="fy-small fy-secondary fy-grow">Apps can’t register themselves. Payroll and equity are never granted by default; they need an Owner’s grant.</span></div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Alerts and more">
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="off-title">
+        <h2 class="fy-h3" id="off-title">Emergency stop</h2>
+        <p class="fy-small fy-secondary">Turns AI apps off for everyone in Cognizhi and ends every connection within 60 seconds. Nothing is lost; turning it back on needs a second Owner.</p>
+        <button class="fy-btn fy-btn--destructive fy-btn--block" type="button"><i data-icon="power"></i>Turn off AI apps now</button>
+        <p class="fy-help">When it is off, no app can connect and this page lists past connections only.</p>
+      </section>
+
+      <section class="fy-card" aria-labelledby="p2-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="p2-title">Integrations and developers</h2><span class="fy-tag fy-tag--expert">P2</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="badge-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Register another app</span><span class="fy-list__meta">Verified publisher and redirect, reviewed quarterly</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="key-round" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Personal access tokens</span><span class="fy-list__meta">Shown once, 90 days at most, proposal-only by default</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="cable" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Integration clients</span><span class="fy-list__meta">Narrow scopes, IP allow-lists, two Owners to grant</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="flask-conical" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-small fy-strong">Sandbox organisation</span><span class="fy-list__meta">A copy of the sample company, no real data</span></span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#auth/consent"><i data-icon="plug"></i>Connect an app</a>
+  </div>
+</div>

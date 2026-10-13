@@ -1,0 +1,173 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Chart of accounts", "mode": "expert", "heights": {"compact": 2100, "medium": 1400, "expanded": 1200}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><span>Chart of accounts</span></nav>
+      <h1 class="fy-h1">Chart of accounts</h1>
+      <p class="fy-secondary">86 accounts, 12 of them protected system accounts. An account with postings can be deactivated or merged, never deleted.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="download"></i>Export</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>New account</button>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Chart sections">
+    <button type="button" role="tab" aria-selected="true">Accounts</button>
+    <button type="button" role="tab" aria-selected="false">Dimensions<span class="fy-badge fy-badge--quiet">3</span></button>
+    <button type="button" role="tab" aria-selected="false">Allocation rules<span class="fy-tag fy-tag--expert">P2</span></button>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="status">
+    <i data-icon="git-merge" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>Merge waiting for approval</strong><span class="fy-small">Grace Ho asked to merge 6135 SaaS tools into 6120 Software subscriptions (14 lines). The journals keep their history; Arjun Rao approves.</span></div>
+    <div class="fy-banner__action"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#approvals/coa-merge-6135">Review</a></div>
+  </div>
+
+  <div class="fy-row fy-row--wrap fy-row--between">
+    <div class="fy-chipset" role="group" aria-label="Filters">
+      <button class="fy-filter" type="button" aria-pressed="true">Active</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Inactive<span class="fy-badge fy-badge--quiet">3</span></button>
+      <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="lock"></i>System</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Money accounts</button>
+    </div>
+    <label class="fy-sr" for="coa-search">Search accounts</label>
+    <input class="fy-input" id="coa-search" placeholder="Code or name" style="max-width: 240px">
+  </div>
+
+  <div class="fy-tablewrap">
+    <table class="fy-table fy-table--cards fy-table--compact">
+      <thead>
+        <tr>
+          <th scope="col">Account</th>
+          <th scope="col" class="fy-from-medium">Report group</th>
+          <th scope="col" class="fy-from-expanded">Cash-flow line</th>
+          <th scope="col" class="fy-from-expanded">Function</th>
+          <th scope="col" class="fy-from-expanded">Default GST</th>
+          <th scope="col">Flags</th>
+          <th scope="col" class="fy-num fy-from-medium">Balance (SGD)</th>
+        </tr>
+      </thead>
+      <tbody class="fy-stagger">
+        <tr class="fy-group"><td colspan="7">Assets</td></tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">1010</span>DBS Business Multi-Currency</td>
+          <td data-card="hide" class="fy-from-medium">Cash and equivalents</td>
+          <td data-card="hide" class="fy-from-expanded">Cash</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--outline"><i data-icon="landmark"></i>Money</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/1010">287,940.22</a></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">1100</span>Accounts receivable</td>
+          <td data-card="hide" class="fy-from-medium">Trade receivables</td>
+          <td data-card="hide" class="fy-from-expanded">Working capital</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>System · control</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/1100">48,250.00</a></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">1590</span>Accumulated depreciation</td>
+          <td data-card="hide" class="fy-from-medium">Property, plant and equipment</td>
+          <td data-card="hide" class="fy-from-expanded">Non-cash</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>System</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/1590">−9,325.03</a></td>
+        </tr>
+        <tr class="fy-group"><td colspan="7">Liabilities</td></tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">2010</span>Accounts payable</td>
+          <td data-card="hide" class="fy-from-medium">Trade payables</td>
+          <td data-card="hide" class="fy-from-expanded">Working capital</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>System · control</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/2010">−10,009.00</a></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">2200</span>GST control</td>
+          <td data-card="hide" class="fy-from-medium">Tax payable</td>
+          <td data-card="hide" class="fy-from-expanded">Working capital</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>System · control</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/2200">−14,380.55</a></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">2500</span>Loan from director</td>
+          <td data-card="hide" class="fy-from-medium">Related parties</td>
+          <td data-card="hide" class="fy-from-expanded">Financing</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>System</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/2500">−24,600.00</a></td>
+        </tr>
+        <tr class="fy-group"><td colspan="7">Expenses</td></tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">6010</span>Salaries</td>
+          <td data-card="hide" class="fy-from-medium">Staff costs</td>
+          <td data-card="hide" class="fy-from-expanded">Operating</td>
+          <td data-card="hide" class="fy-from-expanded">By department</td>
+          <td data-card="hide" class="fy-from-expanded">Out of scope</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--outline"><i data-icon="users"></i>Payroll cost</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/6010">428,400.00</a></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">6120</span>Software subscriptions</td>
+          <td data-card="hide" class="fy-from-medium">Technology</td>
+          <td data-card="hide" class="fy-from-expanded">Operating</td>
+          <td data-card="hide" class="fy-from-expanded">G&amp;A</td>
+          <td data-card="hide" class="fy-from-expanded">TX9 · 9%</td>
+          <td data-card="meta">—</td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/6120">9,402.57</a></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">6135</span>SaaS tools</td>
+          <td data-card="hide" class="fy-from-medium">Technology</td>
+          <td data-card="hide" class="fy-from-expanded">Operating</td>
+          <td data-card="hide" class="fy-from-expanded">G&amp;A</td>
+          <td data-card="hide" class="fy-from-expanded">TX9 · 9%</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--info"><i data-icon="git-merge"></i>Merge awaiting approval</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/6135">1,288.00</a></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">6140</span>Printing and stationery</td>
+          <td data-card="hide" class="fy-from-medium">Office</td>
+          <td data-card="hide" class="fy-from-expanded">Operating</td>
+          <td data-card="hide" class="fy-from-expanded">G&amp;A</td>
+          <td data-card="hide" class="fy-from-expanded">TX9 · 9%</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-pause"></i>Inactive</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium">0.00</td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-acct">7030</span>FX &amp; rounding</td>
+          <td data-card="hide" class="fy-from-medium">Other gains and losses</td>
+          <td data-card="hide" class="fy-from-expanded">Non-cash</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>System</span></td>
+          <td data-card="amount" class="fy-num fy-from-medium"><a href="#accounting/ledger/7030">412.86</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section class="fy-card" aria-labelledby="coa-dims">
+    <div class="fy-card__head"><h2 class="fy-h3" id="coa-dims">Dimensions</h2><span class="fy-small fy-muted">3 of 10 used · Department and Project are built in</span></div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-table--cards fy-table--compact">
+        <thead><tr><th scope="col">Dimension</th><th scope="col">Values</th><th scope="col">Required on</th></tr></thead>
+        <tbody>
+          <tr><td data-card="title">Department</td><td data-card="meta">Engineering · Sales · Operations · Management</td><td data-card="meta">All 6xxx expense accounts</td></tr>
+          <tr><td data-card="title">Project</td><td data-card="meta">Lumen Health pilot · Acme data platform</td><td data-card="meta">4020 Services revenue, 5030 Delivery contractors</td></tr>
+          <tr><td data-card="title">Grant <span class="fy-tag">Custom</span></td><td data-card="meta">EDG-2026 · none</td><td data-card="meta">Optional everywhere</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="fy-actionbar fy-only-compact"><button class="fy-btn fy-btn--primary fy-btn--block" type="button"><i data-icon="plus"></i>New account</button></div>
+</div>

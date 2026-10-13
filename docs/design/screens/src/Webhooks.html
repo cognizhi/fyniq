@@ -1,0 +1,226 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Webhooks", "mode": "expert", "heights": {"compact": 4200, "medium": 3200, "expanded": 2000}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/integrations">Integrations</a><i data-icon="chevron-right"></i><span>Webhooks</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">Webhooks</h1><span class="fy-tag">P2</span></div>
+      <p class="fy-secondary">Signed event notifications to your own systems. Failed deliveries retry with growing gaps for 3 days, then wait in dead letters until you replay them.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#help/api/events"><i data-icon="book-open"></i>Event catalogue</a>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="plus"></i>Add endpoint</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--critical" role="alert">
+    <i data-icon="circle-x" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">n8n.cognizhi.com is refusing deliveries</span>
+      <span class="fy-small fy-secondary">Since 11 Oct 14:20 it answers “410 Gone”, so 2 events are retrying. Retries stop on 14 Oct 14:20 and those events move to dead letters. Check the URL in n8n, then send a test.</span>
+      <a class="fy-btn fy-btn--secondary fy-btn--sm fy-only-compact" href="#endpoint-detail" style="align-self: flex-start; margin-top: var(--space-2)">Open endpoint</a>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm fy-from-medium" href="#endpoint-detail">Open endpoint</a>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <div class="fy-tile">
+      <span class="fy-tile__label"><i data-icon="webhook"></i>Endpoints</span>
+      <span class="fy-tile__value fy-num">3</span>
+      <span class="fy-tile__meta">1 active · 1 failing · 1 not verified</span>
+    </div>
+    <div class="fy-tile">
+      <span class="fy-tile__label"><i data-icon="send"></i>Delivered, last 7 days</span>
+      <span class="fy-tile__value fy-num">1,284</span>
+      <span class="fy-tile__meta">98.9% on the first try</span>
+    </div>
+    <a class="fy-tile" href="#log">
+      <span class="fy-tile__label"><i data-icon="refresh-cw"></i>Retrying</span>
+      <span class="fy-tile__value fy-num">2</span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>n8n endpoint</span></span>
+    </a>
+    <a class="fy-tile" href="#dead">
+      <span class="fy-tile__label"><i data-icon="inbox"></i>Dead letters</span>
+      <span class="fy-tile__value fy-num">4</span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Replay needed</span></span>
+    </a>
+  </div>
+
+  <section class="fy-card" aria-labelledby="ep-title">
+    <div class="fy-card__head"><h2 class="fy-h3" id="ep-title">Endpoints</h2></div>
+    <table class="fy-table fy-table--cards">
+      <thead><tr><th scope="col">Endpoint</th><th scope="col">Events</th><th scope="col">Status</th><th scope="col">Signing secret</th><th scope="col" class="fy-num">7-day success</th></tr></thead>
+      <tbody class="fy-stagger">
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/webhooks/ops" class="fy-mono" style="word-break: break-all">ops.cognizhi.com/hooks/fyniq</a><div class="fy-small fy-muted">Operations dashboard</div></td>
+          <td data-card="meta"><span class="fy-mono fy-small">invoice.* · bill.* · payment.received</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+          <td data-card="meta">Rotated 3 Oct 2026</td>
+          <td data-card="amount" class="fy-num">97.6%</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/webhooks/n8n" class="fy-mono" style="word-break: break-all">n8n.cognizhi.com/webhook/fyniq-invoices</a><div class="fy-small fy-muted">Invoice sync to the CRM</div></td>
+          <td data-card="meta"><span class="fy-mono fy-small">invoice.issued · invoice.paid</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Failing</span></td>
+          <td data-card="meta">Rotating · old secret valid to 14 Oct</td>
+          <td data-card="amount" class="fy-num">61.5%</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/webhooks/staging" class="fy-mono" style="word-break: break-all">staging.cognizhi.com/hooks</a><div class="fy-small fy-muted">Staging test receiver</div></td>
+          <td data-card="meta"><span class="fy-mono fy-small">journal.posted</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-dot"></i>Not verified</span></td>
+          <td data-card="meta">Created 12 Oct 2026 · <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Verify</button></td>
+          <td data-card="amount" class="fy-num fy-muted">Nothing sent</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="fy-card__foot"><p class="fy-small fy-muted">An endpoint receives nothing until it answers the verification request. Addresses inside private networks are refused.</p></div>
+  </section>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="log-title" id="log">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="log-title">Delivery log · n8n endpoint</h2>
+          <div class="fy-chipset fy-from-medium" role="group" aria-label="Show">
+            <button class="fy-filter" type="button" aria-pressed="true">All</button>
+            <button class="fy-filter" type="button" aria-pressed="false">Retrying</button>
+            <button class="fy-filter" type="button" aria-pressed="false">Delivered</button>
+          </div>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Event</th><th scope="col">Last try</th><th scope="col" class="fy-num">Attempt</th><th scope="col">Result</th><th scope="col">Next try</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">invoice.paid · INV-0140<div class="fy-small fy-muted fy-mono">msg_2Xq7…f1c9</div></td>
+              <td data-card="meta">13 Oct 09:02<span class="fy-only-compact"> · attempt 6</span></td>
+              <td data-card="hide" class="fy-num">6</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>410 Gone</span></td>
+              <td data-card="meta"><span class="fy-only-compact">Next try </span>13 Oct 14:20</td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">invoice.issued · INV-0150<div class="fy-small fy-muted fy-mono">msg_2Xm4…77d0</div></td>
+              <td data-card="meta">13 Oct 04:20<span class="fy-only-compact"> · attempt 7</span></td>
+              <td data-card="hide" class="fy-num">7</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>410 Gone</span></td>
+              <td data-card="meta"><span class="fy-only-compact">Next try </span>13 Oct 14:20</td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">invoice.issued · INV-0146<div class="fy-small fy-muted fy-mono">msg_2Xh0…c3e5</div></td>
+              <td data-card="meta">8 Oct 16:05<span class="fy-only-compact"> · attempt 1</span></td>
+              <td data-card="hide" class="fy-num">1</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>200 · 184 ms</span></td>
+              <td data-card="meta" class="fy-muted">Done</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><p class="fy-small fy-muted">Gaps grow after each failure: 5 seconds, 5 minutes, 30 minutes, 2 hours, then every 5 to 10 hours, for 3 days in all.</p></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="dead-title" id="dead">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="dead-title">Dead letters</h2>
+          <span class="fy-badge fy-badge--quiet">4</span>
+          <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="rotate-ccw"></i>Replay 4 selected</button>
+        </div>
+        <div class="fy-banner fy-banner--strip fy-banner--warning">
+          <i data-icon="triangle-alert"></i>
+          <span class="fy-small">The ops endpoint was down from 6 to 9 Oct. These events used up their 3 days of retries.</span>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col" class="fy-col-check"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select all dead letters"><i data-icon="check"></i></button></th><th scope="col">Event</th><th scope="col">Endpoint</th><th scope="col">Gave up</th><th scope="col">Last error</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select bill.approved BILL-0921"><i data-icon="check"></i></button></td>
+              <td data-card="title">bill.approved · BILL-0921</td>
+              <td data-card="meta" class="fy-mono fy-small">ops.cognizhi.com</td>
+              <td data-card="meta">9 Oct 11:02</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Timed out</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select payment.received INV-0131"><i data-icon="check"></i></button></td>
+              <td data-card="title">payment.received · INV-0131</td>
+              <td data-card="meta" class="fy-mono fy-small">ops.cognizhi.com</td>
+              <td data-card="meta">9 Oct 15:40</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Timed out</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select invoice.issued INV-0144"><i data-icon="check"></i></button></td>
+              <td data-card="title">invoice.issued · INV-0144</td>
+              <td data-card="meta" class="fy-mono fy-small">ops.cognizhi.com</td>
+              <td data-card="meta">9 Oct 18:15</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>503 Unavailable</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select bill.paid BILL-0909"><i data-icon="check"></i></button></td>
+              <td data-card="title">bill.paid · BILL-0909</td>
+              <td data-card="meta" class="fy-mono fy-small">ops.cognizhi.com</td>
+              <td data-card="meta">9 Oct 20:51</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>503 Unavailable</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><p class="fy-small fy-muted">A replay sends the original event with the same webhook-id, so your system can ignore one it already has. Replays are audited.</p></div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Selected endpoint" id="endpoint-detail">
+      <section class="fy-card" aria-labelledby="det-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="det-title">n8n endpoint</h2><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Failing</span></div>
+        <div class="fy-card__body fy-stack">
+          <dl class="fy-dl" style="grid-template-columns: minmax(0, 1fr)">
+            <div><dt>URL</dt><dd class="fy-mono fy-small" style="word-break: break-all">https://n8n.cognizhi.com/webhook/fyniq-invoices</dd></div>
+            <div><dt>Verified</dt><dd>2 Oct 2026, by Arjun Rao</dd></div>
+            <div><dt>Events</dt><dd class="fy-row fy-row--wrap" style="gap: 4px"><span class="fy-tag fy-mono">invoice.issued</span><span class="fy-tag fy-mono">invoice.paid</span></dd></div>
+            <div><dt>Format</dt><dd>CloudEvents 1.0, signed per Standard Webhooks</dd></div>
+          </dl>
+          <div class="fy-divider"></div>
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-strong fy-small">Signing secret</span>
+            <div class="fy-row fy-row--between"><span class="fy-small">New · since 12 Oct 09:00</span><span class="fy-mono fy-small fy-muted">whsec_…a91f</span></div>
+            <div class="fy-row fy-row--between"><span class="fy-small">Old · valid to 14 Oct 09:00</span><span class="fy-mono fy-small fy-muted">whsec_…07c2</span></div>
+            <p class="fy-small fy-muted">Both sign each event until the old one expires, so you can switch without missing any.</p>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" style="align-self: flex-start"><i data-icon="key-round"></i>Rotate secret</button>
+          </div>
+          <div class="fy-divider"></div>
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-strong fy-small">Headers on every delivery</span>
+            <ul class="fy-stack fy-stack--2 fy-small">
+              <li class="fy-row fy-row--between" style="gap: var(--space-2)"><span class="fy-mono">webhook-id</span><span class="fy-muted">for duplicates</span></li>
+              <li class="fy-row fy-row--between" style="gap: var(--space-2)"><span class="fy-mono">webhook-timestamp</span><span class="fy-muted">5-minute window</span></li>
+              <li class="fy-row fy-row--between" style="gap: var(--space-2)"><span class="fy-mono">webhook-signature</span><span class="fy-muted">HMAC-SHA256</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="fy-card__foot" style="flex-wrap: wrap">
+          <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="send"></i>Send a test</button>
+          <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="circle-pause"></i>Pause</button>
+          <span class="fy-spacer"></span>
+          <button class="fy-btn fy-btn--destructive fy-btn--sm" type="button"><i data-icon="trash"></i>Delete</button>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="sample-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="sample-title">Example event</h2><button class="fy-iconbtn" type="button" aria-label="Copy example event"><i data-icon="copy"></i></button></div>
+        <div class="fy-card__body">
+          <pre class="fy-mono fy-small" style="margin: 0; white-space: pre-wrap; word-break: break-all; padding: var(--space-3); border-radius: var(--radius-m); background: var(--surface-2); color: var(--text-secondary)">{
+  "specversion": "1.0",
+  "type": "invoice.paid",
+  "source": "/orgs/cognizhi",
+  "id": "msg_2Xq7…f1c9",
+  "time": "2026-10-13T01:02:04Z",
+  "data": {
+    "invoice": "INV-0140",
+    "amount": "10900.00",
+    "currency": "SGD"
+  }
+}</pre>
+          <p class="fy-small fy-muted" style="margin-top: var(--space-2)">Amounts are decimal strings, never numbers.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="plus"></i>Add endpoint</button>
+  </div>
+</div>

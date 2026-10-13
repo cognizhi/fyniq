@@ -1,0 +1,197 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Categorise", "mode": "basic", "heights": {"compact": 3000, "medium": 2300, "expanded": 1850}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Banking</span>
+      <h1 class="fy-h1">Categorise</h1>
+      <p class="fy-secondary">One line at a time: accept the suggestion, change it, or skip for now.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--ghost" href="#banking/categorise?view=grid"><i data-icon="table"></i>Grid view<span class="fy-tag fy-tag--expert">Expert</span></a>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Banking">
+    <a href="#banking">Accounts</a>
+    <a href="#banking/categorise" aria-current="page">Categorise<span class="fy-badge fy-badge--quiet">14</span></a>
+    <a href="#banking/auto-reconciled">Auto-reconciled</a>
+    <a href="#banking/reconciliations">Reconciliation</a>
+    <a class="fy-expert-only" href="#banking/rules">Rules</a>
+    <a class="fy-expert-only" href="#banking/payouts">Payouts</a>
+  </nav>
+
+  <div class="fy-stack fy-stack--2">
+    <div class="fy-row fy-row--between fy-row--wrap">
+      <span class="fy-strong">26 of 40 done</span>
+      <span class="fy-small fy-muted">14 left · lines since 1 Oct</span>
+    </div>
+    <div class="fy-progress" role="progressbar" aria-label="Lines categorised" aria-valuemin="0" aria-valuemax="40" aria-valuenow="26"><span style="width: 65%"></span></div>
+    <div class="fy-chipset" role="group" aria-label="Account">
+      <button class="fy-filter" type="button" aria-pressed="true">All accounts · 14</button>
+      <button class="fy-filter" type="button" aria-pressed="false">DBS · 12</button>
+      <button class="fy-filter" type="button" aria-pressed="false">OCBC · 2</button>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="line-title">
+        <div class="fy-card__head">
+          <span class="fy-list__icon fy-list__icon--brand"><i data-icon="landmark" class="fy-i--20"></i></span>
+          <div class="fy-grow fy-stack" style="gap: 0">
+            <h2 class="fy-h3" id="line-title">DBS Business · 12 Oct 2026</h2>
+            <span class="fy-small fy-muted">Line 1 of 14</span>
+          </div>
+          <button class="fy-iconbtn" type="button" aria-label="Previous line"><i data-icon="chevron-left"></i></button>
+          <button class="fy-iconbtn" type="button" aria-label="Next line"><i data-icon="chevron-right"></i></button>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-tile__label"><i data-icon="arrow-down-left"></i>Money in</span>
+            <span class="fy-tile__value fy-num"><span class="fy-muted" style="font-size: var(--fs-md)">S$</span>2,180.00</span>
+            <p class="fy-mono fy-plain" style="overflow-wrap: anywhere">FAST CR KOPI LABS PTE LTD</p>
+            <span class="fy-small fy-muted">Description as the bank sent it.</span>
+          </div>
+
+          <fieldset class="fy-fieldset">
+            <legend class="fy-h3">What is this?</legend>
+            <button class="fy-choice" type="button" role="radio" aria-checked="true">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-grow" style="gap: 4px">
+                <span class="fy-row fy-row--wrap" style="justify-content: space-between"><span class="fy-strong">Payment for invoice INV-0136</span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Exact match</span></span>
+                <span class="fy-small fy-secondary">Kopi Labs Pte Ltd · <span class="fy-num">S$2,180.00</span> · due 13 Sep</span>
+                <span class="fy-small fy-muted">Same amount from the same customer, and its oldest open invoice.</span>
+              </span>
+            </button>
+            <button class="fy-choice" type="button" role="radio" aria-checked="false">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-grow" style="gap: 4px">
+                <span class="fy-strong">Payment for invoice INV-0143</span>
+                <span class="fy-small fy-secondary">Kopi Labs Pte Ltd · <span class="fy-num">S$1,635.00</span> · due 1 Nov</span>
+                <span class="fy-small fy-muted">A different amount: S$545.00 would be left over. The bank line carries no invoice number, so it was not matched by itself.</span>
+              </span>
+            </button>
+          </fieldset>
+
+          <div class="fy-card fy-card--sunken fy-stack fy-stack--3" style="padding: var(--space-3) var(--space-4)">
+            <span class="fy-h3">Or change it yourself</span>
+            <div class="fy-form fy-form--2">
+              <div class="fy-field">
+                <label class="fy-label" for="cc-cat">Category</label>
+                <select class="fy-select" id="cc-cat"><option>Customer payment</option><option>Other income</option></select>
+              </div>
+              <div class="fy-field">
+                <label class="fy-label" for="cc-contact">Contact</label>
+                <select class="fy-select" id="cc-contact"><option>Kopi Labs Pte Ltd</option><option>Choose a contact</option></select>
+              </div>
+              <div class="fy-field fy-field--full">
+                <label class="fy-label" for="cc-gst">GST<button class="fy-info" type="button" aria-label="About GST on bank lines" aria-expanded="false"><i data-icon="info"></i></button></label>
+                <select class="fy-select" id="cc-gst"><option>No GST: the invoice already has it</option><option>Standard-rated 9%</option></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="fy-plain">
+            <i data-icon="circle-check" style="color: var(--status-good)"></i>
+            <span class="fy-small"><span class="fy-basic-only">Marks INV-0136 as paid and adds S$2,180.00 to DBS Business.</span><span class="fy-expert-only">Dr <span class="fy-mono">1010</span> DBS Business 2,180.00 · Cr <span class="fy-mono">1100</span> Accounts receivable 2,180.00 · clears INV-0136</span></span>
+          </div>
+          <p class="fy-small fy-muted fy-row"><i data-icon="split"></i><span>Paid two invoices at once? You can split this line in Expert mode.</span></p>
+        </div>
+        <div class="fy-card__foot fy-from-medium">
+          <button class="fy-btn fy-btn--ghost" type="button">Skip</button>
+          <span class="fy-spacer"></span>
+          <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="pencil-line"></i>Change</button>
+          <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="check"></i>Accept</button>
+        </div>
+      </section>
+
+      <section class="fy-stack fy-stack--3" aria-labelledby="next-title">
+        <div class="fy-section__head">
+          <h2 class="fy-h3" id="next-title">Up next</h2>
+          <span class="fy-small fy-muted">13 more</span>
+        </div>
+        <ul class="fy-card fy-list fy-stagger">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="file-text" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-list__title">Lumen Health paid part of INV-0141</span>
+              <span class="fy-list__meta" style="white-space: normal">12 Oct · DBS · invoice S$13,080.00 · S$7,080.00 stays open</span>
+            </span>
+            <span class="fy-num fy-strong">+6,000.00</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="list-checks" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-list__title">Figma: Software subscriptions</span>
+              <span class="fy-list__meta">11 Oct · DBS · your rule "Figma"</span>
+            </span>
+            <span class="fy-num fy-strong">−186.40</span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--ai"><i data-icon="sparkles" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-row fy-row--wrap"><span class="fy-list__title fy-ai-text">Grab: Local travel</span><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span></span>
+              <span class="fy-small fy-secondary" style="white-space: normal">10 Oct · DBS · 9 similar Grab lines since July were coded Local travel, contact Grab for Business.</span>
+              <span class="fy-source"><i data-icon="clock"></i>From your coded lines, Jul–Oct</span>
+            </span>
+            <span class="fy-num fy-strong">−86.40</span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="triangle-alert" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-row fy-row--wrap"><span class="fy-list__title">Transfer from OCBC</span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Possible duplicate</span></span>
+              <span class="fy-small fy-secondary" style="white-space: normal">9 Oct · DBS · Arjun Rao already recorded a S$15,000.00 transfer from OCBC on 9 Oct. If this is its other side, match them so it counts once.</span>
+            </span>
+            <span class="fy-num fy-strong">+15,000.00</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="circle-question-mark" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-list__title">ATM cash withdrawal</span>
+              <span class="fy-list__meta" style="white-space: normal">7 Oct · DBS · no suggestion: choose a category</span>
+            </span>
+            <span class="fy-num fy-strong">−200.00</span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon"><i data-icon="lock" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-row fy-row--wrap"><span class="fy-list__title">OCBC interest</span><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>August is closed</span></span>
+              <span class="fy-small fy-secondary" style="white-space: normal">31 Aug · OCBC · this line can't post on 31 Aug because August is locked. Grace Ho has been asked how to record it.</span>
+            </span>
+            <span class="fy-num fy-strong">+12.48</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Suggestions and help">
+      <section class="fy-ai-card" aria-labelledby="prop-title">
+        <div class="fy-ai-card__head">
+          <span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span>
+          <h2 class="fy-h3 fy-grow" id="prop-title">Suggestions for 12 DBS lines</h2>
+        </div>
+        <div class="fy-ai-card__body">
+          <p class="fy-ai-text">The assistant suggested a category or match for all 12 DBS lines. Accepting several of its suggestions at once makes <span class="fy-strong">one proposal</span> for you to approve. Nothing posts until you do.</p>
+          <span class="fy-source"><i data-icon="file-text"></i>Proposal P-311 · routine, tier 1 · <a href="#inbox/proposal-311">Open in Inbox</a></span>
+          <div class="fy-row fy-row--wrap"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#inbox/proposal-311">Review all 12</a></div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="how-title">
+        <h2 class="fy-h3" id="how-title">Where suggestions come from</h2>
+        <ol class="fy-stack fy-stack--3">
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">1</span><span class="fy-small"><span class="fy-strong">Invoices and bills</span> that match the amount, reference and contact.</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">2</span><span class="fy-small"><span class="fy-strong">Your rules</span>, such as "Figma" or "Google Workspace".</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">3</span><span class="fy-small"><span class="fy-strong">The assistant</span>, in violet with an AI label and its reason. It never posts by itself.</span></li>
+        </ol>
+        <a class="fy-small" href="#help/categorise">How categorising works</a>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--ghost" type="button">Skip</button>
+    <button class="fy-btn fy-btn--secondary" type="button">Change</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="check"></i>Accept</button>
+  </div>
+</div>

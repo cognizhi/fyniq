@@ -1,0 +1,5810 @@
+{
+ "doc": "PRD-001",
+ "revision": "0.10",
+ "canvases": [
+  {
+   "id": "core",
+   "title": "Fyniq · Shell and core"
+  },
+  {
+   "id": "sales-purchases",
+   "title": "Fyniq · Sales, purchases and contacts"
+  },
+  {
+   "id": "banking-claims",
+   "title": "Fyniq · Banking and claims"
+  },
+  {
+   "id": "people-ledger",
+   "title": "Fyniq · Payroll, projects and accounting"
+  },
+  {
+   "id": "insight",
+   "title": "Fyniq · Reports, planning and dashboards"
+  },
+  {
+   "id": "compliance",
+   "title": "Fyniq · Compliance and documents"
+  },
+  {
+   "id": "settings-admin",
+   "title": "Fyniq · Settings, admin and portals"
+  },
+  {
+   "id": "access-ai",
+   "title": "Fyniq · Sign-in, AI and integrations"
+  },
+  {
+   "id": "equity",
+   "title": "Fyniq · Equity, investors and founders"
+  },
+  {
+   "id": "workflows",
+   "title": "Fyniq · Workflows and dialogs"
+  },
+  {
+   "id": "ai-models",
+   "title": "Fyniq · AI providers and model routes"
+  }
+ ],
+ "screens": [
+  {
+   "id": "app-shell",
+   "file": "AppShell",
+   "title": "App shell and navigation",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/*",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-37",
+    "FR-UX-23",
+    "FR-UX-24",
+    "FR-UX-21",
+    "FR-ORG-06",
+    "FR-UX-18",
+    "REL-05"
+   ],
+   "purpose": "The frame every page lives in: find any area, see what is waiting, switch Basic/Expert, theme and organisation, and reach the AI panel and Help from anywhere.",
+   "content": [
+    "Header (56 px): organisation switcher 'Cognizhi Pte Ltd ▾' with logo, '⌘K Search…' field, Basic | Expert segmented control (current mode always visible), theme switch (Light, Dark, System), Help button, notification bell with unread count, avatar menu (profile, About dialog with platform version and git SHA, sign out)",
+    "Expert sidebar (240 px, collapsible to 64 px icons with tooltips): Home, Inbox (count), Sales (overdue count), Purchases (due count), Contacts, Banking (uncategorised count), Payroll (due status), Projects (over-budget count, feature-switched), Accounting (close status), Reports, Planning, Equity (ACRA tasks due, feature-switched), Compliance (due count); Settings in the footer",
+    "Basic sidebar: at most 10 items (Home, Inbox, Sales, Purchases, Contacts, Banking, Reports, Payroll and Projects when allowed, Equity shown as 'Who owns the company')",
+    "Personal section at the top for every user: My claims, Money I put in (directors), My payslips (from P2); favourites and recent items",
+    "Compact class (< 600 px; phone 390 × 844, foldable cover 344 × 882): top bar (menu, search, AI) and a bottom bar of at most five destinations: Home, Inbox, the role's main area, Banking, More",
+    "Medium class (600–1023 px; foldable unfolded 690 × 840, tablet portrait 834 × 1194): navigation rail with icons and labels; two-pane layouts split at the hinge on spanning devices, nothing placed across it",
+    "Expanded class (≥ 1024 px): full sidebar, collapsed to 64 px below 1280 px; AI panel and side-peek dock beside the content",
+    "Feature-switched items (payroll, projects, equity, AI assistant, portals) are hidden when the organisation switches them off",
+    "Badge changes announced through one polite status region as phrases ('3 approvals waiting'), never bare numbers, never moving focus",
+    "P3: multi-entity switcher in the header with an 'All entities' view where the user has access",
+    "Basic mode shows an 'Available in Expert mode' hint where a hidden area is reached from search"
+   ],
+   "states": [
+    "loading (skeleton shell)",
+    "Basic mode",
+    "Expert mode",
+    "collapsed sidebar",
+    "offline / reconnecting",
+    "sample company (practice) organisation"
+   ]
+  },
+  {
+   "id": "home",
+   "file": "Home",
+   "title": "Home (Today)",
+   "canvas": "core",
+   "module": "Home",
+   "route": "/",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Bookkeeper",
+    "Approver",
+    "Employee"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-KPI-01",
+    "FR-CTL-02",
+    "FR-VIZ-01",
+    "FR-UX-04",
+    "FR-PLN-03",
+    "FR-TAX-07",
+    "FR-KPI-03"
+   ],
+   "purpose": "Role-aware 'Today': what the money is doing and what needs me now, with every figure drillable to its source.",
+   "content": [
+    "Pulse card (full width, the only place besides the AI panel header with the violet-to-teal gradient band): cash today (e.g. S$412,300), runway in months (or 'Not burning' when 3-month net burn ≤ 0), books health OK / review / problems with counts by severity; number ticker on first load only, none with reduced or Off motion",
+    "Needs attention: top 5 Inbox items grouped by type with status chip, amount, due date and 'Open Inbox (23)'",
+    "Stat tiles with 'last updated' and a definition on hover: burn, revenue MTD, gross margin, owed to us, we owe, GST due; undefined KPIs show '—' with the reason, never 0",
+    "Cash chart: 13 months, one series, forecast segment dashed and labelled 'Projection'; summary sentence ('Cash fell 8% in September to S$412,300') and table view",
+    "Runway shown without unconfirmed funding, saying so when the forecast includes money not yet received",
+    "Upcoming deadlines with ⏰ chips: CPF by the 14th, GST F5 one month after the period end, ECI, AIS 1 March",
+    "AI suggestions card in violet with the AI label (e.g. 'INV-0138 likely paid: S$10,900 alert from ACME ROBOTICS')",
+    "Basic: pulse card, needs attention, four tiles (cash, burn, owed to us, we owe), deadlines. Expert: adds gross margin and GST tiles, cash chart drill to ledger lines, unrealised FX",
+    "Role variants: accountant sees close status and checks; employee sees My claims totals ('the company owes you S$27.30') and payslips; approver sees approvals waiting; board viewer sees KPIs only"
+   ],
+   "states": [
+    "first run (empty books, set-up checklist prompt)",
+    "loading",
+    "Not burning",
+    "KPI undefined ('—' with reason)",
+    "parameter update pending (no all-clear)",
+    "error"
+   ]
+  },
+  {
+   "id": "inbox",
+   "file": "Inbox",
+   "title": "Inbox",
+   "canvas": "core",
+   "module": "Inbox",
+   "route": "/inbox",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-03",
+    "FR-APR-07",
+    "FR-NTF-01",
+    "AI-32",
+    "FR-UX-21",
+    "FR-UX-37",
+    "FR-UX-19"
+   ],
+   "purpose": "Everything waiting for me to act: approvals, AI proposals, items that cannot post, items to review, mentions and compliance tasks, triaged quickly and safely.",
+   "content": [
+    "Two panes: list (40%) and detail (60%); on compact and medium screens the detail opens as a full page with a back link that restores scroll position",
+    "Group headers, each collapsible: Approvals 4, AI proposals 3, Cannot post 2 (✖), To review 6 (⚠), Mentions, Deadlines 1 (⏰), Compliance tasks, Weekly review (Founder mode)",
+    "Row: type icon, title, counterparty, amount (tabular, right-aligned), status chip with SVG icon and text, age; AI proposals carry the AI badge and a violet left rule",
+    "Filters by type and due date; link to the AI tasks page",
+    "Keyboard (Expert): J/K move, E open, A opens the approval confirmation (never approves directly), R reject with reason, ? shortcut sheet; focus never lands on Approve by default",
+    "Bulk actions only where safe: tier-1 proposals and routine documents within the self-approval limit; tier-2/3 proposals and FM-1 actions cannot be bulk-approved",
+    "Deep links from email and chat notifications open the item here (approvals never happen in chat)",
+    "Empty state: 'Nothing waiting for you.' with the last 3 decisions and undo where allowed",
+    "P2: anomaly alerts (spend 3σ above trend) and escalations of pending approvals arrive here"
+   ],
+   "states": [
+    "empty",
+    "loading",
+    "item changed by someone else (review and re-apply)",
+    "approval expired",
+    "permission denied",
+    "offline (read-only)"
+   ]
+  },
+  {
+   "id": "ai-proposal-review",
+   "file": "ProposalReview",
+   "title": "AI proposal review",
+   "canvas": "core",
+   "module": "Inbox",
+   "route": "/inbox/proposals/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Accountant",
+    "Controller",
+    "AR specialist",
+    "AP specialist",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "AI-07",
+    "AI-09",
+    "AI-10",
+    "AI-14",
+    "AI-31",
+    "FR-APR-02",
+    "AI-69",
+    "AI-22"
+   ],
+   "purpose": "Decide on a proposal the AI prepared, seeing exactly what will execute, its ledger impact and the evidence, before approving or rejecting.",
+   "content": [
+    "Header: AI badge, task type name (e.g. 'Categorise bank lines', bank.categorise_lines), risk tier chip, 'proposed by AI for Anthony · 2 h ago', expiry (72 h)",
+    "Plain summary generated by platform code from the payload and dry-run impact (not model text)",
+    "Items list for batch proposals: a checkbox per item (all selected by default only for tier 1); changing the selection re-hashes the payload; 'Approve 12 of 40 categorisations'",
+    "Ledger impact: debit / credit / account table with balanced totals (Expert) or the one-line plain summary (Basic), plus balances after for affected accounts and checks that change",
+    "Diff for changed master data (before → after per field)",
+    "Evidence: links to the records and documents relied on; the AI rationale shown separately in the violet subtle style and labelled as AI text",
+    "'What could go wrong' notes for tier 2; tier 3 needs two different approvers",
+    "Sticky action bar that never covers focus: Reject (needs a reason, fed back to the AI) and Approve (names the action; step-up for tier 2-3)",
+    "After execution: resulting records, ledger entries and an 'Undo' action while the period is open"
+   ],
+   "states": [
+    "pending",
+    "invalid",
+    "stale (base data changed)",
+    "expired",
+    "executed",
+    "failed",
+    "superseded",
+    "requester cannot self-approve (needs another approver)"
+   ]
+  },
+  {
+   "id": "approval-confirmation",
+   "file": "ApprovalConfirm",
+   "title": "Approval confirmation with step-up",
+   "canvas": "core",
+   "module": "Inbox",
+   "route": "/inbox/:id?confirm=approve",
+   "kind": "dialog",
+   "phase": "P1",
+   "roles": [
+    "Approver",
+    "Controller",
+    "Owner",
+    "Payment releaser",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-APR-02",
+    "FR-APR-03",
+    "FR-APR-04",
+    "FR-APR-05",
+    "FR-APR-10",
+    "NFR-A11Y-05",
+    "FR-UX-03"
+   ],
+   "purpose": "Confirm exactly what is being approved and sign it, with a passkey or TOTP step-up where the action is high-risk.",
+   "content": [
+    "What you are approving: object, version, operation, selected items, amounts and currencies, payee and the version of the payee's bank details",
+    "Ledger impact and affected balances; diff against the previous version",
+    "Policy step and quorum ('Step 2 of 2 · second founder required (FM-1)'); self-approved flag below the S$2,000 threshold in Founder mode",
+    "Envelope hash shown in mono with a copy action; approvals expire after 7 days",
+    "Step-up: passkey prompt (preferred) or a TOTP field that accepts paste and password managers; no cognitive tests; error summary takes focus",
+    "Reject path with a required reason",
+    "Same dialog from the email secure link (after sign-in) and on phones as a full-screen sheet (P2 PWA)"
+   ],
+   "states": [
+    "step-up required",
+    "step-up failed",
+    "envelope changed (re-approval needed)",
+    "approver lacks authority",
+    "expired",
+    "approved (signed record)"
+   ]
+  },
+  {
+   "id": "ai-assistant-panel",
+   "file": "AiPanel",
+   "title": "AI assistant panel",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/*?ai=open",
+   "kind": "panel",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-17",
+    "AI-08",
+    "AI-68",
+    "AI-69",
+    "FR-UX-33",
+    "AI-51",
+    "AI-01",
+    "QA-AI-05"
+   ],
+   "purpose": "Ask, explain and simulate in plain words from any page, with every figure cited to its source, and hand off anything that would change data as a proposal.",
+   "content": [
+    "Persistent side panel (⌘J / Ctrl+J, or 'Ask about this' on any record, report or figure) carrying the page context as a chip ('Context: P&L Sep 2026')",
+    "Header with the violet-to-teal gradient band and the AI label; every AI message in violet with an 'AI' badge",
+    "Answers render figures from cited facts (measure, entity, period, currency) with citation chips that open the record, report or guide page; 'could not establish' text when a fact is missing, never a partial figure",
+    "Lanes: Ask ('What's our runway at the current burn?'), Explain (lineage of a report cell), Simulate (sandboxed scenario, 'Save as proposal'), Prepare (creates a proposal card linking to Inbox)",
+    "How-to answers cite user-guide pages from the compiled knowledge base",
+    "Expert mode also shows ledger lines, account codes and the query details behind each figure",
+    "Output limited to safe Markdown: no images or remote fetches; external URLs shown in full",
+    "Thumbs up/down with a reason; conversation history; token budget notice",
+    "Compact: opens full screen; medium: sheet over content; expanded: docked beside content"
+   ],
+   "states": [
+    "empty (suggested questions)",
+    "streaming",
+    "tool failed (says what it could not establish)",
+    "assistant disabled by kill switch",
+    "budget exceeded",
+    "excluded data (payroll not enabled)"
+   ]
+  },
+  {
+   "id": "command-palette",
+   "file": "CommandPalette",
+   "title": "Command palette",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/*?palette=open",
+   "kind": "overlay",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-01",
+    "FR-UX-26",
+    "FR-UX-23",
+    "FR-UX-06"
+   ],
+   "purpose": "Go anywhere, create anything and run any command from the keyboard.",
+   "content": [
+    "⌘K / Ctrl+K overlay with fuzzy search, recent items first",
+    "Groups: Go to (pages, records), Create ('new invoice for Acme'), Run report, Commands (change theme, 'Switch to Expert mode'), Help: …",
+    "Tab hands the query to the AI assistant",
+    "In Basic mode, Expert features appear with 'Available in Expert mode: switch?' as one action",
+    "Bulk actions on selected rows when opened from a grid",
+    "Shortcut hints on each command; keyboard-only navigation"
+   ],
+   "states": [
+    "empty query (recent)",
+    "no results (ask the assistant)",
+    "Basic mode hint"
+   ]
+  },
+  {
+   "id": "global-search",
+   "file": "Search",
+   "title": "Global search results",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/search?q=",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-02",
+    "SEC-34",
+    "FR-UX-26"
+   ],
+   "purpose": "Find any document, contact, account, amount, reference or note across the organisation.",
+   "content": [
+    "Query field supporting amounts ('1,234.56', '> 5k'), references ('INV-0138') and text",
+    "Type filters with counts: invoices, bills, bank lines, journals, contacts, accounts, claims, documents, help pages",
+    "Result rows with type icon, title, matched snippet, amount, date and status chip; keyboard navigation",
+    "Results, counts and snippets filtered to what the user may see; masked fields stay masked",
+    "Expert-only results offer 'Open in Expert mode'"
+   ],
+   "states": [
+    "no results",
+    "loading",
+    "too many results (refine)"
+   ]
+  },
+  {
+   "id": "notification-centre",
+   "file": "Notifications",
+   "title": "Notification centre",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/*?notifications=open",
+   "kind": "panel",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-NTF-01",
+    "FR-NTF-02",
+    "FR-UX-15",
+    "FR-UX-21"
+   ],
+   "purpose": "See what happened (as opposed to what waits for action) and jump to the related record or Inbox item.",
+   "content": [
+    "Bell panel with unread count; tabs Unread, All, Archived",
+    "Each notification: type icon, severity, the record it is about, time; actionable ones link to their Inbox item",
+    "Security notifications (new-device sign-in, MFA or role change) marked and not mutable",
+    "Mark read, mark all read, archive; link to notification preferences",
+    "Daily digest preview line when digest delivery is on"
+   ],
+   "states": [
+    "empty",
+    "loading",
+    "many unread"
+   ]
+  },
+  {
+   "id": "trace-panel",
+   "file": "TracePanel",
+   "title": "Trace panel (drill-down)",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/*?trace=:figure",
+   "kind": "panel",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-04",
+    "FR-UX-05",
+    "FR-RPT-08",
+    "NFR-A11Y-03"
+   ],
+   "purpose": "Follow any figure from a report or tile to its breakdown, the ledger lines, the source document and its history without losing place.",
+   "content": [
+    "Breadcrumb trail keeping report context (P&L Sep 2026 › Software subscriptions › Ledger lines › BILL-0412)",
+    "Level 1 breakdown table; level 2 ledger lines with date, account, debit, credit, dimension values; level 3 source document preview; level 4 history from the audit trail",
+    "Ledger revision the figure was read at",
+    "Back returns to the same scroll position and filters",
+    "Side-peek over the current list; full screen on phones"
+   ],
+   "states": [
+    "loading",
+    "no lines",
+    "restricted line (masked)"
+   ]
+  },
+  {
+   "id": "checks",
+   "file": "Checks",
+   "title": "Books health and checks",
+   "canvas": "core",
+   "module": "Home",
+   "route": "/checks",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Bookkeeper",
+    "Auditor",
+    "Tax agent"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-CTL-01",
+    "FR-CTL-02",
+    "FR-CTL-05",
+    "FR-UX-09",
+    "ENG-21"
+   ],
+   "purpose": "See every workbook and platform check with its status, understand it in plain English and fix what blocks the close.",
+   "content": [
+    "Summary: books health OK / review / problems with counts of ✖, ⚠, ⏰ and ⚠ Not assessed",
+    "Grouped list by area (Books, Ledger, Banking, Purchases, Tax, Payroll, Founders, Equity, Corporate, AI, Integrations): check name, severity chip (icon + text), plain-English explanation, owner, last run",
+    "Examples: 'Debits equal credits' ✖; 'Unreconciled lines older than 30 days' ⚠; 'CPF payment due by the 14th not yet paid' ⏰; 'A director's account is in debit at a month end' ⚠",
+    "Drill-down to offending items; 'Fix it' action where possible; Not assessed names the missing input and opens the setting",
+    "Nightly ledger verification result (recomputed balances, subledgers vs control accounts, hash chain)",
+    "Basic shows the same severities with plain words only"
+   ],
+   "states": [
+    "all clear",
+    "problems",
+    "not assessed (missing input)",
+    "check run failed",
+    "loading"
+   ]
+  },
+  {
+   "id": "banners",
+   "file": "Banners",
+   "title": "Banners (announcement, What's new, break-glass)",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/*",
+   "kind": "overlay",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-NTF-03",
+    "FR-UX-35",
+    "FM-8",
+    "FR-UX-36"
+   ],
+   "purpose": "Show organisation-wide and installation-wide messages under the header without hiding what the user is working on.",
+   "content": [
+    "Announcement banner under the header: message, link, severity info / warning / critical; dismissible unless critical; info uses role=status, critical role=alert",
+    "Platform banners for maintenance windows and incidents",
+    "'What's new' card shown once after a release, linking to the guide",
+    "Break-glass banner on every page while active: who, reason, time left of the 24-hour expiry, 'End break-glass'",
+    "Sample company banner: 'Practice organisation: nothing here touches your real books'",
+    "Banner never covers the focused element; stacks in a fixed order when several are active"
+   ],
+   "states": [
+    "info",
+    "warning",
+    "critical (not dismissible)",
+    "break-glass active",
+    "several banners stacked"
+   ]
+  },
+  {
+   "id": "shortcut-sheet",
+   "file": "Shortcuts",
+   "title": "Keyboard shortcut sheet",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/*?shortcuts=open",
+   "kind": "overlay",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-06",
+    "FR-UX-03",
+    "NFR-A11Y-02"
+   ],
+   "purpose": "Show every keyboard shortcut for the current page and let the user remap or turn off single-character shortcuts.",
+   "content": [
+    "Opened with ?; grouped: Global (⌘K, ⌘J, G then B for Banking), Create (C I new invoice), Inbox (J/K, A, R, E), Grids (Ctrl+D fill-down, = arithmetic, undo/redo)",
+    "Basic mode shows ⌘K and ? only, with a link to switch",
+    "'Remap' and 'Turn off single-character shortcuts' controls (WCAG 2.1.4)",
+    "Note that shortcuts never fire while typing in a field"
+   ],
+   "states": [
+    "Basic mode",
+    "Expert mode",
+    "shortcuts turned off"
+   ]
+  },
+  {
+   "id": "void-confirmation",
+   "file": "ConfirmVoid",
+   "title": "Void and destructive-action confirmation",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/*?confirm=void",
+   "kind": "dialog",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Owner",
+    "Bookkeeper"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-14",
+    "FR-GL-12",
+    "FM-1"
+   ],
+   "purpose": "Make the consequences of a void or other high-risk action clear before it happens, and record the reason.",
+   "content": [
+    "Consequence summary: 'Voiding INV-0150 posts a reversal dated 13 Oct 2026; the original stays in history'",
+    "Reversal entries preview (Expert) or plain sentence (Basic)",
+    "Required reason field",
+    "Typed confirmation for bulk voids ('type VOID 12')",
+    "Note when the action needs a second approver (FM-1) and what happens next"
+   ],
+   "states": [
+    "locked period (cannot void here)",
+    "needs second approver",
+    "bulk"
+   ]
+  },
+  {
+   "id": "first-run-tour",
+   "file": "Tour",
+   "title": "First-run walkthrough",
+   "canvas": "core",
+   "module": "Shell",
+   "route": "/?tour=1",
+   "kind": "overlay",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-34",
+    "FR-UX-35",
+    "FR-UX-38"
+   ],
+   "purpose": "Give a new user a short, skippable spotlight tour of the real interface.",
+   "content": [
+    "Spotlight on each element with a short caption and step counter (at most 7 steps, about 2 minutes): Basic/Expert toggle, Home, Inbox and approving, recording money in and out, ⌘K search, the AI panel, Help",
+    "Next, Back, Skip at every step; Esc closes; focus moves to the step and back to where it started",
+    "Role variants (founder or owner, accountant, employee, approver, board viewer)",
+    "Steps whose target is hidden at the current breakpoint or mode are skipped",
+    "With reduced motion or organisation motion Off: same steps, no movement",
+    "Feature tip variant (1-3 steps) the first time a feature is opened"
+   ],
+   "states": [
+    "step n of 7",
+    "resumed",
+    "reduced motion",
+    "completed"
+   ]
+  },
+  {
+   "id": "help-guide",
+   "file": "Help",
+   "title": "Help and user guide",
+   "canvas": "core",
+   "module": "Help",
+   "route": "/help/:page",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-32",
+    "FR-UX-33",
+    "FR-UX-30",
+    "FR-UX-35",
+    "FR-UX-36"
+   ],
+   "purpose": "Learn the whole product where you are: tasks, concepts, Singapore guides, shortcuts, the glossary and What's new.",
+   "content": [
+    "Left column (sticky): search, table of contents (Getting started, tasks, concepts, Singapore guides, keyboard shortcuts, glossary, What's new) and 'Take the tour again'",
+    "Page (max 880 px): title, one-sentence purpose, numbered steps ('How do I record a bill?'), 'Good to know', Recommended default callout, Check first callout for [verify] items, related pages, version and last update",
+    "Opens on the page mapped to the current route (Banking → Recording money)",
+    "Screenshots from end-to-end tests in light and dark",
+    "What's new: release entries newest first with version and date",
+    "'Try it in the sample company' action",
+    "Info popover pattern shown on a field: what it is, why it matters, example, Learn more",
+    "Below 1024 px the contents stack above the page, search first; Help panel variant as a side sheet"
+   ],
+   "states": [
+    "no search results (ask the assistant)",
+    "page filtered for Basic mode",
+    "deep link redirected"
+   ]
+  },
+  {
+   "id": "guided-setup",
+   "file": "Setup",
+   "title": "Guided set-up checklist",
+   "canvas": "core",
+   "module": "Home",
+   "route": "/getting-started",
+   "kind": "wizard",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-10",
+    "FR-UX-36",
+    "FR-UX-11",
+    "FR-ORG-08"
+   ],
+   "purpose": "Set the organisation up step by step, or explore safely in the sample company first.",
+   "content": [
+    "Checklist with progress (e.g. 4 of 8): company, financial year, GST, bank accounts, opening balances, contacts, employees, import from the workbook",
+    "Each step shows status, the recommended defaults it applies ('Recommended' or 'Changed from recommended') and a link to the guide",
+    "'Explore the sample company' card opening a separate, clearly labelled organisation",
+    "'What happened → where to record it' helper: pick an event (customer paid, bought a laptop, founder paid a cost) and go to the right screen",
+    "Target: first-time set-up from the workbook in 60 minutes or less"
+   ],
+   "states": [
+    "not started",
+    "in progress",
+    "complete ('books ready')",
+    "step blocked (e.g. no GST status)"
+   ]
+  },
+  {
+   "id": "invoices-list",
+   "file": "Invoices",
+   "title": "Invoices list",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/invoices",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "Bookkeeper",
+    "Accountant",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AR-03",
+    "FR-UX-12",
+    "FR-UX-05",
+    "FR-UX-11",
+    "FR-AR-10"
+   ],
+   "purpose": "See and work every sales invoice by its approval, delivery, settlement and due state.",
+   "content": [
+    "Tabs: Invoices, Credit notes, Receipts; saved views and a 'needs attention' view (overdue, bounced, cannot post)",
+    "Columns: number (mono), customer, date, due date, amount, amount due, currency, state chips (approval, ledger, delivery, settlement, due)",
+    "Summary strip: overdue S$ and count, awaiting approval, drafts",
+    "Basic: simple table with key columns; Expert: full grid with column chooser, multi-sort, bulk send or post, export",
+    "Side-peek opens a record without losing place",
+    "Teaching empty state: 'Invoices you send appear here' with 'Create your first invoice'",
+    "Compact: rows become cards with amount, customer and the most urgent chip"
+   ],
+   "states": [
+    "empty",
+    "loading",
+    "filtered no results",
+    "bulk selection"
+   ]
+  },
+  {
+   "id": "invoice-editor",
+   "file": "InvoiceEditor",
+   "title": "Invoice editor",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/invoices/new",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "Bookkeeper",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AR-03",
+    "FR-AR-05",
+    "FR-AR-09",
+    "FR-UX-25",
+    "FR-INT-14",
+    "FR-UX-20",
+    "FR-AR-02"
+   ],
+   "purpose": "Create or edit an invoice, quote or credit note with the IRAS particulars right, and preview its ledger impact before saving.",
+   "content": [
+    "Basic guided form: customer, date, amount or lines with description, category, GST code suggested (SR 9%), attachment; plain words",
+    "Expert lines grid: item, description, quantity, unit price, discount %, account, GST code, dimensions, service period (deferred revenue); paste from Excel, = arithmetic",
+    "Currency and rate with source; for foreign-currency invoices net, GST and gross shown in SGD",
+    "Terms and due date, deposit or retainer to apply, notes, template choice, attachments",
+    "Totals panel with GST summary and the ledger impact preview (dry run)",
+    "'Has advanced details (2)' disclosure in Basic when the record uses Expert fields, with 'Open in Expert mode'",
+    "Created from a quote, order or timesheets keeps the link; switching mode keeps every entered value",
+    "Credit note variant: pick the invoice and lines to credit (full or partial) or standalone"
+   ],
+   "states": [
+    "draft",
+    "validation errors (✖ cannot post, plain words with field links)",
+    "locked period",
+    "approval required",
+    "pasted amount preview"
+   ]
+  },
+  {
+   "id": "invoice-record",
+   "file": "InvoiceRecord",
+   "title": "Invoice record (also quote, credit note)",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/invoices/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "Bookkeeper",
+    "Accountant",
+    "Controller",
+    "Owner",
+    "Auditor"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AR-03",
+    "FR-AR-16",
+    "FR-AR-18",
+    "FR-AR-12",
+    "FR-AR-08",
+    "FR-AR-04",
+    "FR-DOC-05",
+    "FR-UX-13"
+   ],
+   "purpose": "Everything about one sales document: its states, what it posted, who saw and paid it, and what to do next.",
+   "content": [
+    "Header: INV-0150, customer, total S$5,450.00, amount due, separate state chips (approval, ledger, delivery: sent / opened / bounced, settlement: open / part-paid / paid / written off, due), primary actions Approve, Post, Send, Record payment, ⋯",
+    "Tabs: Details · Lines · Ledger impact (open for accountants; collapsed plain summary in Basic) · Attachments · Activity (history, approvals, comments, @mentions) · Related (receipts, allocations, credit notes, source quote)",
+    "Right panel: checks for this record, AI suggestions (violet), evidence",
+    "Send status timeline: sent, opened, accepted (quotes), paid; secure online link; PayNow QR or payment link (P2)",
+    "Peppol transmission status up to the IRAS acknowledgement ID (P2)",
+    "Disputed amount and promise-to-pay date pausing reminders (P2)",
+    "Quote variant: validity date, status Draft/Sent/Accepted/Declined/Invoiced/Expired, customer acceptance evidence (name, date, comment), 'Convert to invoice'",
+    "Provider-billed (Model B) variant: read-only mirror with the provider's collection attempts and next retry date"
+   ],
+   "states": [
+    "draft",
+    "awaiting approval",
+    "posted",
+    "voided by reversal",
+    "overdue",
+    "paid, settlement pending",
+    "edited after post (new version)"
+   ]
+  },
+  {
+   "id": "quotes-list",
+   "file": "Quotes",
+   "title": "Quotes and orders",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/quotes",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "Owner",
+    "Bookkeeper"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AR-01",
+    "FR-AR-02",
+    "FR-AR-16"
+   ],
+   "purpose": "Track quotes and sales orders through to invoice and see the pipeline value.",
+   "content": [
+    "Pipeline value by status (Draft, Sent, Accepted, Declined, Invoiced, Cancelled, Expired)",
+    "Rows: number, customer, date, validity date, amount, status chip, opened or accepted online",
+    "Expiring-soon filter with scheduled reminders",
+    "Bulk convert accepted quotes to invoices (full or partial)"
+   ],
+   "states": [
+    "empty",
+    "expired quotes",
+    "loading"
+   ]
+  },
+  {
+   "id": "record-payment",
+   "file": "RecordPayment",
+   "title": "Record payment and allocate",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/invoices/:id?dialog=payment",
+   "kind": "dialog",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "Bookkeeper",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AR-18",
+    "FR-BNK-07",
+    "FR-BNK-08",
+    "FR-AR-17",
+    "FR-AR-09"
+   ],
+   "purpose": "Apply a receipt, credit note or deposit to one or more documents and deal with any residual properly.",
+   "content": [
+    "Receipt amount, date, money account, currency and rate",
+    "Allocation table: open documents with amount in document currency and in base, realised FX per allocation",
+    "Residual handling: within tolerance clears to 7030; larger keeps the document part-paid unless a reason-coded write-off is chosen (agreed discount, bank or provider charges, bad debt, cross-currency difference) which needs approval and evidence",
+    "Overpayment above S$1.00 stays as a customer credit (never income)",
+    "Undo allocation creates a reversing allocation",
+    "Same dialog mirrored for bills (supplier credits and refunds)"
+   ],
+   "states": [
+    "fully allocated",
+    "part-paid",
+    "residual needs a reason",
+    "write-off approval required",
+    "locked period"
+   ]
+  },
+  {
+   "id": "recurring-documents",
+   "file": "Recurring",
+   "title": "Recurring invoices and bills",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/recurring",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "AP specialist",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AR-07",
+    "FR-AP-09",
+    "FR-AUT-01"
+   ],
+   "purpose": "Set up and monitor documents that repeat on a schedule.",
+   "content": [
+    "Templates with frequency (weekly to yearly), next run date, auto-draft or auto-send, month-end handling, amount, contact",
+    "Run history with the documents created and any failures (scheduler ⚠)",
+    "Pause, resume, edit (new version)",
+    "AI-proposed templates (recur.create_template) shown with the AI badge until approved"
+   ],
+   "states": [
+    "empty",
+    "failed run",
+    "paused"
+   ]
+  },
+  {
+   "id": "statements-reminders",
+   "file": "CustomerStatements",
+   "title": "Customer statements and reminders",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/statements",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AR-08",
+    "FR-TPL-05"
+   ],
+   "purpose": "Send statements of account and keep overdue invoices chased on a schedule.",
+   "content": [
+    "Statement builder: customer, date range; brought-forward balance, documents, payments, FX and rounding, ageing that adds to the balance; preview and send",
+    "Reminder schedules per customer group with templates (e.g. 7 days before, on due date, 14 days after)",
+    "Reminder queue with paused items (disputed, promise-to-pay; P2)",
+    "AI-drafted reminder emails (ar.draft_reminders) sent only after approval"
+   ],
+   "states": [
+    "no overdue invoices",
+    "reminder paused",
+    "email bounced"
+   ]
+  },
+  {
+   "id": "items",
+   "file": "Items",
+   "title": "Items (products and services)",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/items",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "Accountant",
+    "Bookkeeper"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-ITM-01",
+    "FR-ITM-02"
+   ],
+   "purpose": "Maintain the products and services used on invoices.",
+   "content": [
+    "Columns: code, name, type, unit, price per currency, revenue account, GST code, active flag, FY quantity and sales",
+    "Item side-peek with printed description and price history",
+    "P3: price lists per customer group or currency"
+   ],
+   "states": [
+    "empty",
+    "inactive items hidden"
+   ]
+  },
+  {
+   "id": "subscriptions",
+   "file": "Subscriptions",
+   "title": "Subscriptions and contracts",
+   "canvas": "sales-purchases",
+   "module": "Sales",
+   "route": "/sales/subscriptions",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "AR specialist",
+    "Accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PSP-03",
+    "FR-PSP-07",
+    "FR-AR-15",
+    "FR-KPI-02"
+   ],
+   "purpose": "See subscriptions mirrored from Stripe Billing or HitPay, and (P2) Fyniq's own subscription schedules and amendments.",
+   "content": [
+    "Rows: customer, plan (e.g. S$49 a month), provider, status (active, past due, unpaid, cancelled, paused), service period, next invoice, collection attempts",
+    "Read-only mirror badge for provider-billed (Model B) subscriptions",
+    "Parked items with ⚠ for the accountant (usage prices, trials with add-ons)",
+    "P2: contract amendments (upgrade, downgrade, cancel) with dated schedule changes and evidence",
+    "Booked MRR vs contracted MRR, each named"
+   ],
+   "states": [
+    "no provider connected",
+    "parked items",
+    "loading"
+   ]
+  },
+  {
+   "id": "bills-board",
+   "file": "BillsBoard",
+   "title": "Bills board and calendar",
+   "canvas": "sales-purchases",
+   "module": "Purchases",
+   "route": "/purchases/bills",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "AP specialist",
+    "Bookkeeper",
+    "Accountant",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AP-13",
+    "FR-AP-06",
+    "FR-AP-09"
+   ],
+   "purpose": "Track every bill from capture to payment and plan what to pay when.",
+   "content": [
+    "Board columns: To review, Awaiting approval, Approved, Scheduled, Paid, Overdue; card shows supplier, number, amount, due date, chips",
+    "Calendar view by due date with scheduled payment dates; drag (or keyboard 'Schedule for…') a bill to a payment date",
+    "List view toggle; AP ageing summary; cash requirement for the next 30 days",
+    "Early-payment discounts shown; reminders before due dates",
+    "Compact: board becomes a status filter with a card list"
+   ],
+   "states": [
+    "empty",
+    "overdue bills",
+    "loading"
+   ]
+  },
+  {
+   "id": "bill-editor",
+   "file": "BillEditor",
+   "title": "Bill editor with document capture",
+   "canvas": "sales-purchases",
+   "module": "Purchases",
+   "route": "/purchases/bills/:id/edit",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "AP specialist",
+    "Bookkeeper",
+    "Accountant",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AP-02",
+    "FR-AP-12",
+    "FR-DOC-12",
+    "FR-AP-20",
+    "FR-AP-19",
+    "FR-GL-03",
+    "FR-EQ-03"
+   ],
+   "purpose": "Record a supplier bill in minutes, from a captured document or by hand, with input tax decided from the facts.",
+   "content": [
+    "Split view: document preview (left) and the draft (right); low-confidence extracted fields highlighted",
+    "Fields: supplier (UEN, GST registration number), number, dates, currency, lines with expense or asset account, GST code (TX, BL…), dimensions, prepayment spread over months",
+    "Input-tax eligibility per line with the deciding condition (claimable, not claimable, ⚠ for the tax agent); 'no SGD GST stated' warning",
+    "Supplier defaults suggested from approved bills; duplicate blocked (supplier, number, amount, date window)",
+    "Non-resident supplier: nature of payment and the tax agent's withholding decision; ⚠ until decided",
+    "Basic: plain summary 'This bill adds S$1,090 to what we owe ABC'; Expert: ledger impact with codes",
+    "Capitalisation threshold prompt to create a fixed asset",
+    "Costs from before incorporation or GST registration keep their original date and are flagged for the accountant"
+   ],
+   "states": [
+    "extracting",
+    "draft from capture",
+    "duplicate blocked",
+    "validation errors",
+    "WHT decision pending",
+    "locked period"
+   ]
+  },
+  {
+   "id": "bill-record",
+   "file": "BillRecord",
+   "title": "Bill record (also vendor credit)",
+   "canvas": "sales-purchases",
+   "module": "Purchases",
+   "route": "/purchases/bills/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "AP specialist",
+    "Approver",
+    "Accountant",
+    "Controller",
+    "Owner",
+    "Auditor"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AP-02",
+    "FR-AP-03",
+    "FR-AP-13",
+    "FR-AP-20",
+    "FR-AP-19",
+    "FR-DOC-05"
+   ],
+   "purpose": "Review, approve, schedule and pay one bill and see what it posted.",
+   "content": [
+    "Header: supplier, BILL number, total, separate state chips (approval, ledger, payment: unscheduled / in a batch / paid / written off, due), actions Approve, Schedule payment, Record payment, ⋯",
+    "Tabs: Details, Lines, Ledger impact, Attachments, Activity, Related (payment batch, PO, supplier contract, credits)",
+    "Right panel: checks (possible duplicate, vendor bank details changed in the last 30 days), AI suggestions, evidence (receipt or invoice required)",
+    "Remittance advice sent status",
+    "Vendor credit variant: apply to bills or refund",
+    "Clearance hold notice when the payee is under an IR21 hold"
+   ],
+   "states": [
+    "to review",
+    "awaiting approval",
+    "approved",
+    "scheduled",
+    "paid",
+    "overdue",
+    "frozen (bank details pending approval)"
+   ]
+  },
+  {
+   "id": "purchase-orders",
+   "file": "PurchaseOrders",
+   "title": "Purchase orders",
+   "canvas": "sales-purchases",
+   "module": "Purchases",
+   "route": "/purchases/orders",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "AP specialist",
+    "Approver",
+    "Controller"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AP-01",
+    "FR-PRJ-08"
+   ],
+   "purpose": "Raise and approve purchase orders and convert them to bills.",
+   "content": [
+    "List: PO number, supplier, project, amount, status (draft, awaiting approval, approved, billed, closed)",
+    "PO record uses the document anatomy with lines and approval; 'Convert to bill'",
+    "P2: three-way match status (PO, receipt, bill)"
+   ],
+   "states": [
+    "empty",
+    "awaiting approval",
+    "partly billed"
+   ]
+  },
+  {
+   "id": "supplier-contracts",
+   "file": "SupplierContracts",
+   "title": "Supplier contracts and renewals",
+   "canvas": "sales-purchases",
+   "module": "Purchases",
+   "route": "/purchases/contracts",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "AP specialist",
+    "Owner",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-AP-21"
+   ],
+   "purpose": "Never miss a cancellation deadline on software, cloud and service commitments.",
+   "content": [
+    "Register: supplier, owner, start and end dates, renewal type, notice deadline (often well before renewal), billing frequency, amount and currency, minimum commitment",
+    "Timeline of notice deadlines with reminders at 30 and 7 days",
+    "Contract evidence and links to POs, recurring bills and bills",
+    "Note: commitments are shown, not booked"
+   ],
+   "states": [
+    "empty",
+    "notice deadline soon",
+    "expired"
+   ]
+  },
+  {
+   "id": "contacts-list",
+   "file": "Contacts",
+   "title": "Contacts list",
+   "canvas": "sales-purchases",
+   "module": "Contacts",
+   "route": "/contacts",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "AR specialist",
+    "AP specialist",
+    "Accountant",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-CT-01",
+    "FR-CT-02",
+    "FR-CT-04",
+    "FR-EQ-15"
+   ],
+   "purpose": "One list of customers, vendors and investors with their live balances.",
+   "content": [
+    "Role filter chips: Customer, Vendor, Both, Investor, Shareholder",
+    "Columns: name, UEN or tax ID, owed to us, we owe, overdue, last activity, Peppol ID",
+    "Possible duplicate flag (name, UEN, email, bank account) with merge review",
+    "Pending bank-detail change chip on vendors"
+   ],
+   "states": [
+    "empty",
+    "duplicate suggested",
+    "loading"
+   ]
+  },
+  {
+   "id": "contact-record",
+   "file": "ContactRecord",
+   "title": "Contact record",
+   "canvas": "sales-purchases",
+   "module": "Contacts",
+   "route": "/contacts/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "AR specialist",
+    "AP specialist",
+    "Accountant",
+    "Owner",
+    "Auditor"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-CT-01",
+    "FR-CT-02",
+    "FR-CT-03",
+    "FR-AP-19",
+    "FR-AP-10",
+    "FR-AR-18"
+   ],
+   "purpose": "Everything about one customer or supplier: details, balances, ageing, activity and payment details.",
+   "content": [
+    "Header: name, roles, owed to us / we owe, FY sales and spend",
+    "Tabs: Details (legal name, UEN, Peppol ID, billing and remittance emails, terms, currency, default category and GST code, tax residence), Documents, Ageing, Activity timeline (sent, opened, paid), Bank details, Unapplied credits",
+    "Bank details shown masked with 'Change bank details' (dual-controlled) and change history",
+    "Withholding-tax decisions by nature of payment for non-resident suppliers",
+    "P2: vendor statement reconciliation"
+   ],
+   "states": [
+    "bank change pending (payments frozen)",
+    "masked fields",
+    "inactive contact"
+   ]
+  },
+  {
+   "id": "bank-details-change",
+   "file": "BankDetailsChange",
+   "title": "Change payee bank details",
+   "canvas": "sales-purchases",
+   "module": "Contacts",
+   "route": "/contacts/:id?dialog=bank-details",
+   "kind": "dialog",
+   "phase": "P1",
+   "roles": [
+    "AP specialist",
+    "Accountant",
+    "Owner",
+    "Controller"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-CT-03",
+    "FR-DOC-06",
+    "FR-APR-05",
+    "FR-APR-04",
+    "SOD-1"
+   ],
+   "purpose": "Change a supplier's bank details safely: evidence, second approver and a payment freeze until approved.",
+   "content": [
+    "Old (masked) and new account details",
+    "Required evidence: bank letter or screenshot of confirmation through a known channel; recommended call-back note (who, when, number used)",
+    "Warning: payments to this vendor freeze until approved; batches approved before the change need re-approval",
+    "Second approver selection; all founders notified; step-up on submit",
+    "P2: payee name check result from the bank"
+   ],
+   "states": [
+    "evidence missing (✖)",
+    "submitted, awaiting approval",
+    "approved",
+    "rejected"
+   ]
+  },
+  {
+   "id": "bank-accounts",
+   "file": "BankAccounts",
+   "title": "Bank accounts and cash position",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Accountant",
+    "Controller",
+    "Owner",
+    "Payment releaser"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-BNK-01",
+    "FR-BNK-13",
+    "FR-BNK-16",
+    "FR-BNK-15"
+   ],
+   "purpose": "See every money account, how fresh its data is and what still needs categorising.",
+   "content": [
+    "Cash position across accounts and currencies at the latest rates (base SGD total)",
+    "Account cards: bank, card, wallet, payment-gateway and cash accounts (DBS current, Wise USD, Airwallex, Stripe clearing), balance, uncategorised count, last sync, 'complete to' date, sync source (file, email report, API)",
+    "Stale or broken sync ⚠ with the gap ('No statement since 9 Oct')",
+    "Actions: Categorise, Import statement, Reconcile, Add account"
+   ],
+   "states": [
+    "no accounts (add your first)",
+    "sync stale",
+    "sync failed",
+    "loading"
+   ]
+  },
+  {
+   "id": "add-bank-account",
+   "file": "AddBankAccount",
+   "title": "Add a bank account and data source",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/accounts/new",
+   "kind": "wizard",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Payment releaser"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-BNK-01",
+    "FR-BNK-15",
+    "FR-BNK-17",
+    "FR-BNK-18",
+    "FR-INT-22"
+   ],
+   "purpose": "Create a money account and choose how its data arrives, without credential-sharing aggregators.",
+   "content": [
+    "Step 1: account type, bank, currency, ledger account code, opening balance date",
+    "Step 2: data source: file import (CSV, MT940, camt.053, OFX), bank reports by email (shows the organisation's bank-ingest address for DBS IDEAL daily reports and incoming-funds alerts), EMI API (Wise, Airwallex read-only key), bank API or host-to-host (P2)",
+    "Step 3: test and first sync; continuity check result",
+    "Explainer: connectors are read-only; payments go out as approved files"
+   ],
+   "states": [
+    "connection test failed",
+    "awaiting first report",
+    "connected"
+   ]
+  },
+  {
+   "id": "bank-account",
+   "file": "BankAccountRegister",
+   "title": "Bank account register",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/accounts/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Accountant",
+    "Controller",
+    "Auditor"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-BNK-16",
+    "FR-BNK-04",
+    "FR-BNK-09",
+    "FR-BNK-11",
+    "FR-BNK-17"
+   ],
+   "purpose": "Review one account's statement lines, their status and any gaps or duplicates.",
+   "content": [
+    "Statement lines: booking and value dates, description (mono, untrusted text), counterparty, amount, running balance, status (reconciled, auto-reconciled, pending, suspense ⚠, possible duplicate ⚠)",
+    "Continuity bar per statement (opening = previous closing; MT940 :60F: / :62F:) with gaps flagged",
+    "Incoming-funds alerts shown as pending signals, not reconciled lines",
+    "Transfers in transit and transfers matched on both sides",
+    "Resolve 'possible duplicate' with a side-by-side compare"
+   ],
+   "states": [
+    "gap in statements",
+    "possible duplicates",
+    "empty"
+   ]
+  },
+  {
+   "id": "statement-import",
+   "file": "StatementImport",
+   "title": "Statement import",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/import",
+   "kind": "wizard",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-BNK-02",
+    "FR-BNK-04",
+    "FR-BNK-16",
+    "FR-DOC-08"
+   ],
+   "purpose": "Bring in statements for several accounts at once and see exactly what will be added.",
+   "content": [
+    "Drop several files (CSV, XLSX, OFX/QFX, camt.053, MT940); each assigned to an account",
+    "Column mapping per bank (signed amount or in/out columns), saved for next time",
+    "Preview: lines to add, duplicates removed (same bank reference), possible duplicates kept for review, continuity check",
+    "Commit with a result per file; malware scan and safe-file checks",
+    "P2: PDF statements via document AI"
+   ],
+   "states": [
+    "mapping needed",
+    "file rejected (type or size)",
+    "continuity gap",
+    "imported"
+   ]
+  },
+  {
+   "id": "categorise-basic",
+   "file": "CategoriseCards",
+   "title": "Categorise, one line at a time (Basic)",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/categorise",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-BNK-06",
+    "FR-BNK-07",
+    "FR-BNK-04",
+    "FR-UX-24"
+   ],
+   "purpose": "Clear the bank queue one line at a time by accepting or changing a suggestion.",
+   "content": [
+    "Card per line: date, description (plain text), amount ('Money in S$10,900.00')",
+    "Suggestions in order: matching invoice or bill (INV-0138, ACME ROBOTICS), rule hit, AI suggestion (violet with AI badge)",
+    "Accept (one click), Change (short form: category, contact, GST code), Skip",
+    "Progress '12 of 40 done'",
+    "Duplicates and mirrored transfers flagged ⚠ with an explanation; contextual hint 'You can split this line in Expert mode'",
+    "Accepting a batch of AI suggestions creates a tier-1 proposal to approve"
+   ],
+   "states": [
+    "queue empty ('all caught up')",
+    "no suggestion",
+    "possible duplicate",
+    "locked period"
+   ]
+  },
+  {
+   "id": "categorise-expert",
+   "file": "CategoriseGrid",
+   "title": "Categorise and match grid (Expert)",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/categorise?view=grid",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-BNK-06",
+    "FR-BNK-07",
+    "FR-BNK-09",
+    "FR-UX-07",
+    "FR-UX-05",
+    "FR-BNK-08",
+    "FR-UX-08"
+   ],
+   "purpose": "Work the unreconciled queue in bulk: categorise, split, transfer and match payments to documents.",
+   "content": [
+    "Grid: date, description, amount, suggested category, contact, GST code, dimensions, status chip; range selection, paste, Ctrl+D fill-down, bulk accept selection",
+    "Split view for matching: bank line left, candidate invoices and bills right with amount difference and tolerance; one payment to many documents and many to one",
+    "Actions: split line, mark as transfer (matched on both sides), post to suspense 2999 ⚠",
+    "Rules editor opens in a side-peek with back-test",
+    "Accountant view toggle (Debit / Credit / Account) vs Plain view"
+   ],
+   "states": [
+    "empty queue",
+    "partial match (residual)",
+    "AI proposal pending",
+    "locked period"
+   ]
+  },
+  {
+   "id": "bank-rules",
+   "file": "BankRules",
+   "title": "Bank rules",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/rules",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-BNK-05",
+    "FR-BNK-14"
+   ],
+   "purpose": "Teach Fyniq how to code recurring bank lines, test rules against history and approve auto-apply.",
+   "content": [
+    "Ordered list: conditions (description contains or regex, amount range, account, counterparty) → category, contact, GST code, dimensions, reference",
+    "Back-test result ('this rule would have matched 23 lines') and hits since created",
+    "'Auto-apply' toggle is an approval request with limits (amount cap per line and per rule per day)",
+    "Suggested rules to promote from patterns coded the same way 5 times",
+    "AI-proposed rules (bank.rule_upsert) shown with AI badge; never auto-apply"
+   ],
+   "states": [
+    "empty",
+    "auto-apply pending approval",
+    "rule conflict"
+   ]
+  },
+  {
+   "id": "auto-reconciled",
+   "file": "AutoReconciled",
+   "title": "Auto-reconciled lines",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/auto-reconciled",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Accountant",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-BNK-14",
+    "FR-AUT-02"
+   ],
+   "purpose": "See what the system reconciled without a click, why, and undo it while the period is open.",
+   "content": [
+    "Rows: line, matched document or rule, match reason (exact amount, unique reference, expected contact), system principal, time",
+    "Undo per line while the period is open",
+    "Sample flagged for the weekly review (Founder mode)",
+    "Limits used today vs caps"
+   ],
+   "states": [
+    "empty",
+    "undo blocked (period closed)"
+   ]
+  },
+  {
+   "id": "bank-reconciliation",
+   "file": "BankReconciliation",
+   "title": "Bank reconciliation",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/reconciliations/:account/:period",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "Accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-BNK-10",
+    "FR-BNK-11",
+    "FR-DOC-06",
+    "FR-GL-07"
+   ],
+   "purpose": "Prove the books agree with the bank for a period and have a different person sign it off.",
+   "content": [
+    "Statement balance from the feed or an uploaded statement (never typed in Founder mode), reconciled book balance, unreconciled items, difference",
+    "Unreconciled list and suspense balance",
+    "Required evidence: bank statement for the period",
+    "Sign-off by someone other than the preparer; report locked with the period",
+    "Ledger revision recorded at sign-off"
+   ],
+   "states": [
+    "difference not zero",
+    "ready to sign off",
+    "signed off",
+    "preparer cannot sign off"
+   ]
+  },
+  {
+   "id": "provider-payouts",
+   "file": "ProviderPayouts",
+   "title": "Payment provider payouts (Stripe, HitPay)",
+   "canvas": "banking-claims",
+   "module": "Banking",
+   "route": "/banking/payouts",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Bookkeeper",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PSP-01",
+    "FR-PSP-06",
+    "FR-PSP-04",
+    "FR-PSP-05",
+    "FR-PSP-02"
+   ],
+   "purpose": "Break each provider payout into its charges, refunds, disputes and fees and prove the clearing account nets to zero.",
+   "content": [
+    "Payouts per provider and currency: date, amount, matched bank line, nets-to-zero chip",
+    "Payout detail: gross charges, refunds, disputes, fees (e.g. HitPay PayNow 0.65% + S$0.30 = S$35.73 on S$5,450, payout S$5,414.27)",
+    "Clearing balance vs the provider's reported balance not yet paid out",
+    "Completeness sweep status and 'complete to' date; unknown events parked ⚠",
+    "Monthly fee tax invoice matched to the month's fees"
+   ],
+   "states": [
+    "payout does not net to zero (✖)",
+    "gap in completeness sweep",
+    "no provider connected"
+   ]
+  },
+  {
+   "id": "payment-batches",
+   "file": "PaymentBatches",
+   "title": "Payment batches",
+   "canvas": "banking-claims",
+   "module": "Purchases",
+   "route": "/purchases/payment-batches",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "AP specialist",
+    "Payroll administrator",
+    "Controller",
+    "Payment releaser",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-BNK-12",
+    "FR-AP-13",
+    "FR-PAY-11"
+   ],
+   "purpose": "See every batch of supplier, claim and salary payments and where it is in prepare, approve, release and paid.",
+   "content": [
+    "Rows: batch name (e.g. 'Fri 17 Oct suppliers'), type, items, total, status (draft, awaiting approval, approved, released, paid), preparer, releaser",
+    "Next scheduled batch from bills scheduled for that date",
+    "New batch action"
+   ],
+   "states": [
+    "empty",
+    "awaiting approval",
+    "re-approval needed"
+   ]
+  },
+  {
+   "id": "payment-batch",
+   "file": "PaymentBatch",
+   "title": "Payment batch record",
+   "canvas": "banking-claims",
+   "module": "Purchases",
+   "route": "/purchases/payment-batches/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "AP specialist",
+    "Payroll administrator",
+    "Controller",
+    "Payment releaser",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-BNK-12",
+    "FR-APR-10",
+    "FR-APR-05",
+    "FR-PAY-10",
+    "FR-AP-19"
+   ],
+   "purpose": "Build, approve and release a payment batch with dual control, then mark it paid from the bank feed.",
+   "content": [
+    "Item table: payee, document (bill, claim, pay run), amount, payee bank-details version, holds",
+    "Holds explained: IR21 clearance hold, withholding-tax decision pending, payee bank details changed (re-approval required)",
+    "Approval steps; release by a person who did not prepare or approve it; step-up",
+    "Export bank bulk-payment file (GIRO / FAST format) with hash; P2 initiate via bank API",
+    "Evidence: bank confirmation screenshot or file; mark paid when the feed shows the debit"
+   ],
+   "states": [
+    "draft",
+    "awaiting approval",
+    "approved",
+    "released",
+    "paid",
+    "blocked (envelope changed)"
+   ]
+  },
+  {
+   "id": "my-claims",
+   "file": "MyClaims",
+   "title": "My claims",
+   "canvas": "banking-claims",
+   "module": "Personal",
+   "route": "/me/claims",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Employee",
+    "All users"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-AP-14",
+    "FR-AP-18",
+    "FR-UX-16",
+    "FR-EQ-02"
+   ],
+   "purpose": "See my expense claims and what the company owes me, and start a new claim from a receipt.",
+   "content": [
+    "Total 'What the company owes me' and claims by status: draft, submitted, approved, scheduled, paid, returned",
+    "New claim: paste a screenshot, drag and drop, phone camera (P2 PWA), or forward to my capture address",
+    "Mileage tab with the monthly mileage log; cash advances with balance outstanding",
+    "Company-card lines waiting for a receipt, category and project",
+    "Returned claims show ⚠ and the approver's comment (e.g. S$64.80 meal claim missing attendees)",
+    "Export my claim history; P2 offline receipt queue indicator"
+   ],
+   "states": [
+    "empty (start from a receipt)",
+    "returned",
+    "offline queue (P2)"
+   ]
+  },
+  {
+   "id": "claim-editor",
+   "file": "ClaimEditor",
+   "title": "Expense claim editor",
+   "canvas": "banking-claims",
+   "module": "Personal",
+   "route": "/me/claims/new",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Employee",
+    "Approver",
+    "AP specialist"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-AP-14",
+    "FR-AP-15",
+    "FR-AP-20",
+    "FR-DOC-12",
+    "FR-EQ-02",
+    "FR-AP-17"
+   ],
+   "purpose": "Turn a receipt into a claim with policy checks before submission, and let approvers return or approve it.",
+   "content": [
+    "Receipt preview with extracted fields (merchant, date, S$27.30, category Local travel), low-confidence field highlighted",
+    "GST: claimable only when the receipt is a valid tax invoice (simplified up to S$1,000); 'no GST registration number shown, GST not claimable'",
+    "Project (e.g. 'Acme rollout'), currency (IDR receipts reimbursed in SGD at the rate cascade), split lines",
+    "Policy checks before submit with the rule named (category limit, receipt rules, claim deadline 60 days)",
+    "Settles a cash advance option",
+    "Directors: 'Paid personally → reimburse or keep as a loan'",
+    "Approver view: line manager then finance, approve or return with comment; audit keeps both versions"
+   ],
+   "states": [
+    "draft",
+    "policy breach ⚠",
+    "duplicate receipt blocked",
+    "submitted",
+    "returned",
+    "IR21 hold"
+   ]
+  },
+  {
+   "id": "mileage-claim",
+   "file": "MileageClaim",
+   "title": "Mileage claim",
+   "canvas": "banking-claims",
+   "module": "Personal",
+   "route": "/me/claims/new/mileage",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-AP-16",
+    "FR-AP-15"
+   ],
+   "purpose": "Claim business mileage in a private vehicle at the organisation's rate.",
+   "content": [
+    "Trip date, purpose, project, from and to (saved places: Office, Client HQ), one-way or return, vehicle type",
+    "Distance typed (18.4 km) or computed by a maps service when enabled (off by default)",
+    "Amount = distance × rate per km in force on the trip date, rounded with RND-MILEAGE; no GST",
+    "Optional map screenshot as evidence",
+    "Trip older than the claim deadline needs finance approval with a reason"
+   ],
+   "states": [
+    "maps disabled",
+    "past deadline",
+    "submitted"
+   ]
+  },
+  {
+   "id": "claims-review",
+   "file": "ClaimsReview",
+   "title": "Expense claims (all users)",
+   "canvas": "banking-claims",
+   "module": "Purchases",
+   "route": "/purchases/claims",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Approver",
+    "AP specialist",
+    "Controller",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-AP-17",
+    "FR-AP-07",
+    "FR-APR-01",
+    "FR-AP-15"
+   ],
+   "purpose": "Process every employee's claims: approve, return, reimburse by batch or pay run, and manage cash advances.",
+   "content": [
+    "Rows: claimant, date, category, project, amount, policy chip, status, approval step",
+    "Cash advances: issued (e.g. S$800 for Jakarta), settled by claims (S$742.15), balance to refund (S$57.85)",
+    "Reimbursement route: next payment batch or non-wage line in the pay run",
+    "Advance unsettled after deadline ⚠; no self-approval in Standard mode"
+   ],
+   "states": [
+    "empty",
+    "awaiting my approval",
+    "policy breaches"
+   ]
+  },
+  {
+   "id": "expense-policy",
+   "file": "ExpensePolicy",
+   "title": "Expense policy",
+   "canvas": "banking-claims",
+   "module": "Settings",
+   "route": "/settings/expense-policy",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Administrator"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-AP-15",
+    "FR-ORG-08",
+    "FR-AP-16",
+    "FR-DOC-06"
+   ],
+   "purpose": "Set claim limits, evidence rules, mileage rates and deadlines, starting from recommended defaults.",
+   "content": [
+    "Per-category limits (e.g. meals above S$50 need attendees), receipt and evidence rules",
+    "Mileage rate per km per vehicle type, effective-dated",
+    "Claim deadline (e.g. 60 days), approval routing, duplicate-receipt detection across users",
+    "Each setting shows Recommended or Changed from recommended, reason, Reset to recommended; dual approval where needed"
+   ],
+   "states": [
+    "recommended",
+    "changed from recommended",
+    "change awaiting approval"
+   ]
+  },
+  {
+   "id": "employees",
+   "file": "Employees",
+   "title": "Employees",
+   "canvas": "people-ledger",
+   "module": "Payroll",
+   "route": "/payroll/employees",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Payroll administrator",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-EMP-01",
+    "FR-EMP-02",
+    "FR-PAY-13",
+    "CMP-PD-07"
+   ],
+   "purpose": "Maintain the employee register that pay runs draw from, with personal data protected.",
+   "content": [
+    "Columns: name, department, job title, residency (citizen, SPR year 1/2/3+, foreigner), CPF age band, start and end dates, status",
+    "NRIC/FIN partially masked by default; salary columns visible only with payroll rights",
+    "Departments mapped to salary accounts and dimensions",
+    "Leavers with IR21 status chip"
+   ],
+   "states": [
+    "empty",
+    "masked (no payroll rights)",
+    "loading"
+   ]
+  },
+  {
+   "id": "employee-record",
+   "file": "EmployeeRecord",
+   "title": "Employee record",
+   "canvas": "people-ledger",
+   "module": "Payroll",
+   "route": "/payroll/employees/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Payroll administrator",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-EMP-01",
+    "FR-PAY-14",
+    "FR-PAY-10",
+    "FR-EQ-04",
+    "FR-PRJ-06",
+    "FR-PAY-12"
+   ],
+   "purpose": "One employee's identity, pay terms, year-to-date CPF state and life-cycle events.",
+   "content": [
+    "Identity (encrypted, masked), residency and PR start date, date of birth, department, salary and allowances, SHG fund or opt-out, salary bank account (masked)",
+    "Year-to-date OW and AW subject to CPF from 1 January for this employer; AW ceiling (S$102,000 minus OW) remaining",
+    "Directors: founder pay choice per period (no salary, salary paid, salary deferred, director's fee) with the signed decision",
+    "Cessation: IR21 applicability and clearance hold on all monies due",
+    "Cost rate (payroll-derived; visible only with payroll rights)",
+    "Evidence with personal-data class; P3 leave balances"
+   ],
+   "states": [
+    "masked",
+    "leaver",
+    "IR21 hold active",
+    "deferral without pay choice (✖)"
+   ]
+  },
+  {
+   "id": "payroll-overview",
+   "file": "Payroll",
+   "title": "Payroll overview and statutory files",
+   "canvas": "people-ledger",
+   "module": "Payroll",
+   "route": "/payroll",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Payroll administrator",
+    "Owner",
+    "Payment releaser"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-PAY-01",
+    "FR-PAY-09",
+    "FR-PAY-10",
+    "FR-PAY-15",
+    "FR-TAX-07"
+   ],
+   "purpose": "See pay runs by month and what is due to the CPF Board and IRAS.",
+   "content": [
+    "Pay runs list: month, employees, gross, employer CPF, SDL, net, status (draft, awaiting approval, approved, posted, paid)",
+    "CPF due ⏰ for last month, pay by the 14th; SDL payable rounded down (e.g. March total S$70.75 → S$70)",
+    "Payroll go-live gate: how payslips, KETs, CPF submission, AIS and IR21 are met this month; missing arrangement ✖",
+    "P2: CPF submission file for EZPay / One-Stop Payroll; IR8A / AIS file due 1 March; IR21 workflow",
+    "Start next pay run"
+   ],
+   "states": [
+    "no pay runs",
+    "go-live gate missing (✖)",
+    "CPF overdue",
+    "loading"
+   ]
+  },
+  {
+   "id": "pay-run",
+   "file": "PayRun",
+   "title": "Pay run",
+   "canvas": "people-ledger",
+   "module": "Payroll",
+   "route": "/payroll/runs/:month",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Payroll administrator",
+    "Owner",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PAY-01",
+    "FR-PAY-02",
+    "FR-PAY-03",
+    "FR-PAY-04",
+    "FR-PAY-06",
+    "FR-PAY-07",
+    "FR-PAY-15",
+    "FR-PAY-16"
+   ],
+   "purpose": "Calculate, check, approve and post one month's pay with every Singapore rule applied.",
+   "content": [
+    "Grid per employee: gross (salary, allowances, overtime, bonus as AW, unpaid leave), employee CPF, employer CPF, SDL, SHG, net, total cost (e.g. Age ≤ 55, gross 7,600.00, EE 1,520, ER 1,292, SDL 11.25, net 6,077)",
+    "Rates source: CPF pack version, OW ceiling S$8,000, graduated rates S$50–750, age band by birthday month",
+    "Overrides with reason and approval, flagged ⚠",
+    "Salary deductions check (50% cap, advances ≤ 25% over ≤ 12 months, written consent) ✖ with the rule named",
+    "Founder deferral: net pay to 2120 with the CPF, SDL and tax still due in plain words",
+    "Posting preview: salary by department account, employer CPF 6020, SDL 6030, 2100 and 2110",
+    "Approval by someone other than the preparer; then salary payment batch",
+    "Foreign worker levy (e.g. S Pass levy) recorded as an expense where applicable"
+   ],
+   "states": [
+    "draft",
+    "awaiting approval",
+    "approved",
+    "posted",
+    "go-live gate blocks approval",
+    "parameter update pending"
+   ]
+  },
+  {
+   "id": "projects",
+   "file": "Projects",
+   "title": "Projects",
+   "canvas": "people-ledger",
+   "module": "Projects",
+   "route": "/projects",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Approver",
+    "Owner",
+    "Controller",
+    "AR specialist"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-PRJ-01",
+    "FR-PRJ-03",
+    "FR-PRJ-09"
+   ],
+   "purpose": "See every project's budget use, margin and unbilled work at a glance.",
+   "content": [
+    "Rows: project, customer, billing method (T&M, fixed fee, retainer, internal), budget use (hours and money), margin, unbilled, health chip",
+    "Over-budget count; alerts at 80% and 100%",
+    "Feature-switched: hidden when projects are off"
+   ],
+   "states": [
+    "empty",
+    "over budget",
+    "feature off"
+   ]
+  },
+  {
+   "id": "project-record",
+   "file": "ProjectRecord",
+   "title": "Project record",
+   "canvas": "people-ledger",
+   "module": "Projects",
+   "route": "/projects/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Approver",
+    "Owner",
+    "Controller",
+    "AR specialist"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-PRJ-03",
+    "FR-PRJ-09",
+    "FR-PRJ-10",
+    "FR-PRJ-12",
+    "FR-PRJ-11",
+    "FR-PRJ-06"
+   ],
+   "purpose": "Manage one project's budget, time, costs, billing and profitability.",
+   "content": [
+    "Budget burn: 340 of 400 budgeted hours (85% ⚠ at 80%), forecast at completion",
+    "Margin = revenue − time at cost − direct costs (payroll-cost accounts excluded); role-average rates unless the viewer has payroll rights",
+    "Unbilled tab: 62.5 approved hours at billing rates plus a S$420 billable expense with 10% markup → 'Draft invoice' (AI may draft, ar.draft_invoice)",
+    "Milestones for fixed-fee projects; retainer drawdown",
+    "Project managers, members, billing rates by role or person",
+    "P2: change orders and revenue over time (cost-to-cost) proposals"
+   ],
+   "states": [
+    "over budget",
+    "unbilled time > 30 days (⚠)",
+    "closed project"
+   ]
+  },
+  {
+   "id": "timesheet",
+   "file": "Timesheet",
+   "title": "Timesheet and timer",
+   "canvas": "people-ledger",
+   "module": "Projects",
+   "route": "/projects/timesheet",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Employee",
+    "Approver"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-PRJ-05",
+    "FR-PRJ-07",
+    "FR-PRJ-02"
+   ],
+   "purpose": "Log the week's time by project and task, and approve the team's time.",
+   "content": [
+    "Weekly grid: project · task rows (e.g. 'Acme rollout · Data migration'), day columns, billable flag, note, totals",
+    "Start/stop timer (2 h 15 min) feeding the grid",
+    "Missing-day reminder and 'Submit week'",
+    "Approved or invoiced entries lock; corrections are reversing entries",
+    "Project manager view: approve the team's submitted weeks (no self-approval in Standard mode)"
+   ],
+   "states": [
+    "draft week",
+    "submitted",
+    "approved (locked)",
+    "missing day ⚠"
+   ]
+  },
+  {
+   "id": "journals",
+   "file": "Journals",
+   "title": "Journals",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/journals",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Tax agent",
+    "Auditor"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-GL-01",
+    "FR-GL-02",
+    "FR-GL-12"
+   ],
+   "purpose": "Find and manage manual, recurring and auto-reversing journals.",
+   "content": [
+    "Rows: number, date, description, total, preparer, approver, status, auto-reverse date, source (manual, AI proposal, schedule, system)",
+    "Recurring journals tab",
+    "Filters by period, account, preparer; export"
+   ],
+   "states": [
+    "empty",
+    "awaiting approval",
+    "locked period"
+   ]
+  },
+  {
+   "id": "journal-editor",
+   "file": "JournalEditor",
+   "title": "Journal editor",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/journals/new",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Tax agent"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-GL-01",
+    "FR-UX-07",
+    "FR-UX-20",
+    "FR-INT-14",
+    "FR-DIM-02",
+    "FR-GL-13"
+   ],
+   "purpose": "Prepare a balanced journal with dimensions and evidence, preview it and send it for approval.",
+   "content": [
+    "Lines grid: account, description, debit, credit, dimensions (department, project, custom), currency and rate; paste, fill-down, = arithmetic",
+    "Balance indicator in base currency and per currency",
+    "Auto-reverse date; recurring option",
+    "Evidence required above S$1,000 (supporting calculation or document)",
+    "Preview (dry run) then submit; approval needed above the threshold (S$5,000 for AI-prepared)",
+    "P3: intercompany journal with eliminations"
+   ],
+   "states": [
+    "unbalanced",
+    "locked period",
+    "soft-locked (accountant only, reason)",
+    "awaiting approval"
+   ]
+  },
+  {
+   "id": "chart-of-accounts",
+   "file": "ChartOfAccounts",
+   "title": "Chart of accounts and dimensions",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/accounts",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Tax agent"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-COA-01",
+    "FR-COA-02",
+    "FR-COA-03",
+    "FR-COA-04",
+    "FR-COA-05",
+    "FR-DIM-01",
+    "FR-DIM-03"
+   ],
+   "purpose": "Maintain the Singapore start-up chart of accounts and the tracking dimensions.",
+   "content": [
+    "Tree of accounts by type with code, name, report group, cash-flow line, function (COGS, R&D, S&M, G&A), default GST code, flags (money, control, payroll-cost, active)",
+    "System accounts locked (1100 AR, 2010 AP, 2200 GST control, 2150 Expense claims payable, 2500 Loan from director, 7030 FX & rounding…)",
+    "Deactivate or merge (approved, journal-preserving); accounts with postings cannot be deleted",
+    "Dimensions tab: Department, Project and up to 8 custom; values required per account",
+    "P2: allocation rules and cost-file allocation keys"
+   ],
+   "states": [
+    "system account (protected)",
+    "merge awaiting approval",
+    "inactive"
+   ]
+  },
+  {
+   "id": "fixed-assets",
+   "file": "FixedAssets",
+   "title": "Fixed asset register",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/assets",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-FA-01",
+    "FR-FA-02",
+    "FR-FA-03",
+    "FR-FA-04"
+   ],
+   "purpose": "Track assets, their monthly depreciation and disposals.",
+   "content": [
+    "Register: asset, category, cost, date, useful life, residual value, method, accumulated depreciation, NBV",
+    "Asset side-peek with depreciation schedule (6610 / 1590), source bill",
+    "Dispose or write off with gain or loss; partial disposal",
+    "P2: movement schedule and tax capital allowance schedule"
+   ],
+   "states": [
+    "empty",
+    "fully depreciated",
+    "disposed"
+   ]
+  },
+  {
+   "id": "schedules",
+   "file": "Schedules",
+   "title": "Prepayment and deferral schedules",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/schedules",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-GL-03",
+    "FR-GL-02",
+    "FR-RPT-13"
+   ],
+   "purpose": "See every spread (prepayments, deferred revenue, amortisation) and what it recognises each month.",
+   "content": [
+    "Schedules from bills, invoices and transactions spread over months: source, total, months, recognised to date, remaining",
+    "Recognition up to the current period only; cumulative-rounding note (ALLOC-EVEN)",
+    "Drill to source and to the posted lines",
+    "P2: deferral roll-forward tying to 2400 and 1210"
+   ],
+   "states": [
+    "empty",
+    "future periods (not yet recognised)"
+   ]
+  },
+  {
+   "id": "fx-revaluation",
+   "file": "Currencies",
+   "title": "FX rates and revaluation",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/fx",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-GL-04",
+    "FR-GL-05",
+    "ENG-40"
+   ],
+   "purpose": "Keep exchange rates right and run the month-end revaluation of open foreign-currency items.",
+   "content": [
+    "Rates table: currency, date, rate, source (daily feed, manual override with audit, monthly table); duplicates ⚠",
+    "Revaluation run for a month end: eligible monetary items (AR, AP, unapplied credits, money accounts, 2500/2120/1250) with open foreign amount, period-end rate, carrying base, unrealised gain or loss",
+    "Posting preview with automatic reversal on day 1",
+    "Not revalued: non-monetary items listed"
+   ],
+   "states": [
+    "not revalued last month (⚠)",
+    "no rate (✖)",
+    "revalued"
+   ]
+  },
+  {
+   "id": "period-close",
+   "file": "PeriodClose",
+   "title": "Period close and year end",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/close/:period",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-GL-07",
+    "FR-GL-08",
+    "FR-GL-14",
+    "FR-GL-10",
+    "AUD-04",
+    "FR-GL-09",
+    "FM-4"
+   ],
+   "purpose": "Close a month (or the year) with every check clean, reconciliations signed, flux explained and an independent attestation.",
+   "content": [
+    "Close checklist from a template: tasks with owner, due date and evidence; progress",
+    "Checks that must be clean; reconciliations signed off; support for each balance account",
+    "Flux analysis: month-on-month and budget variances above the threshold need an explanation (AI may draft)",
+    "Attestation by a founder who did not prepare the close; accountant quarterly review record (queries, answers, sign-off)",
+    "Close → hard lock in the database; snapshot hashed and anchored; 'Books closed' moment",
+    "Reopen: dual approval with reason and before/after snapshots",
+    "Year end: retained earnings, optional closing entry, director balance confirmations",
+    "P2: soft locks and per-module locks with an exceptions report"
+   ],
+   "states": [
+    "open",
+    "blocked by ✖ checks",
+    "attestation pending",
+    "closed",
+    "reopened",
+    "close failed (re-run checks)"
+   ]
+  },
+  {
+   "id": "opening-balances",
+   "file": "OpeningBalances",
+   "title": "Opening balances",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/opening-balances",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-GL-06",
+    "FR-UX-07",
+    "FR-MIG-01"
+   ],
+   "purpose": "Enter or import balances at the books start date, with open invoices and bills in their currencies.",
+   "content": [
+    "Grid of accounts with debit and credit at books start; balance check",
+    "Open items tab: opening invoices and bills with currency and rate",
+    "Editing after posting is high-risk (FM-1: second approver)"
+   ],
+   "states": [
+    "unbalanced",
+    "posted (locked)",
+    "change awaiting approval"
+   ]
+  },
+  {
+   "id": "director-accounts",
+   "file": "DirectorAccounts",
+   "title": "Director accounts",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/directors",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-01",
+    "FR-EQ-11",
+    "FR-EQ-12",
+    "FR-EQ-04",
+    "FR-EQ-10"
+   ],
+   "purpose": "Track what the company owes each founder (2500 and 2120) by origin, and settle it properly.",
+   "content": [
+    "Per director: balance on 2500 Loan from director and 2120 Deferred remuneration, movements by origin (cash lent, cost paid personally, pay, fee), pending settlements",
+    "Statement per person (opening, movements, repayments, conversions, waivers, closing) with PDF for balance confirmations",
+    "Director's account in debit ⚠, citing s162 when the company is not exempt private",
+    "Year-end confirmation by passkey; unconfirmed ⚠",
+    "Related-party schedule for the notes"
+   ],
+   "states": [
+    "in debit (⚠)",
+    "unconfirmed at year end",
+    "settlement pending"
+   ]
+  },
+  {
+   "id": "director-settlement",
+   "file": "DirectorSettlement",
+   "title": "Settle a director's balance",
+   "canvas": "people-ledger",
+   "module": "Accounting",
+   "route": "/accounting/directors/:id/settle",
+   "kind": "wizard",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Owner",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-05",
+    "FR-EQ-06",
+    "FR-EQ-07",
+    "FR-EQ-09",
+    "FM-9"
+   ],
+   "purpose": "Choose and approve how a founder's balance is settled: repay, keep, convert to shares, waive or convert to a SAFE.",
+   "content": [
+    "Route choice with plain consequences per route (posting, tax and paperwork summary; general information, not advice)",
+    "Convert to shares: amount, share class, price per share and basis (latest priced round default), shares by RND-SHARE with remainder kept, capacity (lender, employee, shareholder)",
+    "Required evidence: shareholders' approval, board resolution, conversion agreement, founder's balance confirmation",
+    "Two steps: Approve (no posting) then Effective (ACRA lodgement reference and register date; posts on that date, never backdated)",
+    "Waive: Cr 3300 capital contribution or other income with reason",
+    "Approver excludes the beneficiary; accountant review added when every approver benefits"
+   ],
+   "states": [
+    "evidence missing",
+    "approved, pending ACRA",
+    "effective (posted)",
+    "approval lapsing at next AGM (⏰)"
+   ]
+  },
+  {
+   "id": "reports-index",
+   "file": "Reports",
+   "title": "Reports",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Controller",
+    "Bookkeeper",
+    "Tax agent",
+    "Auditor",
+    "Board viewer"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-RPT-03",
+    "FR-UX-12",
+    "FR-RPT-07",
+    "FR-RPT-10"
+   ],
+   "purpose": "Find any report: the curated essentials, statements, management and tax reports, saved and scheduled ones.",
+   "content": [
+    "Basic curated set with a plain-English line each: P&L, balance sheet, cash and runway, who owes us / whom we owe, GST summary",
+    "Expert adds: trial balance, general ledger, journals, comparatives, Budget vs Actual, AR & AP ageing, sales by customer and item, spend by supplier, top expenses, projects, KPIs, accountant exports (GL, TB, journals, FA schedule, AR/AP detail, GST detail)",
+    "Saved reports and shared view links; favourites",
+    "P2: scheduled reports (email or Slack, permissions checked at send time) with a schedule dialog; report builder entry"
+   ],
+   "states": [
+    "no saved reports",
+    "Basic set only"
+   ]
+  },
+  {
+   "id": "financial-statement",
+   "file": "FinancialStatement",
+   "title": "Financial statement viewer",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/:statement",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Controller",
+    "Tax agent",
+    "Auditor",
+    "Board viewer"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-RPT-01",
+    "FR-RPT-02",
+    "FR-RPT-08",
+    "FR-UX-04",
+    "FR-ORG-10",
+    "FR-EQ-10"
+   ],
+   "purpose": "Read the P&L, balance sheet, cash flow or trial balance for any period with comparatives, and drill into any figure.",
+   "content": [
+    "Toolbar: report name, period picker (month, quarter, YTD, FY, custom), comparison (prior period, prior year, budget, forecast), columns by month or dimension, 'as at' ledger revision, export menu, Ask about this",
+    "Semantic table with sticky header row and first column; collapsible groups; totals with a top rule; every figure a button opening the Trace panel",
+    "P&L by stream, gross margin, opex by group and function, EBITDA, % of revenue; balance sheet with balance check and movement in equity; cash flow (indirect) with non-cash financing listed separately",
+    "Framework and edition shown; titled 'management statements' until policies are approved",
+    "Basic: plain-English explanation under each section, no codes; Expert: codes, variance columns (amount and %), dimension pivots",
+    "Budget vs Actual as a comparison with sign and arrow icons, never colour alone",
+    "Compact: statement scrolls inside its own region with sticky first column; figures never animate"
+   ],
+   "states": [
+    "loading",
+    "restated presentation",
+    "management statements (policies not approved)",
+    "no data for period",
+    "print"
+   ]
+  },
+  {
+   "id": "general-ledger",
+   "file": "GeneralLedger",
+   "title": "General ledger",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/general-ledger",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Tax agent",
+    "Auditor"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-GL-11",
+    "FR-RPT-10",
+    "FR-RPT-08"
+   ],
+   "purpose": "List every ledger line for chosen accounts and dates with a running balance and drill to source.",
+   "content": [
+    "Account picker (several), date range, dimension filters",
+    "Columns: date, entry, source document, description, debit, credit, running balance, dimensions, preparer",
+    "Opening and closing balances per account; virtualised to 100,000 rows",
+    "Export XLSX, CSV (formula-safe), PDF"
+   ],
+   "states": [
+    "no lines",
+    "large result (async export)"
+   ]
+  },
+  {
+   "id": "management-report",
+   "file": "ManagementReport",
+   "title": "Management report (ageing and analysis)",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/ageing",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Controller",
+    "AR specialist",
+    "AP specialist"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-RPT-03",
+    "FR-AR-10",
+    "FR-AP-06",
+    "FR-RPT-13",
+    "FR-DIM-03"
+   ],
+   "purpose": "Analyse who owes us and whom we owe, sales and spend, with the same drill-down as statements.",
+   "content": [
+    "AR ageing: Current, 1–30, 31–60, 61–90, 90+ by customer and currency; unapplied credits; unrealised FX exposure; P2 disputed and undisputed separately",
+    "AP ageing and bills to pay by due date with cash requirement",
+    "Variants on the same layout: sales by customer and item, spend by supplier, top expenses",
+    "P2: deferral roll-forward and contribution margin by customer and product"
+   ],
+   "states": [
+    "nothing overdue",
+    "loading"
+   ]
+  },
+  {
+   "id": "project-reports",
+   "file": "ProjectReports",
+   "title": "Project reports",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/projects",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Approver",
+    "Accountant"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PRJ-12",
+    "FR-PRJ-06",
+    "FR-PAY-13"
+   ],
+   "purpose": "Compare profitability, utilisation and realisation across projects, customers and people.",
+   "content": [
+    "Profitability per project, customer and person: revenue − time at cost − direct costs",
+    "Utilisation (billable ÷ available hours; 40 h a week, 173.33 a month, less public holidays) and realisation (billed ÷ standard value)",
+    "Unbilled work and budget burn; project-tagged payroll lines listed separately to reconcile",
+    "Per-person cost hidden without payroll rights: hours shown instead; small-group warning"
+   ],
+   "states": [
+    "role-average rates (no payroll rights)",
+    "no projects"
+   ]
+  },
+  {
+   "id": "export-dialog",
+   "file": "ExportDialog",
+   "title": "Export dialog",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/:report?dialog=export",
+   "kind": "dialog",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Controller",
+    "Auditor",
+    "Tax agent"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-RPT-05",
+    "FR-RPT-09",
+    "FR-VIZ-06",
+    "FR-RPT-10"
+   ],
+   "purpose": "Export a report, chart or list safely in the right format.",
+   "content": [
+    "Format: XLSX (formatted, data tab), PDF (branded, print quality), CSV (raw, streaming); chart PNG and data",
+    "Options: period, columns, include drill detail; audit-tool formats for accountant exports",
+    "Large exports run in the background: progress, then a link valid 24 hours after sign-in",
+    "Note that every export is logged in the audit trail"
+   ],
+   "states": [
+    "preparing",
+    "ready (download)",
+    "link expired",
+    "permission changed (download blocked)"
+   ]
+  },
+  {
+   "id": "report-builder",
+   "file": "ReportBuilder",
+   "title": "Report builder",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/builder",
+   "kind": "editor",
+   "phase": "P2",
+   "roles": [
+    "Accountant",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-RPT-04",
+    "FR-RPT-07"
+   ],
+   "purpose": "Build a custom report from rows, columns, filters and calculated rows, then save, share or schedule it.",
+   "content": [
+    "Rows: accounts, groups, dimensions; columns: periods, comparatives, dimensions; filters; calculated rows",
+    "Live preview using the statement layout",
+    "Save, share, schedule"
+   ],
+   "states": [
+    "empty canvas",
+    "invalid formula",
+    "saved"
+   ]
+  },
+  {
+   "id": "board-pack",
+   "file": "BoardPack",
+   "title": "Board pack builder",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/board-pack/:month",
+   "kind": "editor",
+   "phase": "P2",
+   "roles": [
+    "Controller",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-RPT-06",
+    "FR-EQ-23"
+   ],
+   "purpose": "Assemble the monthly board pack from saved reports with human-edited commentary.",
+   "content": [
+    "Sections: cover, highlights, P&L, balance sheet, cash flow, KPIs, runway, commentary",
+    "Commentary drafted by AI (rpt.draft_commentary, violet, tier 1) and edited by a person",
+    "Preview as PDF and web link; access control for board viewers",
+    "Issued pack stored with a hash"
+   ],
+   "states": [
+    "draft",
+    "AI draft pending approval",
+    "issued"
+   ]
+  },
+  {
+   "id": "dashboards",
+   "file": "Dashboards",
+   "title": "Dashboards",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/dashboards/:id",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Board viewer"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-KPI-01",
+    "FR-KPI-05",
+    "FR-VIZ-09",
+    "FR-VIZ-06",
+    "FR-VIZ-03"
+   ],
+   "purpose": "See the workbook's 16 tiles and 4 charts, and (P2) compose custom dashboards per role.",
+   "content": [
+    "Default tiles: cash, burn, runway, revenue, gross margin, net profit YTD, owed to us, owed by us, revenue and cost vs budget, forecast cash-out date, books health, pipeline, unbilled time, recurring due, unrealised FX",
+    "Charts with one y-axis each, legends with direct labels, table view toggle, PNG and data export",
+    "Tiles show 'last updated' and drill down",
+    "P2: add, remove, resize and save tiles per role or user, with keyboard alternatives to dragging"
+   ],
+   "states": [
+    "loading",
+    "tile undefined ('—')",
+    "edit layout (P2)"
+   ]
+  },
+  {
+   "id": "kpis",
+   "file": "Kpis",
+   "title": "KPIs and benchmarks",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/kpis",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Board viewer"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-KPI-02",
+    "FR-KPI-03",
+    "FR-KPI-04",
+    "FR-KPI-07",
+    "FR-KPI-08"
+   ],
+   "purpose": "Track the start-up KPIs with their definitions, and see how they compare to benchmarks.",
+   "content": [
+    "KPI set: booked MRR and contracted MRR (both named, with an explanation of the difference), ARR, growth, gross margin, net burn, runway, ARPA, churn, CAC, LTV, burn multiple, DSO, DPO, ratios, headcount, revenue per employee",
+    "Each KPI: definition, source, formula, date basis, currency; undefined state shows '—' with the reason",
+    "P2: industry benchmark bands with source, year and sample; AI may explain a gap",
+    "P3: opt-in peer benchmarks (cells with ≥ 10 organisations)"
+   ],
+   "states": [
+    "no subscription data",
+    "not burning",
+    "benchmarks unavailable"
+   ]
+  },
+  {
+   "id": "budgets",
+   "file": "Budgets",
+   "title": "Budgets",
+   "canvas": "insight",
+   "module": "Planning",
+   "route": "/planning/budgets/:version",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Controller",
+    "Accountant",
+    "Approver",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PLN-01",
+    "FR-UX-07"
+   ],
+   "purpose": "Build budgets by account and dimension per month, in versions, and approve and lock them.",
+   "content": [
+    "Grid: accounts × months with dimension filter (department budgets for approvers); paste from XLSX, fill-right, = arithmetic",
+    "Versions (original, revised) with status; copy with growth %; import from XLSX",
+    "Approval and lock; AI-proposed budget versions (plan.propose_budget) as drafts"
+   ],
+   "states": [
+    "draft",
+    "approved (locked)",
+    "import errors"
+   ]
+  },
+  {
+   "id": "forecast",
+   "file": "Forecast",
+   "title": "Driver forecast and scenarios",
+   "canvas": "insight",
+   "module": "Planning",
+   "route": "/planning/forecast/:scenario",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PLN-02",
+    "FR-PLN-03",
+    "FR-PLN-08",
+    "FR-PLN-07"
+   ],
+   "purpose": "Model the company forward from drivers and compare scenarios, without touching the ledger.",
+   "content": [
+    "Scenario tabs: Base, Best, Worst, custom; horizon 12–60 months",
+    "Drivers: customers, new customers and growth, churn, ARPA, price increases, services; cost drivers (hosting %, AI/API %, contractors %, payment fees %, salary increases); headcount, capex and funding plans",
+    "Outputs: monthly P&L and cash, cash-out month, runway (with and without unconfirmed funding), minimum cash, break-even month, funding gap",
+    "Side-by-side scenario comparison view",
+    "Sandbox label: never posts; AI simulations can be saved as scenarios"
+   ],
+   "states": [
+    "sandbox",
+    "unconfirmed funding included",
+    "saved scenario"
+   ]
+  },
+  {
+   "id": "cash-flow-forecast",
+   "file": "CashForecast",
+   "title": "Short-term cash flow (30/60/90/180 days, 13 weeks)",
+   "canvas": "insight",
+   "module": "Planning",
+   "route": "/planning/cash",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-PLN-09",
+    "FR-PLN-05",
+    "FR-PLN-04"
+   ],
+   "purpose": "See the cash balance day by day ahead and the lowest point, and test what-ifs safely.",
+   "content": [
+    "Range picker 30, 60 (default), 90, 180 days; weekly 13-week bucket view",
+    "Projection line from today's balances with expected receipts and payments, scheduled pay runs, CPF, GST and tax due dates; buffer line and alert",
+    "Lowest balance and its date",
+    "What-ifs (delay this bill, chase that invoice) sandboxed, never posted",
+    "P2: forecast accuracy against actual cash 4 and 13 weeks later, by cause"
+   ],
+   "states": [
+    "below buffer alert",
+    "no bank data",
+    "what-if active"
+   ]
+  },
+  {
+   "id": "feasibility",
+   "file": "Feasibility",
+   "title": "Feasibility calculator",
+   "canvas": "insight",
+   "module": "Planning",
+   "route": "/planning/feasibility",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PLN-06",
+    "FR-PLN-08"
+   ],
+   "purpose": "Evaluate a project or investment from its cash flows.",
+   "content": [
+    "Inputs: cash flows by period, discount rate",
+    "Outputs: NPV, IRR, payback, discounted payback, profitability index, break-even, margin of safety, verdict",
+    "Sensitivity grid"
+   ],
+   "states": [
+    "incomplete inputs",
+    "IRR undefined"
+   ]
+  },
+  {
+   "id": "consolidation",
+   "file": "Consolidation",
+   "title": "Consolidated reporting (multi-entity)",
+   "canvas": "insight",
+   "module": "Reports",
+   "route": "/reports/consolidated",
+   "kind": "page",
+   "phase": "P3",
+   "roles": [
+    "Controller",
+    "Accountant",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-RPT-12",
+    "FR-ENT-01",
+    "FR-ENT-02",
+    "FR-UX-18"
+   ],
+   "purpose": "Report across several legal entities with eliminations and currency translation.",
+   "content": [
+    "Entity columns, eliminations column, consolidated total",
+    "Currency translation rates and differences",
+    "Intercompany balances that do not agree flagged"
+   ],
+   "states": [
+    "intercompany mismatch",
+    "single entity (not applicable)"
+   ]
+  },
+  {
+   "id": "practice-dashboard",
+   "file": "PracticeDashboard",
+   "title": "Accountant practice dashboard",
+   "canvas": "insight",
+   "module": "Portal",
+   "route": "/practice",
+   "kind": "page",
+   "phase": "P3",
+   "roles": [
+    "Accountant",
+    "Tax agent"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ENT-03",
+    "FR-UX-18"
+   ],
+   "purpose": "Let an accounting firm see all client organisations and what needs attention in each.",
+   "content": [
+    "Client list: organisation, books health, close status, filings due (GST F5, Form C-S, ECI), open queries",
+    "Per-client access scope and expiry",
+    "Switch into a client organisation"
+   ],
+   "states": [
+    "no clients",
+    "access expired"
+   ]
+  },
+  {
+   "id": "statutory-calendar",
+   "file": "StatutoryCalendar",
+   "title": "Statutory calendar",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/calendar",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Controller",
+    "Tax agent",
+    "Company secretary",
+    "Compliance officer"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-TAX-07",
+    "CMP-02",
+    "FR-EQ-09",
+    "FR-CS-02"
+   ],
+   "purpose": "See every Singapore filing and payment deadline derived from the organisation's year, GST periods and payroll.",
+   "content": [
+    "Month and list views: GST F5 (1 month after period end), CPF (14th), AIS (1 Mar), ECI (FY end + 3 months), Form C-S/C (30 Nov), ACRA annual return (FY end + 7 months), AGM, register-of-controllers updates, share-issue approvals (lodge within 14 days), returns of allotment",
+    "Each item: owner, due date, ⏰ chip, reminders at 30, 14, 7 and 1 days, evidence status (acknowledgement required)",
+    "Filter by area (tax, payroll, corporate); link to the Inbox task",
+    "Overdue items also on Checks"
+   ],
+   "states": [
+    "overdue",
+    "missing input (Not assessed: no FY end)",
+    "nothing due soon"
+   ]
+  },
+  {
+   "id": "gst-returns",
+   "file": "GstReturns",
+   "title": "GST returns and registration monitor",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/gst",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Tax agent",
+    "Controller",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-TAX-02",
+    "FR-TAX-05",
+    "FR-TAX-04",
+    "FR-ORG-03"
+   ],
+   "purpose": "See GST periods and their status, and whether registration is needed.",
+   "content": [
+    "Registration monitor: retrospective (calendar-year taxable supplies) and prospective (next 12 months) tests against S$1m; alert as turnover nears the threshold",
+    "Return periods: period, due date, status (open, ready, filed, F7 filed), net GST, filing reference",
+    "IRAS audit listings: sales and purchase listings in Excel/CSV for any period",
+    "Not-registered state explains that overseas vendors' GST is part of cost"
+   ],
+   "states": [
+    "not GST-registered",
+    "near threshold",
+    "return overdue"
+   ]
+  },
+  {
+   "id": "gst-return",
+   "file": "GstReturn",
+   "title": "GST F5 return",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/gst/:period",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Accountant",
+    "Tax agent",
+    "Owner",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-TAX-02",
+    "FR-TAX-03",
+    "FR-TAX-11",
+    "FR-TAX-01",
+    "ENG-42"
+   ],
+   "purpose": "Prepare, check and record the filing of a GST F5 return with every box traced to its documents.",
+   "content": [
+    "All F5 boxes (1 standard-rated supplies, 2 zero-rated, 3 exempt, 5 taxable purchases, 6 output tax, 7 input tax…) with drill-down to transactions by code (SR, ZR, ES, TX, IM, BL)",
+    "GST control account roll-forward reconciliation",
+    "Filing gate: every in-scope item has an IRAS acknowledgement ID or recorded exclusion; contingency filing with dual approval and evidence",
+    "Record filing: lock the return, filing reference, acknowledgement as evidence; filed version immutable",
+    "P2: F7 corrections and F8 final return; IRAS filing API"
+   ],
+   "states": [
+    "open",
+    "roll-forward does not reconcile (✖)",
+    "InvoiceNow gaps",
+    "filed (locked)",
+    "F7 version"
+   ]
+  },
+  {
+   "id": "gst-adjustments",
+   "file": "GstAdjustments",
+   "title": "GST adjustment queue",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/gst/adjustments",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Tax agent",
+    "Accountant"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-TAX-12",
+    "FR-AR-11"
+   ],
+   "purpose": "Handle changes that fall into already-filed GST periods: next F5 or F7, decided by the tax agent.",
+   "content": [
+    "Rows: document, original tax period, change, amount per box, IRAS test result (net error ≤ S$3,000, other boxes ≤ 5% of Box 4), proposed route, decision",
+    "Five-year limit and penalty-risk-after-one-year indicators",
+    "Correction working paper with evidence for a manual F7",
+    "P2: bad-debt relief candidates with eligibility dates"
+   ],
+   "states": [
+    "empty",
+    "decision due ⏰",
+    "decided"
+   ]
+  },
+  {
+   "id": "invoicenow-submissions",
+   "file": "InvoiceNow",
+   "title": "InvoiceNow submissions",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/invoicenow",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Accountant",
+    "Tax agent",
+    "AR specialist"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-TAX-10",
+    "FR-AR-12",
+    "FR-AP-05",
+    "FR-TAX-11"
+   ],
+   "purpose": "Make sure every document in the GST return reaches IRAS through the Access Point, or has a recorded exclusion.",
+   "content": [
+    "Rows: document, type (Peppol sale or purchase, solution-extracted, aggregated claims and card lines, credit/debit note, resubmission), status (queued, sent, IRAS acknowledgement ID, failed with retry), due by",
+    "Exclusions with reasons (reverse charge, non-registered supplier, blocked input tax)",
+    "Coverage bar per return period",
+    "Inbound Peppol invoices into draft bills"
+   ],
+   "states": [
+    "Access Point outage",
+    "failed submissions",
+    "complete for period"
+   ]
+  },
+  {
+   "id": "filing-packs",
+   "file": "FilingPacks",
+   "title": "Year-end tax and ACRA filing packs",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/filing-packs/:ya",
+   "kind": "page",
+   "phase": "P2",
+   "roles": [
+    "Tax agent",
+    "Accountant",
+    "Company secretary",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-TAX-06",
+    "FR-CS-07",
+    "FR-TAX-08"
+   ],
+   "purpose": "Assemble the data packs the tax agent and secretary file: Form C-S, ECI and the annual return.",
+   "content": [
+    "Tax-adjusted profit working paper: non-deductible expenses, capital allowances, SUTE/PTE and rebate estimates, form selector (C-S Lite ≤ S$200k, C-S ≤ S$5m, C)",
+    "ECI data (within 3 months of FY end)",
+    "Annual-return pack by filing category: officers, members, share capital, FS figures",
+    "P3: ACRA filing-category classifier, BizFinx data pack, XBRL (Taxonomy 2026) validated"
+   ],
+   "states": [
+    "books not closed",
+    "ready for tax agent",
+    "filed (evidence attached)"
+   ]
+  },
+  {
+   "id": "compliance-center",
+   "file": "ComplianceCenter",
+   "title": "Compliance Center (controls)",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/controls",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Compliance officer",
+    "Owner",
+    "Controller",
+    "Auditor"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "CMP-01",
+    "CMP-04",
+    "FR-CTL-05",
+    "SEC-33"
+   ],
+   "purpose": "See every control's status, last run, evidence and owner, filtered by framework.",
+   "content": [
+    "Control list: ID, description, status (pass, fail, overdue, not applicable, not assessed with the missing input named), last run, evidence link, owner",
+    "Framework filter: Singapore statute, PDPA, ISO 27001, SOC 2, CSA Cyber Essentials / Cyber Trust, IMDA agentic AI, OWASP",
+    "Nightly ledger and audit-chain verification results; cloud posture findings",
+    "P2: evidence export per framework and period"
+   ],
+   "states": [
+    "all passing",
+    "failing control",
+    "not assessed"
+   ]
+  },
+  {
+   "id": "attestations",
+   "file": "Attestations",
+   "title": "Reviews and attestations",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/attestations",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Compliance officer",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "CMP-03",
+    "FR-CTL-06",
+    "SEC-06",
+    "FM-3"
+   ],
+   "purpose": "Carry out the recurring human reviews: weekly self-approval review, journal review, access review and policy acknowledgements.",
+   "content": [
+    "Due attestations with owner and due date",
+    "Weekly review (Founder mode): self-approved and high-risk items, auto-reconciled sample, AI anomaly flags, break-glass post-review; mark reviewed",
+    "Quarterly access review: who has what, last sign-in, SoD conflicts, external users and their expiry, OAuth clients; attest",
+    "Sign-off with evidence"
+   ],
+   "states": [
+    "overdue (⚠ older than 14 days)",
+    "signed off",
+    "nothing due"
+   ]
+  },
+  {
+   "id": "data-protection",
+   "file": "DataProtection",
+   "title": "Data protection (PDPA)",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/data-protection",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Compliance officer",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "CMP-05",
+    "CMP-PD-02",
+    "CMP-PD-04",
+    "CMP-PD-05",
+    "CMP-PD-08",
+    "CMP-AI-02",
+    "CMP-PD-01"
+   ],
+   "purpose": "Run the PDPA programme: data inventory, DPIAs, access requests and breach timers.",
+   "content": [
+    "Data inventory: what, why, where, who, how long, cross-border flows (AI endpoint, email providers)",
+    "DPIAs (payroll, AI assistant) and AI inventory",
+    "Access and correction requests with 30-day timers",
+    "Breach register with timers: assessment within 30 days, PDPC notification within 3 calendar days after deciding it is notifiable",
+    "DPO contact and published policies"
+   ],
+   "states": [
+    "breach timer running",
+    "request overdue",
+    "empty"
+   ]
+  },
+  {
+   "id": "risk-policies",
+   "file": "RiskPolicies",
+   "title": "Risk register and policy library",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/risks",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Compliance officer",
+    "Owner",
+    "All users"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "CMP-06",
+    "CMP-07"
+   ],
+   "purpose": "Keep risks reviewed and policies versioned and acknowledged by staff.",
+   "content": [
+    "Risks tab: risk, owner, rating, mitigation, review date",
+    "Policies tab: information security, acceptable use, access control, incident response, backup, change management, AI use, data protection; version and acknowledgement rate",
+    "Staff view: 'Acknowledge policy' card"
+   ],
+   "states": [
+    "review overdue",
+    "acknowledgement pending"
+   ]
+  },
+  {
+   "id": "audit-trail",
+   "file": "AuditTrail",
+   "title": "Audit trail explorer",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/audit-trail",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Controller",
+    "Auditor",
+    "Compliance officer",
+    "Tax agent"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-CTL-03",
+    "AUD-07",
+    "AUD-05",
+    "AUD-09",
+    "AUD-02"
+   ],
+   "purpose": "Search every recorded change with before and after values, and verify the trail has not been tampered with.",
+   "content": [
+    "Filters: user, AI (originator), record, field, time, action, approval ID",
+    "Event rows: time, actor (user / AI / service), on-behalf-of, action, object and version, reason; detail with field-level before → after (sensitive values masked)",
+    "'Verify integrity' for a date range: chain recomputed against signed anchors; result pass, fail or explained gap (purge boundary, restore)",
+    "Export (logged)"
+   ],
+   "states": [
+    "verifying",
+    "verified",
+    "verification failed (✖)",
+    "explained gap"
+   ]
+  },
+  {
+   "id": "company-secretary",
+   "file": "CompanySecretary",
+   "title": "AI company secretary workspace",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/secretary",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Company secretary",
+    "Board viewer"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-CS-04",
+    "AI-62",
+    "AI-63",
+    "AI-67",
+    "FR-CS-05"
+   ],
+   "purpose": "See what the AI company secretary assistant found, what is due and which drafts await approval.",
+   "content": [
+    "Latest run report summary; Basic: '2 things need you this week'; Expert: every finding with rule and source",
+    "Open findings with ✔ ⚠ ✖ ⏰ and Not assessed listed first; never 'all clear' while any remain",
+    "Obligations calendar; drafts awaiting approval (resolutions, AGM notice, minutes, reminders; sec.draft_*)",
+    "Run history with 'new since last run'",
+    "Schedule settings: daily 07:00 SGT monitor, weekly Monday 08:00 full cross-check, after month close, FY end + 1 month; event triggers; quiet hours; Run now; Pause",
+    "Agent principal, on behalf of the Owner who enabled it; token budget; failed or late run ⚠",
+    "Clear statement: the agent never files, signs or marks obligations met"
+   ],
+   "states": [
+    "agent off",
+    "paused",
+    "over budget",
+    "run failed",
+    "Not assessed items"
+   ]
+  },
+  {
+   "id": "agent-run-report",
+   "file": "AgentRunReport",
+   "title": "Agent run report",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/secretary/runs/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Company secretary",
+    "Auditor"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-65",
+    "FR-CS-03",
+    "AI-64"
+   ],
+   "purpose": "Read one run's findings, the rules and sources applied, and what to do next.",
+   "content": [
+    "Header: run time, trigger, ledger revision, knowledge-base snapshot and pack versions used",
+    "Findings: status, rule and source (e.g. 'Annual return within 7 months after FY end'), evidence links, next step, task link",
+    "Cross-checks: books closed, FS approved, ledger share capital = equity register = ACRA, exempt-private-company status, director debit balances, controller changes, GST threshold",
+    "Model step skipped when no input changed; model text stored as written and labelled AI"
+   ],
+   "states": [
+    "all items assessed",
+    "Not assessed items",
+    "run failed"
+   ]
+  },
+  {
+   "id": "corporate-profile",
+   "file": "CorporateProfile",
+   "title": "Corporate profile and registers",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/corporate-profile",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Company secretary",
+    "Owner",
+    "Board viewer"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-CS-01",
+    "FR-CS-06",
+    "FR-EQ-25",
+    "FR-EQ-11"
+   ],
+   "purpose": "Keep the company's officers, controllers and registered details in step with ACRA.",
+   "content": [
+    "Effective-dated profile: UEN, name, registered office, SSIC, FY end, exempt-private-company status",
+    "Directors, secretary (named human), auditors with appointment and cessation dates",
+    "Registrable controllers (> 25% shares or votes, board-appointment rights), annual notices and 30-day replies; nominee directors and nominee shareholders",
+    "ACRA business-profile extract upload and differences; P2 fetched via ACRA API",
+    "A change opens its lodgement checklist (14 days for officers and registered office)",
+    "No secretary 6 months after incorporation ✖; sole director as secretary ✖"
+   ],
+   "states": [
+    "differs from ACRA extract",
+    "lodgement due ⏰",
+    "extract out of date (Not assessed)"
+   ]
+  },
+  {
+   "id": "evidence-panel",
+   "file": "EvidencePanel",
+   "title": "Evidence panel",
+   "canvas": "compliance",
+   "module": "Shell",
+   "route": "/*?panel=evidence",
+   "kind": "panel",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-DOC-05",
+    "FR-DOC-06",
+    "FR-DOC-07",
+    "FR-DOC-08",
+    "FR-DOC-13",
+    "FR-DOC-09",
+    "FR-DOC-01"
+   ],
+   "purpose": "Attach and see the evidence for any record or important activity, with rules telling you what is missing.",
+   "content": [
+    "Evidence rules for this activity: required (✖ when missing, in plain words) and recommended (⚠) types, e.g. bank letter for a payee bank change",
+    "Add by drag and drop, file picker, paste a screenshot, forward an email, phone camera (P2)",
+    "Each file: evidence type, note, date it relates to, data class (general, personal, bank, payroll, identity), SHA-256, uploader, source",
+    "Upload states: scanning, converted (HEIC to JPEG), metadata stripped, rejected (macro, type, size > 25 MB)",
+    "Append-only once approved: supersede with a reason, both kept",
+    "Inline server-rendered preview; P2 redaction tool"
+   ],
+   "states": [
+    "no evidence",
+    "required missing (✖)",
+    "scanning",
+    "rejected file",
+    "append-only (locked)"
+   ]
+  },
+  {
+   "id": "evidence-search",
+   "file": "EvidenceSearch",
+   "title": "Evidence search and packs",
+   "canvas": "compliance",
+   "module": "Compliance",
+   "route": "/compliance/evidence",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Auditor",
+    "Compliance officer",
+    "Company secretary"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-DOC-10",
+    "FR-RPT-10",
+    "CMP-04"
+   ],
+   "purpose": "Find evidence across the organisation and see what is missing; build packs for audits and filings.",
+   "content": [
+    "Search by activity, evidence type, date, uploader",
+    "Missing evidence list (required and recommended)",
+    "P2: evidence pack for a period, filing, investor or audit with a manifest of file hashes; auditor evidence pack with chain verification results"
+   ],
+   "states": [
+    "nothing missing",
+    "pack building",
+    "pack ready"
+   ]
+  },
+  {
+   "id": "document-inbox",
+   "file": "DocumentInbox",
+   "title": "Document inbox (capture)",
+   "canvas": "compliance",
+   "module": "Purchases",
+   "route": "/documents/inbox",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Bookkeeper",
+    "AP specialist",
+    "Accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-DOC-12",
+    "FR-INT-22",
+    "FR-AP-05"
+   ],
+   "purpose": "See every captured document (uploaded, pasted or emailed in) and what draft it became.",
+   "content": [
+    "Capture addresses for the organisation and for me, with copy buttons",
+    "Rows: received, source (upload, paste, email, Peppol inbound), sender with SPF/DKIM/DMARC result, classified as (receipt, bill, invoice, statement, contract), extraction confidence, draft created",
+    "Quarantine for unknown senders: accept or reject",
+    "Duplicate detected and receipts matched to card or bank lines"
+   ],
+   "states": [
+    "empty",
+    "processing",
+    "quarantined",
+    "extraction failed"
+   ]
+  },
+  {
+   "id": "organisation-settings",
+   "file": "OrganisationSettings",
+   "title": "Organisation settings",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/organisation",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Accountant"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ORG-01",
+    "FR-ORG-02",
+    "FR-ORG-03",
+    "FR-ORG-04",
+    "FR-ORG-06",
+    "FR-ORG-08",
+    "FR-ORG-10"
+   ],
+   "purpose": "Set up the organisation's identity, year, GST status, defaults, features and accounting policies.",
+   "content": [
+    "Settings sub-navigation (on phones Settings opens on a section list): Organisation, Brand, Users and roles, Team mode, Approval policies, AI, Connected apps, Integrations, Statutory parameters, Templates, Appearance and motion, Data",
+    "Profile: legal name, UEN, GST registration number and date, addresses, PayNow details for documents, footers",
+    "Financial year (any start month, short or long first year), books start date, base currency SGD, time zone Asia/Singapore",
+    "GST status with effective dates, return frequency, invoice basis; reverse-charge setting decided by the tax agent",
+    "Defaults: payment terms, numbering per document type (prefix, next number, gap-free), rounding and FX tolerances, capitalisation threshold",
+    "Feature switches: payroll, projects, multi-currency, AI assistant, portals",
+    "Accounting framework and edition (FRS, SFRS(I), SFRS for Small Entities) and policies with approver and date",
+    "Each setting: Recommended / Changed from recommended, reason, Reset to recommended; dual approval where FM-1 applies"
+   ],
+   "states": [
+    "change awaiting approval",
+    "policies not approved",
+    "recommended"
+   ]
+  },
+  {
+   "id": "logo-brand",
+   "file": "LogoBrand",
+   "title": "Logo and brand",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/brand",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-ORG-09",
+    "FR-TPL-01"
+   ],
+   "purpose": "Upload the company logo once and see it applied everywhere it appears.",
+   "content": [
+    "Upload SVG or PNG (SVG reduced to a safe subset), light and dark variants, square icon",
+    "Optional document and email accent colour from contrast-checked options; the app keeps its own colours and violet for AI",
+    "Previews: app header, sign-in page, email, invoice template, PDF report, customer portal",
+    "Version history; issued documents keep their original logo"
+   ],
+   "states": [
+    "no logo",
+    "unsafe SVG cleaned",
+    "preview"
+   ]
+  },
+  {
+   "id": "users-roles",
+   "file": "UsersRoles",
+   "title": "Users and roles",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/users",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ADM-01",
+    "FR-ADM-09",
+    "SEC-06",
+    "FR-UX-27",
+    "FR-UX-28",
+    "FR-ADM-04"
+   ],
+   "purpose": "Invite people, give them roles and scopes, and keep external access time-boxed.",
+   "content": [
+    "Users: name, email, roles (Owner, Administrator, Controller, Accountant, Bookkeeper, AR, AP, Payroll, Payment releaser, Approver, Employee, Auditor, Tax agent, Board viewer, Company secretary, Compliance officer), scopes (entity, department), last sign-in, MFA status, expiry for externals",
+    "Invite user dialog with role, scope, expiry and default experience mode (Basic or Expert by role; Owner wins)",
+    "SoD conflict warnings per user under the current team mode",
+    "Owner add, remove or transfer (dual-controlled); succession with evidence and waiting period",
+    "Role change approval-gated; P2 pin a role to Basic"
+   ],
+   "states": [
+    "invite pending",
+    "external access expired",
+    "role change awaiting approval",
+    "SoD conflict"
+   ]
+  },
+  {
+   "id": "team-mode",
+   "file": "TeamMode",
+   "title": "Team mode and controls",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/team-mode",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ADM-04",
+    "FR-CTL-04",
+    "FM-1",
+    "FM-2",
+    "FM-8"
+   ],
+   "purpose": "Choose Founder, Standard or Enterprise mode and see the compensating controls that apply.",
+   "content": [
+    "Mode cards: Founder (1-3 founders, compensating controls), Standard (4-15, conflicts blocked), Enterprise (15+, SSO and SCIM)",
+    "Founder-mode controls FM-1…FM-9 with status: two-person rule, self-approval threshold S$2,000, weekly review, close attestation, accountant review",
+    "Switch to Standard: list of users whose role combinations now conflict; switch blocked until resolved or overridden with a reason (dual-controlled)",
+    "Break-glass: start dialog (reason, step-up, 24-hour expiry, total limit) with what is allowed and never allowed"
+   ],
+   "states": [
+    "switch blocked by conflicts",
+    "change awaiting second approver",
+    "break-glass active"
+   ]
+  },
+  {
+   "id": "approval-policies",
+   "file": "ApprovalPolicies",
+   "title": "Approval policies",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/approval-policies",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Administrator",
+    "Owner",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-APR-01",
+    "FR-APR-09",
+    "FR-APR-06",
+    "FR-APR-08",
+    "AI-06"
+   ],
+   "purpose": "Define who approves what, with conditions and ordered steps, as a versioned, approval-gated policy.",
+   "content": [
+    "Policies per object type: bill, payment batch, journal, pay run, expense claim, PO, credit note, write-off, vendor bank change, period reopen, parameter change, role change, AI proposal, director settlement, share issue, template publish, KB publish",
+    "Conditions (amount, entity, department, account, vendor, risk tier) and ordered steps (role or named user, quorum)",
+    "AI proposals always keep a mandatory human step (cannot be removed)",
+    "Version history and diff; a change restarts pending approvals; proposer cannot approve",
+    "P2: delegation with start and end dates; escalation and reminders"
+   ],
+   "states": [
+    "draft policy",
+    "awaiting approval",
+    "active version"
+   ]
+  },
+  {
+   "id": "statutory-packs",
+   "file": "StatutoryPacks",
+   "title": "Statutory parameter packs",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/statutory-packs",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Controller",
+    "Accountant",
+    "Tax agent",
+    "Owner",
+    "Payroll administrator"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ORG-05",
+    "ENG-30",
+    "ENG-32",
+    "ENG-33",
+    "FR-TAX-09"
+   ],
+   "purpose": "See the effective-dated GST, CPF, SDL, SHG, CIT and ACRA rules in force, and accept updates with dual approval.",
+   "content": [
+    "Packs: sg-gst, sg-cpf, sg-sdl, sg-shg, sg-cit, sg-acra with version (e.g. sg-cpf@2026.1), effective from/to, source URL and section, kind of source, verifier, approver, review date",
+    "Pack detail: values (GST 9% since 1 Jan 2024; CPF ≤ 55: 17% / 20%; OW ceiling S$8,000; SDL 0.25% min S$2 max S$11.25)",
+    "'Parameter update available' with a diff and pinned test results; accept needs a second approver",
+    "Past review date ⚠; mandatory update pending shows 'based on <version>; update pending'",
+    "P3: country packs"
+   ],
+   "states": [
+    "update available",
+    "awaiting second approver",
+    "review overdue (⚠)"
+   ]
+  },
+  {
+   "id": "document-templates",
+   "file": "DocumentTemplates",
+   "title": "Document templates",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/templates",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Controller",
+    "Accountant",
+    "AR specialist",
+    "AP specialist",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-TPL-05",
+    "FR-TPL-07",
+    "FR-TPL-04"
+   ],
+   "purpose": "Manage the templates used for invoices, quotes, statements, reminders, remittances, POs and emails.",
+   "content": [
+    "Templates by document type with default flag, per-customer overrides, published version and draft status",
+    "Starter gallery of 3-4 templates built with the design system",
+    "Export and import as a versioned bundle"
+   ],
+   "states": [
+    "draft changes",
+    "publish awaiting approval"
+   ]
+  },
+  {
+   "id": "template-editor",
+   "file": "TemplateEditor",
+   "title": "Template editor",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/templates/:id",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Controller",
+    "Accountant",
+    "AR specialist",
+    "Owner"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-TPL-01",
+    "FR-TPL-02",
+    "FR-TPL-03",
+    "FR-TPL-04",
+    "FR-TPL-06",
+    "FR-TPL-08"
+   ],
+   "purpose": "Design a document template visually, with the IRAS particulars locked, and publish it as a version.",
+   "content": [
+    "Block list (drag or keyboard to reorder): header and logo, our and customer details, document details, line table, totals and GST summary, payment details (bank, PayNow QR, link), notes, signature, footer, free text and image",
+    "Per-block settings; field catalogue (customer name, due date, amount due, SGD equivalents) and conditions (GST-registered, foreign currency, overdue, PayNow available)",
+    "Locked IRAS particulars blocks for tax invoices and credit notes",
+    "Live preview with sample or real document; A4 / Letter; theme",
+    "Versions: compare any two side by side, rollback, publish (approval object)",
+    "Basic: theme, logo, colours, texts; Expert: layout, columns, conditions; P2 Typst code mode; P3 languages"
+   ],
+   "states": [
+    "draft",
+    "publish blocked (missing particular)",
+    "published",
+    "comparing versions"
+   ]
+  },
+  {
+   "id": "profile-preferences",
+   "file": "ProfilePreferences",
+   "title": "Profile, preferences and security",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/profile",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-23",
+    "FR-UX-06",
+    "FR-ADM-03",
+    "NFR-L10N-01",
+    "FR-UX-38",
+    "SEC-35"
+   ],
+   "purpose": "Set my own experience: mode, theme, density, formats, shortcuts, reduce motion, and manage my sign-in security.",
+   "content": [
+    "Experience: Basic or Expert, Plain view or Accountant view, theme (Light, Dark, System, high contrast), density (Comfortable, Compact), Reduce motion",
+    "Formats: number and date ('12 Oct 2026'), negative numbers −1,234.56 or (1,234.56)",
+    "Keyboard: turn off or remap single-character shortcuts; contextual hints on or off; tips on or off",
+    "Security: passkeys and TOTP, recovery codes, linked sign-in identities (Google, Zoho), devices and sessions with revoke",
+    "My MCP connections link"
+   ],
+   "states": [
+    "organisation motion Off (my setting has no effect, explained)",
+    "recovery codes not saved ⚠",
+    "session revoked"
+   ]
+  },
+  {
+   "id": "notification-preferences",
+   "file": "NotificationPreferences",
+   "title": "Notification preferences",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/notifications",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-NTF-02",
+    "FR-UX-15"
+   ],
+   "purpose": "Choose how and when I hear about each kind of event.",
+   "content": [
+    "Matrix: event types × channels (in-app always, email, Slack or Cliq when connected)",
+    "Immediate, daily or weekly digest; quiet hours",
+    "Security notifications locked on",
+    "Organisation defaults shown as Recommended"
+   ],
+   "states": [
+    "chat not connected",
+    "changed from recommended"
+   ]
+  },
+  {
+   "id": "appearance-motion",
+   "file": "AppearanceMotion",
+   "title": "Appearance and motion",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/appearance",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-UX-38",
+    "FR-ORG-08",
+    "FR-UX-37"
+   ],
+   "purpose": "Switch interface motion on or off for the whole organisation (users can still reduce motion for themselves).",
+   "content": [
+    "Organisation motion: On (Recommended) or Off, with the one-line reason and Reset to recommended",
+    "What motion covers: page and panel entrances (fade with 8 px rise or slide, 120–240 ms), list rows staggered (≤ 30 ms per row, 8 rows), skeletons while loading, status-chip and count changes, the Home pulse ticker, the 'Books closed' moment",
+    "Live preview of each transition, and of the final state shown immediately when Off",
+    "Note: each user can still choose Reduce motion, and the device's reduced-motion setting always wins",
+    "Change is audited and effective-dated"
+   ],
+   "states": [
+    "On (recommended)",
+    "Off (changed from recommended)",
+    "preview playing"
+   ]
+  },
+  {
+   "id": "workbook-import",
+   "file": "WorkbookImport",
+   "title": "Import from the workbook",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/import",
+   "kind": "wizard",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-MIG-01",
+    "FR-MIG-02",
+    "FR-MIG-03",
+    "FR-INT-05"
+   ],
+   "purpose": "Move from the zh-sheet-accounting workbook (or any CSV/XLSX) with a validation report before anything is committed.",
+   "content": [
+    "Upload the published .xlsx; detected sheets (Settings, Accounts, Contacts, Employees, Items, Lists, Transactions, Invoices, Bills, Journal, Payroll, Assets, Budget, Forecast drivers, Funding)",
+    "Validation report per sheet: errors (✖), warnings (⚠), rows to import",
+    "Reconciliation: imported trial balance vs workbook for every account and month to the cent",
+    "Migration difference register: class (cent allocation, deliberate rule change, workbook defect), accountant sign-off",
+    "Generic CSV/XLSX import per entity with templates and dry run",
+    "P3: import from Xero, QuickBooks Online and Zoho Books"
+   ],
+   "states": [
+    "validating",
+    "errors to fix",
+    "TB differs (register items)",
+    "committed"
+   ]
+  },
+  {
+   "id": "data-export",
+   "file": "DataExport",
+   "title": "Data, retention, usage and export",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/data",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Compliance officer"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-MIG-04",
+    "FR-ORG-07",
+    "FR-ADM-05",
+    "AUD-06"
+   ],
+   "purpose": "See where data lives and how long it is kept, and export the whole tenant under dual control.",
+   "content": [
+    "Data region (asia-southeast1, Singapore) and retention (default 7 years after FY end, legal holds), read-only where fixed",
+    "Full tenant export: CSV/JSON plus files with manifest and hashes; needs a second Owner approval; progress and link",
+    "P2: usage and cost (AI tokens, storage, exports)"
+   ],
+   "states": [
+    "export awaiting approval",
+    "export running",
+    "export ready"
+   ]
+  },
+  {
+   "id": "customer-document-view",
+   "file": "CustomerDocumentView",
+   "title": "Customer online invoice and quote view",
+   "canvas": "settings-admin",
+   "module": "Portal",
+   "route": "/d/:token",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Customer"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-AR-06",
+    "FR-AR-16",
+    "FR-AR-13",
+    "FR-PSP-02"
+   ],
+   "purpose": "What a customer sees from the secure link: the document, and accepting a quote or paying an invoice.",
+   "content": [
+    "Branded document view with the company logo, PDF download",
+    "Quote: Accept or Decline with name, date and comment (kept as evidence)",
+    "Invoice: amount due, due date, P2 PayNow QR (SGQR) and card or bank payment link (Stripe, HitPay)",
+    "Link expiry and 'Paid, thank you' state"
+   ],
+   "states": [
+    "link expired",
+    "accepted",
+    "declined",
+    "paid",
+    "settlement pending"
+   ]
+  },
+  {
+   "id": "customer-portal",
+   "file": "CustomerPortal",
+   "title": "Customer portal",
+   "canvas": "settings-admin",
+   "module": "Portal",
+   "route": "/portal",
+   "kind": "page",
+   "phase": "P2",
+   "roles": [
+    "Customer"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-AR-14",
+    "FR-AR-13"
+   ],
+   "purpose": "Let a customer see and pay all their invoices and download statements.",
+   "content": [
+    "Open invoices with pay actions; paid history",
+    "Statement download by date range",
+    "Company branding"
+   ],
+   "states": [
+    "nothing due",
+    "overdue"
+   ]
+  },
+  {
+   "id": "employee-self-service",
+   "file": "MyPayslips",
+   "title": "My payslips and option grants",
+   "canvas": "settings-admin",
+   "module": "Personal",
+   "route": "/me/payslips",
+   "kind": "page",
+   "phase": "P2",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-PAY-08",
+    "FR-EQ-24",
+    "FR-UX-16"
+   ],
+   "purpose": "Give each employee their itemised payslips and their own option grants in an MFA-protected area.",
+   "content": [
+    "Payslips by month with the 12 MOM items; open or download (never NRIC-password PDFs); expiring-link variant",
+    "Key employment terms",
+    "My option grants: number, exercise price, vesting progress (from the P1 register)"
+   ],
+   "states": [
+    "no payslips yet",
+    "link expired"
+   ]
+  },
+  {
+   "id": "auditor-workspace",
+   "file": "AuditorWorkspace",
+   "title": "Auditor workspace",
+   "canvas": "settings-admin",
+   "module": "Portal",
+   "route": "/auditor",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Auditor",
+    "Tax agent"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "SEC-06",
+    "FR-RPT-10",
+    "AUD-07",
+    "FR-CTL-03",
+    "FR-ADM-01"
+   ],
+   "purpose": "Give an external auditor time-boxed, read-only access to everything in scope in one place.",
+   "content": [
+    "Access banner: scope and expiry date",
+    "Shortcuts: trial balance as at any revision, GL, journal population with user and timestamp, change logs, access lists, audit trail, evidence",
+    "Requests list (queries to management, answers)",
+    "P2: auditor evidence pack with chain verification results"
+   ],
+   "states": [
+    "access expiring soon",
+    "access expired",
+    "payroll not granted (masked)"
+   ]
+  },
+  {
+   "id": "sign-in",
+   "file": "SignIn",
+   "title": "Sign in",
+   "canvas": "access-ai",
+   "module": "Auth",
+   "route": "/sign-in",
+   "kind": "page",
+   "phase": "P0",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-ADM-08",
+    "FR-ADM-02",
+    "SEC-01",
+    "NFR-A11Y-05",
+    "FR-ORG-09"
+   ],
+   "purpose": "Sign in with an enabled provider and the platform's own MFA.",
+   "content": [
+    "Organisation logo and name; buttons for each enabled provider: Google, Zoho (US data centre, accounts.zoho.com), other OpenID Connect, email and password (optional)",
+    "MFA step: passkey (preferred) or TOTP code; no SMS; paste and password managers allowed",
+    "Error summary that takes focus and links to fields; account linking only after step-up",
+    "Invitation acceptance variant (join by invite; domain join off by default)",
+    "'Lost your authenticator?' link to account recovery"
+   ],
+   "states": [
+    "provider disabled",
+    "wrong code",
+    "account locked",
+    "session expired (signed out)",
+    "invitation"
+   ]
+  },
+  {
+   "id": "mfa-enrolment",
+   "file": "MfaEnrolment",
+   "title": "MFA, passkey and recovery-code enrolment",
+   "canvas": "access-ai",
+   "module": "Auth",
+   "route": "/sign-in/enrol",
+   "kind": "wizard",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "SEC-01",
+    "SEC-35",
+    "FR-ADM-02"
+   ],
+   "purpose": "Set up the authenticators a user needs before using Fyniq.",
+   "content": [
+    "Step 1: add a passkey (or TOTP with QR code and manual key)",
+    "Step 2: save recovery codes (download, copy, print); confirm saved",
+    "Step 3: add a second authenticator (two passkeys, or passkey and TOTP) – recommended",
+    "Done: what step-up will be used for (approvals, payments, bank details)"
+   ],
+   "states": [
+    "passkey not supported (use TOTP)",
+    "codes not confirmed",
+    "complete"
+   ]
+  },
+  {
+   "id": "account-recovery",
+   "file": "AccountRecovery",
+   "title": "Account recovery",
+   "canvas": "access-ai",
+   "module": "Auth",
+   "route": "/recover",
+   "kind": "wizard",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "SEC-35",
+    "AI-38"
+   ],
+   "purpose": "Regain access after losing an authenticator, with two independent proofs and a cooling-off period.",
+   "content": [
+    "Proof 1: a saved recovery code",
+    "Proof 2: a still-bound authenticator, or confirmation by a named recovery contact (another Owner or Administrator, with step-up)",
+    "Outcome: all sessions and tokens revoked, every Owner notified, 24-hour cooling-off during which approvals, payment release, bank-detail and role changes and break-glass are blocked",
+    "Email alone or a support request never recovers an account"
+   ],
+   "states": [
+    "waiting for recovery contact",
+    "cooling-off active",
+    "failed"
+   ]
+  },
+  {
+   "id": "oauth-consent",
+   "file": "OAuthConsent",
+   "title": "Connect an app (OAuth consent)",
+   "canvas": "access-ai",
+   "module": "Auth",
+   "route": "/auth/consent",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "AI-37",
+    "AI-35",
+    "AI-36"
+   ],
+   "purpose": "Decide what an MCP client or integration may read or propose on my behalf.",
+   "content": [
+    "Client name, verified publisher, class (agent: proposal-only), redirect",
+    "Requested scopes as plain-language rows: fyniq.read.reports (default), read sales, banking…, fyniq.propose.<task>; payroll and equity never granted by default",
+    "Data categories and expiry (consent renewed every 90 days)",
+    "Allow / Deny; shown only after MFA"
+   ],
+   "states": [
+    "client not on allowlist",
+    "MCP off for organisation",
+    "scope needs Owner grant"
+   ]
+  },
+  {
+   "id": "first-run-setup",
+   "file": "FirstRunSetup",
+   "title": "First-run installation setup",
+   "canvas": "access-ai",
+   "module": "Super admin",
+   "route": "/install",
+   "kind": "wizard",
+   "phase": "P0",
+   "roles": [
+    "Super admin"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-ADM-06",
+    "FR-ADM-07"
+   ],
+   "purpose": "Claim a new installation safely: the first person to finish becomes the Super admin and Owner of the first organisation.",
+   "content": [
+    "One-time setup code (printed by make setup locally; Secret Manager in the cloud); optional fixed email",
+    "Create the Super admin account with MFA",
+    "Create the first organisation (Cognizhi Pte Ltd)",
+    "Recommend a second Super admin; explain break-glass",
+    "Closes for good when done"
+   ],
+   "states": [
+    "invalid setup code",
+    "complete (wizard closed)"
+   ]
+  },
+  {
+   "id": "super-admin-console",
+   "file": "SuperAdmin",
+   "title": "Super admin console",
+   "canvas": "access-ai",
+   "module": "Super admin",
+   "route": "/admin",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Super admin"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ADM-07",
+    "FR-ADM-09",
+    "FR-INT-21",
+    "FR-NTF-03"
+   ],
+   "purpose": "Run the installation: health, Super admins, installation-wide connections and announcements to everyone.",
+   "content": [
+    "Platform health: services, scheduler tick heartbeat, outbox backlog, last audit anchor",
+    "Super admins (the last cannot be removed, only replaced; dual control once a second exists)",
+    "Installation email senders (ZeptoMail, Resend, SMTP) with SPF, DKIM and DMARC status",
+    "Announcements to everyone",
+    "P3: organisations list; never reads an organisation's books without membership"
+   ],
+   "states": [
+    "degraded service",
+    "only one Super admin ⚠",
+    "change awaiting second Super admin"
+   ]
+  },
+  {
+   "id": "sign-in-providers",
+   "file": "SignInProviders",
+   "title": "Sign-in providers",
+   "canvas": "access-ai",
+   "module": "Super admin",
+   "route": "/admin/sign-in-providers",
+   "kind": "page",
+   "phase": "P0",
+   "roles": [
+    "Super admin"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ADM-08",
+    "FR-INT-20",
+    "SEC-36"
+   ],
+   "purpose": "Configure and switch on or off each way people sign in.",
+   "content": [
+    "Providers: Google, Zoho (one per data centre; issuer https://accounts.zoho.com), any OIDC (discovery URL, client ID, write-only secret, scopes, claim mapping), email and password, P3 SAML",
+    "Enable or disable each; optionally end its sessions; cannot disable the last method a Super admin can use",
+    "Allowed email domains; join by domain (off by default)",
+    "Test sign-in; 'trust the provider's MFA' off by default"
+   ],
+   "states": [
+    "test failed",
+    "last method (cannot disable)",
+    "awaiting second approval"
+   ]
+  },
+  {
+   "id": "announcements",
+   "file": "Announcements",
+   "title": "Announcements",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/announcements",
+   "kind": "editor",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Super admin"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-NTF-03",
+    "FR-NTF-05"
+   ],
+   "purpose": "Publish a banner to the organisation (or, for the Super admin, everyone).",
+   "content": [
+    "Message, link, severity (info, warning, critical), audience (everyone, roles), start and end time, dismissible (not for critical)",
+    "Live preview of the banner",
+    "Scheduled and past announcements; publishing audited"
+   ],
+   "states": [
+    "scheduled",
+    "live",
+    "ended"
+   ]
+  },
+  {
+   "id": "ai-tasks",
+   "file": "AiTasks",
+   "title": "AI tasks (catalogue and proposal history)",
+   "canvas": "access-ai",
+   "module": "Inbox",
+   "route": "/inbox/ai-tasks",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Bookkeeper",
+    "Auditor"
+   ],
+   "mode": "both",
+   "requirements": [
+    "AI-32",
+    "AI-06",
+    "AI-13",
+    "AI-33"
+   ],
+   "purpose": "See which tasks the AI may propose, with their limits and status, and every proposal it has made.",
+   "content": [
+    "Catalogue: task type (bank.categorise_lines, bank.match_payments, ap.draft_bill, gl.post_journal…), tier, limits (e.g. ≤ 100 lines, each ≤ S$10,000, ≤ S$50,000 total), approver roles, enabled per organisation (off by default)",
+    "Never-list shown: approvals, payments, payee bank details, filings, equity…",
+    "Proposal history: pending, approved, executed, rejected, expired, filterable and linked to the records changed",
+    "P2: approval-quality metrics (approval rate, edit-before-approve, time to decide, reversals)"
+   ],
+   "states": [
+    "all task types off",
+    "kill switch on",
+    "empty history"
+   ]
+  },
+  {
+   "id": "ai-activity-log",
+   "file": "AiActivityLog",
+   "title": "AI activity log",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/ai/activity",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Compliance officer",
+    "All users"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-12",
+    "AI-60",
+    "QA-AI-04",
+    "AI-44",
+    "AI-74",
+    "AI-76"
+   ],
+   "purpose": "See everything the AI did: conversations, tool calls, proposals and cost, mine or (for the Owner) everyone's.",
+   "content": [
+    "Rows: time, user, client (in-app or MCP client and version), model, turn, tool calls with row counts, tokens and cost, proposals and outcomes",
+    "Turn detail: tool inputs, output hash, knowledge-base page versions used; restricted entries masked",
+    "Monitoring: grounding failures, refusals, tool errors"
+   ],
+   "states": [
+    "my activity only",
+    "masked entries",
+    "empty"
+   ]
+  },
+  {
+   "id": "ai-settings",
+   "file": "AiSettings",
+   "title": "AI settings and kill switches",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/ai",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-13",
+    "AI-02",
+    "AI-26",
+    "AI-32",
+    "AI-63",
+    "AI-74",
+    "AI-77"
+   ],
+   "purpose": "Control the assistant: what it may see, what it may propose, how much it may spend, and turn it off instantly.",
+   "content": [
+    "Kill switches: assistant, propose tool, individual task types (instant)",
+    "AI exclusions: NRIC/FIN, full bank numbers, secrets, home addresses always excluded; 'AI payroll access' off by default",
+    "Budgets: organisation (S$ and tokens) and per person, with the 80% alert and the 100% stop; per-agent budgets on Usage",
+    "Providers and model routes: connections on, waiting and draft; agents routed; routes needing attention (links to AI providers, Model routes)",
+    "Scheduled agents: enable (Owner plus second approver), permission profile",
+    "Every change dual-controlled (FM-1) and audited"
+   ],
+   "states": [
+    "change awaiting second approver",
+    "assistant off",
+    "person near their budget"
+   ]
+  },
+  {
+   "id": "knowledge-base",
+   "file": "KnowledgeBase",
+   "title": "Knowledge base admin",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/ai/knowledge-base",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Auditor"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-55",
+    "AI-56",
+    "AI-52",
+    "AI-54",
+    "AI-59"
+   ],
+   "purpose": "Inspect and govern the compiled pages the assistant reads for know-how.",
+   "content": [
+    "Index browser: platform and organisation pages with key, title, summary, sources (SHA-256), data class, taint, status",
+    "Page view with sources; diff any two versions; edit (human-edited version), rollback, recompile",
+    "Lint findings (stale, uncovered source, ungrounded number, contradiction with a setting) as tasks",
+    "Publish organisation changes (approval object)",
+    "P2: pages proposed from conversations or uploaded documents awaiting approval (stay untrusted)"
+   ],
+   "states": [
+    "lint findings",
+    "publish awaiting approval",
+    "overlay conflicts with setting"
+   ]
+  },
+  {
+   "id": "connected-apps",
+   "file": "ConnectedApps",
+   "title": "Connected apps (MCP and API clients)",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/connected-apps",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "AI-44",
+    "AI-35",
+    "AI-34",
+    "FR-INT-02",
+    "AI-46",
+    "FR-INT-18",
+    "AI-45"
+   ],
+   "purpose": "See and control which AI clients and integrations can reach the organisation's data, and revoke them.",
+   "content": [
+    "Organisation MCP access switch (Owner, dual-controlled) and per-user opt-in",
+    "Client allowlist: Claude Desktop, Claude Code (first-party, P1); class (agent, integration), scopes, last use, per-client kill switch",
+    "My connections: scopes, expiry, revoke",
+    "P2: register a third-party client, personal access tokens (shown once, ≤ 90 days), integration clients with scopes and IP allow-lists, sandbox organisation",
+    "Detection alerts: new client or origin, denied scopes"
+   ],
+   "states": [
+    "MCP off",
+    "no clients",
+    "client revoked",
+    "token expiring"
+   ]
+  },
+  {
+   "id": "connector-catalogue",
+   "file": "ConnectorCatalogue",
+   "title": "Integrations and connector catalogue",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/integrations",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Super admin"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-INT-25",
+    "FR-INT-26",
+    "FR-INT-28",
+    "FR-INT-04"
+   ],
+   "purpose": "Browse the available connectors and see the health of the installed ones.",
+   "content": [
+    "Grouped by capability: sign-in, outbound email (ZeptoMail, Resend, SMTP), inbound email, messaging (Slack, Zoho Cliq; P2), ticketing (Jira, Linear, GitHub, Zoho Desk; P2), payment providers (Stripe, HitPay), bank data (DBS reports, Wise, Airwallex; P2 DBS RAPID, UOB), e-invoicing (Peppol Access Point), document AI",
+    "Installed connectors: status (enabled, paused, disabled), health, credential expiry",
+    "Manifest summary per connector: publisher, version, data classes sent out, processing regions",
+    "P3: reviewed third-party connectors"
+   ],
+   "states": [
+    "failing health check ⚠",
+    "credentials expire in 14 days",
+    "upgrade available"
+   ]
+  },
+  {
+   "id": "connector-detail",
+   "file": "ConnectorDetail",
+   "title": "Connector detail",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/integrations/:connector",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Super admin"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-INT-20",
+    "FR-INT-26",
+    "FR-INT-27",
+    "FR-INT-21",
+    "FR-INT-22",
+    "SEC-36"
+   ],
+   "purpose": "Install, configure, test, enable, upgrade, pause, disable or uninstall one connector.",
+   "content": [
+    "Lifecycle stepper: install → configure → test → enable → upgrade → disable → uninstall; pause",
+    "Configuration form from the manifest schema; secrets write-only",
+    "Test connection result (pass or fail with reason, never the response body); health; failover order for email",
+    "Email: sender per purpose, SPF/DKIM/DMARC status checked daily, suppression list",
+    "Upgrade diff of the manifest; new scopes or data classes need Owner consent again",
+    "Activity: queued and in-flight work, last sync, parser version; P2 re-ingestion preview",
+    "Every step audited and dual-controlled"
+   ],
+   "states": [
+    "not installed",
+    "test failed",
+    "enabled",
+    "paused",
+    "disabled",
+    "awaiting second approver"
+   ]
+  },
+  {
+   "id": "routing-rules",
+   "file": "RoutingRules",
+   "title": "Chat, ticketing and automation rules",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/integrations/routing",
+   "kind": "editor",
+   "phase": "P2",
+   "roles": [
+    "Owner",
+    "Administrator"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-NTF-04",
+    "FR-INT-23",
+    "FR-AUT-03"
+   ],
+   "purpose": "Send event types to the right chat channels and ticket projects, and set simple workflow rules.",
+   "content": [
+    "Rules: event type → Slack or Cliq channel (approvals to #finance, company-secretary runs to #compliance) or ticket project, issue type, priority",
+    "Content level per connection: minimal by default ('2 approvals waiting') or standard after a PDPA transfer assessment",
+    "Workflow rules without code ('when a bill over S$5,000 is created, notify X')",
+    "Test message; note that approvals never happen in chat"
+   ],
+   "states": [
+    "no connection",
+    "delivery failed (fell back to email)"
+   ]
+  },
+  {
+   "id": "webhooks",
+   "file": "Webhooks",
+   "title": "Webhooks",
+   "canvas": "access-ai",
+   "module": "Settings",
+   "route": "/settings/integrations/webhooks",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-INT-12",
+    "FR-AUT-04",
+    "FR-INT-24"
+   ],
+   "purpose": "Send signed event notifications to other systems and recover from failed deliveries.",
+   "content": [
+    "Endpoints: URL, event types (CloudEvents), status (verified before activation), signing secret rotation",
+    "Delivery log with retries (exponential back-off for 3 days)",
+    "Dead-letter view with manual replay"
+   ],
+   "states": [
+    "unverified endpoint",
+    "failing deliveries",
+    "dead-lettered events"
+   ]
+  },
+  {
+   "id": "cap-table",
+   "file": "CapTable",
+   "title": "Cap table (Who owns the company)",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Company secretary",
+    "Board viewer"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-EQ-20",
+    "FR-EQ-27",
+    "FR-EQ-26",
+    "FR-EQ-25"
+   ],
+   "purpose": "Know at any date who owns what, issued and fully diluted, computed from the equity transactions.",
+   "content": [
+    "Basic 'Who owns the company': ownership chart with table view, my holding, the latest round",
+    "Expert: by holder and class, issued and fully diluted (granted options, unallocated pool, SAFEs and notes as converted at a stated price), ownership and voting %, shown to 2 decimals",
+    "As-at date picker and comparison of two dates; drill to each transaction and its evidence",
+    "Reconciliation tab: paid-up capital vs 3010 + 3020 in the ledger; register vs uploaded ACRA register-of-members extract with differences",
+    "Controller threshold (> 25%) flags; exempt-private-company status",
+    "Export XLSX and PDF; restricted data (fyniq.read.equity never granted to AI by default)"
+   ],
+   "states": [
+    "differs from ACRA extract (⚠)",
+    "ledger differs from register (✖)",
+    "no holders yet",
+    "feature off"
+   ]
+  },
+  {
+   "id": "holders",
+   "file": "Holders",
+   "title": "Shareholders and investors",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/holders",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Company secretary"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-15",
+    "FR-EQ-25"
+   ],
+   "purpose": "List every shareholder, SAFE or note holder and option holder with their holdings.",
+   "content": [
+    "Rows: holder (individual or entity), type, holdings by class, instruments, ownership %, controller flag",
+    "Identifiers masked like employee identifiers",
+    "Corporate holder joining ends exempt-private-company status (re-check banner)"
+   ],
+   "states": [
+    "empty",
+    "holder change awaiting approval"
+   ]
+  },
+  {
+   "id": "holder-record",
+   "file": "HolderRecord",
+   "title": "Holder and investor record",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/holders/:id",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Company secretary",
+    "Board viewer"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-15",
+    "FR-EQ-22",
+    "FR-EQ-28",
+    "FR-EQ-24"
+   ],
+   "purpose": "One holder's investments, rights, documents and obligations.",
+   "content": [
+    "Investments: round, instrument, amount, price, date",
+    "Rights from agreements: board seat, observer, information rights, pro-rata, consent matters",
+    "Documents as evidence (subscription agreement, shareholders' agreement, side letters, identity documents with personal-data class)",
+    "Versioned changes with approval",
+    "P2: obligation tasks (e.g. quarterly accounts within 45 days) and investor access settings"
+   ],
+   "states": [
+    "change awaiting approval",
+    "obligation due ⏰"
+   ]
+  },
+  {
+   "id": "share-classes",
+   "file": "ShareClasses",
+   "title": "Share classes and rights",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/classes",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Company secretary"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-16",
+    "FR-EQ-27"
+   ],
+   "purpose": "Record ordinary and preference classes with their structured rights.",
+   "content": [
+    "Classes: ordinary, preference series; votes per share, liquidation preference (multiple, participating, seniority), dividend rights, conversion ratio, anti-dilution, pro-rata, redemption",
+    "Constitution and shareholders' agreement as evidence",
+    "Note: rights are recorded, not computed, in P1"
+   ],
+   "states": [
+    "empty",
+    "rights missing (Not assessed for controller tests)"
+   ]
+  },
+  {
+   "id": "equity-register",
+   "file": "EquityRegister",
+   "title": "Equity transactions and register of share issues",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/transactions",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Company secretary",
+    "Auditor"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-08",
+    "FR-EQ-17",
+    "FR-EQ-09"
+   ],
+   "purpose": "The append-only history of issues, transfers, conversions and exercises, with their ACRA steps.",
+   "content": [
+    "Rows: effective date, type (issue for cash, non-cash issue, transfer, class conversion, SAFE or note conversion, option exercise), holder, class, number, price, consideration type, resolution refs, ACRA lodgement reference, status",
+    "ACRA steps per transaction: shareholders' approval lodged within 14 days (⏰), return of allotment, register updated; approval lapsing at the next AGM ⚠",
+    "Share application monies held before the effective date",
+    "Corrections only by reversing transactions citing the ACRA extract"
+   ],
+   "states": [
+    "pending ACRA",
+    "effective",
+    "reversed",
+    "approval lapsing"
+   ]
+  },
+  {
+   "id": "equity-transaction",
+   "file": "EquityTransaction",
+   "title": "New equity transaction",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/transactions/new",
+   "kind": "wizard",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Accountant",
+    "Company secretary"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-17",
+    "FR-DOC-06",
+    "FR-EQ-09",
+    "FR-EQ-25",
+    "FR-APR-01"
+   ],
+   "purpose": "Record a share issue, transfer or conversion with approval, evidence and its ACRA tasks.",
+   "content": [
+    "Type, parties, class, number, price, consideration",
+    "Required evidence per type: shareholders' and board resolutions, ACRA acknowledgement; signed transfer form for transfers",
+    "Posting preview (Dr Bank, Cr 3010) or 'no entry in the company's books' for transfers",
+    "Effects: cap table before and after, controller threshold crossings, exempt-private-company status",
+    "Approval (FM-1, FM-9) then ACRA tasks created"
+   ],
+   "states": [
+    "evidence missing (✖)",
+    "awaiting approval",
+    "creates controller update task"
+   ]
+  },
+  {
+   "id": "instruments",
+   "file": "Instruments",
+   "title": "SAFEs and convertible notes",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/instruments",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-18",
+    "FR-EQ-20"
+   ],
+   "purpose": "Track SAFEs and notes and convert them correctly at a priced round.",
+   "content": [
+    "Rows: holder, form (post-money SAFE with cap, pre-money SAFE, discount only, MFN, convertible note), amount, date, valuation cap, discount, interest and maturity, classification (liability or equity), account 2700",
+    "Conversion preview at a round: lower of cap price and discounted price, shares by RND-SHARE, draft share issues",
+    "Forms without an approved template create a draft for the accountant (⚠)",
+    "Past maturity ⚠"
+   ],
+   "states": [
+    "past maturity",
+    "conversion drafted",
+    "needs accountant (unsupported form)"
+   ]
+  },
+  {
+   "id": "option-pool",
+   "file": "OptionPool",
+   "title": "Option pool and grants",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/options",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-19",
+    "FR-EQ-13"
+   ],
+   "purpose": "Manage the option pool and each grant's vesting, exercises, forfeitures and expiries.",
+   "content": [
+    "Pool: size by resolution, granted, exercised, forfeited, available",
+    "Grants: holder, number, exercise price, grant date, vesting (cliff, monthly, acceleration), expiry, vested to date",
+    "P2: share-based payment expense schedules and IR8A Appendix 8B data"
+   ],
+   "states": [
+    "pool exhausted",
+    "grant expiring"
+   ]
+  },
+  {
+   "id": "round-simulator",
+   "file": "RoundSimulator",
+   "title": "Round simulator",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/rounds",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Board viewer"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-EQ-21",
+    "FR-EQ-27"
+   ],
+   "purpose": "Model a funding round and see the dilution for every holder, without posting anything.",
+   "content": [
+    "Inputs: pre-money valuation or price per share, new money per investor, option-pool top-up before or after, SAFE and note conversions, pro-rata take-up",
+    "Outputs: price per share, shares per investor, pro-forma cap table, ownership before and after, dilution in percentage points, post-money valuation",
+    "Side-by-side scenarios; 'Create draft share issues' from an approved scenario",
+    "Basic: a few inputs and a simple before/after chart; AI may run scenarios",
+    "Sandbox label"
+   ],
+   "states": [
+    "sandbox",
+    "draft issues created"
+   ]
+  },
+  {
+   "id": "exit-waterfall",
+   "file": "ExitWaterfall",
+   "title": "Exit waterfall",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/exit",
+   "kind": "page",
+   "phase": "P2",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Board viewer"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-EQ-29"
+   ],
+   "purpose": "See proceeds per class and holder for an exit value under the recorded preferences.",
+   "content": [
+    "Exit value input; proceeds per class and holder under preferences next to as-converted, with each holder's better choice",
+    "Only structures confirmed by the company's lawyer or accountant",
+    "Shown only once a class with a liquidation preference exists; sandboxed"
+   ],
+   "states": [
+    "not available (no preference class)",
+    "sandbox"
+   ]
+  },
+  {
+   "id": "investor-updates",
+   "file": "InvestorUpdates",
+   "title": "Investor updates",
+   "canvas": "equity",
+   "module": "Equity",
+   "route": "/equity/updates",
+   "kind": "editor",
+   "phase": "P2",
+   "roles": [
+    "Owner",
+    "Controller"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-EQ-23",
+    "FR-EQ-28"
+   ],
+   "purpose": "Send monthly or quarterly investor updates built from the board pack.",
+   "content": [
+    "Sections: KPIs, cash, runway, highlights, asks; AI-drafted commentary edited by a person",
+    "Distribution list; access-controlled links; read status",
+    "Archive of past updates; delivered update as evidence for information rights"
+   ],
+   "states": [
+    "draft",
+    "sent",
+    "unread by some investors"
+   ]
+  },
+  {
+   "id": "board-portal",
+   "file": "BoardPortal",
+   "title": "Board and investor portal",
+   "canvas": "equity",
+   "module": "Portal",
+   "route": "/board",
+   "kind": "page",
+   "phase": "P2",
+   "roles": [
+    "Board viewer"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-EQ-24",
+    "FR-RPT-06",
+    "FR-EQ-23"
+   ],
+   "purpose": "Where a board member or investor reads the numbers: board packs, updates and their own holdings.",
+   "content": [
+    "Latest board pack and investor update; archive",
+    "KPIs and dashboards as granted",
+    "My holdings; the full cap table only when an Owner grants it",
+    "Read-only; no transaction-level data unless granted"
+   ],
+   "states": [
+    "nothing published",
+    "cap table not granted"
+   ]
+  },
+  {
+   "id": "money-i-put-in",
+   "file": "MoneyIPutIn",
+   "title": "Money I put in",
+   "canvas": "equity",
+   "module": "Personal",
+   "route": "/me/money-i-put-in",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-EQ-14",
+    "FR-EQ-01",
+    "FR-EQ-12"
+   ],
+   "purpose": "A founder's plain view of what the company owes them and what is happening to it.",
+   "content": [
+    "Balance owed to me (loan and deferred pay) with latest items by origin (cash lent, cost paid personally, pay, fee)",
+    "Pending settlements (repay, convert, waive) and their status",
+    "Year-end balance confirmation with passkey",
+    "⚠ and ⏰ items shown as in Expert (in debit, approval lapsing)",
+    "Link to record a cost paid personally (My claims, keep as a loan)"
+   ],
+   "states": [
+    "nothing owed",
+    "confirmation due",
+    "in debit (⚠)"
+   ]
+  },
+  {
+   "id": "edit-conflict",
+   "file": "EditConflict",
+   "title": "Edit conflict review",
+   "canvas": "workflows",
+   "module": "Shell",
+   "route": "(dialog on any record)",
+   "kind": "dialog",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-UX-19",
+    "FR-INT-09"
+   ],
+   "purpose": "When someone else saved the record you are editing, show what changed and let you re-apply your edits safely.",
+   "content": [
+    "Banner on the record: 'Changed by Arjun Rao at 10:42 — review and re-apply'",
+    "Side-by-side diff: their saved values vs your unsaved edits, field by field",
+    "Per-field choose: keep theirs / use mine; ledger-derived figures never edited optimistically",
+    "Actions: Re-apply my changes (primary), Discard my changes, Copy my edits"
+   ],
+   "states": [
+    "conflict"
+   ]
+  },
+  {
+   "id": "operations-tray",
+   "file": "OperationsTray",
+   "title": "Background operations",
+   "canvas": "workflows",
+   "module": "Shell",
+   "route": "(panel from the header)",
+   "kind": "panel",
+   "phase": "P1",
+   "roles": [
+    "All users"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-INT-11",
+    "NFR-PERF-04",
+    "NFR-PERF-05"
+   ],
+   "purpose": "Follow long and bulk jobs (imports, exports, bulk categorisation) without waiting on the page.",
+   "content": [
+    "Panel listing running and finished operations with progress bars: '10,000 bank lines imported, de-duplicated, rule-matched — 62%'",
+    "Each: started by, started at, status chip, result counts (succeeded, failed with reasons), download link for exports",
+    "Bulk results per item with errors linked to the record",
+    "Cancel where safe; notifications when done"
+   ],
+   "states": [
+    "running",
+    "failed"
+   ]
+  },
+  {
+   "id": "ir21-clearance",
+   "file": "IrClearance",
+   "title": "IR21 tax clearance",
+   "canvas": "workflows",
+   "module": "Payroll",
+   "route": "/payroll/employees/:id/ir21",
+   "kind": "wizard",
+   "phase": "P2",
+   "roles": [
+    "Payroll administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-PAY-10",
+    "FR-AP-17"
+   ],
+   "purpose": "Handle a foreign employee leaving: file the IR21 on time and hold payments until IRAS clears them.",
+   "content": [
+    "Employee leaving: Priya Nair (Employment Pass), last day 3 Apr; IR21 due by 3 Mar (one month before)",
+    "Steps: notify IRAS, held payments, IRAS notification, release",
+    "Held items list: March salary, an approved S$420 claim, final pay; banner 'Held until IRAS's clearance (C.2 #44)'",
+    "Evidence upload for the IRAS acknowledgement; release needs the two-person rule"
+   ],
+   "states": [
+    "due",
+    "held"
+   ]
+  },
+  {
+   "id": "payslip-generator",
+   "file": "PayslipView",
+   "title": "Itemised payslip",
+   "canvas": "workflows",
+   "module": "Payroll",
+   "route": "/payroll/pay-runs/:id/payslips/:employee",
+   "kind": "record",
+   "phase": "P2",
+   "roles": [
+    "Payroll administrator",
+    "Employee"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-PAY-08",
+    "FR-PAY-15"
+   ],
+   "purpose": "The itemised payslip with the 12 MOM items, issued with the salary payment.",
+   "content": [
+    "Payslip for Daniel Lim, October 2026: the 12 MOM items (employer name, employee name, date of payment, basic salary, start and end of salary period, allowances, other payments, deductions, overtime hours and pay, net salary, CPF)",
+    "Issued with pay run PR-2026-10; delivery status (email, self-service)",
+    "Download PDF; employee view vs administrator view"
+   ],
+   "states": [
+    "issued",
+    "draft"
+   ]
+  },
+  {
+   "id": "accountant-review",
+   "file": "AccountantReview",
+   "title": "Accountant's quarterly review",
+   "canvas": "workflows",
+   "module": "Compliance",
+   "route": "/compliance/reviews/:period",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "External accountant",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FM-7",
+    "AUD-04",
+    "FR-GL-08"
+   ],
+   "purpose": "Record the accountant's quarterly review: the close snapshot, queries and answers, adjusting journals and the sign-off.",
+   "content": [
+    "Review for Jul–Sep 2026 by Grace Ho (Ho & Partners LLP); close snapshot it covers",
+    "Queries thread: two queries with management's answers",
+    "Adjusting journal JNL-0214 (through approval; closed period follows FR-GL-08)",
+    "Sign-off with step-up; reopening marks the review superseded and keeps both versions"
+   ],
+   "states": [
+    "in review",
+    "signed off",
+    "superseded"
+   ]
+  },
+  {
+   "id": "bad-debt-relief",
+   "file": "BadDebtRelief",
+   "title": "Bad-debt write-off and GST relief",
+   "canvas": "workflows",
+   "module": "Sales",
+   "route": "/sales/bad-debts",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-AR-11",
+    "SOD-9"
+   ],
+   "purpose": "Write off an uncollectable invoice with approval and track when GST bad-debt relief can be claimed.",
+   "content": [
+    "Queue of written-off invoices with relief conditions: written off, 12 months passed or debtor insolvent, claim within 5 years",
+    "Per invoice: customer, amount, GST amount, earliest relief date, status chip",
+    "Write-off dialog: reason, approver (SOD-9: not someone who receives cash from that customer)",
+    "Link to the GST return where relief was claimed"
+   ],
+   "states": [
+    "eligible",
+    "waiting"
+   ]
+  },
+  {
+   "id": "pre-incorporation-costs",
+   "file": "PreIncorporationCosts",
+   "title": "Costs before incorporation",
+   "canvas": "workflows",
+   "module": "Accounting",
+   "route": "/accounting/pre-incorporation",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "External accountant"
+   ],
+   "mode": "both",
+   "requirements": [
+    "FR-EQ-03",
+    "FR-EQ-01"
+   ],
+   "purpose": "Review costs founders paid before the company existed or before GST registration, for the accountant's decision.",
+   "content": [
+    "List of costs with original date, payer (director), amount, category, flag 'needs accountant decision'",
+    "Accountant's decision per item (deductible, capital, not claimable; GST pre-registration claim where allowed [verify])",
+    "Totals owed to each director via director accounts"
+   ],
+   "states": [
+    "needs decision",
+    "decided"
+   ]
+  },
+  {
+   "id": "privacy-notices",
+   "file": "PrivacyNotices",
+   "title": "Privacy notices and consent",
+   "canvas": "workflows",
+   "module": "Compliance",
+   "route": "/compliance/privacy/notices",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Compliance officer",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "CMP-PD-03",
+    "CMP-PD-01"
+   ],
+   "purpose": "Keep the notices and purposes for employees and contacts, and record consent where required.",
+   "content": [
+    "Notices per audience (employees, contacts; customers' users in P3) with version, effective date, purposes",
+    "Consent records where consent is required, with withdrawal",
+    "Who has acknowledged which version"
+   ],
+   "states": [
+    "current",
+    "superseded"
+   ]
+  },
+  {
+   "id": "statement-notes",
+   "file": "StatementNotes",
+   "title": "Notes to the financial statements",
+   "canvas": "workflows",
+   "module": "Reports",
+   "route": "/reports/statements/notes",
+   "kind": "editor",
+   "phase": "P3",
+   "roles": [
+    "External accountant",
+    "Controller"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-RPT-11",
+    "FR-ORG-10"
+   ],
+   "purpose": "Prepare financial statements in the recorded framework, with a scaffold for the notes.",
+   "content": [
+    "Framework and edition from organisation settings (e.g. SFRS for Small Entities)",
+    "Notes outline: accounting policies, critical judgements, PPE, revenue, related parties, share capital, subsequent events",
+    "Each note links to its figures; 'management statements' title until the accountant approves the policies"
+   ],
+   "states": [
+    "draft",
+    "approved"
+   ]
+  },
+  {
+   "id": "entity-setup",
+   "file": "EntitySetup",
+   "title": "Add a legal entity",
+   "canvas": "workflows",
+   "module": "Settings",
+   "route": "/settings/entities/new",
+   "kind": "wizard",
+   "phase": "P3",
+   "roles": [
+    "Owner",
+    "Administrator"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ENT-01",
+    "FR-ENT-02"
+   ],
+   "purpose": "Add another legal entity to the organisation with its own base currency, account mapping, tax packs and periods.",
+   "content": [
+    "Wizard: entity name and UEN, country, base currency, chart of accounts mapping to the group, tax packs, financial periods",
+    "Intercompany settings",
+    "Review and create with dual approval"
+   ],
+   "states": [
+    "draft"
+   ]
+  },
+  {
+   "id": "ai-providers",
+   "file": "AiProviders",
+   "title": "AI providers",
+   "canvas": "ai-models",
+   "module": "Settings",
+   "route": "/settings/ai/providers",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Controller",
+    "Auditor",
+    "Compliance officer"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-71",
+    "AI-72",
+    "AI-73",
+    "AI-75",
+    "AI-70"
+   ],
+   "purpose": "See every model-provider connection, its status, billing mode and the data it may receive; add one from an adapter or preset.",
+   "content": [
+    "Connections: name, provider, region, models, status (on, waiting for second approver, draft), billing mode, data classes allowed, cost this month",
+    "Data-class policy: know-how, business figures, personal data, payroll and restricted, with the connections each may reach; personal data and payroll only in Singapore or self-hosted by default",
+    "Add a connection: Anthropic API, Agent Platform (Claude, Gemini), OpenAI API, OpenAI-compatible presets (Moonshot Kimi, xAI Grok, OpenRouter, LiteLLM gateway, vLLM, Ollama, LM Studio)",
+    "Billing modes explained: usage-based, subscription or commitment, a person's own plan (P2); consumer-plan sign-in not supported",
+    "Every change needs a second Owner; history with links to the audit trail"
+   ],
+   "states": [
+    "connection waiting for second approver",
+    "draft connection",
+    "no connection but the default"
+   ]
+  },
+  {
+   "id": "ai-provider-connection",
+   "file": "AiProviderConnection",
+   "title": "AI provider connection",
+   "canvas": "ai-models",
+   "module": "Settings",
+   "route": "/settings/ai/providers/:connection",
+   "kind": "record",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Controller",
+    "Auditor",
+    "Compliance officer"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-72",
+    "AI-73",
+    "AI-75",
+    "AI-78",
+    "AI-79"
+   ],
+   "purpose": "Configure one provider connection: endpoint, credentials, allowed models, billing, limits and its data-handling declaration with evidence.",
+   "content": [
+    "Lifecycle: configure, approve (Owner plus second approver), qualify, route, on; off by default",
+    "Endpoint, region and authentication (API key, service account, OAuth grant, none for a private endpoint); credential write-only, shown once then masked; egress allow-list",
+    "Model allow-list of pinned versions with capabilities and qualification result; moving aliases need weekly re-qualification",
+    "Billing mode and price table (usage-based, subscription or commitment with quota and reset; own plan P2), budget with 80% alert and 100% stop",
+    "Data handling: where prompts are processed, retention, training use, sub-processors, evidence (terms, DPA), PDPA transfer assessment; data classes allowed",
+    "Limits: timeouts, retries, request and token rate limits; default parameters",
+    "Agents that use or would use it; audit history"
+   ],
+   "states": [
+    "awaiting second approver",
+    "on",
+    "qualification pending",
+    "credential being replaced"
+   ]
+  },
+  {
+   "id": "ai-model-routes",
+   "file": "AiModelRoutes",
+   "title": "Model routes",
+   "canvas": "ai-models",
+   "module": "Settings",
+   "route": "/settings/ai/routes",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Controller",
+    "Auditor",
+    "Compliance officer"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-74",
+    "AI-76",
+    "AI-78",
+    "AI-26",
+    "AI-27"
+   ],
+   "purpose": "See which provider and model each agent runs on, its fallbacks, the data it handles and whether each step is qualified.",
+   "content": [
+    "Region preset (A Singapore only, B global, C by data class)",
+    "One row per agent: assistant, document capture, bank categorisation and matching, proposal drafting, commentary, knowledge-base compiler, company secretary agent, eval runner; first choice and fallbacks; data classes; status; cost this month",
+    "Route needs attention (C.2 #55): fell back more than its daily threshold, moving alias not re-qualified, within 20% of budget",
+    "Qualification results per model version and agent (golden figures, red team, extraction, categorisation, knowledge evals)",
+    "How failover works: only to a step that meets the data classes and capabilities, else stop with an error code"
+   ],
+   "states": [
+    "route needs attention",
+    "change waiting for second approver"
+   ]
+  },
+  {
+   "id": "ai-route-editor",
+   "file": "AiRouteEditor",
+   "title": "Edit a model route",
+   "canvas": "ai-models",
+   "module": "Settings",
+   "route": "/settings/ai/routes/:agent",
+   "kind": "panel",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-74",
+    "AI-76",
+    "AI-75",
+    "AI-77"
+   ],
+   "purpose": "Choose the provider and model an agent runs on, and its fallbacks, within the data classes and capabilities it needs.",
+   "content": [
+    "Data classes and capabilities the agent needs (read-only)",
+    "Ordered steps: connection, model, region, qualification, capability match; move up and down with buttons",
+    "Adding a step that the data-class policy does not allow is refused with the reason, the fix and an error code",
+    "Fallback threshold per day; budget with 80% alert and 100% stop",
+    "Who must approve: Owner or Administrator; a change that widens where data goes needs the Owner and a second approver"
+   ],
+   "states": [
+    "step refused by data-class policy",
+    "unsaved changes"
+   ]
+  },
+  {
+   "id": "ai-usage",
+   "file": "AiUsage",
+   "title": "AI usage and budgets",
+   "canvas": "ai-models",
+   "module": "Settings",
+   "route": "/settings/ai/usage",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Controller",
+    "Auditor",
+    "Compliance officer"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "AI-77",
+    "AI-73",
+    "AI-13",
+    "QA-AI-04"
+   ],
+   "purpose": "See what the AI used and cost, by agent, connection, model and person, against the budgets.",
+   "content": [
+    "Month to date: cost and tokens against the organisation budgets, fallbacks and errors",
+    "Daily cost chart with a table view",
+    "By agent: tokens, cost, budget bar (80% alert, 100% stop)",
+    "By connection and model: tokens by kind, cost; quota and reset for subscription connections",
+    "By person (assistant): tokens against the per-person budget",
+    "Checking provider invoices: usage-based connections are billed by the provider and entered as bills; September usage to compare"
+   ],
+   "states": [
+    "budget near its limit",
+    "agent stopped by its budget"
+   ]
+  },
+  {
+   "id": "my-ai-plan",
+   "file": "MyAiPlan",
+   "title": "Use your own AI plan",
+   "canvas": "ai-models",
+   "module": "Personal",
+   "route": "/settings/profile/ai-plan",
+   "kind": "page",
+   "phase": "P2",
+   "roles": [
+    "Owner",
+    "Administrator",
+    "Controller",
+    "Accountant",
+    "Bookkeeper",
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "AI-73",
+    "AI-75",
+    "AI-02"
+   ],
+   "purpose": "Let one person run their own assistant chats on their own provider plan, where the provider allows it and an Owner has turned it on.",
+   "content": [
+    "Connected plan, account and what it is used for (only your own chats in Fyniq; never scheduled agents, connected apps or other people)",
+    "Data classes your plan may receive, set by the Owner; exclusions always apply",
+    "When your plan runs out: the assistant tells you and asks before it uses the organisation's connection",
+    "Not supported: consumer plans reserved for the provider's apps, reused chat sessions or cookies",
+    "Disconnect"
+   ],
+   "states": [
+    "not enabled by the Owner",
+    "connected",
+    "plan limit reached"
+   ]
+  }
+ ]
+}

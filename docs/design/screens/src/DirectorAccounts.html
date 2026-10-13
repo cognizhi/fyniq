@@ -1,0 +1,78 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Director accounts", "mode": "expert", "heights": {"compact": 2000, "medium": 1400, "expanded": 1300}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><span>Director accounts</span></nav>
+      <h1 class="fy-h1">Director accounts</h1>
+      <p class="fy-secondary">What the company owes its directors, and what they owe it, by where each amount came from.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="file-down"></i>Statements (PDF)</button>
+      <a class="fy-btn fy-btn--primary" href="#accounting/directors/mei-lin/settle"><i data-icon="handshake"></i>Settle a balance</a>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--2 fy-stagger">
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="da-ml">
+      <div class="fy-row"><span class="fy-avatar" aria-hidden="true">ML</span><div class="fy-stack" style="gap: 0"><h2 class="fy-h3" id="da-ml">Mei Lin Tan</h2><span class="fy-small fy-muted">CEO, director, shareholder</span></div></div>
+      <dl class="fy-dl">
+        <div><dt>Company owes her<span class="fy-expert-only"> · 2500</span></dt><dd class="fy-num"><a href="#accounting/directors/mei-lin/2500">24,600.00</a></dd></div>
+        <div><dt>Deferred pay<span class="fy-expert-only"> · 2120</span></dt><dd class="fy-num"><a href="#accounting/directors/mei-lin/2120">14,315.40</a></dd></div>
+      </dl>
+      <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--info"><i data-icon="clock"></i>Settlement pending</span><span class="fy-small fy-wrap">S$20,000.00 to shares · waiting for Arjun Rao and Grace Ho</span></div>
+      <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>2025 not confirmed</span><span class="fy-small fy-wrap">S$31,240.00 at 31 Dec 2025 · due 22 Oct</span></div>
+    </section>
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="da-ar">
+      <div class="fy-row"><span class="fy-avatar" aria-hidden="true">AR</span><div class="fy-stack" style="gap: 0"><h2 class="fy-h3" id="da-ar">Arjun Rao</h2><span class="fy-small fy-muted">CTO, director, shareholder</span></div></div>
+      <dl class="fy-dl">
+        <div><dt>Company owes him<span class="fy-expert-only"> · 2500</span></dt><dd class="fy-num"><a href="#accounting/directors/arjun/2500">0.00</a></dd></div>
+        <div><dt>He owes the company<span class="fy-expert-only"> · 1250</span></dt><dd class="fy-num"><a href="#accounting/directors/arjun/1250">1,200.00</a></dd></div>
+      </dl>
+      <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Account in debit</span><span class="fy-small fy-wrap">Personal rides on the company Grab account. Repay or offset against his loan.</span></div>
+      <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>2025 confirmed</span><span class="fy-small fy-muted">By passkey, 9 Jan 2026</span></div>
+    </section>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="note">
+    <i data-icon="info" class="fy-i--20"></i>
+    <div class="fy-banner__text"><span class="fy-small">Cognizhi is an exempt private company. If that changes, section 162 of the Companies Act restricts loans to directors, and an account in debit becomes a "can't post". General information, not advice.</span></div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="da-stmt">
+    <div class="fy-card__head" style="flex-wrap: wrap">
+      <h2 class="fy-h3" id="da-stmt">Statement · Mei Lin Tan · 1 Jan–13 Oct 2026</h2>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="file-down"></i>PDF for confirmation</button>
+    </div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-statement">
+        <thead><tr><th scope="col">S$</th><th scope="col" class="fy-num">Loan from director</th><th scope="col" class="fy-num">Deferred pay</th></tr></thead>
+        <tbody>
+          <tr><td>Opening, 1 Jan</td><td class="fy-num">12,980.00</td><td class="fy-num">18,260.00</td></tr>
+          <tr><td class="fy-sub">Cash lent</td><td class="fy-num"><a href="#trace/dl-ml-cash">15,000.00</a></td><td class="fy-num">—</td></tr>
+          <tr><td class="fy-sub">Costs paid personally</td><td class="fy-num"><a href="#trace/dl-ml-costs">1,620.00</a></td><td class="fy-num">—</td></tr>
+          <tr><td class="fy-sub">Pay deferred</td><td class="fy-num">—</td><td class="fy-num"><a href="#trace/dl-ml-pay">4,771.80</a></td></tr>
+          <tr><td class="fy-sub">Repayments</td><td class="fy-num"><a href="#trace/dl-ml-repay">−5,000.00</a></td><td class="fy-num"><a href="#trace/dl-ml-paid">−8,716.40</a></td></tr>
+          <tr><td class="fy-sub">Converted to shares</td><td class="fy-num">0.00 <span class="fy-small fy-muted">(20,000.00 pending)</span></td><td class="fy-num">0.00</td></tr>
+          <tr><td class="fy-sub">Waived</td><td class="fy-num">0.00</td><td class="fy-num">0.00</td></tr>
+        </tbody>
+        <tfoot><tr><td>Closing, 13 Oct</td><td class="fy-num">24,600.00</td><td class="fy-num">14,315.40</td></tr></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="fy-card" aria-labelledby="da-rp">
+    <div class="fy-card__head"><h2 class="fy-h3" id="da-rp">Related-party schedule for the notes</h2><span class="fy-small fy-muted">Draft for FY2026</span></div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-table--cards">
+        <thead><tr><th scope="col">Party</th><th scope="col">Nature</th><th scope="col" class="fy-num">Balance (SGD)</th></tr></thead>
+        <tbody>
+          <tr><td data-card="title">Mei Lin Tan, director</td><td data-card="meta">Interest-free loan, repayable on demand</td><td data-card="amount" class="fy-num">24,600.00</td></tr>
+          <tr><td data-card="title">Mei Lin Tan, director</td><td data-card="meta">Remuneration deferred</td><td data-card="amount" class="fy-num">14,315.40</td></tr>
+                    <tr><td data-card="title">Arjun Rao, director</td><td data-card="meta">Advance owed to the company</td><td data-card="amount" class="fy-num">−1,200.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="fy-actionbar fy-only-compact"><a class="fy-btn fy-btn--primary fy-btn--block" href="#accounting/directors/mei-lin/settle"><i data-icon="handshake"></i>Settle a balance</a></div>
+</div>

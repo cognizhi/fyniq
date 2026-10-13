@@ -1,0 +1,188 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Payouts", "mode": "expert", "heights": {"compact": 2500, "medium": 1900, "expanded": 1500}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Banking</span>
+      <h1 class="fy-h1">Payment provider payouts</h1>
+      <p class="fy-secondary">Each payout broken into the charges, refunds, disputes and fees it settles. Each provider's clearing account must come back to zero.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="refresh-cw"></i>Sync now</button>
+      <a class="fy-btn fy-btn--secondary" href="#settings/connectors/new?kind=provider"><i data-icon="plug"></i>Connect provider</a>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Banking">
+    <a href="#banking">Accounts</a>
+    <a href="#banking/categorise">Categorise<span class="fy-badge fy-badge--quiet">14</span></a>
+    <a href="#banking/auto-reconciled">Auto-reconciled</a>
+    <a href="#banking/reconciliations">Reconciliation</a>
+    <a class="fy-expert-only" href="#banking/rules">Rules</a>
+    <a class="fy-expert-only" href="#banking/payouts" aria-current="page">Payouts</a>
+  </nav>
+
+  <div class="fy-banner fy-banner--critical" role="alert">
+    <i data-icon="circle-x" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>HitPay payout HP-1006 doesn't net to zero</strong>
+      <span class="fy-small">After the 6 Oct payout, S$12.00 is still in HitPay clearing. HitPay's data for that payout has a refund fee Fyniq can't place. Open the payout, then fetch the missing item or record the fee with a reason.</span>
+    </div>
+    <a class="fy-btn fy-btn--primary fy-btn--sm" href="#banking/payouts/hp-1006">Review payout</a>
+  </div>
+
+  <div class="fy-grid fy-grid--2 fy-stagger">
+    <section class="fy-card" aria-labelledby="pv-stripe">
+      <div class="fy-card__head">
+        <span class="fy-list__icon fy-list__icon--brand"><i data-icon="credit-card" class="fy-i--20"></i></span>
+        <div class="fy-grow fy-stack" style="gap: 0">
+          <h2 class="fy-h3" id="pv-stripe">Stripe · SGD</h2>
+          <span class="fy-small fy-muted">API and signed webhooks</span>
+        </div>
+        <button class="fy-iconbtn" type="button" aria-label="More actions for Stripe"><i data-icon="ellipsis"></i></button>
+      </div>
+      <div class="fy-card__body fy-stack fy-stack--3">
+        <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Clearing agrees</span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Complete to 12 Oct</span></div>
+        <table class="fy-table fy-table--compact">
+          <tbody>
+            <tr><td>Clearing balance</td><td class="fy-num"><a href="#accounting/ledger/stripe-clearing-sgd">1,846.20</a></td></tr>
+            <tr><td>Stripe's unpaid balance</td><td class="fy-num">1,846.20</td></tr>
+            <tr><td class="fy-strong">Difference</td><td class="fy-num fy-strong">0.00</td></tr>
+          </tbody>
+        </table>
+        <span class="fy-small fy-muted">Daily completeness sweep ran at 03:00 and found nothing missing.</span>
+      </div>
+    </section>
+
+    <section class="fy-card" aria-labelledby="pv-hitpay">
+      <div class="fy-card__head">
+        <span class="fy-list__icon fy-list__icon--brand"><i data-icon="qr-code" class="fy-i--20"></i></span>
+        <div class="fy-grow fy-stack" style="gap: 0">
+          <h2 class="fy-h3" id="pv-hitpay">HitPay · SGD</h2>
+          <span class="fy-small fy-muted">API and signed webhooks · PayNow</span>
+        </div>
+        <button class="fy-iconbtn" type="button" aria-label="More actions for HitPay"><i data-icon="ellipsis"></i></button>
+      </div>
+      <div class="fy-card__body fy-stack fy-stack--3">
+        <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Clearing differs</span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 event parked</span></div>
+        <table class="fy-table fy-table--compact">
+          <tbody>
+            <tr><td>Clearing balance</td><td class="fy-num"><a href="#accounting/ledger/hitpay-clearing-sgd">12.00</a></td></tr>
+            <tr><td>HitPay's unpaid balance</td><td class="fy-num">0.00</td></tr>
+            <tr><td class="fy-strong">Difference</td><td class="fy-num fy-strong">12.00</td></tr>
+          </tbody>
+        </table>
+        <span class="fy-small fy-muted">Complete to 11 Oct. One event of a type Fyniq doesn't know is parked: <a href="#banking/payouts/hitpay/parked">review it</a>.</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="po-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="po-title">Payouts</h2>
+        <div class="fy-chipset fy-from-medium" role="group" aria-label="Provider">
+          <button class="fy-filter" type="button" aria-pressed="true">All</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Stripe</button>
+          <button class="fy-filter" type="button" aria-pressed="false">HitPay</button>
+        </div>
+      </div>
+      <div style="overflow-x: auto">
+      <table class="fy-table fy-table--cards">
+        <thead><tr><th scope="col">Date</th><th scope="col">Payout</th><th scope="col">Bank line</th><th scope="col" class="fy-num" style="text-align: right">SGD</th><th scope="col">Clearing</th></tr></thead>
+        <tbody>
+          <tr>
+            <td data-card="meta" style="white-space: nowrap">10 Oct</td>
+            <td data-card="title" style="white-space: nowrap"><a href="#banking/payouts/hp-1010">HitPay <span class="fy-mono">HP-1010</span></a></td>
+            <td data-card="meta" style="white-space: nowrap">DBS 10 Oct</td>
+            <td data-card="amount" class="fy-num">5,414.27</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nets to zero</span></td>
+          </tr>
+          <tr>
+            <td data-card="meta" style="white-space: nowrap">9 Oct</td>
+            <td data-card="title" style="white-space: nowrap"><a href="#banking/payouts/stripe-1009">Stripe <span class="fy-mono">po_1Q…X4kq</span></a></td>
+            <td data-card="meta" style="white-space: nowrap">DBS 9 Oct</td>
+            <td data-card="amount" class="fy-num">3,412.85</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nets to zero</span></td>
+          </tr>
+          <tr>
+            <td data-card="meta" style="white-space: nowrap">6 Oct</td>
+            <td data-card="title" style="white-space: nowrap"><a href="#banking/payouts/hp-1006">HitPay <span class="fy-mono">HP-1006</span></a></td>
+            <td data-card="meta" style="white-space: nowrap">DBS 6 Oct</td>
+            <td data-card="amount" class="fy-num">1,288.62</td>
+            <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>12.00 left</span></td>
+          </tr>
+          <tr>
+            <td data-card="meta" style="white-space: nowrap">2 Oct</td>
+            <td data-card="title" style="white-space: nowrap"><a href="#banking/payouts/stripe-1002">Stripe <span class="fy-mono">po_1Q…7Hm2</span></a></td>
+            <td data-card="meta" style="white-space: nowrap">DBS 2 Oct</td>
+            <td data-card="amount" class="fy-num">2,980.40</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nets to zero</span></td>
+          </tr>
+          <tr>
+            <td data-card="meta" style="white-space: nowrap">25 Sep</td>
+            <td data-card="title" style="white-space: nowrap"><a href="#banking/payouts/stripe-0925">Stripe <span class="fy-mono">po_1P…c9Tn</span></a></td>
+            <td data-card="meta" style="white-space: nowrap">DBS 25 Sep</td>
+            <td data-card="amount" class="fy-num">4,104.10</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nets to zero</span></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Payout detail and fee invoices">
+      <section class="fy-card" aria-labelledby="det-title">
+        <div class="fy-card__head">
+          <div class="fy-grow fy-stack" style="gap: 0">
+            <h2 class="fy-h3" id="det-title">HitPay <span class="fy-mono">HP-1010</span></h2>
+            <span class="fy-small fy-muted">Paid out 10 Oct · 1 charge</span>
+          </div>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Zero</span>
+        </div>
+        <table class="fy-table fy-table--compact">
+          <tbody>
+            <tr><td>Charges (1)</td><td class="fy-num">5,450.00</td></tr>
+            <tr><td class="fy-sub"><a href="#sales/inv-0131">INV-0131</a> Acme Analytics · PayNow</td><td class="fy-num fy-secondary">5,450.00</td></tr>
+            <tr><td>Refunds (0)</td><td class="fy-num">0.00</td></tr>
+            <tr><td>Disputes (0)</td><td class="fy-num">0.00</td></tr>
+            <tr><td>Fees <span class="fy-small fy-muted">0.65% + S$0.30</span></td><td class="fy-num">−35.73</td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td>Payout to DBS</td><td class="fy-num">5,414.27</td></tr>
+          </tfoot>
+        </table>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-expert-only">
+            <table class="fy-table fy-table--compact fy-ledger">
+              <thead><tr><th scope="col">Account</th><th scope="col">Debit</th><th scope="col">Credit</th></tr></thead>
+              <tbody>
+                <tr><td><span class="fy-acct">1010</span>DBS</td><td class="fy-num">5,414.27</td><td></td></tr>
+                <tr><td>Payment fees</td><td class="fy-num">35.73</td><td></td></tr>
+                <tr><td>HitPay clearing</td><td></td><td class="fy-num">5,450.00</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="fy-plain fy-basic-only fy-small"><i data-icon="info"></i>The S$5,414.27 that reached DBS and the S$35.73 fee together clear the S$5,450.00 the customer paid.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="tax-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="tax-title">Fee tax invoices</h2></div>
+        <ul class="fy-list">
+          <li>
+            <a class="fy-list__item" href="#documents/stripe-tax-invoice-2026-09">
+              <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-check" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">Stripe, September 2026</span><span class="fy-list__meta">Fees 184.20 + GST 16.58 · agrees to September's fees</span></span>
+              <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Matched</span>
+            </a>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="file-question-mark" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">HitPay, September 2026</span><span class="fy-list__meta">Whether HitPay charges GST on fees: ask your tax agent</span></span>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Fees are expensed once, from each payout. A matched tax invoice only moves the GST to input tax<span class="fy-expert-only"> (<span class="fy-mono">2200</span>)</span>.</span></div>
+      </section>
+    </aside>
+  </div>
+</div>

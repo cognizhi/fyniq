@@ -1,0 +1,176 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Announcements", "mode": "expert", "heights": {"compact": 2580, "medium": 2080, "expanded": 1400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><span>Announcements</span></nav>
+      <h1 class="fy-h1">Announcements</h1>
+      <p class="fy-secondary">Put a banner under the header on every page, for the people who need to see it.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="calendar-clock"></i>Schedule announcement</button>
+    </div>
+  </div>
+
+  <div class="fy-split fy-split--wide-aside">
+    <section class="fy-card" aria-labelledby="ed-title">
+      <div class="fy-card__head"><h2 class="fy-h3" id="ed-title">New announcement</h2><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></div>
+      <div class="fy-card__body fy-stack">
+        <div class="fy-field">
+          <span class="fy-label" id="scope-l">Show to</span>
+          <div class="fy-segmented" role="radiogroup" aria-labelledby="scope-l" style="align-self: flex-start; max-width: 100%">
+            <button type="button" role="radio" aria-checked="true">Cognizhi Pte Ltd</button>
+            <button type="button" role="radio" aria-checked="false">Whole installation</button>
+          </div>
+          <span class="fy-help">The whole installation is for Super admins only, for example a maintenance window.</span>
+        </div>
+
+        <div class="fy-field">
+          <label class="fy-label" for="an-msg">Message <span class="fy-req" aria-hidden="true">*</span></label>
+          <textarea class="fy-textarea" id="an-msg" readonly="readonly" aria-describedby="an-msg-help">The GST return for Jul–Sep is due on 31 Oct. Please submit any September receipts and claims by 20 Oct so the close can finish.</textarea>
+          <span class="fy-help" id="an-msg-help">126 of 200 characters. Plain text; one idea, what to do and by when.</span>
+        </div>
+
+        <div class="fy-form fy-form--2">
+          <div class="fy-field">
+            <label class="fy-label" for="an-link-text">Link text</label>
+            <input class="fy-input" id="an-link-text" value="Submit a claim" readonly="readonly">
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="an-link">Link to</label>
+            <input class="fy-input fy-mono" id="an-link" value="/my-claims/new" readonly="readonly">
+          </div>
+        </div>
+
+        <div class="fy-field">
+          <span class="fy-label" id="sev-l">Severity<button class="fy-info" type="button" aria-label="About severity" aria-expanded="false"><i data-icon="info"></i></button></span>
+          <div class="fy-segmented" role="radiogroup" aria-labelledby="sev-l" style="align-self: flex-start">
+            <button type="button" role="radio" aria-checked="false"><i data-icon="info"></i> Info</button>
+            <button type="button" role="radio" aria-checked="true"><i data-icon="triangle-alert"></i> Warning</button>
+            <button type="button" role="radio" aria-checked="false"><i data-icon="circle-x"></i> Critical</button>
+          </div>
+          <span class="fy-help">Info and warning are announced politely to screen readers; only critical interrupts.</span>
+        </div>
+
+        <fieldset class="fy-fieldset">
+          <legend class="fy-label">Audience</legend>
+          <div class="fy-segmented" role="radiogroup" aria-label="Audience" style="align-self: flex-start">
+            <button type="button" role="radio" aria-checked="false">Everyone</button>
+            <button type="button" role="radio" aria-checked="true">Chosen roles</button>
+          </div>
+          <div class="fy-chipset" role="group" aria-label="Roles">
+            <button class="fy-filter" type="button" aria-pressed="true"><i data-icon="check"></i>Employee</button>
+            <button class="fy-filter" type="button" aria-pressed="true"><i data-icon="check"></i>Owner</button>
+            <button class="fy-filter" type="button" aria-pressed="false">Administrator</button>
+            <button class="fy-filter" type="button" aria-pressed="false">Accountant</button>
+            <button class="fy-filter" type="button" aria-pressed="false">Auditor</button>
+          </div>
+          <span class="fy-help">Reaches 8 people: Mei Lin Tan, Arjun Rao and 6 employees.</span>
+        </fieldset>
+
+        <div class="fy-form fy-form--2">
+          <div class="fy-field">
+            <label class="fy-label" for="an-start">Starts</label>
+            <input class="fy-input" id="an-start" value="14 Oct 2026, 09:00" readonly="readonly">
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="an-end">Ends</label>
+            <input class="fy-input" id="an-end" value="20 Oct 2026, 18:00" readonly="readonly">
+          </div>
+        </div>
+
+        <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+          <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="dis-l" aria-describedby="dis-d"></button>
+          <span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong" id="dis-l">People can dismiss it</span><span class="fy-small fy-secondary" id="dis-d">Dismissals are kept per person on every device. Critical banners can’t be dismissed, so this switch turns off when you choose Critical.</span></span>
+        </div>
+      </div>
+      <div class="fy-card__foot"><i data-icon="scroll-text" class="fy-muted"></i><span class="fy-small fy-secondary">Publishing, editing and ending an announcement are recorded in the audit log.</span></div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Preview">
+      <section class="fy-card" aria-labelledby="pv-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="pv-title">Live preview</h2><div class="fy-segmented" role="radiogroup" aria-label="Preview size"><button type="button" role="radio" aria-checked="true">Desktop</button><button type="button" role="radio" aria-checked="false">Phone</button></div></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div style="border: 1px solid var(--border); border-radius: var(--radius-m); overflow: hidden; background: var(--background)" aria-hidden="true">
+            <div class="fy-row" style="height: 36px; padding: 0 var(--space-3); border-bottom: 1px solid var(--border); background: var(--surface-1)">
+              <span class="fy-brand__mark" style="width: 18px; height: 18px; font-size: 11px; border-radius: 5px">f</span>
+              <span class="fy-skel fy-skel--text" style="width: 90px; height: 8px"></span>
+              <span class="fy-spacer"></span>
+              <span class="fy-avatar fy-avatar--sm">ML</span>
+            </div>
+            <div class="fy-banner fy-banner--warning fy-banner--strip" style="align-items: flex-start">
+              <i data-icon="triangle-alert"></i>
+              <div class="fy-banner__text"><span class="fy-small">The GST return for Jul–Sep is due on 31 Oct. Please submit any September receipts and claims by 20 Oct so the close can finish. <a href="#my-claims/new" tabindex="-1">Submit a claim</a></span></div>
+              <span class="fy-muted"><i data-icon="x"></i></span>
+            </div>
+            <div class="fy-stack fy-stack--2" style="padding: var(--space-3)">
+              <span class="fy-skel fy-skel--title"></span>
+              <span class="fy-skel fy-skel--text" style="width: 80%"></span>
+              <span class="fy-skel fy-skel--block" style="height: 64px"></span>
+            </div>
+          </div>
+          <p class="fy-small fy-muted">Sits under the header on every page from 14 Oct, 09:00 to 20 Oct, 18:00. It never covers the field you are working in.</p>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="sys-title">
+        <h2 class="fy-h3" id="sys-title">Banners Fyniq adds by itself</h2>
+        <p class="fy-small fy-secondary">Maintenance windows, incidents and the “What’s new” note after an upgrade appear alongside yours. Critical ones come first.</p>
+      </section>
+    </aside>
+  </div>
+
+  <section class="fy-card" aria-labelledby="all-title">
+    <div class="fy-card__head">
+      <h2 class="fy-h3" id="all-title">All announcements</h2>
+      <div class="fy-chipset fy-from-medium" role="group" aria-label="Show">
+        <button class="fy-filter" type="button" aria-pressed="true">All</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Live</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Scheduled</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Ended</button>
+      </div>
+    </div>
+    <table class="fy-table fy-table--cards">
+      <thead><tr><th scope="col">Message</th><th scope="col" class="fy-from-expanded">Severity</th><th scope="col">Audience</th><th scope="col">Shows</th><th scope="col">Status</th><th scope="col" class="fy-from-expanded"><span class="fy-sr">Actions</span></th></tr></thead>
+      <tbody class="fy-stagger">
+        <tr>
+          <td data-card="title">September claims close on 15 Oct<span class="fy-until-expanded fy-small fy-muted" style="display: block; font-weight: 400">Info</span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-row" style="gap: 4px"><i data-icon="info"></i>Info</span></td>
+          <td data-card="meta">Employees · dismissed by 4 of 6</td>
+          <td data-card="hide" style="white-space: nowrap">6 Oct → 15 Oct</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="radio-tower"></i>Live</span></td>
+          <td data-card="hide" class="fy-from-expanded"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">End now</button></td>
+        </tr>
+        <tr>
+          <td data-card="title">Maintenance on Sat 17 Oct, 02:00–03:00 SGT<span class="fy-until-expanded fy-small fy-muted" style="display: block; font-weight: 400">Info</span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-row" style="gap: 4px"><i data-icon="info"></i>Info</span></td>
+          <td data-card="meta">Whole installation · Super admin</td>
+          <td data-card="hide" style="white-space: nowrap">15 Oct → 17 Oct</td>
+          <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>Scheduled</span></td>
+          <td data-card="hide" class="fy-from-expanded"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Edit</button></td>
+        </tr>
+        <tr>
+          <td data-card="title">DBS bank feed is delayed; balances may lag a day<span class="fy-until-expanded fy-small fy-muted" style="display: block; font-weight: 400">Warning</span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-row" style="gap: 4px"><i data-icon="triangle-alert"></i>Warning</span></td>
+          <td data-card="meta">Owner, Accountant · by Arjun Rao</td>
+          <td data-card="hide" style="white-space: nowrap">2 Oct → 3 Oct</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-check"></i>Ended</span></td>
+          <td data-card="hide" class="fy-from-expanded"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Copy</button></td>
+        </tr>
+        <tr>
+          <td data-card="title">Payroll cut-off moved to 23 Sep<span class="fy-until-expanded fy-small fy-muted" style="display: block; font-weight: 400">Info</span></td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-row" style="gap: 4px"><i data-icon="info"></i>Info</span></td>
+          <td data-card="meta">Everyone · by Mei Lin Tan</td>
+          <td data-card="hide" style="white-space: nowrap">16 Sep → 23 Sep</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-check"></i>Ended</span></td>
+          <td data-card="hide" class="fy-from-expanded"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Copy</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Schedule</button>
+  </div>
+</div>

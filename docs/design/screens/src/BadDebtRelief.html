@@ -1,0 +1,130 @@
+<!-- fyniq-screen {"nav": "sales", "title": "Bad debts", "mode": "expert", "heights": {"compact": 2650, "medium": 2050, "expanded": 1150}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#sales">Sales</a><i data-icon="chevron-right"></i><span>Bad debts</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Bad debts and GST relief</h1>
+      <p class="fy-secondary">Invoices written off as uncollectable, and when the GST on them can be claimed back.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="file-down"></i>Export</button>
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="file-x"></i>Write off an invoice</button>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <a class="fy-tile" href="#reports/bad-debts?year=2026"><span class="fy-tile__label"><i data-icon="file-x"></i>Written off in 2026</span><span class="fy-tile__value fy-num">8,722.00<small>SGD</small></span><span class="fy-tile__meta">4 invoices</span></a>
+    <a class="fy-tile" href="#tax/gst/2026-q3"><span class="fy-tile__label"><i data-icon="circle-check"></i>GST relief you can claim now</span><span class="fy-tile__value fy-num">270.00<small>SGD</small></span><span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>1 eligible</span>Jul–Sep return, due 31 Oct</span></a>
+    <div class="fy-tile"><span class="fy-tile__label"><i data-icon="hourglass"></i>Relief still waiting</span><span class="fy-tile__value fy-num">252.00<small>SGD</small></span><span class="fy-tile__meta">Earliest 28 Apr 2027</span></div>
+    <div class="fy-tile"><span class="fy-tile__label"><i data-icon="stamp"></i>Write-offs to approve</span><span class="fy-tile__value fy-num">0</span><span class="fy-tile__meta">INV-0117 approved 12 Oct</span></div>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="bd-queue">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="bd-queue">Written-off invoices</h2>
+        <button class="fy-info" type="button" aria-label="When GST bad-debt relief can be claimed" aria-expanded="false"><i data-icon="info"></i></button>
+      </div>
+      <div class="fy-plain fy-small" style="margin: var(--space-3) var(--space-4)">
+        <i data-icon="list-checks"></i>
+        <span>Relief needs all three: the invoice is <strong>written off</strong>; <strong>12 months have passed</strong> since the supply, or the customer is <strong>insolvent</strong>; and the claim is made <strong>within 5 years</strong> of the supply.</span>
+      </div>
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr><th scope="col">Invoice</th><th scope="col" class="fy-num" style="text-align: right">Amount (SGD)</th><th scope="col" class="fy-num fy-from-expanded" style="text-align: right">GST (SGD)</th><th scope="col">Conditions</th><th scope="col">Status</th></tr>
+        </thead>
+        <tbody class="fy-stagger">
+          <tr>
+            <td data-card="title" style="padding-top: 10px; padding-bottom: 10px"><a class="fy-mono" href="#sales/INV-0109">INV-0109</a><span class="fy-small fy-secondary" style="display: block; font-weight: 400">Brightside Fitness Pte Ltd<span class="fy-until-expanded"> · GST S$270.00</span></span><span class="fy-small fy-muted" style="display: block; font-weight: 400">Supplied 12 Mar 2026 · written off 30 Sep</span></td>
+            <td class="fy-num" data-card="amount">3,270.00</td>
+            <td class="fy-num fy-from-expanded" data-card="hide">270.00</td>
+            <td data-card="meta">
+              <ul class="fy-stack fy-small" style="gap: 2px">
+                <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>Written off</li>
+                <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>Insolvent: winding-up order 18 Sep</li>
+                <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>Claim by 12 Mar 2031</li>
+              </ul>
+            </td>
+            <td data-card="status">
+              <div class="fy-stack fy-stack--2" style="align-items: flex-start">
+                <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Eligible</span>
+                <a class="fy-small" href="#tax/gst/2026-q3">In Jul–Sep 2026 return</a>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-top: 10px; padding-bottom: 10px"><a class="fy-mono" href="#sales/INV-0116">INV-0116</a><span class="fy-small fy-secondary" style="display: block; font-weight: 400">Tandem Events Pte Ltd<span class="fy-until-expanded"> · GST S$162.00</span></span><span class="fy-small fy-muted" style="display: block; font-weight: 400">Supplied 28 Apr 2026 · written off 30 Sep</span></td>
+            <td class="fy-num" data-card="amount">1,962.00</td>
+            <td class="fy-num fy-from-expanded" data-card="hide">162.00</td>
+            <td data-card="meta">
+              <ul class="fy-stack fy-small" style="gap: 2px">
+                <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>Written off</li>
+                <li class="fy-row" style="gap: 4px"><i data-icon="clock"></i>12 months on 28 Apr 2027</li>
+                <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>Claim by 28 Apr 2031</li>
+              </ul>
+            </td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Waiting</span></td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-top: 10px; padding-bottom: 10px"><a class="fy-mono" href="#sales/INV-0117">INV-0117</a><span class="fy-small fy-secondary" style="display: block; font-weight: 400">Sora Design Co. Pte Ltd<span class="fy-until-expanded"> · GST S$90.00</span></span><span class="fy-small fy-muted" style="display: block; font-weight: 400">Supplied 9 Jun 2026 · written off 12 Oct</span></td>
+            <td class="fy-num" data-card="amount">1,090.00</td>
+            <td class="fy-num fy-from-expanded" data-card="hide">90.00</td>
+            <td data-card="meta">
+              <ul class="fy-stack fy-small" style="gap: 2px">
+                <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>Written off 12 Oct</li>
+                <li class="fy-row" style="gap: 4px"><i data-icon="clock"></i>12 months on 9 Jun 2027</li>
+                <li class="fy-row" style="gap: 4px"><i data-icon="circle-check" style="color: var(--status-good)"></i>Claim by 9 Jun 2031</li>
+              </ul>
+            </td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Waiting</span></td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-top: 10px; padding-bottom: 10px"><a class="fy-mono" href="#sales/INV-0098">INV-0098</a><span class="fy-small fy-secondary" style="display: block; font-weight: 400">Noodle Lab Studio<span class="fy-until-expanded"> · GST S$0.00</span></span><span class="fy-small fy-muted" style="display: block; font-weight: 400">Supplied 15 Nov 2025 · written off 31 Mar</span></td>
+            <td class="fy-num" data-card="amount">2,400.00</td>
+            <td class="fy-num fy-from-expanded" data-card="hide">0.00</td>
+            <td data-card="meta"><span class="fy-small fy-secondary">No GST was charged: supplied before GST registration on 1 Jan 2026</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="minus"></i>No relief</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <aside class="fy-card" aria-labelledby="bd-wo">
+      <div class="fy-card__head">
+        <span class="fy-list__icon fy-list__icon--brand"><i data-icon="file-x" class="fy-i--20"></i></span>
+        <h2 class="fy-h3" id="bd-wo">INV-0117 written off</h2>
+      </div>
+      <div class="fy-card__body fy-stack">
+        <dl class="fy-stack fy-stack--2">
+          <div class="fy-row fy-row--between"><dt class="fy-small fy-muted">Customer</dt><dd class="fy-small">Sora Design Co. Pte Ltd</dd></div>
+          <div class="fy-row fy-row--between"><dt class="fy-small fy-muted">Outstanding</dt><dd class="fy-num fy-strong">S$1,090.00</dd></div>
+          <div class="fy-row fy-row--between"><dt class="fy-small fy-muted">Of which GST</dt><dd class="fy-num">S$90.00</dd></div>
+        </dl>
+        <div class="fy-field">
+          <label class="fy-label" for="bd-reason">Reason <span class="fy-req" aria-hidden="true">*</span></label>
+          <input class="fy-input" id="bd-reason" value="Bad debt: customer stopped trading" readonly="readonly">
+        </div>
+        <div class="fy-field">
+          <label class="fy-label" for="bd-evidence">Evidence <span class="fy-req" aria-hidden="true">*</span></label>
+          <input class="fy-input" id="bd-evidence" value="3 reminders and a letter of demand, 2 Oct" readonly="readonly">
+          <span class="fy-help">Attached from the invoice’s Activity tab</span>
+        </div>
+        <div class="fy-field">
+          <label class="fy-label" for="bd-approver">Approved by<button class="fy-info" type="button" aria-label="Who can approve a write-off" aria-expanded="false"><i data-icon="info"></i></button></label>
+          <input class="fy-input" id="bd-approver" value="Arjun Rao, 12 Oct 2026" readonly="readonly">
+          <p class="fy-help" style="display: flex; gap: 6px"><i data-icon="shield-alert"></i><span>Mei Lin Tan couldn’t approve it: she records the payments from this customer. Writing off and receiving cash from the same customer must be two people (SOD-9).</span></p>
+        </div>
+        <p class="fy-plain fy-small fy-expert-only"><i data-icon="scale"></i><span>Posted Dr Bad debts 1,090.00 · Cr <span class="fy-mono">1100</span> Accounts receivable 1,090.00 on 12 Oct. The S$90.00 GST comes back when relief is claimed: Dr <span class="fy-mono">2200</span> GST control · Cr Bad debts.</span></p>
+        <p class="fy-plain fy-small fy-basic-only"><i data-icon="scale"></i><span>Took S$1,090.00 off what customers owe us and recorded it as a cost. The S$90.00 GST can be claimed back later.</span></p>
+      </div>
+      <div class="fy-card__foot fy-from-medium">
+        <span class="fy-grow"></span>
+        <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="book-open"></i>Open the journal</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="book-open"></i>Open the write-off journal</button>
+  </div>
+</div>

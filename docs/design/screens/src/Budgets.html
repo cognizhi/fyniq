@@ -1,0 +1,39 @@
+<!-- fyniq-screen {"nav": "planning", "title": "Budgets", "mode": "expert", "heights": {"compact": 1250, "medium": 950, "expanded": 850}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#planning">Planning</a><i data-icon="chevron-right"></i><span>Budgets</span></nav>
+      <h1 class="fy-h1">Budget 2026 · revised</h1>
+      <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft v2</span><span class="fy-small fy-muted">Copied from Original (approved, locked) with +5% on hosting</span></div>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="upload"></i>Import XLSX</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit for approval</button>
+    </div>
+  </div>
+  <div class="fy-row fy-row--wrap" style="gap: var(--space-2)">
+    <div class="fy-segmented" role="radiogroup" aria-label="Version"><button type="button" role="radio" aria-checked="false">Original</button><button type="button" role="radio" aria-checked="true">Revised v2</button></div>
+    <button class="fy-filter" type="button" aria-pressed="true">Department: all</button>
+    <span class="fy-small fy-muted">Paste from Excel, fill right with Ctrl+R, type = to calculate</span>
+  </div>
+  <div class="fy-banner fy-banner--info fy-only-compact"><i data-icon="monitor" class="fy-i--20"></i><div class="fy-banner__text"><span>Budgets are easiest to edit on a larger screen. Here you can review and approve.</span></div></div>
+  <div class="fy-tablewrap">
+    <table class="fy-table fy-table--compact fy-statement">
+      <thead><tr><th scope="col">Account</th><th scope="col" class="fy-num">Oct</th><th scope="col" class="fy-num">Nov</th><th scope="col" class="fy-num">Dec</th><th scope="col" class="fy-num">Q4</th><th scope="col" class="fy-num">Actual YTD</th></tr></thead>
+      <tbody>
+        <tr class="fy-group"><td colspan="6">Revenue</td></tr>
+        <tr><td><span class="fy-acct">4010</span>Subscription revenue</td><td class="fy-num">54,000</td><td class="fy-num">61,000</td><td class="fy-num">62,500</td><td class="fy-num">177,500</td><td class="fy-num">398,640</td></tr>
+        <tr><td><span class="fy-acct">4020</span>Services revenue</td><td class="fy-num">24,000</td><td class="fy-num">18,000</td><td class="fy-num">12,000</td><td class="fy-num">54,000</td><td class="fy-num">162,300</td></tr>
+        <tr class="fy-group"><td colspan="6">Expenses</td></tr>
+        <tr><td><span class="fy-acct">6010</span>Salaries, Engineering</td><td class="fy-num">−42,000</td><td class="fy-num">−42,000</td><td class="fy-num">−52,500</td><td class="fy-num">−136,500</td><td class="fy-num">−239,400</td></tr>
+        <tr aria-selected="true"><td><span class="fy-acct">5010</span>Cloud hosting</td><td class="fy-num">−3,045</td><td class="fy-num">−3,045</td><td class="fy-num">−3,045</td><td class="fy-num">−9,135</td><td class="fy-num">−21,095</td></tr>
+        <tr><td><span class="fy-acct">6110</span>Rent and office, WeWork</td><td class="fy-num">−6,800</td><td class="fy-num">−6,800</td><td class="fy-num">−6,800</td><td class="fy-num">−20,400</td><td class="fy-num">−58,320</td></tr>
+      </tbody>
+      <tfoot><tr><td>Net result</td><td class="fy-num">26,155</td><td class="fy-num">27,155</td><td class="fy-num">12,155</td><td class="fy-num">65,465</td><td class="fy-num">242,125</td></tr></tfoot>
+    </table>
+  </div>
+  <section class="fy-ai-card" aria-labelledby="bud-ai">
+    <div class="fy-ai-card__head"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span><h2 class="fy-h3 fy-grow" id="bud-ai">Proposed version: Revised v3</h2></div>
+    <div class="fy-ai-card__body"><p class="fy-ai-text">Raises December salaries for the two hires in the hiring plan and cloud hosting to the September run rate (<span class="fy-fact">S$2,861.40</span> a month plus 6%). Opens as a draft version; nothing changes until approved.</p><div class="fy-row"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Open as a draft</button></div></div>
+  </section>
+</div>

@@ -1,0 +1,198 @@
+<!-- fyniq-screen {"nav": "reports", "title": "General ledger", "mode": "expert", "heights": {"compact": 2900, "medium": 1950, "expanded": 1550}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#reports">Reports</a><i data-icon="chevron-right"></i><span>Statements and ledgers</span></nav>
+      <h1 class="fy-h1">General ledger</h1>
+      <p class="fy-secondary">Every posted line for the accounts you pick, with a running balance. Select an entry to open its source.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="bookmark"></i>Save view</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export</button>
+    </div>
+  </div>
+
+  <div class="fy-card fy-card--pad fy-stack fy-stack--3">
+    <div class="fy-field">
+      <span class="fy-label" id="gl-acc">Accounts</span>
+      <div class="fy-chipset" role="group" aria-labelledby="gl-acc">
+        <span class="fy-tag fy-tag--expert"><span class="fy-mono">1010</span> DBS Business Multi-Currency<button class="fy-info" type="button" aria-label="Remove 1010" style="width: 20px; height: 20px"><i data-icon="x"></i></button></span>
+        <span class="fy-tag fy-tag--expert"><span class="fy-mono">5010</span> Cloud hosting<button class="fy-info" type="button" aria-label="Remove 5010" style="width: 20px; height: 20px"><i data-icon="x"></i></button></span>
+        <button class="fy-filter" type="button"><i data-icon="plus"></i>Add account</button>
+        <button class="fy-filter fy-only-medium" type="button"><i data-icon="columns-3"></i>Columns: 6 of 9</button>
+      </div>
+    </div>
+    <div class="fy-form fy-form--2" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))">
+      <div class="fy-field"><label class="fy-label" for="gl-from">From</label><input class="fy-input" id="gl-from" value="8 Oct 2026" readonly="readonly"></div>
+      <div class="fy-field"><label class="fy-label" for="gl-to">To</label><input class="fy-input" id="gl-to" value="13 Oct 2026" readonly="readonly"></div>
+      <div class="fy-field"><label class="fy-label" for="gl-dept">Department</label><select class="fy-select" id="gl-dept"><option>All departments</option><option>Engineering</option><option>Customer success</option><option>Operations</option></select></div>
+      <div class="fy-field"><label class="fy-label" for="gl-proj">Project</label><select class="fy-select" id="gl-proj"><option>All projects</option><option>Lumen Health pilot</option><option>Acme data platform</option></select></div>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="status">
+    <i data-icon="file-down" class="fy-i--20"></i>
+    <div class="fy-banner__text fy-stack fy-stack--2">
+      <strong>Preparing your export: all accounts, Jan to Sep 2026</strong>
+      <span class="fy-small">62,418 lines, XLSX. Large exports run in the background; you get a link valid for 24 hours after you sign in.</span>
+      <div class="fy-progress" role="progressbar" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100" aria-label="Export progress"><span style="width: 64%"></span></div>
+    </div>
+    <span class="fy-num fy-small fy-strong">64%</span>
+  </div>
+
+  
+<section class="fy-stack fy-stack--3" aria-labelledby="acc-1010">
+  <div class="fy-row fy-row--between fy-row--wrap">
+    <h2 class="fy-h3" id="acc-1010"><span class="fy-mono fy-muted">1010</span> DBS Business Multi-Currency (SGD)</h2>
+    <span class="fy-small fy-muted">13 lines · opening <a class="fy-num" href="#trace/1010-open" style="color: inherit">217,972.12</a></span>
+  </div>
+  <div class="fy-tablewrap">
+    <table class="fy-table fy-table--compact fy-table--cards">
+      <caption class="fy-sr">Ledger lines for account 1010, 8 to 13 October 2026, SGD</caption>
+      <thead><tr>
+  <th scope="col">Date · entry</th><th scope="col" class="fy-from-expanded">Source</th><th scope="col">Description</th>
+  <th scope="col" class="fy-num">Debit</th><th scope="col" class="fy-num">Credit</th><th scope="col" class="fy-num fy-only-compact">Amount</th>
+  <th scope="col" class="fy-num">Balance</th><th scope="col" class="fy-from-expanded">Department · project</th><th scope="col" class="fy-from-expanded">Prepared by</th></tr></thead>
+      <tbody>
+        <tr class="fy-group"><td data-card="title" colspan="2">Opening balance, 8 Oct</td><td class="fy-from-expanded" data-card="hide"></td><td class="fy-num" data-card="hide"></td><td class="fy-num" data-card="hide"></td><td class="fy-only-compact" data-card="hide"></td><td class="fy-num" data-card="amount"><a href="#trace/1010-open" style="color: inherit">248,983.72</a></td><td colspan="2" data-card="hide" class="fy-from-expanded"></td></tr>
+        <tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">8 Oct · <a class="fy-mono" href="#accounting/entries/e-18386">E-18386</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/dbs/line-88201">BANK</a></td>
+  <td data-card="title">SP Digital, held in 2999 Suspense <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>To categorise</span></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18386" style="color: inherit">148.62</a></td>
+  <td class="fy-num fy-only-compact" data-card="amount">−148.62</td>
+  <td class="fy-num" data-card="status">248,835.10</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Bank feed</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">9 Oct · <a class="fy-mono" href="#accounting/entries/e-18391">E-18391</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#source/trf-0052">TRF-0052</a></td>
+  <td data-card="title">Transfer from OCBC Business Growth <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>May be recorded twice</span></td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18391" style="color: inherit">15,000.00</a></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num fy-only-compact" data-card="amount">+15,000.00</td>
+  <td class="fy-num" data-card="status">263,835.10</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Arjun Rao</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">9 Oct · <a class="fy-mono" href="#accounting/entries/e-18392">E-18392</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/dbs/line-88204">BANK</a></td>
+  <td data-card="title">WeWork Singapore, held in 2999 Suspense <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>To categorise</span></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18392" style="color: inherit">3,270.00</a></td>
+  <td class="fy-num fy-only-compact" data-card="amount">−3,270.00</td>
+  <td class="fy-num" data-card="status">260,565.10</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Bank feed</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">9 Oct · <a class="fy-mono" href="#accounting/entries/e-18393">E-18393</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/payouts/po_1Q-X4kq">po_1Q…X4kq</a></td>
+  <td data-card="title">Stripe payout, card subscriptions</td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18393" style="color: inherit">3,412.85</a></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num fy-only-compact" data-card="amount">+3,412.85</td>
+  <td class="fy-num" data-card="status">263,977.95</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Auto-reconciled</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">10 Oct · <a class="fy-mono" href="#accounting/entries/e-18395">E-18395</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/dbs/line-88207">BANK</a></td>
+  <td data-card="title">Grab for Business, held in 2999 Suspense <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>To categorise</span></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18395" style="color: inherit">86.40</a></td>
+  <td class="fy-num fy-only-compact" data-card="amount">−86.40</td>
+  <td class="fy-num" data-card="status">263,891.55</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Bank feed</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">10 Oct · <a class="fy-mono" href="#accounting/entries/e-18396">E-18396</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/dbs/line-88208">BANK</a></td>
+  <td data-card="title">Google Workspace, extra seats</td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18396" style="color: inherit">259.20</a></td>
+  <td class="fy-num fy-only-compact" data-card="amount">−259.20</td>
+  <td class="fy-num" data-card="status">263,632.35</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">Operations</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Bank rule R-04</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">10 Oct · <a class="fy-mono" href="#accounting/entries/e-18398">E-18398</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/payouts/hp-1010">HP-1010</a></td>
+  <td data-card="title">HitPay payout, INV-0131 by PayNow</td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18398" style="color: inherit">5,414.27</a></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num fy-only-compact" data-card="amount">+5,414.27</td>
+  <td class="fy-num" data-card="status">269,046.62</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Auto-reconciled</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">11 Oct · <a class="fy-mono" href="#accounting/entries/e-18400">E-18400</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/dbs/line-88210">BANK</a></td>
+  <td data-card="title">Figma, held in 2999 Suspense <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>To categorise</span></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18400" style="color: inherit">186.40</a></td>
+  <td class="fy-num fy-only-compact" data-card="amount">−186.40</td>
+  <td class="fy-num" data-card="status">268,860.22</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Bank feed</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">12 Oct · <a class="fy-mono" href="#accounting/entries/e-18403">E-18403</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/dbs/line-88212">BANK</a></td>
+  <td data-card="title">Kopi Labs, held in 2999 Suspense <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>To categorise</span></td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18403" style="color: inherit">2,180.00</a></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num fy-only-compact" data-card="amount">+2,180.00</td>
+  <td class="fy-num" data-card="status">271,040.22</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Bank feed</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">12 Oct · <a class="fy-mono" href="#accounting/entries/e-18404">E-18404</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#banking/dbs/line-88213">BANK</a></td>
+  <td data-card="title">Lumen Health, held in 2999 Suspense <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>To categorise</span></td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18404" style="color: inherit">6,000.00</a></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num fy-only-compact" data-card="amount">+6,000.00</td>
+  <td class="fy-num" data-card="status">277,040.22</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Bank feed</td>
+</tr><tr>
+  <td data-card="meta" style="white-space: nowrap; grid-row: 2">12 Oct · <a class="fy-mono" href="#accounting/entries/e-18405">E-18405</a></td>
+  <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap"><a class="fy-mono" href="#source/inv-0140">INV-0140</a></td>
+  <td data-card="title">Acme Analytics: subscription, September</td>
+  <td class="fy-num" data-card="hide"><a href="#accounting/entries/e-18405" style="color: inherit">10,900.00</a></td>
+  <td class="fy-num" data-card="hide"></td>
+  <td class="fy-num fy-only-compact" data-card="amount">+10,900.00</td>
+  <td class="fy-num" data-card="status">287,940.22</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded">–</td>
+  <td data-card="hide" class="fy-secondary fy-from-expanded" style="white-space: nowrap">Auto-reconciled</td>
+</tr>
+      </tbody>
+      <tfoot><tr><td colspan="2" data-card="title">Closing balance, 13 Oct</td><td class="fy-from-expanded" data-card="hide"></td><td class="fy-num" data-card="hide">42,907.12</td><td class="fy-num" data-card="hide">3,950.62</td><td class="fy-only-compact" data-card="hide"></td><td class="fy-num" data-card="amount"><a href="#trace/1010-close" style="color: inherit">287,940.22</a></td><td colspan="2" data-card="hide" class="fy-from-expanded"></td></tr></tfoot>
+    </table>
+  </div>
+  <div class="fy-banner fy-banner--warning">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>E-18391 may be recorded twice</strong><span class="fy-small">DBS also shows a S$15,000.00 credit on 9 Oct that may be this transfer’s other side. It is held, not posted, until someone matches it to E-18391 or records it on its own; correct by reversal, never by editing.</span></div>
+    <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#banking/reconcile">Review</a>
+  </div>
+</section>
+  
+<section class="fy-stack fy-stack--3" aria-labelledby="acc-5010">
+  <div class="fy-row fy-row--between fy-row--wrap">
+    <h2 class="fy-h3" id="acc-5010"><span class="fy-mono fy-muted">5010</span> Cloud hosting</h2>
+    <span class="fy-small fy-muted">0 lines · opening and closing <span class="fy-num">18,470.11</span></span>
+  </div>
+  <div class="fy-card fy-card--flat fy-empty" style="padding: var(--space-6) var(--space-4)">
+    <span class="fy-empty__art" style="width: 48px; height: 48px; border-radius: 14px"><i data-icon="list-filter" class="fy-i--24"></i></span>
+    <strong>No lines from 8 to 13 October</strong>
+    <p class="fy-small">The September accrual, JNL-0240, reversed on 1 Oct. BILL-0918 for September posts once Mei Lin approves it, and October’s bill has not arrived yet. <a href="#reports/general-ledger?account=5010&amp;from=2026-07-01">Show July to September</a></p>
+  </div>
+</section>
+
+  <p class="fy-small fy-muted">Ledger revision 18,412 · 13 Oct 2026, 09:12 · amounts in SGD · up to 100,000 lines scroll here without paging. Exports to CSV write amounts as plain numbers and text so that nothing can become a formula.</p>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="bookmark"></i>Save view</button>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export</button>
+  </div>
+</div>

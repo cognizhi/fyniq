@@ -1,0 +1,212 @@
+<!-- fyniq-screen {"nav": "my-claims", "title": "New claim", "mode": "basic", "heights": {"compact": 2950, "medium": 2750, "expanded": 1650}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#me/claims">My claims</a><i data-icon="chevron-right"></i><span>New claim</span></nav>
+      <h1 class="fy-h1">Grab ride to Acme Analytics</h1>
+      <div class="fy-row fy-row--wrap">
+        <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+        <span class="fy-small fy-muted"><span class="fy-mono">CLM-0047</span> · from a receipt photo, 08:41 today</span>
+      </div>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button">Save draft</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Submit for approval</button>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-grid fy-grid--2" style="align-items: start">
+      <section class="fy-card fy-from-medium" aria-labelledby="rc-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="rc-title">Receipt</h2>
+          <button class="fy-iconbtn" type="button" aria-label="Zoom in"><i data-icon="zoom-in"></i></button>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Replace</button>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-receipt" role="img" aria-label="Photo of a Grab receipt: GrabCar ride on 13 Oct 2026, total S$27.30, paid with GrabPay">
+            <div class="fy-stack fy-stack--2 fy-mono" style="width: 78%; padding: var(--space-4); background: var(--surface-1); border-radius: var(--radius-s); box-shadow: var(--shadow-1); color: var(--text-secondary); font-size: 11px">
+              <strong style="color: var(--text-primary); font-size: 14px">Grab</strong>
+              <span>Your GrabCar ride</span>
+              <span style="filter: blur(1.2px)">13/10/26 08:22</span>
+              <span>From 71 Robinson Rd</span>
+              <span>To Acme Analytics</span>
+              <span class="fy-divider"></span>
+              <span class="fy-row fy-row--between"><span>Fare</span><span>26.30</span></span>
+              <span class="fy-row fy-row--between"><span>Platform fee</span><span>1.00</span></span>
+              <span class="fy-row fy-row--between" style="color: var(--text-primary)"><strong>Total</strong><strong>S$27.30</strong></span>
+              <span>Paid with GrabPay</span>
+            </div>
+          </div>
+          <span class="fy-small fy-muted fy-row"><i data-icon="shield-check"></i>Kept as evidence. Location data removed; scanned for malware.</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="det-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="det-title">Details</h2>
+          <span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-row fy-only-compact" style="align-items: stretch; gap: var(--space-3)">
+            <div class="fy-receipt" role="img" aria-label="Photo of the Grab receipt" style="width: 72px; flex: none"><i data-icon="receipt" class="fy-i--24"></i></div>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <span class="fy-strong">Receipt photo</span>
+              <span class="fy-small fy-muted">Taken 08:41 · kept as evidence</span>
+              <div class="fy-row"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="camera"></i>Retake</button><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">View</button></div>
+            </div>
+          </div>
+          <p class="fy-small fy-muted">The assistant read 5 fields from the receipt. Check them; nothing is sent until you submit.</p>
+
+          <div class="fy-form">
+            <div class="fy-field">
+              <label class="fy-label" for="ce-merchant">Merchant</label>
+              <input class="fy-input" id="ce-merchant" value="Grab" readonly="readonly">
+              <span class="fy-suggest"><i data-icon="sparkles"></i>Read from the receipt</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ce-date">Date<span class="fy-req" aria-hidden="true">*</span></label>
+              <input class="fy-input" id="ce-date" value="13 Oct 2026" readonly="readonly" aria-describedby="ce-date-help" style="border-color: var(--status-warning); box-shadow: 0 0 0 1px var(--status-warning)">
+              <span class="fy-small fy-row" id="ce-date-help" style="color: var(--status-warning)"><i data-icon="triangle-alert"></i>Not sure: the date is blurred in the photo. Check it.</span>
+              <span class="fy-suggest"><i data-icon="sparkles"></i>Read from the receipt</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ce-amount">Amount<span class="fy-req" aria-hidden="true">*</span></label>
+              <div class="fy-inputgroup">
+                <span class="fy-inputgroup__addon">S$</span>
+                <input class="fy-input fy-num" id="ce-amount" value="27.30" inputmode="decimal" readonly="readonly">
+              </div>
+              <span class="fy-suggest"><i data-icon="sparkles"></i>Read from the receipt</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ce-cur">Currency</label>
+              <select class="fy-select" id="ce-cur"><option>SGD</option><option>IDR</option><option>USD</option><option>MYR</option></select>
+              <span class="fy-help">Paid in another currency, such as IDR? You're paid back in SGD at the rate for the receipt date.</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ce-cat">Category<span class="fy-req" aria-hidden="true">*</span></label>
+              <select class="fy-select" id="ce-cat"><option>Local travel</option><option>Meals and entertainment</option><option>Overseas travel</option><option>Software and subscriptions</option></select>
+              <span class="fy-suggest"><i data-icon="sparkles"></i>Suggested from the receipt</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ce-proj">Project</label>
+              <select class="fy-select" id="ce-proj"><option>Acme data platform</option><option>Lumen Health pilot</option><option>No project</option></select>
+              <span class="fy-suggest"><i data-icon="sparkles"></i>Suggested: the ride ends at Acme Analytics</span>
+            </div>
+            <div class="fy-field fy-field--full">
+              <label class="fy-label" for="ce-purpose">Business purpose</label>
+              <textarea class="fy-textarea" id="ce-purpose" readonly="readonly">Data platform workshop at Acme's office</textarea>
+            </div>
+          </div>
+
+          <div class="fy-row fy-row--wrap">
+            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="split"></i>Split into lines</button>
+            <span class="fy-small fy-muted">For a receipt that covers more than one category or project.</span>
+          </div>
+
+          <div class="fy-divider"></div>
+
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="ce-adv-l" aria-describedby="ce-adv-h"></button>
+            <div class="fy-stack" style="gap: 2px">
+              <span class="fy-strong" id="ce-adv-l">This claim settles a cash advance</span>
+              <span class="fy-help" id="ce-adv-h">You have no advance outstanding.</span>
+            </div>
+          </div>
+
+          <fieldset class="fy-fieldset">
+            <legend>You paid personally. How should the company settle it?<button class="fy-info" type="button" aria-label="About paying back or keeping it as a loan" aria-expanded="false"><i data-icon="info"></i></button></legend>
+            <div class="fy-stack fy-stack--2" role="radiogroup" aria-label="Settle as">
+              <button class="fy-choice" type="button" role="radio" aria-checked="true">
+                <span class="fy-radio"></span>
+                <span class="fy-stack" style="gap: 2px"><span class="fy-strong">Pay me back</span><span class="fy-small fy-muted">In the next claims batch.<span class="fy-expert-only"> Credits <span class="fy-mono">2150</span> Expense claims payable.</span></span></span>
+              </button>
+              <button class="fy-choice" type="button" role="radio" aria-checked="false">
+                <span class="fy-radio"></span>
+                <span class="fy-stack" style="gap: 2px"><span class="fy-strong">Keep it as a loan to the company</span><span class="fy-small fy-muted">Added to what the company owes you as a director.<span class="fy-expert-only"> Credits <span class="fy-mono">2500</span> Loan from director.</span></span></span>
+              </button>
+            </div>
+            <span class="fy-help">Shown because you're a director. Arjun Rao approves either way.</span>
+          </fieldset>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Checks, GST and approval">
+      <section class="fy-card" aria-labelledby="chk-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="chk-title">Checks before you submit</h2>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>5 passed</span>
+        </div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Receipt attached</span><span class="fy-list__meta">Receipt rule: every claim needs one</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Within the local travel limit</span><span class="fy-list__meta">S$27.30 of S$100.00 per trip</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Within the claim deadline</span><span class="fy-list__meta">Claim within 60 days: by 12 Dec</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Not a duplicate</span><span class="fy-list__meta">No matching receipt from anyone at Cognizhi</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Business purpose added</span><span class="fy-list__meta">Recommended for every claim</span></span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="gst-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="gst-title">GST</h2>
+          <span class="fy-chip fy-chip--neutral"><i data-icon="circle-slash"></i>Not claimable</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--2">
+          <p>No GST registration number is shown on the receipt, so it isn't a valid tax invoice. The full S$27.30 is the cost.</p>
+          <p class="fy-small fy-muted">A simplified tax invoice (up to S$1,000 including GST) can be claimed when it shows the supplier's GST registration number.</p>
+          <p class="fy-small fy-muted fy-expert-only">Code <span class="fy-mono">NR</span> · decided by: supplier GST registration number missing. Finance confirms on approval.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="route-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="route-title">Who approves it</h2></div>
+        <div class="fy-card__body fy-stack">
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="send"></i></span>
+              <span class="fy-strong">You submit</span>
+              <span class="fy-small fy-muted">Checks run again on submit</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="user-check"></i></span>
+              <span class="fy-strong">Arjun Rao, the other director</span>
+              <span class="fy-small fy-muted">Approves, or returns it with a comment</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="user-check"></i></span>
+              <span class="fy-strong">Grace Ho, finance</span>
+              <span class="fy-small fy-muted">Confirms the GST and schedules payment</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="banknote"></i></span>
+              <span class="fy-strong">Paid back</span>
+              <span class="fy-small fy-muted">In the next claims batch</span>
+            </li>
+          </ol>
+          <p class="fy-small fy-muted">If it's returned, fix it and submit again. Both versions stay in the claim's history.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Submit</button>
+  </div>
+</div>

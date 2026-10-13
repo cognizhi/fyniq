@@ -1,0 +1,184 @@
+<!-- fyniq-screen {"nav": "equity", "title": "Equity transactions", "mode": "expert", "heights": {"compact": 2700, "medium": 2350, "expanded": 1400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Equity</span>
+      <h1 class="fy-h1">Equity transactions</h1>
+      <p class="fy-secondary">The register of share issues, with every transfer, conversion and exercise. Append-only: a mistake is reversed, never edited.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="download"></i>Export</button>
+      <a class="fy-btn fy-btn--primary" href="#equity/transactions/new"><i data-icon="plus"></i>New transaction</a>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Equity views">
+    <a href="#equity">Cap table</a>
+    <a href="#equity/holders">Holders</a>
+    <a href="#equity/classes">Classes</a>
+    <a href="#equity/transactions" aria-current="page">Transactions</a>
+    <a href="#equity/instruments">SAFEs and notes</a>
+    <a href="#equity/options">Option pool</a>
+  </nav>
+
+  <div class="fy-grid fy-grid--tiles">
+    <a class="fy-tile" href="#accounting/accounts/3010">
+      <span class="fy-tile__label">Paid-up capital</span>
+      <span class="fy-tile__value fy-num">90,000.00<small>SGD</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Matches 3010</span></span>
+    </a>
+    <div class="fy-tile">
+      <span class="fy-tile__label">Shares issued</span>
+      <span class="fy-tile__value fy-num">9,000,000</span>
+      <span class="fy-tile__meta">Ordinary · effective</span>
+    </div>
+    <a class="fy-tile" href="#equity/transactions/eq-0005">
+      <span class="fy-tile__label">Waiting for ACRA</span>
+      <span class="fy-tile__value fy-num">15,000</span>
+      <span class="fy-tile__meta">1 transaction · EQ-0005</span>
+    </a>
+    <a class="fy-tile" href="#accounting/accounts/share-application-monies">
+      <span class="fy-tile__label">Share application monies<button class="fy-info" type="button" aria-label="About share application monies" aria-expanded="false"><i data-icon="info"></i></button></span>
+      <span class="fy-tile__value fy-num">1,500.00<small>SGD</small></span>
+      <span class="fy-tile__meta">Held for Nurul Aziz since 9 Oct</span>
+    </a>
+  </div>
+
+  <div class="fy-chipset" role="group" aria-label="Show">
+    <button class="fy-filter" type="button" aria-pressed="true">All 6</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Pending ACRA 1</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Approval lapsing 0</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Effective 3</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Reversed 1</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Draft 1</button>
+  </div>
+
+  <div class="fy-card">
+    <table class="fy-table fy-table--cards">
+      <thead>
+        <tr>
+          <th scope="col">Ref</th><th scope="col">Effective</th><th scope="col">Type</th><th scope="col">Holder</th>
+          <th scope="col" class="fy-from-expanded">Class</th><th scope="col" class="fy-num">Shares</th><th scope="col" class="fy-num fy-from-expanded">Price</th>
+          <th scope="col" class="fy-from-expanded">Consideration</th><th scope="col" class="fy-from-expanded">Resolutions</th><th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody class="fy-stagger">
+        <tr>
+          <td data-card="title" style="white-space: nowrap"><a class="fy-mono" href="#equity/transactions/new?draft=eq-0006">EQ-0006</a></td>
+          <td data-card="hide" class="fy-muted">–</td>
+          <td data-card="meta">Option exercise</td>
+          <td data-card="meta" style="white-space: nowrap">Daniel Lim</td>
+          <td data-card="hide" class="fy-from-expanded">Ordinary</td>
+          <td data-card="amount" class="fy-num">25,000</td>
+          <td data-card="hide" class="fy-num fy-from-expanded">0.10</td>
+          <td data-card="hide" class="fy-from-expanded">Cash S$2,500.00</td>
+          <td data-card="hide" class="fy-from-expanded fy-muted">Board resolution to add</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+        </tr>
+        <tr>
+          <td data-card="title" style="white-space: nowrap"><a class="fy-mono" href="#equity/transactions/eq-0005">EQ-0005</a></td>
+          <td data-card="hide" class="fy-muted">At ACRA</td>
+          <td data-card="meta">Option exercise</td>
+          <td data-card="meta" style="white-space: nowrap">Nurul Aziz</td>
+          <td data-card="hide" class="fy-from-expanded">Ordinary</td>
+          <td data-card="amount" class="fy-num">15,000</td>
+          <td data-card="hide" class="fy-num fy-from-expanded">0.10</td>
+          <td data-card="hide" class="fy-from-expanded">Cash S$1,500.00</td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">AGM-2026</span>, <span class="fy-mono">BR-2026-14</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="landmark"></i>Pending ACRA</span></td>
+        </tr>
+        <tr>
+          <td data-card="title" style="white-space: nowrap"><a class="fy-mono" href="#equity/transactions/eq-0004">EQ-0004</a></td>
+          <td data-card="hide" style="white-space: nowrap">2 Sep 2024</td>
+          <td data-card="meta">Reversal of EQ-0003</td>
+          <td data-card="meta" style="white-space: nowrap">Arjun Rao</td>
+          <td data-card="hide" class="fy-from-expanded">Ordinary</td>
+          <td data-card="amount" class="fy-num">−4,500,000</td>
+          <td data-card="hide" class="fy-num fy-from-expanded">0.01</td>
+          <td data-card="hide" class="fy-from-expanded">–</td>
+          <td data-card="hide" class="fy-from-expanded">Cites ACRA extract, 6 Jan 2026</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Effective</span></td>
+        </tr>
+        <tr>
+          <td data-card="title" style="white-space: nowrap"><a class="fy-mono" href="#equity/transactions/eq-0003">EQ-0003</a></td>
+          <td data-card="hide" style="white-space: nowrap">2 Sep 2024</td>
+          <td data-card="meta">Issue for cash, imported twice</td>
+          <td data-card="meta" style="white-space: nowrap">Arjun Rao</td>
+          <td data-card="hide" class="fy-from-expanded">Ordinary</td>
+          <td data-card="amount" class="fy-num" style="color: var(--text-muted)">4,500,000</td>
+          <td data-card="hide" class="fy-num fy-from-expanded">0.01</td>
+          <td data-card="hide" class="fy-from-expanded">Cash S$45,000.00</td>
+          <td data-card="hide" class="fy-from-expanded">Workbook import</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="undo-2"></i>Reversed</span></td>
+        </tr>
+        <tr>
+          <td data-card="title" style="white-space: nowrap"><a class="fy-mono" href="#equity/transactions/eq-0002">EQ-0002</a></td>
+          <td data-card="hide" style="white-space: nowrap">2 Sep 2024</td>
+          <td data-card="meta">Issue for cash, subscriber</td>
+          <td data-card="meta" style="white-space: nowrap">Arjun Rao</td>
+          <td data-card="hide" class="fy-from-expanded">Ordinary</td>
+          <td data-card="amount" class="fy-num">4,500,000</td>
+          <td data-card="hide" class="fy-num fy-from-expanded">0.01</td>
+          <td data-card="hide" class="fy-from-expanded">Cash S$45,000.00</td>
+          <td data-card="hide" class="fy-from-expanded">At incorporation</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Effective</span></td>
+        </tr>
+        <tr>
+          <td data-card="title" style="white-space: nowrap"><a class="fy-mono" href="#equity/transactions/eq-0001">EQ-0001</a></td>
+          <td data-card="hide" style="white-space: nowrap">2 Sep 2024</td>
+          <td data-card="meta">Issue for cash, subscriber</td>
+          <td data-card="meta" style="white-space: nowrap">Mei Lin Tan</td>
+          <td data-card="hide" class="fy-from-expanded">Ordinary</td>
+          <td data-card="amount" class="fy-num">4,500,000</td>
+          <td data-card="hide" class="fy-num fy-from-expanded">0.01</td>
+          <td data-card="hide" class="fy-from-expanded">Cash S$45,000.00</td>
+          <td data-card="hide" class="fy-from-expanded">At incorporation</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Effective</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="er-acra-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="er-acra-title">EQ-0005: ACRA steps</h2>
+        <span class="fy-chip fy-chip--info"><i data-icon="landmark"></i>Pending ACRA</span>
+      </div>
+      <div class="fy-card__body fy-stack fy-stack--3">
+        <p class="fy-small fy-secondary">Nurul Aziz · 15,000 ordinary shares at S$0.10 · option exercise under ESOP 2026. Fyniq tracks the steps and their evidence; you or your company secretary lodge with ACRA.</p>
+        <ol class="fy-timeline" style="padding-left: 28px">
+          <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong">Shareholders' approval to issue shares</span><span class="fy-small fy-muted">Given at the AGM on 26 Jun 2026; lodged 3 Jul, within 14 days. Lapses at the next AGM, by 30 Jun 2027.</span></li>
+          <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong">Board resolution allotting the shares</span><span class="fy-small fy-muted">BR-2026-14, 12 Oct · approved by Mei Lin Tan and Arjun Rao</span></li>
+          <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong">Cash received</span><span class="fy-small fy-muted">S$1,500.00 into DBS Business on 9 Oct, held as share application monies</span></li>
+          <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="circle-dashed"></i></span><span class="fy-strong">Return of allotment</span><span class="fy-small fy-muted">To lodge. ACRA's guidance: within 14 days, by 26 Oct. Warns after that date.</span></li>
+          <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="circle-dashed"></i></span><span class="fy-strong">ACRA updates the register of members</span><span class="fy-small fy-muted">That date becomes the effective date. Then it posts: Dr share application monies S$1,500.00, Cr 3010 S$1,500.00.</span></li>
+        </ol>
+      </div>
+      <div class="fy-card__foot">
+        <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="upload"></i>Add ACRA acknowledgement</button>
+      </div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Rules">
+      <div class="fy-card fy-card--pad fy-stack fy-stack--3">
+        <div class="fy-row"><i data-icon="undo-2" class="fy-muted"></i><h2 class="fy-h3">Corrections</h2></div>
+        <p class="fy-small fy-secondary">A wrong transaction is reversed by a new one that cites its evidence. EQ-0003 was a duplicate from the workbook import; Grace Ho reversed it on 8 Jan 2026 with EQ-0004, citing the ACRA register of members extract of 6 Jan 2026.</p>
+        <p class="fy-small fy-muted">When the legal position itself must change, such as a buy-back, it is a new transaction with its own resolutions, never a reversal.</p>
+      </div>
+      <div class="fy-card fy-card--pad fy-stack fy-stack--3">
+        <div class="fy-row"><i data-icon="triangle-alert" class="fy-muted"></i><h2 class="fy-h3">What Fyniq warns about</h2></div>
+        <ul class="fy-stack fy-stack--2">
+          <li class="fy-row fy-row--top"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Due</span><span class="fy-small fy-secondary">A shareholders' approval not lodged within 14 days of the resolution</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Lapsing</span><span class="fy-small fy-secondary">An approval that lapses at the next AGM before ACRA registers the shares</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Late</span><span class="fy-small fy-secondary">A return of allotment not lodged 14 days after the allotment</span></li>
+        </ul>
+        <p class="fy-small fy-muted">None applies today.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#equity/transactions/new"><i data-icon="plus"></i>New transaction</a>
+  </div>
+</div>

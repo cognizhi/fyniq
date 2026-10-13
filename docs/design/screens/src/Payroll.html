@@ -1,0 +1,202 @@
+<!-- fyniq-screen {"nav": "payroll", "title": "Payroll", "mode": "basic", "heights": {"compact": 2900, "medium": 2080, "expanded": 1200}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Payroll</span>
+      <h1 class="fy-h1">Pay runs and what is due</h1>
+      <p class="fy-secondary">6 employees · next pay day Wednesday 28 Oct · CPF for October due 14 Nov</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#payroll/employees"><i data-icon="users"></i>Employees</a>
+      <a class="fy-btn fy-btn--primary" href="#payroll/runs/2026-10"><i data-icon="wallet"></i>Continue October pay run</a>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <a class="fy-tile" href="#payroll/runs/2026-10">
+      <span class="fy-tile__label"><i data-icon="wallet"></i>October gross pay</span>
+      <span class="fy-tile__value fy-num">47,600.00<small>SGD</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>includes a S$5,000.00 bonus</span>
+    </a>
+    <a class="fy-tile" href="#payroll/runs/2026-10">
+      <span class="fy-tile__label"><i data-icon="building"></i>October cost to the company</span>
+      <span class="fy-tile__value fy-num">53,658.25<small>SGD</small></span>
+      <span class="fy-tile__meta">Gross, employer CPF and SDL</span>
+    </a>
+    <a class="fy-tile" href="#payroll/cpf/2026-10">
+      <span class="fy-tile__label"><i data-icon="landmark"></i>CPF for October</span>
+      <span class="fy-tile__value fy-num">12,986.00<small>SGD</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>Due 14 Nov</span>32 days</span>
+    </a>
+    <a class="fy-tile" href="#payroll/cpf/2026-09">
+      <span class="fy-tile__label"><i data-icon="landmark"></i>CPF for September</span>
+      <span class="fy-tile__value fy-num">11,136.00<small>SGD</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid 9 Oct</span>before the 14th</span>
+    </a>
+  </div>
+
+  <div class="fy-split fy-split--wide-aside">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="runs-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="runs-title">Pay runs</h2>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Start a pay run</button>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
+              <th scope="col" class="fy-num fy-from-expanded">People</th>
+              <th scope="col" class="fy-num">Gross</th>
+              <th scope="col" class="fy-num fy-from-expanded">Employer CPF</th>
+              <th scope="col" class="fy-num fy-from-expanded">SDL</th>
+              <th scope="col" class="fy-num">Net pay</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><a href="#payroll/runs/2026-10" class="fy-strong">October 2026</a><span class="fy-small fy-muted fy-from-medium"> · PR-2026-10</span></td>
+              <td data-card="meta" class="fy-num fy-from-expanded">6</td>
+              <td data-card="amount" class="fy-num">47,600.00</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">5,992.00</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">66.00</td>
+              <td data-card="meta" class="fy-num"><span class="fy-only-compact">Net </span>40,672.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+              <td data-card="meta" class="fy-only-compact">6 people · employer CPF 5,992.00 · SDL 66.00 · pay day 28 Oct</td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><a href="#payroll/runs/2026-09" class="fy-strong">September 2026</a><span class="fy-small fy-muted fy-from-medium"> · PR-2026-09</span></td>
+              <td data-card="meta" class="fy-num fy-from-expanded">6</td>
+              <td data-card="amount" class="fy-num">42,600.00</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">5,142.00</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">66.00</td>
+              <td data-card="meta" class="fy-num"><span class="fy-only-compact">Net </span>36,672.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td>
+              <td data-card="meta" class="fy-only-compact">6 people · employer CPF 5,142.00 · SDL 66.00 · paid 28 Sep</td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><a href="#payroll/runs/2026-08" class="fy-strong">August 2026</a><span class="fy-small fy-muted fy-from-medium"> · PR-2026-08</span></td>
+              <td data-card="meta" class="fy-num fy-from-expanded">5</td>
+              <td data-card="amount" class="fy-num">38,600.00</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">4,642.00</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">56.00</td>
+              <td data-card="meta" class="fy-num"><span class="fy-only-compact">Net </span>33,172.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td>
+              <td data-card="meta" class="fy-only-compact">5 people · employer CPF 4,642.00 · SDL 56.00 · paid 28 Aug</td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><a href="#payroll/runs/2026-07" class="fy-strong">July 2026</a><span class="fy-small fy-muted fy-from-medium"> · PR-2026-07</span></td>
+              <td data-card="meta" class="fy-num fy-from-expanded">5</td>
+              <td data-card="amount" class="fy-num">38,600.00</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">4,642.00</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">56.00</td>
+              <td data-card="meta" class="fy-num"><span class="fy-only-compact">Net </span>33,172.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td>
+              <td data-card="meta" class="fy-only-compact">5 people · employer CPF 4,642.00 · SDL 56.00 · paid 28 Jul</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot">
+          <span class="fy-small fy-muted fy-grow">Statuses: draft, awaiting approval, approved, posted, paid. Directors on no salary are not in these runs.</span>
+          <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#payroll/runs">Earlier runs</a>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="cpf-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="cpf-title">Paying the CPF Board</h2>
+          <button class="fy-info" type="button" aria-label="About CPF payments" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">CPF, SDL and the self-help group funds for a month are paid together by the 14th of the next month. Paying later adds interest.</p>
+          <div class="fy-tablewrap">
+            <table class="fy-table fy-table--compact">
+              <thead><tr><th scope="col">Item</th><th scope="col" class="fy-num">September</th><th scope="col" class="fy-num">October</th></tr></thead>
+              <tbody>
+                <tr><td>CPF contributions <span class="fy-muted">(employee and employer)</span></td><td class="fy-num">11,062.00</td><td class="fy-num">12,912.00</td></tr>
+                <tr><td>Skills Development Levy<button class="fy-info" type="button" aria-label="About SDL rounding" aria-expanded="false"><i data-icon="info"></i></button></td><td class="fy-num">66.00</td><td class="fy-num">66.00</td></tr>
+                <tr><td class="fy-sub">Sum per employee, rounded down to the dollar</td><td class="fy-num fy-muted">66.25</td><td class="fy-num fy-muted">66.25</td></tr>
+                <tr><td>Self-help group funds</td><td class="fy-num">8.00</td><td class="fy-num">8.00</td></tr>
+              </tbody>
+              <tfoot><tr><td>Pay to the CPF Board</td><td class="fy-num">11,136.00</td><td class="fy-num">12,986.00</td></tr></tfoot>
+            </table>
+          </div>
+          <div class="fy-row fy-row--wrap">
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>September submitted 8 Oct, paid 9 Oct</span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>October due 14 Nov</span>
+          </div>
+          <p class="fy-small fy-muted fy-expert-only">The 0.25 SDL below a dollar is never payable; it moves from <span class="fy-mono">2110</span> CPF &amp; SDL payable to <span class="fy-mono">7030</span> when the payment posts (RND-SDL).</p>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Go-live gate and statutory files">
+      <section class="fy-card" aria-labelledby="gate-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="gate-title">Ready to pay October</h2>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>5 of 5</span>
+        </div>
+        <div class="fy-card__body" style="padding-bottom: 0">
+          <p class="fy-small fy-secondary">Before a pay run can be approved, record how each legal duty for the month is met. A missing one stops approval.</p>
+        </div>
+        <ul class="fy-list fy-stagger">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-text" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Itemised payslips</span><span class="fy-list__meta">Sarah Koh sends each as an expiring link within 3 working days</span></span>
+            <span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check" class="fy-i--20"></i></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-pen-line" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Key employment terms</span><span class="fy-list__meta">No new starters in October</span></span>
+            <span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check" class="fy-i--20"></i></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="landmark" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">CPF submission and payment</span><span class="fy-list__meta">Mei Lin Tan enters it in CPF EZPay by 14 Nov</span></span>
+            <span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check" class="fy-i--20"></i></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-spreadsheet" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Employment income to IRAS (AIS)</span><span class="fy-list__meta">Ho &amp; Partners LLP files by 1 Mar 2027</span></span>
+            <span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check" class="fy-i--20"></i></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="plane" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Tax clearance (IR21)</span><span class="fy-list__meta">Applies to Chen Yu · filed 9 Oct</span></span>
+            <span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check" class="fy-i--20"></i></span>
+          </li>
+        </ul>
+        <div class="fy-card__foot">
+          <span class="fy-small fy-muted fy-grow">Evidence for each is kept with the arrangement. Directors on no salary don't need one.</span>
+          <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#payroll/arrangements">Change</a>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="files-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="files-title">Statutory files</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="file-down" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">CPF submission file, October</span><span class="fy-list__meta">For CPF EZPay · ready when the run is approved</span></span>
+            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-disabled="true">Download</button>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="file-spreadsheet" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">IR8A and AIS file, 2026</span><span class="fy-list__meta">7 people including directors · due 1 Mar 2027</span></span>
+            <span class="fy-muted fy-small">139 days</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="plane" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">IR21 for Chen Yu</span><span class="fy-list__meta">Filed 9 Oct · his pay is held until IRAS releases it</span></span>
+            <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Hold</span>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#payroll/runs/2026-10"><i data-icon="wallet"></i>Continue October pay run</a>
+  </div>
+</div>

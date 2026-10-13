@@ -1,0 +1,188 @@
+<!-- fyniq-screen {"nav": "compliance", "title": "Compliance Center", "mode": "expert", "heights": {"compact": 2950, "medium": 2600, "expanded": 1420}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#compliance">Compliance</a><i data-icon="chevron-right"></i><span>Controls</span></nav>
+      <h1 class="fy-h1">Compliance Center</h1>
+      <p class="fy-secondary">Every control in the registry with its status, last run, evidence and owner. 67 controls · checked 02:00 today.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="folder-archive"></i>Export evidence<span class="fy-tag">P2</span></button>
+    </div>
+  </div>
+
+  <div class="fy-row fy-row--wrap fy-only-compact" role="group" aria-label="Summary">
+    <span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>1 failing</span>
+    <span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>1 overdue</span>
+    <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 not assessed</span>
+    <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>60 passing</span>
+    <span class="fy-chip fy-chip--neutral"><i data-icon="minus"></i>4 not applicable</span>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles fy-from-medium">
+    <a class="fy-tile" href="#compliance/controls?status=fail">
+      <span class="fy-tile__label"><i data-icon="circle-x"></i>Failing</span>
+      <span class="fy-tile__value fy-num">1</span>
+      <span class="fy-tile__meta">CTL-CHG-11 · since 12 Oct 23:10</span>
+    </a>
+    <a class="fy-tile" href="#compliance/controls?status=overdue">
+      <span class="fy-tile__label"><i data-icon="clock-alert"></i>Overdue</span>
+      <span class="fy-tile__value fy-num">1</span>
+      <span class="fy-tile__meta">Weekly founder review, 15 days</span>
+    </a>
+    <a class="fy-tile" href="#compliance/controls?status=not-assessed">
+      <span class="fy-tile__label"><i data-icon="circle-dashed"></i>Not assessed</span>
+      <span class="fy-tile__value fy-num">1</span>
+      <span class="fy-tile__meta">ACRA extract out of date</span>
+    </a>
+    <a class="fy-tile" href="#compliance/controls?status=pass">
+      <span class="fy-tile__label"><i data-icon="circle-check"></i>Passing</span>
+      <span class="fy-tile__value fy-num">60</span>
+      <span class="fy-tile__meta">4 not applicable (MCP access is off)</span>
+    </a>
+  </div>
+
+  <div class="fy-chipset" role="group" aria-label="Framework">
+    <button class="fy-filter" type="button" aria-pressed="true">All frameworks</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Singapore statute</button>
+    <button class="fy-filter" type="button" aria-pressed="false">PDPA</button>
+    <button class="fy-filter" type="button" aria-pressed="false">ISO 27001</button>
+    <button class="fy-filter" type="button" aria-pressed="false">SOC 2</button>
+    <button class="fy-filter" type="button" aria-pressed="false">CSA Cyber Essentials / Cyber Trust</button>
+    <button class="fy-filter" type="button" aria-pressed="false">IMDA agentic AI</button>
+    <button class="fy-filter" type="button" aria-pressed="false">OWASP</button>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="ctl-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="ctl-title">Controls</h2>
+        <span class="fy-small fy-muted">Problems first</span>
+      </div>
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr><th scope="col">Control</th><th scope="col">Status</th><th scope="col" class="fy-from-expanded">Last run</th><th scope="col">Evidence</th><th scope="col" class="fy-from-expanded">Owner</th></tr>
+        </thead>
+        <tbody class="fy-stagger">
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-CHG-11</span> GitHub Actions pinned by SHA; least-privilege workflow permissions<br><span class="fy-small fy-error" style="font-weight: 500"><i data-icon="circle-x"></i>release.yml uses a version tag for one action. Pin it by SHA.</span><span class="fy-small fy-muted" style="font-weight: 400">ISO 8.30, 8.28 · SOC 2 CC8.1</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Fail</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">12 Oct 23:10 · CI</td>
+            <td data-card="meta"><a href="#compliance/evidence/ctl-chg-11">Lint report</a></td>
+            <td data-card="hide" class="fy-from-expanded">Arjun Rao</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-FIN-07</span> Segregation of duties per team mode; Founder-mode compensating controls operate<br><span class="fy-small fy-secondary" style="font-weight: 400">Weekly review for 28 Sep to 4 Oct not signed after 15 days. <a href="#compliance/attestations">Review now</a></span><br><span class="fy-small fy-muted" style="font-weight: 400">ISO 5.3 · SOC 2 CC6.1 · COSO P10</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Overdue</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">Today 02:00</td>
+            <td data-card="meta"><a href="#compliance/evidence/ctl-fin-07">Review sign-offs</a></td>
+            <td data-card="hide" class="fy-from-expanded">Arjun Rao</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-FIN-12</span> Equity register integrity<br><span class="fy-small fy-secondary" style="font-weight: 400">Not assessed: the ACRA extract (2 Sep) is older than the last change (8 Oct). <a href="#compliance/corporate-profile">Upload a new extract</a></span><br><span class="fy-small fy-muted" style="font-weight: 400">COSO P10 · SOC 2 PI1 · Companies Act, register of members</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Not assessed</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">Today 02:00</td>
+            <td data-card="meta"><a href="#compliance/evidence/ctl-fin-12">Reconciliation log</a></td>
+            <td data-card="hide" class="fy-from-expanded">Rachel Teo</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-STAT-01</span> GST F5 filed by the due date; every in-scope item acknowledged or excluded<br><span class="fy-small fy-muted" style="font-weight: 400">GST Act · IRAS InvoiceNow requirement</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">Today 06:00</td>
+            <td data-card="meta"><a href="#compliance/gst">Filing record</a></td>
+            <td data-card="hide" class="fy-from-expanded">Grace Ho</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-STAT-02</span> CPF paid by the 14th<br><span class="fy-small fy-muted" style="font-weight: 400">CPF Act</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">Today 06:00</td>
+            <td data-card="meta"><a href="#payroll/cpf/2026-09">Payment record</a></td>
+            <td data-card="hide" class="fy-from-expanded">Mei Lin Tan</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-AUD-02</span> Audit hash chain intact and anchored hourly<br><span class="fy-small fy-muted" style="font-weight: 400">ISO 8.15, 5.33 · SOC 2 CC7.2</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">Today 02:00</td>
+            <td data-card="meta"><a href="#compliance/audit-trail">Verification log</a></td>
+            <td data-card="hide" class="fy-from-expanded">Arjun Rao</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-FIN-04</span> Subledgers agree with control accounts<br><span class="fy-small fy-muted" style="font-weight: 400">SOC 2 PI1</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">Today 02:00</td>
+            <td data-card="meta"><a href="#compliance/evidence/ctl-fin-04">Verification log</a></td>
+            <td data-card="hide" class="fy-from-expanded">Grace Ho</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-DP-05</span> Data inventory, retention schedule and DPIAs current<br><span class="fy-small fy-muted" style="font-weight: 400">PDPA accountability · ISO 5.34</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">1 Oct · quarterly</td>
+            <td data-card="meta"><a href="#compliance/data-protection">Inventory v7</a></td>
+            <td data-card="hide" class="fy-from-expanded">Arjun Rao</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-AI-02</span> Every executed proposal has a matching human approval<br><span class="fy-small fy-muted" style="font-weight: 400">IMDA agentic AI · 0 exceptions</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small">Today 02:00</td>
+            <td data-card="meta"><a href="#compliance/evidence/ctl-ai-02">Reconciliation log</a></td>
+            <td data-card="hide" class="fy-from-expanded">Mei Lin Tan</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted">CTL-MCP-01</span> Agent-class tokens cannot write except by propose<br><span class="fy-small fy-muted" style="font-weight: 400">Not applicable while MCP access is off</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="minus"></i>N/A</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small fy-muted">–</td>
+            <td data-card="meta" class="fy-muted">–</td>
+            <td data-card="hide" class="fy-from-expanded">Arjun Rao</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="fy-card__foot"><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#compliance/controls?all=1">Show all 67<i data-icon="arrow-right"></i></a></div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Verification and posture">
+      <section class="fy-card" aria-labelledby="ver-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ver-title">Nightly verification</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Clean</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="sigma" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Balances recomputed</span><span class="fy-list__meta">48,213 journal lines match the stored balances</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="git-compare-arrows" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Subledgers = control accounts</span><span class="fy-list__meta" style="white-space: normal">8 of 8: AR, AP, payroll, assets, GST, prepayments, deferred revenue, claims</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="link" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Audit chain and anchors</span><span class="fy-list__meta">41,906 events · last anchor 02:00</span></span>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Ran 02:00 to 02:07 today. Results also show on Checks.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="scc-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="scc-title">Cloud posture</h2><span class="fy-small fy-muted">Security Command Center</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--wrap">
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>0 critical</span>
+            <span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>1 high</span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="info"></i>4 medium</span>
+          </div>
+          <div class="fy-plain"><i data-icon="shield-alert" class="fy-muted"></i><span class="fy-small">High: a firewall rule allows SSH from the internet on the staging network. Fix within 7 days; day 3 of 7.</span></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="fw-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="fw-title">By framework</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-stack fy-stack--2"><div class="fy-row fy-row--between fy-small"><span>Singapore statute</span><span class="fy-num">6 of 6</span></div><div class="fy-progress fy-progress--good" role="img" aria-label="6 of 6 passing"><span style="width: 100%"></span></div></div>
+          <div class="fy-stack fy-stack--2"><div class="fy-row fy-row--between fy-small"><span>PDPA</span><span class="fy-num">9 of 9</span></div><div class="fy-progress fy-progress--good" role="img" aria-label="9 of 9 passing"><span style="width: 100%"></span></div></div>
+          <div class="fy-stack fy-stack--2"><div class="fy-row fy-row--between fy-small"><span>ISO 27001</span><span class="fy-num">50 of 52</span></div><div class="fy-progress fy-progress--warning" role="img" aria-label="50 of 52 passing"><span style="width: 96%"></span></div></div>
+          <div class="fy-stack fy-stack--2"><div class="fy-row fy-row--between fy-small"><span>SOC 2</span><span class="fy-num">46 of 49</span></div><div class="fy-progress fy-progress--warning" role="img" aria-label="46 of 49 passing"><span style="width: 94%"></span></div></div>
+          <div class="fy-stack fy-stack--2"><div class="fy-row fy-row--between fy-small"><span>CSA Cyber Essentials / Cyber Trust</span><span class="fy-num">8 of 8</span></div><div class="fy-progress fy-progress--good" role="img" aria-label="8 of 8 passing"><span style="width: 100%"></span></div></div>
+          <div class="fy-stack fy-stack--2"><div class="fy-row fy-row--between fy-small"><span>IMDA agentic AI</span><span class="fy-num">10 of 10 · 3 N/A</span></div><div class="fy-progress fy-progress--good" role="img" aria-label="10 of 10 applicable passing"><span style="width: 100%"></span></div></div>
+          <div class="fy-stack fy-stack--2"><div class="fy-row fy-row--between fy-small"><span>OWASP</span><span class="fy-num">14 of 14</span></div><div class="fy-progress fy-progress--good" role="img" aria-label="14 of 14 passing"><span style="width: 100%"></span></div></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>

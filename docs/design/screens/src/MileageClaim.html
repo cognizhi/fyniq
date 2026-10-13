@@ -1,0 +1,154 @@
+<!-- fyniq-screen {"nav": "my-claims", "title": "Mileage trip", "mode": "basic", "heights": {"compact": 2320, "medium": 1860, "expanded": 1100}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#me/claims">My claims</a><i data-icon="chevron-right"></i><span>Mileage trip</span></nav>
+      <h1 class="fy-h1">Mileage trip</h1>
+      <p class="fy-secondary">A business trip in your own vehicle, paid back at Cognizhi's rate per km.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button">Save draft</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Submit for approval</button>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="trip-title">
+      <div class="fy-card__head"><h2 class="fy-h3" id="trip-title">Trip</h2><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></div>
+      <div class="fy-card__body fy-stack">
+        <div class="fy-form fy-form--2">
+          <div class="fy-field">
+            <label class="fy-label" for="ml-date">Trip date<span class="fy-req" aria-hidden="true">*</span></label>
+            <input class="fy-input" id="ml-date" value="12 Oct 2026" readonly="readonly" aria-describedby="ml-date-help">
+            <span class="fy-help" id="ml-date-help">Trips more than 60 days old (before 14 Aug) need finance approval and a reason.</span>
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="ml-proj">Project</label>
+            <select class="fy-select" id="ml-proj"><option>Lumen Health pilot</option><option>Acme data platform</option><option>No project</option></select>
+          </div>
+          <div class="fy-field fy-field--full">
+            <label class="fy-label" for="ml-purpose">Purpose<span class="fy-req" aria-hidden="true">*</span></label>
+            <input class="fy-input" id="ml-purpose" value="Pilot review meeting at Lumen Health" readonly="readonly">
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="ml-from">From<span class="fy-req" aria-hidden="true">*</span></label>
+            <input class="fy-input" id="ml-from" value="Office · 71 Robinson Road" readonly="readonly">
+            <div class="fy-chipset" role="group" aria-label="Saved places for From">
+              <button class="fy-filter" type="button" aria-pressed="true"><i data-icon="building"></i>Office</button>
+              <button class="fy-filter" type="button" aria-pressed="false">Home</button>
+            </div>
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="ml-to">To<span class="fy-req" aria-hidden="true">*</span></label>
+            <input class="fy-input" id="ml-to" value="Lumen Health HQ" readonly="readonly">
+            <div class="fy-chipset" role="group" aria-label="Saved places for To">
+              <button class="fy-filter" type="button" aria-pressed="true"><i data-icon="map-pin"></i>Lumen Health HQ</button>
+              <button class="fy-filter" type="button" aria-pressed="false">Acme Analytics</button>
+            </div>
+          </div>
+          <div class="fy-field">
+            <span class="fy-label" id="ml-way-l">Journey</span>
+            <div class="fy-segmented" role="radiogroup" aria-labelledby="ml-way-l" style="align-self: flex-start">
+              <button type="button" role="radio" aria-checked="false">One way</button>
+              <button type="button" role="radio" aria-checked="true">Return</button>
+            </div>
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="ml-km">Distance, one way<span class="fy-req" aria-hidden="true">*</span></label>
+            <div class="fy-inputgroup">
+              <input class="fy-input fy-num" id="ml-km" value="18.4" inputmode="decimal" readonly="readonly" aria-describedby="ml-km-help">
+              <span class="fy-inputgroup__addon" style="border-right: 0; border-left: 1px solid var(--border)">km</span>
+            </div>
+            <span class="fy-help" id="ml-km-help">Read it from a map app.</span>
+          </div>
+          <fieldset class="fy-fieldset fy-field--full">
+            <legend>Vehicle</legend>
+            <div class="fy-grid fy-grid--2" role="radiogroup" aria-label="Vehicle" style="gap: var(--space-2)">
+              <button class="fy-choice" type="button" role="radio" aria-checked="true">
+                <span class="fy-radio"></span>
+                <span class="fy-stack" style="gap: 2px"><span class="fy-strong fy-row"><i data-icon="car"></i>Car</span><span class="fy-small fy-muted">S$0.60 per km</span></span>
+              </button>
+              <button class="fy-choice" type="button" role="radio" aria-checked="false">
+                <span class="fy-radio"></span>
+                <span class="fy-stack" style="gap: 2px"><span class="fy-strong fy-row"><i data-icon="motorbike"></i>Motorcycle</span><span class="fy-small fy-muted">S$0.25 per km</span></span>
+              </button>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="fy-plain">
+          <i data-icon="map" class="fy-i--20"></i>
+          <div class="fy-stack" style="gap: 2px">
+            <span class="fy-strong">Distance is typed in</span>
+            <span class="fy-small fy-secondary">A maps service could work it out, but Cognizhi has it turned off, so your addresses stay in Fyniq. An Owner can turn it on in Settings.</span>
+          </div>
+        </div>
+
+        <div class="fy-dropzone" style="padding: var(--space-4)">
+          <i data-icon="image-plus" class="fy-i--24"></i>
+          <span><strong style="color: var(--text-primary)">Add a map screenshot</strong> <span class="fy-small">(optional evidence)</span></span>
+          <span class="fy-small">Paste, drop or <a href="#me/claims/new/mileage">choose a file</a></span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Amount and mileage log">
+      <section class="fy-card" aria-labelledby="amt-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="amt-title">Amount</h2>
+          <button class="fy-info" type="button" aria-label="How the amount is worked out" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <span class="fy-tile__value fy-num"><span class="fy-muted" style="font-size: var(--fs-md)">S$</span>22.08</span>
+          <table class="fy-table fy-table--compact">
+            <caption class="fy-sr">How the amount is worked out</caption>
+            <tbody>
+              <tr><td>One way</td><td class="fy-num">18.4 km</td></tr>
+              <tr><td>Return, × 2</td><td class="fy-num">36.8 km</td></tr>
+              <tr><td>Car rate from 1 Jan 2026</td><td class="fy-num">S$0.60 per km</td></tr>
+            </tbody>
+            <tfoot>
+              <tr><td>36.8 km × S$0.60</td><td class="fy-num">S$22.08</td></tr>
+            </tfoot>
+          </table>
+          <p class="fy-small fy-muted fy-basic-only">Distance is rounded to 0.1 km, then the amount to the cent.</p>
+          <p class="fy-small fy-muted fy-expert-only">Rounded with <span class="fy-mono">RND-MILEAGE</span>: km to 0.1 half-up, then cents half-up, per trip. Posts to Travel (mileage) and <span class="fy-mono">2150</span> Expense claims payable.</p>
+          <div class="fy-row fy-row--top" style="gap: var(--space-2)">
+            <span class="fy-chip fy-chip--neutral"><i data-icon="circle-slash"></i>No GST</span>
+            <span class="fy-small fy-secondary">There's no tax invoice, and GST on car expenses can't be claimed.</span>
+          </div>
+          <p class="fy-small fy-muted">Business mileage at Cognizhi's rate isn't taxable pay for you.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="log-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="log-title">Your mileage log</h2>
+          <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#me/claims/mileage">All months</a>
+        </div>
+        <table class="fy-table fy-table--compact">
+          <thead>
+            <tr><th scope="col">Trip</th><th scope="col" class="fy-num">km</th><th scope="col" class="fy-num">SGD</th></tr>
+          </thead>
+          <tbody>
+            <tr class="fy-group"><td colspan="3">October · draft</td></tr>
+            <tr><td>12 Oct · Lumen Health</td><td class="fy-num">36.8</td><td class="fy-num">22.08</td></tr>
+            <tr class="fy-group"><td colspan="3">September · CLM-0045 submitted</td></tr>
+            <tr><td>4 Sep · Lumen Health</td><td class="fy-num">36.8</td><td class="fy-num">22.08</td></tr>
+            <tr><td>17 Sep · Acme Analytics</td><td class="fy-num">24.6</td><td class="fy-num">14.76</td></tr>
+            <tr><td>25 Sep · Kopi Labs</td><td class="fy-num">13.2</td><td class="fy-num">7.92</td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td>September</td><td class="fy-num">74.6</td><td class="fy-num">44.76</td></tr>
+          </tfoot>
+        </table>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Every trip is from the Office and back, by car.</span></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Submit S$22.08</button>
+  </div>
+</div>

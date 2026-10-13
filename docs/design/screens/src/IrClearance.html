@@ -1,0 +1,154 @@
+<!-- fyniq-screen {"nav": "payroll", "title": "IR21 clearance", "mode": "expert", "heights": {"compact": 3250, "medium": 2550, "expanded": 1450}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#payroll">Payroll</a><i data-icon="chevron-right"></i><a href="#payroll/employees">Employees</a><i data-icon="chevron-right"></i><a href="#payroll/employees/chen-yu">Chen Yu</a><i data-icon="chevron-right"></i><span>IR21</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <div class="fy-row fy-row--wrap">
+        <h1 class="fy-h1">IR21 tax clearance: Chen Yu</h1>
+        <span class="fy-chip fy-chip--serious"><i data-icon="lock"></i>Payments held</span>
+      </div>
+      <p class="fy-secondary">Employment Pass · resigned 1 Oct 2026 · last day 30 Nov 2026 · Data scientist</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="file-text"></i>View the IR21 filed</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="upload"></i>Upload IRAS’s notification</button>
+    </div>
+  </div>
+
+  <ol class="fy-steps" aria-label="IR21 steps">
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Notify IRAS</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">2</span>Hold payments</li>
+    <li class="fy-step"><span class="fy-step__n">3</span>IRAS’s notification</li>
+    <li class="fy-step"><span class="fy-step__n">4</span>Release</li>
+  </ol>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="lock" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>Held until IRAS’s clearance (C.2 #44)</strong>
+      <span class="fy-small">Since 1 Oct, every payment due to Chen Yu is held on every payment path: pay runs, payment batches, claims and advances. Releasing or scheduling any of it before IRAS’s notification fails check C.2 #44.</span>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="ir-notify">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="ir-notify">1 · Notify IRAS</h2>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Filed on time</span>
+        </div>
+        <div class="fy-card__body">
+          <dl class="fy-dl fy-dl--3">
+            <div><dt>Why IR21 applies</dt><dd>Non-citizen employee ceasing employment</dd></div>
+            <div><dt>Due by<button class="fy-info" type="button" aria-label="About the IR21 due date" aria-expanded="false"><i data-icon="info"></i></button></dt><dd>30 Oct 2026 <span class="fy-muted fy-small">· one month before the last day</span></dd></div>
+            <div><dt>Filed</dt><dd>9 Oct 2026 by Grace Ho, Ho &amp; Partners LLP <span class="fy-muted fy-small">· myTax Portal</span></dd></div>
+            <div><dt>Hold starts</dt><dd>1 Oct 2026 <span class="fy-muted fy-small">· the day we knew</span></dd></div>
+            <div><dt>Exemption</dt><dd class="fy-muted">None recorded</dd></div>
+            <div><dt>IRAS acknowledgement</dt><dd><a href="#documents/ir21-ack">IR21 acknowledgement.pdf</a></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ir-held">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="ir-held">2 · Held payments</h2>
+          <span class="fy-badge fy-badge--quiet">3</span>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">What is due</th><th scope="col">Payment path</th><th scope="col">Would be paid</th><th scope="col" class="fy-num" style="text-align: right">Amount (SGD)</th><th scope="col">Status</th></tr></thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title" style="padding-top: 6px; padding-bottom: 6px">October salary<span class="fy-small fy-muted fy-expert-only" style="display: block; font-weight: 400">Stays in 2100 Salaries payable</span></td>
+              <td data-card="meta"><a href="#payroll/pay-runs/PR-2026-10">Pay run PR-2026-10</a></td>
+              <td data-card="hide">28 Oct</td>
+              <td class="fy-num" data-card="amount"><a href="#payroll/pay-runs/PR-2026-10/chen-yu">9,000.00</a></td>
+              <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="lock"></i>Held</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: 6px; padding-bottom: 6px">Approved claims CLM-0042 and CLM-0043<span class="fy-small fy-muted fy-expert-only" style="display: block; font-weight: 400">Stays in 2150 Expense claims payable</span></td>
+              <td data-card="meta"><a href="#purchases/batches">Payment batch, 16 Oct</a></td>
+              <td data-card="hide">16 Oct</td>
+              <td class="fy-num" data-card="amount"><a href="#purchases/claims?person=chen-yu">632.60</a></td>
+              <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="lock"></i>Held</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: 6px; padding-bottom: 6px">Final pay<span class="fy-small fy-muted" style="display: block; font-weight: 400">November salary and 5 days’ unused leave</span></td>
+              <td data-card="meta">Final pay run</td>
+              <td data-card="hide">30 Nov</td>
+              <td class="fy-num" data-card="amount">11,076.92</td>
+              <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="lock"></i>Held</span></td>
+            </tr>
+          </tbody>
+          <tfoot class="fy-from-medium"><tr><td colspan="3">Total held</td><td class="fy-num">20,709.52</td><td></td></tr></tfoot>
+        </table>
+        <div class="fy-row fy-row--between fy-only-compact fy-strong" style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border-strong)"><span>Total held</span><span class="fy-num">S$20,709.52</span></div>
+        <div class="fy-card__foot fy-stack fy-stack--2" style="align-items: stretch">
+          <div class="fy-row fy-row--top">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="hand-coins" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <span class="fy-row fy-row--wrap"><span class="fy-strong">Cash advance not yet settled</span><span class="fy-num fy-strong">S$800.00</span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Check before deducting</span></span>
+              <span class="fy-small fy-secondary">Recovering it from the final pay is checked against the salary-deduction rules for a termination (FR-PAY-16) [verify with the accountant]. Until then it stays on 1250 Staff &amp; director advances.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ir-paths">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ir-paths">Where the hold applies</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="wallet" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Pay runs</span><span class="fy-list__meta" style="white-space: normal">PR-2026-10 pays the other 5 employees; Chen Yu’s line is held</span></span><span class="fy-chip fy-chip--serious"><i data-icon="lock"></i>Held</span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="banknote" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Payment batches</span><span class="fy-list__meta" style="white-space: normal">Chen Yu can’t be added to a batch while the hold is on</span></span><span class="fy-chip fy-chip--serious"><i data-icon="lock"></i>Held</span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="receipt-text" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Claims and advances</span><span class="fy-list__meta" style="white-space: normal">Approved claims wait; no new advance can be paid</span></span><span class="fy-chip fy-chip--serious"><i data-icon="lock"></i>Held</span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="user-round" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Director balances</span><span class="fy-list__meta" style="white-space: normal">Not a director: nothing to hold [verify the rule with the tax agent]</span></span><span class="fy-chip fy-chip--neutral"><i data-icon="minus"></i>None</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Notification and release">
+      <section class="fy-card" aria-labelledby="ir-iras">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="ir-iras">3 · IRAS’s notification</h2>
+          <span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Waiting</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Upload IRAS’s notification to release the money, or its tax directive. If IRAS asks us to pay tax first, the payment comes out of the held amount before release.</p>
+          <div class="fy-dropzone">
+            <i data-icon="file-up" class="fy-i--24"></i>
+            <span class="fy-strong">Drop the IRAS letter here</span>
+            <span class="fy-small fy-muted">PDF or image from the myTax Portal · kept as evidence</span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Choose a file</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ir-release">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ir-release">4 · Release</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Releasing needs two people: one prepares, another approves.</p>
+          <ul class="fy-stack fy-stack--2">
+            <li class="fy-row"><span class="fy-avatar fy-avatar--sm" aria-hidden="true">ML</span><span class="fy-grow fy-small">Mei Lin Tan prepares</span><span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Waiting</span></li>
+            <li class="fy-row"><span class="fy-avatar fy-avatar--sm" aria-hidden="true">AR</span><span class="fy-grow fy-small">Arjun Rao approves</span><span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Waiting</span></li>
+          </ul>
+          <button class="fy-btn fy-btn--secondary fy-btn--block" type="button" aria-disabled="true" aria-describedby="ir-release-why"><i data-icon="lock-open"></i>Release held payments</button>
+          <p class="fy-help" id="ir-release-why">Available once IRAS’s notification is uploaded.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ir-activity">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ir-activity">Activity</h2></div>
+        <div class="fy-card__body">
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="banknote"></i></span><span class="fy-small">The 16 Oct batch holds CLM-0042 and CLM-0043</span><span class="fy-small fy-muted">System · 13 Oct, 08:30</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-small">IR21 filed; acknowledgement attached</span><span class="fy-small fy-muted">Grace Ho · 9 Oct, 16:20</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="lock"></i></span><span class="fy-small">Hold applied to all payments due</span><span class="fy-small fy-muted">System · 1 Oct, 11:05</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="user-x"></i></span><span class="fy-small">Resignation recorded, last day 30 Nov</span><span class="fy-small fy-muted">Mei Lin Tan · 1 Oct, 11:04</span></li>
+          </ol>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="upload"></i>Upload IRAS’s notification</button>
+  </div>
+</div>

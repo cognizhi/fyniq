@@ -1,0 +1,95 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Currencies", "mode": "expert", "heights": {"compact": 2500, "medium": 1700, "expanded": 1550}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><span>Currencies</span></nav>
+      <h1 class="fy-h1">Exchange rates and revaluation</h1>
+      <p class="fy-secondary">Base currency SGD · rates from the MAS daily feed · USD and MYR in use</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="plus"></i>Add a rate</button>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Currency views">
+    <button type="button" role="tab" aria-selected="false">Rates</button>
+    <button type="button" role="tab" aria-selected="true">Revaluation</button>
+  </div>
+
+  <div class="fy-banner fy-banner--critical" role="status">
+    <i data-icon="circle-x" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>No AUD rate for 12 Oct</strong><span class="fy-small">The Canva bill (BILL-0929, A$420.00) can't post until there is a rate for its date. The feed had no AUD rate that day; add one by hand with its source.</span></div>
+    <div class="fy-banner__action"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Add AUD rate</button></div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="fx-rates">
+    <div class="fy-card__head"><h2 class="fy-h3" id="fx-rates">Recent rates</h2><span class="fy-small fy-muted">1 unit of currency in SGD</span></div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-table--cards fy-table--compact">
+        <thead><tr><th scope="col">Currency</th><th scope="col">Date</th><th scope="col" class="fy-num">Rate</th><th scope="col">Source</th><th scope="col">Check</th></tr></thead>
+        <tbody class="fy-stagger">
+          <tr><td data-card="title">USD</td><td data-card="meta">13 Oct 2026</td><td data-card="amount" class="fy-num">1.2867</td><td data-card="meta">MAS daily feed</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td></tr>
+          <tr><td data-card="title">USD</td><td data-card="meta">30 Sep 2026</td><td data-card="amount" class="fy-num">1.2867</td><td data-card="meta">Manual override · Grace Ho · "MAS published late"</td><td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>2 rates for this date</span></td></tr>
+          <tr><td data-card="title">USD</td><td data-card="meta">30 Sep 2026</td><td data-card="amount" class="fy-num">1.2864</td><td data-card="meta">MAS daily feed</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-pause"></i>Not used</span></td></tr>
+          <tr><td data-card="title">MYR</td><td data-card="meta">30 Sep 2026</td><td data-card="amount" class="fy-num">0.3056</td><td data-card="meta">MAS daily feed</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td></tr>
+          <tr><td data-card="title">AUD</td><td data-card="meta">12 Oct 2026</td><td data-card="amount" class="fy-num">—</td><td data-card="meta">Missing from the feed</td><td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>No rate</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="fy-card__foot"><span class="fy-small fy-muted">The manual override wins over the feed for 30 Sep. Both are kept, and the override is in the audit trail.</span></div>
+  </section>
+
+  <section class="fy-card" aria-labelledby="fx-run">
+    <div class="fy-card__head" style="flex-wrap: wrap">
+      <h2 class="fy-h3" id="fx-run">Revaluation at 30 Sep 2026</h2>
+      <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Previewed · <span class="fy-mono">JNL-0247</span> draft</span>
+    </div>
+    <div class="fy-card__body"><p class="fy-small">Foreign-currency balances that will be settled in money are restated at the month-end rate. The difference is an unrealised gain or loss, reversed on 1 Oct.</p></div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr><th scope="col">Item</th><th scope="col" class="fy-num fy-from-medium">Open (USD)</th><th scope="col" class="fy-num fy-from-expanded">Carrying (SGD)</th><th scope="col" class="fy-num fy-from-expanded">At 1.2867 (SGD)</th><th scope="col" class="fy-num">Gain or loss</th></tr>
+        </thead>
+        <tbody>
+          <tr><td data-card="title"><span class="fy-acct">1030</span>Wise (USD)</td><td data-card="meta" class="fy-num fy-from-medium">16,240.00</td><td data-card="hide" class="fy-num fy-from-expanded">20,803.44</td><td data-card="hide" class="fy-num fy-from-expanded">20,896.01</td><td data-card="amount" class="fy-num"><a href="#trace/reval-1030">92.57</a></td></tr>
+          <tr><td data-card="title"><span class="fy-acct">1040</span>Airwallex (USD)</td><td data-card="meta" class="fy-num fy-from-medium">5,980.00</td><td data-card="hide" class="fy-num fy-from-expanded">7,660.37</td><td data-card="hide" class="fy-num fy-from-expanded">7,694.47</td><td data-card="amount" class="fy-num"><a href="#trace/reval-1040">34.10</a></td></tr>
+          <tr><td data-card="title"><span class="fy-acct">1100</span>Orbital Freight Asia, <span class="fy-mono">INV-0135</span></td><td data-card="meta" class="fy-num fy-from-medium">3,804.10</td><td data-card="hide" class="fy-num fy-from-expanded">4,830.07</td><td data-card="hide" class="fy-num fy-from-expanded">4,894.74</td><td data-card="amount" class="fy-num"><a href="#trace/reval-inv-0135">64.67</a></td></tr>
+          <tr><td data-card="title"><span class="fy-acct">2010</span>GitHub, <span class="fy-mono">BILL-0898</span></td><td data-card="meta" class="fy-num fy-from-medium">1,050.00</td><td data-card="hide" class="fy-num fy-from-expanded">1,345.05</td><td data-card="hide" class="fy-num fy-from-expanded">1,351.04</td><td data-card="amount" class="fy-num"><a href="#trace/reval-bill-0898">−5.99</a></td></tr>
+        </tbody>
+        <tfoot><tr><td>Net unrealised gain</td><td class="fy-from-medium"></td><td class="fy-from-expanded"></td><td class="fy-from-expanded"></td><td class="fy-num">185.35</td></tr></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <div class="fy-grid fy-grid--2">
+    <section class="fy-card" aria-labelledby="fx-post">
+      <div class="fy-card__head"><h2 class="fy-h3" id="fx-post">Posting preview</h2><span class="fy-small fy-muted">30 Sep, reversed 1 Oct</span></div>
+      <table class="fy-table fy-table--compact fy-ledger">
+        <thead><tr><th scope="col">Account</th><th scope="col" style="text-align: right">Debit</th><th scope="col" style="text-align: right">Credit</th></tr></thead>
+        <tbody>
+          <tr><td><span class="fy-acct">1030</span>Wise (USD)</td><td class="fy-num">92.57</td><td></td></tr>
+          <tr><td><span class="fy-acct">1040</span>Airwallex (USD)</td><td class="fy-num">34.10</td><td></td></tr>
+          <tr><td><span class="fy-acct">1100</span>Accounts receivable</td><td class="fy-num">64.67</td><td></td></tr>
+          <tr><td><span class="fy-acct">7040</span>Unrealised FX gain or loss</td><td class="fy-num">5.99</td><td class="fy-num">191.34</td></tr>
+          <tr><td><span class="fy-acct">2010</span>Accounts payable</td><td></td><td class="fy-num">5.99</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="fy-num">197.33</td><td class="fy-num">197.33</td></tr></tfoot>
+      </table>
+    </section>
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="fx-not">
+      <h2 class="fy-h3" id="fx-not">Not revalued</h2>
+      <p class="fy-small fy-muted">These stay at the rate on the day they were recorded, because they will not be settled in money.</p>
+      <ul class="fy-list">
+        <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Prepaid Figma licence, paid in USD</span><span class="fy-list__meta"><span class="fy-acct">1210</span>Prepayments</span></span></li>
+        <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">MacBook Pro bought in USD</span><span class="fy-list__meta"><span class="fy-acct">1510</span>Computer equipment</span></span></li>
+        <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">SAFE from Lion Rock Ventures</span><span class="fy-list__meta">In SGD, so nothing to revalue</span></span></li>
+      </ul>
+      <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>August revalued</span><span class="fy-small fy-muted"><span class="fy-mono">JNL-0228</span>, reversed 1 Sep</span></div>
+    </section>
+  </div>
+
+  <div class="fy-actionbar">
+    <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="refresh-cw"></i>Preview again</button>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="check"></i>Post revaluation</button>
+  </div>
+</div>

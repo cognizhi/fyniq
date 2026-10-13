@@ -1,0 +1,66 @@
+<!-- fyniq-screen {"nav": "contacts", "title": "WeWork Singapore", "mode": "basic", "heights": {"compact": 1550, "medium": 1400, "expanded": 1250}} -->
+<div class="fy-page">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#contacts">Contacts</a><i data-icon="chevron-right"></i><span>WeWork Singapore Pte Ltd</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">WeWork Singapore Pte Ltd</h1><span class="fy-tag">Supplier</span></div>
+      <p class="fy-secondary">We owe S$5,955.75 · BILL-0921 due 31 Oct</p>
+    </div>
+  </div>
+  <div class="fy-skel fy-skel--block" style="height: 120px"></div>
+  <div class="fy-skel fy-skel--block" style="height: 240px"></div>
+</div>
+
+<div class="fy-scrim">
+  <section class="fy-dialog fy-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="bd-title">
+    <div class="fy-grabber fy-only-compact"></div>
+    <div class="fy-dialog__head">
+      <div class="fy-stack fy-stack--2 fy-grow"><span class="fy-eyebrow">WeWork Singapore Pte Ltd</span><h2 class="fy-h2" id="bd-title">Change payee bank details</h2></div>
+      <button class="fy-iconbtn" type="button" aria-label="Close without saving"><i data-icon="x" class="fy-i--20"></i></button>
+    </div>
+    <div class="fy-dialog__body">
+      <div class="fy-banner fy-banner--warning" role="note">
+        <i data-icon="snowflake" class="fy-i--20"></i>
+        <div class="fy-banner__text"><strong>Payments to WeWork freeze until a second person approves</strong><span class="fy-small">BILL-0921 (S$5,955.75) is already approved for payment; it will need approving again after the change.</span></div>
+      </div>
+
+      <div class="fy-grid fy-grid--2">
+        <div class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--2">
+          <span class="fy-tile__label">Current · version 1</span>
+          <span class="fy-strong">Citibank Singapore</span>
+          <span class="fy-mono">•••• 8810</span>
+          <span class="fy-small fy-muted">WeWork Singapore Pte Ltd · since 5 Jan</span>
+        </div>
+        <div class="fy-form">
+          <div class="fy-field"><label class="fy-label" for="bd-bank">New bank<span class="fy-req" aria-hidden="true">*</span></label><input class="fy-input" id="bd-bank" value="Standard Chartered Bank (Singapore)" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="bd-acct">New account number<span class="fy-req" aria-hidden="true">*</span></label><input class="fy-input fy-mono" id="bd-acct" value="0108552391" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="bd-name">Name on the account<span class="fy-req" aria-hidden="true">*</span></label><input class="fy-input" id="bd-name" value="WeWork Singapore Pte Ltd" readonly="readonly"><span class="fy-help">Name check with the bank<span class="fy-tag fy-tag--expert">P2</span></span></div>
+        </div>
+      </div>
+
+      <fieldset class="fy-fieldset fy-stack fy-stack--3">
+        <legend class="fy-strong">Evidence</legend>
+        <div class="fy-stack fy-stack--2">
+          <span class="fy-label">Bank letter or statement<span class="fy-req" aria-hidden="true">*</span></span>
+          <div class="fy-dropzone" style="border-color: var(--status-critical)" aria-describedby="bd-ev-err"><i data-icon="upload" class="fy-i--24"></i><span class="fy-small">Drop a PDF or image, or <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">choose a file</button></span></div>
+          <span class="fy-error" id="bd-ev-err"><i data-icon="circle-x"></i>Add a letter or statement from WeWork's bank showing the new account name and number. (BANK_EVIDENCE_REQUIRED)</span>
+        </div>
+        <div class="fy-form fy-form--2">
+          <div class="fy-field"><label class="fy-label" for="bd-who">Call-back: who you spoke to</label><input class="fy-input" id="bd-who" value="Jasmine Lee, WeWork billing" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="bd-when">When</label><input class="fy-input" id="bd-when" value="13 Oct 2026, 10:30" readonly="readonly"></div>
+          <div class="fy-field fy-field--full"><label class="fy-label" for="bd-num">Number you called</label><input class="fy-input" id="bd-num" value="+65 6812 3000 (from our contract)" readonly="readonly"><span class="fy-help">Use a number you already had, never one from the email asking for the change.</span></div>
+        </div>
+      </fieldset>
+
+      <div class="fy-stack fy-stack--2">
+        <span class="fy-label" id="bd-appr-l">Second approver</span>
+        <div class="fy-segmented" role="radiogroup" aria-labelledby="bd-appr-l"><button type="button" role="radio" aria-checked="true">Arjun Rao</button><button type="button" role="radio" aria-checked="false">Grace Ho</button></div>
+        <span class="fy-small fy-muted">You can't approve your own change. Mei Lin Tan and Arjun Rao are both told when it is submitted.</span>
+      </div>
+    </div>
+    <div class="fy-dialog__foot">
+      <button class="fy-btn fy-btn--secondary" type="button">Cancel</button>
+      <button class="fy-btn fy-btn--primary" type="button" aria-disabled="true" aria-describedby="bd-ev-err"><i data-icon="key-round"></i>Submit with passkey</button>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,290 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Knowledge base", "mode": "expert", "heights": {"compact": 4600, "medium": 3200, "expanded": 2100}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/ai">AI</a><i data-icon="chevron-right"></i><span aria-current="page">Knowledge base</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Knowledge base</h1>
+      <p class="fy-secondary">The compiled pages the assistant reads for know-how. People read the user guide; these pages appear only here.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="refresh-cw"></i>Recompile changed sources</button>
+      <a class="fy-btn fy-btn--primary" href="#inbox/approval-kb-218"><i data-icon="upload"></i>Review publish request</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="status">
+    <i data-icon="hourglass" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Publishing 2 organisation pages is waiting for approval</span>
+      <span class="fy-small fy-secondary">Submitted by Mei Lin Tan at 08:15 today: org.expense-policy v5 and org.founder-pay-choice v3. In Founder mode you may approve it yourself; it then goes into Arjun Rao’s weekly review. One page contradicts a setting (below).</span>
+    </div>
+  </div>
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#inbox/approval-kb-218"><i data-icon="upload"></i>Review publish request</a>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <div class="fy-tile">
+      <span class="fy-tile__label"><i data-icon="book-open"></i>Platform pages</span>
+      <span class="fy-tile__value fy-num">4</span>
+      <span class="fy-tile__meta">From release v0.4.0 · reviewed in git</span>
+    </div>
+    <div class="fy-tile">
+      <span class="fy-tile__label"><i data-icon="building"></i>Organisation pages</span>
+      <span class="fy-tile__value fy-num">3</span>
+      <span class="fy-tile__meta">Snapshot 7 · 2 drafts waiting</span>
+    </div>
+    <div class="fy-tile">
+      <span class="fy-tile__label"><i data-icon="list-tree"></i>Index size<button class="fy-info" type="button" aria-label="About the index" aria-expanded="false"><i data-icon="info"></i></button></span>
+      <span class="fy-tile__value fy-num">2,140<small>tokens</small></span>
+      <span class="fy-tile__meta">of 8,000 before it splits into sections</span>
+    </div>
+    <div class="fy-tile">
+      <span class="fy-tile__label"><i data-icon="list-checks"></i>Lint findings</span>
+      <span class="fy-tile__value fy-num">4</span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>1 contradiction</span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>2</span></span>
+    </div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="idx-title">
+    <div class="fy-card__head">
+      <h2 class="fy-h3" id="idx-title">Index</h2>
+      <div class="fy-segmented fy-from-medium" role="radiogroup" aria-label="Which pages">
+        <button type="button" role="radio" aria-checked="true">All 7</button>
+        <button type="button" role="radio" aria-checked="false">Platform 4</button>
+        <button type="button" role="radio" aria-checked="false">Organisation 3</button>
+      </div>
+    </div>
+    <div class="fy-card__body" style="padding-bottom: var(--space-3)">
+      <div class="fy-field">
+        <label class="fy-label fy-sr" for="kb-search">Search pages</label>
+        <div class="fy-inputgroup">
+          <span class="fy-inputgroup__addon"><i data-icon="search"></i></span>
+          <input class="fy-input" id="kb-search" placeholder="Search keys, titles and aliases">
+        </div>
+      </div>
+    </div>
+    <table class="fy-table fy-table--cards fy-table--compact">
+      <thead>
+        <tr>
+          <th scope="col">Key and title</th>
+          <th scope="col" class="fy-from-expanded">Sources</th>
+          <th scope="col">Written by</th>
+          <th scope="col">Class · taint</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody class="fy-stagger">
+        <tr class="fy-group"><td colspan="5" style="grid-column: 1 / -1">Platform · release v0.4.0</td></tr>
+        <tr>
+          <td data-card="title"><a class="fy-mono" href="#kb/founders.balance">founders.balance</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">What the company owes a founder</span></td>
+          <td data-card="hide" class="fy-from-expanded fy-small fy-mono fy-muted">founders-money.md · 7c1e…a9b4</td>
+          <td data-card="meta"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span> compiled 12 Oct</td>
+          <td data-card="meta" class="fy-small">general · trusted</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+        </tr>
+        <tr>
+          <td data-card="title"><a class="fy-mono" href="#kb/founders.pay-choice">founders.pay-choice</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">How a founder can be paid</span></td>
+          <td data-card="hide" class="fy-from-expanded fy-small fy-mono fy-muted">founders-money.md · 7c1e…a9b4</td>
+          <td data-card="meta"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span> compiled 12 Oct</td>
+          <td data-card="meta" class="fy-small">general · trusted</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+        </tr>
+        <tr>
+          <td data-card="title"><a class="fy-mono" href="#kb/founders.settle-balance">founders.settle-balance</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">Settling a founder’s balance</span></td>
+          <td data-card="hide" class="fy-from-expanded fy-small fy-mono fy-muted">founders-money.md · 7c1e…a9b4</td>
+          <td data-card="meta"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span> compiled 12 Oct</td>
+          <td data-card="meta" class="fy-small">general · trusted</td>
+          <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Stale</span></td>
+        </tr>
+        <tr>
+          <td data-card="title"><a class="fy-mono" href="#kb/ui.status-chips">ui.status-chips</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">What each status chip means</span></td>
+          <td data-card="hide" class="fy-from-expanded fy-small fy-mono fy-muted">status-chips.md · 2b90…4f17</td>
+          <td data-card="meta"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span> compiled 10 Oct</td>
+          <td data-card="meta" class="fy-small">general · trusted</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Published</span></td>
+        </tr>
+        <tr class="fy-group"><td colspan="5" style="grid-column: 1 / -1">Cognizhi Pte Ltd · snapshot 7</td></tr>
+        <tr>
+          <td data-card="title"><a class="fy-mono" href="#kb/org.approval-policy">org.approval-policy</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">Who approves what, in Founder mode</span></td>
+          <td data-card="hide" class="fy-from-expanded fy-small fy-mono fy-muted">settings · a3d0…19be</td>
+          <td data-card="meta" class="fy-small">Rendered from settings</td>
+          <td data-card="meta" class="fy-small">general · trusted</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>v6</span></td>
+        </tr>
+        <tr>
+          <td data-card="title"><a class="fy-mono" href="#kb/org.expense-policy">org.expense-policy</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">Expense policy</span></td>
+          <td data-card="hide" class="fy-from-expanded fy-small fy-mono fy-muted">admin note · 51c8…0e3f</td>
+          <td data-card="meta" class="fy-small">Edited by Mei Lin Tan</td>
+          <td data-card="meta" class="fy-small">general · trusted</td>
+          <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>v5 conflict</span></td>
+        </tr>
+        <tr>
+          <td data-card="title"><a class="fy-mono" href="#kb/org.founder-pay-choice">org.founder-pay-choice</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">Why the founders take no salary for now</span></td>
+          <td data-card="hide" class="fy-from-expanded fy-small fy-mono fy-muted">admin note · e04d…8c21</td>
+          <td data-card="meta"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span> compiled 13 Oct</td>
+          <td data-card="meta" class="fy-small">personal · trusted</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>v3 draft</span></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-mono fy-muted">org.board-minutes-2026-10</span> <span class="fy-tag">P2</span><span class="fy-small fy-muted" style="display: block; font-weight: 400">From uploaded board minutes, 2 Oct</span></td>
+          <td data-card="hide" class="fy-from-expanded fy-small fy-mono fy-muted">upload · 90ab…3e55</td>
+          <td data-card="meta" class="fy-small fy-muted">Proposed, needs an Owner</td>
+          <td data-card="meta" class="fy-small fy-muted">general · untrusted</td>
+          <td data-card="status"><span class="fy-chip fy-chip--outline fy-chip--neutral"><i data-icon="hourglass"></i>Proposed</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="fy-card__foot fy-small fy-muted"><i data-icon="search"></i><span>Index first, then PostgreSQL full-text search over pages, aliases and sources. No embeddings or vector search. Each reader sees only the pages they may open.</span></div>
+  </section>
+
+  <div class="fy-split fy-split--wide-aside">
+    <section class="fy-card" aria-labelledby="page-title">
+      <div class="fy-card__body fy-stack">
+        <div class="fy-stack fy-stack--2">
+          <span class="fy-eyebrow">Organisation page · policy</span>
+          <h2 class="fy-h2" id="page-title">Expense policy</h2>
+          <div class="fy-row fy-row--wrap">
+            <span class="fy-mono fy-small">org.expense-policy</span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft v5</span>
+            <span class="fy-tag">Human-edited</span>
+            <span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Contradicts a setting</span>
+          </div>
+        </div>
+        <div class="fy-row fy-row--wrap">
+          <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="pencil"></i>Edit</button>
+          <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="rotate-ccw"></i>Roll back to v4</button>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-describedby="recompile-note"><i data-icon="refresh-cw"></i>Recompile</button>
+          <button class="fy-iconbtn" type="button" aria-label="More actions"><i data-icon="ellipsis"></i></button>
+        </div>
+        <p class="fy-help" id="recompile-note">A recompile never overwrites a human-edited version; lint flags the difference for a person. Rolling back creates a new version.</p>
+
+        <div class="fy-banner fy-banner--critical" role="alert">
+          <i data-icon="circle-x" class="fy-i--20"></i>
+          <div class="fy-banner__text">
+            <span class="fy-strong">This draft contradicts a setting</span>
+            <span class="fy-small fy-secondary">The page says a founder may approve their own claim up to S$1,500. The Founder-mode setting allows self-approval up to S$2,000. Until a person resolves it, the assistant follows the setting and says so.</span>
+            <div class="fy-row fy-row--wrap" style="margin-top: var(--space-2)">
+              <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Change the page to S$2,000</button>
+              <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/approvals">Open the setting</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="fy-stack fy-stack--3">
+          <div class="fy-row fy-row--between fy-row--wrap">
+            <h3 class="fy-h3"><i data-icon="git-compare"></i> Compare versions</h3>
+            <div class="fy-row fy-row--wrap fy-small">
+              <label class="fy-sr" for="kb-from">From version</label>
+              <select class="fy-select" id="kb-from" style="height: 32px; width: auto; font-size: var(--fs-sm)"><option>v4 · published</option><option>v3 · 18 Sep</option></select>
+              <i data-icon="arrow-right" class="fy-muted"></i>
+              <label class="fy-sr" for="kb-to">To version</label>
+              <select class="fy-select" id="kb-to" style="height: 32px; width: auto; font-size: var(--fs-sm)"><option>v5 · draft</option></select>
+            </div>
+          </div>
+          <div class="fy-card fy-card--flat fy-small" style="overflow: hidden">
+            <div class="fy-mono" style="padding: 6px var(--space-3); color: var(--text-muted)">## Who approves expense claims</div>
+            <div class="fy-row fy-row--top" style="padding: 6px var(--space-3); background: var(--status-critical-subtle)"><i data-icon="minus" style="color: var(--status-critical)"></i><span class="fy-sr">Removed:</span><span>A founder’s own claim always needs the other founder’s approval.</span></div>
+            <div class="fy-row fy-row--top" style="padding: 6px var(--space-3); background: var(--status-good-subtle)"><i data-icon="plus" style="color: var(--status-good)"></i><span class="fy-sr">Added:</span><span>A founder may approve their own claim up to S$1,500; above that, the other founder approves.</span></div>
+            <div class="fy-row fy-row--top" style="padding: 6px var(--space-3)"><span aria-hidden="true" style="width: 16px; flex: none"></span><span class="fy-secondary">Claims are submitted within 30 days of the receipt date. (src: expense-policy#claims)</span></div>
+            <div class="fy-mono" style="padding: 6px var(--space-3); color: var(--text-muted); border-top: 1px solid var(--border)">## Receipts</div>
+            <div class="fy-row fy-row--top" style="padding: 6px var(--space-3)"><span aria-hidden="true" style="width: 16px; flex: none"></span><span class="fy-secondary">Every claim over S$50 needs a receipt or an invoice. (src: expense-policy#receipts)</span></div>
+          </div>
+        </div>
+
+        <div class="fy-grid fy-grid--2">
+          <div class="fy-stack fy-stack--2">
+            <h3 class="fy-h3">Sources</h3>
+            <ul class="fy-stack fy-stack--2 fy-small">
+              <li class="fy-row fy-row--top"><i data-icon="file-text"></i><span>Admin note “Expense policy”, edited by Mei Lin Tan, 13 Oct<span class="fy-mono fy-muted" style="display: block">sha256:51c8…0e3f</span></span></li>
+              <li class="fy-row fy-row--top"><i data-icon="sliders-horizontal"></i><span>Settings: approval policies (checked before publishing)<span class="fy-mono fy-muted" style="display: block">sha256:a3d0…19be</span></span></li>
+            </ul>
+          </div>
+          <div class="fy-stack fy-stack--2">
+            <h3 class="fy-h3">Front matter</h3>
+            <dl class="fy-stack fy-stack--2 fy-small">
+              <div class="fy-row fy-row--between"><dt class="fy-muted">Data class</dt><dd>general</dd></div>
+              <div class="fy-row fy-row--between"><dt class="fy-muted">Taint</dt><dd>trusted</dd></div>
+              <div class="fy-row fy-row--between"><dt class="fy-muted">Compiled by</dt><dd>Opus 4.6 via kb-compiler</dd></div>
+              <div class="fy-row fy-row--between"><dt class="fy-muted">Human-edited</dt><dd>yes, v5</dd></div>
+              <div class="fy-row fy-row--between"><dt class="fy-muted">Used in answers</dt><dd class="fy-num"><a href="#settings/ai/activity?kb=org.expense-policy">14 in October</a></dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <div class="fy-stack fy-stack--2">
+          <h3 class="fy-h3">Versions</h3>
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="pencil"></i></span>
+              <span class="fy-small fy-strong">v5 · draft · edited by Mei Lin Tan</span>
+              <span class="fy-small fy-muted">13 Oct, 08:10 · in the publish request</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-small fy-strong">v4 · published</span>
+              <span class="fy-small fy-muted">2 Oct · approved by Arjun Rao</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--ai"><i data-icon="sparkles"></i></span>
+              <span class="fy-small fy-strong">v3 · compiled from the admin note</span>
+              <span class="fy-small fy-muted">18 Sep · kb-compiler</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Lint findings">
+      <section class="fy-card" aria-labelledby="lint-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="lint-title">Lint findings</h2><span class="fy-badge fy-badge--quiet">4</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--critical"><i data-icon="circle-x" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-list__title" style="white-space: normal">Contradicts a setting</span>
+              <span class="fy-small fy-secondary">org.expense-policy v5: self-approval S$1,500 vs setting S$2,000</span>
+              <span class="fy-list__meta">Task for Mei Lin Tan · today</span>
+            </span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="triangle-alert" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-list__title" style="white-space: normal">Stale page</span>
+              <span class="fy-small fy-secondary" style="word-break: break-all">founders.settle-balance: its source changed on 12 Oct</span>
+              <span class="fy-row fy-row--wrap"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Recompile</button></span>
+            </span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="triangle-alert" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-list__title" style="white-space: normal">Number not in its source</span>
+              <span class="fy-small fy-secondary">org.founder-pay-choice v3: “S$6,000” does not appear in the cited section</span>
+              <span class="fy-list__meta">Task for Mei Lin Tan · today</span>
+            </span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__icon"><i data-icon="file-plus" class="fy-i--20"></i></span>
+            <span class="fy-list__main">
+              <span class="fy-list__title" style="white-space: normal">Source without a page</span>
+              <span class="fy-small fy-secondary">Admin note “Travel and meals” (9 Oct) is not compiled yet</span>
+              <span class="fy-row fy-row--wrap"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Compile</button></span>
+            </span>
+          </li>
+        </ul>
+        <div class="fy-card__foot fy-small fy-muted">Checked on every change; contradictions and missing pages also weekly.</div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="how-title">
+        <h2 class="fy-h3" id="how-title">What the assistant may use</h2>
+        <ul class="fy-stack fy-stack--2 fy-small fy-secondary">
+          <li class="fy-row fy-row--top"><i data-icon="check" style="color: var(--status-good)"></i><span>Know-how only. Figures come from read tools, never from pages.</span></li>
+          <li class="fy-row fy-row--top"><i data-icon="check" style="color: var(--status-good)"></i><span>Citations point people to the user guide or the record, not to these pages.</span></li>
+          <li class="fy-row fy-row--top"><i data-icon="check" style="color: var(--status-good)"></i><span>Answers never become pages by themselves.</span></li>
+          <li class="fy-row fy-row--top"><i data-icon="lock" class="fy-muted"></i><span>Text from uploaded documents stays untrusted, even after approval.</span></li>
+        </ul>
+        <p class="fy-small fy-muted">Owners and Administrators can edit. Auditors can view. Every action is audited.</p>
+      </section>
+    </aside>
+  </div>
+</div>

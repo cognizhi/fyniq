@@ -1,0 +1,138 @@
+<!-- fyniq-screen {"nav": "compliance", "title": "GST returns", "mode": "expert", "heights": {"compact": 2150, "medium": 1650, "expanded": 960}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#compliance">Compliance</a><i data-icon="chevron-right"></i><span>GST</span></nav>
+      <h1 class="fy-h1">GST returns</h1>
+      <p class="fy-secondary">GST no. 202412345K · registered from 1 Jan 2026 · quarterly returns · invoice basis</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#compliance/gst/adjustments"><i data-icon="git-compare-arrows"></i>Adjustment queue<span class="fy-badge fy-badge--quiet" aria-label="2 waiting for a decision">2</span></a>
+      <a class="fy-btn fy-btn--primary" href="#compliance/gst/2026-q3"><i data-icon="file-text"></i>Open Jul–Sep return</a>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="periods-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="periods-title">Return periods</h2>
+          <div class="fy-segmented fy-from-medium" role="radiogroup" aria-label="Year">
+            <button type="button" role="radio" aria-checked="true">2026</button>
+            <button type="button" role="radio" aria-checked="false">All</button>
+          </div>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr><th scope="col">Period</th><th scope="col">Due</th><th scope="col">Status</th><th scope="col" class="fy-num">Net GST (S$)</th><th scope="col" class="fy-from-expanded">Filing reference</th></tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title"><a href="#compliance/gst/2026-q4">Oct–Dec 2026</a></td>
+              <td data-card="meta"><span class="fy-only-compact">Due </span>31 Jan 2027</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Open</span></td>
+              <td data-card="amount" class="fy-num fy-muted">–</td>
+              <td data-card="hide" class="fy-from-expanded fy-muted">–</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#compliance/gst/2026-q3">Jul–Sep 2026</a><br><span class="fy-small fy-muted" style="font-weight: 400">6 InvoiceNow items to resolve before filing</span></td>
+              <td data-card="meta"><span class="fy-only-compact">Due </span>31 Oct 2026</td>
+              <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Due in 18 days</span></td>
+              <td data-card="amount" class="fy-num"><a href="#compliance/gst/2026-q3?box=8">12,387.60</a></td>
+              <td data-card="hide" class="fy-from-expanded fy-muted">–</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#compliance/gst/2026-q2">Apr–Jun 2026</a><br><span class="fy-small fy-muted" style="font-weight: 400">Paid 28 Jul</span></td>
+              <td data-card="meta"><span class="fy-only-compact">Due </span>31 Jul 2026</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="lock"></i>Filed 27 Jul</span></td>
+              <td data-card="amount" class="fy-num"><a href="#compliance/gst/2026-q2?box=8">10,846.20</a></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">A2607271184</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#compliance/gst/2026-q1">Jan–Mar 2026</a><br><span class="fy-small fy-muted" style="font-weight: 400">Version 2 · F5 filed 24 Apr; F7 corrected Box 1 and Box 6</span></td>
+              <td data-card="meta"><span class="fy-only-compact">Due </span>30 Apr 2026</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="lock"></i>F7 filed 18 Aug</span></td>
+              <td data-card="amount" class="fy-num"><a href="#compliance/gst/2026-q1?box=8">6,657.30</a></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">A2608181021</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot">
+          <i data-icon="info" class="fy-muted"></i>
+          <span class="fy-small fy-muted">A filed return is kept as it was filed. An F7 adds a new version and never overwrites the original. Changes to filed periods go to the <a href="#compliance/gst/adjustments">adjustment queue</a>.</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="listings-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="listings-title">IRAS audit listings</h2>
+          <button class="fy-info" type="button" aria-label="About audit listings" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Sales and purchase listings in Excel or CSV for any period: what IRAS's current GST audit guidance asks for. Every export is recorded in the audit trail.</p>
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="lst-period">Period</label>
+              <input class="fy-input" id="lst-period" value="Jul–Sep 2026" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <span class="fy-label" id="lst-format">Format</span>
+              <div class="fy-segmented" role="radiogroup" aria-labelledby="lst-format">
+                <button type="button" role="radio" aria-checked="true">Excel</button>
+                <button type="button" role="radio" aria-checked="false">CSV</button>
+              </div>
+            </div>
+          </div>
+          <div class="fy-row fy-row--wrap">
+            <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="download"></i>Sales listing</button>
+            <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="download"></i>Purchase listing</button>
+          </div>
+          <p class="fy-small fy-muted">Last export: purchase listing, Apr–Jun 2026, CSV, by Grace Ho on 3 Oct.</p>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Registration">
+      <section class="fy-card" aria-labelledby="reg-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="reg-title">Registration monitor</h2>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Registered</span>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between"><span class="fy-tile__label">Retrospective test<button class="fy-info" type="button" aria-label="About the retrospective test" aria-expanded="false"><i data-icon="info"></i></button></span><span class="fy-small fy-muted">56%</span></div>
+            <a class="fy-num fy-strong" href="#reports/gst-turnover?test=retro" style="font-size: var(--fs-lg); color: var(--text-primary)">S$559,670.00</a>
+            <div class="fy-progress" role="img" aria-label="56% of the S$1,000,000 threshold"><span style="width: 56%"></span></div>
+            <span class="fy-small fy-muted">Taxable supplies, calendar year 2026 to 30 Sep, against S$1,000,000</span>
+          </div>
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between"><span class="fy-tile__label">Prospective test<button class="fy-info" type="button" aria-label="About the prospective test" aria-expanded="false"><i data-icon="info"></i></button></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Above S$1m</span></div>
+            <a class="fy-num fy-strong" href="#planning/forecast?measure=taxable-supplies" style="font-size: var(--fs-lg); color: var(--text-primary)">S$1,124,000.00</a>
+            <div class="fy-progress fy-progress--warning" role="img" aria-label="Above the S$1,000,000 threshold"><span style="width: 100%"></span></div>
+            <span class="fy-small fy-muted">Forecast taxable supplies, Oct 2026 to Sep 2027, from the base forecast</span>
+          </div>
+          <div class="fy-plain"><i data-icon="circle-check" class="fy-muted"></i><span class="fy-small">You are already registered, so nothing to do. An unregistered business above the threshold would have to apply within 30 days.</span></div>
+          <div class="fy-plain"><i data-icon="info" class="fy-muted"></i><span class="fy-small">Before 1 Jan 2026 the company was not registered: GST charged by overseas vendors was part of the cost, and no input tax was claimed.</span></div>
+          <span class="fy-source"><i data-icon="book-open"></i>Threshold and tests from <span class="fy-mono">sg-gst@2026.1</span></span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="corr-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="corr-title">Corrections to filed periods</h2></div>
+        <ul class="fy-list">
+          <li>
+            <a class="fy-list__item" href="#compliance/gst/adjustments">
+              <span class="fy-list__icon fy-list__icon--warning"><i data-icon="git-compare-arrows" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">2 waiting for the tax agent</span><span class="fy-list__meta">Apr–Jun: next F5 proposed · Jan–Mar: F7 proposed</span></span>
+              <i data-icon="chevron-right" class="fy-muted"></i>
+            </a>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#compliance/gst/2026-q3"><i data-icon="file-text"></i>Open Jul–Sep return</a>
+  </div>
+</div>

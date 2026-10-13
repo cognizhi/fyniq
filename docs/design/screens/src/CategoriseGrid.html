@@ -1,0 +1,367 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Categorise", "mode": "expert", "heights": {"compact": 1550, "medium": 2150, "expanded": 1500}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Banking</span>
+      <h1 class="fy-h1">Categorise and match</h1>
+      <p class="fy-secondary">14 lines · DBS 12 · OCBC 2. Paste from a spreadsheet, fill down with <span class="fy-kbd">Ctrl</span> <span class="fy-kbd">D</span>, accept in bulk.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <div class="fy-segmented" role="radiogroup" aria-label="Column view">
+        <button type="button" role="radio" aria-checked="true">Plain</button>
+        <button type="button" role="radio" aria-checked="false">Accountant</button>
+      </div>
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="list-checks"></i>Rule from selection</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="check"></i>Accept 9 selected</button>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Banking">
+    <a href="#banking">Accounts</a>
+    <a href="#banking/categorise" aria-current="page">Categorise<span class="fy-badge fy-badge--quiet">14</span></a>
+    <a href="#banking/auto-reconciled">Auto-reconciled</a>
+    <a href="#banking/reconciliations">Reconciliation</a>
+    <a class="fy-expert-only" href="#banking/rules">Rules</a>
+    <a class="fy-expert-only" href="#banking/payouts">Payouts</a>
+  </nav>
+
+  <section class="fy-ai-card" aria-labelledby="p311">
+    <div class="fy-ai-card__body" style="flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3)">
+      <span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span>
+      <span class="fy-grow fy-stack" style="gap: 2px; flex-basis: 260px">
+        <span class="fy-strong" id="p311">Proposal P-311 is waiting: suggestions for the 12 DBS lines</span>
+        <span class="fy-small fy-secondary">2 lines in your selection use an AI suggestion. Accepting them adds them to this tier-1 proposal for approval; AI suggestions never post by themselves.</span>
+      </span>
+      <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#inbox/proposal-311">Open proposal</a>
+    </div>
+  </section>
+
+  <div class="fy-row fy-row--wrap fy-from-medium" style="justify-content: space-between">
+    <div class="fy-row fy-row--wrap" role="toolbar" aria-label="Selected lines">
+      <span class="fy-strong">9 selected</span>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="arrow-down-to-line"></i>Fill down</button>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="split"></i>Split line</button>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="arrow-left-right"></i>Mark as transfer</button>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="triangle-alert"></i>Post to suspense <span class="fy-mono">2999</span></button>
+    </div>
+    <div class="fy-chipset" role="group" aria-label="Show">
+      <button class="fy-filter" type="button" aria-pressed="true">All 14</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Matches 4</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Rules 3</button>
+      <button class="fy-filter" type="button" aria-pressed="false">AI 4</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Needs you 3</button>
+    </div>
+  </div>
+
+  <div class="fy-tablewrap fy-from-medium">
+    <table class="fy-table fy-table--compact" aria-label="Lines to categorise">
+      <thead>
+        <tr>
+          <th scope="col" class="fy-col-check"><button class="fy-check" type="button" role="checkbox" aria-checked="mixed" aria-label="Select all lines"><i data-icon="minus"></i></button></th>
+          <th scope="col">Date</th>
+          <th scope="col">Description</th>
+          <th scope="col" class="fy-num fy-from-expanded">In</th>
+          <th scope="col" class="fy-num fy-from-expanded">Out</th>
+          <th scope="col" class="fy-num fy-only-medium">Amount</th>
+          <th scope="col">Category or match</th>
+          <th scope="col" class="fy-from-expanded">Contact</th>
+          <th scope="col" class="fy-from-expanded">GST</th>
+          <th scope="col" class="fy-from-expanded">Project</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">12 Oct</td>
+          <td><span class="fy-mono">FAST CR KOPI LABS PTE LTD</span></td>
+          <td class="fy-num fy-from-expanded">2,180.00</td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-only-medium">+2,180.00</td>
+          <td><a href="#sales/inv-0136">INV-0136</a></td>
+          <td class="fy-from-expanded">Kopi Labs</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Exact match</span></td>
+        </tr>
+        <tr>
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select line"></button></td>
+          <td class="fy-num">12 Oct</td>
+          <td><span class="fy-mono">FAST CR LUMEN HEALTH PTE LTD</span></td>
+          <td class="fy-num fy-from-expanded">6,000.00</td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-only-medium">+6,000.00</td>
+          <td><a href="#sales/inv-0141">INV-0141</a> <span class="fy-small fy-muted">part</span></td>
+          <td class="fy-from-expanded">Lumen Health</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded">Lumen Health pilot</td>
+          <td><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>7,080.00 left</span></td>
+        </tr>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">11 Oct</td>
+          <td><span class="fy-mono">FIGMA* PROFESSIONAL SAN FRANCISCO</span></td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-from-expanded">186.40</td>
+          <td class="fy-num fy-only-medium">−186.40</td>
+          <td><span class="fy-mono fy-muted">6120</span> Software subscriptions</td>
+          <td class="fy-from-expanded">Figma</td>
+          <td class="fy-from-expanded"><span class="fy-mono">TX</span></td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--neutral"><i data-icon="list-checks"></i>Rule: Figma</span></td>
+        </tr>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">10 Oct</td>
+          <td><span class="fy-mono">GRAB* A-7PQ2KXB SINGAPORE</span></td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-from-expanded">86.40</td>
+          <td class="fy-num fy-only-medium">−86.40</td>
+          <td><span class="fy-suggest" style="font-size: var(--fs-sm)"><span class="fy-mono">6310</span> Local travel</span></td>
+          <td class="fy-from-expanded"><span class="fy-suggest" style="font-size: var(--fs-sm)">Grab for Business</span></td>
+          <td class="fy-from-expanded"><span class="fy-suggest fy-mono">TX</span></td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-row" style="gap: 6px"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span><span class="fy-small fy-muted">9 alike</span></span></td>
+        </tr>
+        <tr>
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select line"></button></td>
+          <td class="fy-num">9 Oct</td>
+          <td><span class="fy-mono">FAST CR OCBC 6012 TRF</span></td>
+          <td class="fy-num fy-from-expanded">15,000.00</td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-only-medium">+15,000.00</td>
+          <td>Transfer from OCBC</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Possible duplicate</span></td>
+        </tr>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">9 Oct</td>
+          <td><span class="fy-mono">WEWORK SINGAPORE PTE LTD</span></td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-from-expanded">3,270.00</td>
+          <td class="fy-num fy-only-medium">−3,270.00</td>
+          <td><span class="fy-suggest" style="font-size: var(--fs-sm)"><span class="fy-mono">6110</span> Rent and office</span></td>
+          <td class="fy-from-expanded"><span class="fy-suggest" style="font-size: var(--fs-sm)">WeWork Singapore</span></td>
+          <td class="fy-from-expanded"><span class="fy-suggest fy-mono">TX</span></td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-row" style="gap: 6px"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span><span class="fy-small fy-muted">5 alike</span></span></td>
+        </tr>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">8 Oct</td>
+          <td><span class="fy-mono">SP DIGITAL PTE LTD GIRO</span></td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-from-expanded">148.62</td>
+          <td class="fy-num fy-only-medium">−148.62</td>
+          <td><span class="fy-suggest" style="font-size: var(--fs-sm)"><span class="fy-mono">6210</span> Utilities</span></td>
+          <td class="fy-from-expanded"><span class="fy-suggest" style="font-size: var(--fs-sm)">SP Group</span></td>
+          <td class="fy-from-expanded"><span class="fy-suggest fy-mono">TX</span></td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-row" style="gap: 6px"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span><span class="fy-small fy-muted">3 alike</span></span></td>
+        </tr>
+        <tr>
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select line"></button></td>
+          <td class="fy-num">7 Oct</td>
+          <td><span class="fy-mono">ATM CASH WDL 0231 RAFFLES PL</span></td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-from-expanded">200.00</td>
+          <td class="fy-num fy-only-medium">−200.00</td>
+          <td><span class="fy-muted">Choose a category</span></td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>No suggestion</span></td>
+        </tr>
+        <tr>
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select line"></button></td>
+          <td class="fy-num">6 Oct</td>
+          <td><span class="fy-mono">INWARD TT ORBITAL FREIGHT ASIA</span></td>
+          <td class="fy-num fy-from-expanded">4,832.00</td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-only-medium">+4,832.00</td>
+          <td><a href="#sales/inv-0139">INV-0139</a> <span class="fy-small fy-muted">4,860.00</span></td>
+          <td class="fy-from-expanded">Orbital Freight Asia</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>28.00 short</span></td>
+        </tr>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">3 Oct</td>
+          <td><span class="fy-mono">FAST CR HARBOURFRONT DENTAL GROUP</span></td>
+          <td class="fy-num fy-from-expanded">4,360.00</td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-only-medium">+4,360.00</td>
+          <td><a href="#sales/inv-0138">INV-0138</a></td>
+          <td class="fy-from-expanded">Harbourfront Dental</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Exact match</span></td>
+        </tr>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">2 Oct</td>
+          <td><span class="fy-mono">SINGAPORE AIRLINES 618-2441907</span></td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-from-expanded">733.85</td>
+          <td class="fy-num fy-only-medium">−733.85</td>
+          <td><span class="fy-suggest" style="font-size: var(--fs-sm)"><span class="fy-mono">6320</span> Overseas travel</span></td>
+          <td class="fy-from-expanded"><span class="fy-suggest" style="font-size: var(--fs-sm)">Singapore Airlines</span></td>
+          <td class="fy-from-expanded"><span class="fy-suggest fy-mono">ZP</span></td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-row" style="gap: 6px"><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span><span class="fy-small fy-muted">2 alike</span></span></td>
+        </tr>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">1 Oct</td>
+          <td><span class="fy-mono">DBS VISA 4821 PAYMENT</span></td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-from-expanded">1,286.40</td>
+          <td class="fy-num fy-only-medium">−1,286.40</td>
+          <td>Transfer to DBS Visa ··4821</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--neutral"><i data-icon="arrow-left-right"></i>Transfer, both sides</span></td>
+        </tr>
+        <tr aria-selected="true">
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select line"><i data-icon="check"></i></button></td>
+          <td class="fy-num">7 Oct</td>
+          <td><span class="fy-mono">OCBC BIZ ACCOUNT FEE</span></td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-from-expanded">10.00</td>
+          <td class="fy-num fy-only-medium">−10.00</td>
+          <td><span class="fy-mono fy-muted">6420</span> Bank charges</td>
+          <td class="fy-from-expanded">OCBC Bank</td>
+          <td class="fy-from-expanded"><span class="fy-mono">EP</span></td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--neutral"><i data-icon="list-checks"></i>Rule: OCBC fees</span></td>
+        </tr>
+        <tr>
+          <td><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-disabled="true" aria-label="Line is in a locked period"></button></td>
+          <td class="fy-num">31 Aug</td>
+          <td><span class="fy-mono">INTEREST CREDIT</span></td>
+          <td class="fy-num fy-from-expanded">12.48</td>
+          <td class="fy-num fy-from-expanded fy-muted">–</td>
+          <td class="fy-num fy-only-medium">+12.48</td>
+          <td><span class="fy-mono fy-muted">7010</span> Interest income</td>
+          <td class="fy-from-expanded">OCBC Bank</td>
+          <td class="fy-from-expanded"><span class="fy-mono">ES</span></td>
+          <td class="fy-from-expanded fy-muted">–</td>
+          <td><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>August locked</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section class="fy-stack fy-stack--3 fy-from-medium" aria-labelledby="match-title">
+    <div class="fy-section__head">
+      <h2 class="fy-h2" id="match-title">Match: Lumen Health, 12 Oct</h2>
+      <span class="fy-small fy-muted">Tolerance S$1.00 in SGD<button class="fy-info" type="button" aria-label="About settlement tolerance" aria-expanded="false"><i data-icon="info"></i></button></span>
+    </div>
+    <div class="fy-split fy-split--wide-aside">
+      <div class="fy-card">
+        <div class="fy-card__head"><h3 class="fy-h3">Bank line</h3><span class="fy-small fy-muted">DBS · <span class="fy-mono">1010</span></span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <span class="fy-tile__value fy-num">+6,000.00<small>SGD</small></span>
+          <p class="fy-mono fy-plain">FAST CR LUMEN HEALTH PTE LTD</p>
+          <dl class="fy-dl fy-dl--3">
+            <div><dt>Booking date</dt><dd>12 Oct 2026</dd></div>
+            <div><dt>Value date</dt><dd>12 Oct 2026</dd></div>
+            <div><dt>Bank reference</dt><dd class="fy-mono">FT26285L77Q1</dd></div>
+            <div><dt>Counterparty</dt><dd>Lumen Health Pte Ltd</dd></div>
+          </dl>
+          <div class="fy-plain fy-small"><i data-icon="scale"></i><span>Dr <span class="fy-mono">1010</span> 6,000.00 · Cr <span class="fy-mono">1100</span> 6,000.00 (INV-0141)</span></div>
+        </div>
+      </div>
+      <div class="fy-card">
+        <div class="fy-card__head"><h3 class="fy-h3">Open documents for Lumen Health</h3><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="search"></i>Find</button></div>
+        <table class="fy-table fy-table--compact" aria-label="Candidate documents">
+          <thead><tr><th scope="col" class="fy-col-check"><span class="fy-sr">Select</span></th><th scope="col">Document</th><th scope="col" class="fy-num">Open</th><th scope="col" class="fy-num">Apply</th></tr></thead>
+          <tbody>
+            <tr aria-selected="true">
+              <td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Apply to INV-0141"><i data-icon="check"></i></button></td>
+              <td><a href="#sales/inv-0141">INV-0141</a> <span class="fy-small fy-muted">due 15 Oct</span></td>
+              <td class="fy-num">13,080.00</td>
+              <td class="fy-num fy-strong">6,000.00</td>
+            </tr>
+            <tr>
+              <td><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-disabled="true" aria-label="INV-0142 can't be matched"></button></td>
+              <td><a href="#sales/inv-0142">INV-0142</a> <span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Can't post</span></td>
+              <td class="fy-num">3,728.00</td>
+              <td class="fy-num fy-muted">–</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr><td></td><td>Left open</td><td></td><td class="fy-num">7,080.00</td></tr>
+          </tfoot>
+        </table>
+        <div class="fy-card__body fy-stack fy-stack--3" style="border-top: 1px solid var(--border)">
+          <p class="fy-small"><span class="fy-strong">S$7,080.00 is more than the S$1.00 tolerance.</span> INV-0141 stays part-paid until the rest arrives, or record a reason.</p>
+          <div class="fy-row fy-row--wrap">
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-pressed="true">Leave S$7,080.00 open</button>
+            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Record a reason</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fy-stack fy-stack--3 fy-only-compact" aria-labelledby="c-title">
+    <div class="fy-row fy-row--between"><h2 class="fy-h3" id="c-title">Line 2 of 14</h2><span class="fy-small fy-muted">12 more after this</span></div>
+    <div class="fy-card">
+      <div class="fy-card__head">
+        <span class="fy-list__icon fy-list__icon--brand"><i data-icon="landmark" class="fy-i--20"></i></span>
+        <div class="fy-grow fy-stack" style="gap: 0"><span class="fy-strong">DBS · 12 Oct</span><span class="fy-small fy-muted"><span class="fy-mono">1010</span> · ref FT26285L77Q1</span></div>
+        <span class="fy-num fy-strong">+6,000.00</span>
+      </div>
+      <div class="fy-card__body fy-stack fy-stack--3">
+        <p class="fy-mono fy-plain" style="overflow-wrap: anywhere">FAST CR LUMEN HEALTH PTE LTD</p>
+        <button class="fy-choice" type="button" role="radio" aria-checked="true">
+          <span class="fy-radio"></span>
+          <span class="fy-stack fy-grow" style="gap: 4px">
+            <span class="fy-strong">Part of INV-0141</span>
+            <span class="fy-small fy-secondary">Lumen Health · open <span class="fy-num">13,080.00</span> · apply <span class="fy-num">6,000.00</span></span>
+            <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>7,080.00 stays open</span>
+          </span>
+        </button>
+        <button class="fy-choice" type="button" role="radio" aria-checked="false">
+          <span class="fy-radio"></span>
+          <span class="fy-stack fy-grow" style="gap: 4px"><span class="fy-strong">Several documents</span><span class="fy-small fy-muted">Lumen Health's only other document, INV-0142, can't post yet</span></span>
+        </button>
+        <div class="fy-plain fy-small"><i data-icon="scale"></i><span>Dr <span class="fy-mono">1010</span> 6,000.00 · Cr <span class="fy-mono">1100</span> 6,000.00</span></div>
+        <div class="fy-row fy-row--wrap">
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="split"></i>Split</button>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="arrow-left-right"></i>Transfer</button>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="triangle-alert"></i>Suspense</button>
+        </div>
+      </div>
+    </div>
+    <ul class="fy-card fy-list fy-stagger" aria-label="Next lines">
+      <li class="fy-list__item">
+        <span class="fy-list__main"><span class="fy-list__title">Figma · <span class="fy-mono">6120</span></span><span class="fy-list__meta">11 Oct · Rule: Figma</span></span>
+        <span class="fy-num fy-strong">−186.40</span>
+      </li>
+      <li class="fy-list__item">
+        <span class="fy-list__main"><span class="fy-row"><span class="fy-list__title fy-ai-text">Grab · Local travel</span><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span></span><span class="fy-list__meta">10 Oct · 9 alike since July</span></span>
+        <span class="fy-num fy-strong">−86.40</span>
+      </li>
+      <li class="fy-list__item">
+        <span class="fy-list__main"><span class="fy-list__title">Transfer from OCBC</span><span class="fy-list__meta">9 Oct · possible duplicate</span></span>
+        <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Check</span>
+      </li>
+      <li class="fy-list__item">
+        <span class="fy-list__main"><span class="fy-list__title">OCBC interest · 31 Aug</span><span class="fy-list__meta">August is locked: can't post</span></span>
+        <span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Locked</span>
+      </li>
+    </ul>
+  </section>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--ghost" type="button">Skip</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="check"></i>Accept</button>
+  </div>
+</div>

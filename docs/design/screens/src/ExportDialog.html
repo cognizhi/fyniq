@@ -1,0 +1,59 @@
+<!-- fyniq-screen {"nav": "reports", "title": "Export", "mode": "basic", "heights": {"compact": 500, "medium": 450, "expanded": 500}} -->
+<div class="fy-page" aria-hidden="true">
+  <div class="fy-pagehead"><div class="fy-pagehead__text">
+    <span class="fy-breadcrumb">Reports · Financial statements</span>
+    <span class="fy-h1">Profit and loss</span>
+    <span class="fy-secondary">Cognizhi Pte Ltd · September 2026 · SGD</span>
+  </div></div>
+  <div class="fy-tablewrap"><table class="fy-table fy-table--compact"><tbody><tr><td>Total revenue</td><td class="fy-num">86,240.00</td></tr><tr><td>Total cost of sales</td><td class="fy-num">14,126.19</td></tr><tr><td>Gross profit</td><td class="fy-num">72,113.81</td></tr><tr><td>Total operating expenses</td><td class="fy-num">93,904.70</td></tr><tr><td>EBITDA</td><td class="fy-num">−21,790.89</td></tr><tr><td>Net loss for the month</td><td class="fy-num">−22,600.75</td></tr></tbody></table></div>
+</div>
+
+<div class="fy-scrim">
+  <section class="fy-dialog fy-dialog--wide fy-enter" role="dialog" aria-modal="true" aria-labelledby="ex-title" aria-describedby="ex-desc">
+    <div class="fy-grabber" aria-hidden="true"></div>
+    <div class="fy-dialog__head">
+      <div class="fy-stack fy-stack--2 fy-grow">
+        <h1 class="fy-h2" id="ex-title">Export profit and loss</h1>
+        <p class="fy-secondary fy-small" id="ex-desc">September 2026, with August and the budget · ledger revision 18,412</p>
+      </div>
+      <button class="fy-iconbtn" type="button" aria-label="Close export"><i data-icon="x"></i></button>
+    </div>
+    <div class="fy-dialog__body">
+      <fieldset class="fy-fieldset">
+        <legend>Format</legend>
+        <div class="fy-grid fy-grid--2" role="radiogroup" aria-label="Format" style="gap: var(--space-2)">
+          <button class="fy-choice" type="button" role="radio" aria-checked="true"><span class="fy-radio"></span><span class="fy-stack" style="gap: 2px"><span class="fy-row" style="gap: 6px; font-weight: 600"><i data-icon="file-spreadsheet"></i>Excel (XLSX)</span><span class="fy-small fy-secondary">Formatted, with live totals and a data tab</span></span></button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false"><span class="fy-radio"></span><span class="fy-stack" style="gap: 2px"><span class="fy-row" style="gap: 6px; font-weight: 600"><i data-icon="file-text"></i>PDF</span><span class="fy-small fy-secondary">Print quality, with your logo and page numbers</span></span></button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false"><span class="fy-radio"></span><span class="fy-stack" style="gap: 2px"><span class="fy-row" style="gap: 6px; font-weight: 600"><i data-icon="file-down"></i>CSV</span><span class="fy-small fy-secondary">Raw lines; streams large reports</span></span></button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false" aria-disabled="true" style="opacity: 0.55"><span class="fy-radio"></span><span class="fy-stack" style="gap: 2px"><span class="fy-row" style="gap: 6px; font-weight: 600"><i data-icon="image"></i>Chart: PNG and data</span><span class="fy-small fy-secondary">For charts: use the download button on the chart</span></span></button>
+        </div>
+      </fieldset>
+
+      <div class="fy-form fy-form--2">
+        <div class="fy-field"><label class="fy-label" for="ex-period">Period</label><select class="fy-select" id="ex-period"><option>September 2026 (as on screen)</option><option>Q3 2026</option><option>Year to date</option></select></div>
+        <div class="fy-field"><label class="fy-label" for="ex-cols">Columns</label><select class="fy-select" id="ex-cols"><option>As on screen: 7 columns</option><option>September only</option><option>By month, Jan–Sep</option></select></div>
+        <div class="fy-field fy-expert-only"><label class="fy-label" for="ex-layout">Layout</label><select class="fy-select" id="ex-layout"><option>Standard</option><option>Audit tool: journal-entry CSV</option><option>Audit tool: trial balance with mapping</option></select><span class="fy-help">For your auditor’s software. The layout is described on the first tab.</span></div>
+        <div class="fy-field" style="justify-content: flex-end">
+          <div class="fy-row fy-row--between" style="min-height: 38px"><span class="fy-label" id="ex-drill">Include the lines behind each figure</span><button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="ex-drill"></button></div>
+          <span class="fy-help">Adds a tab per section with every ledger line: about 1,240 rows.</span>
+        </div>
+      </div>
+
+      <div class="fy-plain fy-small">
+        <i data-icon="shield-check"></i>
+        <span>Amounts go out as plain numbers with an ASCII minus. Any text that starts with =, +, − or @ stays text, so nothing can turn into a formula. This export is logged in the audit trail: who, what, filters and row count.</span>
+      </div>
+
+      <section class="fy-stack fy-stack--2" aria-labelledby="ex-recent">
+        <h2 class="fy-h3" id="ex-recent">Your recent exports</h2>
+        <ul class="fy-list fy-card fy-card--flat fy-stagger"><li class="fy-list__item"><span class="fy-list__icon"><i data-icon="file-spreadsheet" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">General ledger, Jan–Sep 2026</span><span class="fy-list__meta" style="white-space: normal">XLSX · 62,418 lines · started 09:31</span></span><span class="fy-stack" style="gap: 4px; min-width: 96px"><span class="fy-small fy-strong fy-right">Preparing 64%</span><span class="fy-progress" role="progressbar" aria-label="General ledger export progress" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100"><span style="width: 64%"></span></span></span></li><li class="fy-list__item"><span class="fy-list__icon"><i data-icon="file-text" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Trial balance, September 2026</span><span class="fy-list__meta" style="white-space: normal">PDF · ready 09:05 · link works for 23 more hours, once you sign in</span></span><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#exports/tb-2026-09"><i data-icon="download"></i>Download</a></li><li class="fy-list__item"><span class="fy-list__icon"><i data-icon="file-spreadsheet" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Receivable detail, August 2026</span><span class="fy-list__meta" style="white-space: normal">CSV · made 11 Oct · the link expired after 24 hours</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="refresh-cw"></i>Export again</button></li><li class="fy-list__item"><span class="fy-list__icon"><i data-icon="file-spreadsheet" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Journals, Q3 2026</span><span class="fy-list__meta" style="white-space: normal">XLSX · made 12 Oct by you</span></span><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Blocked</span></li></ul>
+        <p class="fy-error"><i data-icon="circle-x"></i><span>Journals, Q3 2026: your access to journals changed on 12 Oct, so the download is blocked. Ask Mei Lin Tan (Owner) to restore it, then export again.</span></p>
+      </section>
+    </div>
+    <div class="fy-dialog__foot">
+      <span class="fy-small fy-muted fy-grow">Large exports carry on in the background; we tell you when they are ready.</span>
+      <button class="fy-btn fy-btn--ghost" type="button">Cancel</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export XLSX</button>
+    </div>
+  </section>
+</div>

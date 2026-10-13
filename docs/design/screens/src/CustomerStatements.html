@@ -1,0 +1,176 @@
+<!-- fyniq-screen {"nav": "sales", "title": "Statements", "mode": "expert", "heights": {"compact": 2450, "medium": 2120, "expanded": 1200}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#sales">Sales</a><i data-icon="chevron-right"></i><span>Statements and reminders</span></nav>
+      <h1 class="fy-h1">Statements and reminders</h1>
+      <p class="fy-secondary">3 overdue invoices are being chased. 2 reminders are paused.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="download"></i>Download PDF</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Send statement</button>
+    </div>
+  </div>
+
+  <div class="fy-split fy-split--wide-aside">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="cs-build">
+        <div class="fy-card__head"><h2 class="fy-h3" id="cs-build">Statement of account</h2></div>
+        <div class="fy-card__body">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field fy-field--full">
+              <label class="fy-label" for="cs-cust">Customer</label>
+              <select class="fy-select" id="cs-cust"><option>Kopi Labs Pte Ltd · owes S$3,815.00</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="cs-from">From</label>
+              <input class="fy-input" id="cs-from" value="1 Jul 2026" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="cs-to">To</label>
+              <input class="fy-input" id="cs-to" value="13 Oct 2026" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <span class="fy-label" id="cs-show">Show</span>
+              <div class="fy-segmented" role="radiogroup" aria-labelledby="cs-show">
+                <button type="button" role="radio" aria-checked="true">All activity</button>
+                <button type="button" role="radio" aria-checked="false">Open items only</button>
+              </div>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="cs-to-email">Send to</label>
+              <input class="fy-input" id="cs-to-email" value="billing@kopilabs.sg" readonly="readonly">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="cs-prev">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="cs-prev">Preview</h2>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Ageing adds up to the balance</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--wrap fy-row--between fy-row--top">
+            <div class="fy-stack fy-stack--2" style="gap: 2px">
+              <span class="fy-strong">Cognizhi Pte Ltd</span>
+              <span class="fy-small fy-muted">UEN and GST no. 202412345K</span>
+            </div>
+            <div class="fy-stack fy-stack--2" style="gap: 2px">
+              <span class="fy-strong">Kopi Labs Pte Ltd</span>
+              <span class="fy-small fy-muted">1 Jul to 13 Oct 2026 · SGD</span>
+            </div>
+          </div>
+          <div class="fy-tablewrap">
+            <table class="fy-table fy-table--compact fy-statement">
+              <caption class="fy-sr">Statement lines for Kopi Labs</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Details</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Charged</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Paid</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="fy-group"><td style="white-space: nowrap">1 Jul</td><td>Balance brought forward</td><td></td><td></td><td class="fy-num">1,635.00</td></tr>
+                <tr><td style="white-space: nowrap">9 Jul</td><td style="white-space: nowrap">Payment, thank you</td><td></td><td class="fy-num">1,635.00</td><td class="fy-num">0.00</td></tr>
+                <tr><td style="white-space: nowrap">31 Jul</td><td style="white-space: nowrap"><a class="fy-mono" href="#sales/inv-0133">INV-0133</a> Data feed set-up</td><td class="fy-num">1,635.00</td><td></td><td class="fy-num">1,635.00</td></tr>
+                <tr><td style="white-space: nowrap">14 Aug</td><td style="white-space: nowrap"><a class="fy-mono" href="#sales/inv-0136">INV-0136</a> Dashboard changes</td><td class="fy-num">2,180.00</td><td></td><td class="fy-num">3,815.00</td></tr>
+                <tr><td style="white-space: nowrap">28 Aug</td><td style="white-space: nowrap">Payment for INV-0133</td><td></td><td class="fy-num">1,634.60</td><td class="fy-num">2,180.40</td></tr>
+                <tr><td style="white-space: nowrap">28 Aug</td><td style="white-space: nowrap">Rounding difference cleared</td><td></td><td class="fy-num">0.40</td><td class="fy-num">2,180.00</td></tr>
+                <tr><td style="white-space: nowrap">2 Oct</td><td style="white-space: nowrap"><a class="fy-mono" href="#sales/inv-0143">INV-0143</a> Data feed, Oct to Dec</td><td class="fy-num">1,635.00</td><td></td><td class="fy-num">3,815.00</td></tr>
+              </tbody>
+              <tfoot><tr><td></td><td>Balance on 13 Oct</td><td class="fy-num">5,450.00</td><td class="fy-num">3,270.00</td><td class="fy-num">3,815.00</td></tr></tfoot>
+            </table>
+          </div>
+          <div class="fy-tablewrap">
+            <table class="fy-table fy-table--compact fy-statement">
+              <caption class="fy-sr">Ageing of the balance</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Ageing</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Not due</th>
+                  <th scope="col" class="fy-num" style="text-align: right">1–30 days</th>
+                  <th scope="col" class="fy-num" style="text-align: right">31–60</th>
+                  <th scope="col" class="fy-num" style="text-align: right">61–90</th>
+                  <th scope="col" class="fy-num" style="text-align: right">90+</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Kopi Labs</td><td class="fy-num">1,635.00</td><td class="fy-num">2,180.00</td><td class="fy-num">0.00</td><td class="fy-num">0.00</td><td class="fy-num">0.00</td><td class="fy-num fy-strong">3,815.00</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="fy-small fy-muted">The 0.40 short-payment on 28 Aug was within the S$1.00 tolerance, so it was cleared and shows here as its own line.</p>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Reminders">
+      <section class="fy-card" aria-labelledby="cs-queue">
+        <div class="fy-card__head"><h2 class="fy-h3" id="cs-queue">Reminder queue</h2><span class="fy-badge fy-badge--quiet">4</span></div>
+        <ul class="fy-list fy-stagger">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="calendar-clock"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">15 Oct · Lumen Health</span><span class="fy-list__meta">INV-0141 · on the due date · S$13,080.00</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Scheduled</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--ai"><i data-icon="sparkles"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">17 Oct · Orbital Freight Asia</span><span class="fy-list__meta">INV-0139 · 14 days after due · draft below</span></span>
+            <span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="mail-x"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Harbourfront Dental Group</span><span class="fy-list__meta">INV-0138 · email bounced on 28 Sep · <a href="#contacts/harbourfront-dental?field=billing-email">Fix the address</a></span></span>
+            <span class="fy-chip fy-chip--warning"><i data-icon="circle-pause"></i>Paused</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="handshake"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Kopi Labs</span><span class="fy-list__meta">INV-0136 · promised to pay by 20 Oct</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="circle-pause"></i>Paused</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-ai-card" aria-labelledby="cs-ai">
+        <div class="fy-ai-card__head">
+          <span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span>
+          <h2 class="fy-h3 fy-grow" id="cs-ai">Drafted reminder for Orbital Freight Asia</h2>
+        </div>
+        <div class="fy-ai-card__body">
+          <div class="fy-plain fy-small" style="background: var(--surface-1); border: 1px solid var(--ai-border)">
+            <p class="fy-ai-text">Hi Marcus, thank you for the S$3,860.00 you paid on 25 Sep. <span class="fy-fact">S$4,860.00</span> on INV-0139 is still open; it was due on 3 Oct. Could you let us know when it will be paid? The invoice and a statement are attached.</p>
+          </div>
+          <span class="fy-source"><i data-icon="file-text"></i>From INV-0139 and its payments · nothing is sent until you approve</span>
+          <div class="fy-row fy-row--wrap"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Review and approve</button><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Edit</button></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="cs-sched">
+        <div class="fy-card__head"><h2 class="fy-h3" id="cs-sched">Reminder schedules</h2><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Edit</button></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between"><span class="fy-strong">Standard, 30-day terms</span><span class="fy-small fy-muted">3 customers</span></div>
+            <div class="fy-chipset">
+              <span class="fy-tag">7 days before</span><span class="fy-tag">On the due date</span><span class="fy-tag">7 days after</span><span class="fy-tag">14 days after</span><span class="fy-tag">30 days after, with statement</span>
+            </div>
+          </div>
+          <div class="fy-divider"></div>
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between"><span class="fy-strong">Key accounts</span><span class="fy-small fy-muted">Acme, Lumen Health</span></div>
+            <div class="fy-chipset"><span class="fy-tag">On the due date</span><span class="fy-tag">14 days after, from Mei Lin</span></div>
+            <span class="fy-chip fy-chip--good" style="align-self: flex-start"><i data-icon="circle-check"></i>No overdue invoices</span>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Send statement</button>
+  </div>
+</div>

@@ -1,0 +1,173 @@
+<!-- fyniq-screen {"nav": "settings", "title": "AI usage", "mode": "expert", "heights": {"compact": 3700, "medium": 2600, "expanded": 2000}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/ai">AI</a><i data-icon="chevron-right"></i><span aria-current="page">Usage and budgets</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">AI usage and budgets</h1>
+      <p class="fy-secondary">What the assistant and the agents used and cost, by agent, connection, model and person. Costs come from each provider's own usage figures and price table.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <div class="fy-segmented" role="radiogroup" aria-label="Period">
+        <button type="button" role="radio" aria-checked="true">October so far</button>
+        <button type="button" role="radio" aria-checked="false">September</button>
+        <button type="button" role="radio" aria-checked="false">This year</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <a class="fy-tile" href="#settings/ai/usage?view=cost">
+      <span class="fy-tile__label"><i data-icon="coins"></i>Spent, 1 to 13 Oct</span>
+      <span class="fy-tile__value fy-num">120.86<small>SGD</small></span>
+      <span class="fy-tile__meta"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 40%"></span></span><span class="fy-small fy-num">40%</span></span><span class="fy-small">of the S$300.00 monthly budget</span></span>
+    </a>
+    <a class="fy-tile" href="#settings/ai/usage?view=tokens">
+      <span class="fy-tile__label"><i data-icon="hash"></i>Tokens</span>
+      <span class="fy-tile__value fy-num">27,278,100</span>
+      <span class="fy-tile__meta"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 45%"></span></span><span class="fy-small fy-num">45%</span></span><span class="fy-small">of 60,000,000 a month</span></span>
+    </a>
+    <a class="fy-tile" href="#settings/ai/routes/bank-categorisation">
+      <span class="fy-tile__label"><i data-icon="git-branch"></i>Fallbacks today</span>
+      <span class="fy-tile__value fy-num">23</span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Above 10</span>Bank categorisation, rate limits on Claude Sonnet 4.6</span>
+    </a>
+    <a class="fy-tile" href="#settings/ai/activity">
+      <span class="fy-tile__label"><i data-icon="message-square"></i>Cost per conversation</span>
+      <span class="fy-tile__value fy-num">0.20<small>SGD</small></span>
+      <span class="fy-tile__meta">S$42.42 for 214 conversations in the app</span>
+    </a>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="day-title">
+        <div class="fy-section__head"><h2 class="fy-h3" id="day-title">Cost per day, October (SGD)</h2><div class="fy-segmented" role="radiogroup" aria-label="Show as"><button type="button" role="radio" aria-checked="true">Chart</button><button type="button" role="radio" aria-checked="false">Table</button></div></div>
+        <svg class="fy-chart" viewBox="0 0 640 190" role="img" aria-label="Most days cost between S$0.74 and S$13.93. The highest were 2 Oct, S$24.59, when the knowledge base was compiled, and 6 Oct, S$27.06, when the eval suites ran. Today so far, S$4.48.">
+            <line class="grid" x1="40" y1="16" x2="634" y2="16"></line><line class="grid" x1="40" y1="64" x2="634" y2="64"></line><line class="grid" x1="40" y1="112" x2="634" y2="112"></line><line class="axis" x1="40" y1="160" x2="634" y2="160"></line>
+            <text x="0" y="20">30</text><text x="0" y="68">20</text><text x="0" y="116">10</text><text x="0" y="164">0</text>
+            <rect class="fy-bar fy-c1" x="48.0" y="117.6" width="30" height="42.4" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="92.5" y="42.0" width="30" height="118.0" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="137.0" y="154.9" width="30" height="5.1" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="181.5" y="155.8" width="30" height="4.2" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="226.0" y="111.9" width="30" height="48.1" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="270.5" y="30.1" width="30" height="129.9" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="315.0" y="115.8" width="30" height="44.2" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="359.5" y="118.5" width="30" height="41.5" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="404.0" y="116.4" width="30" height="43.6" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="448.5" y="148.8" width="30" height="11.2" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="493.0" y="156.4" width="30" height="3.6" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="537.5" y="93.1" width="30" height="66.9" rx="3"></rect>
+            <rect class="fy-bar fy-c1" x="582.0" y="138.5" width="30" height="21.5" rx="3"></rect>
+            <text x="57.0" y="180">1</text><text x="101.5" y="180">2</text><text x="146.0" y="180">3</text><text x="190.5" y="180">4</text><text x="235.0" y="180">5</text><text x="279.5" y="180">6</text><text x="324.0" y="180">7</text><text x="368.5" y="180">8</text><text x="413.0" y="180">9</text><text x="453.5" y="180">10</text><text x="498.0" y="180">11</text><text x="542.5" y="180">12</text><text x="587.0" y="180">13</text>
+        </svg>
+        <p class="fy-small fy-muted">2 Oct: knowledge-base compile after the release. 6 Oct: eval runs to qualify Gemini 2.5 Flash. Mondays include the company secretary agent's weekly cross-check. Weekends are low because only scheduled work runs.</p>
+      </section>
+
+      <section class="fy-card" aria-labelledby="agent-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="agent-title">By agent</h2><span class="fy-small fy-muted">Alert at 80% · stops at 100%</span></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Agent</th><th scope="col" class="fy-num" style="text-align: right">Tokens</th><th scope="col" class="fy-num" style="text-align: right">Cost (SGD)</th><th scope="col">Budget</th></tr></thead>
+          <tbody class="fy-stagger">
+              <tr>
+                <td data-card="title"><a href="#settings/ai/routes/assistant">Assistant: chat and tools</a></td>
+                <td data-card="hide" class="fy-num">9,666,000</td>
+                <td data-card="amount" class="fy-num">42.42</td>
+                <td data-card="meta"><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 35%"></span></span><span class="fy-small fy-num">35%</span></span><span class="fy-small fy-muted">of S$120.00 a month</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#settings/ai/routes/capture">Document capture and extraction</a></td>
+                <td data-card="hide" class="fy-num">4,005,200</td>
+                <td data-card="amount" class="fy-num">17.11</td>
+                <td data-card="meta"><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 34%"></span></span><span class="fy-small fy-num">34%</span></span><span class="fy-small fy-muted">of S$50.00 a month</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#settings/ai/routes/bank-categorisation">Bank categorisation and matching</a></td>
+                <td data-card="hide" class="fy-num">2,730,100</td>
+                <td data-card="amount" class="fy-num">6.47</td>
+                <td data-card="meta"><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 32%"></span></span><span class="fy-small fy-num">32%</span></span><span class="fy-small fy-muted">of S$20.00 a month</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#settings/ai/routes/drafting">Proposal drafting</a></td>
+                <td data-card="hide" class="fy-num">1,738,000</td>
+                <td data-card="amount" class="fy-num">8.58</td>
+                <td data-card="meta"><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 34%"></span></span><span class="fy-small fy-num">34%</span></span><span class="fy-small fy-muted">of S$25.00 a month</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#settings/ai/routes/commentary">Report and board-pack commentary</a></td>
+                <td data-card="hide" class="fy-num">458,000</td>
+                <td data-card="amount" class="fy-num">4.32</td>
+                <td data-card="meta"><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 29%"></span></span><span class="fy-small fy-num">29%</span></span><span class="fy-small fy-muted">of S$15.00 a month</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#settings/ai/routes/kb-compiler">Knowledge-base compiler</a></td>
+                <td data-card="hide" class="fy-num">3,169,800</td>
+                <td data-card="amount" class="fy-num">22.29</td>
+                <td data-card="meta"><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-row"><span class="fy-progress fy-progress--warning fy-grow" style="min-width: 72px"><span style="width: 89%"></span></span><span class="fy-small fy-num">89%</span></span><span class="fy-small fy-muted">of S$25.00 a month</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#settings/ai/routes/company-secretary">Company secretary agent</a></td>
+                <td data-card="hide" class="fy-num">231,000</td>
+                <td data-card="amount" class="fy-num">1.46</td>
+                <td data-card="meta"><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 15%"></span></span><span class="fy-small fy-num">15%</span></span><span class="fy-small fy-muted">of S$10.00 a month</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#settings/ai/routes/evals">Eval runner</a></td>
+                <td data-card="hide" class="fy-num">5,280,000</td>
+                <td data-card="amount" class="fy-num">18.21</td>
+                <td data-card="meta"><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 46%"></span></span><span class="fy-small fy-num">46%</span></span><span class="fy-small fy-muted">of S$40.00 a month</span></span></td>
+              </tr>
+          </tbody>
+          <tfoot><tr><td>Total</td><td class="fy-num">27,278,100</td><td class="fy-num">120.86</td><td></td></tr></tfoot>
+        </table>
+      </section>
+
+      <section class="fy-card" aria-labelledby="model-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="model-title">By connection and model</h2></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Model</th><th scope="col" class="fy-num" style="text-align: right">Input</th><th scope="col" class="fy-num fy-from-medium" style="text-align: right">of which cached</th><th scope="col" class="fy-num" style="text-align: right">Output</th><th scope="col" class="fy-num" style="text-align: right">Cost (SGD)</th></tr></thead>
+          <tbody>
+            <tr class="fy-group"><td colspan="5" style="grid-column: 1 / -1">Claude on Agent Platform · Singapore · usage-based</td></tr>
+            <tr><td data-card="title">Claude Opus 4.6</td><td data-card="meta" class="fy-num">17,451,000</td><td data-card="hide" class="fy-num fy-from-medium">10,980,000</td><td data-card="hide" class="fy-num">1,216,000</td><td data-card="amount" class="fy-num">96.60</td></tr>
+            <tr><td data-card="title">Claude Sonnet 4.6</td><td data-card="meta" class="fy-num">6,200,000</td><td data-card="hide" class="fy-num fy-from-medium">3,000,000</td><td data-card="hide" class="fy-num">389,000</td><td data-card="amount" class="fy-num">23.12</td></tr>
+            <tr class="fy-group"><td colspan="5" style="grid-column: 1 / -1">Gemini on Agent Platform · Singapore · usage-based</td></tr>
+            <tr><td data-card="title">Gemini 2.5 Flash</td><td data-card="meta" class="fy-num">1,896,000</td><td data-card="hide" class="fy-num fy-from-medium">0</td><td data-card="hide" class="fy-num">126,100</td><td data-card="amount" class="fy-num">1.14</td></tr>
+          </tbody>
+          <tfoot><tr><td colspan="4" style="grid-column: 1 / -1">Total</td><td class="fy-num">120.86</td></tr></tfoot>
+        </table>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Prices are Agent Platform's list prices for Singapore, converted at each day's rate (S$1.2867 to US$1 today). A subscription connection would also show its quota and when it resets.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="person-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="person-title">By person, the assistant</h2><span class="fy-small fy-muted">3,000,000 tokens each a month</span></div>
+        <table class="fy-table fy-table--compact fy-table--cards">
+          <thead><tr><th scope="col">Person</th><th scope="col" class="fy-num" style="text-align: right">Tokens</th><th scope="col">Of their budget</th></tr></thead>
+          <tbody>
+            <tr><td data-card="title"><span class="fy-row"><span class="fy-avatar fy-avatar--sm">AR</span>Arjun Rao</span></td><td data-card="amount" class="fy-num">2,430,000</td><td data-card="meta"><span class="fy-row"><span class="fy-progress fy-progress--warning fy-grow" style="min-width: 72px"><span style="width: 81%"></span></span><span class="fy-small fy-num">81%</span></span></td></tr>
+            <tr><td data-card="title"><span class="fy-row"><span class="fy-avatar fy-avatar--sm">ML</span>Mei Lin Tan</span></td><td data-card="amount" class="fy-num">1,872,000</td><td data-card="meta"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 62%"></span></span><span class="fy-small fy-num">62%</span></span></td></tr>
+            <tr><td data-card="title"><span class="fy-row"><span class="fy-avatar fy-avatar--sm">GH</span>Grace Ho</span></td><td data-card="amount" class="fy-num">1,140,000</td><td data-card="meta"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 72px"><span style="width: 38%"></span></span><span class="fy-small fy-num">38%</span></span></td></tr>
+            <tr><td data-card="title">6 employees</td><td data-card="amount" class="fy-num">4,224,000</td><td data-card="meta"><span class="fy-small fy-muted">Highest: Priya Nair, 1,290,000 (43%)</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Invoices and budgets">
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="inv-title">
+        <div class="fy-row"><i data-icon="receipt-text" class="fy-i--20"></i><h2 class="fy-h3" id="inv-title">Check the provider's invoice</h2></div>
+        <p class="fy-small fy-secondary">Claude and Gemini on Agent Platform are billed on Cognizhi's Google Cloud invoice. Enter it as a bill like any other supplier's, then compare its Agent Platform lines with the usage here.</p>
+        <dl class="fy-dl">
+          <div><dt>September usage here</dt><dd class="fy-num">S$231.17</dd></div>
+          <div><dt>September invoice</dt><dd>Not entered yet</dd></div>
+        </dl>
+        <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#purchases/bills/new?contact=google-cloud" style="align-self: flex-start">Enter the bill</a>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="bud-title">
+        <div class="fy-row"><i data-icon="gauge" class="fy-i--20"></i><h2 class="fy-h3" id="bud-title">How budgets work</h2></div>
+        <p class="fy-small fy-secondary">Every agent, connection and the organisation has a monthly budget. At 80% both Owners get an alert; at 100% that agent stops with a plain message until the month ends or an Owner raises the budget.</p>
+        <p class="fy-small fy-secondary">When the AI stops, deadlines, postings and approvals carry on as usual.</p>
+        <div class="fy-row fy-row--wrap"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Change budgets</button><span class="fy-small fy-muted">Needs a second Owner</span></div>
+      </section>
+    </aside>
+  </div>
+</div>

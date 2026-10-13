@@ -1,0 +1,95 @@
+<!-- fyniq-screen {"nav": "purchases", "title": "New bill", "mode": "basic", "heights": {"compact": 2550, "medium": 1750, "expanded": 1400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#purchases">Purchases</a><i data-icon="chevron-right"></i><a href="#purchases/bills">Bills</a><i data-icon="chevron-right"></i><span>New</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">Kestrel Data Ltd · KD-2026-118</h1><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft from capture</span></div>
+      <p class="fy-secondary">Read from the PDF that Arjun Rao forwarded on 12 Oct · 2 fields need checking</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="save"></i>Save draft</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit for approval</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>Withholding tax decision pending</strong><span class="fy-small">Kestrel Data is not resident in Singapore and part of the work was done here. Grace Ho, as tax agent, decides whether tax must be withheld before this bill is paid. You can still submit it.</span></div>
+  </div>
+
+  <div class="fy-grid fy-grid--2" style="align-items: start">
+    <section class="fy-card fy-card--sunken" aria-labelledby="be-doc">
+      <div class="fy-card__head"><h2 class="fy-h3" id="be-doc">Document</h2><span class="fy-small fy-muted">KD-2026-118.pdf · page 1 of 1</span></div>
+      <div class="fy-card__body">
+        <div class="fy-stack fy-stack--3" role="img" aria-label="The supplier's invoice. Highlighted: the invoice date and the VAT number, which were read with low confidence." style="background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-m); padding: var(--space-5); box-shadow: var(--shadow-1)">
+          <div class="fy-row fy-row--between"><span class="fy-strong" style="font-size: var(--fs-lg)">KESTREL DATA LTD</span><span class="fy-small fy-muted">INVOICE</span></div>
+          <span class="fy-small fy-muted">14 Clerkenwell Road, London EC1M 5PA, United Kingdom</span>
+          <span class="fy-small" style="outline: 2px solid var(--status-warning); outline-offset: 2px; border-radius: 2px; align-self: flex-start">VAT GB 318 4471 09</span>
+          <div class="fy-row fy-row--wrap fy-small"><span>No. KD-2026-118</span><span style="outline: 2px solid var(--status-warning); outline-offset: 2px; border-radius: 2px">Date 07/10/2026</span><span>Terms 30 days</span></div>
+          <span class="fy-small">Bill to: Cognizhi Pte Ltd, Singapore</span>
+          <div class="fy-divider"></div>
+          <div class="fy-row fy-row--between fy-small"><span>Data pipeline design workshop, on site in Singapore, 5–7 Oct</span><span class="fy-num">£2,400.00</span></div>
+          <div class="fy-row fy-row--between fy-small"><span>Remote follow-up support, October</span><span class="fy-num">£800.00</span></div>
+          <div class="fy-divider"></div>
+          <div class="fy-row fy-row--between fy-small"><span>VAT: outside the scope of UK VAT</span><span class="fy-num">£0.00</span></div>
+          <div class="fy-row fy-row--between"><span class="fy-strong">Total due</span><span class="fy-num fy-strong">£3,200.00</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="be-supp">
+        <div class="fy-card__head"><h2 class="fy-h3" id="be-supp">Supplier and dates</h2></div>
+        <div class="fy-card__body fy-form fy-form--2">
+          <div class="fy-field fy-field--full"><label class="fy-label" for="be-sup">Supplier</label><input class="fy-input" id="be-sup" value="Kestrel Data Ltd" readonly="readonly"><span class="fy-help">New supplier · tax residence United Kingdom</span></div>
+          <div class="fy-field"><label class="fy-label" for="be-num">Their invoice number</label><input class="fy-input" id="be-num" value="KD-2026-118" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="be-date">Invoice date</label><input class="fy-input" id="be-date" value="7 Oct 2026" readonly="readonly" aria-describedby="be-date-h" style="border-color: var(--status-warning)"><span class="fy-help" id="be-date-h"><i data-icon="triangle-alert"></i> Read as 07/10: check it is 7 October, not 10 July</span></div>
+          <div class="fy-field"><label class="fy-label" for="be-due">Due date</label><input class="fy-input" id="be-due" value="6 Nov 2026" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="be-cur">Currency and rate</label><input class="fy-input" id="be-cur" value="GBP · 1.7120 (MAS, 7 Oct)" readonly="readonly"></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="be-lines">
+        <div class="fy-card__head"><h2 class="fy-h3" id="be-lines">Lines</h2></div>
+        <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+          <table class="fy-table fy-table--cards">
+            <thead><tr><th scope="col">Item</th><th scope="col" class="fy-from-expanded">Category</th><th scope="col">GST</th><th scope="col" class="fy-num">GBP</th></tr></thead>
+            <tbody>
+              <tr><td data-card="title">Data pipeline design workshop<span class="fy-small fy-muted fy-only-compact"> · Consultancy</span></td><td data-card="hide" class="fy-from-expanded">Consultancy<span class="fy-expert-only"> · <span class="fy-mono">6530</span></span> · Acme data platform</td><td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Tax agent to decide</span></td><td data-card="amount" class="fy-num">2,400.00</td></tr>
+              <tr><td data-card="title">Remote follow-up support<span class="fy-small fy-muted fy-only-compact"> · Consultancy</span></td><td data-card="hide" class="fy-from-expanded">Consultancy<span class="fy-expert-only"> · <span class="fy-mono">6530</span></span> · Acme data platform</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-minus"></i>No GST to claim</span></td><td data-card="amount" class="fy-num">800.00</td></tr>
+            </tbody>
+            <tfoot><tr><td>Total</td><td class="fy-from-expanded"></td><td></td><td class="fy-num">3,200.00</td></tr></tfoot>
+          </table>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--2">
+          <p class="fy-small"><span class="fy-strong">No Singapore GST is stated on this invoice,</span> so there is no input tax to claim. Imported services may fall under reverse charge; Grace Ho confirms the treatment.</p>
+          <div class="fy-row"><button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="be-pre"></button><span class="fy-small" id="be-pre">Spread the cost over several months (prepayment)</span></div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="be-wht">
+        <h2 class="fy-h3" id="be-wht">Withholding tax</h2>
+        <div class="fy-field"><label class="fy-label" for="be-nature">Nature of payment</label><input class="fy-input" id="be-nature" value="Services performed in Singapore by a non-resident" readonly="readonly"></div>
+        <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Decision pending</span><span class="fy-small">Grace Ho (tax agent) · asked 12 Oct</span></div>
+      </section>
+
+      <p class="fy-plain fy-basic-only fy-small"><i data-icon="info"></i>This bill adds S$5,478.40 to what we owe Kestrel Data Ltd (£3,200.00 at 1.7120).</p>
+      <section class="fy-card fy-expert-only" aria-labelledby="be-li">
+        <div class="fy-card__head"><h2 class="fy-h3" id="be-li">Ledger impact</h2></div>
+        <table class="fy-table fy-table--compact fy-ledger">
+          <thead><tr><th scope="col">Account</th><th scope="col" style="text-align: right">Debit</th><th scope="col" style="text-align: right">Credit</th></tr></thead>
+          <tbody>
+            <tr><td><span class="fy-acct">6530</span>Consultancy</td><td class="fy-num">5,478.40</td><td></td></tr>
+            <tr><td><span class="fy-acct">2010</span>Accounts payable · GBP</td><td></td><td class="fy-num">5,478.40</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <p class="fy-small fy-muted">Not a duplicate: no other bill from this supplier with this number, amount or date.</p>
+    </div>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="save"></i>Save</button>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit</button>
+  </div>
+</div>

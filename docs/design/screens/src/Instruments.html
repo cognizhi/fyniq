@@ -1,0 +1,139 @@
+<!-- fyniq-screen {"nav": "equity", "title": "SAFEs and notes", "mode": "expert", "heights": {"compact": 2750, "medium": 2000, "expanded": 1300}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Equity</span>
+      <h1 class="fy-h1">SAFEs and convertible notes</h1>
+      <p class="fy-secondary">Money in today that becomes shares at a priced round. Fyniq converts it with the instrument's own terms and whole shares only.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>Add instrument</button>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Equity views">
+    <a href="#equity">Cap table</a>
+    <a href="#equity/holders">Holders</a>
+    <a href="#equity/classes">Classes</a>
+    <a href="#equity/transactions">Transactions</a>
+    <a href="#equity/instruments" aria-current="page">SAFEs and notes</a>
+    <a href="#equity/options">Option pool</a>
+  </nav>
+
+  <div class="fy-grid fy-grid--tiles">
+    <a class="fy-tile" href="#accounting/accounts/2700">
+      <span class="fy-tile__label">Outstanding</span>
+      <span class="fy-tile__value fy-num">500,000.00<small>SGD</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Matches 2700</span></span>
+    </a>
+    <div class="fy-tile">
+      <span class="fy-tile__label">Instruments</span>
+      <span class="fy-tile__value fy-num">1</span>
+      <span class="fy-tile__meta">1 SAFE · no convertible notes</span>
+    </div>
+    <a class="fy-tile" href="#equity">
+      <span class="fy-tile__label">As converted at the cap</span>
+      <span class="fy-tile__value fy-num">666,666</span>
+      <span class="fy-tile__meta">shares · 6.25% fully diluted</span>
+    </a>
+    <div class="fy-tile">
+      <span class="fy-tile__label">Converts on</span>
+      <span class="fy-tile__value" style="font-size: var(--fs-lg)">Next priced round</span>
+      <span class="fy-tile__meta">No maturity date</span>
+    </div>
+  </div>
+
+  <div class="fy-card">
+    <table class="fy-table fy-table--cards">
+      <thead>
+        <tr>
+          <th scope="col">Holder</th><th scope="col">Form</th><th scope="col" class="fy-num">Amount (SGD)</th><th scope="col" class="fy-from-expanded">Date</th>
+          <th scope="col" class="fy-num fy-from-expanded">Valuation cap</th><th scope="col" class="fy-from-expanded">Discount</th><th scope="col" class="fy-from-expanded">Interest, maturity</th>
+          <th scope="col" class="fy-from-expanded">Classification</th><th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-card="title" style="white-space: nowrap"><a href="#equity/holders/lion-rock-ventures">Lion Rock Ventures</a></td>
+          <td data-card="meta">Post-money SAFE, cap only</td>
+          <td data-card="amount" class="fy-num"><a href="#accounting/accounts/2700">500,000.00</a></td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">18 Jun 2026</td>
+          <td data-card="hide" class="fy-num fy-from-expanded">8,000,000.00</td>
+          <td data-card="hide" class="fy-from-expanded">None</td>
+          <td data-card="hide" class="fy-from-expanded">None</td>
+          <td data-card="meta" class="fy-from-expanded">Liability · 2700</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Template approved</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="fy-card__foot"><span class="fy-small fy-muted">Classified as a liability by Grace Ho on 30 Jun 2026 from the terms: it converts into a number of shares not yet known.</span></div>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="in-conv-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="in-conv-title">Conversion preview</h2>
+        <span class="fy-tag"><i data-icon="flask-conical"></i>Sandbox, nothing posts</span>
+      </div>
+      <div class="fy-card__body fy-stack fy-stack--6">
+        <div class="fy-form fy-form--2">
+          <div class="fy-field">
+            <label class="fy-label" for="in-round">At the round</label>
+            <input class="fy-input" id="in-round" value="Scenario A, seed round" readonly="readonly">
+            <span class="fy-help">From the round simulator · S$10,000,000 pre-money · round price S$0.9375</span>
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="in-prec">Price precision in the terms</label>
+            <input class="fy-input" id="in-prec" value="4 decimal places" readonly="readonly">
+          </div>
+        </div>
+
+        <ol class="fy-stack fy-stack--3" aria-label="How the shares are worked out">
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">1</span><span class="fy-small"><span class="fy-strong">Ownership at the cap.</span> S$500,000 ÷ S$8,000,000 = <span class="fy-num fy-strong">6.25%</span> of the company capitalisation, counting this SAFE.</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">2</span><span class="fy-small"><span class="fy-strong">Capitalisation before the SAFE.</span> 9,000,000 issued shares + 1,000,000 ESOP 2026 pool, granted or not = <span class="fy-num">10,000,000</span>. A pool top-up made for the round is left out, as the terms say.</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">3</span><span class="fy-small"><span class="fy-strong">Capitalisation with the SAFE.</span> 10,000,000 ÷ (1 − 0.0625) = <span class="fy-num">10,666,666.67</span></span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">4</span><span class="fy-small"><span class="fy-strong">Cap price.</span> S$8,000,000 ÷ 10,666,666.67 = <span class="fy-num fy-strong">S$0.7500</span></span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">5</span><span class="fy-small"><span class="fy-strong">Conversion price.</span> The lower of the cap price S$0.7500 and the round price S$0.9375; no discount applies. <span class="fy-strong">S$0.7500</span></span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">6</span><span class="fy-small"><span class="fy-strong">Whole shares (RND-SHARE).</span> 666,666 × S$0.75 = S$499,999.50, which fits within S$500,000.00; 666,667 × S$0.75 = S$500,000.25 does not. <span class="fy-num fy-strong">666,666 shares</span></span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">7</span><span class="fy-small"><span class="fy-strong">Remainder.</span> S$0.50 stays on 2700 until it is settled under the terms.</span></li>
+        </ol>
+
+        <div class="fy-grid fy-grid--3">
+          <div class="fy-tile"><span class="fy-tile__label">Shares</span><span class="fy-tile__value fy-num">666,666</span><span class="fy-tile__meta">Seed preference in scenario A</span></div>
+          <div class="fy-tile"><span class="fy-tile__label">Converted</span><span class="fy-tile__value fy-num">499,999.50<small>SGD</small></span><span class="fy-tile__meta">Dr 2700 · Cr share capital</span></div>
+          <div class="fy-tile"><span class="fy-tile__label">Stays on 2700</span><span class="fy-tile__value fy-num">0.50<small>SGD</small></span><span class="fy-tile__meta">Settled under the terms</span></div>
+        </div>
+      </div>
+      <div class="fy-card__foot">
+        <span class="fy-small fy-muted fy-grow">Draft share issues can be created once the round's scenario is approved. They then need approval and ACRA steps like any issue.</span>
+        <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-disabled="true">Create draft issue</button>
+      </div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Templates and warnings">
+      <section class="fy-card" aria-labelledby="in-tpl-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="in-tpl-title">Forms Fyniq converts</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Post-money SAFE, valuation cap, no discount</span><span class="fy-list__meta" style="white-space: normal">Approved template with a pinned test</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Automatic</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Pre-money SAFE, discount only, MFN, convertible note</span><span class="fy-list__meta" style="white-space: normal">Fyniq drafts the conversion; Grace Ho completes and checks it</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="user-check"></i>Accountant</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="in-watch-title">
+        <h2 class="fy-h3" id="in-watch-title">What Fyniq watches</h2>
+        <p class="fy-small fy-secondary">A note past its maturity date, and an instrument whose form has no approved template, show a warning here and on Checks. Neither applies today.</p>
+        <p class="fy-small fy-muted">A founder's balance turned into a SAFE or note is recorded here too, with Dr 2500, Cr 2700.</p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>Add instrument</button>
+  </div>
+</div>

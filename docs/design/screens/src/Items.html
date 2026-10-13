@@ -1,0 +1,162 @@
+<!-- fyniq-screen {"nav": "sales", "title": "Items", "mode": "expert", "heights": {"compact": 2250, "medium": 1500, "expanded": 900}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#sales">Sales</a><i data-icon="chevron-right"></i><span>Items</span></nav>
+      <h1 class="fy-h1">Products and services</h1>
+      <p class="fy-secondary">8 active items. Each one brings its price, sales account and GST code onto invoice lines.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost fy-expert-only" type="button"><i data-icon="upload"></i>Import</button>
+      <a class="fy-btn fy-btn--primary" href="#sales/items/new"><i data-icon="plus"></i>New item</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>EXP-RECHARGE has no default GST code</strong>
+      <span class="fy-small">Lines that use it start without a code and can't post until someone picks one. INV-0142 to Lumen Health is waiting on this now.</span>
+    </div>
+    <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Set it</button>
+  </div>
+
+  <div class="fy-split fy-split--wide-aside">
+    <div class="fy-stack fy-stack--3">
+      <div class="fy-row fy-row--wrap fy-row--between">
+        <div class="fy-chipset" role="group" aria-label="Filter by type">
+          <button class="fy-filter" type="button" aria-pressed="true">All 8</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Services 5</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Subscriptions 2</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Recharges 1</button>
+        </div>
+        <div class="fy-row" style="flex: 0 1 260px; margin-left: auto">
+          <label class="fy-sr" for="it-search">Search items</label>
+          <div class="fy-inputgroup" style="flex: 1 1 200px; min-width: 0">
+            <span class="fy-inputgroup__addon"><i data-icon="search"></i></span>
+            <input class="fy-input" id="it-search" placeholder="Code or name">
+          </div>
+        </div>
+      </div>
+
+      <div class="fy-tablewrap">
+        <table class="fy-table fy-table--cards fy-table--compact">
+          <caption class="fy-sr">Items</caption>
+          <thead>
+            <tr>
+              <th scope="col">Item</th>
+              <th scope="col" class="fy-num" style="text-align: right">Price</th>
+              <th scope="col" class="fy-expert-only fy-from-expanded">Sales account</th>
+              <th scope="col">GST</th>
+              <th scope="col" class="fy-num fy-from-medium" style="text-align: right">Sales this year</th>
+            </tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><span class="fy-mono fy-small fy-muted">PLT-PILOT</span><span class="fy-small fy-muted"> · Service</span><span style="display: block">Clinic analytics pilot</span></td>
+              <td class="fy-num" data-card="amount">12,000.00<span class="fy-small fy-muted" style="display: block">S$ a month</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><span class="fy-mono fy-muted">4020</span> Services revenue</td>
+              <td data-card="meta"><span class="fy-mono">SR</span> 9%</td>
+              <td class="fy-num fy-from-medium" data-card="hide">24,000.00<span class="fy-small fy-muted" style="display: block">2 months</span></td>
+            </tr>
+            <tr aria-selected="true" style="background: color-mix(in oklch, var(--primary-subtle) 60%, var(--surface-1))">
+              <td data-card="title" style="white-space: nowrap"><span class="fy-mono fy-small fy-muted">SVC-BUILD</span><span class="fy-small fy-muted"> · Service</span><span style="display: block">Data platform engineering</span></td>
+              <td class="fy-num" data-card="amount">180.00<span class="fy-small fy-muted" style="display: block">S$ an hour · US$140.00</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><span class="fy-mono fy-muted">4020</span> Services revenue</td>
+              <td data-card="meta"><span class="fy-mono">SR</span> 9%</td>
+              <td class="fy-num fy-from-medium" data-card="hide">71,887.50<span class="fy-small fy-muted" style="display: block">412.5 hours</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><span class="fy-mono fy-small fy-muted">SVC-SUPPORT</span><span class="fy-small fy-muted"> · Service</span><span style="display: block">Data platform support</span></td>
+              <td class="fy-num" data-card="amount">5,000.00<span class="fy-small fy-muted" style="display: block">S$ a month</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><span class="fy-mono fy-muted">4020</span> Services revenue</td>
+              <td data-card="meta"><span class="fy-mono">SR</span> 9%</td>
+              <td class="fy-num fy-from-medium" data-card="hide">5,000.00<span class="fy-small fy-muted" style="display: block">1 month</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><span class="fy-mono fy-small fy-muted">SVC-TRAIN</span><span class="fy-small fy-muted"> · Service</span><span style="display: block">On-site training</span></td>
+              <td class="fy-num" data-card="amount">1,600.00<span class="fy-small fy-muted" style="display: block">S$ a day</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><span class="fy-mono fy-muted">4020</span> Services revenue</td>
+              <td data-card="meta"><span class="fy-mono">SR</span> 9%</td>
+              <td class="fy-num fy-from-medium" data-card="hide">4,800.00<span class="fy-small fy-muted" style="display: block">3 days</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><span class="fy-mono fy-small fy-muted">SVC-SETUP</span><span class="fy-small fy-muted"> · Service</span><span style="display: block">Data feed set-up</span></td>
+              <td class="fy-num" data-card="amount">1,500.00<span class="fy-small fy-muted" style="display: block">S$ each</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><span class="fy-mono fy-muted">4020</span> Services revenue</td>
+              <td data-card="meta"><span class="fy-mono">SR</span> 9%</td>
+              <td class="fy-num fy-from-medium" data-card="hide">1,500.00<span class="fy-small fy-muted" style="display: block">1</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><span class="fy-mono fy-small fy-muted">LIC-DASH</span><span class="fy-small fy-muted"> · Subscription</span><span style="display: block">Dashboard licence</span></td>
+              <td class="fy-num" data-card="amount">800.00<span class="fy-small fy-muted" style="display: block">S$ a month</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><span class="fy-mono fy-muted">4010</span> Subscription revenue</td>
+              <td data-card="meta"><span class="fy-mono">SR</span> 9%</td>
+              <td class="fy-num fy-from-medium" data-card="hide">7,200.00<span class="fy-small fy-muted" style="display: block">9 months</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><span class="fy-mono fy-small fy-muted">FEED-DATA</span><span class="fy-small fy-muted"> · Subscription</span><span style="display: block">Data feed subscription</span></td>
+              <td class="fy-num" data-card="amount">1,500.00<span class="fy-small fy-muted" style="display: block">S$ a quarter</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><span class="fy-mono fy-muted">4010</span> Subscription revenue</td>
+              <td data-card="meta"><span class="fy-mono">SR</span> 9%</td>
+              <td class="fy-num fy-from-medium" data-card="hide">1,500.00<span class="fy-small fy-muted" style="display: block">1 quarter</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="white-space: nowrap"><span class="fy-mono fy-small fy-muted">EXP-RECHARGE</span><span class="fy-small fy-muted"> · Recharge</span><span style="display: block">Recharged costs</span></td>
+              <td class="fy-num" data-card="amount"><span class="fy-muted">At cost</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><span class="fy-mono fy-muted">4090</span> Recharged costs</td>
+              <td data-card="meta"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>No default</span></td>
+              <td class="fy-num fy-from-medium" data-card="hide">0.00<span class="fy-small fy-muted" style="display: block">1 line not posted</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="fy-row fy-row--wrap fy-row--between">
+        <span class="fy-small fy-muted">1 inactive item hidden: DASH-HOST, still used by a recurring schedule.</span>
+        <div class="fy-row"><span class="fy-small" id="it-inactive">Show inactive</span><button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="it-inactive"></button></div>
+      </div>
+      <span class="fy-small fy-muted">Sales this year are before GST, from posted invoices only. Prices per customer group or currency come later.</span>
+    </div>
+
+    <aside class="fy-card" aria-labelledby="it-peek">
+      <div class="fy-card__head">
+        <span class="fy-list__icon fy-list__icon--brand"><i data-icon="package"></i></span>
+        <div class="fy-stack fy-stack--2 fy-grow" style="gap: 0">
+          <span class="fy-mono fy-small fy-muted">SVC-BUILD</span>
+          <h2 class="fy-h3" id="it-peek">Data platform engineering</h2>
+        </div>
+        <button class="fy-iconbtn" type="button" aria-label="Open full item"><i data-icon="external-link"></i></button>
+        <button class="fy-iconbtn" type="button" aria-label="Close side-peek"><i data-icon="x"></i></button>
+      </div>
+      <div class="fy-card__body fy-stack">
+        <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span><span class="fy-tag">Service · per hour</span></div>
+        <div class="fy-stack fy-stack--2">
+          <span class="fy-eyebrow">Printed on invoices</span>
+          <p class="fy-small fy-secondary">Data engineering on your data platform: pipelines, models and dashboards, billed per hour from approved timesheets.</p>
+        </div>
+        <dl class="fy-dl">
+          <div><dt>Price, SGD</dt><dd class="fy-num">S$180.00 an hour</dd></div>
+          <div><dt>Price, USD</dt><dd class="fy-num">US$140.00 an hour</dd></div>
+          <div class="fy-expert-only"><dt>Sales account</dt><dd><span class="fy-mono fy-muted">4020</span> Services revenue</dd></div>
+          <div><dt>GST code</dt><dd><span class="fy-mono">SR</span> Standard-rated, 9%</dd></div>
+        </dl>
+        <div class="fy-stack fy-stack--2">
+          <span class="fy-eyebrow">Price history</span>
+          <div class="fy-timeline">
+            <div class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-small fy-strong">From 1 Jul 2026: S$180.00, US$140.00</span><span class="fy-small fy-muted">Changed by Mei Lin Tan on 24 Jun</span></div>
+            <div class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="clock"></i></span><span class="fy-small fy-strong">1 Jan to 30 Jun 2026: S$165.00</span><span class="fy-small fy-muted">No USD price</span></div>
+          </div>
+        </div>
+        <div class="fy-stack fy-stack--2">
+          <span class="fy-eyebrow">This year</span>
+          <div class="fy-row fy-row--between"><span class="fy-small">412.5 hours on 7 invoices</span><span class="fy-num fy-strong">S$71,887.50</span></div>
+          <a class="fy-small" href="#reports/sales-by-item?item=svc-build">See the invoices</a>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#sales/items/new"><i data-icon="plus"></i>New item</a>
+  </div>
+</div>

@@ -1,0 +1,87 @@
+<!-- fyniq-screen {"nav": "inbox", "title": "Inbox", "mode": "expert", "heights": {"compact": 500, "medium": 450, "expanded": 450}} -->
+<div class="fy-page fy-enter" aria-hidden="true">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Inbox</h1>
+      <p class="fy-secondary">5 waiting for you · nothing overdue</p>
+    </div>
+  </div>
+  <div class="fy-listdetail">
+    <div class="fy-listdetail__list">
+      <ul class="fy-list">
+        <li class="fy-list__item" aria-current="true"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="stamp" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Approve bill BILL-0918</span><span class="fy-list__meta">Amazon Web Services</span></span></li>
+        <li class="fy-list__item" style="box-shadow: inset 3px 0 0 var(--ai-border)"><span class="fy-list__icon fy-list__icon--ai"><i data-icon="sparkles" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Categorise 4 bank lines</span><span class="fy-list__meta">DBS Business</span></span></li>
+        <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--critical"><i data-icon="circle-x" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">INV-0142 can't post</span><span class="fy-list__meta">Lumen Health</span></span></li>
+      </ul>
+    </div>
+    <div class="fy-listdetail__detail"><div class="fy-stack" style="padding: var(--space-5)"><span class="fy-skel fy-skel--title"></span><span class="fy-skel fy-skel--block"></span></div></div>
+  </div>
+</div>
+
+<div class="fy-scrim">
+  <div class="fy-dialog fy-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="ks-title" aria-describedby="ks-desc">
+    <div class="fy-grabber"></div>
+    <div class="fy-dialog__head">
+      <span class="fy-list__icon"><i data-icon="keyboard" class="fy-i--20"></i></span>
+      <div class="fy-stack fy-stack--2 fy-grow">
+        <h2 class="fy-h2" id="ks-title">Keyboard shortcuts</h2>
+        <p class="fy-small fy-secondary" id="ks-desc">Shortcuts for the Inbox and everywhere else. They never fire while you are typing in a field. On Windows, use Ctrl for ⌘.</p>
+      </div>
+      <button class="fy-iconbtn" type="button" aria-label="Close"><i data-icon="x" class="fy-i--20"></i></button>
+    </div>
+
+    <div class="fy-dialog__body">
+      <div class="fy-card fy-card--sunken fy-card--pad fy-row fy-row--wrap" style="gap: var(--space-3) var(--space-4)">
+        <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="ks-single"></button>
+        <span class="fy-stack fy-stack--2 fy-grow" style="gap: 2px; min-width: 200px">
+          <span class="fy-strong" id="ks-single">Single-key shortcuts</span>
+          <span class="fy-small fy-secondary">Turn them off if you use speech input or press keys by accident.</span>
+        </span>
+        <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="sliders-horizontal"></i>Change keys…</button>
+      </div>
+
+      <div class="fy-basic-only fy-stack fy-stack--3">
+        <div class="fy-row fy-row--between"><span>Search or run a command</span><span class="fy-row" style="gap: 4px"><span class="fy-kbd">⌘</span><span class="fy-kbd">K</span></span></div>
+        <div class="fy-row fy-row--between"><span>Show this list</span><span class="fy-kbd">?</span></div>
+        <p class="fy-plain fy-small"><i data-icon="info" class="fy-muted"></i><span>Expert mode adds single-key shortcuts for the Inbox, for creating records and for grids. <a href="#mode/expert">Switch to Expert</a></span></p>
+      </div>
+
+      <div class="fy-grid fy-grid--2 fy-expert-only" style="gap: var(--space-6)">
+        <section class="fy-stack fy-stack--2" aria-labelledby="ks-inbox" style="padding: var(--space-3); margin: calc(var(--space-3) * -1); border-radius: var(--radius-l); background: color-mix(in oklch, var(--primary-subtle) 40%, var(--surface-1))">
+          <h3 class="fy-eyebrow" id="ks-inbox" style="color: var(--primary-subtle-foreground)">Inbox · this page</h3>
+          <div class="fy-row fy-row--between"><span>Next or previous item</span><span class="fy-row" style="gap: 4px"><span class="fy-kbd">J</span><span class="fy-kbd">K</span></span></div>
+          <div class="fy-row fy-row--between"><span>Open the item</span><span class="fy-kbd">E</span></div>
+          <div class="fy-row fy-row--between"><span>Approve (opens the confirmation)</span><span class="fy-kbd">A</span></div>
+          <div class="fy-row fy-row--between"><span>Reject with a reason</span><span class="fy-kbd">R</span></div>
+          <div class="fy-row fy-row--between"><span>Select for approving together</span><span class="fy-kbd">X</span></div>
+        </section>
+        <section class="fy-stack fy-stack--2" aria-labelledby="ks-global">
+          <h3 class="fy-eyebrow" id="ks-global">Everywhere</h3>
+          <div class="fy-row fy-row--between"><span>Search or run a command</span><span class="fy-row" style="gap: 4px"><span class="fy-kbd">⌘</span><span class="fy-kbd">K</span></span></div>
+          <div class="fy-row fy-row--between"><span>Open the assistant</span><span class="fy-row" style="gap: 4px"><span class="fy-kbd">⌘</span><span class="fy-kbd">J</span></span></div>
+          <div class="fy-row fy-row--between"><span>Go to Banking</span><span class="fy-row fy-small fy-muted" style="gap: 4px"><span class="fy-kbd">G</span>then<span class="fy-kbd">B</span></span></div>
+          <div class="fy-row fy-row--between"><span>Go to Inbox</span><span class="fy-row fy-small fy-muted" style="gap: 4px"><span class="fy-kbd">G</span>then<span class="fy-kbd">I</span></span></div>
+          <div class="fy-row fy-row--between"><span>Show this list</span><span class="fy-kbd">?</span></div>
+        </section>
+        <section class="fy-stack fy-stack--2" aria-labelledby="ks-create">
+          <h3 class="fy-eyebrow" id="ks-create">Create</h3>
+          <div class="fy-row fy-row--between"><span>New invoice</span><span class="fy-row fy-small fy-muted" style="gap: 4px"><span class="fy-kbd">C</span>then<span class="fy-kbd">I</span></span></div>
+          <div class="fy-row fy-row--between"><span>New bill</span><span class="fy-row fy-small fy-muted" style="gap: 4px"><span class="fy-kbd">C</span>then<span class="fy-kbd">B</span></span></div>
+          <div class="fy-row fy-row--between"><span>New journal</span><span class="fy-row fy-small fy-muted" style="gap: 4px"><span class="fy-kbd">C</span>then<span class="fy-kbd">J</span></span></div>
+        </section>
+        <section class="fy-stack fy-stack--2" aria-labelledby="ks-grid">
+          <h3 class="fy-eyebrow" id="ks-grid">Grids</h3>
+          <div class="fy-row fy-row--between"><span>Fill down</span><span class="fy-row" style="gap: 4px"><span class="fy-kbd">Ctrl</span><span class="fy-kbd">D</span></span></div>
+          <div class="fy-row fy-row--between"><span>Calculate in a cell</span><span class="fy-row fy-small fy-muted" style="gap: 4px"><span class="fy-kbd">=</span><span class="fy-mono">1200*1.09</span></span></div>
+          <div class="fy-row fy-row--between"><span>Undo · redo</span><span class="fy-row" style="gap: 4px"><span class="fy-kbd">⌘</span><span class="fy-kbd">Z</span><span class="fy-small fy-muted">·</span><span class="fy-kbd">⇧</span><span class="fy-kbd">⌘</span><span class="fy-kbd">Z</span></span></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="fy-dialog__foot" style="position: sticky; bottom: 0">
+      <a class="fy-btn fy-btn--ghost" href="#help/keyboard">Keyboard guide</a>
+      <span class="fy-spacer"></span>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Done</button>
+    </div>
+  </div>
+</div>

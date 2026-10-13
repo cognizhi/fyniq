@@ -1,0 +1,237 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Expense policy", "mode": "expert", "heights": {"compact": 3300, "medium": 2580, "expanded": 1780}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><span>Expense policy</span></nav>
+      <h1 class="fy-h1">Expense policy</h1>
+      <p class="fy-secondary">Limits, evidence, mileage rates and deadlines for everyone's claims. It starts from recommended values; every change is dated and audited.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--ghost" href="#settings/expense-policy/history"><i data-icon="clock"></i>Change history</a>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="plus"></i>Add a category limit</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info">
+    <i data-icon="clock" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>1 change is waiting for approval</strong>
+      <span class="fy-small">Car mileage rate S$0.65 per km from 1 Nov 2026, proposed by Mei Lin Tan today. Arjun Rao approves: in Founder mode a second person approves policy changes.</span>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#inbox/approval-policy-58">View request</a>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="lim-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="lim-title">Category limits</h2>
+          <button class="fy-info" type="button" aria-label="About category limits" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr>
+              <th scope="col">Category</th>
+              <th scope="col" class="fy-num">Limit</th>
+              <th scope="col">Also needs</th>
+              <th scope="col">Setting</th>
+            </tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title">Meals and entertainment</td>
+              <td data-card="amount" class="fy-num">S$50 per person</td>
+              <td data-card="meta">Attendees' names above S$50</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Local travel</td>
+              <td data-card="amount" class="fy-num">S$100 per trip</td>
+              <td data-card="meta">Recommended S$80</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Changed</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Overseas hotel</td>
+              <td data-card="amount" class="fy-num">S$250 per night</td>
+              <td data-card="meta">Trip itinerary</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Software and subscriptions</td>
+              <td data-card="amount" class="fy-num">S$200 per claim</td>
+              <td data-card="meta">An Owner's approval above it</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Training and events</td>
+              <td data-card="amount" class="fy-num">S$500 per claim</td>
+              <td data-card="meta">—</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot" style="flex-wrap: wrap">
+          <span class="fy-small fy-secondary" style="flex: 1 1 280px">Local travel changed from S$80 to S$100 on 2 Sep by Mei Lin Tan, approved by Arjun Rao on 3 Sep. Reason: “Late client meetings in Jurong and Changi.”</span>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="rotate-ccw"></i>Reset to recommended</button>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ev-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="ev-title">Receipts and evidence</h2>
+          <button class="fy-info" type="button" aria-label="About evidence rules" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr>
+              <th scope="col">Evidence</th>
+              <th scope="col">Applies to</th>
+              <th scope="col">If missing</th>
+              <th scope="col">Setting</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-card="title">Receipt or invoice</td>
+              <td data-card="meta">Every claim; a director's cost paid personally</td>
+              <td data-card="amount"><span class="fy-tag fy-tag--expert">Blocks submitting</span></td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Business purpose note</td>
+              <td data-card="meta">Every claim</td>
+              <td data-card="amount"><span class="fy-tag">Warns the approver</span></td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Attendees' names</td>
+              <td data-card="meta">Meals above S$50</td>
+              <td data-card="amount"><span class="fy-tag fy-tag--expert">Blocks submitting</span></td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Map screenshot</td>
+              <td data-card="meta">Mileage trips</td>
+              <td data-card="amount"><span class="fy-tag">Nothing: optional</span></td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">A missing required item stops the claim being submitted; a missing recommended item shows a warning to the approver.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="mr-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="mr-title">Mileage rates</h2>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Add a rate</button>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr>
+              <th scope="col">Vehicle</th>
+              <th scope="col" class="fy-num">Rate per km</th>
+              <th scope="col">In force</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-card="title">Car</td>
+              <td data-card="amount" class="fy-num">S$0.60</td>
+              <td data-card="meta">1 Jan – 31 Oct 2026</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>In force</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Car</td>
+              <td data-card="amount" class="fy-num">S$0.65</td>
+              <td data-card="meta">From 1 Nov 2026</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Awaiting approval</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Motorcycle</td>
+              <td data-card="amount" class="fy-num">S$0.25</td>
+              <td data-card="meta">From 1 Jan 2026</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>In force</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__body fy-stack fy-stack--3" style="border-top: 1px solid var(--border)">
+          <div class="fy-plain">
+            <i data-icon="info" class="fy-i--20"></i>
+            <span class="fy-small fy-secondary">There is no recommended rate: IRAS sets none, but the rate must be reasonable. Anything above a reasonable rate is taxable pay. Each trip is rounded with <span class="fy-mono">RND-MILEAGE</span> (km to 0.1, then to the cent, half-up); mileage never carries GST.</span>
+          </div>
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="ep-maps-l" aria-describedby="ep-maps-h"></button>
+            <div class="fy-stack fy-grow" style="gap: 2px">
+              <span class="fy-row fy-row--wrap"><span class="fy-strong" id="ep-maps-l">Work out distances with a maps service</span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span></span>
+              <span class="fy-help" id="ep-maps-h">Off. If you turn it on, trip addresses are sent to the maps provider, so it is added to the data inventory first.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="dl-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="dl-title">Deadlines, duplicates and approval</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item" style="flex-wrap: wrap">
+            <span class="fy-list__main" style="flex-basis: 220px"><span class="fy-list__title">Claim deadline</span><span class="fy-list__meta" style="white-space: normal">60 days after the expense. Later claims need finance approval and a reason.</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span>
+          </li>
+          <li class="fy-list__item" style="flex-wrap: wrap">
+            <span class="fy-list__main" style="flex-basis: 220px"><span class="fy-list__title">Cash advance settled within</span><span class="fy-list__meta" style="white-space: normal">60 days of the advance, by claims or a refund.</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span>
+          </li>
+          <li class="fy-list__item" style="flex-wrap: wrap">
+            <span class="fy-list__main" style="flex-basis: 220px"><span class="fy-list__title">Duplicate receipts</span><span class="fy-list__meta" style="white-space: normal">Checked across everyone's claims and card lines; a duplicate is blocked.</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span>
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Duplicate receipt check"></button>
+          </li>
+          <li class="fy-list__item" style="flex-wrap: wrap">
+            <span class="fy-list__main" style="flex-basis: 220px"><span class="fy-list__title">Approval route</span><span class="fy-list__meta" style="white-space: normal">Line manager, then finance; above S$500 also an Owner. No one approves their own claim: a director's claim goes to the other director.</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span>
+            <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/approval-policies">Approval policies</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="How settings work and change history">
+      <section class="fy-card" aria-labelledby="how-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="how-title">How these settings work</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--top"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Recommended</span><span class="fy-small fy-secondary">The value Fyniq ships with, with a one-line reason.</span></div>
+          <div class="fy-row fy-row--top"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Changed</span><span class="fy-small fy-secondary">Changed from recommended; the reason is kept. Reset at any time.</span></div>
+          <div class="fy-row fy-row--top"><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Awaiting approval</span><span class="fy-small fy-secondary">Takes effect only after a second person approves it.</span></div>
+          <a class="fy-small" href="#help/expense-policy">Read the guide to expense policies</a>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="hist-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="hist-title">Recent changes</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/expense-policy/history">All</a></div>
+        <div class="fy-card__body">
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="clock"></i></span>
+              <span class="fy-strong">Car rate S$0.60 → S$0.65 from 1 Nov</span>
+              <span class="fy-small fy-muted">Mei Lin Tan, today · waiting for Arjun Rao</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong">Local travel limit S$80 → S$100</span>
+              <span class="fy-small fy-muted">Mei Lin Tan, 2 Sep · approved by Arjun Rao, 3 Sep</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong">Policy created from recommended values</span>
+              <span class="fy-small fy-muted">1 Jan 2026</span>
+            </li>
+          </ol>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="plus"></i>Add a category limit</button>
+  </div>
+</div>

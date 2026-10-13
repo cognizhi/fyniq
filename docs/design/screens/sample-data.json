@@ -1,0 +1,1171 @@
+{
+  "about": "The one sample company every screen shows (AUTHORING.md §6). All of it is synthetic. `build.py check` reads this file: an account code must carry its name here, a document number must belong to its contact here, a person's masked ID must match. Change a fact here first, then the screens.",
+  "clock": "Tuesday 13 Oct 2026, 09:12 (SGT). Every screen shows the books at this moment: an uncategorised bank line leaves its invoice open; an auto-matched one has paid it.",
+  "accounts": {
+    "1010": [
+      "DBS Business Multi-Currency"
+    ],
+    "1020": [
+      "OCBC Business Growth"
+    ],
+    "1030": [
+      "Wise (USD)"
+    ],
+    "1040": [
+      "Airwallex (USD)"
+    ],
+    "1100": [
+      "Accounts receivable"
+    ],
+    "1210": [
+      "Prepayments"
+    ],
+    "1250": [
+      "Staff & director advances"
+    ],
+    "1350": [
+      "Due from related companies",
+      "Due from"
+    ],
+    "1510": [
+      "Computer equipment"
+    ],
+    "1590": [
+      "Accumulated depreciation"
+    ],
+    "2010": [
+      "Accounts payable"
+    ],
+    "2050": [
+      "Accrued expenses"
+    ],
+    "2100": [
+      "Salaries payable"
+    ],
+    "2110": [
+      "CPF & SDL payable"
+    ],
+    "2115": [
+      "EPF payable"
+    ],
+    "2116": [
+      "SOCSO and EIS payable"
+    ],
+    "2120": [
+      "Deferred remuneration payable",
+      "Deferred remuneration"
+    ],
+    "2150": [
+      "Expense claims payable"
+    ],
+    "2200": [
+      "GST control"
+    ],
+    "2300": [
+      "Income tax payable"
+    ],
+    "2350": [
+      "Due to related companies",
+      "Due to"
+    ],
+    "2400": [
+      "Deferred revenue"
+    ],
+    "2500": [
+      "Loan from director"
+    ],
+    "2700": [
+      "Convertible notes / SAFE"
+    ],
+    "2999": [
+      "Suspense"
+    ],
+    "3010": [
+      "Share capital, ordinary"
+    ],
+    "3020": [
+      "Share capital, preference"
+    ],
+    "3100": [
+      "Retained earnings"
+    ],
+    "3300": [
+      "Capital contribution"
+    ],
+    "4010": [
+      "Subscription revenue"
+    ],
+    "4020": [
+      "Services revenue"
+    ],
+    "4090": [
+      "Recharged costs"
+    ],
+    "5010": [
+      "Cloud hosting"
+    ],
+    "5020": [
+      "AI and API usage"
+    ],
+    "5030": [
+      "Delivery contractors"
+    ],
+    "5040": [
+      "Payment processing fees"
+    ],
+    "6010": [
+      "Salaries"
+    ],
+    "6020": [
+      "Employer CPF"
+    ],
+    "6030": [
+      "SDL"
+    ],
+    "6050": [
+      "Directors' fees"
+    ],
+    "6060": [
+      "Contract staff"
+    ],
+    "6110": [
+      "Rent and office"
+    ],
+    "6120": [
+      "Software subscriptions"
+    ],
+    "6135": [
+      "SaaS tools"
+    ],
+    "6140": [
+      "Printing and stationery"
+    ],
+    "6150": [
+      "Marketing and design"
+    ],
+    "6210": [
+      "Utilities"
+    ],
+    "6310": [
+      "Local travel"
+    ],
+    "6320": [
+      "Overseas travel"
+    ],
+    "6350": [
+      "Staff welfare"
+    ],
+    "6410": [
+      "Insurance"
+    ],
+    "6420": [
+      "Bank charges"
+    ],
+    "6430": [
+      "Small equipment"
+    ],
+    "6510": [
+      "Accounting fees"
+    ],
+    "6520": [
+      "Legal and secretarial"
+    ],
+    "6530": [
+      "Consultancy"
+    ],
+    "6610": [
+      "Depreciation expense",
+      "Depreciation"
+    ],
+    "7010": [
+      "Interest income"
+    ],
+    "7030": [
+      "FX & rounding differences",
+      "FX & rounding"
+    ],
+    "7040": [
+      "Unrealised FX gain or loss"
+    ],
+    "8010": [
+      "Income tax expense"
+    ]
+  },
+  "contacts": {
+    "Acme Analytics Pte Ltd": [
+      "Acme"
+    ],
+    "Lumen Health Pte Ltd": [
+      "Lumen"
+    ],
+    "Orbital Freight Asia Pte Ltd": [
+      "Orbital"
+    ],
+    "Kopi Labs Pte Ltd": [
+      "Kopi Labs",
+      "KOPI LABS"
+    ],
+    "Harbourfront Dental Group": [
+      "Harbourfront"
+    ],
+    "Brightside Fitness Pte Ltd": [
+      "Brightside"
+    ],
+    "Tandem Events Pte Ltd": [
+      "Tandem Events"
+    ],
+    "Sora Design Co. Pte Ltd": [
+      "Sora Design"
+    ],
+    "Noodle Lab Studio": [
+      "Noodle Lab"
+    ],
+    "Amazon Web Services Singapore Pte Ltd": [
+      "Amazon Web Services",
+      "AWS"
+    ],
+    "Google Workspace": [
+      "Google Workspace"
+    ],
+    "WeWork Singapore Pte Ltd": [
+      "WeWork"
+    ],
+    "Figma": [
+      "Figma"
+    ],
+    "Grab for Business": [
+      "Grab"
+    ],
+    "SP Group": [
+      "SP Group"
+    ],
+    "Ho & Partners LLP": [
+      "Ho & Partners"
+    ],
+    "Kestrel Data Ltd": [
+      "Kestrel"
+    ],
+    "Studio Pagi": [
+      "Studio Pagi"
+    ],
+    "Sprout Studio Pte Ltd": [
+      "Sprout Studio"
+    ],
+    "PT Data Nusantara": [
+      "Data Nusantara"
+    ],
+    "GitHub": [
+      "GitHub"
+    ],
+    "Notion": [
+      "Notion"
+    ],
+    "Apple": [
+      "Apple"
+    ],
+    "Lion Rock Ventures": [
+      "Lion Rock"
+    ],
+    "Challenger Technologies": [
+      "Challenger"
+    ],
+    "Canva": [
+      "Canva"
+    ],
+    "Google Cloud": [
+      "Google Cloud"
+    ],
+    "Anthropic": [
+      "Anthropic"
+    ]
+  },
+  "people": {
+    "Mei Lin Tan": {
+      "role": "CEO, founder and director; Owner",
+      "id": "305G"
+    },
+    "Arjun Rao": {
+      "role": "CTO, co-founder and director",
+      "id": "119A"
+    },
+    "Grace Ho": {
+      "role": "External accountant, Ho & Partners LLP"
+    },
+    "Daniel Lim": {
+      "role": "Senior software engineer, Engineering",
+      "id": "412F"
+    },
+    "Wei Jie Ong": {
+      "role": "Engineering lead, Engineering",
+      "id": "238J"
+    },
+    "Chen Yu": {
+      "role": "Data scientist, Engineering; Employment Pass; leaving 30 Nov 2026",
+      "id": "903N"
+    },
+    "Priya Nair": {
+      "role": "Head of customer success, Customer success",
+      "id": "771C"
+    },
+    "Hafiz Rahman": {
+      "role": "Customer support specialist, Customer success",
+      "id": "156K"
+    },
+    "Sarah Koh": {
+      "role": "Office and people manager, Operations",
+      "id": "684B"
+    },
+    "Rachel Teo": {
+      "role": "Company secretary (named person, resident), Ho & Partners LLP; appointed 2 Jan 2025",
+      "id": "477D"
+    },
+    "Nurul Aziz": {
+      "role": "Former employee, left 31 Jul 2026; exercised 15,000 options on 8 Oct (ESOP 2026), at ACRA",
+      "id": "924E"
+    }
+  },
+  "documents": {
+    "INV-0096": {
+      "contact": "Acme Analytics Pte Ltd",
+      "amount": "12,000.00",
+      "date": "Dec 2025",
+      "what": "Opening receivable",
+      "status": "Paid 20 Jan"
+    },
+    "INV-0098": {
+      "contact": "Noodle Lab Studio",
+      "amount": "2,400.00",
+      "date": "15 Nov 2025",
+      "what": "Opening receivable; no GST (before registration)",
+      "status": "Written off 31 Mar"
+    },
+    "INV-0101": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "US$5,000.00 (S$6,500.00 at 1.3000)",
+      "date": "Dec 2025",
+      "what": "Opening receivable",
+      "status": "Paid 3 Feb"
+    },
+    "INV-0104": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "440.00",
+      "date": "Dec 2025",
+      "what": "Opening receivable found late",
+      "status": "Proposed addition to the opening balances"
+    },
+    "INV-0109": {
+      "contact": "Brightside Fitness Pte Ltd",
+      "amount": "3,270.00",
+      "date": "12 Mar 2026",
+      "what": "GST 270.00",
+      "status": "Written off 30 Sep; bad-debt relief eligible"
+    },
+    "INV-0112": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "8,400.00",
+      "date": "Apr 2026",
+      "what": "SR to ZR correction (international service)",
+      "status": "GST adjustment to decide"
+    },
+    "INV-0116": {
+      "contact": "Tandem Events Pte Ltd",
+      "amount": "1,962.00",
+      "date": "28 Apr 2026",
+      "what": "GST 162.00",
+      "status": "Written off 30 Sep; relief from 28 Apr 2027"
+    },
+    "INV-0117": {
+      "contact": "Sora Design Co. Pte Ltd",
+      "amount": "1,090.00",
+      "date": "9 Jun 2026",
+      "what": "GST 90.00",
+      "status": "Written off 12 Oct (approved by Arjun Rao); relief from 9 Jun 2027"
+    },
+    "INV-0118": {
+      "contact": "Acme Analytics Pte Ltd",
+      "amount": "36,000.00",
+      "date": "Jul 2026",
+      "what": "Annual platform fee, Jul 2026–Jun 2027 (deferred)",
+      "status": "Paid"
+    },
+    "INV-0122": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "4,800.00",
+      "date": "Jul 2026",
+      "what": "Support plan, Aug 2026–Jul 2027 (deferred)",
+      "status": "Paid"
+    },
+    "INV-0125": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "date": "Jul 2026",
+      "what": "InvoiceNow resubmission",
+      "status": "Queued"
+    },
+    "INV-0128": {
+      "contact": "Acme Analytics Pte Ltd",
+      "date": "Jul 2026",
+      "what": "InvoiceNow: Peppol ID not found",
+      "status": "Failed"
+    },
+    "INV-0129": {
+      "contact": "Lumen Health Pte Ltd",
+      "date": "Jul 2026",
+      "what": "InvoiceNow acknowledged A26-0930-118274",
+      "status": "Paid"
+    },
+    "INV-0131": {
+      "contact": "Acme Analytics Pte Ltd",
+      "amount": "5,450.00",
+      "date": "Jul 2026",
+      "what": "Data platform set-up",
+      "status": "Paid 9 Oct by PayNow through HitPay (payout HP-1010)"
+    },
+    "INV-0133": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "1,635.00",
+      "date": "31 Jul 2026",
+      "what": "Data feed set-up",
+      "status": "Paid 28 Aug (1,634.60; 0.40 within tolerance)"
+    },
+    "INV-0134": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "8,720.00",
+      "date": "Aug 2026",
+      "what": "Freight analytics, August",
+      "status": "Paid 2 Sep by PayNow"
+    },
+    "INV-0135": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "US$3,804.10",
+      "date": "Sep 2026",
+      "what": "USD platform fee, September",
+      "status": "Paid 1 Oct (open at 30 Sep: revalued in JNL-0247)"
+    },
+    "INV-0136": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "2,180.00",
+      "date": "14 Aug 2026",
+      "what": "Dashboard changes; due 13 Sep",
+      "status": "Overdue 30 days; disputed"
+    },
+    "INV-0137": {
+      "contact": "Lumen Health Pte Ltd",
+      "amount": "13,080.00",
+      "date": "15 Aug 2026",
+      "what": "Pilot milestone 1 of 4 (12,000.00 + GST)",
+      "status": "Paid"
+    },
+    "INV-0138": {
+      "contact": "Harbourfront Dental Group",
+      "amount": "4,360.00",
+      "date": "28 Aug 2026",
+      "what": "Due 27 Sep",
+      "status": "Overdue 16 days; email bounced"
+    },
+    "INV-0139": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "8,720.00",
+      "date": "3 Sep 2026",
+      "what": "Due 3 Oct; part-paid 3,860.00 on 25 Sep",
+      "status": "4,860.00 open, overdue 10 days"
+    },
+    "INV-0140": {
+      "contact": "Acme Analytics Pte Ltd",
+      "amount": "10,900.00",
+      "date": "12 Sep 2026",
+      "what": "Subscription, September; due 12 Oct",
+      "status": "Paid 12 Oct (auto-matched)"
+    },
+    "INV-0141": {
+      "contact": "Lumen Health Pte Ltd",
+      "amount": "13,080.00",
+      "date": "15 Sep 2026",
+      "what": "Pilot milestone 2 of 4; due 15 Oct",
+      "status": "Open"
+    },
+    "INV-0142": {
+      "contact": "Lumen Health Pte Ltd",
+      "amount": "3,728.00",
+      "date": "2 Oct 2026",
+      "what": "Clinic staff training and travel; line 2 has no GST code",
+      "status": "Draft, can't post"
+    },
+    "INV-0143": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "1,635.00",
+      "date": "2 Oct 2026",
+      "what": "Data feed, Oct to Dec",
+      "status": "Open, due 1 Nov"
+    },
+    "INV-0144": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "US$3,804.10 (S$4,913.00 at 1.2915)",
+      "date": "5 Oct 2026",
+      "what": "USD platform fee, October",
+      "status": "Open, due 4 Nov"
+    },
+    "INV-0145": {
+      "contact": "Harbourfront Dental Group",
+      "amount": "3,270.00",
+      "date": "6 Oct 2026",
+      "status": "Awaiting approval"
+    },
+    "INV-0146": {
+      "contact": "Acme Analytics Pte Ltd",
+      "amount": "11,772.00",
+      "date": "8 Oct 2026",
+      "what": "Data platform, September time and materials",
+      "status": "Posted, not sent; due 7 Nov"
+    },
+    "INV-0147": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "545.00",
+      "date": "9 Oct 2026",
+      "status": "Draft"
+    },
+    "INV-0148": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "2,180.00",
+      "date": "9 Oct 2026",
+      "status": "Draft"
+    },
+    "INV-0149": {
+      "contact": "Harbourfront Dental Group",
+      "amount": "1,090.00",
+      "date": "12 Oct 2026",
+      "status": "Awaiting approval"
+    },
+    "INV-0150": {
+      "contact": "Acme Analytics Pte Ltd",
+      "amount": "5,450.00",
+      "date": "12 Oct 2026",
+      "what": "Data platform support, October (QUO-0024, 1 of 3)",
+      "status": "Sent and opened; due 11 Nov"
+    },
+    "INV-0151": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "4,360.00",
+      "date": "13 Oct 2026",
+      "what": "From QUO-0030",
+      "status": "Draft being edited"
+    },
+    "CN-0012": {
+      "contact": "Harbourfront Dental Group",
+      "amount": "260.00",
+      "date": "Oct 2026",
+      "what": "Service credit for 4 Sep downtime; apply to INV-0138",
+      "status": "Not yet applied"
+    },
+    "QUO-0024": {
+      "contact": "Acme Analytics Pte Ltd",
+      "amount": "16,350.00",
+      "status": "Invoiced 1 of 3"
+    },
+    "QUO-0025": {
+      "contact": "Harbourfront Dental Group",
+      "amount": "5,450.00",
+      "status": "Declined"
+    },
+    "QUO-0026": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "2,725.00",
+      "status": "Expired"
+    },
+    "QUO-0027": {
+      "contact": "Lumen Health Pte Ltd",
+      "amount": "26,160.00",
+      "status": "Accepted 30 Sep"
+    },
+    "QUO-0028": {
+      "contact": "Acme Analytics Pte Ltd",
+      "amount": "10,900.00",
+      "status": "Expires 15 Oct"
+    },
+    "QUO-0029": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "32,700.00",
+      "status": "Sent"
+    },
+    "QUO-0030": {
+      "contact": "Kopi Labs Pte Ltd",
+      "amount": "4,360.00",
+      "status": "Accepted 2 Oct; INV-0151 draft"
+    },
+    "QUO-0031": {
+      "contact": "Harbourfront Dental Group",
+      "amount": "21,800.00",
+      "status": "Sent",
+      "what": "Dashboards for six clinics, 20,000.00 + GST; valid until 1 Nov"
+    },
+    "QUO-0032": {
+      "contact": "Orbital Freight Asia Pte Ltd",
+      "amount": "8,720.00",
+      "status": "Draft"
+    },
+    "PO-0013": {
+      "contact": "WeWork Singapore Pte Ltd",
+      "amount": "1,200.00",
+      "what": "Extra desks",
+      "status": "Closed"
+    },
+    "PO-0014": {
+      "contact": "Studio Pagi",
+      "amount": "6,000.00",
+      "what": "Lumen Health pilot",
+      "status": "Approved"
+    },
+    "PO-0015": {
+      "contact": "Kestrel Data Ltd",
+      "amount": "£4,800.00",
+      "what": "Acme data platform",
+      "status": "Partly billed"
+    },
+    "PO-0016": {
+      "contact": "Challenger Technologies",
+      "amount": "4,598.00",
+      "status": "Arjun Rao to approve"
+    },
+    "BILL-0790": {
+      "contact": "WeWork Singapore Pte Ltd",
+      "amount": "4,360.00",
+      "date": "Dec 2025",
+      "what": "Opening payable",
+      "status": "Paid 5 Jan"
+    },
+    "BILL-0794": {
+      "contact": "Amazon Web Services Singapore Pte Ltd",
+      "amount": "US$1,423.08 (S$1,850.00 at 1.3000)",
+      "date": "Dec 2025",
+      "what": "Opening payable",
+      "status": "Paid 6 Jan"
+    },
+    "BILL-0812": {
+      "contact": "WeWork Singapore Pte Ltd",
+      "amount": "6,540.00",
+      "date": "Jan 2026",
+      "what": "Refundable desk deposit 6,000.00 + GST 540.00 claimed in error",
+      "status": "GST adjustment to decide"
+    },
+    "BILL-0841": {
+      "contact": "Google Workspace",
+      "amount": "1,382.40",
+      "date": "Jan 2026",
+      "what": "Annual plan, Jan–Dec 2026 (prepaid)",
+      "status": "Paid"
+    },
+    "BILL-0844": {
+      "contact": "Figma",
+      "amount": "2,160.00",
+      "date": "Jan 2026",
+      "what": "Annual licence, Jan–Dec 2026 (prepaid)",
+      "status": "Paid"
+    },
+    "BILL-0851": {
+      "contact": "Amazon Web Services Singapore Pte Ltd",
+      "amount": "2,310.65",
+      "date": "2 Jul 2026",
+      "what": "Cloud hosting, June",
+      "status": "Paid"
+    },
+    "BILL-0861": {
+      "contact": "Apple",
+      "date": "Jul 2026",
+      "what": "MacBook Pro (fixed asset)",
+      "status": "Paid"
+    },
+    "BILL-0866": {
+      "amount": "3,400.00",
+      "date": "Apr 2026",
+      "what": "Directors' and officers' insurance, Apr 2026–Mar 2027 (prepaid)",
+      "status": "Paid"
+    },
+    "BILL-0874": {
+      "contact": "Google Workspace",
+      "amount": "−1,308.00",
+      "date": "Jun 2026",
+      "what": "Supplier credit note, Apr–Jun (Box 5 −1,200.00, Box 7 −108.00)",
+      "status": "Decided 6 Oct"
+    },
+    "BILL-0876": {
+      "contact": "Amazon Web Services Singapore Pte Ltd",
+      "amount": "2,402.15",
+      "date": "3 Aug 2026",
+      "what": "Cloud hosting, July",
+      "status": "Paid"
+    },
+    "BILL-0881": {
+      "date": "Aug 2026",
+      "what": "Staff family transport, coded BL",
+      "status": "Paid"
+    },
+    "BILL-0896": {
+      "contact": "WeWork Singapore Pte Ltd",
+      "amount": "7,063.20",
+      "date": "1 Sep 2026",
+      "what": "Membership, September (6,480.00 + GST)",
+      "status": "Paid"
+    },
+    "BILL-0897": {
+      "contact": "SP Group",
+      "date": "Sep 2026",
+      "what": "Peppol purchase",
+      "status": "Queued for InvoiceNow"
+    },
+    "BILL-0898": {
+      "contact": "GitHub",
+      "amount": "US$1,050.00",
+      "date": "Sep 2026",
+      "what": "Open at 30 Sep, revalued",
+      "status": "Paid in October"
+    },
+    "BILL-0902": {
+      "contact": "Google Workspace",
+      "amount": "277.43",
+      "date": "2 Sep 2026",
+      "what": "Extra seats, September",
+      "status": "Paid"
+    },
+    "BILL-0903": {
+      "contact": "Amazon Web Services Singapore Pte Ltd",
+      "amount": "2,457.40",
+      "date": "2 Sep 2026",
+      "what": "Cloud hosting, August",
+      "status": "Paid 18 Sep"
+    },
+    "BILL-0905": {
+      "contact": "GitHub",
+      "amount": "389.30",
+      "date": "5 Sep 2026",
+      "what": "Team plan, Engineering",
+      "status": "Paid"
+    },
+    "BILL-0908": {
+      "contact": "Figma",
+      "amount": "412.80",
+      "date": "30 Sep 2026",
+      "what": "Prepared by Arjun Rao",
+      "status": "Paid"
+    },
+    "BILL-0909": {
+      "contact": "WeWork Singapore Pte Ltd",
+      "amount": "7,063.20",
+      "date": "1 Oct 2026",
+      "what": "Membership, October (6,480.00 + GST)",
+      "status": "Paid 1 Oct"
+    },
+    "BILL-0910": {
+      "contact": "Google Workspace",
+      "amount": "403.20",
+      "date": "1 Oct 2026",
+      "what": "Seats, October",
+      "status": "Paid 1 Oct"
+    },
+    "BILL-0913": {
+      "contact": "Figma",
+      "amount": "216.00",
+      "date": "3 Oct 2026",
+      "what": "Seats, October",
+      "status": "Paid 3 Oct"
+    },
+    "BILL-0914": {
+      "contact": "Ho & Partners LLP",
+      "amount": "2,398.00",
+      "date": "3 Sep 2026",
+      "what": "Bookkeeping and close support, August (2,200.00 + GST)",
+      "status": "Paid 7 Oct (batch of Wed 7 Oct)"
+    },
+    "BILL-0915": {
+      "contact": "Sprout Studio Pte Ltd",
+      "amount": "4,250.00",
+      "date": "8 Oct 2026",
+      "what": "Campaign design",
+      "status": "Paid 7 Oct (batch of Wed 7 Oct)"
+    },
+    "BILL-0916": {
+      "contact": "Grab for Business",
+      "amount": "589.40",
+      "date": "1 Oct 2026",
+      "what": "Rides, September",
+      "status": "Paid 12 Oct by the DBS Visa card"
+    },
+    "BILL-0917": {
+      "contact": "Anthropic",
+      "amount": "4,108.30",
+      "date": "5 Oct 2026",
+      "what": "Prepaid API credits for the product (5020 AI and API usage)",
+      "status": "Paid 5 Oct"
+    },
+    "BILL-0918": {
+      "contact": "Amazon Web Services Singapore Pte Ltd",
+      "amount": "2,861.40",
+      "date": "12 Oct 2026",
+      "what": "Cloud hosting, September: 2,625.14 + GST 236.26; prepared by Arjun Rao",
+      "status": "Awaiting approval by Mei Lin Tan; due 20 Oct"
+    },
+    "BILL-0920": {
+      "contact": "Ho & Partners LLP",
+      "amount": "2,398.00",
+      "date": "1 Oct 2026",
+      "what": "Bookkeeping and close support, September",
+      "status": "Approved; payment frozen by the bank-details change; due 15 Oct"
+    },
+    "BILL-0921": {
+      "contact": "WeWork Singapore Pte Ltd",
+      "amount": "5,955.75",
+      "date": "5 Oct 2026",
+      "what": "Extra desks and meeting rooms, September",
+      "status": "Approved; due 31 Oct; 2% off if paid by 20 Oct"
+    },
+    "BILL-0922": {
+      "contact": "Google Workspace",
+      "amount": "403.20",
+      "date": "2 Oct 2026",
+      "what": "Seats, November in advance",
+      "status": "Approved; due 1 Nov"
+    },
+    "BILL-0923": {
+      "contact": "Figma",
+      "amount": "216.00",
+      "date": "3 Oct 2026",
+      "what": "Seats, November in advance",
+      "status": "Approved; due 3 Nov"
+    },
+    "BILL-0924": {
+      "contact": "Grab for Business",
+      "amount": "667.52",
+      "date": "2 Oct 2026",
+      "what": "Rides, early October",
+      "status": "Approved; pay 16 Oct"
+    },
+    "BILL-0925": {
+      "contact": "SP Group",
+      "amount": "368.53",
+      "date": "9 Oct 2026",
+      "what": "Electricity, September",
+      "status": "Approved; due 9 Nov"
+    },
+    "BILL-0926": {
+      "contact": "SP Group",
+      "amount": "412.66",
+      "date": "12 Oct 2026",
+      "what": "From InvoiceNow",
+      "status": "Draft; due 9 Dec"
+    },
+    "BILL-0927": {
+      "contact": "WeWork Singapore Pte Ltd",
+      "amount": "7,412.40",
+      "date": "12 Oct 2026",
+      "what": "From InvoiceNow (e-invoice received 12 Oct)",
+      "status": "Draft; due 15 Nov"
+    },
+    "BILL-0928": {
+      "contact": "Google Workspace",
+      "amount": "1,284.00",
+      "date": "12 Oct 2026",
+      "what": "From InvoiceNow",
+      "status": "Draft; due 12 Nov"
+    },
+    "JNL-0001": {
+      "date": "8 Jan 2026",
+      "what": "Opening balances at 1 Jan 2026",
+      "status": "Posted"
+    },
+    "JNL-0161": {
+      "amount": "283.33",
+      "date": "30 Apr 2026",
+      "what": "Schedules, April",
+      "status": "Posted"
+    },
+    "JNL-0178": {
+      "amount": "283.34",
+      "date": "31 May 2026",
+      "what": "Schedules, May",
+      "status": "Posted"
+    },
+    "JNL-0193": {
+      "amount": "283.33",
+      "date": "30 Jun 2026",
+      "what": "Schedules, June",
+      "status": "Posted"
+    },
+    "JNL-0207": {
+      "amount": "283.33",
+      "date": "31 Jul 2026",
+      "what": "Schedules, July",
+      "status": "Posted"
+    },
+    "JNL-0226": {
+      "amount": "283.34",
+      "date": "31 Aug 2026",
+      "what": "Schedules, August",
+      "status": "Posted"
+    },
+    "JNL-0227": {
+      "amount": "2,254.50",
+      "date": "31 Aug 2026",
+      "what": "Accrual for AWS hosting, August (Grace Ho)",
+      "status": "Posted; reversed 1 Sep"
+    },
+    "JNL-0239": {
+      "amount": "318.40",
+      "date": "31 Aug 2026",
+      "what": "Accrued SP Group utilities, August",
+      "status": "Posted, locked"
+    },
+    "JNL-0241": {
+      "amount": "4,890.00",
+      "date": "30 Sep 2026",
+      "what": "Capitalise three laptops bought in July (Grace Ho)",
+      "status": "Awaiting approval"
+    },
+    "JNL-0242": {
+      "amount": "1,850.00",
+      "date": "30 Sep 2026",
+      "what": "WeWork accrual, September (Arjun Rao): duplicates BILL-0896",
+      "status": "Posted; in the attestation sample"
+    },
+    "JNL-0243": {
+      "date": "29 Sep 2026",
+      "what": "Accrued bonus, Q3",
+      "status": "Can't post: unbalanced by 120.00"
+    },
+    "JNL-0244": {
+      "amount": "8,200.00",
+      "date": "30 Sep 2026",
+      "what": "Reclassify AWS credits to cloud hosting",
+      "status": "Awaiting approval by Arjun Rao"
+    },
+    "JNL-0245": {
+      "amount": "1,036.11",
+      "date": "30 Sep 2026",
+      "what": "Depreciation, September",
+      "status": "Posted"
+    },
+    "JNL-0246": {
+      "amount": "3,978.53",
+      "date": "30 Sep 2026",
+      "what": "Prepayment and deferral schedules, September",
+      "status": "Posted"
+    },
+    "JNL-0247": {
+      "amount": "197.33",
+      "date": "30 Sep 2026",
+      "what": "Unrealised FX revaluation, September",
+      "status": "Draft, previewed"
+    },
+    "JNL-0248": {
+      "amount": "6,540.00",
+      "date": "30 Sep 2026",
+      "what": "September accrual: Ho & Partners quarterly review (AI proposal)",
+      "status": "Awaiting approval by Mei Lin Tan"
+    },
+    "JNL-0249": {
+      "amount": null,
+      "date": "30 Sep 2026",
+      "what": "Accrue Kestrel Data contractor hours, September (Grace Ho)",
+      "status": "Draft"
+    },
+    "CLM-0038": {
+      "person": "Daniel Lim",
+      "amount": "145.80",
+      "date": "9 Sep 2026",
+      "what": "Notion",
+      "status": "Paid"
+    },
+    "CLM-0040": {
+      "person": "Mei Lin Tan",
+      "amount": "362.40",
+      "date": "18 Sep 2026",
+      "what": "Jakarta hotel, 3 nights (IDR 4,350,000)",
+      "status": "Paid 1 Oct"
+    },
+    "CLM-0041": {
+      "person": "Arjun Rao",
+      "amount": "86.40",
+      "date": "4 Oct 2026",
+      "what": "Grab rides (a Sunday)",
+      "status": "In the attestation sample"
+    },
+    "CLM-0042": {
+      "person": "Chen Yu",
+      "amount": "212.60",
+      "date": "30 Sep 2026",
+      "what": "Taxis to client sites (Acme data platform)",
+      "status": "Approved; held for IR21 clearance"
+    },
+    "CLM-0043": {
+      "person": "Chen Yu",
+      "amount": "420.00",
+      "date": "Sep 2026",
+      "what": "Travel to the Johor data centre (billable, Acme data platform)",
+      "status": "Approved; held for IR21 clearance; billable with 10% markup"
+    },
+    "CLM-0044": {
+      "person": "Daniel Lim",
+      "amount": "186.30",
+      "date": "3 Oct 2026",
+      "status": "Approved; Fri 16 Oct batch",
+      "what": "USB-C dock and cables"
+    },
+    "CLM-0045": {
+      "person": "Mei Lin Tan",
+      "amount": "44.76",
+      "date": "30 Sep 2026",
+      "what": "Mileage, September, 3 trips, 74.6 km",
+      "status": "Submitted; waiting for Arjun Rao"
+    },
+    "CLM-0046": {
+      "person": "Mei Lin Tan",
+      "amount": "64.80",
+      "date": "9 Oct 2026",
+      "what": "Client lunch with Lumen Health",
+      "status": "Returned by Arjun Rao: needs a receipt"
+    },
+    "CLM-0047": {
+      "person": "Mei Lin Tan",
+      "amount": "27.30",
+      "date": "13 Oct 2026",
+      "what": "Grab ride to Acme Analytics",
+      "status": "Draft"
+    },
+    "CLM-0048": {
+      "person": "Priya Nair",
+      "amount": "742.15",
+      "date": "Sep 2026",
+      "what": "Jakarta trip, settles advance ADV-007 (800.00)",
+      "status": "Refund due 57.85"
+    },
+    "INV-0132": {
+      "contact": "Harbourfront Dental Group",
+      "amount": "4,360.00",
+      "date": "Jul 2026",
+      "status": "Paid 29 Aug (auto-matched)"
+    },
+    "CLM-0039": {
+      "person": "Mei Lin Tan",
+      "amount": "249.00",
+      "date": "1 Oct 2026",
+      "what": "Conference ticket",
+      "status": "Approved; Thu 15 Oct claims batch"
+    },
+    "JNL-0240": {
+      "amount": "2,625.14",
+      "date": "30 Sep 2026",
+      "what": "Accrue September AWS usage, net of GST, until BILL-0918 is approved (Grace Ho; approved by Mei Lin Tan)",
+      "status": "Posted; reverses 1 Oct"
+    },
+    "JNL-0228": {
+      "date": "31 Aug 2026",
+      "what": "Unrealised FX revaluation, August",
+      "status": "Posted; reversed 1 Sep"
+    },
+    "CLM-0049": {
+      "person": "Wei Jie Ong",
+      "amount": "38.00",
+      "what": "Test-device app subscription, 11 Oct (Acme data platform)",
+      "status": "Waiting for approval, step 1 of 2"
+    },
+    "CLM-0050": {
+      "person": "Sarah Koh",
+      "amount": "92.40",
+      "what": "Client lunch, Kopi Labs, 9 Oct: attendees missing",
+      "status": "Waiting for approval, step 1 of 2"
+    },
+    "CLM-0051": {
+      "person": "Hafiz Rahman",
+      "amount": "25.56",
+      "what": "Mileage, 42.6 km, 7 Oct (Lumen Health pilot)",
+      "status": "Waiting for approval, step 1 of 2"
+    },
+    "BILL-0929": {
+      "contact": "Canva",
+      "amount": "A$420.00",
+      "date": "12 Oct 2026",
+      "status": "Draft; can't post until an AUD rate for 12 Oct is added"
+    },
+    "INV-0152": {
+      "what": "Next number (Settings › Numbering)"
+    },
+    "CN-0013": {
+      "what": "Next number (Settings › Numbering)"
+    },
+    "QUO-0033": {
+      "what": "Next number (Settings › Numbering)"
+    },
+    "PO-0017": {
+      "what": "Next number (Settings › Numbering)"
+    },
+    "BILL-0930": {
+      "what": "Next number (Settings › Numbering)"
+    },
+    "JNL-0250": {
+      "what": "Next number (Settings › Numbering)"
+    },
+    "BILL-0907": {
+      "contact": "Figma",
+      "amount": "US$",
+      "date": "Sep 2026",
+      "what": "No SGD GST stated on the tax invoice; input tax not claimed",
+      "status": "Open"
+    },
+    "BILL-0875": {
+      "contact": "WeWork Singapore Pte Ltd",
+      "amount": "7,063.20",
+      "date": "1 Aug 2026",
+      "what": "Membership, August",
+      "status": "Paid; August locked"
+    }
+  },
+  "figures": {
+    "Cash, 13 Oct 09:12": "412,380.15 = DBS 287,940.22 + OCBC 96,115.80 + Wise US$15,862.65 (20,410.47 at 1.2867) + Airwallex US$6,150.35 (7,913.66 at 1.2867); US$22,013.00 in all (28,324.13)",
+    "DBS statement, 30 Sep": "301,226.85 (books 300,740.10; the 30 Sep claims batch, 486.75, cleared 1 Oct)",
+    "Receivables, 13 Oct": "48,250.00 from 5 customers: 36,850.00 not yet due, 11,400.00 overdue across 3 invoices (INV-0136, INV-0138, INV-0139)",
+    "Bills to pay, 13 Oct": "12,870.40 including BILL-0918 awaiting approval (2,861.40); posted payables 10,009.00",
+    "P&L, September 2026 (provisional)": "revenue 86,240.00; cost of sales 14,126.19; gross profit 72,113.81 (83.6%); operating expenses 93,904.70; EBITDA −21,790.89; depreciation 1,036.11; net loss −22,600.75",
+    "P&L, August 2026": "revenue 83,115.00; cost of sales 13,438.35; gross profit 69,676.65; net loss −26,062.41",
+    "Year to date, Jan–Sep 2026": "net loss −185,963.91",
+    "Equity, 30 Sep": "−71,282.50 (shares 90,000.00 + retained earnings); assets 532,744.39, liabilities 604,026.89 including the S$500,000 SAFE",
+    "Payroll": "Sep PR-2026-09: gross 42,600.00, net 36,672.00, paid Mon 28 Sep; Oct PR-2026-10: gross 47,600.00, net 40,672.00, of which 31,672.00 paid Wed 28 Oct (Chen Yu 9,000.00 held for IR21)",
+    "Burn and runway": "38,214 a month on average (Jul–Sep); 10.8 months",
+    "Share capital": "9,000,000 ordinary shares issued at S$0.01 on 2 Sep 2024 (incorporation): S$90,000.00 on 3010",
+    "SAFE": "Lion Rock Ventures, S$500,000 post-money SAFE, S$8,000,000 cap, signed 18 Jun 2026; on 2700, classified as a liability by Grace Ho on 30 Jun (converts into a number of shares not yet known); founders still to approve the policy; at its cap it converts into 666,666 shares (S$0.75 a share, whole shares by RND-SHARE), 6.25% of 10,666,666 fully diluted",
+    "Payment batches": "Mon 28 Sep salaries 36,672.00 · Wed 30 Sep claims 486.75 · Wed 7 Oct suppliers 6,648.00 · Thu 15 Oct claims 328.90 · Fri 16 Oct suppliers and claims 3,251.82 to pay (BILL-0920 blocked until approved again; CLM-0042 and CLM-0043 held) · Fri 23 Oct suppliers 3,077.40 · Wed 28 Oct salaries 31,672.00",
+    "Company": "Cognizhi Pte Ltd, UEN 202412345K, incorporated 2 Sep 2024; GST-registered from 1 Jan 2026",
+    "AI usage, 1–13 Oct 09:12": "S$120.86 and 27,278,100 tokens: Claude on Agent Platform, Singapore 119.72 (Opus 4.6 96.60, 18,667,000 tokens; Sonnet 4.6 23.12, 6,589,000) + Gemini on Agent Platform, Singapore 1.14 (Gemini 2.5 Flash, 2,022,100). By agent: assistant 42.42 (9,666,000 tokens; 214 conversations in the app, 0.20 each; Arjun Rao 2,430,000 = 81% of his 3,000,000, Mei Lin Tan 1,872,000, Grace Ho 1,140,000, 6 employees 4,224,000 of which Priya Nair 1,290,000) · document capture 17.11 · bank categorisation 6.47 (23 fallbacks to Gemini today from 08:31, threshold 10) · proposal drafting 8.58 · commentary 4.32 · knowledge-base compiler 22.29 of its S$25.00 budget (89%) · company secretary agent 1.46 (on since 1 Oct; 231,000 tokens) · eval runner 18.21. Per day: 1 Oct 8.84, 2 Oct 24.59, 3 Oct 1.06, 4 Oct 0.88, 5 Oct 10.02, 6 Oct 27.06, 7 Oct 9.21, 8 Oct 8.64, 9 Oct 9.08, 10 Oct 2.33, 11 Oct 0.74, 12 Oct 13.93, 13 Oct 4.48. Organisation budget S$300.00 (40%) and 60,000,000 tokens (45%). Connected apps (Claude Desktop, Claude Code) run on their own model and plan: no Fyniq tokens or cost. September usage S$231.17. Prices: Agent Platform Singapore list price + 10% regional premium, US$1 = S$1.2867",
+    "AI connections, 13 Oct": "Claude on Agent Platform, Singapore: on, usage-based (Google Cloud invoice) · Gemini on Agent Platform, Singapore: on since Tue 6 Oct (fallback for bank categorisation; qualified 6 Oct) · OpenAI API, United States: off, added by Mei Lin Tan at 08:55 for the knowledge-base compiler (know-how only), waiting for Arjun Rao; transfer assessment by Arjun Rao (DPO) 12 Oct; GPT-5 not yet qualified · OpenRouter: draft, prepaid credits US$50.00, zero data retention, know-how only, not qualified. Region preset A, Singapore only",
+    "Company secretary and officers": "Directors Mei Lin Tan and Arjun Rao since 2 Sep 2024; secretary Rachel Teo (Ho & Partners LLP) since 2 Jan 2025. AGM for FY 2025 held 26 Jun 2026; ACRA annual return FY 2025 filed 15 Jul 2026; next: annual notice to registrable controllers by 20 Nov 2026, AGM for FY 2026 by 30 Jun 2027, annual return by 31 Jul 2027. Lion Rock Ventures has not replied to the controllers notice of 2 Sep (Not assessed). Arjun Rao's director account in debit by S$1,200.00 since 30 Sep (1250). The company secretary agent is on since 1 Oct (daily 07:00, weekly Monday 08:00)",
+    "Checks, 13 Oct 09:12": "90 checks (36 from the workbook, 54 platform; C.2 #52 is P2): 1 can't post (INV-0142), 3 to review (OCBC to DBS transfer of 9 Oct; Arjun Rao's director debit; AI model routes, C.2 #55), 1 not assessed (registrable controllers), 85 OK"
+  },
+  "proposals": {
+    "#306": {
+      "what": "Bank rule for Grab for Business (bank.rule_upsert)",
+      "created": "5 Oct 2026, 14:48",
+      "status": "Executed; approved by Mei Lin Tan"
+    },
+    "#307": {
+      "what": "Draft 3 reminder emails (ar.draft_reminders)",
+      "created": "6 Oct 2026, 09:15",
+      "status": "Expired; nobody decided within 72 hours"
+    },
+    "#308": {
+      "what": "Accrue Ho & Partners fees, 1,800.00 (gl.post_journal)",
+      "created": "10 Oct 2026, 11:30",
+      "status": "Rejected by Grace Ho: wrong period"
+    },
+    "#309": {
+      "what": "Draft a bill from an AWS invoice: BILL-0918, 2,861.40, coded to 5010 (ap.draft_bill)",
+      "created": "11 Oct 2026, 16:22",
+      "status": "Executed 12 Oct 16:04; approved by Arjun Rao (APR-2207, 16:03)"
+    },
+    "#310": {
+      "what": "Match a payment to an invoice: Orbital USD receipt in Wise to INV-0135, 4,895.88 (bank.match_payments)",
+      "created": "12 Oct 2026, 10:05",
+      "status": "Executed; approved by Mei Lin Tan"
+    },
+    "#311": {
+      "what": "Categorise 4 DBS Business lines from 2 to 10 Oct, 4,238.87 (bank.categorise_lines)",
+      "created": "13 Oct 2026, 08:40",
+      "status": "Pending; waiting for Mei Lin Tan; expires 16 Oct 08:40"
+    }
+  }
+}

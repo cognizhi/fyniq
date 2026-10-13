@@ -1,0 +1,177 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Journals", "mode": "expert", "heights": {"compact": 2300, "medium": 1550, "expanded": 1100}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><span>Journals</span></nav>
+      <h1 class="fy-h1">Journals</h1>
+      <p class="fy-secondary">Manual, scheduled and system journals. Posted journals are never edited; they are reversed.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="download"></i>Export</button>
+      <a class="fy-btn fy-btn--primary" href="#accounting/journals/new"><i data-icon="plus"></i>New journal</a>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Journal lists">
+    <button type="button" role="tab" aria-selected="true">Journals<span class="fy-badge fy-badge--quiet">48</span></button>
+    <button type="button" role="tab" aria-selected="false">Recurring<span class="fy-badge fy-badge--quiet">4</span></button>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="note">
+    <i data-icon="lock" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>August 2026 is locked</strong><span class="fy-small">Journals dated on or before 31 Aug can't be posted. To correct August, post a dated reversal in September with a reason.</span></div>
+  </div>
+
+  <div class="fy-row fy-row--wrap fy-row--between">
+    <div class="fy-chipset" role="group" aria-label="Filters">
+      <button class="fy-filter" type="button" aria-pressed="true">Period: Aug–Oct 2026</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Account: any</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Preparer: anyone</button>
+      <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="clock"></i>Awaiting approval<span class="fy-badge fy-badge--quiet">3</span></button>
+    </div>
+    <label class="fy-sr" for="jn-search">Search journals</label>
+    <input class="fy-input" id="jn-search" placeholder="Search number or description" style="max-width: 280px">
+  </div>
+
+  <div class="fy-tablewrap">
+    <table class="fy-table fy-table--cards">
+      <thead>
+        <tr>
+          <th scope="col">Number</th><th scope="col">Date</th><th scope="col">Description</th>
+          <th scope="col" class="fy-num">Total (SGD)</th>
+          <th scope="col" class="fy-from-expanded">Source</th>
+          <th scope="col" class="fy-from-expanded">Prepared by</th>
+          <th scope="col" class="fy-from-expanded">Approved by</th>
+          <th scope="col" class="fy-from-medium">Reverses on</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody class="fy-stagger">
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0249">JNL-0249</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">Accrue Kestrel Data hours, September</td>
+          <td data-card="amount" class="fy-num">2,582.25</td>
+          <td data-card="hide" class="fy-from-expanded">Manual</td>
+          <td data-card="hide" class="fy-from-expanded">Grace Ho</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-medium">1 Oct</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0248">JNL-0248</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">September accrual: Ho &amp; Partners quarterly review</td>
+          <td data-card="amount" class="fy-num">6,540.00</td>
+          <td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--outline"><i data-icon="sparkles"></i>AI proposal</span></td>
+          <td data-card="hide" class="fy-from-expanded">Grace Ho</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-medium">1 Oct</td>
+          <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Awaiting approval · Mei Lin Tan</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0247">JNL-0247</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">Unrealised FX revaluation, September</td>
+          <td data-card="amount" class="fy-num">197.33</td>
+          <td data-card="hide" class="fy-from-expanded">System</td>
+          <td data-card="hide" class="fy-from-expanded">Fyniq</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-medium">1 Oct</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft · previewed</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0246">JNL-0246</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">Prepayment and deferral schedules, September</td>
+          <td data-card="amount" class="fy-num">3,978.53</td>
+          <td data-card="hide" class="fy-from-expanded">Schedule</td>
+          <td data-card="hide" class="fy-from-expanded">Fyniq</td>
+          <td data-card="hide" class="fy-from-expanded">Rule</td>
+          <td data-card="hide" class="fy-from-medium">—</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Posted</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0245">JNL-0245</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">Depreciation, September</td>
+          <td data-card="amount" class="fy-num">1,036.11</td>
+          <td data-card="hide" class="fy-from-expanded">Schedule</td>
+          <td data-card="hide" class="fy-from-expanded">Fyniq</td>
+          <td data-card="hide" class="fy-from-expanded">Rule</td>
+          <td data-card="hide" class="fy-from-medium">—</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Posted</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0244">JNL-0244</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">Reclassify AWS credits to cloud hosting</td>
+          <td data-card="amount" class="fy-num">8,200.00</td>
+          <td data-card="hide" class="fy-from-expanded">Manual</td>
+          <td data-card="hide" class="fy-from-expanded">Grace Ho</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-medium">—</td>
+          <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Awaiting approval · Arjun Rao</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0243">JNL-0243</a></td>
+          <td data-card="meta">29 Sep</td>
+          <td data-card="title">Accrued bonus, Q3</td>
+          <td data-card="amount" class="fy-num">—</td>
+          <td data-card="hide" class="fy-from-expanded">Manual</td>
+          <td data-card="hide" class="fy-from-expanded">Mei Lin Tan</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-medium">—</td>
+          <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Can't post: unbalanced by 120.00</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0242">JNL-0242</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">WeWork accrual, September</td>
+          <td data-card="amount" class="fy-num">1,850.00</td>
+          <td data-card="hide" class="fy-from-expanded">Manual</td>
+          <td data-card="hide" class="fy-from-expanded">Arjun Rao</td>
+          <td data-card="hide" class="fy-from-expanded">Arjun Rao, under S$2,000</td>
+          <td data-card="hide" class="fy-from-medium">1 Oct</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Posted</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0241">JNL-0241</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">Capitalise three laptops bought in July</td>
+          <td data-card="amount" class="fy-num">4,890.00</td>
+          <td data-card="hide" class="fy-from-expanded">Manual</td>
+          <td data-card="hide" class="fy-from-expanded">Grace Ho</td>
+          <td data-card="hide" class="fy-from-expanded">—</td>
+          <td data-card="hide" class="fy-from-medium">—</td>
+          <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Awaiting approval · Mei Lin Tan</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0240">JNL-0240</a></td>
+          <td data-card="meta">30 Sep</td>
+          <td data-card="title">Accrue September AWS usage</td>
+          <td data-card="amount" class="fy-num">2,625.14</td>
+          <td data-card="hide" class="fy-from-expanded">Manual</td>
+          <td data-card="hide" class="fy-from-expanded">Grace Ho</td>
+          <td data-card="hide" class="fy-from-expanded">Mei Lin Tan</td>
+          <td data-card="hide" class="fy-from-medium">1 Oct</td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Posted</span></td>
+        </tr>
+        <tr>
+          <td data-card="meta"><a class="fy-mono" href="#accounting/journals/jnl-0239">JNL-0239</a></td>
+          <td data-card="meta">31 Aug</td>
+          <td data-card="title">Accrued SP Group utilities, August</td>
+          <td data-card="amount" class="fy-num">318.40</td>
+          <td data-card="hide" class="fy-from-expanded">Manual</td>
+          <td data-card="hide" class="fy-from-expanded">Grace Ho</td>
+          <td data-card="hide" class="fy-from-expanded">Mei Lin Tan</td>
+          <td data-card="hide" class="fy-from-medium">1 Sep</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Posted · locked</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fy-small fy-muted">Showing 11 of 48 · amounts are the debit total in SGD</p>
+
+  <div class="fy-actionbar fy-only-compact"><a class="fy-btn fy-btn--primary fy-btn--block" href="#accounting/journals/new"><i data-icon="plus"></i>New journal</a></div>
+</div>

@@ -11,7 +11,8 @@
 | Name and line | **Fyniq** (one word, capital F), with the line *Intelligence behind every number* (13 Oct 2026). The line belongs on the sign-in page, the first-run welcome and outward material, never in place of a label. It is a promise the UI keeps: every figure opens to its source and history (FR-UX-04), and AI content says where its numbers come from (AI-68). Until a logo exists the wordmark is the name in the UI font; the organisation's own logo (FR-ORG-09) sits beside it |
 | Users | Founders who are not accountants (Basic mode) and accountants, controllers and auditors (Expert mode) |
 | Stack | React 19 SPA, shadcn/ui on Base UI, Tailwind CSS 4, AG Grid (entry grids), TanStack Table (statements), ECharts 6, Lucide icons |
-| Origin | uipro (`ui-ux-pro-max`) review of PRD-001 on 12 Oct 2026, reconciled with the PRD; findings REV-29…40 in `docs/prd/reviews/prd-001-review-2026-10-12.md` |
+| Origin | uipro (`ui-ux-pro-max`) review of PRD-001 on 12 Oct 2026, reconciled with the PRD; findings REV-29…40 in `docs/prd/reviews/prd-001-review-2026-10-12.md`. Device classes and motion (§5.1, §9) added for PRD rev 0.10 after a second uipro pass (13 Oct 2026, below) |
+| Screens | Every screen is designed in Claude Design canvases built from `docs/design/screens/` at the five reference frames of §5.1, in light and dark. The canvases are the visual reference; the static prototype is superseded |
 | Dials | Variance 3 (minimal), Motion 3 (subtle), Density 8 (data-dense) |
 
 ## 1. Direction
@@ -95,9 +96,38 @@ Set by the header theme menu and the command palette; "System" follows `prefers-
 | Sidebar | 240 px; collapses to 64 px icons with labels in tooltips |
 | Side-peek / AI panel | 420 px from the right; never covers the focused element (NFR-A11Y-03) |
 | Rows | 40 px comfortable, 32 px compact (`[data-density="compact"]`) |
-| Breakpoints | 375 / 768 / 1024 / 1440. Below 1024 px the sidebar becomes a drawer; below 768 px, grids become cards and statements scroll horizontally inside their own region with a sticky first column |
-| Targets | ≥ 24 × 24 px pointer targets everywhere (WCAG 2.2 SC 2.5.8); ≥ 44 px on touch in the PWA |
+| Breakpoints | Device classes, not devices (§5.1): **compact** < 600, **medium** 600–1023, **expanded** ≥ 1024 (sidebar collapsed to 64 px below 1280). Layout is mobile-first: base styles are compact, and `min-width` queries add the larger layouts |
+| Targets | ≥ 24 × 24 px pointer targets everywhere (WCAG 2.2 SC 2.5.8); ≥ 44 × 44 px on touch screens (`@media (pointer: coarse)`, `--touch-target`) |
 | Z-index | sticky 10 · header 20 · panel 30 · popover 40 · modal 50 · tour 55 · toast 60 (`--z-*` tokens) |
+
+### 5.1 Device classes (PRD §7.10, FR-UX-37; rev 0.10)
+
+| Class | Width | Reference frames | Navigation | Lists and records | Panels |
+|---|---|---|---|---|---|
+| **Compact** | < 600 px | Phone 390 × 844; foldable folded 344 × 882 | Top bar 56 px: menu, page title, search, AI. Bottom bar 64 px (`--bottom-bar-height`): Home, Inbox, the role's main area, Banking, More (≤ 5, icon + label). The full navigation opens from More as a sheet | One column. Grids become cards (title, amount, status chip, one secondary line). Record tabs become a horizontally scrolling tab strip; the right panel moves below the body. Statements scroll inside their region with a sticky first column | Side-peek, the AI panel and filters open full screen with a close button and a back gesture |
+| **Medium** | 600–1023 px | Foldable unfolded 690 × 840; tablet portrait 834 × 1194 | Navigation rail 80 px (`--rail-width`): icons with short labels, badges; the header keeps search, the mode toggle and the AI button | List and detail side by side where the screen has both (list 320 px, detail fills); full grids with the key columns; the column chooser adds the rest | Side-peek and AI panel as a 420 px sheet over the content with a scrim |
+| **Expanded** | ≥ 1024 px | Desktop 1440 × 900 (tablet landscape and laptops fall here) | Sidebar 240 px; collapsed to 64 px icons below 1280 px or on request | As §7: full grids, record anatomy with the right panel | AI panel and side-peek dock beside the content (420 px) |
+
+- **Same content in every class.** A class changes layout, never information: statuses, approvals,
+  locked periods, deadlines, AI labels and books health appear everywhere (FR-UX-24, FR-UX-37).
+- **Foldables.** The cover screen (344 px) is the narrowest target: nothing may need more. When a
+  foldable opens or closes, the page, scroll position, filters and drafts stay. On a device that
+  spans a hinge (`@media (horizontal-viewport-segments: 2)`), a two-pane layout puts the list in the
+  first segment and the detail in the second, using `env(viewport-segment-right 0 0)` and
+  `env(viewport-segment-left 1 0)`, and nothing straddles the hinge. Table-top posture
+  (`vertical-viewport-segments: 2`) keeps reading content in the top half and controls in the bottom.
+- **Primary action.** In compact, the one primary action of a page sits in a sticky bottom action
+  bar above the bottom navigation (or replaces it on editors), never in a floating button that
+  covers content.
+- **Safe areas.** Fixed bars pad with `env(safe-area-inset-*)`; scroll content is padded so nothing
+  hides behind a fixed bar (SC 2.4.11).
+- **uipro (13 Oct 2026).** Adopted: mobile-first `min-width` queries; 24 px web and 44 px touch
+  targets; one primary action per screen; bottom navigation at most five labelled items;
+  `prefers-reduced-motion`; easing by purpose. uipro has no guidance for foldables, hinges or
+  list-detail layouts (no database match after a narrower retry), so those rules follow the W3C
+  Viewport Segments and Device Posture drafts and the common window-size-class pattern. Rejected
+  again: its dark-first navy and green palette, the Fira pairing and the landing-page pattern
+  (PRD §7.4 fixes the brand and type).
 
 ## 6. Experience modes: Basic and Expert (PRD §7.8)
 
@@ -141,17 +171,32 @@ Decorative icons beside text get `aria-hidden="true"`; icon-only buttons get an 
 and a tooltip. uipro's default is Phosphor, but shadcn/ui's own components use Lucide, and one
 set is a hard rule.
 
-## 9. Motion
+## 9. Motion (PRD §7.4, FR-UX-38)
 
-- 120 ms (fast) / 180 ms (base) / 240 ms (slow); exits ≈ 70% of entrances; `transform` and
-  `opacity` only. The walkthrough spotlight is the one exception: it moves with `transform` and
-  resizes with `width`/`height` over 300 ms (`--duration-tour`), one element at a time (§12).
-- Side panels slide from the right; dialogs scale and fade from their trigger; list items do not
-  animate on data refresh.
-- Number tickers on the Home pulse card only, never in reports or grids.
-- `prefers-reduced-motion`, or the user's in-app Reduce motion setting (`[data-motion="reduce"]`):
-  every duration is 0 and final states render immediately.
-- Exactly one "moment": the month-end "Books closed" confirmation (no confetti).
+Minimal and purposeful: motion shows where something came from or what changed, and never delays
+input. Durations 120 ms (fast) / 180 ms (base) / 240 ms (slow); exits ≈ 70% of entrances;
+`transform` and `opacity` only; ease-out (`--ease-out`) on entry, ease-in on exit, linear only for
+progress. The walkthrough spotlight is the one exception: it moves with `transform` and resizes
+with `width`/`height` over 300 ms (`--duration-tour`), one element at a time (§12).
+
+**The catalogue** (nothing else animates):
+
+| Motion | Where | Spec |
+|---|---|---|
+| Page enter | Main region on route change | Fade in with an 8 px rise (`--rise`), `--duration-base` |
+| Panel and sheet | Side-peek, AI panel, sheets, the More sheet | Slide from its edge (right; bottom in compact), `--duration-slow`; exit `--duration-base` |
+| Dialog | Dialogs and the step-up prompt | Scale 0.98 → 1 and fade from the trigger, `--duration-base` |
+| List entry | First render of a list, card stack or Inbox group | Rows fade and rise in a stagger of `--stagger` (30 ms), at most 8 rows; never on a data refresh |
+| Skeleton | Content loading over 300 ms | A soft sheen across `--surface-2` → `--surface-3`, 1.2 s linear; `aria-busy` on the region |
+| Status change | Chip or count changing value | Cross-fade, `--duration-fast`; the polite live region announces it (FR-UX-21) |
+| Pulse ticker | Home pulse card figures only | Counts up to the server value once, ≤ 600 ms; never in reports or grids |
+| Books closed | Month-end close confirmation | The check draws (stroke offset), then the card settles; once, no confetti |
+| Hover and press | Buttons, rows, cards | Colour and shadow transitions, `--duration-fast`; no movement on hover |
+
+**Switches.** The Administrator sets organisation motion **On** (default) or **Off** in Settings ›
+Appearance and motion (`[data-motion="off"]` on the root). A user can choose Reduce motion
+(`[data-motion="reduce"]`), and `prefers-reduced-motion` always wins. Off and Reduce set every
+duration to 0 and render final states immediately; skeletons keep a static fill.
 
 ## 10. Charts
 
@@ -161,7 +206,9 @@ diverging = blue ↔ red with a grey midpoint, status colours reserved, a legend
 direct labels for ≤ 4, hover tooltips that are also keyboard-reachable, a table view toggle, and
 PNG and XLSX/CSV export. Waterfalls for bridges (cash bridge, budget variance): ≤ 12 bars, with
 signed values and arrow icons, not red and green alone. The palette is validated in CI
-(FR-VIZ-07).
+(FR-VIZ-07). `--chart-7` is a violet, but it is a data colour, not the AI violet: charts never
+use the `--ai` tokens, the violet series appears only from the seventh series on, and AI content
+is always marked by the "AI" badge, never by hue alone (PRD §7.5, rev 0.11).
 
 ## 11. Accessibility (WCAG 2.2 AA, with AAA where stated)
 

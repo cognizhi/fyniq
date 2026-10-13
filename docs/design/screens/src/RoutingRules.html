@@ -1,0 +1,222 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Chat and ticket rules", "mode": "expert", "heights": {"compact": 4700, "medium": 3450, "expanded": 2100}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/integrations">Integrations</a><i data-icon="chevron-right"></i><span>Rules</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">Chat, ticket and automation rules</h1><span class="fy-tag">P2</span></div>
+      <p class="fy-secondary">Choose which events reach which Slack channel or Jira project, and add simple rules without code. Email is always the fallback.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="send"></i>Send a test message</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="save"></i>Save rules</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="note">
+    <i data-icon="shield-check" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Approvals never happen in chat or in a ticket</span>
+      <span class="fy-small fy-secondary">Messages carry a link into Fyniq, where the approver confirms with a passkey. Closing a ticket can close a task, never approve, file or change a record.</span>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">1 message couldn’t reach Slack, so we emailed it</span>
+      <span class="fy-small fy-secondary">12 Oct 18:02: the company secretary’s run summary for #compliance failed because Slack couldn’t find the channel (it may have been renamed or archived). Mei Lin Tan got it by email. Pick the channel again in the rule.</span>
+      <a class="fy-btn fy-btn--secondary fy-btn--sm fy-only-compact" href="#rule-secretary" style="align-self: flex-start; margin-top: var(--space-2)">Fix the rule</a>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm fy-from-medium" href="#rule-secretary">Fix the rule</a>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="rules-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="rules-title">Routing rules</h2><span class="fy-badge fy-badge--quiet">6</span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Add rule</button></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">When</th><th scope="col">Send to</th><th scope="col">Content</th><th scope="col">Last delivery</th></tr></thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Approval requested<div class="fy-small fy-muted fy-mono">approval.requested</div></td>
+              <td data-card="meta"><span class="fy-row" style="gap: 6px"><i data-icon="hash"></i>Slack · #finance</span></td>
+              <td data-card="meta">Minimal</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>08:41</span></td>
+            </tr>
+            <tr id="rule-secretary">
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Company secretary run finished<div class="fy-small fy-muted fy-mono">secretary.run.completed</div></td>
+              <td data-card="meta"><span class="fy-row" style="gap: 6px"><i data-icon="hash"></i>Slack · #compliance</span></td>
+              <td data-card="meta">Minimal</td>
+              <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Sent by email</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">A critical check fails <span class="fy-tag">Editing</span><div class="fy-small fy-muted fy-mono">check.failed</div></td>
+              <td data-card="meta"><span class="fy-row" style="gap: 6px"><i data-icon="ticket"></i>Jira · FIN · Task · High</span></td>
+              <td data-card="meta">Minimal</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>FIN-212</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Security alert<div class="fy-small fy-muted fy-mono">security.alert</div></td>
+              <td data-card="meta"><span class="fy-row" style="gap: 6px"><i data-icon="ticket"></i>Jira · SEC · Bug · Highest</span></td>
+              <td data-card="meta">Minimal</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>None yet</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Compliance task created<div class="fy-small fy-muted fy-mono">compliance.task.created</div></td>
+              <td data-card="meta"><span class="fy-row" style="gap: 6px"><i data-icon="ticket"></i>Jira · FIN · Task · Medium</span></td>
+              <td data-card="meta">Minimal</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>FIN-209</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Assistant proposal waiting<div class="fy-small fy-muted fy-mono">proposal.created</div></td>
+              <td data-card="meta"><span class="fy-row" style="gap: 6px"><i data-icon="message-square"></i>Slack · direct message to the approver</span></td>
+              <td data-card="meta">Minimal</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>08:40</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="fy-card" aria-labelledby="edit-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="edit-title">Edit rule: a critical check fails</h2><button class="fy-btn fy-btn--destructive fy-btn--sm" type="button"><i data-icon="trash"></i>Delete</button></div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="r-event">When this happens</label>
+              <select class="fy-select" id="r-event"><option>A check fails (check.failed)</option><option>Approval requested</option><option>Security alert</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-filter">Only if</label>
+              <select class="fy-select" id="r-filter"><option>Severity is critical</option><option>Any severity</option></select>
+            </div>
+            <div class="fy-field fy-field--full">
+              <span class="fy-label" id="r-dest-label">Send to</span>
+              <div class="fy-segmented" role="radiogroup" aria-labelledby="r-dest-label">
+                <button type="button" role="radio" aria-checked="false">Chat channel</button>
+                <button type="button" role="radio" aria-checked="true">Ticket</button>
+                <button type="button" role="radio" aria-checked="false">Email</button>
+              </div>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-project">Jira project</label>
+              <select class="fy-select" id="r-project"><option>FIN · Finance operations</option><option>SEC · Security</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-type">Issue type</label>
+              <select class="fy-select" id="r-type"><option>Task</option><option>Bug</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-priority">Priority</label>
+              <select class="fy-select" id="r-priority"><option>High</option><option>Highest</option><option>Medium</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-labels">Labels</label>
+              <input class="fy-input" id="r-labels" value="fyniq, books-health" readonly="readonly">
+            </div>
+          </div>
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="r-dedupe-label"></button>
+            <div class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong" id="r-dedupe-label">One ticket per finding</span><span class="fy-small fy-muted">If the same check fails again, Fyniq comments on the open ticket instead of creating another.</span></div>
+          </div>
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="r-assign-label"></button>
+            <div class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong" id="r-assign-label">Assign by verified email</span><span class="fy-small fy-muted">Grace Ho’s check findings go to her Jira account, matched on grace@hopartners.sg.</span></div>
+          </div>
+          <div class="fy-plain fy-small"><i data-icon="info"></i><span>The ticket holds the check’s name, a link and the due date. No amounts or names, because Jira gets minimal content.</span></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="wf-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="wf-title">Workflow rules</h2><span class="fy-small fy-muted">No code needed</span></div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--3">
+            <span class="fy-eyebrow">New rule</span>
+            <div class="fy-row fy-row--wrap" style="gap: var(--space-2); row-gap: var(--space-3)">
+              <span class="fy-strong">When</span>
+              <label class="fy-sr" for="wf-when">Event</label><select class="fy-select" id="wf-when" style="width: auto"><option>a bill is created</option></select>
+              <span class="fy-strong">and</span>
+              <label class="fy-sr" for="wf-field">Field</label><select class="fy-select" id="wf-field" style="width: auto"><option>its total</option></select>
+              <label class="fy-sr" for="wf-op">Comparison</label><select class="fy-select" id="wf-op" style="width: auto"><option>is over</option></select>
+              <label class="fy-sr" for="wf-amount">Amount in SGD</label>
+              <div class="fy-inputgroup" style="width: 150px"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="wf-amount" value="5,000.00" readonly="readonly"></div>
+            </div>
+            <div class="fy-row fy-row--wrap" style="gap: var(--space-2); row-gap: var(--space-3)">
+              <span class="fy-strong">then</span>
+              <label class="fy-sr" for="wf-do">Action</label><select class="fy-select" id="wf-do" style="width: auto"><option>notify</option><option>create a task for</option></select>
+              <label class="fy-sr" for="wf-who">Person</label><select class="fy-select" id="wf-who" style="width: auto"><option>Arjun Rao</option></select>
+              <span class="fy-strong">by</span>
+              <label class="fy-sr" for="wf-how">Channel</label><select class="fy-select" id="wf-how" style="width: auto"><option>Slack direct message</option><option>email</option></select>
+            </div>
+            <div class="fy-row fy-row--wrap" style="gap: var(--space-2)"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Add rule</button><span class="fy-small fy-muted">Would have run 3 times in the last 30 days (BILL-0909, BILL-0921, BILL-0927).</span></div>
+          </div>
+          <ul class="fy-list" style="margin: 0 calc(var(--space-4) * -1)">
+            <li class="fy-list__item">
+              <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Rule on: invoice 14 days overdue"></button>
+              <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">When an invoice is 14 days overdue, notify Mei Lin Tan by email</span><span class="fy-list__meta">Ran 3 times this month · last INV-0136, 9 Oct</span></span>
+            </li>
+            <li class="fy-list__item">
+              <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Rule on: large bank line"></button>
+              <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">When a bank line over S$10,000.00 arrives, post a notice in #finance</span><span class="fy-list__meta">Ran once this month · OCBC → DBS S$15,000.00, 9 Oct</span></span>
+            </li>
+            <li class="fy-list__item">
+              <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-label="Rule off: new contact"></button>
+              <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">When a supplier is added, create a task for Grace Ho to check it</span><span class="fy-list__meta">Off since 30 Sep</span></span>
+            </li>
+          </ul>
+          <p class="fy-small fy-muted fy-row fy-row--top" style="gap: 6px"><i data-icon="lock"></i><span>Workflow rules notify people and create tasks. They never approve, post, pay or file anything.</span></p>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Connections and content">
+      <section class="fy-card" aria-labelledby="conn-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="conn-title">Connections</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/integrations">Manage</a></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="hash" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Slack · Cognizhi</span><span class="fy-list__meta">Bot posts to 2 channels and direct messages</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On</span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="ticket" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Jira Cloud</span><span class="fy-list__meta">cognizhi.atlassian.net · token to 30 Jan 2027</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On</span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="mail" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Email</span><span class="fy-list__meta">Fallback for every rule</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Always</span></li>
+        </ul>
+        <div class="fy-card__foot fy-stack fy-stack--2" style="align-items: stretch">
+          <div class="fy-row" style="gap: var(--space-2)"><span class="fy-list__icon"><i data-icon="messages-square" class="fy-i--20"></i></span><span class="fy-grow fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong fy-small">Zoho Cliq is not connected</span><span class="fy-small fy-muted">Install it to route events to Cliq channels.</span></span><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#settings/integrations">Install</a></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="lvl-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="lvl-title">Content level · Slack</h2><button class="fy-info" type="button" aria-label="About content levels" aria-expanded="false"><i data-icon="info"></i></button></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-segmented" role="radiogroup" aria-label="Content level for Slack">
+            <button type="button" role="radio" aria-checked="true">Minimal</button>
+            <button type="button" role="radio" aria-checked="false" aria-disabled="true" aria-describedby="lvl-why">Standard</button>
+          </div>
+          <p class="fy-small fy-muted" id="lvl-why">Standard adds amounts and names. It unlocks once Slack is in the data inventory with a PDPA transfer assessment.</p>
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-eyebrow">Preview in #finance</span>
+            <div class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--2">
+              <div class="fy-row" style="gap: var(--space-2)"><span class="fy-brand__mark" aria-hidden="true" style="width: 22px; height: 22px; font-size: 12px">f</span><span class="fy-strong fy-small">Fyniq</span><span class="fy-small fy-muted">08:41</span></div>
+              <p class="fy-small">2 approvals are waiting for you in Fyniq.</p>
+              <span class="fy-small"><a href="#inbox">Open Fyniq</a></span>
+            </div>
+            <div class="fy-card fy-card--flat fy-card--pad fy-stack fy-stack--2" style="opacity: 0.7">
+              <span class="fy-eyebrow">Standard would say</span>
+              <p class="fy-small">BILL-0918 from Amazon Web Services, S$2,861.40, is waiting for your approval.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="test-title">
+        <h2 class="fy-h3" id="test-title">Test message</h2>
+        <div class="fy-field">
+          <label class="fy-label" for="t-dest">Send to</label>
+          <select class="fy-select" id="t-dest"><option>Slack · #finance</option><option>Jira · FIN</option><option>Email · Mei Lin Tan</option></select>
+        </div>
+        <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="send"></i>Send a test</button>
+        <p class="fy-small fy-row" style="gap: 6px"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Delivered</span><span class="fy-muted">to #finance, today 08:39</span></p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="save"></i>Save rules</button>
+  </div>
+</div>

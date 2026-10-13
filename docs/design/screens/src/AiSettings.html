@@ -1,0 +1,243 @@
+<!-- fyniq-screen {"nav": "settings", "title": "AI settings", "mode": "expert", "heights": {"compact": 4500, "medium": 3350, "expanded": 2500}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><span aria-current="page">AI</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">AI settings</h1>
+      <p class="fy-secondary">What the assistant may see, what it may propose, how much it may spend, and how to turn it off at once.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--ghost" href="#inbox/ai-tasks">AI tasks</a>
+      <a class="fy-btn fy-btn--ghost" href="#settings/ai/activity">Activity log</a>
+      <a class="fy-btn fy-btn--ghost" href="#settings/ai/knowledge-base">Knowledge base</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="users" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">2 changes are waiting for a second Owner</span>
+      <span class="fy-small fy-secondary">You asked to turn on AI payroll access at 09:02 today and to add the OpenAI API connection at 08:55. Arjun Rao must approve each with his passkey; until then nothing changes.</span>
+      <div class="fy-row fy-row--wrap" style="margin-top: var(--space-2)">
+        <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#inbox/approval-ai-412">Payroll access request</a>
+        <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/ai/providers/openai">OpenAI API connection</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="kill-title">
+        <div class="fy-card__head">
+          <span class="fy-list__icon fy-list__icon--critical" style="width: 28px; height: 28px"><i data-icon="power"></i></span>
+          <h2 class="fy-h3" id="kill-title">Kill switches</h2>
+          <span class="fy-small fy-muted fy-from-medium">New requests stop at once; running work within 60 seconds</span>
+        </div>
+        <ul class="fy-list fy-stagger">
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__main">
+              <span class="fy-list__title" style="white-space: normal">Assistant</span>
+              <span class="fy-small fy-secondary">On for everyone in the app and in connected apps. Off: the AI panel says an Owner turned it off, and connected apps lose their tools.</span>
+            </span>
+            <span class="fy-row" style="flex: none"><span class="fy-small">On</span><button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Assistant"></button></span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__main">
+              <span class="fy-list__title" style="white-space: normal">Making proposals</span>
+              <span class="fy-small fy-secondary">Off: the assistant still answers questions but cannot propose anything. Pending proposals stay for a person to decide.</span>
+            </span>
+            <span class="fy-row" style="flex: none"><span class="fy-small">On</span><button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Making proposals"></button></span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__main">
+              <span class="fy-list__title" style="white-space: normal">Task types</span>
+              <span class="fy-small fy-secondary">8 of 20 on. Each one can be switched off on its own.</span>
+            </span>
+            <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#inbox/ai-tasks#catalogue">Manage</a>
+          </li>
+        </ul>
+        <div class="fy-card__foot fy-row--wrap" style="flex-wrap: wrap">
+          <button class="fy-btn fy-btn--destructive" type="button"><i data-icon="power-off"></i>Turn all AI off now</button>
+          <span class="fy-small fy-muted" style="flex: 1 1 220px">One Owner can turn things off at once. Turning them back on needs a second Owner.</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="excl-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="excl-title">What the assistant never sees</h2>
+          <button class="fy-info" type="button" aria-label="About AI exclusions" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <p class="fy-small fy-secondary">Removed before anything reaches the model, in the app, in connected apps and in scheduled agents.</p>
+          <ul class="fy-chipset" aria-label="Always excluded">
+            <li class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>NRIC and FIN numbers</li>
+            <li class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Full bank account numbers</li>
+            <li class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Passwords and secrets</li>
+            <li class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Sign-in and authentication data</li>
+            <li class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Full home addresses</li>
+          </ul>
+          <div class="fy-divider"></div>
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <span class="fy-list__icon"><i data-icon="wallet" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <div class="fy-row fy-row--wrap"><span class="fy-strong">AI payroll access</span><span class="fy-chip fy-chip--warning"><i data-icon="users"></i>Waiting for Arjun Rao</span></div>
+              <span class="fy-small fy-secondary">Off. When on, payroll and individual salaries reach the assistant only for people who also hold the Payroll role. Scheduled agents follow the same rule.</span>
+            </div>
+            <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-disabled="true" aria-label="AI payroll access (change pending)"></button>
+          </div>
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <span class="fy-list__icon"><i data-icon="eye-off" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <span class="fy-strong">Fields you excluded</span>
+              <span class="fy-small fy-secondary">Contacts: personal mobile numbers. Added by Mei Lin Tan, approved by Arjun Rao, 2 Oct.</span>
+            </div>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="plus"></i>Add</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="budget-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="budget-title">Budgets</h2>
+          <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 person near the limit</span>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between fy-row--wrap"><span class="fy-strong">Cognizhi Pte Ltd, October</span><span class="fy-num fy-small"><span class="fy-strong">S$120.86</span> of S$300.00 · 40%</span></div>
+            <div class="fy-progress" role="progressbar" aria-label="Organisation budget used" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"><span style="width: 40%"></span></div>
+            <span class="fy-small fy-muted"><span class="fy-num">27,278,100</span> of 60,000,000 tokens (45%), every agent included. At 80% both Owners get an alert; at 100% the AI stops until 1 Nov or until an Owner raises the budget. <a href="#settings/ai/usage">Usage by agent and model</a></span>
+          </div>
+          <table class="fy-table fy-table--compact fy-table--cards">
+            <thead><tr><th scope="col">Person, the assistant</th><th scope="col" class="fy-num" style="text-align: right">Tokens</th><th scope="col">Of 3,000,000 each</th></tr></thead>
+            <tbody>
+              <tr>
+                <td data-card="title"><span class="fy-row"><span class="fy-avatar fy-avatar--sm">AR</span>Arjun Rao</span></td>
+                <td data-card="amount" class="fy-num">2,430,000</td>
+                <td data-card="meta"><span class="fy-row"><span class="fy-progress fy-progress--warning fy-grow" style="min-width: 80px"><span style="width: 81%"></span></span><span class="fy-small">81%</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><span class="fy-row"><span class="fy-avatar fy-avatar--sm">ML</span>Mei Lin Tan</span></td>
+                <td data-card="amount" class="fy-num">1,872,000</td>
+                <td data-card="meta"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 80px"><span style="width: 62%"></span></span><span class="fy-small">62%</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><span class="fy-row"><span class="fy-avatar fy-avatar--sm">GH</span>Grace Ho</span></td>
+                <td data-card="amount" class="fy-num">1,140,000</td>
+                <td data-card="meta"><span class="fy-row"><span class="fy-progress fy-grow" style="min-width: 80px"><span style="width: 38%"></span></span><span class="fy-small">38%</span></span></td>
+              </tr>
+              <tr>
+                <td data-card="title">6 employees</td>
+                <td data-card="amount" class="fy-num">4,224,000</td>
+                <td data-card="meta"><span class="fy-small fy-muted">Highest: Priya Nair, 1,290,000 (43%)</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="fy-small fy-muted">Arjun Rao passed 80% on 11 Oct; the alert went to him and both Owners.</p>
+          <div class="fy-row fy-row--wrap"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Change budgets</button><span class="fy-small fy-muted">Needs a second Owner</span></div>
+          <div class="fy-divider"></div>
+          <h3 class="fy-h3">Limits for each connected app</h3>
+          <dl class="fy-dl">
+            <div><dt>Requests</dt><dd class="fy-num">60 a minute</dd></div>
+            <div><dt>Tool calls</dt><dd class="fy-num">600 an hour</dd></div>
+            <div><dt>Proposals</dt><dd class="fy-num">30 an hour</dd></div>
+            <div><dt>Result size</dt><dd class="fy-num">500 rows or 256 KB</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="model-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="model-title">Providers and model routes</h2>
+          <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>2 routes need attention</span>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <dl class="fy-dl">
+            <div><dt>Connections on</dt><dd>Claude and Gemini on Agent Platform, both in Singapore</dd></div>
+            <div><dt>Waiting</dt><dd>OpenAI API, know-how only, for Arjun Rao</dd></div>
+            <div><dt>Where models may run</dt><dd>Singapore only</dd></div>
+            <div><dt>Agents</dt><dd>8 routes · last qualified 6 Oct</dd></div>
+          </dl>
+          <div class="fy-row fy-row--wrap">
+            <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#settings/ai/providers">Providers</a>
+            <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#settings/ai/routes">Model routes</a>
+            <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/ai/usage">Usage</a>
+          </div>
+          <p class="fy-small fy-muted">A connection or model serves an agent only after it passes that agent's evals and two Owners approve it.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="agents-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="agents-title">Scheduled agents</h2>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>1 on</span>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+            <span class="fy-list__icon"><i data-icon="calendar-clock" class="fy-i--20"></i></span>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <span class="fy-strong">Company secretary agent</span>
+              <span class="fy-small fy-secondary">Checks the statutory calendar, registers and filings on a schedule and reports what is due. It runs as its own identity, on behalf of the Owner who turns it on. It can create tasks and proposals, never file or mark anything as done.</span>
+            </div>
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-label="Company secretary agent"></button>
+          </div>
+          <div class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--2">
+            <span class="fy-small fy-strong">Permission profile</span>
+            <ul class="fy-stack fy-stack--2 fy-small">
+              <li class="fy-row fy-row--top"><i data-icon="check" style="color: var(--status-good)"></i><span>Ledger summaries, the statutory calendar, the equity register, officers and controllers</span></li>
+              <li class="fy-row fy-row--top"><i data-icon="check" style="color: var(--status-good)"></i><span>Settings and evidence metadata</span></li>
+              <li class="fy-row fy-row--top"><i data-icon="x" class="fy-muted"></i><span>No payroll detail unless AI payroll access is on</span></li>
+              <li class="fy-row fy-row--top"><i data-icon="x" class="fy-muted"></i><span>The exclusions above, always</span></li>
+            </ul>
+          </div>
+          <p class="fy-small fy-muted">On since 1 Oct: turned on by Mei Lin Tan, approved by Arjun Rao. Turning an agent on needs you and a second Owner; one Owner can turn it off.</p>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Approvals and history">
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="dual-title">
+        <div class="fy-row"><i data-icon="users" class="fy-i--20"></i><h2 class="fy-h3" id="dual-title">Two people for every change</h2></div>
+        <p class="fy-small fy-secondary">Founder mode: every change on this page needs a second Owner, who confirms it with a passkey. Each change is in the audit trail.</p>
+      </section>
+
+      <section class="fy-card" aria-labelledby="hist-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="hist-title">Recent changes</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#compliance/audit?area=ai">Audit trail</a></div>
+        <div class="fy-card__body">
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="hourglass"></i></span>
+              <span class="fy-strong fy-small">AI payroll access: turn on</span>
+              <span class="fy-small fy-muted">Requested by Mei Lin Tan · today 09:02 · waiting for Arjun Rao</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="hourglass"></i></span>
+              <span class="fy-strong fy-small">Add the OpenAI API connection</span>
+              <span class="fy-small fy-muted">Requested by Mei Lin Tan · today 08:55 · waiting for Arjun Rao</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong fy-small">Turned on “Accrual, prepayment or correction journal”</span>
+              <span class="fy-small fy-muted">Mei Lin Tan, approved by Arjun Rao · 5 Oct</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong fy-small">Excluded personal mobile numbers</span>
+              <span class="fy-small fy-muted">Mei Lin Tan, approved by Arjun Rao · 2 Oct</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong fy-small">Organisation budget set to S$300.00 and 60,000,000 tokens a month</span>
+              <span class="fy-small fy-muted">Arjun Rao, approved by Mei Lin Tan · 2 Oct</span>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="mcp-title">
+        <h2 class="fy-h3" id="mcp-title">Connected apps</h2>
+        <p class="fy-small fy-secondary">MCP access is on. Claude Desktop and Claude Code can read and propose as the person who connected them, within these settings.</p>
+        <a class="fy-small" href="#settings/connected-apps">Manage connected apps</a>
+      </section>
+    </aside>
+  </div>
+</div>

@@ -1,0 +1,106 @@
+<!-- fyniq-screen {"nav": "purchases", "title": "Bills", "mode": "basic", "heights": {"compact": 1300, "medium": 1500, "expanded": 1400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#purchases">Purchases</a><i data-icon="chevron-right"></i><span>Bills</span></nav>
+      <h1 class="fy-h1">Bills</h1>
+      <p class="fy-secondary">We owe suppliers S$12,870.40. Nothing is overdue; 2 bills are due this week.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <div class="fy-segmented" role="radiogroup" aria-label="View"><button type="button" role="radio" aria-checked="true">Board</button><button type="button" role="radio" aria-checked="false">Calendar</button><button type="button" role="radio" aria-checked="false">List</button></div>
+      <a class="fy-btn fy-btn--primary" href="#purchases/bills/new"><i data-icon="plus"></i>New bill</a>
+    </div>
+  </div>
+
+  <section class="fy-card" aria-label="What we owe" style="overflow: hidden">
+    <div class="fy-row fy-row--wrap fy-row--top" style="gap: 0; margin: 0 -1px -1px 0; align-items: stretch">
+      <div class="fy-stack fy-stack--2" style="flex: 1 1 140px; padding: var(--space-4); box-shadow: inset -1px 0 0 var(--border), inset 0 -1px 0 var(--border)">
+        <span class="fy-tile__label">Not yet due</span><span class="fy-num fy-strong" style="font-size: var(--fs-lg)">12,870.40</span><span class="fy-small fy-muted">7 bills</span>
+      </div>
+      <div class="fy-stack fy-stack--2" style="flex: 1 1 140px; padding: var(--space-4); box-shadow: inset -1px 0 0 var(--border), inset 0 -1px 0 var(--border)">
+        <span class="fy-tile__label">Overdue</span><span class="fy-num fy-strong" style="font-size: var(--fs-lg)">0.00</span><span class="fy-chip fy-chip--good" style="align-self: flex-start"><i data-icon="circle-check"></i>None</span>
+      </div>
+      <div class="fy-stack fy-stack--2" style="flex: 1 1 160px; padding: var(--space-4); box-shadow: inset -1px 0 0 var(--border), inset 0 -1px 0 var(--border)">
+        <span class="fy-tile__label">Cash needed, next 30 days<button class="fy-info" type="button" aria-label="About cash needed" aria-expanded="false"><i data-icon="info"></i></button></span><span class="fy-num fy-strong" style="font-size: var(--fs-lg)">12,870.40</span><span class="fy-small fy-muted">+9,109.06 in bills still to review</span>
+      </div>
+      <div class="fy-stack fy-stack--2" style="flex: 1 1 160px; padding: var(--space-4); box-shadow: inset -1px 0 0 var(--border), inset 0 -1px 0 var(--border)">
+        <span class="fy-tile__label">Early-payment discount</span><span class="fy-num fy-strong" style="font-size: var(--fs-lg)">119.12</span><span class="fy-small fy-muted">WeWork, 2% if paid by 20 Oct</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="fy-only-compact fy-stack fy-stack--3">
+    <div class="fy-chipset" role="group" aria-label="Status" style="flex-wrap: nowrap; overflow-x: auto">
+      <button class="fy-filter" type="button" aria-pressed="false">To review<span class="fy-badge fy-badge--quiet">4</span></button>
+      <button class="fy-filter" type="button" aria-pressed="true">Approval<span class="fy-badge fy-badge--quiet">1</span></button>
+      <button class="fy-filter" type="button" aria-pressed="false">Approved<span class="fy-badge fy-badge--quiet">4</span></button>
+      <button class="fy-filter" type="button" aria-pressed="false">Scheduled<span class="fy-badge fy-badge--quiet">2</span></button>
+      <button class="fy-filter" type="button" aria-pressed="false">Paid</button>
+    </div>
+    <ul class="fy-list fy-card">
+      <li><a class="fy-list__item" href="#purchases/bill-0918"><span class="fy-list__main"><span class="fy-list__title">Amazon Web Services</span><span class="fy-list__meta"><span class="fy-mono">BILL-0918</span> · due 20 Oct</span></span><span class="fy-stack" style="gap: 2px; align-items: flex-end"><span class="fy-num fy-strong">2,861.40</span><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Arjun Rao</span></span></a></li>
+    </ul>
+    <p class="fy-small fy-muted">Showing bills awaiting approval. Pick a status above to see the others.</p>
+  </div>
+
+  <div class="fy-board fy-board--fit fy-from-medium fy-stagger" aria-label="Bills by status">
+    <section class="fy-board__col" aria-labelledby="bb-review">
+      <h2 class="fy-row fy-small fy-strong" id="bb-review">To review <span class="fy-badge fy-badge--quiet">4</span></h2>
+      <a class="fy-board__card" href="#purchases/bill-0927"><span class="fy-strong">WeWork Singapore</span><span class="fy-num">7,412.40</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0927</span> · from InvoiceNow · due 15 Nov</span></a>
+      <a class="fy-board__card" href="#purchases/bill-0928"><span class="fy-strong">Google Workspace</span><span class="fy-num">1,284.00</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0928</span> · from InvoiceNow · due 12 Nov</span></a>
+      <a class="fy-board__card" href="#purchases/bill-0926"><span class="fy-strong">SP Group</span><span class="fy-num">412.66</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0926</span> · from InvoiceNow · due 9 Dec</span></a>
+      <a class="fy-board__card" href="#purchases/bill-0929"><span class="fy-strong">Canva</span><span class="fy-num">A$420.00</span><span class="fy-chip fy-chip--critical" style="align-self: flex-start"><i data-icon="circle-x"></i>No AUD rate</span></a>
+    </section>
+    <section class="fy-board__col" aria-labelledby="bb-appr">
+      <h2 class="fy-row fy-small fy-strong" id="bb-appr">Awaiting approval <span class="fy-badge fy-badge--quiet">1</span></h2>
+      <a class="fy-board__card" href="#purchases/bill-0918"><span class="fy-strong">Amazon Web Services</span><span class="fy-num">2,861.40</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0918</span> · due 20 Oct</span><span class="fy-chip fy-chip--serious" style="align-self: flex-start"><i data-icon="clock-alert"></i>Arjun Rao</span></a>
+    </section>
+    <section class="fy-board__col" aria-labelledby="bb-ok">
+      <h2 class="fy-row fy-small fy-strong" id="bb-ok">Approved <span class="fy-badge fy-badge--quiet">4</span></h2>
+      <a class="fy-board__card" href="#purchases/bill-0921"><span class="fy-strong">WeWork Singapore</span><span class="fy-num">5,955.75</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0921</span> · due 31 Oct</span><span class="fy-chip fy-chip--info" style="align-self: flex-start"><i data-icon="percent"></i>2% off by 20 Oct</span></a>
+      <a class="fy-board__card" href="#purchases/bill-0922"><span class="fy-strong">Google Workspace</span><span class="fy-num">403.20</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0922</span> · due 1 Nov</span></a>
+      <a class="fy-board__card" href="#purchases/bill-0923"><span class="fy-strong">Figma</span><span class="fy-num">216.00</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0923</span> · due 3 Nov</span></a>
+      <a class="fy-board__card" href="#purchases/bill-0925"><span class="fy-strong">SP Group</span><span class="fy-num">368.53</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0925</span> · due 9 Nov</span></a>
+    </section>
+    <section class="fy-board__col" aria-labelledby="bb-sched">
+      <h2 class="fy-row fy-small fy-strong" id="bb-sched">Scheduled <span class="fy-badge fy-badge--quiet">2</span></h2>
+      <a class="fy-board__card" href="#purchases/bill-0920"><span class="fy-strong">Ho &amp; Partners LLP</span><span class="fy-num">2,398.00</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0920</span> · pay 16 Oct</span><span class="fy-chip fy-chip--warning" style="align-self: flex-start"><i data-icon="triangle-alert"></i>Bank details changed</span></a>
+      <a class="fy-board__card" href="#purchases/bill-0924"><span class="fy-strong">Grab for Business</span><span class="fy-num">667.52</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0924</span> · pay 16 Oct</span></a>
+    </section>
+    <section class="fy-board__col" aria-labelledby="bb-paid">
+      <h2 class="fy-row fy-small fy-strong" id="bb-paid">Paid this month</h2>
+      <a class="fy-board__card" href="#purchases/bill-0916"><span class="fy-strong">Grab for Business</span><span class="fy-num">589.40</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0916</span> · paid 12 Oct</span></a>
+      <a class="fy-board__card" href="#purchases/bill-0914"><span class="fy-strong">Ho &amp; Partners LLP</span><span class="fy-num">2,398.00</span><span class="fy-small fy-muted"><span class="fy-mono">BILL-0914</span> · paid 7 Oct</span></a>
+    </section>
+    <section class="fy-board__col" aria-labelledby="bb-over">
+      <h2 class="fy-row fy-small fy-strong" id="bb-over">Overdue</h2>
+      <div class="fy-empty" style="padding: var(--space-4)"><i data-icon="circle-check" class="fy-i--24"></i><span class="fy-small">Nothing overdue</span></div>
+    </section>
+  </div>
+
+  <section class="fy-card" aria-labelledby="bb-cal">
+    <div class="fy-card__head" style="flex-wrap: wrap"><h2 class="fy-h3" id="bb-cal">Payment dates, next two weeks</h2><span class="fy-small fy-muted fy-from-medium">Drag a bill onto a date, or choose "Schedule for…" from its menu</span></div>
+    <div class="fy-card__body">
+      <div class="fy-cal" role="grid" aria-label="12 to 25 October 2026">
+        <div class="fy-cal__dow">Mon</div><div class="fy-cal__dow">Tue</div><div class="fy-cal__dow">Wed</div><div class="fy-cal__dow">Thu</div><div class="fy-cal__dow">Fri</div><div class="fy-cal__dow">Sat</div><div class="fy-cal__dow">Sun</div>
+        <div class="fy-cal__day"><span class="fy-cal__n">12</span><span class="fy-cal__ev fy-cal__ev--done">Grab paid</span></div>
+        <div class="fy-cal__day fy-cal__day--today"><span class="fy-cal__n">13</span></div>
+        <div class="fy-cal__day"><span class="fy-cal__n">14</span></div>
+        <div class="fy-cal__day"><span class="fy-cal__n">15</span><span class="fy-cal__ev">Ho &amp; Partners</span></div>
+        <div class="fy-cal__day"><span class="fy-cal__n">16</span><span class="fy-cal__ev">Grab</span></div>
+        <div class="fy-cal__day fy-cal__day--muted"><span class="fy-cal__n">17</span></div>
+        <div class="fy-cal__day fy-cal__day--muted"><span class="fy-cal__n">18</span></div>
+        <div class="fy-cal__day"><span class="fy-cal__n">19</span></div>
+        <div class="fy-cal__day"><span class="fy-cal__n">20</span><span class="fy-cal__ev fy-cal__ev--due">AWS due</span></div>
+        <div class="fy-cal__day"><span class="fy-cal__n">21</span></div>
+        <div class="fy-cal__day"><span class="fy-cal__n">22</span></div>
+        <div class="fy-cal__day"><span class="fy-cal__n">23</span></div>
+        <div class="fy-cal__day fy-cal__day--muted"><span class="fy-cal__n">24</span></div>
+        <div class="fy-cal__day fy-cal__day--muted"><span class="fy-cal__n">25</span></div>
+      </div>
+      <p class="fy-small fy-muted" style="margin-top: var(--space-3)">Reminders go to the approver 3 days before a bill is due.</p>
+    </div>
+  </section>
+
+  <div class="fy-actionbar fy-only-compact"><a class="fy-btn fy-btn--primary fy-btn--block" href="#purchases/bills/new"><i data-icon="plus"></i>New bill</a></div>
+</div>

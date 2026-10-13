@@ -1,0 +1,64 @@
+<!-- fyniq-screen {"nav": "compliance", "title": "Audit trail", "mode": "expert", "heights": {"compact": 1000, "medium": 1150, "expanded": 850}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#compliance">Compliance</a><i data-icon="chevron-right"></i><span>Audit trail</span></nav>
+      <h1 class="fy-h1">Audit trail</h1>
+      <p class="fy-secondary">Every saved change, who made it, on whose behalf and why. Append-only and hash-chained.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="download"></i>Export</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="shield-check"></i>Verify integrity</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--good" role="status">
+    <i data-icon="shield-check" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>Chain verified for 1 Sep – 13 Oct 2026</strong><span>48,214 events recomputed against 43 daily anchors in the audit project. One explained gap: a retention purge on 2 Sep (AUD-09), with its tombstone and anchor.</span></div>
+  </div>
+
+  <div class="fy-row fy-row--wrap" style="gap: var(--space-2)">
+    <div class="fy-inputgroup" style="flex: 1 1 260px"><span class="fy-inputgroup__addon"><i data-icon="search"></i></span><input class="fy-input" id="at-q" aria-label="Search the audit trail" value="BILL-0918" readonly="readonly"></div>
+    <div class="fy-chipset">
+      <button class="fy-filter" type="button" aria-pressed="false">Actor: anyone</button>
+      <button class="fy-filter" type="button" aria-pressed="true">Originator: AI</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Last 30 days</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Action: any</button>
+    </div>
+  </div>
+
+  <div class="fy-listdetail">
+    <div class="fy-listdetail__list">
+      <ul class="fy-list fy-stagger" aria-label="Audit events">
+        <li><a class="fy-list__item" href="#audit/ev-91650"><span class="fy-list__icon"><i data-icon="eye" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Payee bank details viewed</span><span class="fy-list__meta">12 Oct 17:40 · Mei Lin Tan · read of sensitive data</span></span></a></li>
+        <li><a class="fy-list__item" href="#audit/ev-91790"><span class="fy-avatar fy-avatar--sm">AR</span><span class="fy-list__main"><span class="fy-list__title">Bill submitted for approval</span><span class="fy-list__meta">12 Oct 16:05 · Arjun Rao</span></span></a></li>
+        <li><a class="fy-list__item" href="#audit/ev-91822" aria-current="true"><span class="fy-list__icon fy-list__icon--ai"><i data-icon="sparkles" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Bill category changed</span><span class="fy-list__meta">12 Oct 16:04 · AI for Arjun Rao · approved</span></span></a></li>
+        <li><a class="fy-list__item" href="#audit/ev-91702"><span class="fy-list__icon"><i data-icon="mail" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Bill drafted from email</span><span class="fy-list__meta">11 Oct 16:22 · capture service</span></span></a></li>
+      </ul>
+    </div>
+    <div class="fy-listdetail__detail">
+      <div class="fy-card__head"><h2 class="fy-h3">Event 91822 · bill.updated</h2><span class="fy-chip fy-chip--good"><i data-icon="link"></i>In chain</span></div>
+      <div class="fy-card__body fy-stack fy-stack--3">
+        <dl class="fy-dl">
+          <div><dt>Recorded</dt><dd>12 Oct 2026 16:04:07 SGT</dd></div>
+          <div><dt>Object</dt><dd><a href="#purchases/bills/918">BILL-0918</a> · version 1 → 2</dd></div>
+          <div><dt>Actor</dt><dd>Proposal executor, as Arjun Rao</dd></div>
+          <div><dt>Originator</dt><dd><span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span> proposal #309</dd></div>
+          <div><dt>Approval</dt><dd>APR-2207, passkey, 12 Oct 16:03</dd></div>
+          <div><dt>Reason</dt><dd>Accepted AI categorisation</dd></div>
+        </dl>
+        <div class="fy-tablewrap">
+          <table class="fy-table fy-table--compact">
+            <thead><tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+            <tbody>
+              <tr><td>Category</td><td><span class="fy-acct">6120</span>Software subscriptions</td><td><span class="fy-acct">5010</span>Cloud hosting</td></tr>
+              <tr><td>Description</td><td>AWS invoice SG26-0047193</td><td>Cloud hosting, September 2026</td></tr>
+              <tr><td>Payee account</td><td class="fy-mono">•••• 4471</td><td class="fy-mono">•••• 4471</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fy-small fy-muted fy-mono">hash 9f3a…c21e · previous 41b0…77d2</p>
+      </div>
+    </div>
+  </div>
+</div>

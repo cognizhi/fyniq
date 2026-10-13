@@ -1,0 +1,53 @@
+<!-- fyniq-screen {"nav": "purchases", "title": "Purchase orders", "mode": "basic", "heights": {"compact": 1350, "medium": 1000, "expanded": 800}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#purchases">Purchases</a><i data-icon="chevron-right"></i><span>Purchase orders</span></nav>
+      <h1 class="fy-h1">Purchase orders</h1>
+      <p class="fy-secondary">Agree a price before the bill arrives. 1 order is waiting for approval.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium"><a class="fy-btn fy-btn--primary" href="#purchases/orders/new"><i data-icon="plus"></i>New order</a></div>
+  </div>
+
+  <div class="fy-chipset" role="group" aria-label="Status">
+    <button class="fy-filter" type="button" aria-pressed="true">Open<span class="fy-badge fy-badge--quiet">3</span></button>
+    <button class="fy-filter" type="button" aria-pressed="false">Awaiting approval<span class="fy-badge fy-badge--quiet">1</span></button>
+    <button class="fy-filter" type="button" aria-pressed="false">Billed</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Closed</button>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-tablewrap">
+      <table class="fy-table fy-table--cards">
+        <thead><tr><th scope="col">Order</th><th scope="col">Supplier</th><th scope="col" class="fy-from-expanded">Project</th><th scope="col" class="fy-num">Amount</th><th scope="col">Status</th><th scope="col" class="fy-from-expanded">Match<span class="fy-tag fy-tag--expert">P2</span></th></tr></thead>
+        <tbody class="fy-stagger">
+          <tr><td data-card="meta"><a class="fy-mono" href="#purchases/orders/po-0016">PO-0016</a></td><td data-card="title">Challenger Technologies</td><td data-card="hide" class="fy-from-expanded">—</td><td data-card="amount" class="fy-num">S$4,598.00</td><td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Arjun Rao to approve</span></td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+          <tr aria-selected="true"><td data-card="meta"><a class="fy-mono" href="#purchases/orders/po-0015">PO-0015</a></td><td data-card="title">Kestrel Data Ltd</td><td data-card="hide" class="fy-from-expanded">Acme data platform</td><td data-card="amount" class="fy-num">£4,800.00</td><td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="circle-dot"></i>Partly billed</span></td><td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>3-way</span></td></tr>
+          <tr><td data-card="meta"><a class="fy-mono" href="#purchases/orders/po-0014">PO-0014</a></td><td data-card="title">Studio Pagi</td><td data-card="hide" class="fy-from-expanded">Lumen Health pilot</td><td data-card="amount" class="fy-num">S$6,000.00</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></td><td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-dashed"></i>No receipt yet</span></td></tr>
+          <tr><td data-card="meta"><a class="fy-mono" href="#purchases/orders/po-0013">PO-0013</a></td><td data-card="title">WeWork Singapore</td><td data-card="hide" class="fy-from-expanded">—</td><td data-card="amount" class="fy-num">S$1,200.00</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="archive"></i>Closed</span></td><td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>3-way</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="fy-card" aria-labelledby="po-peek">
+      <div class="fy-card__head"><div class="fy-stack fy-stack--2"><span class="fy-eyebrow">PO-0015 · approved by Mei Lin Tan, 28 Sep</span><h2 class="fy-h3" id="po-peek">Kestrel Data Ltd</h2><span class="fy-small fy-muted">Data pipeline design and support · Acme data platform</span></div></div>
+      <table class="fy-table fy-table--compact">
+        <thead><tr><th scope="col">Line</th><th scope="col" class="fy-num">Ordered</th><th scope="col" class="fy-num">Billed</th></tr></thead>
+        <tbody>
+          <tr><td>Design workshop</td><td class="fy-num">2,400.00</td><td class="fy-num">2,400.00</td></tr>
+          <tr><td>Support, Oct</td><td class="fy-num">800.00</td><td class="fy-num">800.00</td></tr>
+          <tr><td>Support, Nov</td><td class="fy-num">800.00</td><td class="fy-num fy-muted">0.00</td></tr>
+          <tr><td>Support, Dec</td><td class="fy-num">800.00</td><td class="fy-num fy-muted">0.00</td></tr>
+        </tbody>
+        <tfoot><tr><td>GBP</td><td class="fy-num">4,800.00</td><td class="fy-num">3,200.00</td></tr></tfoot>
+      </table>
+      <div class="fy-card__body fy-stack fy-stack--2">
+        <div class="fy-row fy-row--wrap"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Order</span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Received 7 Oct</span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Bill matches</span></div>
+        <p class="fy-small fy-muted">The draft bill KD-2026-118 matches the first two lines. The rest stays open on this order.</p>
+      </div>
+      <div class="fy-card__foot"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="file-plus"></i>Convert to bill</button></div>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact"><a class="fy-btn fy-btn--primary fy-btn--block" href="#purchases/orders/new"><i data-icon="plus"></i>New order</a></div>
+</div>

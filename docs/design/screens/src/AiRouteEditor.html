@@ -1,0 +1,115 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Model routes", "mode": "expert", "heights": {"compact": 1500, "medium": 1450, "expanded": 1250}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/ai">AI</a><i data-icon="chevron-right"></i><span>Model routes</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Model routes</h1>
+      <p class="fy-secondary">Each agent runs on its own route: a first choice and fallbacks, limited to the data the agent handles.</p>
+    </div>
+  </div>
+  <section class="fy-card" aria-label="Agents and their routes">
+    <ul class="fy-list">
+      <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Assistant: chat and tools</span><span class="fy-list__meta">Claude Opus 4.6, then Claude Sonnet 4.6</span></span></li>
+      <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Document capture and extraction</span><span class="fy-list__meta">Claude Sonnet 4.6, then Claude Opus 4.6</span></span></li>
+      <li class="fy-list__item" aria-current="true"><span class="fy-list__main"><span class="fy-list__title">Bank categorisation and matching</span><span class="fy-list__meta">Claude Sonnet 4.6, then Gemini 2.5 Flash</span></span></li>
+      <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Proposal drafting</span><span class="fy-list__meta">Claude Opus 4.6</span></span></li>
+    </ul>
+  </section>
+</div>
+
+<div class="fy-scrim fy-scrim--right">
+  <section class="fy-sheet" role="dialog" aria-modal="true" aria-labelledby="re-title">
+    <div class="fy-row fy-row--top" style="padding: var(--space-4) var(--space-3) var(--space-2) var(--space-4)">
+      <div class="fy-stack fy-stack--2 fy-grow">
+        <span class="fy-eyebrow">Edit route</span>
+        <h2 class="fy-h2" id="re-title">Bank categorisation and matching</h2>
+        <span class="fy-small fy-secondary">Gives bank lines a category, contact and GST code, and matches them to invoices and bills.</span>
+      </div>
+      <button class="fy-iconbtn" type="button" aria-label="Close without saving"><i data-icon="x" class="fy-i--20"></i></button>
+    </div>
+
+    <div style="flex: 1 1 auto; overflow: auto">
+      <div class="fy-stack" style="padding: 0 var(--space-4) var(--space-4)">
+        <section class="fy-stack fy-stack--2" aria-labelledby="needs-title">
+          <h3 class="fy-h3" id="needs-title">What this agent needs</h3>
+          <ul class="fy-chipset" aria-label="Data this agent handles">
+            <li class="fy-chip fy-chip--neutral"><i data-icon="chart-column"></i>Business figures</li>
+            <li class="fy-chip fy-chip--neutral"><i data-icon="user-round"></i>Personal data</li>
+          </ul>
+          <ul class="fy-chipset" aria-label="Capabilities this agent needs">
+            <li class="fy-chip fy-chip--outline fy-chip--neutral">Tool calling</li>
+            <li class="fy-chip fy-chip--outline fy-chip--neutral">Structured output</li>
+          </ul>
+          <p class="fy-small fy-muted">Bank descriptions can name people, so this agent handles personal data. Set by the agent, not here.</p>
+        </section>
+
+        <section class="fy-stack fy-stack--2" aria-labelledby="steps-title">
+          <h3 class="fy-h3" id="steps-title">Steps, in order</h3>
+          <ol class="fy-card fy-card--flat fy-list">
+            <li class="fy-list__item" style="align-items: flex-start">
+              <span class="fy-badge">1</span>
+              <span class="fy-list__main">
+                <span class="fy-list__title">Claude Sonnet 4.6</span>
+                <span class="fy-small fy-secondary fy-wrap">Claude on Agent Platform · Singapore</span>
+                <span class="fy-row fy-row--wrap" style="gap: var(--space-2)"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Qualified 6 Oct</span><span class="fy-small fy-muted">Rate limit 120 requests a minute</span></span>
+              </span>
+              <span class="fy-row" style="flex: none; gap: 4px">
+                <button class="fy-iconbtn" type="button" aria-label="Move Claude Sonnet 4.6 down"><i data-icon="arrow-down"></i></button>
+                <button class="fy-iconbtn" type="button" aria-label="Remove Claude Sonnet 4.6"><i data-icon="trash"></i></button>
+              </span>
+            </li>
+            <li class="fy-list__item" style="align-items: flex-start">
+              <span class="fy-badge fy-badge--quiet">2</span>
+              <span class="fy-list__main">
+                <span class="fy-list__title">Gemini 2.5 Flash</span>
+                <span class="fy-small fy-secondary fy-wrap">Gemini on Agent Platform · Singapore</span>
+                <span class="fy-row fy-row--wrap" style="gap: var(--space-2)"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Qualified 6 Oct</span><span class="fy-small fy-muted">Used 23 times today</span></span>
+              </span>
+              <span class="fy-row" style="flex: none; gap: 4px">
+                <button class="fy-iconbtn" type="button" aria-label="Move Gemini 2.5 Flash up"><i data-icon="arrow-up"></i></button>
+                <button class="fy-iconbtn" type="button" aria-label="Remove Gemini 2.5 Flash"><i data-icon="trash"></i></button>
+              </span>
+            </li>
+          </ol>
+        </section>
+
+        <section class="fy-stack fy-stack--2" aria-labelledby="add-title">
+          <h3 class="fy-h3" id="add-title">Add a step</h3>
+          <div class="fy-field">
+            <label class="fy-label" for="re-add">Connection and model</label>
+            <select class="fy-select" id="re-add" aria-invalid="true" aria-describedby="re-add-error"><option>GPT-5 · OpenAI API, United States</option><option>Claude Opus 4.6 · Claude on Agent Platform, Singapore</option></select>
+            <span class="fy-error" id="re-add-error"><i data-icon="circle-x"></i>OpenAI API may receive know-how only, and this agent handles business figures and personal data. Choose a Singapore connection, or ask an Owner to change which data may go where. (AI_ROUTE_DATA_CLASS)</span>
+          </div>
+        </section>
+
+        <section class="fy-stack fy-stack--2" aria-labelledby="lim-title">
+          <h3 class="fy-h3" id="lim-title">Limits</h3>
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="re-fb">Fallbacks a day before a warning</label>
+              <input class="fy-input fy-num" id="re-fb" value="10" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="re-budget">Budget a month</label>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="re-budget" value="20.00" readonly="readonly" aria-describedby="re-budget-help"></div>
+              <span class="fy-help" id="re-budget-help">S$6.47 used this month. Alert at 80%; the agent stops at 100% and lines wait for a person.</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="fy-banner fy-banner--info" role="note">
+          <i data-icon="users" class="fy-i--20"></i>
+          <div class="fy-banner__text">
+            <span class="fy-strong fy-small">Who approves this change</span>
+            <span class="fy-small fy-secondary">Reordering or removing steps within Singapore needs an Owner or the Administrator. A step that sends this agent's data somewhere new needs the Owner and a second approver.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fy-row fy-row--wrap" style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); gap: var(--space-2); justify-content: flex-end">
+      <button class="fy-btn fy-btn--ghost" type="button">Cancel</button>
+      <button class="fy-btn fy-btn--primary" type="button">Save route</button>
+    </div>
+  </section>
+</div>

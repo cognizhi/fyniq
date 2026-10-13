@@ -1,0 +1,310 @@
+<!-- fyniq-screen {"nav": "sales", "title": "New invoice", "mode": "basic", "heights": {"compact": 3750, "medium": 2800, "expanded": 2050}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#sales">Sales</a><i data-icon="chevron-right"></i><a href="#sales/invoices">Invoices</a><i data-icon="chevron-right"></i><span>New</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">New invoice</h1><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></div>
+      <p class="fy-secondary">Created from <a href="#sales/quotes/quo-0030">QUO-0030</a>, accepted online by Kopi Labs on 2 Oct. The link to the quote stays.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="eye"></i>Preview PDF</button>
+      <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Submit for approval</button>
+    </div>
+  </div>
+
+  <div class="fy-row fy-row--wrap fy-row--between">
+    <div class="fy-segmented" role="radiogroup" aria-label="Document type">
+      <button type="button" role="radio" aria-checked="true">Invoice</button>
+      <button type="button" role="radio" aria-checked="false">Quote</button>
+      <button type="button" role="radio" aria-checked="false">Credit note</button>
+    </div>
+    <span class="fy-small fy-muted">Number INV-0151 is given when it posts</span>
+  </div>
+
+  <div class="fy-banner fy-banner--info">
+    <i data-icon="stamp" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>Needs approval before it posts</strong>
+      <span class="fy-small">In founder mode you can approve your own invoices up to S$2,000.00. This one is S$4,360.00, so Arjun Rao approves it. Nothing is sent or posted until then.</span>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="ie-who">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ie-who">Customer and dates</h2></div>
+        <div class="fy-card__body">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field fy-field--full">
+              <label class="fy-label" for="ie-customer">Customer<span class="fy-req" aria-hidden="true">*</span></label>
+              <input class="fy-input" id="ie-customer" value="Kopi Labs Pte Ltd" readonly="readonly" aria-describedby="ie-customer-help">
+              <span class="fy-help" id="ie-customer-help">UEN 202211874R · billing@kopilabs.sg · InvoiceNow ID 0195:SG202211874R</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ie-date">Invoice date<span class="fy-req" aria-hidden="true">*</span></label>
+              <input class="fy-input" id="ie-date" value="13 Oct 2026" readonly="readonly" aria-describedby="ie-date-help">
+              <span class="fy-help" id="ie-date-help"><i data-icon="lock"></i> August 2026 is closed and locked, so the date must be 1 Sep or later.</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ie-terms">Payment terms</label>
+              <select class="fy-select" id="ie-terms" aria-describedby="ie-terms-help"><option>30 days</option><option>14 days</option><option>Due on receipt</option></select>
+              <span class="fy-help" id="ie-terms-help">Due <strong>12 Nov 2026</strong> · Kopi Labs' usual terms</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ie-ccy">Currency</label>
+              <select class="fy-select" id="ie-ccy" aria-describedby="ie-ccy-help"><option>SGD, Singapore dollar</option><option>USD, US dollar</option></select>
+              <span class="fy-help fy-basic-only" id="ie-ccy-help">For another currency, the invoice also shows net, GST and total in SGD, as IRAS requires.</span>
+            </div>
+            <div class="fy-field fy-expert-only">
+              <label class="fy-label" for="ie-rate">Rate and source<button class="fy-info" type="button" aria-label="About the rate" aria-expanded="false"><i data-icon="info"></i></button></label>
+              <input class="fy-input" id="ie-rate" value="1.0000 · base currency" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ie-ref">Customer reference</label>
+              <input class="fy-input" id="ie-ref" value="Kopi Labs PO 2026-118" readonly="readonly">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-basic-only" aria-labelledby="ie-lines-b">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ie-lines-b">What you are charging for</h2></div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-stack fy-stack--3">
+            <div class="fy-row fy-row--between"><span class="fy-eyebrow">Line 1</span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-label="Remove line 1"><i data-icon="trash"></i>Remove</button></div>
+            <div class="fy-form fy-form--2">
+              <div class="fy-field">
+                <label class="fy-label" for="ieb-d1">Description</label>
+                <input class="fy-input" id="ieb-d1" value="Dashboard licence, Oct to Dec 2026 (3 months)" readonly="readonly">
+              </div>
+              <div class="fy-field">
+                <label class="fy-label" for="ieb-a1">Amount before GST</label>
+                <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="ieb-a1" value="2,400.00" readonly="readonly" style="text-align: right"></div>
+              </div>
+              <div class="fy-field">
+                <label class="fy-label" for="ieb-c1">Category</label>
+                <select class="fy-select" id="ieb-c1"><option>Sales: subscriptions</option></select>
+              </div>
+              <div class="fy-field">
+                <label class="fy-label" for="ieb-g1">GST<button class="fy-info" type="button" aria-label="About GST codes" aria-expanded="false"><i data-icon="info"></i></button></label>
+                <select class="fy-select" id="ieb-g1" aria-describedby="ieb-g1-help"><option>Standard-rated, 9% (SR)</option></select>
+                <span class="fy-help" id="ieb-g1-help">Suggested from Kopi Labs' default</span>
+              </div>
+            </div>
+          </div>
+          <div class="fy-divider"></div>
+          <div class="fy-stack fy-stack--3">
+            <div class="fy-row fy-row--between"><span class="fy-eyebrow">Line 2</span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-label="Remove line 2"><i data-icon="trash"></i>Remove</button></div>
+            <div class="fy-form fy-form--2">
+              <div class="fy-field">
+                <label class="fy-label" for="ieb-d2">Description</label>
+                <input class="fy-input" id="ieb-d2" value="Set-up and staff training, 1 day" readonly="readonly">
+              </div>
+              <div class="fy-field">
+                <label class="fy-label" for="ieb-a2">Amount before GST</label>
+                <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="ieb-a2" value="1,600.00" readonly="readonly" style="text-align: right"></div>
+              </div>
+              <div class="fy-field">
+                <label class="fy-label" for="ieb-c2">Category</label>
+                <select class="fy-select" id="ieb-c2"><option>Sales: services</option></select>
+              </div>
+              <div class="fy-field">
+                <label class="fy-label" for="ieb-g2">GST</label>
+                <select class="fy-select" id="ieb-g2"><option>Standard-rated, 9% (SR)</option></select>
+              </div>
+            </div>
+          </div>
+          <button class="fy-btn fy-btn--secondary" type="button" style="align-self: flex-start"><i data-icon="plus"></i>Add a line</button>
+          <div class="fy-plain" role="group" aria-labelledby="ie-adv">
+            <i data-icon="layers" class="fy-muted"></i>
+            <div class="fy-stack fy-stack--2 fy-grow">
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-expanded="true" id="ie-adv" style="align-self: flex-start; padding-left: 0"><i data-icon="chevron-down"></i>Has advanced details (2)</button>
+              <dl class="fy-dl">
+                <div><dt>Line 1 · service period</dt><dd>1 Oct to 31 Dec 2026, spread monthly</dd></div>
+                <div><dt>Both lines · department</dt><dd>Delivery</dd></div>
+              </dl>
+              <span class="fy-help">Set by the quote. You can see them here; change them in Expert mode.</span>
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" style="align-self: flex-start; padding-left: 0">Open in Expert mode<i data-icon="arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+    <aside class="fy-stack fy-stack--6" aria-label="Totals">
+      <section class="fy-card" aria-labelledby="ie-tot">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ie-tot">Totals</h2><span class="fy-small fy-muted">SGD</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--between"><span class="fy-secondary">Subtotal</span><span class="fy-num">4,000.00</span></div>
+          <div class="fy-row fy-row--between"><span class="fy-secondary">GST 9% on S$4,000.00</span><span class="fy-num">360.00</span></div>
+          <div class="fy-divider"></div>
+          <div class="fy-row fy-row--between"><span class="fy-strong">Total</span><span class="fy-num fy-strong" style="font-size: var(--fs-lg)">S$4,360.00</span></div>
+          <span class="fy-small fy-muted">Due 12 Nov 2026 · Kopi Labs already owes S$3,815.00, of which S$2,180.00 is overdue.</span>
+        </div>
+      </section>
+      <section class="fy-card" aria-labelledby="ie-checks">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ie-checks">Checks</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Ready</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Tax invoice details complete</span><span class="fy-list__meta">GST no. 202412345K, dates, net, GST and total</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Every line has a GST code</span><span class="fy-list__meta">SR 9% on both lines</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Date is in an open period</span><span class="fy-list__meta">October 2026 is open</span></span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <section class="fy-card fy-expert-only" aria-labelledby="ie-lines">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="ie-lines">What you are charging for</h2>
+          <span class="fy-tag fy-tag--expert"><i data-icon="table-2"></i>Paste from Excel works here</span>
+        </div>
+
+        <div class="fy-from-medium">
+          <div class="fy-tablewrap" style="border-radius: 0; border-width: 0 0 1px">
+            <table class="fy-table fy-table--compact fy-statement">
+              <caption class="fy-sr">Invoice lines</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Item</th>
+                  <th scope="col">Description</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Qty</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Unit price</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Disc %</th>
+                  <th scope="col">Account</th>
+                  <th scope="col">GST</th>
+                  <th scope="col">Department</th>
+                  <th scope="col">Service period</th>
+                  <th scope="col" class="fy-num" style="text-align: right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="white-space: nowrap"><span class="fy-mono">LIC-DASH</span></td>
+                  <td>Dashboard licence, Oct to Dec 2026</td>
+                  <td class="fy-num">3</td>
+                  <td class="fy-num">800.00</td>
+                  <td class="fy-num fy-muted">–</td>
+                  <td style="white-space: nowrap"><span class="fy-mono fy-muted">4010</span> Subscription revenue</td>
+                  <td style="white-space: nowrap"><span class="fy-mono">SR</span> 9%</td>
+                  <td>Delivery</td>
+                  <td style="white-space: nowrap">1 Oct – 31 Dec</td>
+                  <td class="fy-num">2,400.00</td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap"><span class="fy-mono">SVC-TRAIN</span></td>
+                  <td>Set-up and staff training, 1 day</td>
+                  <td class="fy-num">1</td>
+                  <td class="fy-num">1,600.00</td>
+                  <td class="fy-num fy-muted">–</td>
+                  <td style="white-space: nowrap"><span class="fy-mono fy-muted">4020</span> Services revenue</td>
+                  <td style="white-space: nowrap"><span class="fy-mono">SR</span> 9%</td>
+                  <td>Delivery</td>
+                  <td class="fy-muted">–</td>
+                  <td class="fy-num">1,600.00</td>
+                </tr>
+                <tr>
+                  <td colspan="10"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Add line</button><span class="fy-small fy-muted"> · Paste rows from Excel or Google Sheets: amounts such as S$1,600.00 or (1,600.00) are previewed before they are kept. Type = for arithmetic.</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="fy-card__body fy-stack fy-only-compact">
+          <div class="fy-card fy-card--flat fy-card--pad fy-stack fy-stack--3">
+            <div class="fy-row fy-row--between"><span class="fy-eyebrow">Line 1 · <span class="fy-mono">LIC-DASH</span></span><span class="fy-num fy-strong">2,400.00</span></div>
+            <div class="fy-field">
+              <label class="fy-label" for="iec-d1">Description</label>
+              <input class="fy-input" id="iec-d1" value="Dashboard licence, Oct to Dec 2026" readonly="readonly">
+            </div>
+            <div class="fy-row">
+              <div class="fy-field fy-grow"><label class="fy-label" for="iec-q1">Qty</label><input class="fy-input fy-num" id="iec-q1" value="3" readonly="readonly"></div>
+              <div class="fy-field fy-grow"><label class="fy-label" for="iec-p1">Unit price</label><input class="fy-input fy-num" id="iec-p1" value="800.00" readonly="readonly"></div>
+            </div>
+            <dl class="fy-dl">
+              <div><dt>Account</dt><dd><span class="fy-mono fy-muted">4010</span> Subscription revenue</dd></div>
+              <div><dt>GST</dt><dd><span class="fy-mono">SR</span> 9%</dd></div>
+              <div><dt>Department</dt><dd>Delivery</dd></div>
+              <div><dt>Service period</dt><dd>1 Oct – 31 Dec 2026</dd></div>
+            </dl>
+          </div>
+          <div class="fy-card fy-card--flat fy-card--pad fy-stack fy-stack--3">
+            <div class="fy-row fy-row--between"><span class="fy-eyebrow">Line 2 · <span class="fy-mono">SVC-TRAIN</span></span><span class="fy-num fy-strong">1,600.00</span></div>
+            <div class="fy-field">
+              <label class="fy-label" for="iec-d2">Description</label>
+              <input class="fy-input" id="iec-d2" value="Set-up and staff training, 1 day" readonly="readonly">
+            </div>
+            <dl class="fy-dl">
+              <div><dt>Qty × price</dt><dd class="fy-num">1 × 1,600.00</dd></div>
+              <div><dt>Account</dt><dd><span class="fy-mono fy-muted">4020</span> Services revenue</dd></div>
+              <div><dt>GST</dt><dd><span class="fy-mono">SR</span> 9%</dd></div>
+              <div><dt>Department</dt><dd>Delivery</dd></div>
+            </dl>
+          </div>
+          <button class="fy-btn fy-btn--secondary" type="button" style="align-self: flex-start"><i data-icon="plus"></i>Add line</button>
+        </div>
+      </section>
+
+
+  <div class="fy-split fy-split--wide-aside">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="ie-send">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ie-send">Template, notes and attachments</h2></div>
+        <div class="fy-card__body">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="ie-tpl">Template</label>
+              <select class="fy-select" id="ie-tpl"><option>Tax invoice, Cognizhi standard</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ie-dep">Deposit or retainer to apply</label>
+              <select class="fy-select" id="ie-dep" aria-describedby="ie-dep-help"><option>None held for Kopi Labs</option></select>
+              <span class="fy-help" id="ie-dep-help">Deposits a customer paid ahead are taken off the total here.</span>
+            </div>
+            <div class="fy-field fy-field--full">
+              <label class="fy-label" for="ie-notes">Notes on the invoice</label>
+              <textarea class="fy-textarea" id="ie-notes" readonly="readonly">Thank you for choosing Cognizhi. Please pay by bank transfer to DBS Business, quoting the invoice number.</textarea>
+            </div>
+            <div class="fy-field fy-field--full">
+              <span class="fy-label">Attachments</span>
+              <div class="fy-row fy-row--wrap">
+                <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#files/quo-0030-acceptance"><i data-icon="paperclip"></i>QUO-0030 acceptance, 2 Oct.pdf</a>
+                <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="upload"></i>Add a file</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <aside class="fy-stack fy-stack--6" aria-label="What it posts and checks">
+      <section class="fy-card" aria-labelledby="ie-impact">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ie-impact">What it will post</h2><span class="fy-tag">Preview</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-plain fy-basic-only">
+            <i data-icon="info" class="fy-muted"></i>
+            <p class="fy-small">Kopi Labs will owe us <strong>S$4,360.00</strong>. S$1,600.00 counts as sales in October. S$2,400.00 counts as S$800.00 a month from October to December. S$360.00 is GST we pay to IRAS with the Oct–Dec return.</p>
+          </div>
+          <table class="fy-table fy-table--compact fy-ledger fy-expert-only">
+            <caption class="fy-sr">Ledger impact preview</caption>
+            <thead><tr><th scope="col">Account</th><th scope="col">Debit</th><th scope="col">Credit</th></tr></thead>
+            <tbody>
+              <tr><td><span class="fy-acct">1100</span>Accounts receivable</td><td class="fy-num">4,360.00</td><td></td></tr>
+              <tr><td><span class="fy-acct">4020</span>Services revenue</td><td></td><td class="fy-num">1,600.00</td></tr>
+              <tr><td><span class="fy-acct">2400</span>Deferred revenue</td><td></td><td class="fy-num">2,400.00</td></tr>
+              <tr><td><span class="fy-acct">2200</span>GST control</td><td></td><td class="fy-num">360.00</td></tr>
+            </tbody>
+            <tfoot><tr><td>Balanced</td><td class="fy-num">4,360.00</td><td class="fy-num">4,360.00</td></tr></tfoot>
+          </table>
+          <span class="fy-small fy-muted fy-expert-only">Then 2400 releases S$800.00 to 4010 at each month end, Oct to Dec.</span>
+        </div>
+      </section>
+
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-actionbar--editor fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Submit</button>
+  </div>
+</div>

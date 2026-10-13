@@ -1,0 +1,121 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "New journal", "mode": "expert", "heights": {"compact": 2350, "medium": 2000, "expanded": 1450}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><a href="#accounting/journals">Journals</a><i data-icon="chevron-right"></i><span>New</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">JNL-0249 · Accrue Kestrel Data hours, September</h1><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></div>
+      <p class="fy-secondary">Prepared by Grace Ho · saved 08:42</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="eye"></i>Preview</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit for approval</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="note">
+    <i data-icon="lock-keyhole" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>September is soft-locked while the close is reviewed</strong><span class="fy-small">Only the accountant can post into it, and must give a reason. Your reason is recorded in the audit trail with this journal.</span></div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="je-head">
+        <div class="fy-card__head"><h2 class="fy-h3" id="je-head">Journal</h2>
+          <div class="fy-segmented" role="radiogroup" aria-label="Journal type"><button type="button" role="radio" aria-checked="true">Standard</button><button type="button" role="radio" aria-checked="false">Intercompany</button></div>
+        </div>
+        <div class="fy-card__body fy-form fy-form--2">
+          <div class="fy-field"><label class="fy-label" for="je-date">Date<span class="fy-req" aria-hidden="true">*</span></label><input class="fy-input" id="je-date" value="30 Sep 2026" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="je-ref">Reference</label><input class="fy-input" id="je-ref" value="Kestrel timesheet, Sep" readonly="readonly"></div>
+          <div class="fy-field fy-field--full"><label class="fy-label" for="je-desc">Description<span class="fy-req" aria-hidden="true">*</span></label><input class="fy-input" id="je-desc" value="Accrue Kestrel Data’s September hours, billed in October" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="je-rev">Reverse automatically on<button class="fy-info" type="button" aria-label="About automatic reversal" aria-expanded="false"><i data-icon="info"></i></button></label><input class="fy-input" id="je-rev" value="1 Oct 2026" readonly="readonly"><span class="fy-help">A matching reversal posts on this date, so the October bill is not counted twice.</span></div>
+          <div class="fy-field"><span class="fy-label" id="je-rec-l">Repeat</span><div class="fy-row"><button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="je-rec-l"></button><span class="fy-small fy-muted">Off · make it a recurring journal</span></div></div>
+          <div class="fy-field fy-field--full"><label class="fy-label" for="je-why">Reason for posting into a soft-locked period<span class="fy-req" aria-hidden="true">*</span></label><input class="fy-input" id="je-why" value="Contractor hours found during the September review" readonly="readonly"></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="je-lines">
+        <div class="fy-card__head" style="flex-wrap: wrap">
+          <h2 class="fy-h3" id="je-lines">Lines</h2>
+          <span class="fy-small fy-muted fy-from-medium">Paste rows from a spreadsheet · <span class="fy-kbd">Ctrl</span> <span class="fy-kbd">D</span> fills down · start a cell with = to calculate</span>
+        </div>
+        <div style="overflow-x: auto">
+          <table class="fy-table fy-table--cards">
+            <thead>
+              <tr>
+                <th scope="col">Account</th><th scope="col" class="fy-from-medium">Description</th>
+                <th scope="col" class="fy-num">Debit</th><th scope="col" class="fy-num">Credit</th>
+                <th scope="col" class="fy-from-expanded">Department</th><th scope="col" class="fy-from-expanded">Project</th>
+                <th scope="col" class="fy-from-medium">Currency · rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-card="title"><span class="fy-acct">5030</span>Delivery contractors</td>
+                <td data-card="hide" class="fy-from-medium">Data engineering, 32 h, Sep</td>
+                <td data-card="amount" class="fy-num">2,065.80</td>
+                <td data-card="hide" class="fy-num"></td>
+                <td data-card="hide" class="fy-from-expanded">Engineering</td>
+                <td data-card="hide" class="fy-from-expanded">Acme data platform</td>
+                <td data-card="meta" class="fy-from-medium"><span class="fy-mono">GBP 1,200.00 × 1.7215</span></td>
+              </tr>
+              <tr>
+                <td data-card="title"><span class="fy-acct">5030</span>Delivery contractors</td>
+                <td data-card="hide" class="fy-from-medium">Pipeline review, 8 h, Sep</td>
+                <td data-card="amount" class="fy-num">516.45</td>
+                <td data-card="hide" class="fy-num"></td>
+                <td data-card="hide" class="fy-from-expanded">Engineering</td>
+                <td data-card="hide" class="fy-from-expanded">Acme data platform</td>
+                <td data-card="meta" class="fy-from-medium"><span class="fy-mono">GBP 300.00 × 1.7215</span></td>
+              </tr>
+              <tr aria-selected="true">
+                <td data-card="title"><span class="fy-acct">2050</span>Accrued expenses</td>
+                <td data-card="hide" class="fy-from-medium">Kestrel Data, to be billed</td>
+                <td data-card="hide" class="fy-num"></td>
+                <td data-card="amount" class="fy-num"><span class="fy-mono fy-small fy-muted fy-from-expanded">=2065.80+516.45 </span>2,582.25</td>
+                <td data-card="hide" class="fy-from-expanded">—</td>
+                <td data-card="hide" class="fy-from-expanded">—</td>
+                <td data-card="meta" class="fy-from-medium">SGD</td>
+              </tr>
+            </tbody>
+            <tfoot><tr><td>Total</td><td class="fy-from-medium"></td><td class="fy-num">2,582.25</td><td class="fy-num">2,582.25</td><td class="fy-from-expanded"></td><td class="fy-from-expanded"></td><td class="fy-from-medium"></td></tr></tfoot>
+          </table>
+        </div>
+        <div class="fy-card__foot fy-row fy-row--wrap fy-row--between">
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Add a line</button>
+          <span class="fy-row fy-row--wrap" role="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Balanced in SGD</span><span class="fy-small fy-muted">GBP 1,500.00 at the MAS rate for 30 Sep</span></span>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="je-ev">
+        <h2 class="fy-h3" id="je-ev">Evidence</h2>
+        <p class="fy-small fy-muted">Journals above S$1,000 need a supporting calculation or document.</p>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="file-text"></i></span><span class="fy-list__main"><span class="fy-list__title">kestrel-timesheet-2026-09.pdf</span><span class="fy-list__meta">Added by Grace Ho · 18 KB</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Attached</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Checks and approval">
+      <section class="fy-card" aria-labelledby="je-checks">
+        <div class="fy-card__head"><h2 class="fy-h3" id="je-checks">Checks</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Debits equal credits</span><span class="fy-list__meta">2,582.25 each side</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Departments filled in</span><span class="fy-list__meta">Required on 5xxx and 6xxx accounts</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Evidence attached</span><span class="fy-list__meta">Above S$1,000</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--warning"><i data-icon="triangle-alert"></i></span><span class="fy-list__main"><span class="fy-list__title">Posting into a soft-locked period</span><span class="fy-list__meta fy-wrap">Allowed for the accountant, with the reason above</span></span></li>
+        </ul>
+      </section>
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="je-appr">
+        <h2 class="fy-h3" id="je-appr">Approval</h2>
+        <p class="fy-small">S$2,582.25 is above the S$1,000 manual-journal limit, so a founder approves it before it posts.</p>
+        <div class="fy-row"><span class="fy-avatar fy-avatar--sm" aria-hidden="true">ML</span><span class="fy-small">Mei Lin Tan or <span class="fy-avatar fy-avatar--sm" aria-hidden="true">AR</span> Arjun Rao</span></div>
+        <p class="fy-small fy-muted">Preview runs the posting rules without saving anything (a dry run).</p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="eye"></i>Preview</button>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit</button>
+  </div>
+</div>

@@ -1,0 +1,152 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Auto-reconciled", "mode": "expert", "heights": {"compact": 2600, "medium": 2100, "expanded": 1250}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Banking</span>
+      <h1 class="fy-h1">Auto-reconciled</h1>
+      <p class="fy-secondary">Lines Fyniq reconciled without a click, what it matched them to and why. Undo any of them while its period is open.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#settings/banking/auto-reconcile"><i data-icon="sliders-horizontal"></i>Limits</a>
+      <a class="fy-btn fy-btn--primary" href="#inbox/weekly-review"><i data-icon="list-checks"></i>Review this week's sample<span class="fy-badge fy-badge--quiet" aria-label="2 lines">2</span></a>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Banking">
+    <a href="#banking">Accounts</a>
+    <a href="#banking/categorise">Categorise<span class="fy-badge fy-badge--quiet">14</span></a>
+    <a href="#banking/auto-reconciled" aria-current="page">Auto-reconciled</a>
+    <a href="#banking/reconciliations">Reconciliation</a>
+    <a class="fy-expert-only" href="#banking/rules">Rules</a>
+    <a class="fy-expert-only" href="#banking/payouts">Payouts</a>
+  </nav>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="list-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="list-title">Since 1 Oct</h2>
+        <span class="fy-badge fy-badge--quiet">6</span>
+        <div class="fy-chipset fy-from-medium" role="group" aria-label="Show">
+          <button class="fy-filter" type="button" aria-pressed="true">All</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Matches</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Rules</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Transfers</button>
+        </div>
+      </div>
+      <div class="fy-banner fy-banner--strip">
+        <i data-icon="bot"></i>
+        <span class="fy-small fy-secondary">Every line here was reconciled by the system principal <strong>Fyniq auto-reconcile</strong>, under its own audit identity.</span>
+      </div>
+      <div style="overflow-x: auto">
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Reconciled</th><th scope="col">Bank line</th><th scope="col">Matched to, and why</th><th scope="col" style="text-align: right">SGD</th><th scope="col"><span class="fy-sr">Undo</span></th></tr></thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="meta"><span style="white-space: nowrap">13 Oct</span> <span class="fy-muted">06:02</span></td>
+              <td data-card="title"><span class="fy-mono">GIRO CR ACME ANALYTICS PTE LTD INV0140</span></td>
+              <td data-card="meta" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><div><a href="#sales/inv-0140">INV-0140</a> Acme Analytics · line of 12 Oct</div><div class="fy-small fy-muted">Exact amount, unique reference, expected contact</div><div style="margin-top: 4px"><span class="fy-chip fy-chip--info"><i data-icon="eye"></i>In weekly review</span></div></td>
+              <td data-card="amount" class="fy-num">10,900.00</td>
+              <td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="undo-2"></i>Undo</button></td>
+            </tr>
+            <tr>
+              <td data-card="meta"><span style="white-space: nowrap">10 Oct</span> <span class="fy-muted">18:40</span></td>
+              <td data-card="title"><span class="fy-mono">HITPAY PAYOUT HP-1010</span></td>
+              <td data-card="meta" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><div><a href="#banking/payouts/hp-1010">HitPay payout HP-1010</a></div><div class="fy-small fy-muted">Exact payout amount and provider reference</div></td>
+              <td data-card="amount" class="fy-num">5,414.27</td>
+              <td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="undo-2"></i>Undo</button></td>
+            </tr>
+            <tr>
+              <td data-card="meta"><span style="white-space: nowrap">10 Oct</span> <span class="fy-muted">07:15</span></td>
+              <td data-card="title"><span class="fy-mono">GOOGLE*WORKSPACE</span></td>
+              <td data-card="meta" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><div>Rule <a href="#banking/rules/google-workspace">Google Workspace</a><span class="fy-expert-only"> → <span class="fy-mono">6120</span> TX</span></div><div class="fy-small fy-muted">Auto-apply approved by Arjun Rao, 2 Sep</div><div style="margin-top: 4px"><span class="fy-chip fy-chip--info"><i data-icon="eye"></i>In weekly review</span></div></td>
+              <td data-card="amount" class="fy-num">−259.20</td>
+              <td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="undo-2"></i>Undo</button></td>
+            </tr>
+            <tr>
+              <td data-card="meta"><span style="white-space: nowrap">9 Oct</span> <span class="fy-muted">17:55</span></td>
+              <td data-card="title"><span class="fy-mono">STRIPE PAYMENTS SG PAYOUT</span></td>
+              <td data-card="meta" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><div><a href="#banking/payouts/stripe-1009">Stripe payout po_1Q…X4kq</a></div><div class="fy-small fy-muted">Exact payout amount and provider reference</div></td>
+              <td data-card="amount" class="fy-num">3,412.85</td>
+              <td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="undo-2"></i>Undo</button></td>
+            </tr>
+            <tr>
+              <td data-card="meta"><span style="white-space: nowrap">6 Oct</span> <span class="fy-muted">07:10</span></td>
+              <td data-card="title"><span class="fy-mono">DBS SERVICE CHARGE</span></td>
+              <td data-card="meta" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><div>Rule <a href="#banking/rules/dbs-service-charges">DBS service charges</a><span class="fy-expert-only"> → <span class="fy-mono">6420</span></span></div><div class="fy-small fy-muted">Auto-apply rule, within its limits</div></td>
+              <td data-card="amount" class="fy-num">−30.00</td>
+              <td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="undo-2"></i>Undo</button></td>
+            </tr>
+            <tr>
+              <td data-card="meta"><span style="white-space: nowrap">3 Oct</span> <span class="fy-muted">11:30</span></td>
+              <td data-card="title"><span class="fy-mono">TRF TO OCBC</span> and <span class="fy-mono">TRF FROM DBS</span></td>
+              <td data-card="meta" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><div>Transfer, DBS to OCBC</div><div class="fy-small fy-muted">Matched on both feeds: same amount, same day</div></td>
+              <td data-card="amount" class="fy-num">8,000.00</td>
+              <td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="undo-2"></i>Undo</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="fy-card__head" style="border-top: 1px solid var(--border)">
+        <h2 class="fy-h3">August 2026</h2>
+        <span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Closed</span>
+      </div>
+      <div style="overflow-x: auto">
+        <table class="fy-table fy-table--cards">
+          <thead class="fy-sr"><tr><th scope="col">Date</th><th scope="col">Bank line</th><th scope="col">Matched to, and why</th><th scope="col">SGD</th><th scope="col">Undo</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-card="meta"><span style="white-space: nowrap">29 Aug</span> <span class="fy-muted">06:04</span></td>
+              <td data-card="title"><span class="fy-mono">FAST CR HARBOURFRONT DENTAL GROUP INV0132</span></td>
+              <td data-card="meta" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><div><a href="#sales/inv-0132">INV-0132</a> Harbourfront Dental Group</div><div class="fy-small fy-muted">Exact amount, unique reference, expected contact</div></td>
+              <td data-card="amount" class="fy-num">4,360.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral" title="August is closed and locked. Undo would change a closed period."><i data-icon="lock"></i>Can't undo</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="fy-card__foot"><span class="fy-small fy-muted">August is closed and locked, so its lines can't be undone here. A correction goes through a reversal in an open period.</span></div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Limits and weekly review">
+      <section class="fy-card" aria-labelledby="lim-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="lim-title">Limits used today</h2>
+          <button class="fy-info" type="button" aria-label="About auto-reconcile limits" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between"><span class="fy-strong">Exact matches</span><span class="fy-num fy-small">10,900.00 of 25,000.00</span></div>
+            <div class="fy-progress" role="img" aria-label="9% of the daily cap used"><span style="width: 9%"></span></div>
+            <span class="fy-small fy-muted">Up to S$15,000.00 a line · 1 line today</span>
+          </div>
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between"><span class="fy-strong">Rule: Google Workspace</span><span class="fy-num fy-small">0.00 of 1,000.00</span></div>
+            <div class="fy-progress" role="img" aria-label="0% of the daily cap used"><span style="width: 0%"></span></div>
+            <span class="fy-small fy-muted">Up to S$500.00 a line</span>
+          </div>
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between"><span class="fy-strong">Rule: DBS service charges</span><span class="fy-num fy-small">0.00 of 200.00</span></div>
+            <div class="fy-progress" role="img" aria-label="0% of the daily cap used"><span style="width: 0%"></span></div>
+            <span class="fy-small fy-muted">Up to S$100.00 a line</span>
+          </div>
+          <p class="fy-small fy-secondary">A line over a cap stays in Categorise for a person. AI suggestions are never auto-applied.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="wr-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="wr-title">Weekly review</h2>
+          <span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Due Fri 16 Oct</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-secondary">Founder mode: a sample of auto-reconciled lines joins the weekly review. A founder who did not approve the rule checks them.</p>
+          <div class="fy-row"><span class="fy-avatar fy-avatar--sm">ML</span><span>You review <strong>2 of 6</strong> lines this week</span></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#inbox/weekly-review"><i data-icon="list-checks"></i>Review this week's sample</a>
+  </div>
+</div>

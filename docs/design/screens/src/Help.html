@@ -1,0 +1,61 @@
+<!-- fyniq-screen {"nav": "help", "title": "Help", "mode": "basic", "heights": {"compact": 2500, "medium": 2050, "expanded": 1500}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Help and user guide</span>
+      <h1 class="fy-h1">How do I record a bill?</h1>
+      <p class="fy-secondary">Opened from Purchases. Fyniq 0.4.0 · updated 10 Oct 2026.</p>
+    </div>
+  </div>
+  <div class="fy-sidenav">
+    <nav class="fy-card fy-card--pad fy-stack fy-stack--3" aria-label="User guide" style="align-self: start">
+      <div class="fy-inputgroup"><span class="fy-inputgroup__addon"><i data-icon="search"></i></span><input class="fy-input" id="help-q" placeholder="Search the guide" aria-label="Search the guide"></div>
+      <ul class="fy-stack fy-stack--2">
+        <li><a href="#help/getting-started">Getting started</a></li>
+        <li><span class="fy-eyebrow">Tasks</span></li>
+        <li><a href="#help/record-money">Recording money in and out</a></li>
+        <li><a href="#help/record-bill" aria-current="page" class="fy-strong">How do I record a bill?</a></li>
+        <li><a href="#help/approve">Approving from the Inbox</a></li>
+        <li><span class="fy-eyebrow">Concepts</span></li>
+        <li><a href="#help/statuses">Statuses and checks</a></li>
+        <li><a href="#help/modes">Basic and Expert</a></li>
+        <li><a href="#help/founders-money">Founders' money</a></li>
+        <li><span class="fy-eyebrow">Singapore</span></li>
+        <li><a href="#help/gst">GST basics</a></li>
+        <li><a href="#help/cpf">CPF and payroll</a></li>
+        <li><a href="#help/shortcuts">Keyboard shortcuts</a> · <a href="#help/glossary">Glossary</a> · <a href="#help/whats-new">What's new</a></li>
+      </ul>
+      <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="route"></i>Take the tour again</button>
+    </nav>
+    <article class="fy-stack fy-stack--6" style="max-width: 880px">
+      <p class="fy-lead">Record a supplier's bill so Fyniq knows what you owe, when it is due, and which GST you can claim.</p>
+      <ol class="fy-stack fy-stack--3 fy-stagger" aria-label="Steps">
+        <li class="fy-row fy-row--top"><span class="fy-step__n">1</span><span>Go to <strong>Purchases › Bills</strong> and choose <strong>New bill</strong>, or forward the PDF to <span class="fy-mono">bills@cognizhi.fyniq.app</span>.</span></li>
+        <li class="fy-row fy-row--top"><span class="fy-step__n">2</span><span>Pick the supplier, the bill date and the due date. Fyniq suggests the category and GST code from earlier bills; check them.</span></li>
+        <li class="fy-row fy-row--top"><span class="fy-step__n">3</span><span>Attach the bill. Amounts above S$2,000 need an approver before they can be paid.</span></li>
+        <li class="fy-row fy-row--top"><span class="fy-step__n">4</span><span>Choose <strong>Submit for approval</strong>. It appears in the approver's Inbox.</span></li>
+      </ol>
+      <figure class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--2">
+        <div class="fy-receipt" style="aspect-ratio: 16 / 7" role="img" aria-label="Screenshot: the bill form with supplier, dates, category and GST code"><span>Screenshot from the end-to-end tests, light and dark</span></div>
+        <figcaption class="fy-small fy-muted">The bill form in Basic mode.</figcaption>
+      </figure>
+      <div class="fy-banner fy-banner--info"><i data-icon="thumbs-up" class="fy-i--20"></i><div class="fy-banner__text"><strong>Recommended default</strong><span>Self-approval up to S$2,000 per bill in Founder mode, reviewed weekly by the other founder. Change it in Settings › Approval policies.</span></div></div>
+      <div class="fy-banner fy-banner--warning"><i data-icon="triangle-alert" class="fy-i--20"></i><div class="fy-banner__text"><strong>Check first</strong><span>Input tax on overseas digital services follows IRAS's reverse-charge rules. Your accountant confirms the GST code. [verify]</span></div></div>
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="help-pop">
+        <h2 class="fy-h3" id="help-pop">What the ⓘ on a field shows</h2>
+        <div class="fy-row" style="position: relative; align-items: flex-start; min-height: 190px">
+          <span class="fy-label">GST code<button class="fy-info" type="button" aria-label="About GST code" aria-expanded="true" aria-controls="help-pop-1"><i data-icon="info"></i></button></span>
+          <div class="fy-popover" id="help-pop-1" role="dialog" aria-label="GST code" style="top: 32px; left: 0">
+            <strong>GST code</strong>
+            <p class="fy-small fy-secondary">Tells Fyniq how much GST is in the bill and where it goes on your GST return. Most local bills are TX (standard-rated, 9%).</p>
+            <a class="fy-small" href="#help/gst">Learn more</a>
+          </div>
+        </div>
+      </section>
+      <div class="fy-row fy-row--wrap">
+        <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="flask-conical"></i>Try it in the sample company</button>
+        <a href="#help/record-money">Related: recording money in and out</a>
+      </div>
+    </article>
+  </div>
+</div>

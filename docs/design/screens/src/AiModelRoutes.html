@@ -1,0 +1,172 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Model routes", "mode": "expert", "heights": {"compact": 3500, "medium": 2600, "expanded": 1600}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/ai">AI</a><i data-icon="chevron-right"></i><span aria-current="page">Model routes</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Model routes</h1>
+      <p class="fy-secondary">Each agent runs on its own route: a first choice and fallbacks, limited to the data the agent handles. Every answer and proposal records the model and the step that produced it.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--ghost" href="#settings/ai/providers">Providers</a>
+      <a class="fy-btn fy-btn--ghost" href="#settings/ai/usage">Usage and budgets</a>
+    </div>
+  </div>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="preset-title">
+    <div class="fy-row fy-row--between fy-row--wrap">
+      <h2 class="fy-h3" id="preset-title">Where models may run</h2>
+      <div class="fy-segmented" role="radiogroup" aria-labelledby="preset-title">
+        <button type="button" role="radio" aria-checked="true">Singapore only</button>
+        <button type="button" role="radio" aria-checked="false">Global</button>
+        <button type="button" role="radio" aria-checked="false">By data class</button>
+      </div>
+    </div>
+    <p class="fy-small fy-secondary">Singapore only: every agent uses a connection that processes in Singapore. The change waiting for Arjun Rao would move the organisation to “By data class”, so know-how may also go to the OpenAI API in the United States.</p>
+  </section>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">2 routes need attention</span>
+      <span class="fy-small fy-secondary">Bank categorisation fell back 23 times today, above its limit of 10: Claude Sonnet 4.6 has been hitting its rate limit since 08:31, and the lines went to Gemini 2.5 Flash, which is qualified for this agent. The knowledge-base compiler has used 89% of its budget.</span>
+      <div class="fy-row fy-row--wrap" style="margin-top: var(--space-2)">
+        <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#settings/ai/routes/bank-categorisation">Open the route</a>
+        <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#compliance/checks?area=ai">See it on Checks</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="routes-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="routes-title">Agents and their routes</h2><span class="fy-small fy-muted">8 agents</span></div>
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr>
+              <th scope="col">Agent</th>
+              <th scope="col">Route</th>
+              <th scope="col" class="fy-from-expanded">Data it handles</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="fy-num" style="text-align: right">October (SGD)</th>
+            </tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title"><a href="#settings/ai/routes/assistant">Assistant: chat and tools</a></td>
+              <td data-card="meta" class="fy-small">1 Claude Opus 4.6 · 2 Claude Sonnet 4.6 <span class="fy-muted">· both Singapore</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Know-how, figures, personal data; payroll when allowed</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Qualified 6 Oct</span></td>
+              <td data-card="amount" class="fy-num">42.42</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/routes/capture">Document capture and extraction</a></td>
+              <td data-card="meta" class="fy-small">1 Claude Sonnet 4.6 · 2 Claude Opus 4.6 <span class="fy-muted">· both Singapore</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Figures, personal data</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Qualified 6 Oct</span></td>
+              <td data-card="amount" class="fy-num">17.11</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/routes/bank-categorisation">Bank categorisation and matching</a></td>
+              <td data-card="meta" class="fy-small">1 Claude Sonnet 4.6 · 2 Gemini 2.5 Flash <span class="fy-muted">· both Singapore</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Figures, personal data</td>
+              <td data-card="status"><span class="fy-chip fy-chip--warning fy-wrap"><i data-icon="triangle-alert"></i>23 fallbacks today</span></td>
+              <td data-card="amount" class="fy-num">6.47</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/routes/drafting">Proposal drafting, 8 task types</a></td>
+              <td data-card="meta" class="fy-small">1 Claude Opus 4.6 <span class="fy-muted">· Singapore · no fallback: stops with a message</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Figures, personal data</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Qualified 6 Oct</span></td>
+              <td data-card="amount" class="fy-num">8.58</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/routes/commentary">Report and board-pack commentary</a></td>
+              <td data-card="meta" class="fy-small">1 Claude Opus 4.6 · 2 Claude Sonnet 4.6 <span class="fy-muted">· both Singapore</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Figures</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Qualified 6 Oct</span></td>
+              <td data-card="amount" class="fy-num">4.32</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/routes/kb-compiler">Knowledge-base compiler</a></td>
+              <td data-card="meta" class="fy-small">1 Claude Opus 4.6 <span class="fy-muted">· Singapore</span><span class="fy-small fy-muted" style="display: block">Waiting: GPT-5 first, on the OpenAI API</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Know-how</td>
+              <td data-card="status"><span class="fy-chip fy-chip--warning fy-wrap"><i data-icon="triangle-alert"></i>89% of budget</span></td>
+              <td data-card="amount" class="fy-num">22.29</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/routes/company-secretary">Company secretary agent</a></td>
+              <td data-card="meta" class="fy-small">1 Claude Opus 4.6 · 2 Claude Sonnet 4.6 <span class="fy-muted">· both Singapore</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">Figures, officers' personal data</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Qualified 6 Oct</span></td>
+              <td data-card="amount" class="fy-num">1.46</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/routes/evals">Eval runner</a></td>
+              <td data-card="meta" class="fy-small">The model under test <span class="fy-muted">· on its own connection</span></td>
+              <td data-card="hide" class="fy-from-expanded fy-small">The sample company only</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>3 runs this month</span></td>
+              <td data-card="amount" class="fy-num">18.21</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="4" style="grid-column: 1 / -1">Total, 1 to 13 Oct</td><td class="fy-num fy-strong"><a href="#settings/ai/usage">120.86</a></td></tr>
+          </tfoot>
+        </table>
+      </section>
+
+      <section class="fy-card" aria-labelledby="qual-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="qual-title">Qualification</h2><button class="fy-info" type="button" aria-label="About qualification" aria-expanded="false"><i data-icon="info"></i></button></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Model and agent</th><th scope="col">Evals</th><th scope="col">Result</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-card="title">Claude Opus 4.6<span class="fy-small fy-muted" style="display: block; font-weight: 400">Assistant, drafting, commentary</span></td>
+              <td data-card="meta" class="fy-small">Golden figures 200 of 200 right, with their sources · red team 0 of 146 attacks got through</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Passed 6 Oct</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Claude Sonnet 4.6<span class="fy-small fy-muted" style="display: block; font-weight: 400">Document capture, bank categorisation</span></td>
+              <td data-card="meta" class="fy-small">Extraction 98.4% of fields right (needs 97%) · categorisation precision 97.2%, recall 95.6% (needs 95% and 93%)</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Passed 6 Oct</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Gemini 2.5 Flash<span class="fy-small fy-muted" style="display: block; font-weight: 400">Bank categorisation, as the fallback</span></td>
+              <td data-card="meta" class="fy-small">Categorisation precision 96.2%, recall 94.8% (needs 95% and 93%) · red team 0 of 146</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Passed 6 Oct</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">GPT-5<span class="fy-small fy-muted" style="display: block; font-weight: 400">Knowledge-base compiler</span></td>
+              <td data-card="meta" class="fy-small">Knowledge evals: 100 help and policy questions, citations, stale pages</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral fy-wrap"><i data-icon="clock"></i>Not run: connection waiting</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Results are kept per model version and route. None of your routes uses a moving model name; one that does is re-qualified every week and shows a warning until it passes.</span></div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="How routes work">
+      <section class="fy-card" aria-labelledby="fail-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="fail-title">When a step fails</h2></div>
+        <ol class="fy-list">
+          <li class="fy-list__item" style="align-items: flex-start"><span class="fy-badge">1</span><span class="fy-list__main"><span class="fy-small fy-wrap">An error, a time-out, a rate limit or a used-up quota moves the request to the next step.</span></span></li>
+          <li class="fy-list__item" style="align-items: flex-start"><span class="fy-badge">2</span><span class="fy-list__main"><span class="fy-small fy-wrap">Only if that step may receive the agent's data and has the capabilities it needs.</span></span></li>
+          <li class="fy-list__item" style="align-items: flex-start"><span class="fy-badge">3</span><span class="fy-list__main"><span class="fy-small fy-wrap">Otherwise the run stops with a plain message and an error code. Protection is never lowered to keep going.</span></span></li>
+        </ol>
+        <div class="fy-card__body" style="padding-top: 0"><p class="fy-small fy-muted">Every fallback is on the <a href="#settings/ai/activity?filter=fallback">AI activity log</a>.</p></div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="who-title">
+        <div class="fy-row"><i data-icon="users" class="fy-i--20"></i><h2 class="fy-h3" id="who-title">Who changes a route</h2></div>
+        <p class="fy-small fy-secondary">An Owner or the Administrator. A change that sends an agent's data somewhere new, such as another country, needs the Owner and a second approver.</p>
+      </section>
+
+      <section class="fy-card" aria-labelledby="wait-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="wait-title">Waiting for approval</h2></div>
+        <ul class="fy-list">
+          <li><a class="fy-list__item" href="#inbox/approval-ai-416" style="align-items: flex-start"><span class="fy-list__icon"><i data-icon="hourglass" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title fy-wrap">Knowledge-base compiler: GPT-5 first</span><span class="fy-list__meta">Mei Lin Tan · today 08:56 · waiting for Arjun Rao and for GPT-5 to pass its evals</span></span></a></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+</div>

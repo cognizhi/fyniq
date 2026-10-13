@@ -1,0 +1,184 @@
+<!-- fyniq-screen {"nav": "equity", "title": "Holders", "mode": "expert", "heights": {"compact": 2500, "medium": 1650, "expanded": 1050}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Equity</span>
+      <h1 class="fy-h1">Shareholders and investors</h1>
+      <p class="fy-secondary">10 holders: 2 shareholders, 1 SAFE holder and 7 option holders. Each is also a contact.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="download"></i>Export</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="user-plus"></i>Add holder</button>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Equity views">
+    <a href="#equity">Cap table</a>
+    <a href="#equity/holders" aria-current="page">Holders</a>
+    <a href="#equity/classes">Classes</a>
+    <a href="#equity/transactions">Transactions</a>
+    <a href="#equity/instruments">SAFEs and notes</a>
+    <a href="#equity/options">Option pool</a>
+  </nav>
+
+  <div class="fy-banner fy-banner--info">
+    <i data-icon="building" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">A company joining as a shareholder ends exempt status</span>
+      <span class="fy-small">Cognizhi is an exempt private company today: 2 members, both individuals. When Lion Rock Ventures' SAFE converts, a company becomes a member and the status ends. Fyniq re-checks on that day, and loans to directors then fall under section 162 of the Companies Act.</span>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--3">
+      <div class="fy-row fy-row--wrap fy-row--between" style="gap: var(--space-3)">
+        <div class="fy-chipset" role="group" aria-label="Show">
+          <button class="fy-filter" type="button" aria-pressed="true">All 10</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Shareholders 2</button>
+          <button class="fy-filter" type="button" aria-pressed="false">SAFEs and notes 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Options 7</button>
+        </div>
+        <div class="fy-field" style="width: 100%; max-width: 260px">
+          <label class="fy-sr" for="hd-search">Search holders</label>
+          <input class="fy-input" id="hd-search" placeholder="Search by name">
+        </div>
+      </div>
+
+      <div class="fy-card">
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr>
+              <th scope="col">Holder</th>
+              <th scope="col" class="fy-from-expanded">Identifier<button class="fy-info" type="button" aria-label="About identifiers" aria-expanded="false"><i data-icon="info"></i></button></th>
+              <th scope="col">Holds</th>
+              <th scope="col" class="fy-num fy-from-expanded">Issued %</th>
+              <th scope="col" class="fy-num">FD %</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title"><a href="#equity/holders/mei-lin-tan">Mei Lin Tan</a><div class="fy-small fy-muted">Individual · founder, director</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">S••••305G</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">4,500,000</span> ordinary</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">50.00</td>
+              <td data-card="amount" class="fy-num">42.19</td>
+              <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="user-check"></i>Controller</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/arjun-rao">Arjun Rao</a><div class="fy-small fy-muted">Individual · co-founder, director</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">S••••119A</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">4,500,000</span> ordinary</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">50.00</td>
+              <td data-card="amount" class="fy-num">42.19</td>
+              <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="user-check"></i>Controller</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/lion-rock-ventures">Lion Rock Ventures</a><div class="fy-small fy-muted">Entity · venture fund</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">T21••••42H</span></td>
+              <td data-card="meta" style="white-space: nowrap">SAFE <span class="fy-num">S$500,000.00</span></td>
+              <td data-card="hide" class="fy-num fy-muted fy-from-expanded">–</td>
+              <td data-card="amount" class="fy-num">6.25</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Awaiting approval</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/daniel-lim">Daniel Lim</a><div class="fy-small fy-muted">Individual · employee</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">S••••412F</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">100,000</span> options</td>
+              <td data-card="hide" class="fy-num fy-muted fy-from-expanded">–</td>
+              <td data-card="amount" class="fy-num">0.94</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Exercise drafted</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/priya-nair">Priya Nair</a><div class="fy-small fy-muted">Individual · employee</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">S••••771C</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">100,000</span> options</td>
+              <td data-card="hide" class="fy-num fy-muted fy-from-expanded">–</td>
+              <td data-card="amount" class="fy-num">0.94</td>
+              <td data-card="hide"></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/wei-jie-ong">Wei Jie Ong</a><div class="fy-small fy-muted">Individual · employee</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">S••••238J</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">80,000</span> options</td>
+              <td data-card="hide" class="fy-num fy-muted fy-from-expanded">–</td>
+              <td data-card="amount" class="fy-num">0.75</td>
+              <td data-card="hide"></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/sarah-koh">Sarah Koh</a><div class="fy-small fy-muted">Individual · employee</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">S••••684B</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">50,000</span> options</td>
+              <td data-card="hide" class="fy-num fy-muted fy-from-expanded">–</td>
+              <td data-card="amount" class="fy-num">0.47</td>
+              <td data-card="hide"></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/hafiz-rahman">Hafiz Rahman</a><div class="fy-small fy-muted">Individual · employee</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">S••••156K</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">50,000</span> options</td>
+              <td data-card="hide" class="fy-num fy-muted fy-from-expanded">–</td>
+              <td data-card="amount" class="fy-num">0.47</td>
+              <td data-card="hide"></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/chen-yu">Chen Yu</a><div class="fy-small fy-muted">Individual · employee</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">G••••903N</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">30,000</span> options</td>
+              <td data-card="hide" class="fy-num fy-muted fy-from-expanded">–</td>
+              <td data-card="amount" class="fy-num">0.28</td>
+              <td data-card="hide"></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/nurul-aziz">Nurul Aziz</a><div class="fy-small fy-muted">Individual · left 31 Jul 2026</div></td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">S••••924E</span></td>
+              <td data-card="meta" style="white-space: nowrap"><span class="fy-num">15,000</span> options</td>
+              <td data-card="hide" class="fy-num fy-muted fy-from-expanded">–</td>
+              <td data-card="amount" class="fy-num">0.14</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>At ACRA</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot">
+          <p class="fy-small fy-muted">Identifiers are masked as for employees; opening one is logged. FD % counts the SAFE at its cap price and every granted option; each figure is rounded to 2 decimals.</p>
+        </div>
+      </div>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Approvals and statutory checks">
+      <section class="fy-card" aria-labelledby="hd-appr-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="hd-appr-title">Awaiting approval</h2><span class="fy-badge fy-badge--quiet">1</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-strong">Lion Rock Ventures: registered address</span>
+            <span class="fy-small fy-secondary">Version 3 → 4 · proposed by Grace Ho on 12 Oct · evidence: letter from the fund manager</span>
+            <span class="fy-small fy-muted">Changes to a holder are versioned and need one approver who did not propose them.</span>
+          </div>
+          <div class="fy-row"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#inbox/holder-change-14">Review change</a></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="hd-stat-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="hd-stat-title">Linked checks</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Controllers by shares and votes</span><span class="fy-list__meta" style="white-space: normal">Mei Lin Tan and Arjun Rao hold over 25%; both on the register of controllers</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Control by other rights</span><span class="fy-list__meta" style="white-space: normal">Board appointment rights are recorded; Lion Rock Ventures has not yet confirmed it has no significant influence</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="circle-dashed"></i>Not assessed</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Exempt private company</span><span class="fy-list__meta" style="white-space: normal">2 of at most 20 members; no company as a member</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Yes</span>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="user-plus"></i>Add holder</button>
+  </div>
+</div>

@@ -1,0 +1,246 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Bank rules", "mode": "expert", "heights": {"compact": 3750, "medium": 2800, "expanded": 1600}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Banking</span>
+      <h1 class="fy-h1">Bank rules</h1>
+      <p class="fy-secondary">Rules run top first and fill in the category. Only a rule with approved auto-apply reconciles lines by itself.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="plus"></i>New rule</button>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Banking">
+    <a href="#banking">Accounts</a>
+    <a href="#banking/categorise">Categorise<span class="fy-badge fy-badge--quiet">14</span></a>
+    <a href="#banking/auto-reconciled">Auto-reconciled</a>
+    <a href="#banking/reconciliations">Reconciliation</a>
+    <a class="fy-expert-only" href="#banking/rules" aria-current="page">Rules</a>
+    <a class="fy-expert-only" href="#banking/payouts">Payouts</a>
+  </nav>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>Rules 3 and 6 disagree on Figma lines</strong>
+      <span class="fy-small">Both match the 10 past FIGMA lines but give different categories. Rule 3 wins because it is higher. Narrow rule 6 or delete it.</span>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/rules/6">Edit rule 6</a>
+  </div>
+
+  <div class="fy-split fy-split--wide-aside">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="rules-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="rules-title">7 rules, in order</h2>
+          <span class="fy-small fy-muted fy-from-medium">Drag or use Move up / Move down</span>
+        </div>
+        <table class="fy-table fy-table--cards" aria-label="Bank rules in order">
+          <thead>
+            <tr>
+              <th scope="col" class="fy-from-expanded" style="width: 56px">Order</th>
+              <th scope="col">Rule and conditions</th>
+              <th scope="col">Sets</th>
+              <th scope="col" class="fy-num">Back-test</th>
+              <th scope="col" class="fy-num fy-from-expanded">Hits</th>
+              <th scope="col">Auto-apply</th>
+            </tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-row"><i data-icon="grip-vertical" class="fy-muted"></i>1</span></td>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><a href="#banking/rules/1"><span class="fy-until-expanded">1. </span>Google Workspace</a><span class="fy-mono fy-small fy-muted">contains "GOOGLE*WORKSPACE"</span></span></td>
+              <td data-card="meta"><span class="fy-mono">6120</span> Software subscriptions · Google Workspace · <span class="fy-mono">TX</span></td>
+              <td data-card="amount" class="fy-num">9 lines</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">3</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-row"><i data-icon="grip-vertical" class="fy-muted"></i>2</span></td>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><a href="#banking/rules/2"><span class="fy-until-expanded">2. </span>DBS service charges</a><span class="fy-mono fy-small fy-muted">regex ^DBS (SERVICE|ADVICE) CHARGE · DBS only</span></span></td>
+              <td data-card="meta"><span class="fy-mono">6420</span> Bank charges · DBS Bank · <span class="fy-mono">EP</span></td>
+              <td data-card="amount" class="fy-num">11 lines</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">2</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-row"><i data-icon="grip-vertical" class="fy-muted"></i>3</span></td>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><a href="#banking/rules/3"><span class="fy-until-expanded">3. </span>Figma</a><span class="fy-mono fy-small fy-muted">contains "FIGMA"</span></span></td>
+              <td data-card="meta"><span class="fy-mono">6120</span> Software subscriptions · Figma · <span class="fy-mono">TX</span></td>
+              <td data-card="amount" class="fy-num">10 lines</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">1</td>
+              <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Awaiting approval</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-row"><i data-icon="grip-vertical" class="fy-muted"></i>4</span></td>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><a href="#banking/rules/4"><span class="fy-until-expanded">4. </span>Grab rides</a><span class="fy-mono fy-small fy-muted">regex ^GRAB\*\s?[A-Z0-9-]+ · out 0.01–200.00</span></span></td>
+              <td data-card="meta"><span class="fy-mono">6310</span> Local travel · Grab for Business · <span class="fy-mono">TX</span></td>
+              <td data-card="amount" class="fy-num">23 lines</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">–</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-row"><i data-icon="grip-vertical" class="fy-muted"></i>5</span></td>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><a href="#banking/rules/5"><span class="fy-until-expanded">5. </span>OCBC fees</a><span class="fy-mono fy-small fy-muted">contains "OCBC BIZ ACCOUNT FEE" · OCBC only</span></span></td>
+              <td data-card="meta"><span class="fy-mono">6420</span> Bank charges · OCBC Bank · <span class="fy-mono">EP</span></td>
+              <td data-card="amount" class="fy-num">10 lines</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">1</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-minus"></i>Off</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-row"><i data-icon="grip-vertical" class="fy-muted"></i>6</span></td>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><a href="#banking/rules/6"><span class="fy-until-expanded">6. </span>Design tools</a><span class="fy-mono fy-small fy-muted">regex FIGMA|CANVA</span></span></td>
+              <td data-card="meta"><span class="fy-mono">6150</span> Marketing and design · no contact</td>
+              <td data-card="amount" class="fy-num">12 lines</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">0</td>
+              <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Conflict</span></td>
+            </tr>
+            <tr>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-row"><i data-icon="grip-vertical" class="fy-muted"></i>7</span></td>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><a href="#banking/rules/7"><span class="fy-until-expanded">7. </span>OCBC interest</a><span class="fy-mono fy-small fy-muted">contains "INTEREST CREDIT" · OCBC only</span></span></td>
+              <td data-card="meta"><span class="fy-mono">7010</span> Interest income · OCBC Bank · <span class="fy-mono">ES</span></td>
+              <td data-card="amount" class="fy-num">9 lines</td>
+              <td data-card="hide" class="fy-num fy-from-expanded">0</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-minus"></i>Off</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Back-test: lines since 1 Jan 2026 the rule would match. Hits: lines it filled in since it was created.</span></div>
+      </section>
+
+      <section class="fy-ai-card" aria-labelledby="ai-rule">
+        <div class="fy-ai-card__head">
+          <span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span>
+          <h2 class="fy-h3 fy-grow" id="ai-rule">Proposed rule: SP Group utilities</h2>
+        </div>
+        <div class="fy-ai-card__body">
+          <p class="fy-ai-text">Lines from <span class="fy-mono">SP DIGITAL PTE LTD</span> were coded Utilities, contact SP Group, GST <span class="fy-mono">TX</span>, all <span class="fy-fact">3</span> times this year. A rule would fill them in next time.</p>
+          <div class="fy-plain fy-small"><i data-icon="flask-conical"></i><span>Back-test: <span class="fy-strong">3 lines</span> since 1 Jan 2026, all coded the same way.</span></div>
+          <span class="fy-source"><i data-icon="file-text"></i>Proposal P-318 · create a bank rule · tier 1 · never turns on auto-apply</span>
+          <div class="fy-row fy-row--wrap"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#inbox/proposal-318">Review proposal</a><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Not useful</button></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="sugg-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="sugg-title">Patterns you could make into rules</h2>
+          <button class="fy-info" type="button" aria-label="About suggested rules" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="repeat" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">WeWork Singapore → Rent</span><span class="fy-list__meta">Coded the same way 5 times · <span class="fy-mono">6110</span> · <span class="fy-mono">TX</span></span></span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Make a rule</button>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="repeat" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Ho &amp; Partners LLP → Accounting fees</span><span class="fy-list__meta">Coded the same way 5 times · <span class="fy-mono">6230</span> · <span class="fy-mono">TX</span></span></span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Make a rule</button>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Offered after 5 lines coded alike. Never applied until you make the rule.</span></div>
+      </section>
+    </div>
+
+    <aside class="fy-card" aria-labelledby="edit-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="edit-title">Rule 4: Grab rides</h2>
+        <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+      </div>
+      <div class="fy-card__body fy-stack">
+        <div class="fy-field">
+          <label class="fy-label" for="r-name">Name</label>
+          <input class="fy-input" id="r-name" value="Grab rides" readonly="readonly">
+        </div>
+        <fieldset class="fy-fieldset">
+          <legend>When a line matches all of these</legend>
+          <div class="fy-field">
+            <label class="fy-label" for="r-desc">Description matches (regex)<button class="fy-info" type="button" aria-label="About regular expressions" aria-expanded="false"><i data-icon="info"></i></button></label>
+            <input class="fy-input fy-mono" id="r-desc" value="^GRAB\*\s?[A-Z0-9-]+" readonly="readonly">
+            <span class="fy-help">Matches GRAB* A-7PQ2KXB SINGAPORE. Case is ignored.</span>
+          </div>
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="r-min">Money out from</label>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="r-min" value="0.01" readonly="readonly"></div>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-max">To</label>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="r-max" value="200.00" readonly="readonly"></div>
+            </div>
+          </div>
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="r-acct">Account</label>
+              <select class="fy-select" id="r-acct"><option>All accounts</option><option>DBS Business</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-cp">Counterparty</label>
+              <input class="fy-input" id="r-cp" placeholder="Any">
+            </div>
+          </div>
+        </fieldset>
+        <fieldset class="fy-fieldset">
+          <legend>Then fill in</legend>
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="r-cat">Category</label>
+              <select class="fy-select" id="r-cat"><option>6310 Local travel</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-con">Contact</label>
+              <select class="fy-select" id="r-con"><option>Grab for Business</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-gst">GST code</label>
+              <select class="fy-select" id="r-gst"><option>TX · purchase 9%</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="r-prj">Project</label>
+              <select class="fy-select" id="r-prj"><option>None</option><option>Acme data platform</option></select>
+            </div>
+            <div class="fy-field fy-field--full">
+              <label class="fy-label" for="r-ref">Reference</label>
+              <input class="fy-input" id="r-ref" value="Use the bank reference" readonly="readonly">
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="fy-stack fy-stack--2" role="status">
+          <div class="fy-banner fy-banner--info">
+            <i data-icon="flask-conical" class="fy-i--20"></i>
+            <div class="fy-banner__text">
+              <strong>This rule would have matched 23 lines</strong>
+              <span class="fy-small">Since 1 Jan 2026, S$1,642.80 in all. 21 were coded the same way; 2 were coded differently:</span>
+            </div>
+          </div>
+          <ul class="fy-list" style="border: 1px solid var(--border); border-radius: var(--radius-m)">
+            <li class="fy-list__item" style="min-height: 44px">
+              <span class="fy-list__main"><span class="fy-list__title fy-mono fy-small">GRAB* A-5KM1TQZ</span><span class="fy-list__meta">14 Mar · coded Client entertainment</span></span>
+              <span class="fy-num fy-small">−42.10</span>
+            </li>
+            <li class="fy-list__item" style="min-height: 44px">
+              <span class="fy-list__main"><span class="fy-list__title fy-mono fy-small">GRAB* A-2HC9WXE</span><span class="fy-list__meta">2 Jun · coded Overseas travel</span></span>
+              <span class="fy-num fy-small">−58.70</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="fy-stack fy-stack--2">
+          <div class="fy-row fy-row--between">
+            <span class="fy-label" id="r-auto-l">Auto-apply</span>
+            <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="r-auto-l"></button>
+          </div>
+          <p class="fy-help">Turning it on sends an approval request with this back-test to Arjun Rao. Limits: S$200.00 a line and S$500.00 a day for this rule. Rules the assistant proposed can't turn it on.</p>
+        </div>
+      </div>
+      <div class="fy-card__foot">
+        <button class="fy-btn fy-btn--ghost" type="button">Cancel</button>
+        <span class="fy-spacer"></span>
+        <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="flask-conical"></i>Back-test</button>
+        <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Save rule</button>
+      </div>
+    </aside>
+  </div>
+</div>

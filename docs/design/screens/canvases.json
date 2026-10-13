@@ -1,0 +1,17 @@
+{
+ "design_type": "https://claude.ai/artifact/QKN21svewxgyPb6SYRqWnd",
+ "design_system": "https://claude.ai/artifact/YKs3TpDd4vwKXqgs2Eztnn",
+ "canvases": {
+  "core": "https://claude.ai/artifact/MG5hvemTx7xnptyZgEbUU5",
+  "workflows": "https://claude.ai/artifact/7aZo8Xj1Jd214q9snsoPQQ",
+  "access-ai": "https://claude.ai/artifact/RshCnytkRX4xwGHyzAtqKk",
+  "banking-claims": "https://claude.ai/artifact/AQYYXo7NC38ADg2Ct8Skhc",
+  "settings-admin": "https://claude.ai/artifact/RVBRhoavuGb51aE3rj1zBM",
+  "equity": "https://claude.ai/artifact/N7aLbdLfPwPdavrtwGRt3b",
+  "compliance": "https://claude.ai/artifact/Mc6unSzX2tWvhBVed9YRUz",
+  "insight": "https://claude.ai/artifact/D8WSpmQAXSBCoGewpx1maU",
+  "people-ledger": "https://claude.ai/artifact/X2stH1KuKQfMP5eSApdQAv",
+  "sales-purchases": "https://claude.ai/artifact/Fz8TxRSE1jGPB5CWXGHMAu",
+  "ai-models": "https://claude.ai/artifact/MvbV5zu4W9DdZhwHCtZKQw"
+ }
+}

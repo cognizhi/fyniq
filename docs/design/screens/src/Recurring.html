@@ -1,0 +1,150 @@
+<!-- fyniq-screen {"nav": "sales", "title": "Recurring", "mode": "expert", "heights": {"compact": 2350, "medium": 1400, "expanded": 1200}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#sales">Sales</a><i data-icon="chevron-right"></i><span>Recurring</span></nav>
+      <h1 class="fy-h1">Recurring invoices and bills</h1>
+      <p class="fy-secondary">7 schedules. The next run is Lumen Health's pilot fee on Thursday 15 Oct.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--primary" href="#sales/recurring/new"><i data-icon="plus"></i>New schedule</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--critical" role="alert">
+    <i data-icon="circle-x" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>The 30 Sep run for Harbourfront Dental Group failed</strong>
+      <span class="fy-small">Item DASH-HOST was made inactive on 30 Sep, so no draft was created. Choose an active item or reactivate DASH-HOST, then run it again. The next run is 31 Oct.</span>
+    </div>
+    <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Fix it</button>
+  </div>
+
+  <div class="fy-stack fy-stack--3">
+      <div class="fy-row fy-row--wrap fy-row--between">
+        <div class="fy-segmented" role="radiogroup" aria-label="Show">
+          <button type="button" role="radio" aria-checked="true">All 7</button>
+          <button type="button" role="radio" aria-checked="false">Invoices 4</button>
+          <button type="button" role="radio" aria-checked="false">Bills 3</button>
+        </div>
+        <span class="fy-small fy-muted">Editing a schedule saves a new version. Documents already created don't change.</span>
+      </div>
+
+      <div class="fy-tablewrap">
+        <table class="fy-table fy-table--cards fy-table--compact">
+          <caption class="fy-sr">Recurring schedules</caption>
+          <thead>
+            <tr>
+              <th scope="col">Schedule</th>
+              <th scope="col">Repeats</th>
+              <th scope="col">Next run</th>
+              <th scope="col" class="fy-from-expanded">Mode</th>
+              <th scope="col" class="fy-num" style="text-align: right">Amount</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="fy-expert-only fy-from-expanded"><span class="fy-sr">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title"><span class="fy-stack fy-stack--2" style="gap: 0"><span>Lumen Health</span><span class="fy-small fy-muted"><i data-icon="receipt"></i> Invoice · Pilot monthly fee<span class="fy-from-expanded"> · last <a class="fy-mono" href="#sales/inv-0141">INV-0141</a></span></span></span></td>
+              <td data-card="meta"><span>Monthly on the 15th<span class="fy-only-compact"> · next 15 Oct</span></span><span class="fy-small fy-muted fy-from-expanded" style="display: block">ends after Nov (3 of 4)</span></td>
+              <td data-card="hide" style="white-space: nowrap">15 Oct</td>
+              <td class="fy-from-expanded" data-card="hide">Auto-draft</td>
+              <td class="fy-num" data-card="amount">13,080.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="pause"></i>Pause</button></td>
+            </tr>
+            <tr>
+              <td data-card="title"><span class="fy-stack fy-stack--2" style="gap: 0"><span>Harbourfront Dental Group</span><span class="fy-small fy-muted"><i data-icon="receipt"></i> Invoice · Dashboard hosting<span class="fy-from-expanded"> · uses DASH-HOST</span></span></span></td>
+              <td data-card="meta"><span>Monthly on the 31st<span class="fy-only-compact"> · next 31 Oct</span></span><span class="fy-small fy-muted fy-from-expanded" style="display: block">last day in shorter months</span></td>
+              <td data-card="hide" style="white-space: nowrap">31 Oct</td>
+              <td class="fy-from-expanded" data-card="hide">Auto-draft</td>
+              <td class="fy-num" data-card="amount">272.50</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Failed 30 Sep</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="rotate-ccw"></i>Run again</button></td>
+            </tr>
+            <tr>
+              <td data-card="title"><span class="fy-stack fy-stack--2" style="gap: 0"><span>Acme Analytics</span><span class="fy-small fy-muted"><i data-icon="receipt"></i> Invoice · Data platform support<span class="fy-from-expanded"> · last <a class="fy-mono" href="#sales/inv-0150">INV-0150</a></span></span></span></td>
+              <td data-card="meta"><span>Monthly on the 12th<span class="fy-only-compact"> · next 12 Nov</span></span><span class="fy-small fy-muted fy-from-expanded" style="display: block">to 12 Dec</span></td>
+              <td data-card="hide" style="white-space: nowrap">12 Nov</td>
+              <td class="fy-from-expanded" data-card="hide">Auto-send</td>
+              <td class="fy-num" data-card="amount">5,450.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="pause"></i>Pause</button></td>
+            </tr>
+            <tr>
+              <td data-card="title"><span class="fy-stack fy-stack--2" style="gap: 0"><span>Kopi Labs</span><span class="fy-small fy-muted"><i data-icon="receipt"></i> Invoice · Data feed subscription<span class="fy-from-expanded"> · last <a class="fy-mono" href="#sales/inv-0143">INV-0143</a></span></span></span></td>
+              <td data-card="meta"><span>Every 3 months on the 2nd<span class="fy-only-compact"> · next 2 Jan</span></span><span class="fy-small fy-muted fy-from-expanded" style="display: block">no end date</span></td>
+              <td data-card="hide" style="white-space: nowrap">2 Jan</td>
+              <td class="fy-from-expanded" data-card="hide">Auto-draft</td>
+              <td class="fy-num" data-card="amount">1,635.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="pause"></i>Pause</button></td>
+            </tr>
+            <tr>
+              <td data-card="title"><span class="fy-stack fy-stack--2" style="gap: 0"><span>WeWork Singapore</span><span class="fy-small fy-muted"><i data-icon="shopping-cart"></i> Bill · Membership, 8 desks<span class="fy-from-expanded"> · last <a class="fy-mono" href="#purchases/bill-0909">BILL-0909</a></span></span></span></td>
+              <td data-card="meta"><span>Monthly on the 1st<span class="fy-only-compact"> · next 1 Nov</span></span><span class="fy-small fy-muted fy-from-expanded" style="display: block">to 31 Dec</span></td>
+              <td data-card="hide" style="white-space: nowrap">1 Nov</td>
+              <td class="fy-from-expanded" data-card="hide">Auto-draft</td>
+              <td class="fy-num" data-card="amount">7,063.20</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="pause"></i>Pause</button></td>
+            </tr>
+            <tr>
+              <td data-card="title"><span class="fy-stack fy-stack--2" style="gap: 0"><span>Ho &amp; Partners LLP</span><span class="fy-small fy-muted"><i data-icon="shopping-cart"></i> Bill · Bookkeeping and close support<span class="fy-from-expanded"> · last <a class="fy-mono" href="#purchases/bill-0920">BILL-0920</a></span></span></span></td>
+              <td data-card="meta"><span>Monthly on the 1st<span class="fy-only-compact"> · next 1 Nov</span></span><span class="fy-small fy-muted fy-from-expanded" style="display: block">to 31 Dec</span></td>
+              <td data-card="hide" style="white-space: nowrap">1 Nov</td>
+              <td class="fy-from-expanded" data-card="hide">Auto-draft</td>
+              <td class="fy-num" data-card="amount">2,398.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="pause"></i>Pause</button></td>
+            </tr>
+            <tr>
+              <td data-card="title"><span class="fy-stack fy-stack--2" style="gap: 0"><span>Google Workspace</span><span class="fy-small fy-muted"><i data-icon="shopping-cart"></i> Bill · Business Standard, 9 users<span class="fy-from-expanded"> · paused by Arjun Rao, 5 Oct</span></span></span></td>
+              <td data-card="meta"><span>Monthly on the 1st</span><span class="fy-small fy-muted fy-from-expanded" style="display: block">“Moving to annual billing”</span></td>
+              <td data-card="hide" class="fy-muted">–</td>
+              <td class="fy-from-expanded" data-card="hide">Auto-draft</td>
+              <td class="fy-num" data-card="amount">264.60</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-pause"></i>Paused</span></td>
+              <td class="fy-expert-only fy-from-expanded" data-card="hide"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="play"></i>Resume</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <span class="fy-small fy-muted">Amounts in SGD including GST. Auto-send emails the invoice as soon as it is created and posted; auto-draft waits for you.</span>
+  </div>
+
+  <div class="fy-grid fy-grid--2" style="align-items: start">
+      <section class="fy-ai-card" aria-labelledby="rc-ai">
+        <div class="fy-ai-card__head">
+          <span class="fy-ai-badge"><i data-icon="sparkles"></i>AI</span>
+          <h2 class="fy-h3 fy-grow" id="rc-ai">Proposed schedule</h2>
+          <span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Awaiting you</span>
+        </div>
+        <div class="fy-ai-card__body">
+          <p class="fy-ai-text">Grab for Business has billed Cognizhi on the last day of every month since April, between <span class="fy-fact">S$1,402.80</span> and <span class="fy-fact">S$1,955.50</span>. A monthly auto-draft bill would save entering it by hand.</p>
+          <dl class="fy-dl">
+            <div><dt>Repeats</dt><dd>Monthly, last day</dd></div>
+            <div><dt>Amount</dt><dd>From the captured bill</dd></div>
+          </dl>
+          <span class="fy-source"><i data-icon="file-text"></i>From 6 Grab bills, Apr to Sep · <a href="#purchases/bills?supplier=grab">See them</a></span>
+          <div class="fy-row fy-row--wrap"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Review proposal</button><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Not useful</button></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="rc-runs">
+        <div class="fy-card__head"><h2 class="fy-h3" id="rc-runs">Recent runs</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#sales/recurring/runs">All runs</a></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">12 Oct · INV-0150 created and sent</span><span class="fy-list__meta">Acme Analytics · S$5,450.00</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">2 Oct · INV-0143 drafted</span><span class="fy-list__meta">Kopi Labs · S$1,635.00</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">1 Oct · BILL-0920 drafted</span><span class="fy-list__meta">Ho &amp; Partners LLP · S$2,398.00</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">1 Oct · BILL-0909 drafted</span><span class="fy-list__meta">WeWork Singapore · S$7,063.20</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--critical"><i data-icon="circle-x"></i></span><span class="fy-list__main"><span class="fy-list__title">30 Sep · Nothing created</span><span class="fy-list__meta">Harbourfront Dental · item inactive</span></span></li>
+        </ul>
+      </section>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#sales/recurring/new"><i data-icon="plus"></i>New schedule</a>
+  </div>
+</div>

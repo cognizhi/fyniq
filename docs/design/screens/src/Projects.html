@@ -1,0 +1,104 @@
+<!-- fyniq-screen {"nav": "projects", "title": "Projects", "mode": "basic", "heights": {"compact": 1550, "medium": 900, "expanded": 750}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Projects</span>
+      <h1 class="fy-h1">Budgets, margins and unbilled work</h1>
+      <p class="fy-secondary">2 client projects · time approved to 11 Oct</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#projects/timesheet"><i data-icon="clock"></i>Timesheets</a>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>New project</button>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <a class="fy-tile" href="#projects?unbilled=1">
+      <span class="fy-tile__label"><i data-icon="hand-coins"></i>Ready to bill</span>
+      <span class="fy-tile__value fy-num">24,732.00<small>SGD</small></span>
+      <span class="fy-tile__meta">Approved time, expenses and milestones reached</span>
+    </a>
+    <a class="fy-tile" href="#projects?health=over">
+      <span class="fy-tile__label"><i data-icon="circle-x"></i>Over budget</span>
+      <span class="fy-tile__value fy-num">0</span>
+      <span class="fy-tile__meta">Acme data platform is forecast at 410 of 400 h</span>
+    </a>
+    <a class="fy-tile" href="#projects?health=near">
+      <span class="fy-tile__label"><i data-icon="triangle-alert"></i>Past 80% of budget</span>
+      <span class="fy-tile__value fy-num">1</span>
+      <span class="fy-tile__meta">Acme data platform 85%</span>
+    </a>
+    <a class="fy-tile" href="#reports/utilisation">
+      <span class="fy-tile__label"><i data-icon="clock"></i>Billable hours, October so far</span>
+      <span class="fy-tile__value fy-num">71.5</span>
+      <span class="fy-tile__meta"><span class="fy-delta fy-delta--up"><i data-icon="arrow-up-right"></i>2%</span>vs the same days in September</span>
+    </a>
+  </div>
+
+  <section class="fy-card" aria-labelledby="prj-title">
+    <div class="fy-card__head" style="flex-wrap: wrap">
+      <h2 class="fy-h3" id="prj-title">All projects</h2>
+      <div class="fy-chipset" role="group" aria-label="Show">
+        <button class="fy-filter" type="button" aria-pressed="true">All 2</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Needs attention 2</button>
+      </div>
+    </div>
+    <div style="overflow-x: auto">
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr>
+            <th scope="col">Project</th>
+            <th scope="col" class="fy-from-expanded">Billing</th>
+            <th scope="col">Hours used</th>
+            <th scope="col" class="fy-from-expanded">Fee or value used</th>
+            <th scope="col" class="fy-num fy-from-expanded">Margin<button class="fy-info" type="button" aria-label="About project margin" aria-expanded="false"><i data-icon="info"></i></button></th>
+            <th scope="col" class="fy-num">Ready to bill</th>
+            <th scope="col">Health</th>
+          </tr>
+        </thead>
+        <tbody class="fy-stagger">
+          <tr>
+            <td data-card="title" style="padding-block: 6px"><a class="fy-stack" href="#projects/acme-data-platform" style="gap: 0; color: var(--text-primary)"><span class="fy-strong">Acme data platform</span><span class="fy-small fy-muted">Acme Analytics Pte Ltd</span></a></td>
+            <td data-card="hide" class="fy-from-expanded">Time and materials</td>
+            <td data-card="meta"><span class="fy-stack fy-stack--2" style="min-width: 100px"><span class="fy-num fy-small">340 of 400 h</span><span class="fy-progress fy-progress--warning" role="img" aria-label="85% of budgeted hours used"><span style="width: 85%"></span></span></span></td>
+            <td data-card="hide" class="fy-from-expanded fy-num">67,662.00 of 80,000.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">61.1%</td>
+            <td data-card="amount" class="fy-num">12,732.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Near budget</span></td>
+            <td data-card="meta" class="fy-only-compact">Time and materials · margin 61.1%</td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-block: 6px"><a class="fy-stack" href="#projects/lumen-health-pilot" style="gap: 0; color: var(--text-primary)"><span class="fy-strong">Lumen Health pilot</span><span class="fy-small fy-muted">Lumen Health Pte Ltd</span></a></td>
+            <td data-card="hide" class="fy-from-expanded">Fixed fee S$48,000</td>
+            <td data-card="meta"><span class="fy-stack fy-stack--2" style="min-width: 100px"><span class="fy-num fy-small">412 of 560 h</span><span class="fy-progress" role="img" aria-label="74% of budgeted hours used"><span style="width: 74%"></span></span></span></td>
+            <td data-card="hide" class="fy-from-expanded fy-num">24,000.00 of 48,000.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">12.5%</td>
+            <td data-card="amount" class="fy-num">12,000.00</td>
+            <td data-card="status"><a class="fy-chip fy-chip--critical" href="#sales/inv-0142"><i data-icon="circle-x"></i>Invoice blocked</a></td>
+            <td data-card="meta" class="fy-only-compact">Fixed fee · Milestone 3 reached; INV-0142 can't post (no GST code on line 2)</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td data-card="title">Total ready to bill</td>
+            <td data-card="hide" class="fy-from-expanded"></td>
+            <td data-card="hide"></td>
+            <td data-card="hide" class="fy-from-expanded"></td>
+            <td data-card="hide" class="fy-from-expanded"></td>
+            <td data-card="amount" class="fy-num">24,732.00</td>
+            <td data-card="hide"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="fy-card__foot">
+      <i data-icon="bell" class="fy-muted"></i>
+      <span class="fy-small fy-secondary fy-grow">Project managers are alerted at 80% and 100% of a budget. Margin is revenue less time at cost and direct costs; salaries are counted once, through time.</span>
+      <a class="fy-btn fy-btn--ghost fy-btn--sm fy-from-medium" href="#settings/projects">Alert settings</a>
+    </div>
+  </section>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>New project</button>
+  </div>
+</div>

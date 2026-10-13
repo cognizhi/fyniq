@@ -1,0 +1,153 @@
+<!-- fyniq-screen {"nav": "compliance", "title": "Risks and policies", "mode": "expert", "heights": {"compact": 3300, "medium": 2500, "expanded": 1500}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#compliance">Compliance</a><i data-icon="chevron-right"></i><span>Risks and policies</span></nav>
+      <h1 class="fy-h1">Risks and policies</h1>
+      <p class="fy-secondary">Keep each risk reviewed by its owner, and each policy versioned and acknowledged by the people it applies to.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="file-plus"></i>New policy version</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="plus"></i>Add a risk</button>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Register">
+    <button type="button" role="tab" aria-selected="true">Risks<span class="fy-badge fy-badge--quiet">22</span></button>
+    <button type="button" role="tab" aria-selected="false">Policies<span class="fy-badge fy-badge--quiet">8</span></button>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="clock-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>1 risk review is overdue</strong>
+      <span class="fy-small">R13, AI models and data residency: the review was due 30 Sep. Arjun Rao owns it.</span>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#compliance/risks/r13">Review</a>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="risk-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="risk-title">Risk register</h2>
+        <span class="fy-small fy-muted">Highest rating first</span>
+      </div>
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr><th scope="col">Risk</th><th scope="col">Rating</th><th scope="col" class="fy-from-expanded">Mitigation</th><th scope="col">Next review</th></tr>
+        </thead>
+        <tbody class="fy-stagger">
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted" style="font-weight: 400">R13</span> The newest AI models are not served in Singapore; residency limits model quality or adds transfer risk<br><span class="fy-small fy-muted" style="font-weight: 400">Arjun Rao · likelihood high, impact medium</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="arrow-up"></i>High</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small fy-secondary">Model options per ADR-T2; numbers only from tools; eval gates</td>
+            <td data-card="meta"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Overdue · 30 Sep</span></td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted" style="font-weight: 400">R22</span> People rely on the AI company secretary and a filing is missed or wrong<br><span class="fy-small fy-muted" style="font-weight: 400">Mei Lin Tan · likelihood medium, impact high</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="arrow-up"></i>High</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small fy-secondary">The agent never marks an obligation met; a named human secretary; the deterministic monitor</td>
+            <td data-card="meta">31 Dec 2026</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted" style="font-weight: 400">R6</span> Statutory rules change (GST, CPF, InvoiceNow, IRAS APIs)<br><span class="fy-small fy-muted" style="font-weight: 400">Grace Ho · likelihood high (yearly), impact medium</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="arrow-up"></i>High</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small fy-secondary">Effective-dated packs, pinned tests, the statutory calendar, a yearly review</td>
+            <td data-card="meta">15 Jan 2027</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted" style="font-weight: 400">R7</span> Data breach of payroll or personal data<br><span class="fy-small fy-muted" style="font-weight: 400">Arjun Rao · likelihood low, impact high · reassessed after BR-0001</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="minus"></i>Medium</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small fy-secondary">Encryption, masking, least privilege, breach runbook, PDPA programme</td>
+            <td data-card="meta">31 Dec 2026</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted" style="font-weight: 400">R5</span> Insider error or fraud in a team of founders<br><span class="fy-small fy-muted" style="font-weight: 400">Mei Lin Tan · likelihood low, impact high</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="minus"></i>Medium</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small fy-secondary">Founder-mode controls, dual control on money movement, audit trail, accountant review</td>
+            <td data-card="meta">31 Dec 2026</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted" style="font-weight: 400">R10</span> Integrations unavailable (bank APIs, IRAS APIs)<br><span class="fy-small fy-muted" style="font-weight: 400">Arjun Rao · likelihood medium, impact medium · Access Point degraded today</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="minus"></i>Medium</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small fy-secondary">File-based fallbacks stay first-class: statement import, payment files, manual filing</td>
+            <td data-card="meta">31 Dec 2026</td>
+          </tr>
+          <tr>
+            <td data-card="title"><span class="fy-mono fy-muted" style="font-weight: 400">R1</span> Calculation error reaches the books<br><span class="fy-small fy-muted" style="font-weight: 400">Arjun Rao · likelihood low, impact high</span></td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="minus"></i>Medium</span></td>
+            <td data-card="hide" class="fy-from-expanded fy-small fy-secondary">Database invariants, an independent reference ledger, nightly verification</td>
+            <td data-card="meta">31 Mar 2027</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="fy-card__foot"><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#compliance/risks?all=1">Show all 22<i data-icon="arrow-right"></i></a></div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Policies">
+      <section class="fy-card" aria-labelledby="pol-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="pol-title">Policy library</h2><span class="fy-small fy-muted">8 people</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="sparkles" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">AI use</span><span class="fy-list__meta">v1.2, 1 Oct · 5 of 8 acknowledged · due 30 Oct</span></span>
+            <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>3 pending</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="siren" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Incident response</span><span class="fy-list__meta">v1.2 · 7 of 8 · Chen Yu pending</span></span>
+            <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 pending</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="shield-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Information security</span><span class="fy-list__meta">v2.0 · 8 of 8</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>All</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="laptop" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Acceptable use</span><span class="fy-list__meta">v1.3 · 8 of 8</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>All</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="key-round" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Access control</span><span class="fy-list__meta">v1.1 · 8 of 8</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>All</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="database-backup" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Backup</span><span class="fy-list__meta">v1.0 · 8 of 8</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>All</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="git-pull-request" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Change management</span><span class="fy-list__meta">v1.1 · 8 of 8</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>All</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="lock-keyhole" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Data protection</span><span class="fy-list__meta">v1.1 · 8 of 8</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>All</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card fy-card--sunken" aria-labelledby="ack-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ack-title">What Chen Yu sees</h2><span class="fy-tag">Staff view</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-card fy-card--pad fy-stack fy-stack--3">
+            <span class="fy-row"><i data-icon="scroll-text" class="fy-i--20 fy-muted"></i><span class="fy-strong">Acknowledge policy: AI use v1.2</span></span>
+            <p class="fy-small fy-secondary">What changed on 1 Oct: the company secretary agent drafts papers but never files or signs; never paste an NRIC or bank number into the assistant. 4 minutes to read.</p>
+            <div class="fy-row fy-row--wrap">
+              <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#policies/ai-use/v1.2">Read the policy</a>
+              <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="check"></i>I have read and understood it</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="plus"></i>Add a risk</button>
+  </div>
+</div>

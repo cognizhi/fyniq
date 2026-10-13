@@ -1,0 +1,276 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Invoice template", "mode": "expert", "heights": {"compact": 4560, "medium": 3850, "expanded": 2300}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/templates">Templates</a><i data-icon="chevron-right"></i><span aria-current="page">Invoice</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Invoice template: Clean</h1>
+      <div class="fy-row fy-row--wrap">
+        <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft, version 4</span>
+        <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Version 3 in use</span>
+        <span class="fy-small fy-muted">Default for tax invoices · saved 12 Oct 2026, 16:42</span>
+      </div>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--ghost" href="#settings/templates/invoice-clean/compare"><i data-icon="git-compare"></i>Compare versions</a>
+      <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+      <button class="fy-btn fy-btn--primary" type="button" aria-disabled="true" aria-describedby="pub-blocked" style="color: var(--primary-foreground)"><i data-icon="send"></i>Publish version 4</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--critical" role="alert" id="pub-blocked">
+    <i data-icon="circle-x" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Can't publish: the US-dollar test invoice has no SGD amounts</span>
+      <span class="fy-small">A tax invoice in a foreign currency must show the amount before GST, the GST and the total in SGD (IRAS). Turn on “SGD equivalents” in the Totals and GST summary block, then publish again. <span class="fy-mono">tpl.particular_missing</span></span>
+    </div>
+    <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Fix it</button>
+  </div>
+
+  <div class="fy-row fy-row--top fy-row--wrap" style="gap: var(--space-6)">
+    <div class="fy-stack fy-stack--6" style="flex: 1 1 340px">
+      <section class="fy-card" aria-labelledby="blocks-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="blocks-title">Blocks</h2>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Add block</button>
+        </div>
+        <p class="fy-help" style="padding: var(--space-3) var(--space-4) 0">Locked blocks carry the IRAS tax-invoice particulars and can't be hidden. Reorder with the grip (Space, then arrow keys) or Move up and Move down.</p>
+        <ol class="fy-list fy-stagger" aria-label="Blocks, in page order" style="padding-top: var(--space-2)">
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Header and logo"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title" id="b1">Header and logo</span></span>
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="b1"></button>
+          </li>
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Our details"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title">Our details</span><span class="fy-list__meta fy-expert-only">Name, address, GST reg. no.</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Locked</span>
+          </li>
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Customer details"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title">Customer details</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Locked</span>
+          </li>
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Document details"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title">Document details</span><span class="fy-list__meta fy-expert-only">Invoice no., date, due date</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Locked</span>
+          </li>
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Line items"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title">Line items</span><span class="fy-list__meta fy-expert-only">Description, amount before GST, rate</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Locked</span>
+          </li>
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Totals and GST summary"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title">Totals and GST summary</span><span class="fy-list__meta" style="color: var(--status-critical)">SGD equivalents off</span></span>
+            <span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Fix</span>
+          </li>
+          <li class="fy-list__item" aria-current="true" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Payment details"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title" id="b7">Payment details</span><span class="fy-list__meta">Editing</span></span>
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="b7"></button>
+          </li>
+          <li style="padding: var(--space-4); background: var(--surface-2); border-bottom: 1px solid var(--border)">
+            <div class="fy-stack fy-stack--3">
+              <div class="fy-field">
+                <label class="fy-label" for="pd-heading">Heading</label>
+                <input class="fy-input" id="pd-heading" value="How to pay" readonly="readonly">
+              </div>
+              <div class="fy-stack fy-stack--2" role="group" aria-label="Show in this block">
+                <span class="fy-label">Show</span>
+                <div class="fy-row"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-labelledby="pd-bank"><i data-icon="check"></i></button><span id="pd-bank">Bank transfer details <span class="fy-muted">(DBS, SGD)</span></span></div>
+                <div class="fy-row"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-labelledby="pd-qr"><i data-icon="check"></i></button><span id="pd-qr">PayNow QR <span class="fy-muted">(UEN 202412345K)</span></span></div>
+                <div class="fy-row"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-disabled="true" aria-labelledby="pd-link"></button><span id="pd-link" class="fy-muted">Payment link: no payment provider connected</span></div>
+              </div>
+              <div class="fy-stack fy-stack--2 fy-expert-only">
+                <span class="fy-label" id="pd-align">Alignment</span>
+                <div class="fy-segmented" role="radiogroup" aria-labelledby="pd-align"><button type="button" role="radio" aria-checked="true">Left</button><button type="button" role="radio" aria-checked="false">Right</button></div>
+              </div>
+              <div class="fy-row fy-row--wrap">
+                <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="arrow-up"></i>Move up</button>
+                <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="arrow-down"></i>Move down</button>
+              </div>
+            </div>
+          </li>
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Notes and terms"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title" id="b8">Notes and terms</span></span>
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="b8"></button>
+          </li>
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Signature or stamp"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title" id="b9">Signature or stamp</span><span class="fy-list__meta">Hidden</span></span>
+            <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="b9"></button>
+          </li>
+          <li class="fy-list__item" style="min-height: 44px; padding: 4px 12px 4px 4px; gap: 6px">
+            <button class="fy-iconbtn" type="button" aria-label="Reorder Footer"><i data-icon="grip-vertical"></i></button>
+            <span class="fy-list__main"><span class="fy-list__title" id="b10">Footer</span></span>
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="b10"></button>
+          </li>
+        </ol>
+        <div class="fy-card__foot fy-expert-only"><span class="fy-tag"><i data-icon="calendar-clock"></i>Later (P2)</span><span class="fy-small fy-muted">Drag-and-drop layout and the column chooser</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="theme-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="theme-title">Theme</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/brand">Logo and brand<i data-icon="arrow-right"></i></a></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+            <span class="fy-org__logo" aria-hidden="true" style="width: 36px; height: 36px; font-size: 16px; background: var(--text-primary); color: var(--surface-1); border: 0">C</span>
+            <div class="fy-stack fy-stack--2 fy-grow"><span class="fy-strong">Cognizhi logo, version 2</span><span class="fy-help">Accent: ink, from Logo and brand · font: Inter, self-hosted</span></div>
+          </div>
+          <div class="fy-row fy-row--wrap" style="gap: var(--space-3) var(--space-5)">
+            <div class="fy-stack fy-stack--2">
+              <span class="fy-label" id="th-paper">Paper</span>
+              <div class="fy-segmented" role="radiogroup" aria-labelledby="th-paper"><button type="button" role="radio" aria-checked="true">A4</button><button type="button" role="radio" aria-checked="false">Letter</button></div>
+            </div>
+            <div class="fy-field" style="flex: 1 1 160px">
+              <label class="fy-label" for="th-margin">Margins</label>
+              <select class="fy-select" id="th-margin"><option>Normal, 20 mm</option><option>Narrow, 12 mm</option></select>
+            </div>
+          </div>
+          <div class="fy-field fy-expert-only">
+            <label class="fy-label" for="th-lang">Language</label>
+            <select class="fy-select" id="th-lang"><option>English (Singapore)</option></select>
+            <span class="fy-help">A language per customer comes later (P3).</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="fields-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="fields-title">Fields</h2><button class="fy-info" type="button" aria-label="About template fields" aria-expanded="false"><i data-icon="info"></i></button></div>
+        <table class="fy-table fy-table--compact fy-table--cards">
+          <thead><tr><th scope="col">Field</th><th scope="col">Shows</th></tr></thead>
+          <tbody>
+            <tr><td data-card="title"><span class="fy-mono">customer.name</span></td><td data-card="meta">Acme Analytics Pte Ltd</td></tr>
+            <tr><td data-card="title"><span class="fy-mono">document.due_date</span></td><td data-card="meta">7 Nov 2026</td></tr>
+            <tr><td data-card="title"><span class="fy-mono">document.amount_due</span></td><td data-card="meta">S$11,772.00</td></tr>
+            <tr><td data-card="title"><span class="fy-mono">totals.sgd_equivalents</span></td><td data-card="meta">Net, GST and total in SGD</td></tr>
+            <tr><td data-card="title"><span class="fy-mono">paynow.qr</span></td><td data-card="meta">SGQR for this invoice</td></tr>
+          </tbody>
+        </table>
+        <p class="fy-help" style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border)">Dates show as 13 Oct 2026; money with two decimals and thousands separators.</p>
+        <div class="fy-card__body fy-stack fy-stack--2 fy-expert-only" style="border-top: 1px solid var(--border)">
+          <div class="fy-row fy-row--wrap"><span class="fy-label fy-grow">Show a block only when</span><span class="fy-tag"><i data-icon="calendar-clock"></i>Later (P2)</span></div>
+          <div class="fy-chipset">
+            <button class="fy-filter" type="button" aria-pressed="true" aria-disabled="true">GST-registered</button>
+            <button class="fy-filter" type="button" aria-pressed="false" aria-disabled="true">Foreign currency</button>
+            <button class="fy-filter" type="button" aria-pressed="false" aria-disabled="true">Overdue</button>
+            <button class="fy-filter" type="button" aria-pressed="false" aria-disabled="true">Discount present</button>
+            <button class="fy-filter" type="button" aria-pressed="true" aria-disabled="true">PayNow available</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="fy-stack fy-stack--6" style="flex: 999 1 460px">
+      <section class="fy-card fy-card--sunken" aria-labelledby="prev-title">
+        <div class="fy-card__head" style="flex-wrap: wrap">
+          <h2 class="fy-h3" id="prev-title">Live preview</h2>
+          <label class="fy-sr" for="prev-doc">Preview with</label>
+          <select class="fy-select" id="prev-doc" style="width: auto; height: 32px; font-size: var(--fs-sm)"><option>INV-0146 · Acme Analytics</option><option>Sample data</option><option>Test: USD tax invoice</option></select>
+        </div>
+        <div style="padding: var(--space-4)">
+          <article data-theme="light" aria-label="Preview of INV-0146" style="color: var(--text-primary); background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-s); box-shadow: var(--shadow-2); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); font-size: var(--fs-xs); max-width: 640px; margin: 0 auto">
+            <div class="fy-row fy-row--top" style="justify-content: space-between">
+              <div class="fy-row"><span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; background: var(--text-primary); color: var(--surface-1); font-weight: 700; font-size: 16px">C</span><span class="fy-strong" style="font-size: var(--fs-md)">Cognizhi</span></div>
+              <span class="fy-strong" style="font-size: var(--fs-md); letter-spacing: 0.04em">TAX INVOICE</span>
+            </div>
+            <div class="fy-row fy-row--top fy-row--wrap" style="gap: var(--space-4)">
+              <div class="fy-stack fy-stack--2" style="flex: 1 1 160px; gap: 2px">
+                <span class="fy-strong">Cognizhi Pte Ltd</span>
+                <span>71 Ayer Rajah Crescent, #06-14</span><span>Singapore 139951</span>
+                <span>UEN 202412345K · GST Reg. No. 202412345K</span>
+              </div>
+              <div class="fy-stack fy-stack--2" style="flex: 1 1 160px; gap: 2px">
+                <span class="fy-muted">Bill to</span>
+                <span class="fy-strong">Acme Analytics Pte Ltd</span>
+                <span>1 Fusionopolis Way, #12-03</span><span>Singapore 138632</span>
+              </div>
+            </div>
+            <div class="fy-row fy-row--wrap" style="gap: var(--space-2) var(--space-5)">
+              <span><span class="fy-muted">Invoice no. </span><span class="fy-mono fy-strong">INV-0146</span></span>
+              <span><span class="fy-muted">Date </span>8 Oct 2026</span>
+              <span><span class="fy-muted">Due </span>7 Nov 2026</span>
+              <span><span class="fy-muted">Terms </span>30 days</span>
+            </div>
+            <table class="fy-table fy-table--compact" style="font-size: var(--fs-xs)">
+              <thead><tr><th scope="col">Description</th><th scope="col" class="fy-num fy-from-medium">Qty</th><th scope="col" class="fy-num fy-from-medium">Rate</th><th scope="col" class="fy-num">Amount (S$)</th></tr></thead>
+              <tbody>
+                <tr><td>Data platform engineering, Sep 2026<span class="fy-muted fy-only-compact" style="display: block">56 h × 180.00 · GST 9%</span></td><td class="fy-num fy-from-medium">56</td><td class="fy-num fy-from-medium">180.00</td><td class="fy-num">10,080.00</td></tr>
+                <tr><td>Cloud hosting, passed through<span class="fy-muted fy-only-compact" style="display: block">1 × 720.00 · GST 9%</span></td><td class="fy-num fy-from-medium">1</td><td class="fy-num fy-from-medium">720.00</td><td class="fy-num">720.00</td></tr>
+              </tbody>
+            </table>
+            <div class="fy-stack fy-stack--2" style="align-self: flex-end; min-width: 200px; gap: 4px">
+              <div class="fy-row" style="justify-content: space-between"><span>Amount before GST</span><span class="fy-num">10,800.00</span></div>
+              <div class="fy-row" style="justify-content: space-between"><span>GST at 9%</span><span class="fy-num">972.00</span></div>
+              <div class="fy-row" style="justify-content: space-between; border-top: 1px solid var(--border-strong); padding-top: 4px"><span class="fy-strong">Total</span><span class="fy-num fy-strong">S$11,772.00</span></div>
+            </div>
+            <div style="position: relative; outline: 2px solid var(--primary); outline-offset: 6px; border-radius: var(--radius-s); margin-top: var(--space-4)">
+              <span class="fy-tag" style="position: absolute; top: -26px; left: -6px; height: 18px; background: var(--primary); color: var(--primary-foreground)">Payment details</span>
+              <div class="fy-row fy-row--top" style="gap: var(--space-4)">
+                <div class="fy-stack fy-stack--2 fy-grow" style="gap: 2px">
+                  <span class="fy-strong">How to pay</span>
+                  <span>Bank transfer to DBS Bank Ltd</span>
+                  <span>Cognizhi Pte Ltd · account 072-118294-4</span>
+                  <span>Or scan with your banking app (PayNow to UEN 202412345K), reference INV-0146</span>
+                </div>
+                <span aria-hidden="true" style="width: 72px; height: 72px; flex: none; border: 1px solid var(--border-strong); border-radius: var(--radius-s); display: grid; place-items: center; color: var(--text-primary)"><i data-icon="qr-code" class="fy-i--48"></i></span>
+              </div>
+            </div>
+            <p class="fy-muted">Please pay within 30 days of the invoice date. Thank you for your business.</p>
+            <div class="fy-row" style="justify-content: space-between; border-top: 1px solid var(--border); padding-top: var(--space-2); color: var(--text-muted)"><span>Cognizhi Pte Ltd · UEN 202412345K</span><span>Page 1 of 1</span></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="checks-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="checks-title">Publish checks</h2><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>1 failed</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Tax invoice in SGD</span><span class="fy-list__meta">All IRAS particulars present</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--critical"><i data-icon="circle-x" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Tax invoice in USD</span><span class="fy-list__meta">No SGD amounts for net, GST and total</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Fix it</button></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Simplified tax invoice, up to S$1,000</span><span class="fy-list__meta">All particulars present</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Tagged PDF</span><span class="fy-list__meta">Headings, reading order and logo text in place</span></span></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ver-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ver-title">Versions</h2><button class="fy-btn fy-btn--ghost fy-btn--sm fy-expert-only" type="button" aria-disabled="true"><i data-icon="code"></i>Code mode · P2</button></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="pencil-line" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Version 4, draft</span><span class="fy-list__meta">Mei Lin Tan · 12 Oct 2026 · PayNow QR added, notes reworded</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Version 3</span><span class="fy-list__meta">Published by Mei Lin Tan · 2 Sep 2026 · on 14 issued invoices</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>In use</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="file-clock" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Version 2</span><span class="fy-list__meta">Published by Arjun Rao · 14 Jul 2026</span></span>
+            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="undo-2"></i>Roll back</button>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="file-clock" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Version 1</span><span class="fy-list__meta">Published by Mei Lin Tan · 2 Jan 2026</span></span>
+            <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="undo-2"></i>Roll back</button>
+          </li>
+        </ul>
+        <div class="fy-card__body fy-stack fy-stack--3" style="border-top: 1px solid var(--border)">
+          <div class="fy-row fy-row--wrap"><span class="fy-label fy-grow">Changed from version 3 to 4</span><span class="fy-tag fy-expert-only"><i data-icon="calendar-clock"></i>Visual diff later (P2)</span></div>
+          <ul class="fy-stack fy-stack--2">
+            <li class="fy-row fy-row--top"><i data-icon="plus" class="fy-muted"></i><span>Payment details › PayNow QR: off → on</span></li>
+            <li class="fy-row fy-row--top"><i data-icon="pencil-line" class="fy-muted"></i><span>Notes and terms › text: “Payment due in 30 days.” → “Please pay within 30 days of the invoice date. Thank you for your business.”</span></li>
+          </ul>
+          <p class="fy-help">Publishing makes version 4 permanent and is an approval: in Founder mode you approve it yourself and it joins the weekly review. Issued invoices keep their version and hash, so a reprint is identical.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button">Save draft</button>
+    <button class="fy-btn fy-btn--primary" type="button" aria-disabled="true" aria-describedby="pub-blocked" style="color: var(--primary-foreground)"><i data-icon="send"></i>Publish</button>
+  </div>
+</div>

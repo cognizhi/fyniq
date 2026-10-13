@@ -1,0 +1,55 @@
+<!-- fyniq-screen {"nav": "planning", "title": "Cash ahead", "mode": "basic", "heights": {"compact": 1700, "medium": 1400, "expanded": 1150}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Planning</span>
+      <h1 class="fy-h1">Cash ahead</h1>
+      <p class="fy-secondary">From today's S$412,380.15, with expected receipts, bills, pay runs, CPF and GST due dates.</p>
+    </div>
+    <div class="fy-pagehead__actions"><div class="fy-segmented" role="radiogroup" aria-label="Range"><button type="button" role="radio" aria-checked="false">30 days</button><button type="button" role="radio" aria-checked="true">60 days</button><button type="button" role="radio" aria-checked="false">90 days</button><button type="button" role="radio" aria-checked="false">180 days</button></div></div>
+  </div>
+  <div class="fy-grid fy-grid--3 fy-stagger">
+    <div class="fy-tile"><span class="fy-tile__label">Lowest balance</span><span class="fy-tile__value fy-num">318,940<small>SGD</small></span><span class="fy-tile__meta">On 28 Nov, after November pay and CPF</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Balance in 60 days</span><span class="fy-tile__value fy-num">341,205<small>SGD</small></span><span class="fy-tile__meta">12 Dec 2026</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Buffer</span><span class="fy-tile__value fy-num">150,000<small>SGD</small></span><span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Never below</span></span></div>
+  </div>
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="cf-chart">
+    <div class="fy-section__head"><h2 class="fy-h3" id="cf-chart">Projected balance</h2><div class="fy-segmented" role="radiogroup" aria-label="Show as"><button type="button" role="radio" aria-checked="true">Chart</button><button type="button" role="radio" aria-checked="false">Table</button></div></div>
+    <svg class="fy-chart fy-only-compact" viewBox="0 0 320 180" role="img" aria-label="Balance dips to S$318,940 on 28 November and ends at S$341,205 on 12 December, above the S$150,000 buffer.">
+      <line class="grid" x1="34" y1="20" x2="318" y2="20"></line><line class="axis" x1="34" y1="150" x2="318" y2="150"></line>
+      <text x="0" y="24">420k</text><text x="0" y="154">300k</text>
+      <polyline class="fy-line fy-c1" points="36,28 70,34 104,70 138,60 172,66 206,110 240,140 274,104 312,92"></polyline>
+      <text x="36" y="172">13 Oct</text><text x="268" y="172">12 Dec</text>
+    </svg>
+    <svg class="fy-chart fy-from-medium" viewBox="0 0 640 200" role="img" aria-label="Balance dips to S$318,940 on 28 November and ends at S$341,205 on 12 December, above the S$150,000 buffer.">
+      <line class="grid" x1="44" y1="20" x2="632" y2="20"></line><line class="grid" x1="44" y1="85" x2="632" y2="85"></line><line class="axis" x1="44" y1="150" x2="632" y2="150"></line>
+      <text x="0" y="24">420k</text><text x="0" y="89">360k</text><text x="0" y="154">300k</text>
+      <polyline class="fy-line fy-c1" points="44,28 110,34 176,70 242,60 308,66 374,110 440,140 506,104 572,96 630,92"></polyline>
+      <circle class="fy-c8" cx="440" cy="140" r="4"></circle>
+      <text x="410" y="132">Lowest 28 Nov</text>
+      <text x="44" y="176">13 Oct</text><text x="220" y="176">28 Oct · pay run</text><text x="420" y="176">28 Nov</text><text x="580" y="176">12 Dec</text>
+    </svg>
+  </section>
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="cf-upcoming">
+      <div class="fy-card__head"><h2 class="fy-h3" id="cf-upcoming">What moves it</h2></div>
+      <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Date</th><th scope="col">Item</th><th scope="col" class="fy-num">Amount (SGD)</th></tr></thead>
+          <tbody>
+            <tr><td data-card="meta">20 Oct</td><td data-card="title">Lumen Health, INV-0141 expected</td><td class="fy-num" data-card="amount">13,080.00</td></tr>
+            <tr><td data-card="meta">28 Oct</td><td data-card="title">October pay run, net</td><td class="fy-num" data-card="amount">−31,672.00</td></tr>
+            <tr><td data-card="meta">31 Oct</td><td data-card="title">GST, Jul–Sep</td><td class="fy-num" data-card="amount">−12,387.60</td></tr>
+            <tr><td data-card="meta">14 Nov</td><td data-card="title">CPF and SDL, October</td><td class="fy-num" data-card="amount">−12,986.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <aside class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="cf-whatif">
+      <h2 class="fy-h3" id="cf-whatif">What if</h2>
+      <p class="fy-small fy-muted">Try changes here; nothing is posted or sent.</p>
+      <div class="fy-choice" role="checkbox" aria-checked="true"><span class="fy-check" aria-hidden="true"><i data-icon="check"></i></span><span class="fy-stack fy-stack--2"><span class="fy-strong">Acme pays 14 days late</span><span class="fy-small fy-muted">Lowest balance becomes S$297,140 on 28 Nov</span></span></div>
+      <div class="fy-choice" role="checkbox" aria-checked="false"><span class="fy-check" aria-hidden="true"></span><span class="fy-stack fy-stack--2"><span class="fy-strong">Delay WeWork bill to 30 Nov</span><span class="fy-small fy-muted">+S$6,800 until then</span></span></div>
+    </aside>
+  </div>
+</div>

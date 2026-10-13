@@ -1,0 +1,124 @@
+<!-- fyniq-screen {"nav": "equity", "title": "Exit waterfall", "mode": "expert", "heights": {"compact": 2600, "medium": 2150, "expanded": 1450}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Equity · sandbox</span>
+      <h1 class="fy-h1">Exit waterfall</h1>
+      <p class="fy-secondary">Who would get what if the company were sold, under the preferences, next to a plain split by shares.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="file-down"></i>Export</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info">
+    <i data-icon="flask-conical" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Based on round scenario A, not on recorded shares</span>
+      <span class="fy-small">Cognizhi has no preference shares today, so there is no waterfall to show for the company as it stands. This view uses the Seed preference shares that scenario A would create. Nothing here is posted or recorded.</span>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="ew-in-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ew-in-title">Exit</h2></div>
+        <div class="fy-card__body">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="ew-value">Exit value<button class="fy-info" type="button" aria-label="About exit value" aria-expanded="false"><i data-icon="info"></i></button></label>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="ew-value" value="8,000,000.00" readonly="readonly"></div>
+              <span class="fy-help">What shareholders receive after debts and sale costs</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="ew-cap">Cap table</label>
+              <input class="fy-input" id="ew-cap" value="After scenario A" readonly="readonly">
+              <span class="fy-help">11,426,666 issued shares; options and the pool are left out</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="fy-grid fy-grid--2">
+        <div class="fy-tile"><span class="fy-tile__label">Preferences paid first</span><span class="fy-tile__value fy-num">2,149,999.50<small>SGD</small></span><span class="fy-tile__meta">Every investor takes their money back</span></div>
+        <div class="fy-tile"><span class="fy-tile__label">Left for ordinary shares</span><span class="fy-tile__value fy-num">5,850,000.50<small>SGD</small></span><span class="fy-tile__meta">S$0.6500 a share across 9,000,000</span></div>
+      </div>
+
+      <section class="fy-card" aria-labelledby="ew-chart-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="ew-chart-title">Split of S$8,000,000, in SGD</h2>
+          <div class="fy-segmented" role="radiogroup" aria-label="Show as">
+            <button type="button" role="radio" aria-checked="true">Chart</button>
+            <button type="button" role="radio" aria-checked="false">Table</button>
+          </div>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-muted">Under the preferences</p>
+          <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 28px; border-radius: 4px" role="img" aria-label="Under the preferences: founders S$5,850,000.50, seed lead S$1,500,000.00, Lion Rock Ventures S$649,999.50.">
+            <rect class="fy-bar fy-c1" x="0" y="0" width="728.25" height="10"></rect>
+            <rect class="fy-bar fy-c6" x="731.25" y="0" width="184.5" height="10"></rect>
+            <rect class="fy-bar fy-c5" x="918.75" y="0" width="81.25" height="10"></rect>
+          </svg>
+          <p class="fy-small fy-muted">Split by shares, as converted</p>
+          <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 28px; border-radius: 4px" role="img" aria-label="Split by shares: founders S$6,301,050.54, seed lead S$1,120,186.76, Lion Rock Ventures S$578,762.70.">
+            <rect class="fy-bar fy-c1" x="0" y="0" width="784.63" height="10"></rect>
+            <rect class="fy-bar fy-c6" x="787.63" y="0" width="137.02" height="10"></rect>
+            <rect class="fy-bar fy-c5" x="927.65" y="0" width="72.35" height="10"></rect>
+          </svg>
+          <div class="fy-legend">
+            <span><i class="fy-legend__key fy-swatch-1"></i>Founders <span class="fy-num fy-strong">5,850,000.50 vs 6,301,050.54</span></span>
+            <span><i class="fy-legend__key fy-swatch-6"></i>Seed lead <span class="fy-num fy-strong">1,500,000.00 vs 1,120,186.76</span></span>
+            <span><i class="fy-legend__key fy-swatch-5"></i>Lion Rock Ventures <span class="fy-num fy-strong">649,999.50 vs 578,762.70</span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-stack fy-stack--3" aria-labelledby="ew-table-title">
+        <h2 class="fy-h3" id="ew-table-title">By holder and class</h2>
+        <div class="fy-card">
+          <table class="fy-table fy-table--cards">
+            <thead>
+              <tr><th scope="col">Holder</th><th scope="col" class="fy-num fy-from-expanded">Shares</th><th scope="col" class="fy-num">Preference</th><th scope="col" class="fy-num">As converted</th><th scope="col" class="fy-num">Receives</th><th scope="col" class="fy-from-expanded">Takes</th></tr>
+            </thead>
+            <tbody>
+              <tr><td data-card="title" style="white-space: nowrap">Seed lead<div class="fy-small fy-muted" style="font-weight: 400">Seed preference</div></td><td data-card="hide" class="fy-num fy-from-expanded">1,600,000</td><td data-card="hide" class="fy-num">1,500,000.00</td><td data-card="hide" class="fy-num">1,120,186.76</td><td data-card="amount" class="fy-num fy-strong">1,500,000.00</td><td data-card="status" class="fy-from-expanded"><span class="fy-chip fy-chip--neutral"><i data-icon="shield"></i>Preference</span></td></tr>
+              <tr><td data-card="title" style="white-space: nowrap">Lion Rock Ventures<div class="fy-small fy-muted" style="font-weight: 400">Seed preference</div></td><td data-card="hide" class="fy-num fy-from-expanded">160,000</td><td data-card="hide" class="fy-num">150,000.00</td><td data-card="hide" class="fy-num">112,018.68</td><td data-card="amount" class="fy-num fy-strong">150,000.00</td><td data-card="status" class="fy-from-expanded"><span class="fy-chip fy-chip--neutral"><i data-icon="shield"></i>Preference</span></td></tr>
+              <tr><td data-card="title" style="white-space: nowrap">Lion Rock Ventures<div class="fy-small fy-muted" style="font-weight: 400">Seed-1, from the SAFE</div></td><td data-card="hide" class="fy-num fy-from-expanded">666,666</td><td data-card="hide" class="fy-num">499,999.50</td><td data-card="hide" class="fy-num">466,744.02</td><td data-card="amount" class="fy-num fy-strong">499,999.50</td><td data-card="status" class="fy-from-expanded"><span class="fy-chip fy-chip--neutral"><i data-icon="shield"></i>Preference</span></td></tr>
+              <tr><td data-card="title" style="white-space: nowrap">Mei Lin Tan<div class="fy-small fy-muted" style="font-weight: 400">Ordinary</div></td><td data-card="hide" class="fy-num fy-from-expanded">4,500,000</td><td data-card="hide" class="fy-num fy-muted">–</td><td data-card="hide" class="fy-num">3,150,525.27</td><td data-card="amount" class="fy-num fy-strong">2,925,000.25</td><td data-card="status" class="fy-from-expanded"><span class="fy-chip fy-chip--neutral"><i data-icon="layers"></i>What is left</span></td></tr>
+              <tr><td data-card="title" style="white-space: nowrap">Arjun Rao<div class="fy-small fy-muted" style="font-weight: 400">Ordinary</div></td><td data-card="hide" class="fy-num fy-from-expanded">4,500,000</td><td data-card="hide" class="fy-num fy-muted">–</td><td data-card="hide" class="fy-num">3,150,525.27</td><td data-card="amount" class="fy-num fy-strong">2,925,000.25</td><td data-card="status" class="fy-from-expanded"><span class="fy-chip fy-chip--neutral"><i data-icon="layers"></i>What is left</span></td></tr>
+            </tbody>
+            <tfoot>
+              <tr><td data-card="title">Total</td><td data-card="hide" class="fy-num fy-from-expanded">11,426,666</td><td data-card="hide" class="fy-num">2,149,999.50</td><td data-card="hide" class="fy-num">8,000,000.00</td><td data-card="amount" class="fy-num">8,000,000.00</td><td data-card="hide" class="fy-from-expanded"></td></tr>
+            </tfoot>
+          </table>
+          <div class="fy-card__foot"><span class="fy-small fy-muted">Amounts in SGD. Preference is what an investor gets by keeping it; as converted is its share of a plain split.</span></div>
+        </div>
+        <p class="fy-small fy-muted">Each investor takes the larger of its preference and its share of a split by shares. At S$8,000,000 every investor is better off with its preference, so each founder receives S$225,525.02 less than a plain split.</p>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Structure and thresholds">
+      <section class="fy-card" aria-labelledby="ew-struct-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ew-struct-title">Structure used</h2><span class="fy-chip fy-chip--good"><i data-icon="badge-check"></i>Confirmed</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <dl class="fy-dl" style="grid-template-columns: minmax(0, 1fr)">
+            <div><dt>Preference</dt><dd>1× the price paid, non-participating</dd></div>
+            <div><dt>Seniority</dt><dd>Seed and Seed-1 rank equally, ahead of ordinary</dd></div>
+            <div><dt>Seed-1 preference</dt><dd>S$0.75 a share, the SAFE's conversion price</dd></div>
+          </dl>
+          <p class="fy-small fy-muted">Confirmed by Grace Ho, Ho &amp; Partners LLP, on 2 Oct 2026, with hand-checked cases. Other structures, such as participating preferences, are not modelled.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ew-thr-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ew-thr-title">How the split changes</h2></div>
+        <ul class="fy-list fy-stagger">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Up to S$2,149,999.50</span><span class="fy-list__meta" style="white-space: normal">Investors share everything by their preferences; founders get nothing</span></span></li>
+          <li class="fy-list__item" aria-current="true"><span class="fy-list__main"><span class="fy-list__title">Up to S$8,899,999.50</span><span class="fy-list__meta" style="white-space: normal">Investors take their preferences; founders share the rest. S$8,000,000 is here</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Up to S$10,712,499.38</span><span class="fy-list__meta" style="white-space: normal">Seed-1 converts; Seed still takes its preference</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Above that</span><span class="fy-list__meta" style="white-space: normal">Everyone converts: a plain split by shares</span></span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+</div>

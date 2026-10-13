@@ -1,0 +1,251 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Banking", "mode": "basic", "heights": {"compact": 3000, "medium": 2150, "expanded": 1400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Banking</span>
+      <h1 class="fy-h1">Bank accounts</h1>
+      <p class="fy-secondary">Every money account, how fresh its data is, and what still needs a category.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--ghost" href="#banking/accounts/new"><i data-icon="plus"></i>Add account</a>
+      <a class="fy-btn fy-btn--secondary" href="#banking/import"><i data-icon="upload"></i>Import statement</a>
+      <a class="fy-btn fy-btn--primary" href="#banking/categorise"><i data-icon="list-checks"></i>Categorise<span class="fy-badge fy-badge--quiet" aria-label="14 lines">14</span></a>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Banking">
+    <a href="#banking" aria-current="page">Accounts</a>
+    <a href="#banking/categorise">Categorise<span class="fy-badge fy-badge--quiet">14</span></a>
+    <a href="#banking/auto-reconciled">Auto-reconciled</a>
+    <a href="#banking/reconciliations">Reconciliation</a>
+    <a class="fy-expert-only" href="#banking/rules">Rules</a>
+    <a class="fy-expert-only" href="#banking/payouts">Payouts</a>
+  </nav>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>Airwallex stopped syncing at 08:00</strong>
+      <span class="fy-small">The read-only API key has expired, so lines after 12 Oct 20:00 are missing. Create a new read-only key in Airwallex and paste it here.</span>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/accounts/airwallex/source">Renew key</a>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="pos-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="pos-title">Cash position</h2>
+          <span class="fy-small fy-muted fy-from-medium">At the latest rates · updated 09:12</span>
+          <button class="fy-info" type="button" aria-label="About the cash position" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--wrap" style="align-items: baseline; gap: var(--space-3)">
+            <a class="fy-tile__value fy-num" href="#reports/cash" style="color: var(--text-primary)"><span class="fy-muted" style="font-size: var(--fs-md)">S$</span>412,380.15</a>
+            <span class="fy-delta fy-delta--down"><i data-icon="arrow-down-right"></i>−9,412.60</span>
+            <span class="fy-small fy-muted">since last Tuesday · 4 accounts</span>
+          </div>
+          <svg class="fy-chart" viewBox="0 0 600 14" preserveAspectRatio="none" role="img" aria-label="Share of cash by account: DBS 70%, OCBC 23%, Wise 5%, Airwallex 2%." style="height: 14px; border-radius: 4px; overflow: hidden">
+            <rect class="fy-bar fy-c1" x="0" y="0" width="418.9" height="14"></rect>
+            <rect class="fy-bar fy-c2" x="420.9" y="0" width="137.8" height="14"></rect>
+            <rect class="fy-bar fy-c3" x="560.7" y="0" width="27.7" height="14"></rect>
+            <rect class="fy-bar fy-c4" x="590.4" y="0" width="9.6" height="14"></rect>
+          </svg>
+          <div class="fy-legend">
+            <span><span class="fy-legend__key fy-swatch-1"></span>DBS 70%</span>
+            <span><span class="fy-legend__key fy-swatch-2"></span>OCBC 23%</span>
+            <span><span class="fy-legend__key fy-swatch-3"></span>Wise 5%</span>
+            <span><span class="fy-legend__key fy-swatch-4"></span>Airwallex 2%</span>
+          </div>
+          <div class="fy-divider"></div>
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between">
+              <span class="fy-secondary">Singapore dollars</span>
+              <span class="fy-num fy-strong">S$384,056.02</span>
+            </div>
+            <div class="fy-row fy-row--between">
+              <span class="fy-secondary">US dollars</span>
+              <span class="fy-num"><span class="fy-strong">US$22,013.00</span> <span class="fy-muted fy-small">≈ S$28,324.13</span></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-stack fy-stack--3" aria-labelledby="acc-title">
+        <div class="fy-section__head">
+          <h2 class="fy-h2" id="acc-title">Money accounts</h2>
+          <span class="fy-small fy-muted">4 accounts · 14 lines to categorise</span>
+        </div>
+        <div class="fy-grid fy-grid--2 fy-stagger">
+          <article class="fy-card" aria-labelledby="a-dbs">
+            <div class="fy-card__head">
+              <span class="fy-list__icon fy-list__icon--brand"><i data-icon="landmark" class="fy-i--20"></i></span>
+              <div class="fy-grow fy-stack" style="gap: 0">
+                <h3 class="fy-h3" id="a-dbs"><a href="#banking/accounts/dbs" style="color: var(--text-primary)">DBS Business Multi-Currency</a></h3>
+                <span class="fy-small fy-muted">Current account · SGD<span class="fy-expert-only"> · <span class="fy-mono">1010</span></span></span>
+              </div>
+              <button class="fy-iconbtn" type="button" aria-label="More actions for DBS"><i data-icon="ellipsis"></i></button>
+            </div>
+            <div class="fy-card__body fy-stack fy-stack--3">
+              <div class="fy-row fy-row--between fy-row--top fy-row--wrap" style="gap: var(--space-2) var(--space-3)">
+                <a class="fy-tile__value fy-num" href="#banking/accounts/dbs" style="color: var(--text-primary)">287,940.22<small>SGD</small></a>
+                <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Up to date</span>
+              </div>
+              <dl class="fy-dl" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+                <div><dt>Last sync</dt><dd>09:12 today</dd></div>
+                <div><dt>Complete to</dt><dd>12 Oct 2026</dd></div>
+                <div style="grid-column: 1 / -1"><dt>Data source</dt><dd class="fy-row"><i data-icon="mail"></i>Bank reports by email: daily report and incoming-funds alerts</dd></div>
+              </dl>
+            </div>
+            <div class="fy-card__foot">
+              <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/categorise?account=dbs">Categorise<span class="fy-badge" aria-label="12 lines">12</span></a>
+              <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#banking/reconciliations/dbs/2026-09">Reconcile</a>
+            </div>
+          </article>
+
+          <article class="fy-card" aria-labelledby="a-ocbc">
+            <div class="fy-card__head">
+              <span class="fy-list__icon fy-list__icon--brand"><i data-icon="landmark" class="fy-i--20"></i></span>
+              <div class="fy-grow fy-stack" style="gap: 0">
+                <h3 class="fy-h3" id="a-ocbc"><a href="#banking/accounts/ocbc" style="color: var(--text-primary)">OCBC Business Growth</a></h3>
+                <span class="fy-small fy-muted">Current account · SGD<span class="fy-expert-only"> · <span class="fy-mono">1020</span></span></span>
+              </div>
+              <button class="fy-iconbtn" type="button" aria-label="More actions for OCBC"><i data-icon="ellipsis"></i></button>
+            </div>
+            <div class="fy-card__body fy-stack fy-stack--3">
+              <div class="fy-row fy-row--between fy-row--top fy-row--wrap" style="gap: var(--space-2) var(--space-3)">
+                <a class="fy-tile__value fy-num" href="#banking/accounts/ocbc" style="color: var(--text-primary)">96,115.80<small>SGD</small></a>
+                <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Stale</span>
+              </div>
+              <dl class="fy-dl" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+                <div><dt>Last import</dt><dd>9 Oct, 17:40</dd></div>
+                <div><dt>Complete to</dt><dd>9 Oct 2026</dd></div>
+                <div style="grid-column: 1 / -1"><dt>Data source</dt><dd class="fy-row"><i data-icon="file-spreadsheet"></i>File import (CSV)</dd></div>
+              </dl>
+              <p class="fy-error"><i data-icon="triangle-alert"></i>No statement since 9 Oct. Import the CSV for 10–12 Oct from OCBC Velocity.</p>
+            </div>
+            <div class="fy-card__foot">
+              <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/import?account=ocbc"><i data-icon="upload"></i>Import</a>
+              <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#banking/categorise?account=ocbc">Categorise<span class="fy-badge fy-badge--quiet" aria-label="2 lines">2</span></a>
+            </div>
+          </article>
+
+          <article class="fy-card" aria-labelledby="a-wise">
+            <div class="fy-card__head">
+              <span class="fy-list__icon"><i data-icon="wallet" class="fy-i--20"></i></span>
+              <div class="fy-grow fy-stack" style="gap: 0">
+                <h3 class="fy-h3" id="a-wise"><a href="#banking/accounts/wise" style="color: var(--text-primary)">Wise</a></h3>
+                <span class="fy-small fy-muted">Wallet · USD<span class="fy-expert-only"> · <span class="fy-mono">1030</span></span></span>
+              </div>
+              <button class="fy-iconbtn" type="button" aria-label="More actions for Wise"><i data-icon="ellipsis"></i></button>
+            </div>
+            <div class="fy-card__body fy-stack fy-stack--3">
+              <div class="fy-row fy-row--between fy-row--top fy-row--wrap" style="gap: var(--space-2) var(--space-3)">
+                <div class="fy-stack" style="gap: 2px">
+                <a class="fy-tile__value fy-num" href="#banking/accounts/wise" style="color: var(--text-primary)">15,862.65<small>USD</small></a>
+                <span class="fy-small fy-muted fy-num">≈ S$20,410.47</span>
+              </div>
+                <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Up to date</span>
+              </div>
+              <dl class="fy-dl" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+                <div><dt>Last sync</dt><dd>09:05 today</dd></div>
+                <div><dt>Complete to</dt><dd>13 Oct 2026</dd></div>
+                <div style="grid-column: 1 / -1"><dt>Data source</dt><dd class="fy-row"><i data-icon="key-round"></i>Wise API, read-only key</dd></div>
+              </dl>
+            </div>
+            <div class="fy-card__foot">
+              <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nothing to categorise</span>
+            </div>
+          </article>
+
+          <article class="fy-card" aria-labelledby="a-awx">
+            <div class="fy-card__head">
+              <span class="fy-list__icon"><i data-icon="wallet" class="fy-i--20"></i></span>
+              <div class="fy-grow fy-stack" style="gap: 0">
+                <h3 class="fy-h3" id="a-awx"><a href="#banking/accounts/airwallex" style="color: var(--text-primary)">Airwallex</a></h3>
+                <span class="fy-small fy-muted">Wallet · USD<span class="fy-expert-only"> · <span class="fy-mono">1040</span></span></span>
+              </div>
+              <button class="fy-iconbtn" type="button" aria-label="More actions for Airwallex"><i data-icon="ellipsis"></i></button>
+            </div>
+            <div class="fy-card__body fy-stack fy-stack--3">
+              <div class="fy-row fy-row--between fy-row--top fy-row--wrap" style="gap: var(--space-2) var(--space-3)">
+                <div class="fy-stack" style="gap: 2px">
+                <a class="fy-tile__value fy-num" href="#banking/accounts/airwallex" style="color: var(--text-primary)">6,150.35<small>USD</small></a>
+                <span class="fy-small fy-muted fy-num">≈ S$7,913.66 · as of 12 Oct, 20:00</span>
+              </div>
+                <span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Sync failed</span>
+              </div>
+              <dl class="fy-dl" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+                <div><dt>Last try</dt><dd>08:00 today, failed</dd></div>
+                <div><dt>Complete to</dt><dd>12 Oct 2026</dd></div>
+                <div style="grid-column: 1 / -1"><dt>Data source</dt><dd class="fy-row"><i data-icon="key-round"></i>Airwallex API, read-only key</dd></div>
+              </dl>
+            </div>
+            <div class="fy-card__foot">
+              <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/accounts/airwallex/source"><i data-icon="key-round"></i>Renew key</a>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Cards, clearing and reconciliations">
+      <section class="fy-card" aria-labelledby="nc-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="nc-title">Cards and payment providers</h2>
+          <button class="fy-info" type="button" aria-label="Why these are not cash" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <ul class="fy-list">
+          <li>
+            <a class="fy-list__item" href="#banking/accounts/dbs-visa">
+              <span class="fy-list__icon"><i data-icon="credit-card" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">DBS Visa Business ··4821</span><span class="fy-list__meta">Card · owed to DBS · statement 25 Oct</span></span>
+              <span class="fy-num fy-strong">−1,286.40</span>
+            </a>
+          </li>
+          <li>
+            <a class="fy-list__item" href="#banking/payouts?provider=stripe">
+              <span class="fy-list__icon"><i data-icon="arrow-left-right" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">Stripe clearing</span><span class="fy-list__meta">Paid by customers, not yet paid out · complete to 12 Oct</span></span>
+              <span class="fy-num fy-strong">1,846.20</span>
+            </a>
+          </li>
+          <li>
+            <a class="fy-list__item" href="#banking/payouts?provider=hitpay">
+              <span class="fy-list__icon"><i data-icon="arrow-left-right" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">HitPay clearing</span><span class="fy-list__meta">S$12.00 should be zero · <span style="color: var(--status-warning)">check payout 6 Oct</span></span></span>
+              <span class="fy-num fy-strong">12.00</span>
+            </a>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Not counted in cash. Amounts in SGD.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="rec-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="rec-title">September reconciliations</h2>
+          <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#banking/reconciliations">All</a>
+        </div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">DBS</span><span class="fy-list__meta">Difference 0.00 · needs Arjun Rao to sign off</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Ready to sign</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">OCBC</span><span class="fy-list__meta">Signed off by Arjun Rao, 8 Oct</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Signed off</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">Wise and Airwallex</span><span class="fy-list__meta">Signed off by Arjun Rao, 8 Oct</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Signed off</span>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--secondary" href="#banking/import"><i data-icon="upload"></i>Import</a>
+    <a class="fy-btn fy-btn--primary" href="#banking/categorise"><i data-icon="list-checks"></i>Categorise 14</a>
+  </div>
+</div>

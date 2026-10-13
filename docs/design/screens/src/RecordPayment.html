@@ -1,0 +1,167 @@
+<!-- fyniq-screen {"nav": "sales", "title": "INV-0139", "mode": "expert", "heights": {"compact": 600, "medium": 500, "expanded": 500}} -->
+<div class="fy-page fy-enter" aria-hidden="true">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#sales">Sales</a><i data-icon="chevron-right"></i><a href="#sales/invoices">Invoices</a><i data-icon="chevron-right"></i><span>INV-0139</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1 fy-mono">INV-0139</h1><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Overdue 10 days</span><span class="fy-chip fy-chip--warning"><i data-icon="circle-dot-dashed"></i>Part-paid</span></div>
+      <p class="fy-secondary">Orbital Freight Asia Pte Ltd · S$8,720.00 · S$4,860.00 due since 3 Oct</p>
+    </div>
+  </div>
+  <div class="fy-card fy-card--pad fy-stack fy-stack--3">
+    <span class="fy-skel fy-skel--title"></span>
+    <span class="fy-skel fy-skel--text"></span>
+    <span class="fy-skel fy-skel--text" style="width: 70%"></span>
+    <span class="fy-skel fy-skel--block"></span>
+  </div>
+</div>
+
+<div class="fy-scrim">
+  <section class="fy-dialog fy-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="rp-title" aria-describedby="rp-sub">
+    <div class="fy-grabber" aria-hidden="true"></div>
+    <div class="fy-dialog__head">
+      <span class="fy-list__icon fy-list__icon--brand"><i data-icon="hand-coins" class="fy-i--20"></i></span>
+      <div class="fy-stack fy-stack--2 fy-grow">
+        <h2 class="fy-h2" id="rp-title">Record payment</h2>
+        <p class="fy-small fy-secondary" id="rp-sub">From Orbital Freight Asia Pte Ltd, applied to their open invoices</p>
+      </div>
+      <button class="fy-iconbtn" type="button" aria-label="Close"><i data-icon="x"></i></button>
+    </div>
+
+    <div class="fy-dialog__body">
+      <div class="fy-banner fy-banner--info">
+        <i data-icon="landmark"></i>
+        <div class="fy-banner__text">
+          <strong>Matched to a bank line</strong>
+          <span class="fy-small">DBS Business, 6 Oct: “INWARD TT ORBITAL FREIGHT ASIA”, S$4,832.00. The amount and the customer point to INV-0139.</span>
+        </div>
+      </div>
+
+      <div class="fy-form fy-form--2">
+        <div class="fy-field">
+          <label class="fy-label" for="rp-amt">Amount received</label>
+          <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rp-amt" value="4,832.00" readonly="readonly" style="text-align: right"></div>
+        </div>
+        <div class="fy-field">
+          <label class="fy-label" for="rp-date">Date received</label>
+          <input class="fy-input" id="rp-date" value="13 Oct 2026" readonly="readonly" aria-describedby="rp-date-help">
+          <span class="fy-help" id="rp-date-help"><i data-icon="lock"></i> August is locked: a date before 1 Sep can't be used</span>
+        </div>
+        <div class="fy-field">
+          <label class="fy-label" for="rp-acct">Into</label>
+          <select class="fy-select" id="rp-acct"><option>DBS Business Multi-Currency (SGD)</option></select>
+        </div>
+        <div class="fy-field">
+          <label class="fy-label" for="rp-ccy">Currency and rate</label>
+          <input class="fy-input" id="rp-ccy" value="SGD · 1.0000, base currency" readonly="readonly">
+        </div>
+      </div>
+
+      <section class="fy-stack fy-stack--3" aria-labelledby="rp-alloc">
+        <div class="fy-row fy-row--between"><h3 class="fy-h3" id="rp-alloc">Apply it to</h3><span class="fy-small fy-muted">2 open documents</span></div>
+        <div class="fy-tablewrap">
+          <table class="fy-table fy-table--cards fy-table--compact">
+            <caption class="fy-sr">Allocation of the receipt</caption>
+            <thead>
+              <tr>
+                <th scope="col">Document</th>
+                <th scope="col" class="fy-num" style="text-align: right">Open</th>
+                <th scope="col" class="fy-num" style="text-align: right">Apply</th>
+                <th scope="col" class="fy-num fy-expert-only fy-from-medium" style="text-align: right">In SGD</th>
+                <th scope="col" class="fy-num fy-expert-only fy-from-medium" style="text-align: right">Realised FX<button class="fy-info" type="button" aria-label="About realised FX" aria-expanded="false"><i data-icon="info"></i></button></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr aria-selected="true" style="background: color-mix(in oklch, var(--primary-subtle) 60%, var(--surface-1))">
+                <td data-card="title"><span class="fy-mono">INV-0139</span> <span class="fy-small fy-muted">· 3 Sep · overdue</span></td>
+                <td class="fy-num" data-card="meta">S$4,860.00 open</td>
+                <td class="fy-num fy-strong" data-card="amount">4,832.00</td>
+                <td class="fy-num fy-expert-only fy-from-medium" data-card="hide">4,832.00</td>
+                <td class="fy-num fy-expert-only fy-from-medium fy-muted" data-card="hide">–</td>
+              </tr>
+              <tr>
+                <td data-card="title"><span class="fy-mono">INV-0144</span> <span class="fy-small fy-muted">· 5 Oct · due 4 Nov</span></td>
+                <td class="fy-num" data-card="meta">US$3,804.10 open</td>
+                <td class="fy-num" data-card="amount">0.00</td>
+                <td class="fy-num fy-expert-only fy-from-medium fy-muted" data-card="hide">–</td>
+                <td class="fy-num fy-expert-only fy-from-medium fy-muted" data-card="hide">–</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td data-card="title">Applied</td>
+                <td class="fy-from-medium" data-card="hide"></td>
+                <td class="fy-num" data-card="amount">4,832.00</td>
+                <td class="fy-num fy-expert-only fy-from-medium" data-card="hide">4,832.00</td>
+                <td class="fy-num fy-expert-only fy-from-medium" data-card="hide">0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <span class="fy-small fy-muted">All S$4,832.00 is applied; nothing is left unapplied. If a customer pays more than S$1.00 too much, the extra stays as their credit, never as income.</span>
+      </section>
+
+      <section class="fy-stack fy-stack--3" aria-labelledby="rp-resid">
+        <div class="fy-banner fy-banner--warning">
+          <i data-icon="triangle-alert"></i>
+          <div class="fy-banner__text">
+            <strong id="rp-resid">INV-0139 is S$28.00 short. Say what it is.</strong>
+            <span class="fy-small">S$28.00 is more than the S$1.00 rounding tolerance, so it doesn't clear by itself. Unless you choose a reason, INV-0139 stays part-paid with S$28.00 due.</span>
+          </div>
+        </div>
+        <div class="fy-grid fy-grid--2" role="radiogroup" aria-labelledby="rp-resid">
+          <button class="fy-choice" type="button" role="radio" aria-checked="false">
+            <span class="fy-radio"></span>
+            <span class="fy-stack fy-stack--2"><span class="fy-strong">Keep it open</span><span class="fy-small fy-secondary">S$28.00 stays due on INV-0139; reminders carry on</span></span>
+          </button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="true">
+            <span class="fy-radio"></span>
+            <span class="fy-stack fy-stack--2"><span class="fy-strong">Bank or provider charges</span><span class="fy-small fy-secondary">Their bank took a fee. Written off as bank charges</span></span>
+          </button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false">
+            <span class="fy-radio"></span>
+            <span class="fy-stack fy-stack--2"><span class="fy-strong">Agreed discount</span><span class="fy-small fy-secondary">A credit note for S$28.00, with the GST adjusted</span></span>
+          </button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false">
+            <span class="fy-radio"></span>
+            <span class="fy-stack fy-stack--2"><span class="fy-strong">Bad debt</span><span class="fy-small fy-secondary">You don't expect to collect it; tagged for GST relief review</span></span>
+          </button>
+        </div>
+        <div class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--3">
+          <div class="fy-row fy-row--wrap fy-row--between">
+            <span class="fy-strong">Write-off of S$28.00</span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="stamp"></i>Needs approval</span>
+          </div>
+          <span class="fy-small fy-secondary">Arjun Rao approves it, because you recorded this payment. Until then INV-0139 shows S$28.00 due.</span>
+          <div class="fy-row fy-row--wrap">
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Evidence</span>
+            <a href="#files/dbs-advice-6-oct" class="fy-small"><i data-icon="paperclip"></i> DBS credit advice, 6 Oct.pdf</a>
+            <span class="fy-small fy-muted">Shows the S$28.00 charge</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-stack fy-stack--2" aria-labelledby="rp-impact">
+        <h3 class="fy-h3" id="rp-impact">What it will post</h3>
+        <div class="fy-plain fy-basic-only"><i data-icon="info" class="fy-muted"></i><p class="fy-small">S$4,832.00 goes into DBS Business and Orbital Freight Asia owes S$4,832.00 less. The S$28.00 write-off posts only when Arjun Rao approves it.</p></div>
+        <table class="fy-table fy-table--compact fy-ledger fy-expert-only">
+          <caption class="fy-sr">Ledger impact preview</caption>
+          <thead><tr><th scope="col">Account</th><th scope="col">Debit</th><th scope="col">Credit</th></tr></thead>
+          <tbody>
+            <tr><td><span class="fy-acct">1010</span>DBS Business Multi-Currency</td><td class="fy-num">4,832.00</td><td></td></tr>
+            <tr><td><span class="fy-acct">1100</span>Accounts receivable · Orbital Freight Asia</td><td></td><td class="fy-num">4,832.00</td></tr>
+            <tr class="fy-group"><td colspan="3">After approval</td></tr>
+            <tr><td><span class="fy-acct">6420</span>Bank charges</td><td class="fy-num">28.00</td><td></td></tr>
+            <tr><td><span class="fy-acct">1100</span>Accounts receivable · Orbital Freight Asia</td><td></td><td class="fy-num">28.00</td></tr>
+          </tbody>
+        </table>
+        <span class="fy-small fy-muted fy-expert-only">To undo later, Fyniq adds a reversing allocation. Nothing is edited or deleted.</span>
+      </section>
+      <p class="fy-small fy-muted"><i data-icon="info"></i> For bills, the same dialog applies supplier payments, credits and refunds.</p>
+    </div>
+
+    <div class="fy-dialog__foot">
+      <button class="fy-btn fy-btn--ghost" type="button">Cancel</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="check"></i>Record payment</button>
+    </div>
+  </section>
+</div>

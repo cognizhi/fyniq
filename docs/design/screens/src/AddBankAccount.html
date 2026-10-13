@@ -1,0 +1,140 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Add account", "mode": "basic", "heights": {"compact": 2500, "medium": 2150, "expanded": 1720}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#banking">Banking</a><i data-icon="chevron-right"></i><span>Add an account</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Add a bank account</h1>
+      <p class="fy-secondary">Step 2 of 3: choose how its statements reach Fyniq.</p>
+    </div>
+  </div>
+
+  <ol class="fy-steps" aria-label="Steps">
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Account</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">2</span>Data source</li>
+    <li class="fy-step"><span class="fy-step__n">3</span>Test and first sync</li>
+  </ol>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="acct-title">
+        <div class="fy-card__head">
+          <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+          <h2 class="fy-h3" id="acct-title">Account</h2>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="pencil-line"></i>Edit</button>
+        </div>
+        <div class="fy-card__body">
+          <dl class="fy-dl fy-dl--3">
+            <div><dt>Type</dt><dd>Bank account</dd></div>
+            <div><dt>Bank</dt><dd>DBS Business Multi-Currency, USD wallet</dd></div>
+            <div><dt>Currency</dt><dd>US dollars (USD)</dd></div>
+            <div><dt>Opening balance date</dt><dd>1 Oct 2026, US$0.00</dd></div>
+            <div class="fy-expert-only"><dt>Ledger account</dt><dd><span class="fy-mono">1012</span> DBS Multi-Currency USD</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="fy-stack fy-stack--3" aria-labelledby="src-title">
+        <h2 class="fy-h2" id="src-title">How should the data arrive?</h2>
+        <div class="fy-stack fy-stack--3 fy-stagger" role="radiogroup" aria-labelledby="src-title">
+          <button class="fy-choice" type="button" role="radio" aria-checked="true">
+            <span class="fy-radio"></span>
+            <span class="fy-stack fy-grow" style="gap: 4px">
+              <span class="fy-row fy-row--wrap"><span class="fy-strong">Bank reports by email</span><span class="fy-chip fy-chip--info"><i data-icon="circle-check"></i>Best for DBS today</span></span>
+              <span class="fy-small fy-secondary">DBS IDEAL emails a daily account report and an alert for each incoming payment to your bank-ingest address. No extra bank fee.</span>
+            </span>
+          </button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false">
+            <span class="fy-radio"></span>
+            <span class="fy-stack fy-grow" style="gap: 4px">
+              <span class="fy-strong">Upload statement files</span>
+              <span class="fy-small fy-secondary">You export CSV, MT940, camt.053 or OFX from the bank and upload or email them.</span>
+            </span>
+          </button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false" aria-disabled="true" style="opacity: 0.6">
+            <span class="fy-radio"></span>
+            <span class="fy-stack fy-grow" style="gap: 4px">
+              <span class="fy-strong">Read-only API key</span>
+              <span class="fy-small fy-secondary">For Wise and Airwallex. DBS does not offer this kind of key.</span>
+            </span>
+          </button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false" aria-disabled="true" style="opacity: 0.6">
+            <span class="fy-radio"></span>
+            <span class="fy-stack fy-grow" style="gap: 4px">
+              <span class="fy-row fy-row--wrap"><span class="fy-strong">Bank API or host-to-host</span><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Not available yet</span></span>
+              <span class="fy-small fy-secondary">DBS RAPID or IDEAL Connect. Needs an application to DBS through your relationship manager, about 4 to 6 weeks.</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="setup-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="setup-title">Set up the emails in DBS IDEAL</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#help/dbs-ideal-reports">Guide</a></div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-field">
+            <label class="fy-label" for="ingest">1. Your bank-ingest address for this account</label>
+            <div class="fy-row">
+              <input class="fy-input fy-mono fy-grow" id="ingest" value="dbs-usd-2m8c@bank.cognizhi.in.fyniq.app" readonly="readonly">
+              <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="copy"></i><span class="fy-from-medium">Copy</span><span class="fy-sr">Copy address</span></button>
+            </div>
+          </div>
+          <ol class="fy-stack fy-stack--3" start="2">
+            <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">2</span><span class="fy-small">In DBS IDEAL, schedule the daily account report for the USD wallet in MT940 format and send it to that address.</span></li>
+            <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">3</span><span class="fy-small">Turn on incoming-funds alerts for the same account, to the same address. Alerts speed up matching; only the daily report adds bank lines.</span></li>
+            <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">4</span><span class="fy-small">At month end, the DBS e-statement confirms the closing balance.</span></li>
+          </ol>
+          <p class="fy-plain fy-small"><i data-icon="shield-check"></i><span>Fyniq accepts only emails that pass SPF, DKIM and DMARC checks for DBS. Anything else waits in quarantine until you accept it. Attachments are scanned for malware.</span></p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="test-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="test-title">Next: test and first sync</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Address ready</span><span class="fy-list__meta">A test email reached it at 10:14</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="clock" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Waiting for the first daily report</span><span class="fy-list__meta" style="white-space: normal">Usually the next business morning. Fyniq checks every 15 minutes.</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Waiting</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="link" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Continuity check</span><span class="fy-list__meta" style="white-space: normal">The first report must open at your opening balance, US$0.00 on 1 Oct</span></span>
+          </li>
+        </ul>
+      </section>
+
+      <div class="fy-row fy-from-medium">
+        <a class="fy-btn fy-btn--ghost" href="#banking/accounts/new?step=1">Back</a>
+        <span class="fy-spacer"></span>
+        <button class="fy-btn fy-btn--secondary" type="button">Save and finish later</button>
+        <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Continue<i data-icon="arrow-right"></i></button>
+      </div>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="About bank connections">
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="ro-title">
+        <span class="fy-list__icon fy-list__icon--brand"><i data-icon="shield-check" class="fy-i--20"></i></span>
+        <h2 class="fy-h3" id="ro-title">Read-only, by design</h2>
+        <p class="fy-small fy-secondary">Fyniq only reads balances and transactions. It never asks for your bank password and never uses screen-scraping services.</p>
+        <p class="fy-small fy-secondary">Payments still leave the way they do today: as an approved payment file that someone uploads to DBS.</p>
+        <a class="fy-small" href="#help/bank-connections">How bank connections work</a>
+      </section>
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="other-title">
+        <h2 class="fy-h3" id="other-title">Your other accounts</h2>
+        <ul class="fy-stack fy-stack--2 fy-small">
+          <li class="fy-row fy-row--between"><span>DBS Business (SGD)</span><span class="fy-muted">Reports by email</span></li>
+          <li class="fy-row fy-row--between"><span>OCBC Business Growth</span><span class="fy-muted">File upload</span></li>
+          <li class="fy-row fy-row--between"><span>Wise (USD)</span><span class="fy-muted">API key</span></li>
+          <li class="fy-row fy-row--between"><span>Airwallex (USD)</span><span style="color: var(--status-critical)">Key expired</span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--ghost" href="#banking/accounts/new?step=1">Back</a>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Continue</button>
+  </div>
+</div>

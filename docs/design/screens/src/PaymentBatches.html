@@ -1,0 +1,119 @@
+<!-- fyniq-screen {"nav": "purchases", "title": "Payment batches", "mode": "basic", "heights": {"compact": 2250, "medium": 1500, "expanded": 950}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Purchases</span>
+      <h1 class="fy-h1">Payment batches</h1>
+      <p class="fy-secondary">Supplier, claim and salary payments, from prepared to paid. Each step is done by a different person.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--primary" href="#purchases/payment-batches/new"><i data-icon="plus"></i>New batch</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>Fri 16 Oct suppliers needs approving again</strong>
+      <span class="fy-small">Ho &amp; Partners LLP's bank details changed at 08:40, after Arjun Rao approved the batch. It can't be released until it is approved again or that payment is removed.</span>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#purchases/payment-batches/fri-16-oct-suppliers">Open batch</a>
+  </div>
+
+  <div class="fy-split">
+    <section class="fy-card" aria-labelledby="b-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="b-title">Batches</h2>
+        <span class="fy-small fy-muted fy-from-medium">Since 28 Sep</span>
+      </div>
+      <div class="fy-card__body" style="padding-bottom: var(--space-3)">
+        <div class="fy-chipset" role="group" aria-label="Filter by status">
+          <button class="fy-filter" type="button" aria-pressed="true">All 6</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Draft 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Awaiting approval 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Approved 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Paid 3</button>
+        </div>
+      </div>
+      <div style="overflow-x: auto">
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Batch</th><th scope="col" style="text-align: right">Total SGD</th><th scope="col">Status</th><th scope="col">Prepared, released</th></tr></thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><span style="white-space: nowrap"><a href="#purchases/payment-batches/fri-16-oct-suppliers">Fri 16 Oct suppliers</a></span><div class="fy-small fy-muted" style="font-weight: 400">Suppliers and claims · 5 items, 2 on hold</div></td>
+                            <td data-card="amount" class="fy-num"><a href="#purchases/payment-batches/fri-16-oct-suppliers" style="color: var(--text-primary)">3,251.82</a></td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Re-approval needed</span></td>
+              <td data-card="meta">Priya Nair <i data-icon="arrow-right" class="fy-muted"></i> <span class="fy-muted">Mei Lin Tan, next</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><span style="white-space: nowrap"><a href="#purchases/payment-batches/thu-15-oct-claims">Thu 15 Oct claims</a></span><div class="fy-small fy-muted" style="font-weight: 400">Claims · 2 items</div></td>
+                            <td data-card="amount" class="fy-num"><a href="#purchases/payment-batches/thu-15-oct-claims" style="color: var(--text-primary)">328.90</a></td>
+              <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="badge-check"></i>Approved</span></td>
+              <td data-card="meta">Priya Nair <i data-icon="arrow-right" class="fy-muted"></i> <span class="fy-muted">not released</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><span style="white-space: nowrap"><a href="#purchases/payment-batches/wed-28-oct-salaries">Wed 28 Oct salaries</a></span><div class="fy-small fy-muted" style="font-weight: 400">Salaries, PR-2026-10 · 5 items, Chen Yu held</div></td>
+                            <td data-card="amount" class="fy-num"><a href="#purchases/payment-batches/wed-28-oct-salaries" style="color: var(--text-primary)">31,672.00</a></td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+              <td data-card="meta">Priya Nair <i data-icon="arrow-right" class="fy-muted"></i> <span class="fy-muted">not released</span></td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><span style="white-space: nowrap"><a href="#purchases/payment-batches/wed-7-oct-suppliers">Wed 7 Oct suppliers</a></span><div class="fy-small fy-muted" style="font-weight: 400">Suppliers · 2 items</div></td>
+                            <td data-card="amount" class="fy-num"><a href="#purchases/payment-batches/wed-7-oct-suppliers" style="color: var(--text-primary)">6,648.00</a></td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td>
+              <td data-card="meta">Priya Nair <i data-icon="arrow-right" class="fy-muted"></i> Mei Lin Tan</td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><span style="white-space: nowrap"><a href="#purchases/payment-batches/wed-30-sep-claims">Wed 30 Sep claims</a></span><div class="fy-small fy-muted" style="font-weight: 400">Claims · 3 items</div></td>
+                            <td data-card="amount" class="fy-num"><a href="#purchases/payment-batches/wed-30-sep-claims" style="color: var(--text-primary)">486.75</a></td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td>
+              <td data-card="meta">Priya Nair <i data-icon="arrow-right" class="fy-muted"></i> Mei Lin Tan</td>
+            </tr>
+            <tr>
+              <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><span style="white-space: nowrap"><a href="#purchases/payment-batches/mon-28-sep-salaries">Mon 28 Sep salaries</a></span><div class="fy-small fy-muted" style="font-weight: 400">Salaries, PR-2026-09 · 6 items</div></td>
+                            <td data-card="amount" class="fy-num"><a href="#purchases/payment-batches/mon-28-sep-salaries" style="color: var(--text-primary)">36,672.00</a></td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td>
+              <td data-card="meta">Priya Nair <i data-icon="arrow-right" class="fy-muted"></i> Mei Lin Tan</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Next batch and how batches work">
+      <section class="fy-card" aria-labelledby="next-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="next-title">Next scheduled</h2>
+          <span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>Fri 23 Oct</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--between">
+            <span class="fy-strong">Fri 23 Oct suppliers</span>
+            <span class="fy-num fy-strong">S$3,077.40</span>
+          </div>
+          <ul class="fy-stack fy-stack--2 fy-small">
+            <li class="fy-row fy-row--between"><span><a href="#purchases/bill-0918">BILL-0918</a> Amazon Web Services</span><span class="fy-num">2,861.40</span></li>
+            <li class="fy-row fy-row--between"><span><a href="#purchases/bill-0923">BILL-0923</a> Figma</span><span class="fy-num">216.00</span></li>
+          </ul>
+          <p class="fy-small fy-muted">From bills scheduled for that date. BILL-0918 joins once it is approved.</p>
+        </div>
+        <div class="fy-card__foot"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#purchases/payment-batches/new?date=2026-10-23">Prepare it now</a></div>
+      </section>
+
+      <section class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--3" aria-labelledby="how-title">
+        <h2 class="fy-h3" id="how-title">How a batch is paid</h2>
+        <ol class="fy-stack fy-stack--2 fy-small fy-secondary">
+          <li class="fy-row fy-row--top"><span class="fy-step__n">1</span><span>Someone prepares it from approved bills, claims and pay runs.</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n">2</span><span>A different person approves it.</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n">3</span><span>A third person, who did neither, releases it with a passkey and uploads the bank file.</span></li>
+          <li class="fy-row fy-row--top"><span class="fy-step__n">4</span><span>It is marked paid when the bank feed shows the debit.</span></li>
+        </ol>
+        <p class="fy-small fy-muted">A payee whose bank details changed after approval blocks the batch until it is approved again.</p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#purchases/payment-batches/new"><i data-icon="plus"></i>New batch</a>
+  </div>
+</div>

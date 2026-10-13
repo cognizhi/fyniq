@@ -1,0 +1,53 @@
+<!-- fyniq-screen {"nav": "contacts", "title": "Contacts", "mode": "basic", "heights": {"compact": 1400, "medium": 1000, "expanded": 900}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Contacts</h1>
+      <p class="fy-secondary">Customers, suppliers, investors and shareholders in one list. 42 contacts.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="upload"></i>Import</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>New contact</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="status">
+    <i data-icon="copy" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>Possible duplicate</strong><span class="fy-small">"KOPI LABS PTE. LTD." from an InvoiceNow bill has the same UEN as Kopi Labs Pte Ltd. Review the two before merging; documents keep their history.</span></div>
+    <div class="fy-banner__action"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#contacts/merge?a=kopi-labs&amp;b=kopi-labs-2">Review</a></div>
+  </div>
+
+  <div class="fy-row fy-row--wrap fy-row--between">
+    <div class="fy-chipset" role="group" aria-label="Roles">
+      <button class="fy-filter" type="button" aria-pressed="true">All</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Customers<span class="fy-badge fy-badge--quiet">19</span></button>
+      <button class="fy-filter" type="button" aria-pressed="false">Suppliers<span class="fy-badge fy-badge--quiet">17</span></button>
+      <button class="fy-filter" type="button" aria-pressed="false">Both<span class="fy-badge fy-badge--quiet">1</span></button>
+      <button class="fy-filter" type="button" aria-pressed="false">Investors<span class="fy-badge fy-badge--quiet">1</span></button>
+      <button class="fy-filter" type="button" aria-pressed="false">Shareholders<span class="fy-badge fy-badge--quiet">2</span></button>
+    </div>
+    <label class="fy-sr" for="ct-search">Search contacts</label>
+    <input class="fy-input" id="ct-search" placeholder="Name, UEN or email" style="max-width: 260px">
+  </div>
+
+  <div class="fy-tablewrap">
+    <table class="fy-table fy-table--cards">
+      <thead><tr><th scope="col">Name</th><th scope="col" class="fy-from-expanded">UEN or tax ID</th><th scope="col" class="fy-num">Owed to us</th><th scope="col" class="fy-num fy-from-medium">We owe</th><th scope="col" class="fy-num fy-from-medium">Overdue</th><th scope="col" class="fy-from-expanded">Last activity</th><th scope="col" class="fy-from-expanded">InvoiceNow ID</th></tr></thead>
+      <tbody class="fy-stagger">
+        <tr><td data-card="title"><a href="#contacts/lumen-health">Lumen Health Pte Ltd</a> <span class="fy-tag">Customer</span></td><td data-card="hide" class="fy-from-expanded fy-mono">202008812D</td><td data-card="amount" class="fy-num">13,080.00</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="hide" class="fy-from-expanded">INV-0141 opened, 9 Oct</td><td data-card="hide" class="fy-from-expanded fy-mono">0195:SG202008812D</td></tr>
+        <tr><td data-card="title"><a href="#contacts/acme">Acme Analytics Pte Ltd</a> <span class="fy-tag">Customer</span></td><td data-card="hide" class="fy-from-expanded fy-mono">201934567M</td><td data-card="amount" class="fy-num">17,222.00</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="hide" class="fy-from-expanded">INV-0150 opened, 12 Oct</td><td data-card="hide" class="fy-from-expanded fy-mono">0195:SG201934567M</td></tr>
+        <tr><td data-card="title"><a href="#contacts/orbital">Orbital Freight Asia Pte Ltd</a> <span class="fy-tag">Customer</span></td><td data-card="hide" class="fy-from-expanded fy-mono">201812290W</td><td data-card="amount" class="fy-num">9,773.00</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="status" class="fy-num fy-from-medium"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>4,860.00</span></td><td data-card="hide" class="fy-from-expanded">Part payment, 25 Sep</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#contacts/harbourfront">Harbourfront Dental Group</a> <span class="fy-tag">Customer</span></td><td data-card="hide" class="fy-from-expanded fy-mono">53412876K</td><td data-card="amount" class="fy-num">4,360.00</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="status" class="fy-num fy-from-medium"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>4,360.00</span></td><td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--warning"><i data-icon="mail-x"></i>Email bounced</span></td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#contacts/kopi-labs">Kopi Labs Pte Ltd</a> <span class="fy-tag">Customer</span></td><td data-card="hide" class="fy-from-expanded fy-mono">202211874R</td><td data-card="amount" class="fy-num">3,815.00</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="status" class="fy-num fy-from-medium"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>2,180.00</span></td><td data-card="hide" class="fy-from-expanded">Promised to pay by 20 Oct</td><td data-card="hide" class="fy-from-expanded fy-mono">0195:SG202211874R</td></tr>
+        <tr><td data-card="title"><a href="#contacts/wework">WeWork Singapore Pte Ltd</a> <span class="fy-tag">Supplier</span></td><td data-card="hide" class="fy-from-expanded fy-mono">201718406E</td><td data-card="hide" class="fy-num">—</td><td data-card="amount" class="fy-num fy-from-medium">5,955.75</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="hide" class="fy-from-expanded">BILL-0927 received, 12 Oct</td><td data-card="hide" class="fy-from-expanded fy-mono">0195:SG201718406E</td></tr>
+        <tr><td data-card="title"><a href="#contacts/aws">Amazon Web Services Singapore Pte Ltd</a> <span class="fy-tag">Supplier</span></td><td data-card="hide" class="fy-from-expanded fy-mono">201714485W</td><td data-card="hide" class="fy-num">—</td><td data-card="amount" class="fy-num fy-from-medium">2,861.40</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="hide" class="fy-from-expanded">BILL-0918 to approve</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#contacts/ho-partners">Ho &amp; Partners LLP</a> <span class="fy-tag">Supplier</span></td><td data-card="hide" class="fy-from-expanded fy-mono">T09LL1234A</td><td data-card="hide" class="fy-num">—</td><td data-card="amount" class="fy-num fy-from-medium">2,398.00</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="status" class="fy-from-expanded"><span class="fy-chip fy-chip--warning"><i data-icon="snowflake"></i>Bank change pending</span></td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#contacts/lion-rock">Lion Rock Ventures</a> <span class="fy-tag">Investor</span></td><td data-card="hide" class="fy-from-expanded fy-mono">T21VC0042H</td><td data-card="hide" class="fy-num">—</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="meta" class="fy-from-expanded">SAFE, S$500,000</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#contacts/mei-lin-tan">Mei Lin Tan</a> <span class="fy-tag">Shareholder</span></td><td data-card="hide" class="fy-from-expanded fy-mono">S••••305G</td><td data-card="hide" class="fy-num">—</td><td data-card="amount" class="fy-num fy-from-medium">38,915.40</td><td data-card="hide" class="fy-num fy-from-medium">—</td><td data-card="meta" class="fy-from-expanded">4,500,000 ordinary shares</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fy-small fy-muted">Showing 10 of 42 · amounts in SGD · NRIC numbers are masked</p>
+
+  <div class="fy-actionbar fy-only-compact"><button class="fy-btn fy-btn--primary fy-btn--block" type="button"><i data-icon="plus"></i>New contact</button></div>
+</div>

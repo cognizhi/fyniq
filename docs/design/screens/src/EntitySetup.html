@@ -1,0 +1,134 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Add an entity", "mode": "expert", "heights": {"compact": 3350, "medium": 2500, "expanded": 1700}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/entities">Legal entities</a><i data-icon="chevron-right"></i><span>Add an entity</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <div class="fy-row fy-row--wrap">
+        <h1 class="fy-h1">Add a legal entity</h1>
+        <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+      </div>
+      <p class="fy-secondary">Cognizhi Sdn. Bhd. joins the Cognizhi group with its own currency, accounts, tax packs and periods · saved 09:02</p>
+    </div>
+  </div>
+
+  <ol class="fy-steps" aria-label="Steps">
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Entity</li>
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Currency and periods</li>
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Chart of accounts</li>
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Tax packs</li>
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Intercompany</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">6</span>Review</li>
+  </ol>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6 fy-stagger">
+      <section class="fy-card" aria-labelledby="es-entity">
+        <div class="fy-card__head"><h2 class="fy-h3" id="es-entity">1 · Entity</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/entities/new/1">Edit</a></div>
+        <div class="fy-card__body">
+          <dl class="fy-dl fy-dl--3">
+            <div><dt>Legal name</dt><dd>Cognizhi Sdn. Bhd.</dd></div>
+            <div><dt>Registration number</dt><dd class="fy-mono">202601038412</dd></div>
+            <div><dt>Country</dt><dd>Malaysia</dd></div>
+            <div><dt>Incorporated</dt><dd>1 Oct 2026</dd></div>
+            <div><dt>Owned by</dt><dd>Cognizhi Pte Ltd, 100%</dd></div>
+            <div><dt>Short name in reports</dt><dd>Cognizhi MY</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="es-periods">
+        <div class="fy-card__head"><h2 class="fy-h3" id="es-periods">2 · Currency and periods</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/entities/new/2">Edit</a></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <dl class="fy-dl fy-dl--3">
+            <div><dt>Base currency<button class="fy-info" type="button" aria-label="About the base currency" aria-expanded="false"><i data-icon="info"></i></button></dt><dd>MYR, Malaysian ringgit</dd></div>
+            <div><dt>Group currency</dt><dd>SGD, from Cognizhi Pte Ltd</dd></div>
+            <div><dt>Financial year</dt><dd>Jan–Dec, like the group</dd></div>
+            <div><dt>Books start</dt><dd>1 Oct 2026</dd></div>
+            <div><dt>Periods</dt><dd>Monthly · October 2026 open</dd></div>
+            <div><dt>First year</dt><dd>1 Oct – 31 Dec 2026</dd></div>
+          </dl>
+          <p class="fy-small fy-muted">The base currency can’t change once anything is posted.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="es-coa">
+        <div class="fy-card__head"><h2 class="fy-h3" id="es-coa">3 · Chart of accounts</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>All mapped</span><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/entities/new/3">Edit</a></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Starts from the group chart: 112 accounts, each mapped to a group account for consolidation. 3 accounts are new for Malaysia:</p>
+          <table class="fy-table fy-table--compact fy-table--cards">
+            <thead><tr><th scope="col">Cognizhi MY account</th><th scope="col">Maps to the group</th><th scope="col">Mapped by</th></tr></thead>
+            <tbody>
+              <tr><td data-card="title"><span class="fy-mono fy-muted">2210</span> SST payable</td><td data-card="meta"><span class="fy-only-compact">To </span><span class="fy-mono fy-muted">2200</span> GST control</td><td data-card="hide">Mei Lin Tan</td></tr>
+              <tr><td data-card="title"><span class="fy-mono fy-muted">2115</span> EPF payable</td><td data-card="meta"><span class="fy-only-compact">To </span><span class="fy-mono fy-muted">2110</span> CPF &amp; SDL payable</td><td data-card="hide">Mei Lin Tan</td></tr>
+              <tr><td data-card="title"><span class="fy-mono fy-muted">2116</span> SOCSO and EIS payable</td><td data-card="meta"><span class="fy-only-compact">To </span><span class="fy-mono fy-muted">2110</span> CPF &amp; SDL payable</td><td data-card="hide">Mei Lin Tan</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="es-tax">
+        <div class="fy-card__head"><h2 class="fy-h3" id="es-tax">4 · Tax packs</h2><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>None for Malaysia yet</span><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/entities/new/4">Edit</a></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <ul class="fy-list" style="border: 1px solid var(--border); border-radius: var(--radius-l)">
+            <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="receipt-text" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Sales and service tax (SST)</span><span class="fy-list__meta">No published pack</span></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Missing</span></li>
+            <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="wallet" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Payroll: EPF, SOCSO, EIS, PCB</span><span class="fy-list__meta">No published pack</span></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Missing</span></li>
+            <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="landmark" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Corporate income tax</span><span class="fy-list__meta">No published pack</span></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Missing</span></li>
+          </ul>
+          <div class="fy-banner fy-banner--warning">
+            <i data-icon="triangle-alert" class="fy-i--20"></i>
+            <div class="fy-banner__text"><span class="fy-small">You chose to create the entity now. Until Malaysian packs are published with their official sources, Cognizhi MY can’t post tax or payroll lines; invoices and bills without tax still work.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="es-ic">
+        <div class="fy-card__head"><h2 class="fy-h3" id="es-ic">5 · Intercompany</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/entities/new/5">Edit</a></div>
+        <div class="fy-card__body">
+          <dl class="fy-dl">
+            <div><dt>In Cognizhi Pte Ltd</dt><dd><span class="fy-mono fy-muted">1350</span> Due from Cognizhi MY</dd></div>
+            <div><dt>In Cognizhi MY</dt><dd><span class="fy-mono fy-muted">2350</span> Due to Cognizhi Pte Ltd</dd></div>
+            <div><dt>Recharges</dt><dd>Monthly management fee, invoiced in SGD</dd></div>
+            <div><dt>On consolidation</dt><dd>Intercompany balances and recharges are eliminated</dd></div>
+            <div style="grid-column: 1 / -1"><dt>Translation to SGD</dt><dd>Assets and liabilities at the closing rate; income and expenses at the month’s average rate; the difference to the translation reserve</dd></div>
+          </dl>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Create">
+      <section class="fy-card" aria-labelledby="es-create">
+        <div class="fy-card__head"><h2 class="fy-h3" id="es-create">6 · Review and create</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Adding an entity changes the group’s books, so it needs two people: you request it, another Owner or Administrator approves.</p>
+          <ul class="fy-stack fy-stack--2">
+            <li class="fy-row"><span class="fy-avatar fy-avatar--sm" aria-hidden="true">ML</span><span class="fy-grow fy-small">Mei Lin Tan requests</span><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></li>
+            <li class="fy-row"><span class="fy-avatar fy-avatar--sm" aria-hidden="true">AR</span><span class="fy-grow fy-small">Arjun Rao approves</span><span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Not yet asked</span></li>
+          </ul>
+          <div class="fy-field">
+            <label class="fy-label" for="es-reason">Reason <span class="fy-req" aria-hidden="true">*</span></label>
+            <textarea class="fy-textarea" id="es-reason" placeholder="Why the group needs this entity"></textarea>
+          </div>
+          <p class="fy-small fy-muted">Nothing is created until Arjun approves. The approval is recorded in the audit trail with both names.</p>
+        </div>
+        <div class="fy-card__foot fy-from-medium">
+          <button class="fy-btn fy-btn--ghost" type="button">Back</button>
+          <span class="fy-grow"></span>
+          <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Request approval</button>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--3" aria-labelledby="es-group">
+        <h2 class="fy-h3" id="es-group">The group after this</h2>
+        <ul class="fy-stack fy-stack--2 fy-small">
+          <li class="fy-row"><i data-icon="building" class="fy-muted"></i><span class="fy-grow">Cognizhi Pte Ltd</span><span class="fy-muted">SGD · parent</span></li>
+          <li class="fy-row"><i data-icon="building" class="fy-muted"></i><span class="fy-grow">Cognizhi Sdn. Bhd.</span><span class="fy-muted">MYR · 100%</span></li>
+        </ul>
+        <p class="fy-small fy-muted">Consolidated reports are in SGD and show each entity’s figures before eliminations.</p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Request approval</button>
+  </div>
+</div>

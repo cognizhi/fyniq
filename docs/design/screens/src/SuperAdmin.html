@@ -1,0 +1,173 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Super admin", "mode": "expert", "heights": {"compact": 3520, "medium": 2760, "expanded": 1720}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><span>Installation</span></nav>
+      <h1 class="fy-h1">Super admin console</h1>
+      <p class="fy-secondary">fyniq.cognizhi.com · <span class="fy-mono">v0.4.0 (56438e8)</span> · Google Cloud asia-southeast1</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#admin/audit"><i data-icon="scroll-text"></i>Installation audit log</a>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="user-plus"></i>Add a second Super admin</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">You are the only Super admin</span>
+      <span class="fy-small fy-secondary">If you lose access, only the recovery procedure held with the deployment can restore it. Arjun Rao was invited on 10 Oct and has not accepted yet. Once he does, every Super admin change also needs the other Super admin’s approval.</span>
+    </div>
+    <button class="fy-btn fy-btn--secondary fy-btn--sm fy-from-medium" type="button">Resend invitation</button>
+  </div>
+
+  <div class="fy-banner fy-banner--critical" role="alert">
+    <i data-icon="server-crash" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Worker is degraded since 08:58</span>
+      <span class="fy-small fy-secondary">The outbox backlog is 412 events and the oldest has waited 6 minutes (target under 1 minute). Emails, webhooks and chat messages are delayed; nothing is lost. <a href="#admin/health/worker">See the worker</a></span>
+    </div>
+  </div>
+
+  <section aria-labelledby="health-title" class="fy-section">
+    <div class="fy-section__head"><h2 class="fy-h2" id="health-title">Platform health</h2><span class="fy-small fy-muted">Updated 09:14:05</span></div>
+    <div class="fy-grid fy-grid--tiles">
+      <a class="fy-tile" href="#admin/health">
+        <span class="fy-tile__label"><i data-icon="server"></i>Services</span>
+        <span class="fy-tile__value fy-num">6<small>of 7 healthy</small></span>
+        <span class="fy-tile__meta"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Worker degraded</span></span>
+      </a>
+      <a class="fy-tile" href="#admin/health/scheduler">
+        <span class="fy-tile__label"><i data-icon="timer"></i>Scheduler tick<button class="fy-info" type="button" aria-label="About the scheduler tick" aria-expanded="false"><i data-icon="info"></i></button></span>
+        <span class="fy-tile__value fy-num">09:14:00</span>
+        <span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On time</span>Every minute · none missed today</span>
+      </a>
+      <a class="fy-tile" href="#admin/health/outbox">
+        <span class="fy-tile__label"><i data-icon="send"></i>Outbox backlog</span>
+        <span class="fy-tile__value fy-num">412<small>events</small></span>
+        <span class="fy-tile__meta"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Oldest 6 min</span>Target under 1 min</span>
+      </a>
+      <a class="fy-tile" href="#admin/audit/anchors">
+        <span class="fy-tile__label"><i data-icon="anchor"></i>Last audit anchor<button class="fy-info" type="button" aria-label="About audit anchors" aria-expanded="false"><i data-icon="info"></i></button></span>
+        <span class="fy-tile__value fy-num">09:00</span>
+        <span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Chain verified</span><span class="fy-mono">a3f9…c1d2</span></span>
+      </a>
+    </div>
+  </section>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="svc-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="svc-title">Services</h2><span class="fy-small fy-muted fy-from-medium">p95 over the last 15 minutes</span></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Service</th><th scope="col">Status</th><th scope="col" class="fy-num">p95</th><th scope="col">Version</th><th scope="col" class="fy-from-expanded">Deployed</th></tr></thead>
+          <tbody class="fy-stagger">
+            <tr><td data-card="title">Worker <span class="fy-mono fy-muted fy-expert-only" style="white-space: nowrap">worker</span></td><td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Degraded</span></td><td class="fy-num" data-card="hide">2.4 s</td><td data-card="meta"><span class="fy-mono">v0.4.0</span></td><td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">12 Oct, 18:20</td></tr>
+            <tr><td data-card="title">API <span class="fy-mono fy-muted fy-expert-only" style="white-space: nowrap">api</span></td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Healthy</span></td><td class="fy-num" data-card="hide">184 ms</td><td data-card="meta"><span class="fy-mono">v0.4.0</span></td><td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">12 Oct, 18:20</td></tr>
+            <tr><td data-card="title">Web app <span class="fy-mono fy-muted fy-expert-only" style="white-space: nowrap">web</span></td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Healthy</span></td><td class="fy-num" data-card="hide">96 ms</td><td data-card="meta"><span class="fy-mono">v0.4.0</span></td><td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">12 Oct, 18:20</td></tr>
+            <tr><td data-card="title">MCP server <span class="fy-mono fy-muted fy-expert-only" style="white-space: nowrap">mcp</span></td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Healthy</span></td><td class="fy-num" data-card="hide">212 ms</td><td data-card="meta"><span class="fy-mono">v0.4.0</span></td><td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">12 Oct, 18:20</td></tr>
+            <tr><td data-card="title">AI orchestrator <span class="fy-mono fy-muted fy-expert-only" style="white-space: nowrap">ai-orchestrator</span></td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Healthy</span></td><td class="fy-num" data-card="hide">3.1 s</td><td data-card="meta"><span class="fy-mono">v0.4.0</span></td><td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">12 Oct, 18:20</td></tr>
+            <tr><td data-card="title">Sign-in (OAuth server) <span class="fy-mono fy-muted fy-expert-only" style="white-space: nowrap">hydra</span></td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Healthy</span></td><td class="fy-num" data-card="hide">88 ms</td><td data-card="meta"><span class="fy-mono">v0.4.0</span></td><td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">12 Oct, 18:20</td></tr>
+            <tr><td data-card="title">Database <span class="fy-mono fy-muted fy-expert-only" style="white-space: nowrap">postgres-18</span></td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Healthy</span></td><td class="fy-num" data-card="hide">6 ms</td><td data-card="meta"><span class="fy-mono">18.0</span> · backup 03:00</td><td data-card="hide" class="fy-from-expanded">Restore tested 6 Oct</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="fy-card" aria-labelledby="mail-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="mail-title">Installation email senders</h2>
+          <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/integrations/zeptomail">Configure<i data-icon="arrow-right"></i></a>
+        </div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--brand"><i data-icon="mail" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Zoho ZeptoMail · primary</span><span class="fy-list__meta">Sends sign-in, security and invitation emails for the installation</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="mail" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Resend · failover</span><span class="fy-list__meta">Used only for sends ZeptoMail is known not to have accepted</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="server" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">SMTP</span><span class="fy-list__meta">Mailpit in local mode only; never reaches staging or production</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="circle-pause"></i>Off</span>
+          </li>
+        </ul>
+        <div class="fy-card__body fy-stack fy-stack--3" style="border-top: 1px solid var(--border)">
+          <div class="fy-row fy-row--between fy-row--wrap"><span class="fy-strong">Sending domain <span class="fy-mono">cognizhi.com</span></span><span class="fy-small fy-muted">Checked daily · last 06:00 today</span></div>
+          <div class="fy-chipset">
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>SPF pass</span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>DKIM pass</span>
+            <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>DMARC policy is none</span>
+          </div>
+          <p class="fy-small fy-secondary">DMARC only reports today. Set the DNS record to <span class="fy-mono">p=quarantine</span> so mail that fails SPF and DKIM is not delivered as Cognizhi. <a href="#help/email-domain">How to change it</a></p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="org-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="org-title">Organisations</h2><span class="fy-tag fy-tag--expert">P3</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-org__logo" aria-hidden="true">C</span>
+            <span class="fy-list__main"><span class="fy-list__title">Cognizhi Pte Ltd</span><span class="fy-list__meta">UEN 202412345K · 9 members · you are an Owner</span></span>
+            <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#home">Open</a>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-org__logo" aria-hidden="true">S</span>
+            <span class="fy-list__main"><span class="fy-list__title">Cognizhi sandbox (sample company)</span><span class="fy-list__meta">For integration testing · no real data</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="flask-conical"></i>Sandbox</span>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><i data-icon="lock" class="fy-muted"></i><span class="fy-small fy-secondary">A Super admin never reads an organisation’s books without being a member of it.</span></div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Super admins and announcements">
+      <section class="fy-card" aria-labelledby="sa-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="sa-title">Super admins</h2><span class="fy-badge fy-badge--quiet">1</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-avatar">ML</span>
+            <span class="fy-list__main"><span class="fy-list__title">Mei Lin Tan (you)</span><span class="fy-list__meta">Since 2 Oct 2026, first-run setup · passkey and TOTP</span></span>
+            <span class="fy-chip fy-chip--neutral" title="The last Super admin can only be replaced"><i data-icon="lock"></i>Last one</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-avatar">AR</span>
+            <span class="fy-list__main"><span class="fy-list__title">Arjun Rao</span><span class="fy-list__meta">Invited 10 Oct · invitation expires 17 Oct</span></span>
+            <span class="fy-chip fy-chip--warning"><i data-icon="hourglass"></i>Pending</span>
+          </li>
+        </ul>
+        <div class="fy-card__body fy-stack fy-stack--3" style="border-top: 1px solid var(--border)">
+          <p class="fy-small fy-secondary">You can’t remove the last Super admin, only replace them: add the new one first. Every change here needs your passkey.</p>
+          <div class="fy-plain"><i data-icon="users" class="fy-muted"></i><span class="fy-small"><span class="fy-strong">Changes waiting for a second Super admin: none.</span> Two-person approval starts when Arjun accepts; until then, changes take effect after your step-up and are audited.</span></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ann-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ann-title">Announcements to everyone</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/announcements">Manage</a></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-banner fy-banner--info">
+            <i data-icon="megaphone" class="fy-i--20"></i>
+            <div class="fy-banner__text"><span class="fy-strong fy-small">Maintenance on Sat 17 Oct, 02:00–03:00 SGT</span><span class="fy-small fy-secondary">Fyniq is read-only during the upgrade to v0.5.0.</span></div>
+          </div>
+          <div class="fy-row fy-row--between fy-row--wrap fy-small"><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>Scheduled</span><span class="fy-muted">Shows from 15 Oct · everyone · all organisations</span></div>
+          <div class="fy-divider"></div>
+          <div class="fy-row fy-row--between fy-small"><span class="fy-secondary">Live now</span><span class="fy-muted">None</span></div>
+          <div class="fy-row fy-row--between fy-small"><span class="fy-secondary">Ended in the last 30 days</span><a href="#settings/announcements">2</a></div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="bg-title">
+        <h2 class="fy-h3" id="bg-title">If you can’t sign in</h2>
+        <p class="fy-small fy-secondary">With only one Super admin, a lost authenticator means using the deployment-held recovery procedure in the runbook. Each use is audited and notifies every Super admin and Owner.</p>
+        <a class="fy-small" href="#help/super-admin-recovery">Read the recovery procedure</a>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="user-plus"></i>Add a second Super admin</button>
+  </div>
+</div>

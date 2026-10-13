@@ -1,0 +1,304 @@
+<!-- fyniq-screen {"nav": "payroll", "title": "October pay run", "mode": "expert", "heights": {"compact": 4850, "medium": 3600, "expanded": 2400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#payroll">Payroll</a><i data-icon="chevron-right"></i><span>October 2026</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">October 2026 pay run</h1><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></div>
+      <p class="fy-secondary"><span class="fy-mono">PR-2026-10</span> · pay day Wednesday 28 Oct · prepared by Mei Lin Tan (you) · calculated 09:08</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <button class="fy-btn fy-btn--secondary fy-from-medium" type="button"><i data-icon="refresh-cw"></i>Recalculate</button>
+      <button class="fy-btn fy-btn--primary fy-from-medium" type="button"><i data-icon="send"></i>Submit for approval</button>
+      <button class="fy-iconbtn" type="button" aria-label="More actions"><i data-icon="ellipsis" class="fy-i--20"></i></button>
+    </div>
+  </div>
+
+  <ol class="fy-steps" aria-label="Pay run progress">
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">1</span>Prepare</li>
+    <li class="fy-step"><span class="fy-step__n">2</span>Approve · Arjun Rao</li>
+    <li class="fy-step"><span class="fy-step__n">3</span>Post</li>
+    <li class="fy-step"><span class="fy-step__n">4</span>Pay · 28 Oct</li>
+  </ol>
+
+  <div class="fy-banner fy-banner--warning" role="note">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Chen Yu's pay is held for tax clearance</span>
+      <span class="fy-small fy-secondary">He resigned on 1 Oct and leaves on 30 Nov. IR21 was filed on 9 Oct; his S$9,000.00 stays out of the salary payment until IRAS tells us to release it. CPF and SDL are still calculated.</span>
+    </div>
+    <a class="fy-btn fy-btn--ghost fy-btn--sm fy-from-medium" href="#payroll/ir21/chen-yu">IR21 task</a>
+  </div>
+  <div class="fy-banner fy-banner--info fy-banner--strip" role="note" style="border-radius: var(--radius-l); border-width: 1px">
+    <i data-icon="info" class="fy-i--20"></i>
+    <div class="fy-banner__text"><span class="fy-small">New CPF rates for 2027 (<span class="fy-mono">sg-cpf@2027.1</span>) are waiting for a second approval. They start on 1 Jan 2027 and do not change this run.</span></div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="sum-title">
+    <h2 class="fy-sr" id="sum-title">Totals</h2>
+    <div class="fy-card__body">
+      <div class="fy-grid fy-grid--4" style="gap: var(--space-4) var(--space-6)">
+        <div class="fy-stack fy-stack--2"><span class="fy-tile__label">Gross pay</span><span class="fy-num fy-strong" style="font-size: var(--fs-xl)">47,600.00</span><span class="fy-small fy-muted">6 employees</span></div>
+        <div class="fy-stack fy-stack--2"><span class="fy-tile__label">CPF, employee and employer</span><span class="fy-num fy-strong" style="font-size: var(--fs-xl)">12,912.00</span><span class="fy-small fy-muted">6,920.00 + 5,992.00</span></div>
+        <div class="fy-stack fy-stack--2"><span class="fy-tile__label">SDL and self-help groups<button class="fy-info" type="button" aria-label="About SDL rounding" aria-expanded="false"><i data-icon="info"></i></button></span><span class="fy-num fy-strong" style="font-size: var(--fs-xl)">74.25</span><span class="fy-small fy-muted">SDL 66.25, payable S$66 · SHG 8.00</span></div>
+        <div class="fy-stack fy-stack--2"><span class="fy-tile__label">Net pay</span><span class="fy-num fy-strong" style="font-size: var(--fs-xl)">40,672.00</span><span class="fy-small fy-muted">31,672.00 to pay · 9,000.00 held</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fy-card" aria-labelledby="grid-title">
+    <div class="fy-card__head" style="flex-wrap: wrap">
+      <h2 class="fy-h3" id="grid-title">Employees</h2>
+      <span class="fy-small fy-muted fy-from-medium">Amounts in SGD · cost = gross + employer CPF + SDL</span>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-pressed="false"><i data-icon="eye"></i>Show breakdown</button>
+    </div>
+    <div style="overflow-x: auto">
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr>
+            <th scope="col">Employee</th>
+            <th scope="col" class="fy-num">Gross</th>
+            <th scope="col" class="fy-num fy-only-medium">CPF</th>
+            <th scope="col" class="fy-num fy-from-expanded">Employee CPF</th>
+            <th scope="col" class="fy-num fy-from-expanded">Employer CPF</th>
+            <th scope="col" class="fy-num fy-from-expanded">SDL</th>
+            <th scope="col" class="fy-num fy-from-expanded">SHG</th>
+            <th scope="col" class="fy-num">Net pay</th>
+            <th scope="col" class="fy-num fy-from-expanded">Cost</th>
+            <th scope="col">Checks</th>
+          </tr>
+        </thead>
+        <tbody class="fy-stagger">
+          <tr>
+            <td data-card="title" style="padding-block: 6px"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Daniel Lim</span><span class="fy-small fy-muted">Citizen · 55 and below</span></span></td>
+            <td data-card="hide" class="fy-num">7,600.00</td>
+            <td data-card="hide" class="fy-num fy-only-medium">2,812.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">1,520.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">1,292.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">11.25</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">3.00 <span class="fy-muted fy-small">CDAC</span></td>
+            <td data-card="amount" class="fy-num">6,077.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">8,903.25</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+            <td data-card="meta" class="fy-only-compact">Gross 7,600.00 · CPF 1,520.00 + 1,292.00 · SDL 11.25 · CDAC 3.00</td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-block: 6px"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Priya Nair</span><span class="fy-small fy-muted">Citizen · 55 and below</span></span></td>
+            <td data-card="hide" class="fy-num">7,000.00</td>
+            <td data-card="hide" class="fy-num fy-only-medium">2,590.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">1,400.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">1,190.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">11.25</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">5.00 <span class="fy-muted fy-small">SINDA</span></td>
+            <td data-card="amount" class="fy-num">5,595.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">8,201.25</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+            <td data-card="meta" class="fy-only-compact">Gross 7,000.00 · CPF 1,400.00 + 1,190.00 · SDL 11.25 · SINDA 5.00</td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-block: 6px"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Wei Jie Ong</span><span class="fy-small fy-muted">Citizen · bonus month</span></span></td>
+            <td data-card="hide" class="fy-num">15,000.00</td>
+            <td data-card="hide" class="fy-num fy-only-medium">4,810.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">2,600.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">2,210.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">11.25</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.00 <span class="fy-muted fy-small">opted out</span></td>
+            <td data-card="amount" class="fy-num">12,400.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">17,221.25</td>
+            <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="info"></i>Capped</span></td>
+            <td data-card="meta" class="fy-only-compact">Gross 15,000.00 · CPF on 8,000.00 ordinary + 5,000.00 bonus: 2,600.00 + 2,210.00 · SDL 11.25</td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-block: 6px"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Sarah Koh</span><span class="fy-small fy-muted">Citizen · above 55 to 60</span></span></td>
+            <td data-card="hide" class="fy-num">5,000.00</td>
+            <td data-card="hide" class="fy-num fy-only-medium">1,700.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">900.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">800.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">11.25</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.00 <span class="fy-muted fy-small">opted out</span></td>
+            <td data-card="amount" class="fy-num">4,100.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">5,811.25</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+            <td data-card="meta" class="fy-only-compact">Gross 5,000.00 · CPF 900.00 + 800.00 · SDL 11.25</td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-block: 6px"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Hafiz Rahman</span><span class="fy-small fy-muted">SPR · above 60 to 65</span></span></td>
+            <td data-card="hide" class="fy-num">4,000.00</td>
+            <td data-card="hide" class="fy-num fy-only-medium">1,000.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">500.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">500.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">10.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.00 <span class="fy-muted fy-small">opted out</span></td>
+            <td data-card="amount" class="fy-num">3,500.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">4,510.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+            <td data-card="meta" class="fy-only-compact">Gross 4,000.00 · CPF 500.00 + 500.00 · SDL 10.00</td>
+          </tr>
+          <tr>
+            <td data-card="title" style="padding-block: 6px"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Chen Yu</span><span class="fy-small fy-muted">EP holder · no CPF</span></span></td>
+            <td data-card="hide" class="fy-num">9,000.00</td>
+            <td data-card="hide" class="fy-num fy-only-medium">0.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">0.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">11.25</td>
+            <td data-card="hide" class="fy-num fy-from-expanded fy-muted">–</td>
+            <td data-card="amount" class="fy-num">9,000.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">9,011.25</td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>IR21 hold</span></td>
+            <td data-card="meta" class="fy-only-compact">Gross 9,000.00 · No CPF · SDL 11.25 · net pay held until IRAS releases it</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td data-card="title">Total</td>
+            <td data-card="hide" class="fy-num">47,600.00</td>
+            <td data-card="hide" class="fy-num fy-only-medium">12,912.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">6,920.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">5,992.00</td>
+            <td class="fy-num fy-from-expanded">66.25</td>
+            <td class="fy-num fy-from-expanded">8.00</td>
+            <td data-card="amount" class="fy-num">40,672.00</td>
+            <td data-card="hide" class="fy-num fy-from-expanded">53,658.25</td>
+            <td data-card="hide"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="fy-card__foot">
+      <i data-icon="info" class="fy-muted"></i>
+      <span class="fy-small fy-secondary fy-grow">Wei Jie's ordinary wage is capped at S$8,000 for CPF; his bonus counts as an additional wage and leaves S$1,000.00 of this year's ceiling. CPF is worked out once per employee per month, across every run.</span>
+    </div>
+  </section>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="post-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="post-title">What this run will post</h2>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Balanced</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-basic-only fy-small">Salary costs of S$53,658.25 by department. The company will owe S$40,672.00 in net pay to employees and S$12,986.25 to the CPF Board.</p>
+          <div class="fy-tablewrap fy-expert-only">
+            <table class="fy-table fy-table--compact fy-ledger">
+              <thead><tr><th scope="col">Account</th><th scope="col">Debit</th><th scope="col">Credit</th></tr></thead>
+              <tbody>
+                <tr><td><span class="fy-acct">6010</span>Salaries · Engineering</td><td class="fy-num">31,600.00</td><td></td></tr>
+                <tr><td><span class="fy-acct">6010</span>Salaries · Customer success <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>2 people</span></td><td class="fy-num">11,000.00</td><td></td></tr>
+                <tr><td><span class="fy-acct">6010</span>Salaries · Operations <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 person</span></td><td class="fy-num">5,000.00</td><td></td></tr>
+                <tr><td><span class="fy-acct">6020</span>Employer CPF</td><td class="fy-num">5,992.00</td><td></td></tr>
+                <tr><td><span class="fy-acct">6030</span>SDL</td><td class="fy-num">66.25</td><td></td></tr>
+                <tr><td><span class="fy-acct">2100</span>Salaries payable</td><td></td><td class="fy-num">40,672.00</td></tr>
+                <tr><td><span class="fy-acct">2110</span>CPF &amp; SDL payable</td><td></td><td class="fy-num">12,986.25</td></tr>
+              </tbody>
+              <tfoot><tr><td>Total</td><td class="fy-num">53,658.25</td><td class="fy-num">53,658.25</td></tr></tfoot>
+            </table>
+          </div>
+          <p class="fy-small fy-muted">Lines carry departments, not people. Customer success and Operations have fewer than 3 people, so their lines show individual pay; combine them in Settings › Departments if that matters.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ded-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ded-title">Rules checked</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>All pass</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="scale" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Salary deductions</span><span class="fy-list__meta">None besides CPF and SHG · limit 50% of salary, advances 25% a month over at most 12 months</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="pencil-line" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Manual overrides</span><span class="fy-list__meta">None this month · an override needs a reason and an approval</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="id-card" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Foreign worker levy</span><span class="fy-list__meta">No S Pass or Work Permit holders, so no levy expense</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="dir-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="dir-title">Directors this month</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-avatar" aria-hidden="true">ML</span>
+            <span class="fy-list__main"><span class="fy-list__title">Mei Lin Tan</span><span class="fy-list__meta">No salary · signed decision of 30 Jun 2026</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>No salary</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-avatar" aria-hidden="true">AR</span>
+            <span class="fy-list__main"><span class="fy-list__title">Arjun Rao</span><span class="fy-list__meta">No salary since 1 Jul · deferred January to June</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>No salary</span>
+          </li>
+        </ul>
+        <div class="fy-card__body" style="padding-top: 0">
+          <div class="fy-plain">
+            <i data-icon="info" class="fy-i--20"></i>
+            <span class="fy-small">When a director defers salary, the net pay is not paid out: it becomes money the company owes them<span class="fy-expert-only"> on <span class="fy-mono">2120</span> Deferred remuneration</span>. The CPF, SDL and income tax on that salary are still due that month. Arjun deferred S$28,800.00 this way.</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Approval, gate and rates">
+      <section class="fy-card" aria-labelledby="apr-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="apr-title">Approval and payment</h2></div>
+        <div class="fy-card__body">
+          <div class="fy-timeline">
+            <div class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong">Prepared by Mei Lin Tan</span>
+              <span class="fy-small fy-muted">13 Oct, 09:08 · you</span>
+            </div>
+            <div class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="stamp"></i></span>
+              <span class="fy-strong">Approve: Arjun Rao</span>
+              <span class="fy-small fy-muted">With a passkey. You prepared this run, so you can't approve it or release its pay.</span>
+            </div>
+            <div class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="book-open"></i></span>
+              <span class="fy-strong">Post to the books</span>
+              <span class="fy-small fy-muted">On approval, dated 28 Oct</span>
+            </div>
+            <div class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="banknote"></i></span>
+              <span class="fy-strong">Pay S$31,672.00 from DBS</span>
+              <span class="fy-small fy-muted">Salary batch for 5 people on 28 Oct · S$9,000.00 held for Chen Yu</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="gate-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="gate-title">Ready to pay</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>5 of 5</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Payslips</span><span class="fy-list__meta">Expiring links within 3 working days</span></span></li>
+          <li class="fy-list__item"><span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Key employment terms</span><span class="fy-list__meta">No new starters</span></span></li>
+          <li class="fy-list__item"><span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">CPF submission</span><span class="fy-list__meta">CPF EZPay by 14 Nov</span></span></li>
+          <li class="fy-list__item"><span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">AIS</span><span class="fy-list__meta">Ho &amp; Partners LLP, by 1 Mar 2027</span></span></li>
+          <li class="fy-list__item"><span style="color: var(--status-good); display: inline-flex"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">IR21</span><span class="fy-list__meta">Chen Yu, filed 9 Oct</span></span></li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">If one is missing, approval stops with a red "can't approve" status.</span></div>
+      </section>
+
+      <section class="fy-card fy-expert-only" aria-labelledby="rate-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="rate-title">Rates used</h2><span class="fy-tag fy-tag--expert">Expert</span></div>
+        <div class="fy-card__body">
+          <dl class="fy-stack fy-stack--3">
+            <div><dt class="fy-small fy-muted">CPF pack</dt><dd><span class="fy-mono">sg-cpf@2026.1</span> · from 1 Jan 2026</dd></div>
+            <div><dt class="fy-small fy-muted">Ordinary wage ceiling</dt><dd>S$8,000 a month</dd></div>
+            <div><dt class="fy-small fy-muted">Additional wage ceiling</dt><dd>S$102,000 a year less ordinary wages</dd></div>
+            <div><dt class="fy-small fy-muted">Graduated rates</dt><dd>Wages S$50 to S$750 · none this month</dd></div>
+            <div><dt class="fy-small fy-muted">Age band</dt><dd>From the month after the birthday</dd></div>
+            <div><dt class="fy-small fy-muted">SDL</dt><dd>0.25%, at least S$2, at most S$11.25</dd></div>
+          </dl>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit for approval</button>
+  </div>
+</div>

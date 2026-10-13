@@ -1,0 +1,210 @@
+<!-- fyniq-screen {"nav": "payroll", "title": "Employees", "mode": "basic", "heights": {"compact": 2850, "medium": 1600, "expanded": 1400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#payroll">Payroll</a><i data-icon="chevron-right"></i><span>Employees</span></nav>
+      <h1 class="fy-h1">Employees</h1>
+      <p class="fy-secondary">6 on payroll, 1 of them leaving · 2 directors on no salary</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="upload"></i>Import</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="user-plus"></i>Add employee</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="note">
+    <i data-icon="shield-check" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Personal data is masked</span>
+      <span class="fy-small fy-secondary">NRIC/FIN shows its last four characters and salaries stay hidden until you reveal them. You see pay because you are an Owner; each reveal is recorded in the audit trail.</span>
+    </div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="emp-title">
+    <div class="fy-card__head" style="flex-wrap: wrap">
+      <h2 class="fy-h3" id="emp-title">Register</h2>
+      <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-pressed="false"><i data-icon="eye"></i>Reveal salaries</button>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm fy-from-medium" type="button"><i data-icon="download"></i>Export</button>
+    </div>
+    <div class="fy-card__body fy-stack fy-stack--3" style="padding-bottom: var(--space-3)">
+      <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+        <div class="fy-chipset" role="group" aria-label="Show">
+          <button class="fy-filter" type="button" aria-pressed="true">All 8</button>
+          <button class="fy-filter" type="button" aria-pressed="false">On payroll 6</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Leaving 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Directors 2</button>
+        </div>
+        <label class="fy-sr" for="emp-search">Search employees</label>
+        <input class="fy-input" id="emp-search" placeholder="Search name or job title" style="max-width: 260px; flex: 1 1 180px">
+      </div>
+    </div>
+    <div style="overflow-x: auto">
+    <table class="fy-table fy-table--cards">
+      <thead>
+        <tr>
+          <th scope="col">Employee</th>
+          <th scope="col">Department</th>
+          <th scope="col" class="fy-from-expanded">Residency</th>
+          <th scope="col" class="fy-from-expanded">CPF age band<button class="fy-info" type="button" aria-label="About the CPF age band" aria-expanded="false"><i data-icon="info"></i></button></th>
+          <th scope="col" class="fy-from-expanded">Employed</th>
+          <th scope="col" class="fy-from-expanded">NRIC/FIN</th>
+          <th scope="col" class="fy-num">Salary a month (SGD)</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody class="fy-stagger">
+        <tr>
+          <td data-card="title" style="padding-block: 6px"><a class="fy-row" href="#payroll/employees/daniel-lim" style="color: var(--text-primary)"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Daniel Lim</span><span class="fy-small fy-muted fy-from-medium">Senior software engineer</span></span></a></td>
+          <td data-card="meta" style="white-space: nowrap">Engineering</td>
+          <td data-card="hide" class="fy-from-expanded">Citizen</td>
+          <td data-card="hide" class="fy-from-expanded">55 and below</td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">from 3 Feb 2025</td>
+          <td data-card="hide" class="fy-from-expanded fy-mono">•••••412F</td>
+          <td data-card="amount" class="fy-num"><span aria-label="Salary hidden">••,•••.••</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+          <td data-card="meta" class="fy-only-compact">Senior software engineer · Citizen · 55 and below · since 3 Feb 2025</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-block: 6px"><a class="fy-row" href="#payroll/employees/wei-jie-ong" style="color: var(--text-primary)"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Wei Jie Ong</span><span class="fy-small fy-muted fy-from-medium">Engineering lead</span></span></a></td>
+          <td data-card="meta" style="white-space: nowrap">Engineering</td>
+          <td data-card="hide" class="fy-from-expanded">Citizen</td>
+          <td data-card="hide" class="fy-from-expanded">55 and below</td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">from 6 Jan 2025</td>
+          <td data-card="hide" class="fy-from-expanded fy-mono">•••••238J</td>
+          <td data-card="amount" class="fy-num"><span aria-label="Salary hidden">••,•••.••</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+          <td data-card="meta" class="fy-only-compact">Engineering lead · Citizen · 55 and below · since 6 Jan 2025</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-block: 6px"><a class="fy-row" href="#payroll/employees/chen-yu" style="color: var(--text-primary)"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Chen Yu</span><span class="fy-small fy-muted fy-from-medium">Data scientist</span></span></a></td>
+          <td data-card="meta" style="white-space: nowrap">Engineering</td>
+          <td data-card="hide" class="fy-from-expanded">Foreigner (EP)</td>
+          <td data-card="hide" class="fy-from-expanded fy-muted">No CPF</td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">2 Jun 2025 to 30 Nov 2026</td>
+          <td data-card="hide" class="fy-from-expanded fy-mono">•••••903N</td>
+          <td data-card="amount" class="fy-num"><span aria-label="Salary hidden">••,•••.••</span></td>
+          <td data-card="status"><span class="fy-stack" style="gap: 4px; align-items: flex-start"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Leaving</span><a class="fy-chip fy-chip--warning" href="#payroll/ir21/chen-yu"><i data-icon="triangle-alert"></i>IR21 hold</a></span></td>
+          <td data-card="meta" class="fy-only-compact">Data scientist · Employment Pass · IR21 filed 9 Oct; pay held until IRAS releases it</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-block: 6px"><a class="fy-row" href="#payroll/employees/priya-nair" style="color: var(--text-primary)"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Priya Nair</span><span class="fy-small fy-muted fy-from-medium">Head of customer success</span></span></a></td>
+          <td data-card="meta" style="white-space: nowrap">Customer success</td>
+          <td data-card="hide" class="fy-from-expanded">Citizen</td>
+          <td data-card="hide" class="fy-from-expanded">55 and below</td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">from 1 Sep 2025</td>
+          <td data-card="hide" class="fy-from-expanded fy-mono">•••••771C</td>
+          <td data-card="amount" class="fy-num"><span aria-label="Salary hidden">••,•••.••</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+          <td data-card="meta" class="fy-only-compact">Head of customer success · Citizen · 55 and below · since 1 Sep 2025</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-block: 6px"><a class="fy-row" href="#payroll/employees/hafiz-rahman" style="color: var(--text-primary)"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Hafiz Rahman</span><span class="fy-small fy-muted fy-from-medium">Customer support specialist</span></span></a></td>
+          <td data-card="meta" style="white-space: nowrap">Customer success</td>
+          <td data-card="hide" class="fy-from-expanded">SPR year 3+</td>
+          <td data-card="hide" class="fy-from-expanded">Above 60 to 65</td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">from 1 Sep 2026</td>
+          <td data-card="hide" class="fy-from-expanded fy-mono">•••••156K</td>
+          <td data-card="amount" class="fy-num"><span aria-label="Salary hidden">••,•••.••</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+          <td data-card="meta" class="fy-only-compact">Customer support specialist · SPR year 3+ · above 60 to 65 · since 1 Sep 2026</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-block: 6px"><a class="fy-row" href="#payroll/employees/sarah-koh" style="color: var(--text-primary)"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Sarah Koh</span><span class="fy-small fy-muted fy-from-medium">Office and people manager</span></span></a></td>
+          <td data-card="meta" style="white-space: nowrap">Operations</td>
+          <td data-card="hide" class="fy-from-expanded">Citizen</td>
+          <td data-card="hide" class="fy-from-expanded">Above 55 to 60</td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">from 7 Apr 2025</td>
+          <td data-card="hide" class="fy-from-expanded fy-mono">•••••684B</td>
+          <td data-card="amount" class="fy-num"><span aria-label="Salary hidden">••,•••.••</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td>
+          <td data-card="meta" class="fy-only-compact">Office and people manager · Citizen · above 55 to 60 · since 7 Apr 2025</td>
+        </tr>
+        <tr class="fy-group"><td colspan="8">Directors</td></tr>
+        <tr>
+          <td data-card="title" style="padding-block: 6px"><a class="fy-row" href="#payroll/employees/mei-lin-tan" style="color: var(--text-primary)"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Mei Lin Tan</span><span class="fy-small fy-muted fy-from-medium">CEO and director</span></span></a></td>
+          <td data-card="meta" style="white-space: nowrap">Management</td>
+          <td data-card="hide" class="fy-from-expanded">Citizen</td>
+          <td data-card="hide" class="fy-from-expanded">55 and below</td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">from 2 Dec 2024</td>
+          <td data-card="hide" class="fy-from-expanded fy-mono">•••••305G</td>
+          <td data-card="amount" class="fy-num fy-muted">0.00</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>No salary</span></td>
+          <td data-card="meta" class="fy-only-compact">CEO and director · no salary, signed decision of 30 Jun 2026</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-block: 6px"><a class="fy-row" href="#payroll/employees/arjun-rao" style="color: var(--text-primary)"><span class="fy-stack" style="gap: 0; white-space: nowrap"><span class="fy-strong">Arjun Rao</span><span class="fy-small fy-muted fy-from-medium">CTO and director</span></span></a></td>
+          <td data-card="meta" style="white-space: nowrap">Management</td>
+          <td data-card="hide" class="fy-from-expanded">Citizen</td>
+          <td data-card="hide" class="fy-from-expanded">55 and below</td>
+          <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">from 2 Dec 2024</td>
+          <td data-card="hide" class="fy-from-expanded fy-mono">•••••119A</td>
+          <td data-card="amount" class="fy-num fy-muted">0.00</td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>No salary</span></td>
+          <td data-card="meta" class="fy-only-compact">CTO and director · no salary since 1 Jul 2026 (deferred Jan–Jun)</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="fy-card__foot fy-small fy-muted">
+      <i data-icon="lock"></i><span>Salary columns and NRIC/FIN show only to Payroll administrators and Owners. Everyone else sees names, departments and dates.</span>
+    </div>
+  </section>
+
+  <div class="fy-grid fy-grid--2">
+    <section class="fy-card" aria-labelledby="dept-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="dept-title">Departments and where their pay posts</h2>
+        <button class="fy-info" type="button" aria-label="About department mapping" aria-expanded="false"><i data-icon="info"></i></button>
+      </div>
+      <ul class="fy-list">
+        <li class="fy-list__item">
+          <span class="fy-list__icon"><i data-icon="code" class="fy-i--20"></i></span>
+          <span class="fy-list__main"><span class="fy-list__title">Engineering</span><span class="fy-list__meta"><span class="fy-expert-only"><span class="fy-mono">6010</span> </span>Salaries · Engineering · Department: Engineering</span></span>
+          <span class="fy-small fy-muted">3 people</span>
+        </li>
+        <li class="fy-list__item">
+          <span class="fy-list__icon fy-list__icon--warning"><i data-icon="headset" class="fy-i--20"></i></span>
+          <span class="fy-list__main"><span class="fy-list__title">Customer success</span><span class="fy-list__meta"><span class="fy-expert-only"><span class="fy-mono">6010</span> </span>Salaries · Customer success · fewer than 3 people</span></span>
+          <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>2 people</span>
+        </li>
+        <li class="fy-list__item">
+          <span class="fy-list__icon fy-list__icon--warning"><i data-icon="building" class="fy-i--20"></i></span>
+          <span class="fy-list__main"><span class="fy-list__title">Operations</span><span class="fy-list__meta"><span class="fy-expert-only"><span class="fy-mono">6010</span> </span>Salaries · Operations · fewer than 3 people</span></span>
+          <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 person</span>
+        </li>
+      </ul>
+      <div class="fy-card__foot">
+        <p class="fy-small fy-secondary fy-grow">A department of fewer than 3 people shows each person's pay in the accounts. Combine them for posting, or keep them and note it in the data protection assessment.</p>
+        <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/departments">Combine</a>
+      </div>
+    </section>
+
+    <section class="fy-card" aria-labelledby="leave-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="leave-title">Leavers and tax clearance</h2>
+      </div>
+      <div class="fy-card__body fy-stack fy-stack--3">
+        <div class="fy-row fy-row--top">
+          <span class="fy-avatar" aria-hidden="true">CY</span>
+          <div class="fy-stack fy-grow" style="gap: 2px">
+            <span class="fy-strong">Chen Yu leaves on 30 Nov 2026</span>
+            <span class="fy-small fy-secondary">Resigned on 1 Oct. As an Employment Pass holder he needs tax clearance (IR21), filed by Ho &amp; Partners LLP on 9 Oct.</span>
+          </div>
+        </div>
+        <div class="fy-plain">
+          <i data-icon="hand" class="fy-i--20"></i>
+          <span class="fy-small">Everything due to him is held from 1 Oct, on every payment route: salary, claims and advances. It is released when IRAS tells us to release the money.</span>
+        </div>
+        <div class="fy-row fy-row--wrap">
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>IR21 filed 9 Oct</span>
+          <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Waiting for IRAS</span>
+          <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#payroll/ir21/chen-yu">Open IR21 task<i data-icon="arrow-right"></i></a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="user-plus"></i>Add employee</button>
+  </div>
+</div>

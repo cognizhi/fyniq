@@ -1,0 +1,169 @@
+<!-- fyniq-screen {"layout": "bare", "title": "Set up Fyniq", "mode": "basic", "heights": {"compact": 2800, "medium": 2350, "expanded": 2250}} -->
+<div class="fy-bare fy-enter" style="grid-template-columns: minmax(0, 1fr)">
+  <div class="fy-bare__card" style="max-width: 640px">
+    <div class="fy-row fy-row--between fy-row--wrap">
+      <span class="fy-brand"><span class="fy-brand__mark" aria-hidden="true">f</span><span class="fy-brand__word">Fyniq</span></span>
+      <span class="fy-small fy-muted fy-mono">fyniq.cognizhi.com · v0.4.0</span>
+    </div>
+
+    <div class="fy-stack fy-stack--2">
+      <span class="fy-eyebrow">New installation</span>
+      <h1 class="fy-h1">Set up Fyniq</h1>
+      <p class="fy-lead">The first person to finish becomes the Super admin of this installation and the Owner of its first organisation. Intelligence behind every number starts here.</p>
+    </div>
+
+    <div class="fy-stack fy-stack--2 fy-only-compact">
+      <div class="fy-row fy-row--between fy-small"><span class="fy-strong">Step 3 of 5: Company</span><span class="fy-muted">Next: second admin</span></div>
+      <div class="fy-progress" role="img" aria-label="Step 3 of 5"><span style="width: 60%"></span></div>
+    </div>
+    <ol class="fy-steps fy-from-medium" aria-label="Set-up steps">
+      <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Code</li>
+      <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>You</li>
+      <li class="fy-step" aria-current="step"><span class="fy-step__n">3</span>Company</li>
+      <li class="fy-step"><span class="fy-step__n">4</span>Second admin</li>
+      <li class="fy-step"><span class="fy-step__n">5</span>Finish</li>
+    </ol>
+
+    <div class="fy-stack fy-stagger">
+      <section class="fy-card" aria-labelledby="fr-s1">
+        <div class="fy-card__head">
+          <span class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span></span>
+          <h2 class="fy-h3" id="fr-s1">Setup code</h2>
+          <span class="fy-chip fy-chip--good fy-from-medium"><i data-icon="circle-check"></i>Accepted</span>
+        </div>
+        <div class="fy-card__body fy-form fy-form--2">
+          <div class="fy-field">
+            <label class="fy-label" for="fr-code">One-time setup code</label>
+            <input class="fy-input fy-mono" id="fr-code" value="FYNQ-7H2K-9XQD-4MRA" readonly="readonly" aria-describedby="fr-code-help">
+            <span class="fy-help" id="fr-code-help">Printed by <span class="fy-mono">make setup</span> on the server; in the cloud it is in Secret Manager.</span>
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="fr-fixed">Email fixed at deployment</label>
+            <input class="fy-input" id="fr-fixed" value="meilin@cognizhi.com" readonly="readonly" aria-describedby="fr-fixed-help">
+            <span class="fy-help fy-row" id="fr-fixed-help" style="gap: 4px"><i data-icon="lock"></i>Only this person can claim the installation.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="fr-s2">
+        <div class="fy-card__head">
+          <span class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span></span>
+          <h2 class="fy-h3" id="fr-s2">Your Super admin account</h2>
+          <span class="fy-chip fy-chip--good fy-from-medium"><i data-icon="circle-check"></i>Done</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row" style="gap: var(--space-3)">
+            <span class="fy-avatar">ML</span>
+            <div class="fy-stack fy-stack--2 fy-grow" style="gap: 0"><span class="fy-strong">Mei Lin Tan</span><span class="fy-small fy-muted">meilin@cognizhi.com · signed in with Google</span></div>
+          </div>
+          <div class="fy-chipset">
+            <span class="fy-chip fy-chip--good"><i data-icon="fingerprint-pattern"></i>Passkey: MacBook Pro</span>
+            <span class="fy-chip fy-chip--good"><i data-icon="key-round"></i>10 recovery codes saved</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="fr-s3" style="border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary)">
+        <div class="fy-card__head">
+          <span class="fy-step" aria-current="step"><span class="fy-step__n">3</span></span>
+          <h2 class="fy-h3" id="fr-s3">Your first organisation</h2>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <p class="fy-secondary">You become its Owner. You can change these later in Settings › Organisation.</p>
+          <div class="fy-form fy-form--2">
+            <div class="fy-field fy-field--full">
+              <label class="fy-label" for="fr-name">Company name <span class="fy-req" aria-hidden="true">*</span></label>
+              <input class="fy-input" id="fr-name" autocomplete="organization" value="Cognizhi Pte Ltd" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="fr-uen">UEN <span class="fy-req" aria-hidden="true">*</span><button class="fy-info" type="button" aria-label="About the UEN" aria-expanded="false"><i data-icon="info"></i></button></label>
+              <input class="fy-input fy-mono" id="fr-uen" value="202412345K" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="fr-ccy">Base currency</label>
+              <select class="fy-select" id="fr-ccy"><option>SGD, Singapore dollar</option><option>USD, US dollar</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="fr-fy">Financial year ends</label>
+              <select class="fy-select" id="fr-fy"><option>31 December</option><option>31 March</option><option>30 June</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="fr-gst">GST</label>
+              <select class="fy-select" id="fr-gst"><option>Registered from 1 Jan 2026</option><option>Not registered</option></select>
+              <span class="fy-help">GST no. 202412345K · quarterly returns</span>
+            </div>
+          </div>
+          <div class="fy-plain fy-small"><i data-icon="users"></i><span>Two founders run Cognizhi, so Fyniq starts in Founder mode: high-risk actions need the other founder’s approval.</span></div>
+          <div class="fy-actionbar fy-actionbar--editor">
+            <button class="fy-btn fy-btn--ghost" type="button">Back</button>
+            <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Create organisation<i data-icon="arrow-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="fr-s4">
+        <div class="fy-card__head">
+          <span class="fy-step"><span class="fy-step__n">4</span></span>
+          <h2 class="fy-h3" id="fr-s4">Add a second Super admin</h2>
+          <span class="fy-tag">Recommended</span>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <p class="fy-secondary">With two, nobody is locked out if one of you loses access, and installation-wide changes need both of you.</p>
+          <div class="fy-field">
+            <label class="fy-label" for="fr-second">Their email</label>
+            <input class="fy-input" id="fr-second" type="email" value="arjun@cognizhi.com" readonly="readonly">
+          </div>
+          <div class="fy-row fy-row--wrap">
+            <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="user-plus"></i>Invite Arjun Rao</button>
+            <button class="fy-btn fy-btn--ghost" type="button">Later</button>
+          </div>
+          <div class="fy-banner fy-banner--info">
+            <i data-icon="life-buoy" class="fy-i--20"></i>
+            <div class="fy-banner__text">
+              <span class="fy-strong">About break-glass</span>
+              <span class="fy-small fy-secondary">If the other founder can’t be reached, one of you can still release payments for bills and pay runs that were already approved, and pay IRAS and CPF, up to a set total. Break-glass never changes bank details, roles, sign-in methods or AI settings. Every use is recorded and reviewed afterwards.</span>
+            </div>
+          </div>
+          <p class="fy-help">If the last Super admin can’t sign in, only the recovery procedure held by whoever runs this deployment restores access, and every Owner is told.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="fr-s5">
+        <div class="fy-card__head">
+          <span class="fy-step"><span class="fy-step__n">5</span></span>
+          <h2 class="fy-h3" id="fr-s5">Finish</h2>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-banner fy-banner--warning">
+            <i data-icon="door-closed" class="fy-i--20"></i>
+            <div class="fy-banner__text">
+              <span class="fy-strong">This page closes for good</span>
+              <span class="fy-small fy-secondary">When you finish, the setup code is deleted and this page never opens again. Everything after this happens in the Super admin console.</span>
+            </div>
+          </div>
+          <button class="fy-btn fy-btn--secondary" type="button" aria-disabled="true" style="align-self: flex-start">Finish setup</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="fy-card fy-card--sunken fy-card--pad fy-stack" aria-labelledby="fr-other">
+      <h2 class="fy-h3" id="fr-other">What this page shows instead</h2>
+      <div class="fy-stack fy-stack--2">
+        <span class="fy-small fy-strong">A wrong setup code</span>
+        <div class="fy-field">
+          <label class="fy-label" for="fr-bad">One-time setup code</label>
+          <input class="fy-input fy-mono" id="fr-bad" value="FYNQ-7H2K-9XQO-4MRA" readonly="readonly" aria-invalid="true" aria-describedby="fr-bad-err">
+          <span class="fy-error" id="fr-bad-err"><i data-icon="circle-x"></i>That setup code isn’t right. Copy it again from the make setup output or Secret Manager. Each try is logged; after 5, setup pauses for 15 minutes.</span>
+        </div>
+      </div>
+      <div class="fy-divider"></div>
+      <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+        <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+        <div class="fy-stack fy-stack--2" style="gap: 2px">
+          <span class="fy-strong">After setup: “This installation is set up”</span>
+          <span class="fy-small fy-secondary">Set up on 2 Oct 2026. The setup page is closed. <a href="#sign-in">Sign in</a></span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

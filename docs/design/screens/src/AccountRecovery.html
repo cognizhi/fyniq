@@ -1,0 +1,125 @@
+<!-- fyniq-screen {"layout": "bare", "title": "Account recovery", "mode": "basic", "heights": {"compact": 2400, "medium": 2050, "expanded": 1950}} -->
+<div class="fy-bare fy-enter" style="grid-template-columns: minmax(0, 1fr)">
+  <div class="fy-bare__card" style="max-width: 600px">
+    <div class="fy-row fy-row--between fy-row--wrap">
+      <span class="fy-brand"><span class="fy-brand__mark" aria-hidden="true">f</span><span class="fy-brand__word">Fyniq</span></span>
+      <span class="fy-row fy-small fy-secondary"><span class="fy-org__logo" aria-hidden="true">C</span>Cognizhi Pte Ltd</span>
+    </div>
+
+    <div class="fy-stack fy-stack--2">
+      <span class="fy-eyebrow">Account recovery</span>
+      <h1 class="fy-h1">Get back into your account</h1>
+      <p class="fy-lead">Lost your phone or your passkey? You need two separate proofs that it’s you, so nobody else can take over your account.</p>
+    </div>
+
+    <div class="fy-plain fy-small"><i data-icon="shield-check"></i><span>Email alone, or a request to support, never recovers an account. Fyniq staff can’t do it for you either.</span></div>
+
+    <ol class="fy-steps" aria-label="Recovery steps">
+      <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Code</li>
+      <li class="fy-step" aria-current="step"><span class="fy-step__n">2</span>Confirm</li>
+      <li class="fy-step"><span class="fy-step__n">3</span><span class="fy-from-medium">Cooling-off</span></li>
+    </ol>
+
+    <div class="fy-stack fy-stagger">
+      <section class="fy-card" aria-labelledby="rc-p1">
+        <div class="fy-card__head">
+          <span class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span></span>
+          <h2 class="fy-h3" id="rc-p1">Proof 1: a recovery code</h2>
+          <span class="fy-chip fy-chip--good fy-from-medium"><i data-icon="circle-check"></i>Accepted</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-field">
+            <label class="fy-label" for="rc-email">Your email</label>
+            <input class="fy-input" id="rc-email" type="email" autocomplete="username" value="meilin@cognizhi.com" readonly="readonly">
+          </div>
+          <div class="fy-field">
+            <label class="fy-label" for="rc-code">Recovery code</label>
+            <input class="fy-input fy-mono" id="rc-code" autocomplete="off" value="R7QD-4KHN" readonly="readonly" aria-describedby="rc-code-help">
+            <span class="fy-help" id="rc-code-help">You can paste it. This code is now used up; 9 of your 10 codes are left.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="rc-p2" style="border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary)">
+        <div class="fy-card__head">
+          <span class="fy-step" aria-current="step"><span class="fy-step__n">2</span></span>
+          <h2 class="fy-h3" id="rc-p2">Proof 2: something only you or a colleague can confirm</h2>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-stack fy-stack--2" role="radiogroup" aria-label="Second proof">
+            <button class="fy-choice" type="button" role="radio" aria-checked="false">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong fy-row"><i data-icon="key-round"></i>An authenticator you still have</span><span class="fy-small fy-secondary">A passkey on another device, or your authenticator app.</span></span>
+            </button>
+            <button class="fy-choice" type="button" role="radio" aria-checked="true">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong fy-row"><i data-icon="user-check"></i>Your recovery contact confirms it’s you</span><span class="fy-small fy-secondary">Another Owner or Administrator, who confirms with their own passkey.</span></span>
+            </button>
+          </div>
+
+          <div class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--3" role="status">
+            <div class="fy-row" style="gap: var(--space-3)">
+              <span class="fy-avatar">AR</span>
+              <div class="fy-grow fy-stack fy-stack--2" style="gap: 0">
+                <span class="fy-strong">Arjun Rao</span>
+                <span class="fy-small fy-muted">Owner · your recovery contact</span>
+              </div>
+              <span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Waiting</span>
+            </div>
+            <p class="fy-small fy-secondary">We asked Arjun at 09:20 by email and in his Fyniq Inbox. He sees request <span class="fy-mono">RC-0417</span>, this device (Chrome on macOS) and its location (Singapore). He has until 14 Oct 2026, 09:20 to confirm.</p>
+            <p class="fy-small fy-secondary">Call or message Arjun so he knows the request is really from you.</p>
+            <div class="fy-row fy-row--wrap">
+              <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="send"></i>Remind Arjun</button>
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Cancel recovery</button>
+            </div>
+          </div>
+          <p class="fy-help">This page updates by itself when Arjun confirms. You can close it; we email you.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="rc-after">
+        <div class="fy-card__head">
+          <span class="fy-step"><span class="fy-step__n">3</span></span>
+          <h2 class="fy-h3" id="rc-after">When Arjun confirms</h2>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <ul class="fy-stack fy-stack--3">
+            <li class="fy-row fy-row--top"><span class="fy-list__icon"><i data-icon="log-out" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong">Signed out everywhere</span><span class="fy-small fy-secondary">Every session and token ends, including connected apps such as Claude Desktop. You sign in again here.</span></span></li>
+            <li class="fy-row fy-row--top"><span class="fy-list__icon"><i data-icon="bell-ring" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong">Everyone who should know is told</span><span class="fy-small fy-secondary">You, by every channel, and every Owner of Cognizhi Pte Ltd. The recovery is recorded and goes into the weekly review.</span></span></li>
+            <li class="fy-row fy-row--top"><span class="fy-list__icon"><i data-icon="fingerprint-pattern" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong">New sign-in methods</span><span class="fy-small fy-secondary">You add a new passkey and get a fresh set of recovery codes. Your old ones stop working.</span></span></li>
+          </ul>
+
+          <div class="fy-banner fy-banner--warning">
+            <i data-icon="lock" class="fy-i--20"></i>
+            <div class="fy-banner__text">
+              <span class="fy-strong">Then a 24-hour cooling-off</span>
+              <span class="fy-small fy-secondary">You can read and record as usual. Until it ends you can’t:</span>
+              <ul class="fy-small fy-secondary" style="list-style: disc; padding-left: 18px; margin-top: 4px">
+                <li>approve anything</li>
+                <li>release payments</li>
+                <li>add or change a payee’s bank details</li>
+                <li>change roles or sign-in methods</li>
+                <li>use break-glass</li>
+              </ul>
+            </div>
+          </div>
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between fy-small"><span class="fy-secondary">Cooling-off shown on your Home page while active</span><span class="fy-num fy-muted">23 h 40 min left</span></div>
+            <div class="fy-progress fy-progress--warning" role="img" aria-label="Example: 20 minutes of 24 hours passed"><span style="width: 2%"></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--flat fy-card--pad fy-stack fy-stack--3" aria-labelledby="rc-fail">
+        <div class="fy-row" style="gap: var(--space-3)">
+          <span class="fy-list__icon fy-list__icon--critical"><i data-icon="circle-x" class="fy-i--20"></i></span>
+          <h2 class="fy-h3" id="rc-fail">If recovery fails</h2>
+        </div>
+        <p class="fy-small fy-secondary">If Arjun declines, or doesn’t answer by 14 Oct, 09:20, this request ends and your account stays locked. Nothing else changes. Start again with another recovery code, or choose a different recovery contact.</p>
+        <p class="fy-small fy-secondary">After 5 wrong recovery codes, recovery pauses for an hour and every Owner is told.</p>
+      </section>
+    </div>
+
+    <p class="fy-small fy-muted" style="text-align: center"><a href="#sign-in">Back to sign in</a></p>
+  </div>
+</div>

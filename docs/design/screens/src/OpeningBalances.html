@@ -1,0 +1,60 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Opening balances", "mode": "expert", "heights": {"compact": 1900, "medium": 1450, "expanded": 1300}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><span>Opening balances</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">Opening balances at 1 Jan 2026</h1><span class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Posted · locked</span></div>
+      <p class="fy-secondary">Brought over from the Zoho Sheet workbook on 8 Jan 2026 · <span class="fy-mono">JNL-0001</span></p>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>A change is waiting for a second approver</strong><span class="fy-small">Grace Ho found a December invoice missing from receivables (INV-0104, S$440.00). Changing posted opening balances is high-risk: Mei Lin Tan and Arjun Rao must both approve.</span></div>
+    <div class="fy-banner__action"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#approvals/ob-change-2">Review the change</a></div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="ob-accts">
+    <div class="fy-card__head" style="flex-wrap: wrap">
+      <h2 class="fy-h3" id="ob-accts">Accounts</h2>
+      <span class="fy-small fy-muted fy-from-medium">Paste from a spreadsheet is available while the balances are a draft</span>
+    </div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-table--compact fy-ledger">
+        <thead><tr><th scope="col">Account</th><th scope="col" style="text-align: right">Debit</th><th scope="col" style="text-align: right">Credit</th></tr></thead>
+        <tbody class="fy-stagger">
+          <tr><td><span class="fy-acct">1010</span>DBS Business Multi-Currency</td><td class="fy-num">95,521.41</td><td></td></tr>
+          <tr><td><span class="fy-acct">1020</span>OCBC Business Growth</td><td class="fy-num">32,000.00</td><td></td></tr>
+          <tr aria-selected="true"><td><span class="fy-acct">1100</span>Accounts receivable <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Change: 21,340.00</span></td><td class="fy-num"><a href="#accounting/opening/open-items?account=1100">20,900.00</a></td><td></td></tr>
+          <tr><td><span class="fy-acct">1510</span>Computer equipment</td><td class="fy-num">5,560.00</td><td></td></tr>
+          <tr><td><span class="fy-acct">1590</span>Accumulated depreciation</td><td></td><td class="fy-num">1,850.00</td></tr>
+          <tr><td><span class="fy-acct">2010</span>Accounts payable</td><td></td><td class="fy-num"><a href="#accounting/opening/open-items?account=2010">6,210.00</a></td></tr>
+          <tr><td><span class="fy-acct">2120</span>Deferred remuneration payable</td><td></td><td class="fy-num">18,260.00</td></tr>
+          <tr><td><span class="fy-acct">2500</span>Loan from director</td><td></td><td class="fy-num">12,980.00</td></tr>
+          <tr><td><span class="fy-acct">3010</span>Share capital, ordinary</td><td></td><td class="fy-num">90,000.00</td></tr>
+          <tr><td><span class="fy-acct">3100</span>Retained earnings <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Change: 25,121.41</span></td><td></td><td class="fy-num">24,681.41</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="fy-num">153,981.41</td><td class="fy-num">153,981.41</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="fy-card__foot"><span class="fy-chip fy-chip--good" role="status"><i data-icon="circle-check"></i>Balanced</span><span class="fy-small fy-muted">The proposed change keeps it balanced: +440.00 on each side.</span></div>
+  </section>
+
+  <section class="fy-card" aria-labelledby="ob-open">
+    <div class="fy-card__head"><h2 class="fy-h3" id="ob-open">Open items behind receivables and payables</h2></div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-table--cards">
+        <thead><tr><th scope="col">Document</th><th scope="col">Contact</th><th scope="col" class="fy-from-medium">Currency · rate</th><th scope="col" class="fy-num">SGD</th><th scope="col">Status</th></tr></thead>
+        <tbody>
+          <tr><td data-card="meta"><span class="fy-mono">INV-0096</span></td><td data-card="title">Acme Analytics Pte Ltd</td><td data-card="hide" class="fy-from-medium">SGD</td><td data-card="amount" class="fy-num">12,000.00</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid 20 Jan</span></td></tr>
+          <tr><td data-card="meta"><span class="fy-mono">INV-0098</span></td><td data-card="title">Noodle Lab Studio</td><td data-card="hide" class="fy-from-medium">SGD</td><td data-card="amount" class="fy-num">2,400.00</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="file-x"></i>Written off 31 Mar</span></td></tr>
+          <tr><td data-card="meta"><span class="fy-mono">INV-0101</span></td><td data-card="title">Orbital Freight Asia Pte Ltd</td><td data-card="hide" class="fy-from-medium">USD 5,000.00 × 1.3000</td><td data-card="amount" class="fy-num">6,500.00</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid 3 Feb</span></td></tr>
+          <tr aria-selected="true"><td data-card="meta"><span class="fy-mono">INV-0104</span></td><td data-card="title">Kopi Labs Pte Ltd</td><td data-card="hide" class="fy-from-medium">SGD</td><td data-card="amount" class="fy-num">440.00</td><td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Proposed addition</span></td></tr>
+          <tr><td data-card="meta"><span class="fy-mono">BILL-0790</span></td><td data-card="title">WeWork Singapore</td><td data-card="hide" class="fy-from-medium">SGD</td><td data-card="amount" class="fy-num">4,360.00</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid 5 Jan</span></td></tr>
+          <tr><td data-card="meta"><span class="fy-mono">BILL-0794</span></td><td data-card="title">Amazon Web Services</td><td data-card="hide" class="fy-from-medium">USD 1,423.08 × 1.3000</td><td data-card="amount" class="fy-num">1,850.00</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid 6 Jan</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="fy-card__foot"><span class="fy-small fy-muted">Open items carry their own currency and rate, so later payments settle at the right amount and the FX difference is real.</span></div>
+  </section>
+</div>

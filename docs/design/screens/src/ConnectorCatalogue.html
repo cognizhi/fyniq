@@ -1,0 +1,263 @@
+<!-- fyniq-screen {"nav": "settings", "title": "Integrations", "mode": "expert", "heights": {"compact": 5800, "medium": 3650, "expanded": 2800}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><span>Integrations</span></nav>
+      <h1 class="fy-h1">Integrations</h1>
+      <p class="fy-secondary">Connectors link Fyniq to other services. Each one is off until an Owner turns it on and a second Owner approves.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#settings/integrations/routing"><i data-icon="route"></i>Chat and ticket rules</a>
+      <a class="fy-btn fy-btn--secondary" href="#settings/integrations/webhooks"><i data-icon="webhook"></i>Webhooks</a>
+      <a class="fy-btn fy-btn--primary" href="#catalogue"><i data-icon="plus"></i>Install a connector</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">DBS reports failed its health check at 06:00</span>
+      <span class="fy-small fy-secondary">The DBS file server refused the sign-in. Today’s statement import is held, not lost; it runs as soon as the check passes. Replace the SFTP key in the connector, then test it.</span>
+      <a class="fy-btn fy-btn--secondary fy-btn--sm fy-only-compact" href="#settings/integrations/dbs-reports" style="align-self: flex-start; margin-top: var(--space-2)">Fix it</a>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm fy-from-medium" href="#settings/integrations/dbs-reports">Fix it</a>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <a class="fy-tile" href="#installed">
+      <span class="fy-tile__label"><i data-icon="plug"></i>Installed</span>
+      <span class="fy-tile__value fy-num">12</span>
+      <span class="fy-tile__meta">10 enabled · 1 paused · 1 off</span>
+    </a>
+    <a class="fy-tile" href="#installed">
+      <span class="fy-tile__label"><i data-icon="activity"></i>Health</span>
+      <span class="fy-tile__value fy-num">9<small>of 10 OK</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>1 failing</span>DBS reports</span>
+    </a>
+    <a class="fy-tile" href="#installed">
+      <span class="fy-tile__label"><i data-icon="key-round"></i>Credentials</span>
+      <span class="fy-tile__value fy-num">1<small>expiring</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>14 days</span>Wise API token</span>
+    </a>
+    <a class="fy-tile" href="#installed">
+      <span class="fy-tile__label"><i data-icon="refresh-cw"></i>Upgrades</span>
+      <span class="fy-tile__value fy-num">2<small>available</small></span>
+      <span class="fy-tile__meta">ZeptoMail, Jira Cloud · both need Owner consent</span>
+    </a>
+  </div>
+
+  <section class="fy-card" aria-labelledby="installed-title" id="installed">
+    <div class="fy-card__head">
+      <h2 class="fy-h3" id="installed-title">Installed connectors</h2>
+      <div class="fy-segmented fy-from-medium" role="radiogroup" aria-label="Show">
+        <button type="button" role="radio" aria-checked="true">All</button>
+        <button type="button" role="radio" aria-checked="false">This organisation</button>
+        <button type="button" role="radio" aria-checked="false">Installation-wide</button>
+      </div>
+    </div>
+    <table class="fy-table fy-table--cards">
+      <thead>
+        <tr>
+          <th scope="col">Connector</th>
+          <th scope="col">Status</th>
+          <th scope="col">Health</th>
+          <th scope="col">Credentials</th>
+          <th scope="col" class="fy-from-expanded">Last activity</th>
+        </tr>
+      </thead>
+      <tbody class="fy-stagger">
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/dbs-reports" style="color: inherit"><span class="fy-strong">DBS reports</span></a><div class="fy-small fy-muted">Bank data · Cognizhi</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.3.2</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Failing</span><span class="fy-small fy-muted" style="display: block">SFTP sign-in refused, 06:00</span></td>
+          <td data-card="meta">SFTP key, set 4 Jul 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">Last import 12 Oct 06:02</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/wise" style="color: inherit"><span class="fy-strong">Wise</span></a><div class="fy-small fy-muted">Bank data · Cognizhi</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">2.0.1</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Expires 27 Oct</span><span class="fy-small fy-muted" style="display: block">in 14 days</span></td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">Synced 09:00</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/zeptomail" style="color: inherit"><span class="fy-strong">ZeptoMail</span></a><div class="fy-small fy-muted">Outbound email · primary · installation-wide</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">2.0.4</span></span> <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>2.1.0 asks for new access</span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta">API token, set 2 Oct 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">46 sent today · 09:11</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/resend" style="color: inherit"><span class="fy-strong">Resend</span></a><div class="fy-small fy-muted">Outbound email · failover · installation-wide</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.4.0</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta">API key, set 2 Oct 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">Standby · test 06:00</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/google" style="color: inherit"><span class="fy-strong">Google sign-in</span></a><div class="fy-small fy-muted">Sign-in · installation-wide</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.2.0</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta">Client secret, set 2 Oct 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">Sign-in 08:31</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/zoho-us" style="color: inherit"><span class="fy-strong">Zoho sign-in (US)</span></a><div class="fy-small fy-muted">Sign-in · installation-wide</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.1.0</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta">Client secret, set 2 Oct 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">Sign-in 12 Oct 22:08</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/stripe" style="color: inherit"><span class="fy-strong">Stripe</span></a><div class="fy-small fy-muted">Payment provider · Cognizhi</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.0.6</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta">Restricted key, set 6 Oct 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">Webhook 09:05</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/peppol" style="color: inherit"><span class="fy-strong">Peppol Access Point</span></a><div class="fy-small fy-muted">E-invoicing (InvoiceNow) · Cognizhi</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.1.3</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta">Certificate, valid to Mar 2027</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">INV-0150 sent 12 Oct</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/airwallex" style="color: inherit"><span class="fy-strong">Airwallex</span></a><div class="fy-small fy-muted">Bank data · Cognizhi</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.0.2</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-pause"></i>Paused</span></td>
+          <td data-card="meta"><span class="fy-small fy-secondary">Paused by Arjun Rao, 9 Oct · 2 imports held</span></td>
+          <td data-card="meta">API key, set 6 Aug 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">Synced 9 Oct 17:40</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/jira" style="color: inherit"><span class="fy-strong">Jira Cloud</span></a><div class="fy-small fy-muted">Ticketing · Cognizhi <span class="fy-tag">P2</span></div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.3.0</span></span> <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1.4.0 asks for new access</span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta">Scoped API token, expires 30 Jan 2027</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">FIN-212 created 12 Oct</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#settings/integrations/slack" style="color: inherit"><span class="fy-strong">Slack</span></a><div class="fy-small fy-muted">Messaging · minimal content · Cognizhi <span class="fy-tag">P2</span></div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.0.0</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></td>
+          <td data-card="meta">Bot token, set 30 Sep 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">#finance 08:41</td>
+        </tr>
+        <tr>
+          <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)"><a href="#admin/sign-in-providers" style="color: inherit"><span class="fy-strong">Ho &amp; Partners SSO</span></a><div class="fy-small fy-muted">Sign-in (OpenID Connect) · installation-wide</div><div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: 6px; margin-top: 2px"><span>Version <span class="fy-mono">1.0.3</span></span></div></td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="power"></i>Off</span></td>
+          <td data-card="meta"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Test failed</span><span class="fy-small fy-muted" style="display: block">TLS certificate expired</span></td>
+          <td data-card="meta">Client secret, set 1 Oct 2026</td>
+          <td data-card="hide" class="fy-secondary fy-from-expanded">Turned off 12 Oct</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="fy-section" aria-labelledby="catalogue-title" id="catalogue">
+    <div class="fy-section__head">
+      <div class="fy-stack fy-stack--2" style="gap: 2px">
+        <h2 class="fy-h2" id="catalogue-title">Connector catalogue</h2>
+        <p class="fy-small fy-muted">Shipped with release v0.4.0. Each card shows the connector’s manifest: who publishes it, what it sends out and where it processes data.</p>
+      </div>
+    </div>
+    <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+      <div class="fy-field" style="flex: 1 1 240px">
+        <label class="fy-label fy-sr" for="cat-search">Search connectors</label>
+        <input class="fy-input" id="cat-search" type="search" placeholder="Search connectors">
+      </div>
+      <div class="fy-chipset" role="group" aria-label="Capability">
+        <button class="fy-filter" type="button" aria-pressed="true">All</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Sign-in</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Email</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Bank data</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Payments</button>
+        <button class="fy-filter" type="button" aria-pressed="false">More</button>
+      </div>
+    </div>
+
+    <div class="fy-grid fy-grid--3">
+      <section class="fy-card" aria-labelledby="g-signin">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="log-in" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-signin">Sign-in</h3><span class="fy-tag">Super admin</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Google</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.2.0 · sends email address</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Zoho, one per data centre</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.1.0 · US installed; EU, IN, AU, JP, SG available</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Add</button></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Any OpenID Connect</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.3 · discovery URL, claim mapping</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Add</button></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">SAML</span><span class="fy-list__meta" style="white-space: normal">Enterprise mode</span></span><span class="fy-tag">P3</span></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="g-out">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="send" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-out">Outbound email</h3><span class="fy-tag">Super admin</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Zoho ZeptoMail</span><span class="fy-list__meta" style="white-space: normal">Zoho · 2.0.4 · names, emails, PDFs · US</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Resend</span><span class="fy-list__meta" style="white-space: normal">Resend · 1.4.0 · names, emails, PDFs · US</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">SMTP</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.1 · your mail server; Mailpit locally</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Install</button></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="g-in">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="inbox" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-in">Inbound email</h3></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Resend receiving</span><span class="fy-list__meta" style="white-space: normal">Resend · 1.4.0 · reads bills@ capture address · US</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Install</button></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">IMAP mailbox</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.0 · polls a mailbox you own</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Install</button></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="g-bank">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="landmark" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-bank">Bank data</h3></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">DBS reports</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.3.2 · reads statements · SG</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Wise</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 2.0.1 · reads balances and transactions</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Airwallex</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.2 · reads balances and transactions</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">DBS RAPID, UOB</span><span class="fy-list__meta" style="white-space: normal">Real-time bank APIs</span></span><span class="fy-tag">P2</span></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="g-pay">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="credit-card" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-pay">Payment providers</h3></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Stripe</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.6 · customer names, invoice totals</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">HitPay</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.0 · PayNow QR on invoices</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Install</button></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="g-einv">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="file-check" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-einv">E-invoicing and documents</h3></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Peppol Access Point</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.1.3 · invoices to InvoiceNow · SG</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Document AI</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.0 · reads uploaded bills and receipts</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Install</button></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="g-msg">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="messages-square" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-msg">Messaging</h3><span class="fy-tag">P2</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Slack</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.0 · minimal notices; SG residency on Business+</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Zoho Cliq</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.0 · minimal notices; no SG data centre</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Install</button></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="g-tix">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="ticket" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-tix">Ticketing</h3><span class="fy-tag">P2</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Jira Cloud</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.3.0 · task titles and links; SG residency</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Installed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Linear, GitHub Issues, Zoho Desk</span><span class="fy-list__meta" style="white-space: normal">Fyniq · 1.0.0 · same ticket contract</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Browse</button></li>
+        </ul>
+      </section>
+
+      <section class="fy-card fy-card--sunken" aria-labelledby="g-third">
+        <div class="fy-card__head"><span class="fy-list__icon"><i data-icon="package-check" class="fy-i--20"></i></span><h3 class="fy-h3" id="g-third">Third-party connectors</h3><span class="fy-tag">P3</span></div>
+        <div class="fy-card__body fy-stack fy-stack--2">
+          <p class="fy-small fy-secondary">Reviewed connectors from other publishers. They run outside Fyniq, use only the public API and events with an integration-class client, and carry the same manifest.</p>
+          <p class="fy-small fy-muted">None listed yet.</p>
+        </div>
+      </section>
+    </div>
+    <p class="fy-small fy-muted fy-row fy-row--top" style="gap: 6px"><i data-icon="shield-check"></i><span>A connector uses only the commands and read APIs the app uses, never approves anything, and its traffic goes through Fyniq’s checked outbound client. Installing, enabling, upgrading and uninstalling are audited and need a second Owner.</span></p>
+  </section>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#catalogue"><i data-icon="plus"></i>Install a connector</a>
+  </div>
+</div>

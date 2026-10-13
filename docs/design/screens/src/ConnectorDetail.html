@@ -1,0 +1,255 @@
+<!-- fyniq-screen {"nav": "settings", "title": "ZeptoMail", "mode": "expert", "heights": {"compact": 6700, "medium": 4850, "expanded": 3400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/integrations">Integrations</a><i data-icon="chevron-right"></i><span>ZeptoMail</span></nav>
+      <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+        <span class="fy-org__logo" aria-hidden="true" style="width: 40px; height: 40px; border-radius: var(--radius-m); font-size: var(--fs-lg)">Z</span>
+        <h1 class="fy-h1">ZeptoMail</h1>
+        <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Enabled</span>
+        <span class="fy-chip fy-chip--outline fy-chip--neutral"><i data-icon="send"></i>Primary for email</span>
+      </div>
+      <p class="fy-secondary">Outbound email by Zoho ZeptoMail · connector <span class="fy-mono">2.0.4</span> published by Fyniq · installation-wide, managed by the Super admin</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="circle-pause"></i>Pause</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="plug-zap"></i>Test connection</button>
+      <button class="fy-iconbtn" type="button" aria-label="More actions"><i data-icon="ellipsis" class="fy-i--20"></i></button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info" role="status">
+    <i data-icon="hourglass" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Upgrade to 2.1.0 is waiting for a second approver</span>
+      <span class="fy-small fy-secondary">Mei Lin Tan approved it at 08:55. It adds a new data class, so Arjun Rao must also consent before it installs. Nothing changes until then.</span>
+      <a class="fy-btn fy-btn--secondary fy-btn--sm fy-only-compact" href="#upgrade" style="align-self: flex-start; margin-top: var(--space-2)">See the changes</a>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm fy-from-medium" href="#upgrade">See the changes</a>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Sections">
+    <a href="#overview" aria-current="page">Overview</a>
+    <a href="#configuration">Configuration</a>
+    <a href="#senders">Senders and domain</a>
+    <a href="#upgrade">Upgrade<span class="fy-badge fy-badge--quiet">1</span></a>
+    <a href="#activity">Activity</a>
+    <a href="#audit">Audit</a>
+  </nav>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="life-title" id="overview">
+        <div class="fy-card__head"><h2 class="fy-h3" id="life-title">Lifecycle</h2></div>
+        <div class="fy-card__body fy-stack">
+          <p class="fy-small fy-muted">Every step is audited and needs a second Owner.</p>
+          <ol class="fy-steps" aria-label="Connector lifecycle" style="flex-wrap: wrap; row-gap: var(--space-2)">
+            <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Install</li>
+            <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Configure</li>
+            <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Test</li>
+            <li class="fy-step" aria-current="step"><span class="fy-step__n">4</span>Enabled</li>
+            <li class="fy-step"><span class="fy-step__n">5</span>Upgrade</li>
+            <li class="fy-step"><span class="fy-step__n">6</span>Disable</li>
+            <li class="fy-step"><span class="fy-step__n">7</span>Uninstall</li>
+          </ol>
+          <div class="fy-grid fy-grid--3">
+            <div class="fy-plain"><i data-icon="circle-pause"></i><div class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong fy-small">Pause</span><span class="fy-small fy-secondary">Stops new sends and holds the queue. Resume picks up where it stopped.</span></div></div>
+            <div class="fy-plain"><i data-icon="power"></i><div class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong fy-small">Disable</span><span class="fy-small fy-secondary">Also cancels queued sends the manifest marks cancellable and revokes its tokens within 60 seconds.</span></div></div>
+            <div class="fy-plain"><i data-icon="trash"></i><div class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong fy-small">Uninstall</span><span class="fy-small fy-secondary">Also removes its webhooks at ZeptoMail and deletes the secrets. The audit history stays.</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="test-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="test-title">Connection test</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Passed 08:50</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Send token accepted</span><span class="fy-list__meta">Mail agent “Cognizhi transactional”</span></span><span class="fy-small fy-muted fy-num">180 ms</span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Sending domain verified</span><span class="fy-list__meta">cognizhi.com</span></span><span class="fy-small fy-muted fy-num">96 ms</span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Event webhook signed and reachable</span><span class="fy-list__meta">Signature checked with the stored key</span></span><span class="fy-small fy-muted fy-num">136 ms</span></li>
+        </ul>
+        <div class="fy-card__foot fy-stack fy-stack--2" style="align-items: stretch">
+          <div class="fy-row fy-row--top" style="gap: var(--space-2)"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Failed</span><span class="fy-small fy-secondary">12 Oct 15:20 · The sending domain is not verified at ZeptoMail: the DKIM record was not found. Add the DKIM record at your DNS host, then test again.</span></div>
+          <p class="fy-small fy-muted">A test shows pass or fail with the reason only, never what the provider sent back.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="cfg-title" id="configuration">
+        <div class="fy-card__head"><h2 class="fy-h3" id="cfg-title">Configuration</h2><span class="fy-small fy-muted">From the manifest schema</span></div>
+        <div class="fy-card__body">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="cfg-dc">Data centre</label>
+              <input class="fy-input" id="cfg-dc" value="United States · api.zeptomail.com" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="cfg-agent">Mail agent</label>
+              <input class="fy-input" id="cfg-agent" value="Cognizhi transactional" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="cfg-domain">Sending domain</label>
+              <input class="fy-input" id="cfg-domain" value="cognizhi.com" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="cfg-bounce">Bounce address</label>
+              <input class="fy-input" id="cfg-bounce" value="bounces@cognizhi.com" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="cfg-token">Send token <span class="fy-tag">Write-only</span></label>
+              <input class="fy-input" id="cfg-token" type="password" autocomplete="off" placeholder="Stored. Enter a new token to replace it" aria-describedby="cfg-token-help">
+              <span class="fy-help" id="cfg-token-help">Kept in Secret Manager and never shown again. Replaced 2 Oct 2026 by Mei Lin Tan.</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="cfg-hook">Webhook signing key <span class="fy-tag">Write-only</span></label>
+              <input class="fy-input" id="cfg-hook" type="password" autocomplete="off" placeholder="Stored. Enter a new key to replace it" aria-describedby="cfg-hook-help">
+              <span class="fy-help" id="cfg-hook-help">Rotates without downtime: the old key stays valid for 24 hours.</span>
+            </div>
+          </div>
+        </div>
+        <div class="fy-card__foot"><span class="fy-small fy-muted fy-grow">Saving sends the change to Arjun Rao for approval.</span><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Save changes</button></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="send-title" id="senders">
+        <div class="fy-card__head"><h2 class="fy-h3" id="send-title">Senders by purpose</h2></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Purpose</th><th scope="col">From</th><th scope="col">Reply-to</th><th scope="col">Sent this week</th></tr></thead>
+          <tbody>
+            <tr><td data-card="title">Notifications</td><td data-card="meta" class="fy-mono" style="word-break: break-all">notifications@cognizhi.com</td><td data-card="hide" class="fy-secondary">No reply</td><td data-card="amount" class="fy-num">212</td></tr>
+            <tr><td data-card="title">Invoices and quotes</td><td data-card="meta" class="fy-mono" style="word-break: break-all">invoices@cognizhi.com</td><td data-card="hide" class="fy-mono">finance@cognizhi.com</td><td data-card="amount" class="fy-num">9</td></tr>
+            <tr><td data-card="title">Reminders</td><td data-card="meta" class="fy-mono" style="word-break: break-all">reminders@cognizhi.com</td><td data-card="hide" class="fy-mono">finance@cognizhi.com</td><td data-card="amount" class="fy-num">3</td></tr>
+            <tr><td data-card="title">Security</td><td data-card="meta" class="fy-mono" style="word-break: break-all">security@cognizhi.com</td><td data-card="hide" class="fy-secondary">No reply</td><td data-card="amount" class="fy-num">14</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="fy-grid fy-grid--2">
+        <section class="fy-card" aria-labelledby="dns-title">
+          <div class="fy-card__head"><h2 class="fy-h3" id="dns-title">Domain authentication</h2><span class="fy-small fy-muted">Checked daily, 06:00</span></div>
+          <ul class="fy-list">
+            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">SPF</span><span class="fy-list__meta">ZeptoMail is allowed to send for cognizhi.com</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></li>
+            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">DKIM</span><span class="fy-list__meta">Signing key found and valid</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></li>
+            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">DMARC</span><span class="fy-list__meta" style="white-space: normal">Policy is “none”: receivers report fake mail but still deliver it. Set it to “quarantine”.</span></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Weak</span></li>
+          </ul>
+        </section>
+
+        <section class="fy-card" aria-labelledby="fail-title">
+          <div class="fy-card__head"><h2 class="fy-h3" id="fail-title">Failover order</h2></div>
+          <ol class="fy-list">
+            <li class="fy-list__item"><span class="fy-badge">1</span><span class="fy-list__main"><span class="fy-list__title">ZeptoMail</span><span class="fy-list__meta">Primary</span></span><button class="fy-iconbtn" type="button" aria-label="Move ZeptoMail down"><i data-icon="arrow-down"></i></button></li>
+            <li class="fy-list__item"><span class="fy-badge fy-badge--quiet">2</span><span class="fy-list__main"><span class="fy-list__title">Resend</span><span class="fy-list__meta">Failover · test passed 06:00</span></span><button class="fy-iconbtn" type="button" aria-label="Move Resend up"><i data-icon="arrow-up"></i></button></li>
+          </ol>
+          <div class="fy-card__body" style="padding-top: 0"><p class="fy-small fy-muted">Fyniq fails over only for sends it knows ZeptoMail did not accept. A send with an unknown result is checked first, so nobody gets an email twice.</p></div>
+        </section>
+      </div>
+
+      <section class="fy-card" aria-labelledby="sup-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="sup-title">Suppression list</h2><span class="fy-badge fy-badge--quiet">3</span></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Address</th><th scope="col">Reason</th><th scope="col">Since</th><th scope="col"><span class="fy-sr">Action</span></th></tr></thead>
+          <tbody>
+            <tr><td data-card="title" class="fy-mono" style="word-break: break-all">accounts@harbourfrontdental.sg</td><td data-card="meta">Hard bounce: mailbox does not exist</td><td data-card="meta">28 Sep 2026</td><td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Remove</button></td></tr>
+            <tr><td data-card="title" class="fy-mono" style="word-break: break-all">ap@kopilabs.sg</td><td data-card="meta">Hard bounce: domain has no mail server</td><td data-card="meta">8 Oct 2026</td><td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Remove</button></td></tr>
+            <tr><td data-card="title" class="fy-mono" style="word-break: break-all">d.lim.personal@gmail.com</td><td data-card="meta">Complaint: marked as spam</td><td data-card="meta">11 Oct 2026</td><td data-card="status"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Remove</button></td></tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><p class="fy-small fy-muted">Fyniq doesn’t send to these addresses. Fix the contact’s email first, then remove it here.</p></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="up-title" id="upgrade">
+        <div class="fy-card__head"><h2 class="fy-h3" id="up-title">Upgrade <span class="fy-mono">2.0.4</span> to <span class="fy-mono">2.1.0</span></h2><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Needs consent</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Manifest changes. Lines with a plus are new; lines with a minus go away.</p>
+          <div class="fy-stack fy-stack--2 fy-small" role="list" aria-label="Manifest differences">
+            <div role="listitem" class="fy-row fy-row--top" style="gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-m); background: var(--status-good-subtle)"><i data-icon="plus"></i><span><span class="fy-strong">Webhook events:</span> open, click (in addition to bounce and complaint)</span></div>
+            <div role="listitem" class="fy-row fy-row--top" style="gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-m); background: var(--status-good-subtle)"><i data-icon="plus"></i><span><span class="fy-strong">Data class received:</span> recipient activity (when an email is opened or a link clicked)</span></div>
+            <div role="listitem" class="fy-row fy-row--top" style="gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-m); background: var(--status-critical-subtle)"><i data-icon="minus"></i><span><span class="fy-strong">Minimum platform:</span> <span class="fy-mono">v0.3.0</span></span></div>
+            <div role="listitem" class="fy-row fy-row--top" style="gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-m); background: var(--status-good-subtle)"><i data-icon="plus"></i><span><span class="fy-strong">Minimum platform:</span> <span class="fy-mono">v0.4.0</span></span></div>
+            <div role="listitem" class="fy-row fy-row--top" style="gap: var(--space-2); padding: var(--space-2) var(--space-3)"><i data-icon="equal"></i><span class="fy-secondary">Unchanged: destinations (api.zeptomail.com), regions (United States), Fyniq scopes (none), secrets</span></div>
+          </div>
+          <div class="fy-row fy-row--wrap" style="gap: var(--space-2)">
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Mei Lin Tan consented 08:55</span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Waiting for Arjun Rao</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="act-title" id="activity">
+        <div class="fy-card__head"><h2 class="fy-h3" id="act-title">Activity</h2><span class="fy-small fy-muted">Event parser <span class="fy-mono">2.0</span></span></div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-row fy-row--wrap fy-row--top" style="gap: var(--space-4)">
+            <div class="fy-stack fy-stack--2" style="gap: 2px; flex: 1 1 120px"><span class="fy-small fy-muted">Queued</span><span class="fy-h2 fy-num">3</span></div>
+            <div class="fy-stack fy-stack--2" style="gap: 2px; flex: 1 1 120px"><span class="fy-small fy-muted">In flight</span><span class="fy-h2 fy-num">1</span></div>
+            <div class="fy-stack fy-stack--2" style="gap: 2px; flex: 1 1 120px"><span class="fy-small fy-muted">Sent today</span><span class="fy-h2 fy-num">46</span></div>
+            <div class="fy-stack fy-stack--2" style="gap: 2px; flex: 1 1 120px"><span class="fy-small fy-muted">Last provider event</span><span class="fy-h2 fy-num">09:11</span></div>
+          </div>
+          <table class="fy-table fy-table--compact fy-table--cards">
+            <thead><tr><th scope="col">Message</th><th scope="col">Time</th><th scope="col">Sender</th><th scope="col">Status</th></tr></thead>
+            <tbody>
+              <tr><td data-card="title">Statement for Acme Analytics, September</td><td data-card="meta" style="font-variant-numeric: tabular-nums">09:12</td><td data-card="hide">reminders@</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="send"></i>In flight</span></td></tr>
+              <tr><td data-card="title">INV-0150 to Acme Analytics</td><td data-card="meta" style="font-variant-numeric: tabular-nums">12 Oct</td><td data-card="hide">invoices@</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="mail-open"></i>Opened</span></td></tr>
+              <tr><td data-card="title">Approval waiting: BILL-0918</td><td data-card="meta" style="font-variant-numeric: tabular-nums">08:47</td><td data-card="hide">notifications@</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="send"></i>Sent</span></td></tr>
+              <tr><td data-card="title">New sign-in to your account</td><td data-card="meta" style="font-variant-numeric: tabular-nums">08:31</td><td data-card="hide">security@</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="send"></i>Sent</span></td></tr>
+            </tbody>
+          </table>
+          <p class="fy-small fy-muted">ZeptoMail reports opens, clicks, bounces and complaints, never “delivered”, so a message stays Sent until one of those arrives.</p>
+          <div class="fy-row fy-row--wrap" style="gap: var(--space-2)"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-disabled="true"><i data-icon="rotate-ccw"></i>Re-read events for a date range</button><span class="fy-tag">P2</span><span class="fy-small fy-muted">Runs as a preview first</span></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="danger-title">
+        <div class="fy-card__head"><span class="fy-list__icon fy-list__icon--critical"><i data-icon="octagon-alert" class="fy-i--20"></i></span><h2 class="fy-h3" id="danger-title">Stop this connector</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">Resend takes over email while ZeptoMail is paused or off. Each action asks for your passkey and Arjun Rao’s approval.</p>
+          <div class="fy-row fy-row--wrap" style="gap: var(--space-2)">
+            <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="circle-pause"></i>Pause</button>
+            <button class="fy-btn fy-btn--destructive" type="button"><i data-icon="power"></i>Disable</button>
+            <button class="fy-btn fy-btn--destructive" type="button"><i data-icon="trash"></i>Uninstall</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Health, manifest and history">
+      <section class="fy-card" aria-labelledby="health-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="health-title">Health</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>OK</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Health check</span><span class="fy-list__meta">Every 5 minutes · last 09:10</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Pass</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Circuit breaker</span><span class="fy-list__meta">Closed · 0 errors in the last hour</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Closed</span></li>
+          <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title">Rate limit</span><span class="fy-list__meta">12% of the hourly limit used</span></span></li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="man-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="man-title">Manifest</h2><span class="fy-mono fy-small fy-muted">2.0.4</span></div>
+        <div class="fy-card__body">
+          <dl class="fy-dl" style="grid-template-columns: minmax(0, 1fr)">
+            <div><dt>Publisher</dt><dd>Fyniq (first-party)</dd></div>
+            <div><dt>Capability</dt><dd>Outbound email</dd></div>
+            <div><dt>Sends out</dt><dd>Recipient names and email addresses, message text, PDF attachments</dd></div>
+            <div><dt>Processing region</dt><dd>United States · no Singapore region offered</dd></div>
+            <div><dt>Destinations</dt><dd class="fy-mono">api.zeptomail.com</dd></div>
+            <div><dt>Secrets</dt><dd>Send token, webhook signing key (write-only)</dd></div>
+            <div><dt>Local substitute</dt><dd>Mailpit</dd></div>
+            <div><dt>Data inventory</dt><dd><a href="#compliance/data-inventory">Listed, with a PDPA transfer assessment (1 Oct 2026)</a></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="audit-title" id="audit">
+        <div class="fy-card__head"><h2 class="fy-h3" id="audit-title">Audit</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#compliance/audit?connector=zeptomail">All</a></div>
+        <div class="fy-card__body">
+          <div class="fy-timeline" role="list">
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot"><i data-icon="hourglass"></i></span><span class="fy-small fy-strong">Upgrade to 2.1.0 requested</span><span class="fy-small fy-muted">13 Oct 08:55 · Mei Lin Tan · waiting for Arjun Rao</span></div>
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-small fy-strong">Test passed</span><span class="fy-small fy-muted">13 Oct 08:50 · Mei Lin Tan</span></div>
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot"><i data-icon="x"></i></span><span class="fy-small fy-strong">Test failed: DKIM record not found</span><span class="fy-small fy-muted">12 Oct 15:20 · Mei Lin Tan</span></div>
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-small fy-strong">Enabled</span><span class="fy-small fy-muted">2 Oct 10:14 · Mei Lin Tan, approved by Arjun Rao with a passkey</span></div>
+            <div class="fy-timeline__item" role="listitem"><span class="fy-timeline__dot"><i data-icon="plug"></i></span><span class="fy-small fy-strong">Installed and configured</span><span class="fy-small fy-muted">2 Oct 10:02 · Mei Lin Tan</span></div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="plug-zap"></i>Test connection</button>
+  </div>
+</div>

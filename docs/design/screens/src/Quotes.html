@@ -1,0 +1,217 @@
+<!-- fyniq-screen {"nav": "sales", "title": "Quotes", "mode": "expert", "heights": {"compact": 1950, "medium": 1520, "expanded": 1260}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#sales">Sales</a><i data-icon="chevron-right"></i><span>Quotes and orders</span></nav>
+      <h1 class="fy-h1">Quotes and orders</h1>
+      <p class="fy-secondary">S$104,640.00 in open quotes. Two accepted quotes are ready to invoice.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost fy-expert-only" type="button"><i data-icon="download"></i>Export</button>
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="clipboard-list"></i>New sales order</button>
+      <a class="fy-btn fy-btn--primary" href="#sales/quotes/new"><i data-icon="plus"></i>New quote</a>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Quotes and orders">
+    <button type="button" role="tab" aria-selected="true">Quotes<span class="fy-badge fy-badge--quiet">9</span></button>
+    <button type="button" role="tab" aria-selected="false">Sales orders<span class="fy-badge fy-badge--quiet">2</span></button>
+  </div>
+
+  <section class="fy-card" aria-labelledby="q-pipe">
+    <div class="fy-card__head">
+      <h2 class="fy-h3" id="q-pipe">Pipeline by status, last 90 days</h2>
+      <div class="fy-segmented" role="radiogroup" aria-label="Show as">
+        <button type="button" role="radio" aria-checked="true">Chart</button>
+        <button type="button" role="radio" aria-checked="false">Table</button>
+      </div>
+    </div>
+    <div class="fy-card__body fy-stack fy-stack--3">
+      <svg class="fy-chart fy-only-compact" viewBox="0 0 320 214" role="img" aria-label="Quote value by status, last 90 days: sent S$65,400, accepted S$30,520, invoiced S$16,350, draft S$8,720, declined S$5,450, expired S$2,725, cancelled none.">
+        <line class="axis" x1="82" y1="4" x2="82" y2="210"></line>
+        <text x="0" y="22">Draft</text><rect class="fy-bar fy-c1" x="82" y="10" width="22.4" height="18" rx="3"></rect><text x="108" y="23">8,720</text>
+        <text x="0" y="52">Sent</text><rect class="fy-bar fy-c1" x="82" y="40" width="168" height="18" rx="3"></rect><text x="254" y="53">65,400</text>
+        <text x="0" y="82">Accepted</text><rect class="fy-bar fy-c1" x="82" y="70" width="78.4" height="18" rx="3"></rect><text x="164" y="83">30,520</text>
+        <text x="0" y="112">Declined</text><rect class="fy-bar fy-cother" x="82" y="100" width="14" height="18" rx="3"></rect><text x="100" y="113">5,450</text>
+        <text x="0" y="142">Invoiced</text><rect class="fy-bar fy-cother" x="82" y="130" width="42" height="18" rx="3"></rect><text x="128" y="143">16,350</text>
+        <text x="0" y="172">Cancelled</text><text x="86" y="173">0</text>
+        <text x="0" y="202">Expired</text><rect class="fy-bar fy-cother" x="82" y="190" width="7" height="18" rx="3"></rect><text x="93" y="203">2,725</text>
+      </svg>
+      <svg class="fy-chart fy-only-medium" viewBox="0 0 560 214" role="img" aria-label="Quote value by status, last 90 days: sent S$65,400, accepted S$30,520, invoiced S$16,350, draft S$8,720, declined S$5,450, expired S$2,725, cancelled none.">
+        <line class="axis" x1="100" y1="4" x2="100" y2="210"></line>
+        <text x="0" y="23">Draft · 1</text><rect class="fy-bar fy-c1" x="100" y="10" width="45.3" height="18" rx="3"></rect><text x="151.3" y="23">8,720.00</text>
+        <text x="0" y="53">Sent · 3</text><rect class="fy-bar fy-c1" x="100" y="40" width="340.0" height="18" rx="3"></rect><text x="446.0" y="53">65,400.00</text>
+        <text x="0" y="83">Accepted · 2</text><rect class="fy-bar fy-c1" x="100" y="70" width="158.7" height="18" rx="3"></rect><text x="264.7" y="83">30,520.00</text>
+        <text x="0" y="113">Declined · 1</text><rect class="fy-bar fy-cother" x="100" y="100" width="28.3" height="18" rx="3"></rect><text x="134.3" y="113">5,450.00</text>
+        <text x="0" y="143">Invoiced · 1</text><rect class="fy-bar fy-cother" x="100" y="130" width="85.0" height="18" rx="3"></rect><text x="191.0" y="143">16,350.00</text>
+        <text x="0" y="173">Cancelled · 0</text><text x="106.0" y="173">0.00</text>
+        <text x="0" y="203">Expired · 1</text><rect class="fy-bar fy-cother" x="100" y="190" width="14.2" height="18" rx="3"></rect><text x="120.2" y="203">2,725.00</text>
+      </svg>
+      <svg class="fy-chart fy-from-expanded" viewBox="0 0 1080 214" role="img" aria-label="Quote value by status, last 90 days: sent S$65,400, accepted S$30,520, invoiced S$16,350, draft S$8,720, declined S$5,450, expired S$2,725, cancelled none.">
+        <line class="axis" x1="110" y1="4" x2="110" y2="210"></line>
+        <text x="0" y="23">Draft · 1</text><rect class="fy-bar fy-c1" x="110" y="10" width="101.3" height="18" rx="3"></rect><text x="217.3" y="23">8,720.00</text>
+        <text x="0" y="53">Sent · 3</text><rect class="fy-bar fy-c1" x="110" y="40" width="760.0" height="18" rx="3"></rect><text x="876.0" y="53">65,400.00</text>
+        <text x="0" y="83">Accepted · 2</text><rect class="fy-bar fy-c1" x="110" y="70" width="354.7" height="18" rx="3"></rect><text x="470.7" y="83">30,520.00</text>
+        <text x="0" y="113">Declined · 1</text><rect class="fy-bar fy-cother" x="110" y="100" width="63.3" height="18" rx="3"></rect><text x="179.3" y="113">5,450.00</text>
+        <text x="0" y="143">Invoiced · 1</text><rect class="fy-bar fy-cother" x="110" y="130" width="190.0" height="18" rx="3"></rect><text x="306.0" y="143">16,350.00</text>
+        <text x="0" y="173">Cancelled · 0</text><text x="116.0" y="173">0.00</text>
+        <text x="0" y="203">Expired · 1</text><rect class="fy-bar fy-cother" x="110" y="190" width="31.7" height="18" rx="3"></rect><text x="147.7" y="203">2,725.00</text>
+      </svg>
+      <div class="fy-row fy-row--wrap fy-row--between">
+        <div class="fy-legend"><span><span class="fy-legend__key fy-swatch-1"></span>Open: S$104,640.00</span><span><span class="fy-legend__key fy-swatch-other"></span>Closed</span></div>
+        <span class="fy-small fy-muted">SGD, including GST · select a bar to filter the list</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="fy-banner fy-banner--warning">
+    <i data-icon="calendar-clock" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>2 quotes expire in the next 14 days</strong>
+      <span class="fy-small">QUO-0028 to Acme Analytics on 15 Oct and QUO-0029 to Orbital Freight Asia on 22 Oct. Reminders go out 7 days and 1 day before expiry.</span>
+    </div>
+    <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Show them</button>
+  </div>
+
+  <div class="fy-stack fy-stack--3">
+    <div class="fy-row fy-row--wrap fy-row--between">
+      <div class="fy-chipset" role="group" aria-label="Filter by status">
+        <button class="fy-filter" type="button" aria-pressed="true">All</button>
+        <button class="fy-filter" type="button" aria-pressed="false">Open<span class="fy-badge fy-badge--quiet">6</span></button>
+        <button class="fy-filter" type="button" aria-pressed="false">Expiring soon<span class="fy-badge fy-badge--quiet">2</span></button>
+        <button class="fy-filter" type="button" aria-pressed="false">Accepted<span class="fy-badge fy-badge--quiet">2</span></button>
+      </div>
+      <div class="fy-row" style="flex: 0 1 320px; margin-left: auto">
+        <label class="fy-sr" for="q-search">Search quotes</label>
+        <div class="fy-inputgroup" style="flex: 1 1 200px; min-width: 0">
+          <span class="fy-inputgroup__addon"><i data-icon="search"></i></span>
+          <input class="fy-input" id="q-search" placeholder="Number, customer or amount">
+        </div>
+      </div>
+    </div>
+
+    <div class="fy-banner fy-banner--info fy-banner--strip fy-expert-only" role="status" style="border-radius: var(--radius-l); border-width: 1px; flex-wrap: wrap">
+      <i data-icon="square-check"></i>
+      <div class="fy-banner__text"><span><strong>2 accepted quotes selected</strong> · S$30,520.00</span></div>
+      <div class="fy-row fy-row--wrap">
+        <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="file-plus"></i>Convert to invoices</button>
+        <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Choose lines</button>
+      </div>
+    </div>
+
+    <div class="fy-tablewrap">
+      <table class="fy-table fy-table--cards fy-table--compact">
+        <caption class="fy-sr">Quotes, newest first</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="fy-expert-only fy-col-check"><button class="fy-check" type="button" role="checkbox" aria-checked="mixed" aria-label="Select all quotes"><i data-icon="minus"></i></button></th>
+            <th scope="col">Number</th>
+            <th scope="col">Customer</th>
+            <th scope="col" class="fy-from-expanded">Date</th>
+            <th scope="col" class="fy-from-expanded">Valid until</th>
+            <th scope="col" class="fy-num" style="text-align: right">Amount</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="fy-from-expanded">Online</th>
+          </tr>
+        </thead>
+        <tbody class="fy-stagger">
+          <tr>
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select QUO-0032"></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0032" style="white-space: nowrap">QUO-0032</a><span class="fy-only-compact"> · until 11 Nov</span></td>
+            <td data-card="title">Orbital Freight Asia</td>
+            <td class="fy-from-expanded" data-card="hide">12 Oct</td>
+            <td class="fy-from-expanded" data-card="hide">11 Nov</td>
+            <td class="fy-num" data-card="amount">8,720.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+            <td class="fy-from-expanded fy-muted" data-card="hide">Not sent</td>
+          </tr>
+          <tr>
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select QUO-0031"></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0031" style="white-space: nowrap">QUO-0031</a><span class="fy-only-compact"> · opened 3 times</span></td>
+            <td data-card="title">Harbourfront Dental Group</td>
+            <td class="fy-from-expanded" data-card="hide">2 Oct</td>
+            <td class="fy-from-expanded" data-card="hide">1 Nov</td>
+            <td class="fy-num" data-card="amount">21,800.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="send"></i>Sent</span></td>
+            <td class="fy-from-expanded" data-card="hide"><i data-icon="mail-open" class="fy-muted"></i> Opened 3 times, last 10 Oct</td>
+          </tr>
+          <tr aria-selected="true" style="background: color-mix(in oklch, var(--primary-subtle) 60%, var(--surface-1))">
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select QUO-0030"><i data-icon="check"></i></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0030" style="white-space: nowrap">QUO-0030</a><span class="fy-only-compact"> · accepted 2 Oct</span></td>
+            <td data-card="title">Kopi Labs</td>
+            <td class="fy-from-expanded" data-card="hide">25 Sep</td>
+            <td class="fy-from-expanded" data-card="hide">25 Oct</td>
+            <td class="fy-num" data-card="amount">4,360.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Accepted</span></td>
+            <td class="fy-from-expanded" data-card="hide">Accepted online by Joanne Lee, 2 Oct · <a href="#sales/invoices/new?from=quo-0030">invoice draft</a></td>
+          </tr>
+          <tr>
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select QUO-0029"></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0029" style="white-space: nowrap">QUO-0029</a><span class="fy-only-compact"> · reminder 15 Oct</span></td>
+            <td data-card="title">Orbital Freight Asia</td>
+            <td class="fy-from-expanded" data-card="hide">22 Sep</td>
+            <td class="fy-from-expanded" data-card="hide" style="white-space: nowrap">22 Oct <span class="fy-chip fy-chip--warning"><i data-icon="clock"></i>9 days</span></td>
+            <td class="fy-num" data-card="amount">32,700.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="send"></i>Sent</span></td>
+            <td class="fy-from-expanded" data-card="hide"><i data-icon="mail-open" class="fy-muted"></i> Opened 5 times · reminder 15 Oct</td>
+          </tr>
+          <tr>
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select QUO-0028"></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0028" style="white-space: nowrap">QUO-0028</a><span class="fy-only-compact"> · expires 15 Oct</span></td>
+            <td data-card="title">Acme Analytics</td>
+            <td class="fy-from-expanded" data-card="hide">15 Sep</td>
+            <td class="fy-from-expanded" data-card="hide" style="white-space: nowrap">15 Oct <span class="fy-chip fy-chip--warning"><i data-icon="clock"></i>2 days</span></td>
+            <td class="fy-num" data-card="amount">10,900.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="clock"></i>Expires in 2 days</span></td>
+            <td class="fy-from-expanded" data-card="hide"><i data-icon="mail-open" class="fy-muted"></i> Opened once · reminder 14 Oct</td>
+          </tr>
+          <tr aria-selected="true" style="background: color-mix(in oklch, var(--primary-subtle) 60%, var(--surface-1))">
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select QUO-0027"><i data-icon="check"></i></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0027" style="white-space: nowrap">QUO-0027</a><span class="fy-only-compact"> · accepted 30 Sep</span></td>
+            <td data-card="title">Lumen Health</td>
+            <td class="fy-from-expanded" data-card="hide">10 Sep</td>
+            <td class="fy-from-expanded" data-card="hide">10 Oct</td>
+            <td class="fy-num" data-card="amount">26,160.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Accepted</span></td>
+            <td class="fy-from-expanded" data-card="hide">Accepted online by Dr Farah Iskandar, 30 Sep</td>
+          </tr>
+          <tr>
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select QUO-0026"></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0026" style="white-space: nowrap">QUO-0026</a><span class="fy-only-compact"> · ended 1 Oct</span></td>
+            <td data-card="title">Kopi Labs</td>
+            <td class="fy-from-expanded" data-card="hide">1 Sep</td>
+            <td class="fy-from-expanded" data-card="hide">1 Oct</td>
+            <td class="fy-num" data-card="amount">2,725.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="calendar-x"></i>Expired</span></td>
+            <td class="fy-from-expanded" data-card="hide"><i data-icon="mail-open" class="fy-muted"></i> Opened twice · <a href="#sales/quotes/quo-0026/renew">Send again</a></td>
+          </tr>
+          <tr>
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select QUO-0025"></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0025" style="white-space: nowrap">QUO-0025</a><span class="fy-only-compact"> · declined 4 Sep</span></td>
+            <td data-card="title">Harbourfront Dental Group</td>
+            <td class="fy-from-expanded" data-card="hide">20 Aug</td>
+            <td class="fy-from-expanded" data-card="hide">19 Sep</td>
+            <td class="fy-num" data-card="amount">5,450.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="circle-slash"></i>Declined</span></td>
+            <td class="fy-from-expanded" data-card="hide">Declined online, 4 Sep: “We'll start with one clinic.”</td>
+          </tr>
+          <tr>
+            <td class="fy-expert-only" data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select QUO-0024"></button></td>
+            <td data-card="meta"><a class="fy-mono" href="#sales/quotes/quo-0024" style="white-space: nowrap">QUO-0024</a><span class="fy-only-compact"> · 1 of 3 invoiced</span></td>
+            <td data-card="title">Acme Analytics</td>
+            <td class="fy-from-expanded" data-card="hide">5 Aug</td>
+            <td class="fy-from-expanded" data-card="hide">4 Sep</td>
+            <td class="fy-num" data-card="amount">16,350.00</td>
+            <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="file-check"></i>Invoiced, 1 of 3</span></td>
+            <td class="fy-from-expanded" data-card="hide">Support Oct to Dec · <a href="#sales/inv-0150">INV-0150</a> for October</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <span class="fy-small fy-muted">Amounts in SGD including GST. Accepting online records the name, date and comment as evidence on the quote.</span>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#sales/quotes/new"><i data-icon="plus"></i>New quote</a>
+  </div>
+</div>

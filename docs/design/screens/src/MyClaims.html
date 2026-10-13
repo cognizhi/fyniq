@@ -1,0 +1,198 @@
+<!-- fyniq-screen {"nav": "my-claims", "title": "My claims", "mode": "basic", "heights": {"compact": 2350, "medium": 1950, "expanded": 1350}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">For you</span>
+      <h1 class="fy-h1">My claims</h1>
+      <p class="fy-secondary">Costs you paid for the company, and what it still owes you.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="download"></i>Export history</button>
+      <a class="fy-btn fy-btn--secondary" href="#me/claims/new/mileage"><i data-icon="car"></i>Mileage trip</a>
+      <a class="fy-btn fy-btn--primary" href="#me/claims/new"><i data-icon="receipt"></i>New claim</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>Arjun Rao returned your client lunch claim</strong>
+      <span class="fy-small">CLM-0046 · S$64.80 · “Meals above S$50 need the attendees. Please add who came.”</span>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#me/claims/clm-0046">Fix it</a>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="owed-title">
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-tile__label" id="owed-title">What the company owes me<button class="fy-info" type="button" aria-label="About what the company owes me" aria-expanded="false"><i data-icon="info"></i></button></div>
+          <div class="fy-row fy-row--wrap" style="align-items: baseline; gap: var(--space-3)">
+            <a class="fy-tile__value fy-num" href="#me/claims?status=owed" style="color: var(--text-primary)"><span class="fy-muted" style="font-size: var(--fs-md)">S$</span>293.76</a>
+            <span class="fy-small fy-muted">2 claims · paid by bank transfer</span>
+          </div>
+          <div class="fy-stack fy-stack--2">
+            <div class="fy-row fy-row--between"><span class="fy-row"><span class="fy-chip fy-chip--neutral"><i data-icon="send"></i>Submitted</span><span class="fy-small fy-muted">waiting for Arjun Rao</span></span><span class="fy-num">44.76</span></div>
+            <div class="fy-row fy-row--between"><span class="fy-row"><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>Scheduled</span><span class="fy-small fy-muted">paid on 15 Oct</span></span><span class="fy-num">249.00</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-only-compact" aria-labelledby="new-title-c">
+        <div class="fy-card__head"><h2 class="fy-h3" id="new-title-c">New claim from a receipt</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-grid fy-grid--2" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2)">
+            <button class="fy-btn fy-btn--secondary fy-btn--lg" type="button"><i data-icon="camera"></i>Camera</button>
+            <button class="fy-btn fy-btn--secondary fy-btn--lg" type="button"><i data-icon="image"></i>Photos</button>
+          </div>
+          <p class="fy-small fy-muted">Or forward the receipt email to <span class="fy-mono">mei-lin@claims.cognizhi.in.fyniq.app</span></p>
+          <p class="fy-small fy-muted fy-row"><i data-icon="cloud-off"></i>Photos taken offline wait on this phone and upload when you reconnect. Nothing waiting.</p>
+        </div>
+      </section>
+
+      <section class="fy-stack fy-stack--3" aria-labelledby="list-title">
+        <div class="fy-section__head">
+          <h2 class="fy-h2" id="list-title">Claims</h2>
+          <button class="fy-btn fy-btn--ghost fy-btn--sm fy-only-compact" type="button"><i data-icon="download"></i>Export</button>
+        </div>
+        <nav class="fy-tabs" aria-label="Claim views">
+          <a href="#me/claims" aria-current="page">Claims<span class="fy-badge fy-badge--quiet">5</span></a>
+          <a href="#me/claims/mileage">Mileage</a>
+          <a href="#me/claims/card">Card lines<span class="fy-badge fy-badge--quiet">2</span></a>
+          <a href="#me/claims/advances">Cash advances</a>
+        </nav>
+        <div class="fy-chipset" role="group" aria-label="Filter by status">
+          <button class="fy-filter" type="button" aria-pressed="true">All 5</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Returned 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Draft 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Submitted 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Scheduled 1</button>
+          <button class="fy-filter" type="button" aria-pressed="false">Paid 1</button>
+        </div>
+        <div class="fy-card" style="overflow: hidden">
+          <table class="fy-table fy-table--cards">
+            <thead>
+              <tr>
+                <th scope="col">Claim</th>
+                <th scope="col" class="fy-from-expanded">Number</th>
+                <th scope="col">Date</th>
+                <th scope="col" class="fy-from-expanded">Category</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="fy-num">Amount (SGD)</th>
+              </tr>
+            </thead>
+            <tbody class="fy-stagger">
+              <tr>
+                <td data-card="title"><a href="#me/claims/clm-0046" style="color: var(--text-primary)">Client lunch with Lumen Health</a></td>
+                <td data-card="hide" class="fy-from-expanded fy-mono">CLM-0046</td>
+                <td data-card="meta">9 Oct<span class="fy-only-compact"> · Meals · CLM-0046</span></td>
+                <td data-card="hide" class="fy-from-expanded">Meals</td>
+                <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Returned</span></td>
+                <td data-card="amount" class="fy-num">64.80</td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#me/claims/clm-0047" style="color: var(--text-primary)">Grab ride to Acme Analytics</a></td>
+                <td data-card="hide" class="fy-from-expanded fy-mono">CLM-0047</td>
+                <td data-card="meta">13 Oct<span class="fy-only-compact"> · Local travel · CLM-0047</span></td>
+                <td data-card="hide" class="fy-from-expanded">Local travel</td>
+                <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span></td>
+                <td data-card="amount" class="fy-num">27.30</td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#me/claims/clm-0045" style="color: var(--text-primary)">September mileage, 3 trips</a></td>
+                <td data-card="hide" class="fy-from-expanded fy-mono">CLM-0045</td>
+                <td data-card="meta">30 Sep<span class="fy-only-compact"> · Mileage · CLM-0045</span></td>
+                <td data-card="hide" class="fy-from-expanded">Mileage</td>
+                <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="send"></i>Submitted</span></td>
+                <td data-card="amount" class="fy-num">44.76</td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#me/claims/clm-0039" style="color: var(--text-primary)">Conference ticket</a></td>
+                <td data-card="hide" class="fy-from-expanded fy-mono">CLM-0039</td>
+                <td data-card="meta">1 Oct<span class="fy-only-compact"> · Training and events · CLM-0039</span></td>
+                <td data-card="hide" class="fy-from-expanded">Training and events</td>
+                <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>Scheduled</span></td>
+                <td data-card="amount" class="fy-num">249.00</td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#me/claims/clm-0040" style="color: var(--text-primary)">Jakarta hotel, 3 nights</a></td>
+                <td data-card="hide" class="fy-from-expanded fy-mono">CLM-0040</td>
+                <td data-card="meta">18 Sep<span class="fy-only-compact"> · IDR 4,350,000 · paid 1 Oct</span></td>
+                <td data-card="hide" class="fy-from-expanded">Overseas travel</td>
+                <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td>
+                <td data-card="amount" class="fy-num">362.40</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="New claim, card lines, mileage and advances">
+      <section class="fy-card fy-from-medium" aria-labelledby="new-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="new-title">New claim from a receipt</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-dropzone">
+            <i data-icon="receipt" class="fy-i--32"></i>
+            <strong style="color: var(--text-primary)">Drop a receipt here</strong>
+            <span class="fy-small">Paste a screenshot with <span class="fy-kbd">Ctrl</span> <span class="fy-kbd">V</span>, or <a href="#me/claims/new">choose a file</a></span>
+          </div>
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-small fy-muted">Or forward the receipt email to</span>
+            <div class="fy-row"><span class="fy-mono fy-small fy-grow" style="overflow-wrap: anywhere">mei-lin@claims.cognizhi.in.fyniq.app</span><button class="fy-iconbtn" type="button" aria-label="Copy the address"><i data-icon="copy"></i></button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="card-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="card-title">Card lines that need a receipt</h2>
+          <span class="fy-badge fy-badge--quiet">2</span>
+        </div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="credit-card" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">ZOOM.US</span><span class="fy-list__meta">10 Oct · DBS Visa ··4821 · S$21.80</span></span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Add receipt</button>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="credit-card" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">GOJEK SG</span><span class="fy-list__meta">8 Oct · DBS Visa ··4821 · S$18.40</span></span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Add receipt</button>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Add the receipt, category and project. If a line was personal, mark it and it becomes an amount you owe the company.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="mile-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="mile-title">Mileage log</h2>
+          <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#me/claims/mileage">Open</a>
+        </div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">October</span><span class="fy-list__meta">No trips yet · car at S$0.60 per km</span></span>
+            <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#me/claims/new/mileage"><i data-icon="plus"></i>Trip</a>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">September</span><span class="fy-list__meta">3 trips · 74.6 km · CLM-0045</span></span>
+            <span class="fy-num">44.76</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card" aria-labelledby="adv-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="adv-title">Cash advances</h2></div>
+        <div class="fy-card__body fy-row">
+          <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+          <span class="fy-grow fy-secondary">You have no advance to settle. Ask finance before a trip if you need one.</span>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--secondary" href="#me/claims/new/mileage"><i data-icon="car"></i>Mileage</a>
+    <a class="fy-btn fy-btn--primary" href="#me/claims/new"><i data-icon="camera"></i>Snap a receipt</a>
+  </div>
+</div>

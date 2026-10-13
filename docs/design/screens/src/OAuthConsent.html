@@ -1,0 +1,104 @@
+<!-- fyniq-screen {"layout": "bare", "title": "Connect an app", "mode": "basic", "heights": {"compact": 2250, "medium": 1650, "expanded": 1650}} -->
+<div class="fy-bare fy-enter" style="grid-template-columns: minmax(0, 1fr)">
+  <div class="fy-bare__card" style="max-width: 560px">
+    <div class="fy-row fy-row--between fy-row--wrap">
+      <span class="fy-brand"><span class="fy-brand__mark" aria-hidden="true">f</span><span class="fy-brand__word">Fyniq</span></span>
+      <span class="fy-row fy-small fy-secondary"><span class="fy-org__logo" aria-hidden="true">C</span>Cognizhi Pte Ltd</span>
+    </div>
+
+    <section class="fy-card" aria-labelledby="oc-title">
+      <div class="fy-card__body fy-stack">
+        <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+          <span class="fy-list__icon fy-list__icon--brand" style="width: 48px; height: 48px"><i data-icon="square-terminal" class="fy-i--24"></i></span>
+          <div class="fy-stack fy-stack--2 fy-grow">
+            <h1 class="fy-h2" id="oc-title">Claude Code wants to connect to Cognizhi Pte Ltd</h1>
+            <span class="fy-small fy-secondary"><i data-icon="badge-check"></i> Anthropic · verified publisher · version 2.3.0</span>
+          </div>
+        </div>
+        <div class="fy-chipset">
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On Cognizhi’s allowlist</span>
+          <span class="fy-chip fy-chip--neutral"><i data-icon="bot"></i>Agent: proposal-only</span>
+        </div>
+
+        <div class="fy-banner fy-banner--info">
+          <i data-icon="shield-check" class="fy-i--20"></i>
+          <div class="fy-banner__text">
+            <span class="fy-strong">It can read and suggest. It can’t change your books.</span>
+            <span class="fy-small fy-secondary">Every AI app is an agent. Its suggestions wait in your Inbox until a person approves them here in Fyniq. Approving never happens inside Claude Code.</span>
+          </div>
+        </div>
+
+        <dl class="fy-dl">
+          <div><dt>Signed in as</dt><dd>Mei Lin Tan (Owner)</dd></div>
+          <div><dt>You confirmed it’s you</dt><dd>Passkey, today 09:11</dd></div>
+          <div><dt>Sends you back to</dt><dd class="fy-mono" style="word-break: break-all">http://127.0.0.1:33418/callback</dd><dd class="fy-help">On this computer only</dd></div>
+          <div><dt>Can only be used at</dt><dd class="fy-mono" style="word-break: break-all">https://fyniq.cognizhi.com/mcp</dd><dd class="fy-help">The Fyniq connector, nowhere else</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="fy-card" aria-labelledby="oc-scopes">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="oc-scopes">What Claude Code asks for</h2>
+        <span class="fy-badge fy-badge--quiet" aria-label="5 of 7 can be allowed">5 of 7</span>
+      </div>
+      <ul class="fy-list fy-stagger">
+        <li class="fy-list__item">
+          <button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-disabled="true" aria-labelledby="sc-1"><i data-icon="check"></i></button>
+          <span class="fy-list__main"><span class="fy-list__title" id="sc-1" style="white-space: normal">Read reports and key figures</span><span class="fy-list__meta" style="white-space: normal">Profit and loss, balance sheet, cash and runway. Always included.</span><span class="fy-mono fy-small fy-muted fy-expert-only">fyniq.read.reports</span></span>
+        </li>
+        <li class="fy-list__item">
+          <button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-labelledby="sc-2"><i data-icon="check"></i></button>
+          <span class="fy-list__main"><span class="fy-list__title" id="sc-2" style="white-space: normal">Read banking</span><span class="fy-list__meta" style="white-space: normal">Bank accounts, balances and transactions. Never full account numbers.</span><span class="fy-mono fy-small fy-muted fy-expert-only">fyniq.read.banking</span></span>
+        </li>
+        <li class="fy-list__item">
+          <button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-labelledby="sc-3"><i data-icon="check"></i></button>
+          <span class="fy-list__main"><span class="fy-list__title" id="sc-3" style="white-space: normal">Read sales</span><span class="fy-list__meta" style="white-space: normal">Invoices, quotes, customers and what they owe.</span><span class="fy-mono fy-small fy-muted fy-expert-only">fyniq.read.sales</span></span>
+        </li>
+        <li class="fy-list__item">
+          <button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-labelledby="sc-4"><i data-icon="check"></i></button>
+          <span class="fy-list__main"><span class="fy-list__title" id="sc-4" style="white-space: normal">Suggest categories for bank lines</span><span class="fy-list__meta" style="white-space: normal">Creates a proposal for you to approve: up to 100 lines, S$50,000 in total.</span><span class="fy-mono fy-small fy-muted fy-expert-only" style="word-break: break-all">fyniq.propose.bank.categorise_lines</span></span>
+        </li>
+        <li class="fy-list__item">
+          <button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-labelledby="sc-5"><i data-icon="check"></i></button>
+          <span class="fy-list__main"><span class="fy-list__title" id="sc-5" style="white-space: normal">See what happened to its suggestions</span><span class="fy-list__meta" style="white-space: normal">Pending, approved or rejected, for proposals it made.</span><span class="fy-mono fy-small fy-muted fy-expert-only">fyniq.read.proposals</span></span>
+        </li>
+        <li class="fy-list__item" style="background: var(--surface-2)">
+          <span class="fy-check" aria-hidden="true" style="background: var(--surface-3)"><i data-icon="minus"></i></span>
+          <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Read payroll</span><span class="fy-list__meta" style="white-space: normal">Not available: AI payroll access is off for Cognizhi Pte Ltd.</span><span class="fy-mono fy-small fy-muted fy-expert-only">fyniq.read.payroll</span></span>
+          <span class="fy-chip fy-chip--neutral fy-from-medium"><i data-icon="lock"></i>Not granted</span>
+        </li>
+        <li class="fy-list__item" style="background: var(--surface-2)">
+          <span class="fy-check" aria-hidden="true" style="background: var(--surface-3)"><i data-icon="minus"></i></span>
+          <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Read equity and investors</span><span class="fy-list__meta" style="white-space: normal">Needs an Owner’s grant in Settings › Connected apps, approved by a second Owner. Not part of this consent.</span><span class="fy-mono fy-small fy-muted fy-expert-only">fyniq.read.equity</span></span>
+          <span class="fy-chip fy-chip--warning fy-from-medium"><i data-icon="lock"></i>Needs Owner grant</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="oc-data">
+      <h2 class="fy-h3" id="oc-data">Data and time limits</h2>
+      <div class="fy-row fy-row--top" style="gap: var(--space-3)"><i data-icon="database" class="fy-i--20 fy-muted"></i><p class="fy-small fy-secondary"><span class="fy-strong" style="color: var(--text-primary)">Shares</span> financial records and the names and emails of customers and suppliers. <span class="fy-strong" style="color: var(--text-primary)">Never</span> NRIC or FIN, full bank account numbers, home addresses, passwords or salaries.</p></div>
+      <div class="fy-row fy-row--top" style="gap: var(--space-3)"><i data-icon="calendar-clock" class="fy-i--20 fy-muted"></i><p class="fy-small fy-secondary">Access lasts until <span class="fy-strong" style="color: var(--text-primary)">11 Jan 2027</span> (90 days), then we ask you again. Remove it any time in Settings › Connected apps; it stops within 60 seconds.</p></div>
+      <div class="fy-row fy-row--top" style="gap: var(--space-3)"><i data-icon="scroll-text" class="fy-i--20 fy-muted"></i><p class="fy-small fy-secondary">Everything it reads and suggests is in your AI activity log. Allowing replaces your older Claude Code connection from 3 Oct; Claude Desktop stays as it is.</p></div>
+    </section>
+
+    <div class="fy-actionbar fy-actionbar--editor">
+      <button class="fy-btn fy-btn--secondary fy-btn--lg" type="button">Deny</button>
+      <button class="fy-btn fy-btn--primary fy-btn--lg" type="button" style="color: var(--primary-foreground)">Allow</button>
+    </div>
+    <p class="fy-small fy-muted" style="text-align: center">Not you, or didn’t start this? <a href="#sign-out">Sign out</a> and tell your Owner.</p>
+
+    <section class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--3" aria-labelledby="oc-no">
+      <h2 class="fy-h3" id="oc-no">When this screen says no instead</h2>
+      <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+        <span class="fy-list__icon fy-list__icon--critical"><i data-icon="ban" class="fy-i--20"></i></span>
+        <div class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong">This app can’t connect</span><span class="fy-small fy-secondary">The app isn’t on Cognizhi’s allowlist. There is no Allow button; an Owner can review the request in Connected apps.</span></div>
+      </div>
+      <div class="fy-row fy-row--top" style="gap: var(--space-3)">
+        <span class="fy-list__icon"><i data-icon="power-off" class="fy-i--20"></i></span>
+        <div class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong">Connected apps are off for Cognizhi Pte Ltd</span><span class="fy-small fy-secondary">An Owner turns them on in Settings › Connected apps, with a second Owner’s approval.</span></div>
+      </div>
+    </section>
+  </div>
+</div>

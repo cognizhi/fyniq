@@ -1,0 +1,47 @@
+<!-- fyniq-screen {"nav": "planning", "title": "Feasibility", "mode": "expert", "heights": {"compact": 2200, "medium": 1700, "expanded": 1150}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#planning">Planning</a><i data-icon="chevron-right"></i><span>Feasibility</span></nav>
+      <h1 class="fy-h1">Acme data platform, phase 2</h1>
+      <p class="fy-secondary">Is the extra build worth it? A sandbox calculation; it never posts.</p>
+    </div>
+    <div class="fy-pagehead__actions"><button class="fy-btn fy-btn--primary" type="button"><i data-icon="save"></i>Save</button></div>
+  </div>
+  <div class="fy-banner fy-banner--good"><i data-icon="circle-check" class="fy-i--20"></i><div class="fy-banner__text"><strong>Worth doing at a 12% discount rate</strong><span>Positive NPV and payback within 14 months. The verdict changes if annual revenue falls below S$118,000.</span></div></div>
+  <div class="fy-grid fy-grid--tiles fy-stagger">
+    <div class="fy-tile"><span class="fy-tile__label">NPV</span><span class="fy-tile__value fy-num">84,210<small>SGD</small></span></div>
+    <div class="fy-tile"><span class="fy-tile__label">IRR</span><span class="fy-tile__value fy-num">38.6%</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Payback</span><span class="fy-tile__value fy-num">13.8<small>months</small></span><span class="fy-tile__meta">Discounted: 15.6</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Profitability index</span><span class="fy-tile__value fy-num">1.70</span><span class="fy-tile__meta">Margin of safety 21%</span></div>
+  </div>
+  <div class="fy-split fy-split--wide-aside">
+    <section class="fy-card" aria-labelledby="fe-flows">
+      <div class="fy-card__head"><h2 class="fy-h3" id="fe-flows">Cash flows</h2><span class="fy-small fy-muted">S$, by half-year</span></div>
+      <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+        <table class="fy-table fy-statement">
+          <thead><tr><th scope="col">Item</th><th scope="col" class="fy-num">H0</th><th scope="col" class="fy-num">H1</th><th scope="col" class="fy-num">H2</th><th scope="col" class="fy-num">H3</th><th scope="col" class="fy-num">H4</th></tr></thead>
+          <tbody>
+            <tr><td>Build cost</td><td class="fy-num">−120,000</td><td class="fy-num">−24,000</td><td class="fy-num">0</td><td class="fy-num">0</td><td class="fy-num">0</td></tr>
+            <tr><td>Revenue</td><td class="fy-num">0</td><td class="fy-num">60,000</td><td class="fy-num">72,000</td><td class="fy-num">72,000</td><td class="fy-num">78,000</td></tr>
+            <tr><td>Running cost</td><td class="fy-num">0</td><td class="fy-num">−9,000</td><td class="fy-num">−9,600</td><td class="fy-num">−9,600</td><td class="fy-num">−10,200</td></tr>
+          </tbody>
+          <tfoot><tr><td>Net</td><td class="fy-num">−120,000</td><td class="fy-num">27,000</td><td class="fy-num">62,400</td><td class="fy-num">62,400</td><td class="fy-num">67,800</td></tr></tfoot>
+        </table>
+      </div>
+    </section>
+    <section class="fy-card" aria-labelledby="fe-sens">
+      <div class="fy-card__head"><h2 class="fy-h3" id="fe-sens">Sensitivity: NPV (S$ thousands)</h2></div>
+      <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+        <table class="fy-table fy-table--compact">
+          <thead><tr><th scope="col">Revenue</th><th scope="col" class="fy-num">10%</th><th scope="col" class="fy-num">12%</th><th scope="col" class="fy-num">15%</th></tr></thead>
+          <tbody>
+            <tr><td>−20%</td><td class="fy-num">31</td><td class="fy-num">24</td><td class="fy-num">15</td></tr>
+            <tr aria-selected="true"><td>Plan</td><td class="fy-num">93</td><td class="fy-num fy-strong">84</td><td class="fy-num">72</td></tr>
+            <tr><td>+20%</td><td class="fy-num">155</td><td class="fy-num">144</td><td class="fy-num">129</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>

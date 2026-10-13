@@ -1,0 +1,237 @@
+<!-- fyniq-screen {"nav": "purchases", "title": "Expense claims", "mode": "expert", "heights": {"compact": 3000, "medium": 2000, "expanded": 1350}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Purchases</span>
+      <h1 class="fy-h1">Expense claims</h1>
+      <p class="fy-secondary">Everyone's claims: approve or return them, then pay them back by payment batch or pay run.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="download"></i>Export</button>
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="undo-2"></i>Return</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="check"></i>Approve 2 selected</button>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <a class="fy-tile" href="#purchases/claims?filter=mine">
+      <span class="fy-tile__label"><i data-icon="inbox"></i>Waiting for my approval</span>
+      <span class="fy-tile__value fy-num">3<small>claims</small></span>
+      <span class="fy-tile__meta">S$155.96 in total</span>
+    </a>
+    <a class="fy-tile" href="#purchases/claims?filter=breach">
+      <span class="fy-tile__label"><i data-icon="triangle-alert"></i>Policy breaches</span>
+      <span class="fy-tile__value fy-num">1<small>claim</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Attendees missing</span></span>
+    </a>
+    <a class="fy-tile" href="#purchases/claims?filter=approved">
+      <span class="fy-tile__label"><i data-icon="banknote"></i>Approved, to pay back</span>
+      <span class="fy-tile__value fy-num">647.90<small>SGD</small></span>
+      <span class="fy-tile__meta">3 claims · S$212.60 on hold</span>
+    </a>
+    <a class="fy-tile" href="#purchases/claims/advances">
+      <span class="fy-tile__label"><i data-icon="hand-coins"></i>Cash advances out</span>
+      <span class="fy-tile__value fy-num">1,100.00<small>SGD</small></span>
+      <span class="fy-tile__meta"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 past deadline</span></span>
+    </a>
+  </div>
+
+  <section class="fy-stack fy-stack--3" aria-labelledby="cl-title">
+    <div class="fy-section__head">
+      <h2 class="fy-h2" id="cl-title">Claims</h2>
+      <span class="fy-small fy-muted">2 selected</span>
+    </div>
+    <div class="fy-chipset" role="group" aria-label="Filter claims">
+      <button class="fy-filter" type="button" aria-pressed="false">Waiting for me 3</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Policy breach 1</button>
+      <button class="fy-filter" type="button" aria-pressed="false">With finance 1</button>
+      <button class="fy-filter" type="button" aria-pressed="false">Approved 3</button>
+      <button class="fy-filter" type="button" aria-pressed="true">All open 8</button>
+    </div>
+    <div class="fy-card" style="overflow: hidden">
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr>
+            <th scope="col" class="fy-col-check"><button class="fy-check" type="button" role="checkbox" aria-checked="mixed" aria-label="Select all claims"><i data-icon="minus"></i></button></th>
+            <th scope="col">Claimant</th>
+            <th scope="col" class="fy-from-expanded">Claim</th>
+            <th scope="col" class="fy-from-expanded">Date</th>
+            <th scope="col" class="fy-from-expanded">Category</th>
+            <th scope="col" class="fy-from-expanded">Project</th>
+            <th scope="col">Policy</th>
+            <th scope="col">Approval</th>
+            <th scope="col" class="fy-num">Amount (SGD)</th>
+          </tr>
+        </thead>
+        <tbody class="fy-stagger">
+          <tr>
+            <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0050"></button></td>
+            <td data-card="title"><span class="fy-row"><button class="fy-check fy-only-compact" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0050"></button><a href="#purchases/claims/clm-0050" style="color: var(--text-primary)">Sarah Koh</a></span><div class="fy-small fy-muted fy-until-expanded" style="font-weight: 400">Client lunch, Kopi Labs · 9 Oct</div></td>
+            <td data-card="hide" class="fy-from-expanded">Client lunch, Kopi Labs</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">9 Oct</td>
+            <td data-card="hide" class="fy-from-expanded">Meals</td>
+            <td data-card="hide" class="fy-from-expanded">—</td>
+            <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Attendees missing</span></td>
+            <td data-card="meta">You · step 1 of 2</td>
+            <td data-card="amount" class="fy-num">92.40</td>
+          </tr>
+          <tr aria-selected="true" style="background: color-mix(in oklch, var(--primary-subtle) 60%, var(--surface-1))">
+            <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select CLM-0049"><i data-icon="check"></i></button></td>
+            <td data-card="title"><span class="fy-row"><button class="fy-check fy-only-compact" type="button" role="checkbox" aria-checked="true" aria-label="Select CLM-0049"><i data-icon="check"></i></button><a href="#purchases/claims/clm-0049" style="color: var(--text-primary)">Wei Jie Ong</a></span><div class="fy-small fy-muted fy-until-expanded" style="font-weight: 400">Test-device app subscription · 11 Oct</div></td>
+            <td data-card="hide" class="fy-from-expanded">Test-device app subscription</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">11 Oct</td>
+            <td data-card="hide" class="fy-from-expanded">Software</td>
+            <td data-card="hide" class="fy-from-expanded">Acme data platform</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Within policy</span></td>
+            <td data-card="meta">You · step 1 of 2</td>
+            <td data-card="amount" class="fy-num">38.00</td>
+          </tr>
+          <tr aria-selected="true" style="background: color-mix(in oklch, var(--primary-subtle) 60%, var(--surface-1))">
+            <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Select CLM-0051"><i data-icon="check"></i></button></td>
+            <td data-card="title"><span class="fy-row"><button class="fy-check fy-only-compact" type="button" role="checkbox" aria-checked="true" aria-label="Select CLM-0051"><i data-icon="check"></i></button><a href="#purchases/claims/clm-0051" style="color: var(--text-primary)">Hafiz Rahman</a></span><div class="fy-small fy-muted fy-until-expanded" style="font-weight: 400">Mileage, 42.6 km · 7 Oct</div></td>
+            <td data-card="hide" class="fy-from-expanded">Mileage, 42.6 km</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">7 Oct</td>
+            <td data-card="hide" class="fy-from-expanded">Mileage</td>
+            <td data-card="hide" class="fy-from-expanded">Lumen Health pilot</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Within policy</span></td>
+            <td data-card="meta">You · step 1 of 2</td>
+            <td data-card="amount" class="fy-num">25.56</td>
+          </tr>
+          <tr>
+            <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0048"></button></td>
+            <td data-card="title"><span class="fy-row"><button class="fy-check fy-only-compact" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0048"></button><a href="#purchases/claims/clm-0048" style="color: var(--text-primary)">Priya Nair</a></span><div class="fy-small fy-muted fy-until-expanded" style="font-weight: 400">Jakarta trip, settles ADV-007 · 30 Sep</div></td>
+            <td data-card="hide" class="fy-from-expanded">Jakarta trip, settles ADV-007</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">30 Sep</td>
+            <td data-card="hide" class="fy-from-expanded">Overseas travel</td>
+            <td data-card="hide" class="fy-from-expanded">—</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Within policy</span></td>
+            <td data-card="meta">Grace Ho · step 2 of 2</td>
+            <td data-card="amount" class="fy-num">742.15</td>
+          </tr>
+          <tr>
+            <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-disabled="true" aria-label="CLM-0045 is your own claim and can't be selected"></button></td>
+            <td data-card="title"><span class="fy-row"><button class="fy-check fy-only-compact" type="button" role="checkbox" aria-checked="false" aria-disabled="true" aria-label="CLM-0045 is your own claim and can't be selected"></button><a href="#purchases/claims/clm-0045" style="color: var(--text-primary)">Mei Lin Tan (you)</a></span><div class="fy-small fy-muted fy-until-expanded" style="font-weight: 400">September mileage, 3 trips · 30 Sep</div></td>
+            <td data-card="hide" class="fy-from-expanded">September mileage, 3 trips</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">30 Sep</td>
+            <td data-card="hide" class="fy-from-expanded">Mileage</td>
+            <td data-card="hide" class="fy-from-expanded">Lumen Health pilot</td>
+            <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Within policy</span></td>
+            <td data-card="meta">Arjun Rao · your own claim</td>
+            <td data-card="amount" class="fy-num">44.76</td>
+          </tr>
+          <tr>
+            <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0044"></button></td>
+            <td data-card="title"><span class="fy-row"><button class="fy-check fy-only-compact" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0044"></button><a href="#purchases/claims/clm-0044" style="color: var(--text-primary)">Daniel Lim</a></span><div class="fy-small fy-muted fy-until-expanded" style="font-weight: 400">USB-C dock and cables · 3 Oct</div></td>
+            <td data-card="hide" class="fy-from-expanded">USB-C dock and cables</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">3 Oct</td>
+            <td data-card="hide" class="fy-from-expanded">Office supplies</td>
+            <td data-card="hide" class="fy-from-expanded">—</td>
+            <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>Fri 16 Oct batch</span></td>
+            <td data-card="meta">Approved</td>
+            <td data-card="amount" class="fy-num">186.30</td>
+          </tr>
+          <tr>
+            <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0039"></button></td>
+            <td data-card="title"><span class="fy-row"><button class="fy-check fy-only-compact" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0039"></button><a href="#purchases/claims/clm-0039" style="color: var(--text-primary)">Mei Lin Tan (you)</a></span><div class="fy-small fy-muted fy-until-expanded" style="font-weight: 400">Conference ticket · 1 Oct</div></td>
+            <td data-card="hide" class="fy-from-expanded">Conference ticket</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">1 Oct</td>
+            <td data-card="hide" class="fy-from-expanded">Training and events</td>
+            <td data-card="hide" class="fy-from-expanded">—</td>
+            <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>Thu 15 Oct batch</span></td>
+            <td data-card="meta">Approved by Arjun Rao</td>
+            <td data-card="amount" class="fy-num">249.00</td>
+          </tr>
+          <tr>
+            <td data-card="hide"><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0042"></button></td>
+            <td data-card="title"><span class="fy-row"><button class="fy-check fy-only-compact" type="button" role="checkbox" aria-checked="false" aria-label="Select CLM-0042"></button><a href="#purchases/claims/clm-0042" style="color: var(--text-primary)">Chen Yu</a></span><div class="fy-small fy-muted fy-until-expanded" style="font-weight: 400">Taxis to client sites · 30 Sep</div></td>
+            <td data-card="hide" class="fy-from-expanded">Taxis to client sites</td>
+            <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">30 Sep</td>
+            <td data-card="hide" class="fy-from-expanded">Local travel</td>
+            <td data-card="hide" class="fy-from-expanded">Acme data platform</td>
+            <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="lock"></i>IR21 hold</span></td>
+            <td data-card="meta">Approved, held</td>
+            <td data-card="amount" class="fy-num">212.60</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fy-small fy-muted fy-row"><i data-icon="info"></i>No one approves their own claim: a director's claims go to the other director. Mei Lin Tan's claims go to Arjun Rao.</p>
+  </section>
+
+  <div class="fy-split">
+    <section class="fy-stack fy-stack--3" aria-labelledby="adv-title">
+      <div class="fy-section__head">
+        <h2 class="fy-h2" id="adv-title">Cash advances</h2>
+        <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Issue advance</button>
+      </div>
+      <div class="fy-card" style="overflow: hidden">
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr>
+              <th scope="col">Person</th>
+              <th scope="col" class="fy-from-expanded">Advance</th>
+              <th scope="col">Issued</th>
+              <th scope="col" class="fy-num">Amount</th>
+              <th scope="col" class="fy-num">Settled by claims</th>
+              <th scope="col" class="fy-num">Balance</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-card="title">Priya Nair</td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">ADV-007</span> · Jakarta trip</td>
+              <td data-card="meta">22 Sep<span class="fy-only-compact"> · Jakarta trip · S$800.00 issued</span></td>
+              <td data-card="hide" class="fy-num">800.00</td>
+              <td data-card="meta" class="fy-num"><span class="fy-only-compact">Settled by CLM-0048: </span>742.15</td>
+              <td data-card="amount" class="fy-num">57.85</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="undo-2"></i>Refund due</span></td>
+            </tr>
+            <tr>
+              <td data-card="title">Hafiz Rahman</td>
+              <td data-card="hide" class="fy-from-expanded"><span class="fy-mono">ADV-005</span> · Kuala Lumpur trip</td>
+              <td data-card="meta">5 Aug<span class="fy-only-compact"> · Kuala Lumpur trip · S$300.00 issued</span></td>
+              <td data-card="hide" class="fy-num">300.00</td>
+              <td data-card="meta" class="fy-num"><span class="fy-only-compact">Settled by claims: </span>0.00</td>
+              <td data-card="amount" class="fy-num">300.00</td>
+              <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Past deadline</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fy-small fy-muted"><span class="fy-basic-only">Hafiz's advance should have been settled by 4 Oct (60 days). Ask for his claims or a refund.</span><span class="fy-expert-only">Advances sit in <span class="fy-mono">1250</span> Staff &amp; director advances until claims settle them. ADV-005 passed its 60-day deadline on 4 Oct: ask for claims or a refund; deduction from salary only with consent (FR-PAY-16).</span></p>
+    </section>
+
+    <aside class="fy-card" aria-labelledby="route-title">
+      <div class="fy-card__head">
+        <h2 class="fy-h3" id="route-title">How approved claims are paid</h2>
+        <button class="fy-info" type="button" aria-label="About reimbursement routes" aria-expanded="false"><i data-icon="info"></i></button>
+      </div>
+      <div class="fy-card__body fy-stack fy-stack--3">
+        <div class="fy-stack fy-stack--2" role="radiogroup" aria-label="Default route">
+          <button class="fy-choice" type="button" role="radio" aria-checked="true">
+            <span class="fy-radio"></span>
+            <span class="fy-stack" style="gap: 2px"><span class="fy-strong">Next payment batch</span><span class="fy-small fy-muted">Fri 16 Oct suppliers: Daniel Lim S$186.30; Chen Yu S$632.60 held</span></span>
+          </button>
+          <button class="fy-choice" type="button" role="radio" aria-checked="false">
+            <span class="fy-radio"></span>
+            <span class="fy-stack" style="gap: 2px"><span class="fy-strong">October pay run, as a non-wage line</span><span class="fy-small fy-muted">PR-2026-10 on 28 Oct. Not taxable and not CPF wages: these are actual business costs.</span></span>
+          </button>
+        </div>
+        <div class="fy-divider"></div>
+        <ul class="fy-list">
+          <li class="fy-list__item" style="padding-left: 0; padding-right: 0">
+            <span class="fy-list__main"><span class="fy-list__title">Thu 15 Oct claims</span><span class="fy-list__meta">2 claims · approved, ready to release</span></span>
+            <span class="fy-num fy-strong">328.90</span>
+          </li>
+        </ul>
+        <a class="fy-small" href="#settings/expense-policy">Expense policy: limits, deadlines and routing</a>
+      </div>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button">Return</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="check"></i>Approve 2</button>
+  </div>
+</div>

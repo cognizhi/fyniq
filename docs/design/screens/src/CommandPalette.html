@@ -1,0 +1,67 @@
+<!-- fyniq-screen {"nav": "home", "title": "Home", "mode": "basic", "heights": {"compact": 900, "medium": 650, "expanded": 550}} -->
+<div class="fy-page fy-enter" aria-hidden="true">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Tuesday 13 Oct 2026</span>
+      <h1 class="fy-h1">Good morning, Mei Lin</h1>
+      <p class="fy-secondary">Five things need you today. Everything else is on track.</p>
+    </div>
+  </div>
+  <div class="fy-grid fy-grid--tiles">
+    <div class="fy-tile"><span class="fy-tile__label">Cash in the bank</span><span class="fy-tile__value fy-num">412,380.15</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Runway</span><span class="fy-tile__value fy-num">10.8<small>months</small></span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Customers owe us</span><span class="fy-tile__value fy-num">48,250.00</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">We owe suppliers</span><span class="fy-tile__value fy-num">12,870.40</span></div>
+  </div>
+  <div class="fy-card">
+    <div class="fy-card__head"><span class="fy-h3">Needs you today</span></div>
+    <div class="fy-card__body fy-stack fy-stack--3"><span class="fy-skel fy-skel--text"></span><span class="fy-skel fy-skel--text"></span><span class="fy-skel fy-skel--text"></span></div>
+  </div>
+</div>
+
+<div class="fy-scrim" style="align-items: flex-start; padding: 64px var(--space-2) var(--space-2)">
+  <div class="fy-palette" role="dialog" aria-modal="true" aria-label="Command palette" style="margin-top: 4px">
+    <div class="fy-palette__input">
+      <i data-icon="search" class="fy-i--20 fy-muted"></i>
+      <label class="fy-sr" for="pal-q">Search pages, records and commands</label>
+      <input class="fy-input" id="pal-q" value="acme" readonly="readonly" role="combobox" aria-expanded="true" aria-controls="pal-list" aria-activedescendant="pal-1" style="border: 0; background: transparent; padding: 0; height: 50px; box-shadow: none">
+      <span class="fy-kbd">Esc</span>
+    </div>
+    <div id="pal-list" role="listbox" aria-label="Results for acme" style="max-height: 640px; overflow: auto; padding-bottom: var(--space-2)">
+      <div class="fy-palette__group" role="group" aria-labelledby="pg-go">
+        <div class="fy-eyebrow" id="pg-go" style="padding: var(--space-1) var(--space-3)">Go to</div>
+        <button class="fy-palette__item" id="pal-1" type="button" role="option" aria-selected="true"><i data-icon="users"></i><span class="fy-grow fy-truncate"><span class="fy-strong">Acme</span> Analytics Pte Ltd</span><span class="fy-small fy-muted fy-from-medium">Customer · owes S$17,222.00</span><i data-icon="corner-down-left"></i></button>
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false"><i data-icon="receipt"></i><span class="fy-grow fy-truncate"><span class="fy-mono">INV-0150</span> · <span class="fy-strong">Acme</span> Analytics</span><span class="fy-chip fy-chip--neutral"><i data-icon="calendar-clock"></i>Due 11 Nov</span></button>
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false"><i data-icon="briefcase-business"></i><span class="fy-grow fy-truncate"><span class="fy-strong">Acme</span> data platform</span><span class="fy-small fy-muted fy-from-medium">Project · time and materials</span></button>
+      </div>
+      <div class="fy-palette__group" role="group" aria-labelledby="pg-new">
+        <div class="fy-eyebrow" id="pg-new" style="padding: var(--space-1) var(--space-3)">Create</div>
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false"><i data-icon="plus"></i><span class="fy-grow fy-truncate">New invoice for <span class="fy-strong">Acme</span> Analytics</span><span class="fy-kbd">C</span><span class="fy-kbd">I</span></button>
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false"><i data-icon="hand-coins"></i><span class="fy-grow fy-truncate">Record a payment from <span class="fy-strong">Acme</span> Analytics</span></button>
+      </div>
+      <div class="fy-palette__group" role="group" aria-labelledby="pg-rep">
+        <div class="fy-eyebrow" id="pg-rep" style="padding: var(--space-1) var(--space-3)">Run report</div>
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false"><i data-icon="chart-column"></i><span class="fy-grow fy-truncate">Customer statement · <span class="fy-strong">Acme</span> Analytics</span></button>
+      </div>
+      <div class="fy-palette__group" role="group" aria-labelledby="pg-cmd">
+        <div class="fy-eyebrow" id="pg-cmd" style="padding: var(--space-1) var(--space-3)">Commands</div>
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false" style="height: auto; min-height: 40px; padding-top: 6px; padding-bottom: 6px"><i data-icon="book-open"></i><span class="fy-grow fy-stack fy-stack--2" style="gap: 0"><span class="fy-truncate">Ledger lines for <span class="fy-strong">Acme</span> Analytics</span><span class="fy-small fy-muted">Available in Expert mode: switch?</span></span><span class="fy-tag fy-tag--expert">Expert</span></button>
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false"><i data-icon="sun-moon"></i><span class="fy-grow fy-truncate">Change theme</span></button>
+      </div>
+      <div class="fy-palette__group" role="group" aria-labelledby="pg-help">
+        <div class="fy-eyebrow" id="pg-help" style="padding: var(--space-1) var(--space-3)">Help</div>
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false"><i data-icon="life-buoy"></i><span class="fy-grow fy-truncate">Help: recording a customer payment</span></button>
+      </div>
+      <div class="fy-palette__group">
+        <button class="fy-palette__item" type="button" role="option" aria-selected="false" style="border: 1px dashed var(--border-strong)"><i data-icon="sparkles"></i><span class="fy-grow fy-truncate">Ask the assistant about “acme”</span><span class="fy-kbd">Tab</span></button>
+      </div>
+    </div>
+    <div class="fy-palette__foot">
+      <span><span class="fy-kbd">↑</span> <span class="fy-kbd">↓</span> move</span>
+      <span><span class="fy-kbd">↵</span> open</span>
+      <span class="fy-from-medium"><span class="fy-kbd">Tab</span> ask the assistant</span>
+      <span class="fy-spacer"></span>
+      <span class="fy-from-medium">Recent items come first</span>
+    </div>
+  </div>
+</div>

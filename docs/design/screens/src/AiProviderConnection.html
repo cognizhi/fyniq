@@ -1,0 +1,225 @@
+<!-- fyniq-screen {"nav": "settings", "title": "OpenAI API", "mode": "expert", "heights": {"compact": 4700, "medium": 3550, "expanded": 2600}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/ai">AI</a><i data-icon="chevron-right"></i><a href="#settings/ai/providers">Providers</a><i data-icon="chevron-right"></i><span aria-current="page">OpenAI API</span></nav>
+      <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+        <span class="fy-org__logo" aria-hidden="true" style="width: 40px; height: 40px; border-radius: var(--radius-m); font-size: var(--fs-lg)">O</span>
+        <h1 class="fy-h1">OpenAI API</h1>
+        <span class="fy-chip fy-chip--warning"><i data-icon="hourglass"></i>Waiting for Arjun Rao</span>
+        <span class="fy-chip fy-chip--neutral"><i data-icon="power-off"></i>Off</span>
+      </div>
+      <p class="fy-secondary">OpenAI API adapter <span class="fy-mono">1.0.0</span> · added by Mei Lin Tan today at 08:55 · for the knowledge-base compiler, know-how only</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button">Withdraw</button>
+      <a class="fy-btn fy-btn--primary" href="#inbox/approval-ai-415">View request</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="users" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">A second Owner must approve this connection</span>
+      <span class="fy-small fy-secondary">Arjun Rao confirms with his passkey. Approving turns the connection on for evals only: GPT-5 serves the knowledge-base compiler after it passes the knowledge evals and the route change is approved.</span>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Sections">
+    <a href="#overview" aria-current="page">Overview</a>
+    <a href="#models">Models</a>
+    <a href="#billing">Billing</a>
+    <a href="#data">Data handling</a>
+    <a href="#limits">Limits</a>
+    <a href="#activity">Activity</a>
+  </nav>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="life-title" id="overview">
+        <div class="fy-card__head"><h2 class="fy-h3" id="life-title">Steps to use it</h2></div>
+        <div class="fy-card__body fy-stack">
+          <ol class="fy-steps fy-steps--wrap" aria-label="Connection steps">
+            <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Configure</li>
+            <li class="fy-step" aria-current="step"><span class="fy-step__n">2</span>Approve</li>
+            <li class="fy-step"><span class="fy-step__n">3</span>Qualify</li>
+            <li class="fy-step"><span class="fy-step__n">4</span>Route</li>
+            <li class="fy-step"><span class="fy-step__n">5</span>In use</li>
+          </ol>
+          <p class="fy-small fy-muted">Every connection starts off. Each step is audited, and approving or widening one needs a second Owner.</p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="end-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="end-title">Endpoint and sign-in</h2></div>
+        <div class="fy-card__body">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="pc-url">Base URL</label>
+              <input class="fy-input fy-mono" id="pc-url" value="https://api.openai.com/v1" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="pc-region">Where it processes</label>
+              <input class="fy-input" id="pc-region" value="United States" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="pc-project">Project</label>
+              <input class="fy-input" id="pc-project" value="fyniq-knowledge-base" readonly="readonly">
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="pc-auth">Sign-in</label>
+              <select class="fy-select" id="pc-auth"><option>API key</option><option>OAuth grant</option><option>None, private endpoint only</option></select>
+            </div>
+            <div class="fy-field fy-field--full">
+              <label class="fy-label" for="pc-key">API key <span class="fy-tag">Write-only</span></label>
+              <input class="fy-input" id="pc-key" type="password" autocomplete="off" placeholder="Stored at 08:52. Enter a new key to replace it" aria-describedby="pc-key-help">
+              <span class="fy-help" id="pc-key-help">Kept in Secret Manager, encrypted with your organisation's key, and never shown again. It is never logged and never reaches the model, a browser or a connected app. Rotate it every 90 days.</span>
+            </div>
+            <div class="fy-field fy-field--full">
+              <label class="fy-label" for="pc-egress">Allowed destinations</label>
+              <input class="fy-input fy-mono" id="pc-egress" value="api.openai.com:443 (TLS)" readonly="readonly" aria-describedby="pc-egress-help">
+              <span class="fy-help" id="pc-egress-help">Calls for this connection can leave only for these addresses.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="mod-title" id="models">
+        <div class="fy-card__head"><h2 class="fy-h3" id="mod-title">Models it may serve</h2><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="plus"></i>Add a model</button></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Model</th><th scope="col">Capabilities</th><th scope="col">Qualification</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-card="title">GPT-5<span class="fy-small fy-muted fy-mono" style="display: block; font-weight: 400">gpt-5-2025-08-07 · pinned</span></td>
+              <td data-card="meta">
+                <ul class="fy-chipset" aria-label="Capabilities of GPT-5">
+                  <li class="fy-chip fy-chip--outline fy-chip--neutral">Tool calling</li>
+                  <li class="fy-chip fy-chip--outline fy-chip--neutral">Structured output</li>
+                  <li class="fy-chip fy-chip--outline fy-chip--neutral">Streaming</li>
+                  <li class="fy-chip fy-chip--outline fy-chip--neutral">PDF and images</li>
+                  <li class="fy-chip fy-chip--outline fy-chip--neutral">Prompt caching</li>
+                  <li class="fy-chip fy-chip--outline fy-chip--neutral">Reasoning effort</li>
+                </ul>
+              </td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral fy-wrap"><i data-icon="clock"></i>Not run: after approval</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Pinned versions only. A name the provider moves to newer models is allowed only with a weekly re-qualification, and its routes show a warning until it passes. A capability the adapter's tests cannot prove counts as absent.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="bill-title" id="billing">
+        <div class="fy-card__head"><h2 class="fy-h3" id="bill-title">Billing</h2></div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-stack fy-stack--3" role="radiogroup" aria-labelledby="bill-title">
+            <button class="fy-choice" type="button" role="radio" aria-checked="true">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-grow" style="gap: 4px">
+                <span class="fy-strong">Usage-based</span>
+                <span class="fy-small fy-secondary">OpenAI bills the project per token in USD. Fyniq costs each request from OpenAI's usage figures (input, cached, output and reasoning tokens) and the price table below.</span>
+              </span>
+            </button>
+            <button class="fy-choice" type="button" role="radio" aria-checked="false">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-grow" style="gap: 4px">
+                <span class="fy-strong">Subscription or commitment</span>
+                <span class="fy-small fy-secondary">A fixed fee with a quota and a reset window, such as reserved capacity. Usage is counted against the quota.</span>
+              </span>
+            </button>
+            <button class="fy-choice" type="button" role="radio" aria-checked="false" aria-disabled="true" style="opacity: 0.6">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-grow" style="gap: 4px">
+                <span class="fy-strong">Each person's own plan</span>
+                <span class="fy-small fy-secondary">Phase 2, and only for that person's own chats. Turned on in AI settings.</span>
+              </span>
+            </button>
+          </div>
+          <table class="fy-table fy-table--compact">
+            <caption class="fy-small fy-muted" style="text-align: left; padding-bottom: var(--space-2)">Price table for GPT-5, US$ per million tokens · checked 13 Oct 2026, 08:50</caption>
+            <thead><tr><th scope="col">Tokens</th><th scope="col" class="fy-num" style="text-align: right">Price (USD)</th></tr></thead>
+            <tbody>
+              <tr><td>Input</td><td class="fy-num">1.25</td></tr>
+              <tr><td>Cached input</td><td class="fy-num">0.125</td></tr>
+              <tr><td>Output, reasoning included</td><td class="fy-num">10.00</td></tr>
+            </tbody>
+          </table>
+          <div class="fy-row fy-row--between fy-row--wrap">
+            <span class="fy-strong">Budget for this connection</span>
+            <span class="fy-num">S$30.00 a month · alert at 80% · stops at 100%</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="data-title" id="data">
+        <div class="fy-card__head"><h2 class="fy-h3" id="data-title">Data handling</h2><button class="fy-info" type="button" aria-label="About data handling" aria-expanded="false"><i data-icon="info"></i></button></div>
+        <div class="fy-card__body fy-stack">
+          <dl class="fy-dl">
+            <div><dt>Processed in</dt><dd>United States</dd></div>
+            <div><dt>Kept by OpenAI</dt><dd>Up to 30 days for abuse monitoring; zero data retention is not granted to this project</dd></div>
+            <div><dt>Used for training</dt><dd>No, as declared in the agreement</dd></div>
+            <div><dt>Sub-processors</dt><dd>OpenAI's published list, captured with the terms</dd></div>
+          </dl>
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-small fy-strong" id="cls-label">Data it may receive</span>
+            <ul class="fy-chipset" aria-labelledby="cls-label">
+              <li class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Know-how</li>
+              <li class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Not business figures</li>
+              <li class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Not personal data</li>
+              <li class="fy-chip fy-chip--neutral"><i data-icon="lock"></i>Not payroll</li>
+            </ul>
+          </div>
+          <ul class="fy-list fy-card fy-card--flat">
+            <li><a class="fy-list__item" href="#compliance/evidence/ev-2026-1013-01"><span class="fy-list__icon"><i data-icon="file-text" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">OpenAI terms and data processing addendum</span><span class="fy-list__meta">Captured 13 Oct 2026, 08:47 · PDF · evidence</span></span><i data-icon="chevron-right" class="fy-muted"></i></a></li>
+            <li><a class="fy-list__item" href="#compliance/data-protection/transfers/openai"><span class="fy-list__icon"><i data-icon="globe" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Transfer assessment, United States</span><span class="fy-list__meta">Arjun Rao, data protection officer · 12 Oct 2026 · know-how only</span></span><i data-icon="chevron-right" class="fy-muted"></i></a></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="lim-title" id="limits">
+        <div class="fy-card__head"><h2 class="fy-h3" id="lim-title">Limits and defaults</h2></div>
+        <div class="fy-card__body">
+          <dl class="fy-dl">
+            <div><dt>Time limit</dt><dd class="fy-num">60 seconds a request</dd></div>
+            <div><dt>Retries</dt><dd class="fy-num">2, waiting longer each time</dd></div>
+            <div><dt>Requests</dt><dd class="fy-num">60 a minute</dd></div>
+            <div><dt>Tokens</dt><dd class="fy-num">400,000 a minute</dd></div>
+            <div><dt>Reasoning effort</dt><dd>Medium</dd></div>
+            <div><dt>Longest answer</dt><dd class="fy-num">8,000 tokens</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <div class="fy-actionbar fy-only-compact">
+        <a class="fy-btn fy-btn--primary fy-btn--block" href="#inbox/approval-ai-415">View request</a>
+      </div>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Agents and activity">
+      <section class="fy-card" aria-labelledby="use-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="use-title">Agents that would use it</h2></div>
+        <ul class="fy-list">
+          <li><a class="fy-list__item" href="#settings/ai/routes/kb-compiler" style="align-items: flex-start"><span class="fy-list__icon"><i data-icon="library" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Knowledge-base compiler</span><span class="fy-small fy-secondary fy-wrap">Proposed first step, with Claude Opus 4.6 in Singapore as the fallback. Its budget is 89% used this month.</span></span><i data-icon="chevron-right" class="fy-muted"></i></a></li>
+        </ul>
+        <div class="fy-card__body" style="padding-top: 0"><p class="fy-small fy-muted">Agents that handle business figures, personal data or payroll cannot use this connection.</p></div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="test-title">
+        <h2 class="fy-h3" id="test-title">Connection test</h2>
+        <p class="fy-small fy-secondary">Runs after approval. The test sends one short request with no company data and shows pass or fail with the reason.</p>
+        <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-disabled="true" style="align-self: flex-start; opacity: 0.6"><i data-icon="plug-zap"></i>Test connection</button>
+      </section>
+
+      <section class="fy-card" aria-labelledby="act-title" id="activity">
+        <div class="fy-card__head"><h2 class="fy-h3" id="act-title">Activity</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#compliance/audit?connection=openai">Audit trail</a></div>
+        <div class="fy-card__body">
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="hourglass"></i></span><span class="fy-strong fy-small">Sent to Arjun Rao for approval</span><span class="fy-small fy-muted">Mei Lin Tan · today 08:55</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong fy-small">API key stored</span><span class="fy-small fy-muted">Mei Lin Tan · today 08:52 · shown once, now masked</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong fy-small">Terms captured as evidence</span><span class="fy-small fy-muted">Mei Lin Tan · today 08:47</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong fy-small">Transfer assessment recorded</span><span class="fy-small fy-muted">Arjun Rao · 12 Oct</span></li>
+          </ol>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>

@@ -1,0 +1,182 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Import statements", "mode": "basic", "heights": {"compact": 2850, "medium": 2100, "expanded": 1550}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#banking">Banking</a><i data-icon="chevron-right"></i><span>Import statements</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Import statements</h1>
+      <p class="fy-secondary">Files for several accounts at once. Nothing is added until you confirm.</p>
+    </div>
+  </div>
+
+  <ol class="fy-steps" aria-label="Import steps">
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Add files</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">2</span>Check and map</li>
+    <li class="fy-step"><span class="fy-step__n">3</span>Import</li>
+  </ol>
+
+  <div class="fy-split fy-split--wide-aside">
+    <div class="fy-stack fy-stack--6">
+      <div class="fy-dropzone">
+        <i data-icon="upload" class="fy-i--24"></i>
+        <span class="fy-strong"><span class="fy-from-medium">Drop more files here, or </span><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Choose files</button></span>
+        <span class="fy-small fy-muted">CSV, XLSX, OFX or QFX, camt.053, MT940 · up to 25 MB each · checked for malware and by content, not by name</span>
+      </div>
+
+      <section class="fy-card" aria-labelledby="files-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="files-title">4 files</h2>
+          <span class="fy-small fy-muted">3 ready to check · 1 not imported</span>
+        </div>
+        <table class="fy-table fy-table--cards" aria-label="Files and the account each goes to">
+          <thead>
+            <tr>
+              <th scope="col">File</th>
+              <th scope="col">Account</th>
+              <th scope="col" class="fy-from-expanded">Format</th>
+              <th scope="col">Result</th>
+            </tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><span class="fy-row"><i data-icon="file-spreadsheet"></i><span style="overflow-wrap: anywhere">OCBC_Velocity_11-12Oct.csv</span></span><span class="fy-small fy-muted">6 lines · 11–12 Oct</span></span></td>
+              <td data-card="meta">OCBC Business Growth</td>
+              <td data-card="hide" class="fy-from-expanded">CSV · saved mapping "OCBC Velocity"</td>
+              <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Gap before 11 Oct</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><span class="fy-row"><i data-icon="file-code"></i><span style="overflow-wrap: anywhere">Wise_USD_statement_Oct.xml</span></span><span class="fy-small fy-muted">9 lines · 1–13 Oct</span></span></td>
+              <td data-card="meta">Wise (USD)</td>
+              <td data-card="hide" class="fy-from-expanded">camt.053</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nothing new</span></td>
+            </tr>
+            <tr aria-selected="true">
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><span class="fy-row"><i data-icon="file-spreadsheet"></i><span style="overflow-wrap: anywhere">DBS_Visa_Sep.xlsx</span></span><span class="fy-small fy-muted">14 lines · 26 Aug–25 Sep</span></span></td>
+              <td data-card="meta">DBS Visa Business ··4821</td>
+              <td data-card="hide" class="fy-from-expanded">XLSX · new layout</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Map columns</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><span class="fy-stack" style="gap: 2px"><span class="fy-row"><i data-icon="file-x"></i><span style="overflow-wrap: anywhere">OCBC_statement_Sep.pdf</span></span><span class="fy-small" style="color: var(--status-critical)">Fyniq can't read PDF statements yet. Export CSV or MT940 from OCBC Velocity instead.</span></span></td>
+              <td data-card="meta">–</td>
+              <td data-card="hide" class="fy-from-expanded">PDF</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Not imported</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="fy-card" aria-labelledby="map-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="map-title">Map the columns of DBS_Visa_Sep.xlsx</h2>
+        </div>
+        <div class="fy-card__body fy-stack">
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-label" id="amt-style">How are amounts shown?</span>
+            <div class="fy-segmented" role="radiogroup" aria-labelledby="amt-style" style="align-self: flex-start">
+              <button type="button" role="radio" aria-checked="false">One column with a sign</button>
+              <button type="button" role="radio" aria-checked="true">Money in and out columns</button>
+            </div>
+          </div>
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="m1"><span class="fy-mono">Trans Date</span><span class="fy-muted fy-small">e.g. 26/08/2026</span></label>
+              <select class="fy-select" id="m1"><option>Booking date</option><option>Value date</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="m2"><span class="fy-mono">Description</span><span class="fy-muted fy-small">e.g. ZOOM.US</span></label>
+              <select class="fy-select" id="m2"><option>Description</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="m3"><span class="fy-mono">Debit</span><span class="fy-muted fy-small">e.g. 21.80</span></label>
+              <select class="fy-select" id="m3"><option>Money out</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="m4"><span class="fy-mono">Credit</span><span class="fy-muted fy-small">e.g. 1,104.65</span></label>
+              <select class="fy-select" id="m4"><option>Money in</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="m5"><span class="fy-mono">Ref No</span><span class="fy-muted fy-small">e.g. 74418211</span></label>
+              <select class="fy-select" id="m5"><option>Bank reference</option></select>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="m-date">Date format</label>
+              <select class="fy-select" id="m-date"><option>DD/MM/YYYY</option></select>
+            </div>
+          </div>
+          <div class="fy-tablewrap">
+            <table class="fy-table fy-table--compact" aria-label="First rows as they will be read">
+              <thead><tr><th scope="col">Booking date</th><th scope="col">Description</th><th scope="col" class="fy-num">Money in</th><th scope="col" class="fy-num">Money out</th></tr></thead>
+              <tbody>
+                <tr><td style="white-space: nowrap">26 Aug 2026</td><td class="fy-mono">AWS EMEA AWS.AMAZON.CO</td><td class="fy-num fy-muted">–</td><td class="fy-num">12.40</td></tr>
+                <tr><td style="white-space: nowrap">2 Sep 2026</td><td class="fy-mono">ZOOM.US 888-799-9666</td><td class="fy-num fy-muted">–</td><td class="fy-num">21.80</td></tr>
+                <tr><td style="white-space: nowrap">5 Sep 2026</td><td class="fy-mono">PAYMENT - THANK YOU</td><td class="fy-num">1,104.65</td><td class="fy-num fy-muted">–</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="fy-field" style="max-width: 240px">
+            <label class="fy-label" for="m-skip">Header rows to skip</label>
+            <input class="fy-input fy-num" id="m-skip" value="3" readonly="readonly">
+          </div>
+          <div class="fy-row fy-row--between">
+            <span class="fy-stack" style="gap: 2px"><span class="fy-label" id="m-save-l">Save as "DBS Visa XLSX" for next time</span><span class="fy-help">Used automatically when the same layout comes again.</span></span>
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="m-save-l"></button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="What will be added">
+      <section class="fy-card" aria-labelledby="prev-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="prev-title">What will be added</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__main">
+              <span class="fy-list__title">OCBC Business Growth</span>
+              <span class="fy-small fy-secondary">4 new lines · 1 duplicate removed (same bank reference) · 1 possible duplicate kept for you to check</span>
+              <span class="fy-error" style="margin-top: 4px"><i data-icon="triangle-alert"></i><span>This file opens at S$96,402.30 on 11 Oct, but OCBC closed at S$96,115.80 on 9 Oct. Lines for 10 Oct (S$286.50) are missing. Add that day's file too.</span></span>
+            </span>
+            <span class="fy-num fy-strong">4</span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__main">
+              <span class="fy-list__title">Wise (USD)</span>
+              <span class="fy-small fy-secondary" style="white-space: normal">All 9 lines already came through the Wise connection and are skipped. The closing balance US$15,862.65 agrees.</span>
+            </span>
+            <span class="fy-num fy-strong">0</span>
+          </li>
+          <li class="fy-list__item" style="align-items: flex-start">
+            <span class="fy-list__main">
+              <span class="fy-list__title">DBS Visa Business ··4821</span>
+              <span class="fy-small fy-secondary">Counted after you map the columns</span>
+            </span>
+            <span class="fy-num fy-muted">–</span>
+          </li>
+        </ul>
+        <div class="fy-card__foot fy-from-medium">
+          <button class="fy-btn fy-btn--ghost" type="button">Back</button>
+          <span class="fy-spacer"></span>
+          <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Import 4 lines</button>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="recent-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="recent-title">Recent imports</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#banking/imports">All</a></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">OCBC_Velocity_1-9Oct.csv</span><span class="fy-list__meta">9 Oct 17:40 · Mei Lin Tan · 31 lines added</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">OCBC_Velocity_Sep.csv</span><span class="fy-list__meta">1 Oct · Mei Lin Tan · 48 lines added</span></span>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--ghost" type="button">Back</button>
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)">Import 4 lines</button>
+  </div>
+</div>

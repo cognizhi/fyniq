@@ -1,0 +1,215 @@
+<!-- fyniq-screen {"nav": "equity", "title": "Round simulator", "mode": "basic", "heights": {"compact": 3250, "medium": 2550, "expanded": 1750}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Equity</span>
+      <h1 class="fy-h1">Round simulator</h1>
+      <p class="fy-secondary">Try a funding round and see what everyone would own. Based on the cap table at 13 Oct 2026.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary fy-expert-only" type="button" aria-disabled="true"><i data-icon="file-plus"></i>Create draft issues</button>
+      <button class="fy-btn fy-btn--primary fy-basic-only" type="button"><i data-icon="save"></i>Save scenario</button>
+      <button class="fy-btn fy-btn--primary fy-expert-only" type="button"><i data-icon="send"></i>Send for approval</button>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--info">
+    <i data-icon="flask-conical" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Sandbox: nothing here is posted or recorded</span>
+      <span class="fy-small">Scenarios never change the cap table or the books. <span class="fy-expert-only">Once both founders approve a scenario, it can create draft share issues, which then need their own approval and ACRA steps.</span><span class="fy-basic-only">A real round is recorded later as share issues, with approvals and ACRA steps.</span></span>
+    </div>
+  </div>
+
+  <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+    <div class="fy-segmented" role="radiogroup" aria-label="Scenario">
+      <button type="button" role="radio" aria-checked="true">A: S$10M pre-money</button>
+      <button type="button" role="radio" aria-checked="false">B: S$12M pre-money</button>
+    </div>
+    <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>New scenario</button>
+  </div>
+
+  <div class="fy-split fy-split--wide-aside">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card fy-basic-only" aria-labelledby="rs-in-b-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="rs-in-b-title">The round</h2></div>
+        <div class="fy-card__body">
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="rs-b-raise">How much you raise</label>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-b-raise" value="1,650,000" readonly="readonly"></div>
+              <span class="fy-help">S$1,500,000 from a new lead and S$150,000 from Lion Rock Ventures</span>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="rs-b-val">Value of the company before the money<button class="fy-info" type="button" aria-label="About the value before the money" aria-expanded="false"><i data-icon="info"></i></button></label>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-b-val" value="10,000,000" readonly="readonly"></div>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="rs-b-pool">More options for employees</label>
+              <input class="fy-input fy-num" id="rs-b-pool" value="0" readonly="readonly">
+              <span class="fy-help">Investors often ask for a bigger pool before they invest</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-expert-only" aria-labelledby="rs-in-e-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="rs-in-e-title">Inputs, scenario A</h2>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--6">
+          <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+            <span class="fy-label" id="rs-e-basis">Set the price from</span>
+            <div class="fy-segmented" role="radiogroup" aria-labelledby="rs-e-basis">
+              <button type="button" role="radio" aria-checked="true">Pre-money valuation</button>
+              <button type="button" role="radio" aria-checked="false">Price per share</button>
+            </div>
+          </div>
+          <div class="fy-form fy-form--2">
+            <div class="fy-field">
+              <label class="fy-label" for="rs-e-pre">Pre-money valuation</label>
+              <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-e-pre" value="10,000,000.00" readonly="readonly"></div>
+            </div>
+            <div class="fy-field">
+              <label class="fy-label" for="rs-e-top">Option pool top-up</label>
+              <input class="fy-input fy-num" id="rs-e-top" value="0" readonly="readonly">
+              <div class="fy-segmented" role="radiogroup" aria-label="Top-up timing" style="align-self: flex-start">
+                <button type="button" role="radio" aria-checked="true">Before the money</button>
+                <button type="button" role="radio" aria-checked="false">After</button>
+              </div>
+            </div>
+          </div>
+          <fieldset class="fy-fieldset">
+            <legend>New money per investor</legend>
+            <div class="fy-form fy-form--2">
+              <div class="fy-field">
+                <label class="fy-label" for="rs-e-lead">Seed lead, not yet named</label>
+                <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-e-lead" value="1,500,000.00" readonly="readonly"></div>
+              </div>
+              <div class="fy-field">
+                <label class="fy-label" for="rs-e-lrv">Lion Rock Ventures, pro-rata take-up</label>
+                <div class="fy-inputgroup"><span class="fy-inputgroup__addon">S$</span><input class="fy-input fy-num" id="rs-e-lrv" value="150,000.00" readonly="readonly"></div>
+              </div>
+            </div>
+          </fieldset>
+          <div class="fy-row fy-row--between fy-row--top" style="gap: var(--space-4)">
+            <div class="fy-stack fy-stack--2" style="gap: 2px">
+              <span class="fy-strong" id="rs-e-safe-label">Convert Lion Rock Ventures' SAFE</span>
+              <span class="fy-small fy-muted">At the lower of its cap price S$0.7500 and the round price S$0.9375. The SAFE's share count ignores a pool top-up made for the round, as its terms say.</span>
+            </div>
+            <button class="fy-switch" type="button" role="switch" aria-checked="true" aria-labelledby="rs-e-safe-label"></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="rs-out-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="rs-out-title">Who would own what</h2>
+          <div class="fy-segmented" role="radiogroup" aria-label="Show as">
+            <button type="button" role="radio" aria-checked="true">Chart</button>
+            <button type="button" role="radio" aria-checked="false">Table</button>
+          </div>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-muted">Now, counting the SAFE and options · 10,666,666 shares</p>
+          <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 28px; border-radius: 4px" role="img" aria-label="Now: Mei Lin Tan and Arjun Rao 42.19% each, option pool 9.38%, Lion Rock Ventures 6.25%.">
+            <rect class="fy-bar fy-c1" x="0" y="0" width="418.875" height="10"></rect>
+            <rect class="fy-bar fy-c2" x="421.875" y="0" width="418.875" height="10"></rect>
+            <rect class="fy-bar fy-c3" x="843.75" y="0" width="90.75" height="10"></rect>
+            <rect class="fy-bar fy-c5" x="937.5" y="0" width="62.5" height="10"></rect>
+          </svg>
+          <p class="fy-small fy-muted">After the round · 12,426,666 shares</p>
+          <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 28px; border-radius: 4px" role="img" aria-label="After: Mei Lin Tan and Arjun Rao 36.21% each, option pool 8.05%, Lion Rock Ventures 6.65%, seed lead 12.88%.">
+            <rect class="fy-bar fy-c1" x="0" y="0" width="359.124" height="10"></rect>
+            <rect class="fy-bar fy-c2" x="362.124" y="0" width="359.124" height="10"></rect>
+            <rect class="fy-bar fy-c3" x="724.248" y="0" width="77.472" height="10"></rect>
+            <rect class="fy-bar fy-c5" x="804.72" y="0" width="63.524" height="10"></rect>
+            <rect class="fy-bar fy-c6" x="871.244" y="0" width="128.756" height="10"></rect>
+          </svg>
+          <div class="fy-legend">
+            <span><i class="fy-legend__key fy-swatch-1"></i>Mei Lin Tan <span class="fy-num fy-strong">42.19 → 36.21%</span></span>
+            <span><i class="fy-legend__key fy-swatch-2"></i>Arjun Rao <span class="fy-num fy-strong">42.19 → 36.21%</span></span>
+            <span><i class="fy-legend__key fy-swatch-3"></i>Option pool <span class="fy-num fy-strong">9.38 → 8.05%</span></span>
+            <span><i class="fy-legend__key fy-swatch-5"></i>Lion Rock Ventures <span class="fy-num fy-strong">6.25 → 6.65%</span></span>
+            <span><i class="fy-legend__key fy-swatch-6"></i>Seed lead <span class="fy-num fy-strong">12.88%</span></span>
+          </div>
+        </div>
+      </section>
+
+      <div class="fy-grid fy-grid--2 fy-basic-only">
+        <div class="fy-tile">
+          <span class="fy-tile__label"><i data-icon="user-round"></i>You would own</span>
+          <span class="fy-tile__value fy-num">36.21<small>%</small></span>
+          <span class="fy-tile__meta"><span class="fy-delta fy-delta--down"><i data-icon="arrow-down-right"></i>−5.98 points</span>from 42.19% today</span>
+          <span class="fy-tile__meta">Still 4,500,000 shares, worth S$4,218,750.00 on paper at the round price</span>
+        </div>
+        <div class="fy-tile">
+          <span class="fy-tile__label"><i data-icon="handshake"></i>What the new investor gets</span>
+          <span class="fy-tile__value fy-num">1,600,000</span>
+          <span class="fy-tile__meta">shares at S$0.9375 each for S$1,500,000</span>
+          <span class="fy-tile__meta">Lion Rock Ventures' SAFE becomes 666,666 shares at S$0.75, its cap price, which is lower</span>
+        </div>
+      </div>
+
+      <section class="fy-stack fy-stack--3 fy-expert-only" aria-labelledby="rs-pf-title">
+        <div class="fy-grid fy-grid--2">
+          <div class="fy-tile"><span class="fy-tile__label">Price per share</span><span class="fy-tile__value fy-num">0.9375<small>SGD</small></span><span class="fy-tile__meta">10,000,000 ÷ 10,666,666, to 4 decimals</span></div>
+          <div class="fy-tile"><span class="fy-tile__label">Post-money valuation</span><span class="fy-tile__value fy-num">11,650,000<small>SGD</small></span><span class="fy-tile__meta">Pre-money + S$1,650,000 new money</span></div>
+          <div class="fy-tile"><span class="fy-tile__label">New shares</span><span class="fy-tile__value fy-num">2,426,666</span><span class="fy-tile__meta">1,760,000 for cash · 666,666 from the SAFE</span></div>
+          <div class="fy-tile"><span class="fy-tile__label">Controller changes</span><span class="fy-tile__value" style="font-size: var(--fs-lg)">None</span><span class="fy-tile__meta">Exempt status would end: companies join</span></div>
+        </div>
+        <h2 class="fy-h3" id="rs-pf-title">Pro-forma cap table, fully diluted</h2>
+        <div class="fy-tablewrap">
+          <table class="fy-table fy-statement">
+            <thead>
+              <tr><th scope="col">Holder</th><th scope="col" class="fy-num">Shares now</th><th scope="col" class="fy-num">Now %</th><th scope="col" class="fy-num">Shares after</th><th scope="col" class="fy-num">After %</th><th scope="col" class="fy-num">Points</th><th scope="col" class="fy-num">New money (SGD)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Mei Lin Tan</td><td class="fy-num">4,500,000</td><td class="fy-num">42.19</td><td class="fy-num">4,500,000</td><td class="fy-num">36.21</td><td class="fy-num">−5.98</td><td class="fy-num fy-muted">–</td></tr>
+              <tr><td>Arjun Rao</td><td class="fy-num">4,500,000</td><td class="fy-num">42.19</td><td class="fy-num">4,500,000</td><td class="fy-num">36.21</td><td class="fy-num">−5.98</td><td class="fy-num fy-muted">–</td></tr>
+              <tr><td style="white-space: nowrap">Option pool</td><td class="fy-num">1,000,000</td><td class="fy-num">9.38</td><td class="fy-num">1,000,000</td><td class="fy-num">8.05</td><td class="fy-num">−1.33</td><td class="fy-num fy-muted">–</td></tr>
+              <tr><td style="white-space: nowrap">Lion Rock Ventures</td><td class="fy-num">666,666</td><td class="fy-num">6.25</td><td class="fy-num">826,666</td><td class="fy-num">6.65</td><td class="fy-num">+0.40</td><td class="fy-num">150,000.00</td></tr>
+              <tr><td style="white-space: nowrap">Seed lead</td><td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td><td class="fy-num">1,600,000</td><td class="fy-num">12.88</td><td class="fy-num">+12.88</td><td class="fy-num">1,500,000.00</td></tr>
+            </tbody>
+            <tfoot>
+              <tr><td>Total</td><td class="fy-num">10,666,666</td><td class="fy-num">100.00</td><td class="fy-num">12,426,666</td><td class="fy-num">100.00</td><td class="fy-num"></td><td class="fy-num">1,650,000.00</td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="fy-small fy-muted">Shares for cash use whole shares only (RND-SHARE): S$1,500,000 ÷ S$0.9375 = 1,600,000 and S$150,000 ÷ S$0.9375 = 160,000, with nothing left over. Pending EQ-0005 and draft EQ-0006 are already in the option pool count.</p>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Compare scenarios">
+      <section class="fy-card" aria-labelledby="rs-cmp-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="rs-cmp-title">Side by side</h2></div>
+        <table class="fy-table fy-table--compact">
+          <thead><tr><th scope="col"></th><th scope="col" class="fy-num">A</th><th scope="col" class="fy-num">B</th></tr></thead>
+          <tbody>
+            <tr><td>Value before the money</td><td class="fy-num">10,000,000</td><td class="fy-num">12,000,000</td></tr>
+            <tr><td>Money raised</td><td class="fy-num">1,650,000</td><td class="fy-num">2,150,000</td></tr>
+            <tr><td>Price per share</td><td class="fy-num">0.9375</td><td class="fy-num">1.1250</td></tr>
+            <tr><td>Pool top-up</td><td class="fy-num">0</td><td class="fy-num">500,000 after</td></tr>
+            <tr><td class="fy-strong">You</td><td class="fy-num fy-strong">36.21%</td><td class="fy-num fy-strong">34.41%</td></tr>
+            <tr><td>Arjun Rao</td><td class="fy-num">36.21%</td><td class="fy-num">34.41%</td></tr>
+            <tr><td>Option pool</td><td class="fy-num">8.05%</td><td class="fy-num">11.47%</td></tr>
+            <tr><td>Lion Rock Ventures</td><td class="fy-num">6.65%</td><td class="fy-num">6.12%</td></tr>
+            <tr><td>Seed lead</td><td class="fy-num">12.88%</td><td class="fy-num">13.59%</td></tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><p class="fy-small fy-muted">B raises S$500,000 more and leaves each founder 1.80 points lower, mostly because of the bigger pool.</p></div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="rs-ai-title">
+        <div class="fy-row"><i data-icon="lock" class="fy-muted"></i><h2 class="fy-h3" id="rs-ai-title">Ask the assistant</h2></div>
+        <p class="fy-small fy-secondary">The assistant can try scenarios for you, but it can't see equity data until an Owner allows it. It is off for Cognizhi.</p>
+        <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/ai" style="align-self: flex-start">AI settings</a>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary fy-basic-only" type="button"><i data-icon="save"></i>Save scenario</button>
+    <button class="fy-btn fy-btn--primary fy-expert-only" type="button"><i data-icon="send"></i>Send for approval</button>
+  </div>
+</div>

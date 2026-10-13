@@ -1,0 +1,189 @@
+<!-- fyniq-screen {"nav": "banking", "title": "Reconciliation", "mode": "expert", "heights": {"compact": 2850, "medium": 2300, "expanded": 1300}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#banking">Banking</a><i data-icon="chevron-right"></i><a href="#banking/reconciliations">Reconciliation</a><i data-icon="chevron-right"></i><span>DBS</span></nav>
+      <h1 class="fy-h1">DBS, September 2026</h1>
+      <div class="fy-row fy-row--wrap">
+        <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Ready to sign off</span>
+        <span class="fy-secondary fy-small">DBS Business Multi-Currency<span class="fy-expert-only"> · <span class="fy-mono">1010</span></span> · 1–30 Sep 2026 · prepared by Grace Ho, 12 Oct</span>
+      </div>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="download"></i>Report (PDF)</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Ask Arjun Rao to sign off</button>
+      <button class="fy-iconbtn" type="button" aria-label="More actions"><i data-icon="ellipsis"></i></button>
+    </div>
+  </div>
+
+  <nav class="fy-tabs" aria-label="Banking">
+    <a href="#banking">Accounts</a>
+    <a href="#banking/categorise">Categorise<span class="fy-badge fy-badge--quiet">14</span></a>
+    <a href="#banking/auto-reconciled">Auto-reconciled</a>
+    <a href="#banking/reconciliations" aria-current="page">Reconciliation</a>
+    <a class="fy-expert-only" href="#banking/rules">Rules</a>
+    <a class="fy-expert-only" href="#banking/payouts">Payouts</a>
+  </nav>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="user-x" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>You can't sign this one off</strong>
+      <span class="fy-small">You recorded 18 of September's DBS lines, and the person who signs off must not have recorded any of them (SOD-5). Arjun Rao can sign off.</span>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="sum-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="sum-title">Bank and books at 30 Sep 2026</h2>
+          <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Agrees</span>
+        </div>
+        <div class="fy-card__body">
+          <div class="fy-grid fy-grid--4 fy-stagger">
+            <div class="fy-stack fy-stack--2">
+              <span class="fy-tile__label"><i data-icon="lock"></i>Statement balance<button class="fy-info" type="button" aria-label="About the statement balance" aria-expanded="false"><i data-icon="info"></i></button></span>
+              <a class="fy-num fy-strong" href="#documents/dbs-estatement-2026-09" style="font-size: var(--fs-xl); color: var(--text-primary)">301,226.85</a>
+              <span class="fy-small fy-muted">Read from the DBS e-statement, not typed</span>
+            </div>
+            <div class="fy-stack fy-stack--2">
+              <span class="fy-tile__label"><i data-icon="book-open"></i>Book balance</span>
+              <a class="fy-num fy-strong" href="#accounting/ledger/1010?to=2026-09-30" style="font-size: var(--fs-xl); color: var(--text-primary)">300,740.10</a>
+              <span class="fy-small fy-muted"><span class="fy-expert-only">Account <span class="fy-mono">1010</span> at 30 Sep</span><span class="fy-basic-only">What the books say at 30 Sep</span></span>
+            </div>
+            <div class="fy-stack fy-stack--2">
+              <span class="fy-tile__label"><i data-icon="list-todo"></i>Unreconciled items</span>
+              <a class="fy-num fy-strong" href="#unrec" style="font-size: var(--fs-xl); color: var(--text-primary)">1</a>
+              <span class="fy-small fy-muted">Explained below</span>
+            </div>
+            <div class="fy-stack fy-stack--2">
+              <span class="fy-tile__label"><i data-icon="equal"></i>Difference</span>
+              <span class="fy-num fy-strong" style="font-size: var(--fs-xl); color: var(--status-good)">0.00</span>
+              <span class="fy-small fy-muted">Statement and books agree</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="stmt-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="stmt-title">Reconciliation statement</h2>
+          <span class="fy-small fy-muted">SGD</span>
+        </div>
+        <table class="fy-table">
+          <thead><tr><th scope="col">Item</th><th scope="col" class="fy-num" style="text-align: right">Amount</th></tr></thead>
+          <tbody>
+            <tr><td>Statement closing balance, 30 Sep 2026</td><td class="fy-num"><a href="#documents/dbs-estatement-2026-09">301,226.85</a></td></tr>
+            <tr><td class="fy-sub">Less payments in the books, not yet on the statement (1)</td><td class="fy-num"><a href="#unrec">−486.75</a></td></tr>
+            <tr><td class="fy-strong">Adjusted statement balance</td><td class="fy-num fy-strong">300,740.10</td></tr>
+            <tr><td>Book balance<span class="fy-expert-only">, <span class="fy-mono">1010</span> DBS</span></td><td class="fy-num"><a href="#accounting/ledger/1010?to=2026-09-30">300,740.10</a></td></tr>
+          </tbody>
+          <tfoot><tr><td>Difference</td><td class="fy-num">0.00</td></tr></tfoot>
+        </table>
+      </section>
+
+      <section class="fy-card" id="unrec" aria-labelledby="unrec-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="unrec-title">Unreconciled items</h2>
+          <span class="fy-badge fy-badge--quiet">1</span>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Date</th><th scope="col">Item</th><th scope="col">Why it differs</th><th scope="col" class="fy-num" style="text-align: right">Amount</th><th scope="col">Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td data-card="meta" style="white-space: nowrap">30 Sep</td>
+              <td data-card="title"><a href="#purchases/payment-batches/wed-30-sep-claims">Wed 30 Sep claims</a> <span class="fy-small fy-muted">(3 claims)</span></td>
+              <td data-card="meta">Paid from the books on 30 Sep; DBS debited it on 1 Oct</td>
+              <td data-card="amount" class="fy-num">−486.75</td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Cleared 1 Oct</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="fy-card" aria-labelledby="susp-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="susp-title">Suspense<span class="fy-expert-only fy-muted"> · <span class="fy-mono">2999</span></span></h2>
+          <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Not zero</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--between fy-row--top fy-row--wrap">
+            <div class="fy-stack fy-stack--2" style="flex: 1 1 220px">
+              <span class="fy-mono">FAST CR 8XXX UNKNOWN REF</span>
+              <span class="fy-small fy-muted">26 Sep · money in with no reference. It sits in suspense until someone says what it is; Checks flags it until then.</span>
+            </div>
+            <a class="fy-num fy-strong" href="#accounting/ledger/2999" style="font-size: var(--fs-md)">1,250.00</a>
+          </div>
+          <div class="fy-row"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/categorise?line=dbs-0926-unknown">Classify this line</a></div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Sign-off and evidence">
+      <section class="fy-card" aria-labelledby="so-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="so-title">Sign-off</h2></div>
+        <div class="fy-card__body">
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong">Prepared by Grace Ho</span>
+              <span class="fy-small fy-muted">12 Oct, 16:20 · Ho &amp; Partners LLP</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong">Bank statement attached</span>
+              <span class="fy-small fy-muted">Required evidence for sign-off</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="clock"></i></span>
+              <span class="fy-strong">Sign-off by Arjun Rao</span>
+              <span class="fy-small fy-muted">Waiting · he recorded none of September's DBS lines</span>
+            </li>
+          </ol>
+        </div>
+        <div class="fy-card__foot fy-stack fy-stack--2" style="align-items: stretch">
+          <span class="fy-small fy-muted"><i data-icon="lock"></i> At sign-off the ledger revision is recorded<span class="fy-expert-only"> (now <span class="fy-mono">r18,442</span>)</span>. The report locks with September when the period closes.</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ev-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ev-title">Evidence</h2></div>
+        <ul class="fy-list">
+          <li>
+            <a class="fy-list__item" href="#documents/dbs-estatement-2026-09">
+              <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-check" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">DBS e-statement, Sep 2026.pdf</span><span class="fy-list__meta">Bank statement for the period · required · uploaded 2 Oct by Grace Ho</span></span>
+            </a>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--good"><i data-icon="link" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Ties to the DBS daily report, 30 Sep</span><span class="fy-list__meta">Closing balance 301,226.85 in both</span></span>
+          </li>
+        </ul>
+        <div class="fy-card__foot">
+          <i data-icon="shield-check" class="fy-muted"></i>
+          <span class="fy-small fy-muted">Founder mode: statement balances come from the bank feed or an uploaded statement. Typed balances are refused (FM-5).</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="oth-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="oth-title">Other accounts, September</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">OCBC</span><span class="fy-list__meta">Signed off by Arjun Rao, 8 Oct</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Signed off</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">Wise and Airwallex</span><span class="fy-list__meta">Signed off by Arjun Rao, 8 Oct</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Signed off</span>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Ask Arjun Rao to sign off</button>
+  </div>
+</div>

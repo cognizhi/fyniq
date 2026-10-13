@@ -1,0 +1,219 @@
+<!-- fyniq-screen {"nav": "settings", "title": "AI activity log", "mode": "expert", "heights": {"compact": 3850, "medium": 2850, "expanded": 1900}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><a href="#settings/ai">AI</a><i data-icon="chevron-right"></i><span aria-current="page">Activity log</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">AI activity log</h1>
+      <p class="fy-secondary">Every conversation turn, tool call and proposal, in the app and from connected apps. Kept as audit data; there is no other memory.</p>
+    </div>
+    <div class="fy-pagehead__actions">
+      <div class="fy-segmented" role="radiogroup" aria-label="Whose activity">
+        <button type="button" role="radio" aria-checked="false">Mine</button>
+        <button type="button" role="radio" aria-checked="true">Everyone</button>
+      </div>
+    </div>
+  </div>
+
+  <section aria-labelledby="mon-title" class="fy-stack fy-stack--3">
+    <div class="fy-row fy-row--between"><h2 class="fy-h3" id="mon-title">Monitoring, last 7 days</h2><a class="fy-small" href="#settings/ai">Budgets and switches</a></div>
+    <div class="fy-grid fy-grid--tiles">
+      <a class="fy-tile" href="#settings/ai/activity?issue=grounding">
+        <span class="fy-tile__label"><i data-icon="search-check"></i>Grounding failures<button class="fy-info" type="button" aria-label="About grounding failures" aria-expanded="false"><i data-icon="info"></i></button></span>
+        <span class="fy-tile__value fy-num">0</span>
+        <span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Every figure came from a read tool</span></span>
+      </a>
+      <a class="fy-tile" href="#settings/ai/activity?issue=refusal">
+        <span class="fy-tile__label"><i data-icon="circle-slash"></i>Refusals</span>
+        <span class="fy-tile__value fy-num">3</span>
+        <span class="fy-tile__meta"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Denied scope, 12 Oct</span>Claude Code asked for payroll</span>
+      </a>
+      <a class="fy-tile" href="#settings/ai/activity?issue=tool-error">
+        <span class="fy-tile__label"><i data-icon="wrench"></i>Tool errors</span>
+        <span class="fy-tile__value fy-num">1</span>
+        <span class="fy-tile__meta">metrics.query timed out, 11 Oct; retried</span>
+      </a>
+      <a class="fy-tile" href="#settings/ai/activity?view=cost">
+        <span class="fy-tile__label"><i data-icon="coins"></i>Cost per conversation</span>
+        <span class="fy-tile__value fy-num">0.20<small>SGD</small></span>
+        <span class="fy-tile__meta">S$42.42 in October · 214 conversations in the app</span>
+      </a>
+    </div>
+  </section>
+
+  <div class="fy-row fy-row--wrap" role="group" aria-label="Filters">
+    <button class="fy-filter" type="button" aria-pressed="true">All clients</button>
+    <button class="fy-filter" type="button" aria-pressed="false">In the app</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Claude Desktop</button>
+    <button class="fy-filter" type="button" aria-pressed="false">Claude Code</button>
+    <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="sparkles"></i>With a proposal</button>
+    <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="git-branch"></i>Fallbacks · 23 today</button>
+    <button class="fy-filter" type="button" aria-pressed="false"><i data-icon="list-filter"></i>More filters</button>
+  </div>
+
+  <div class="fy-split fy-split--wide-aside">
+    <section class="fy-card" aria-labelledby="turns-title">
+      <div class="fy-card__head"><h2 class="fy-h3" id="turns-title">Conversation turns</h2><span class="fy-small fy-muted">Everyone · 214 in October</span></div>
+      <table class="fy-table fy-table--cards">
+        <thead>
+          <tr>
+            <th scope="col">Turn</th>
+            <th scope="col" class="fy-num" style="text-align: right">Tool calls</th>
+            <th scope="col" class="fy-num" style="text-align: right">Tokens</th>
+            <th scope="col" class="fy-num" style="text-align: right">Cost (SGD)</th>
+            <th scope="col">Outcome</th>
+          </tr>
+        </thead>
+        <tbody class="fy-stagger">
+            <tr class="fy-group"><td colspan="5" style="grid-column: 1 / -1">Today, 13 Oct</td></tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/activity/t-9921">Why did cash fall since last Tuesday?</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">09:12 · Mei Lin Tan · In the app · Claude Opus 4.6, step 1</span></td>
+              <td data-card="hide" class="fy-num fy-small">3 · 41 rows</td>
+              <td data-card="hide" class="fy-num">14,880</td>
+              <td data-card="amount" class="fy-num">0.09</td>
+              <td data-card="status"><span class="fy-small fy-muted">Answer</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/activity/t-9917">Summarise AWS spend, Apr to Sep</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">08:52 · Mei Lin Tan · Claude Desktop 1.4.2 · the app's own model</span></td>
+              <td data-card="hide" class="fy-num fy-small">2 · 6 rows</td>
+              <td data-card="hide" class="fy-num">–</td>
+              <td data-card="amount" class="fy-num">–</td>
+              <td data-card="status"><span class="fy-small fy-muted">Answer</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/activity/t-9910">Categorise the new DBS lines</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">08:40 · Mei Lin Tan · In the app · Claude Opus 4.6, step 1</span></td>
+              <td data-card="hide" class="fy-num fy-small">4 · 4 rows</td>
+              <td data-card="hide" class="fy-num">31,205</td>
+              <td data-card="amount" class="fy-num">0.20</td>
+              <td data-card="status"><a class="fy-chip fy-chip--neutral" href="#inbox/proposal-311"><i data-icon="hourglass"></i>#311 pending</a></td>
+            </tr>
+            <tr class="fy-group"><td colspan="5" style="grid-column: 1 / -1">Monday, 12 Oct</td></tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/activity/t-9884">Payroll cost by month</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">22:10 · Arjun Rao · Claude Code 2.3.0 · the app's own model</span></td>
+              <td data-card="hide" class="fy-num fy-small">3 denied</td>
+              <td data-card="hide" class="fy-num">–</td>
+              <td data-card="amount" class="fy-num">–</td>
+              <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Refused</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/activity/t-9850">Is the WeWork deposit refundable?</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">15:31 · Grace Ho · In the app · Claude Opus 4.6, step 1</span></td>
+              <td data-card="hide" class="fy-num fy-small">2 · 3 rows</td>
+              <td data-card="hide" class="fy-num">6,210</td>
+              <td data-card="amount" class="fy-num">0.04</td>
+              <td data-card="status"><span class="fy-small fy-muted">Answer</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/activity/t-9832">Restricted entry</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">11:04 · Hafiz Rahman · In the app · payroll data</span></td>
+              <td data-card="hide" class="fy-num fy-small">–</td>
+              <td data-card="hide" class="fy-num">–</td>
+              <td data-card="amount" class="fy-num">–</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="eye-off"></i>Masked</span></td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#settings/ai/activity/t-9801">Match the Orbital receipt in Wise</a><span class="fy-small fy-muted" style="display: block; font-weight: 400">10:02 · Mei Lin Tan · In the app · Claude Opus 4.6, step 1</span></td>
+              <td data-card="hide" class="fy-num fy-small">3 · 22 rows</td>
+              <td data-card="hide" class="fy-num">24,960</td>
+              <td data-card="amount" class="fy-num">0.15</td>
+              <td data-card="status"><a class="fy-chip fy-chip--good" href="#inbox/proposal-310"><i data-icon="circle-check"></i>#310 executed</a></td>
+            </tr>
+        </tbody>
+      </table>
+      <div class="fy-card__foot"><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Show older turns</button><span class="fy-spacer"></span><span class="fy-small fy-muted">Select a turn to see its detail</span></div>
+    </section>
+
+    <aside class="fy-card" aria-labelledby="turn-title">
+      <div class="fy-stack" style="padding: var(--space-4)">
+        <div class="fy-stack fy-stack--2">
+          <span class="fy-eyebrow">Turn detail · 13 Oct 2026, 08:40:12</span>
+          <h2 class="fy-h2" id="turn-title">Categorise the new DBS lines</h2>
+          <div class="fy-row fy-row--wrap">
+            <span class="fy-avatar fy-avatar--sm">ML</span><span class="fy-small">Mei Lin Tan</span>
+            <span class="fy-tag">In the app · web v0.4.0</span>
+            <span class="fy-tag">Claude Opus 4.6 · Agent Platform, Singapore · route step 1</span>
+          </div>
+        </div>
+
+        <div class="fy-stack fy-stack--3">
+          <div class="fy-msg fy-msg--user"><span>Categorise the new DBS lines from last week.</span></div>
+          <div class="fy-msg fy-msg--ai">
+            <span class="fy-ai-badge" style="align-self: flex-start"><i data-icon="sparkles"></i>AI</span>
+            <p class="fy-ai-text">I found 4 uncategorised DBS Business lines from 2–10 Oct, <span class="fy-fact">S$4,238.87</span> in total. I prepared proposal #311 with a category, contact and GST code for each. Nothing changes until you approve it.</p>
+            <span class="fy-source"><i data-icon="landmark"></i>From records.search, 4 rows</span>
+          </div>
+        </div>
+
+        <section class="fy-stack fy-stack--2" aria-labelledby="tools-title">
+          <h3 class="fy-h3" id="tools-title">Tool calls</h3>
+          <ol class="fy-card fy-card--flat fy-list">
+            <li class="fy-list__item" style="align-items: flex-start">
+              <span class="fy-list__icon"><i data-icon="search" class="fy-i--20"></i></span>
+              <span class="fy-list__main">
+                <span class="fy-list__title fy-mono">records.search</span>
+                <span class="fy-small fy-secondary fy-basic-only">Looked up uncategorised DBS Business lines since 1 Oct</span>
+                <span class="fy-small fy-mono fy-muted fy-expert-only" style="word-break: break-all">account=dbs-business status=uncategorised from=2026-10-01</span>
+                <span class="fy-list__meta">4 rows · output sha256:3f9a…c1d2 · 182 ms</span>
+              </span>
+            </li>
+            <li class="fy-list__item" style="align-items: flex-start">
+              <span class="fy-list__icon"><i data-icon="list-checks" class="fy-i--20"></i></span>
+              <span class="fy-list__main">
+                <span class="fy-list__title fy-mono">checks.list</span>
+                <span class="fy-small fy-secondary fy-basic-only">Checked for open problems on those lines</span>
+                <span class="fy-small fy-mono fy-muted fy-expert-only" style="word-break: break-all">scope=bank_lines ids=4</span>
+                <span class="fy-list__meta">0 rows · output sha256:9b04…77ae · 64 ms</span>
+              </span>
+            </li>
+            <li class="fy-list__item" style="align-items: flex-start">
+              <span class="fy-list__icon"><i data-icon="book-open-text" class="fy-i--20"></i></span>
+              <span class="fy-list__main">
+                <span class="fy-list__title fy-mono">kb.read</span>
+                <span class="fy-small fy-secondary fy-basic-only">Read the company’s expense policy</span>
+                <span class="fy-small fy-mono fy-muted fy-expert-only" style="word-break: break-all">key=org.expense-policy</span>
+                <span class="fy-list__meta">1 page · version 4 · sha256:51c8…0e3f · 21 ms</span>
+              </span>
+            </li>
+            <li class="fy-list__item" style="align-items: flex-start">
+              <span class="fy-list__icon fy-list__icon--ai"><i data-icon="sparkles" class="fy-i--20"></i></span>
+              <span class="fy-list__main">
+                <span class="fy-list__title fy-mono">propose</span>
+                <span class="fy-small fy-secondary">Created proposal <a href="#inbox/proposal-311">#311</a>, tier 1, 4 items, within limits</span>
+                <span class="fy-small fy-mono fy-muted fy-expert-only" style="word-break: break-all">task_type=bank.categorise_lines items=4</span>
+                <span class="fy-list__meta"><span class="fy-chip fy-chip--neutral"><i data-icon="hourglass"></i>Pending</span></span>
+              </span>
+            </li>
+          </ol>
+        </section>
+
+        <section class="fy-stack fy-stack--2" aria-labelledby="kbused-title">
+          <h3 class="fy-h3" id="kbused-title">Knowledge-base pages used</h3>
+          <ul class="fy-stack fy-stack--2 fy-small">
+            <li class="fy-row fy-row--wrap"><i data-icon="book-open"></i><span class="fy-mono">index</span><span class="fy-muted">12 Oct 2026 · 7 pages for this reader</span></li>
+            <li class="fy-row fy-row--wrap"><i data-icon="file-text"></i><a class="fy-mono" href="#settings/ai/knowledge-base/org.expense-policy?v=4">org.expense-policy</a><span class="fy-muted">version 4, human-edited</span></li>
+          </ul>
+        </section>
+
+        <section class="fy-stack fy-stack--2" aria-labelledby="usage-title">
+          <h3 class="fy-h3" id="usage-title">Usage</h3>
+          <table class="fy-table fy-table--compact">
+            <tbody>
+              <tr><th scope="row" style="position: static; background: none; font-weight: 500">Input tokens</th><td class="fy-num">27,940</td></tr>
+              <tr><th scope="row" style="position: static; background: none; font-weight: 500">of which cached</th><td class="fy-num">18,200</td></tr>
+              <tr><th scope="row" style="position: static; background: none; font-weight: 500">Output tokens</th><td class="fy-num">3,265</td></tr>
+              <tr><th scope="row" style="position: static; background: none; font-weight: 500">Cost (SGD)</th><td class="fy-num fy-strong">0.20</td></tr>
+            </tbody>
+          </table>
+          <p class="fy-small fy-muted fy-expert-only" style="word-break: break-all">Session web-7c21 · request req_01HF3Q8Z · IP 116.86.14.201</p>
+        </section>
+
+        <div class="fy-banner" role="note">
+          <i data-icon="eye-off" class="fy-i--20"></i>
+          <div class="fy-banner__text">
+            <span class="fy-strong fy-small">Restricted entries are masked</span>
+            <span class="fy-small fy-secondary">A turn that touched payroll or other restricted data keeps that data class. People without the matching right see “Restricted entry”; opening one is audited.</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <p class="fy-small fy-muted">Showing everyone’s activity because you are an Owner. Other people see only their own turns. Connected apps run on their own model and plan, so their tokens and cost are not Fyniq’s. An empty log says “No AI activity yet” with a link to the assistant.</p>
+</div>

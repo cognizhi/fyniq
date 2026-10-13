@@ -1,0 +1,168 @@
+<!-- fyniq-screen {"nav": "reports", "title": "Project reports", "mode": "expert", "heights": {"compact": 2900, "medium": 2200, "expanded": 1500}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#reports">Reports</a><i data-icon="chevron-right"></i><span>Management</span></nav>
+      <h1 class="fy-h1">Project reports</h1>
+      <p class="fy-secondary">Profit, utilisation and realisation for September 2026 · SGD. Time is valued at cost here; it never posts.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="message-square"></i>Ask about this</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export</button>
+    </div>
+  </div>
+
+  <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+    <div class="fy-field" style="flex: 1 1 150px; max-width: 220px"><label class="fy-label" for="pr-period">Period</label><select class="fy-select" id="pr-period"><option>September 2026</option><option>Q3 2026</option><option>Project to date</option></select></div>
+    <div class="fy-field" style="flex: 0 0 auto"><span class="fy-label" id="pr-by">Profit by</span><div class="fy-segmented" role="radiogroup" aria-labelledby="pr-by"><button type="button" role="radio" aria-checked="true">Project</button><button type="button" role="radio" aria-checked="false">Customer</button><button type="button" role="radio" aria-checked="false">Person</button></div></div>
+  </div>
+
+  <div class="fy-grid fy-grid--tiles">
+    <div class="fy-tile"><span class="fy-tile__label">Project profit, September</span><a class="fy-tile__value" href="#projects?metric=profit" style="color: var(--text-primary)">10,145.56<small>SGD</small></a><span class="fy-tile__meta">44.5% of S$22,800.00 project revenue</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Team utilisation<button class="fy-info" type="button" aria-label="About utilisation" aria-expanded="false"><i data-icon="info"></i></button></span><a class="fy-tile__value" href="#reports/projects#people" style="color: var(--text-primary)">21.5%</a><span class="fy-tile__meta">224 billable of 1,039.98 available hours</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Unbilled work</span><a class="fy-tile__value" href="#projects/acme/unbilled" style="color: var(--text-primary)">12,732.00<small>SGD</small></a><span class="fy-tile__meta">62.5 h and 1 expense on Acme data platform</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Lumen Health pilot budget</span><a class="fy-tile__value" href="#projects/lumen" style="color: var(--text-primary)">74%<small>used</small></a><span class="fy-tile__meta"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>On track</span>2 of 4 milestones billed</span></div>
+  </div>
+
+  <section aria-labelledby="pp-title" class="fy-stack fy-stack--3">
+    <div class="fy-row fy-row--between fy-row--wrap"><h2 class="fy-h3" id="pp-title">Profit by project</h2><span class="fy-small fy-muted">Revenue − time at cost − direct costs</span></div>
+    <div class="fy-tablewrap">
+      <table class="fy-table fy-table--compact fy-statement">
+        <caption class="fy-sr">Project profitability for September 2026, SGD</caption>
+        <thead><tr><th scope="col" style="min-width: 200px">Project</th><th scope="col" class="fy-num">Revenue</th><th scope="col" class="fy-num">Time at cost</th><th scope="col" class="fy-num">Direct costs</th><th scope="col" class="fy-num">Profit</th><th scope="col" class="fy-num">Margin</th><th scope="col" class="fy-num">Hours</th><th scope="col">Budget burn</th><th scope="col" class="fy-num">Realisation<button class="fy-info" type="button" aria-label="About realisation" aria-expanded="false"><i data-icon="info"></i></button></th><th scope="col" class="fy-num">Unbilled</th></tr></thead>
+        <tbody><tr>
+  <td style="min-width: 200px"><span class="fy-stack" style="gap: 2px; padding: 4px 0"><a class="fy-strong" href="#projects/lumen" style="color: inherit">Lumen Health pilot</a><span class="fy-small fy-muted">Lumen Health Pte Ltd · fixed fee S$48,000</span></span></td>
+  <td class="fy-num"><a href="#projects/lumen/revenue" style="color: inherit">12,000.00</a></td>
+  <td class="fy-num"><a href="#projects/lumen/time" style="color: inherit">−6,116.24</a></td>
+  <td class="fy-num"><a href="#projects/lumen/costs" style="color: inherit">−640.00</a></td>
+  <td class="fy-num fy-strong"><a href="#projects/lumen/profit" style="color: inherit">5,243.76</a></td>
+  <td class="fy-num">43.7%</td>
+  <td class="fy-num"><a href="#projects/lumen/time" style="color: inherit">132 h</a></td>
+  <td style="min-width: 140px"><span class="fy-stack" style="gap: 4px"><span class="fy-small">412 of 560 h · 2 of 4 milestones</span><span class="fy-progress"><span style="width: 74%"></span></span></span></td>
+  <td class="fy-num">61.9%</td>
+  <td class="fy-num"><span class="fy-muted">–</span></td>
+</tr><tr>
+  <td style="min-width: 200px"><span class="fy-stack" style="gap: 2px; padding: 4px 0"><a class="fy-strong" href="#projects/acme" style="color: inherit">Acme data platform</a><span class="fy-small fy-muted">Acme Analytics Pte Ltd · time and materials</span></span></td>
+  <td class="fy-num"><a href="#projects/acme/revenue" style="color: inherit">10,800.00</a></td>
+  <td class="fy-num"><a href="#projects/acme/time" style="color: inherit">−5,265.60</a></td>
+  <td class="fy-num"><a href="#projects/acme/costs" style="color: inherit">−632.60</a></td>
+  <td class="fy-num fy-strong"><a href="#projects/acme/profit" style="color: inherit">4,901.80</a></td>
+  <td class="fy-num">45.4%</td>
+  <td class="fy-num"><a href="#projects/acme/time" style="color: inherit">92 h</a></td>
+  <td style="min-width: 140px"><span class="fy-stack" style="gap: 4px"><span class="fy-small">92 of 100 h monthly cap</span><span class="fy-progress fy-progress--warning"><span style="width: 92%"></span></span></span></td>
+  <td class="fy-num">121.2%</td>
+  <td class="fy-num"><a href="#projects/acme/unbilled" style="color: inherit">12,732.00</a></td>
+</tr></tbody>
+        <tfoot><tr><td>Both projects</td><td class="fy-num"><a href="#projects/revenue" style="color: inherit">22,800.00</a></td><td class="fy-num"><a href="#projects/time" style="color: inherit">−11,381.84</a></td><td class="fy-num"><a href="#projects/costs" style="color: inherit">−1,272.60</a></td><td class="fy-num"><a href="#projects/profit" style="color: inherit">10,145.56</a></td><td class="fy-num">44.5%</td><td class="fy-num">224 h</td><td></td><td></td><td class="fy-num"><a href="#projects/acme/unbilled" style="color: inherit">12,732.00</a></td></tr></tfoot>
+      </table>
+    </div>
+    <p class="fy-small fy-muted">Realisation is billed ÷ standard value (S$165 an hour for engineers, S$140 for everyone else). The Lumen Health pilot is priced below standard to win the account.</p>
+  </section>
+
+  <div class="fy-split">
+    <section class="fy-stack fy-stack--3" aria-labelledby="pe-title" id="people">
+      <h2 class="fy-h3" id="pe-title">People</h2>
+      <div class="fy-banner fy-banner--info">
+        <i data-icon="lock" class="fy-i--20"></i>
+        <div class="fy-banner__text"><strong>You can see each person’s cost rate</strong><span class="fy-small">You are an Owner with payroll rights. Everyone else sees hours, and time at a role average over at least 3 people: Engineering S$72.82 an hour.</span></div>
+      </div>
+      <div class="fy-tablewrap">
+        <table class="fy-table fy-table--compact fy-table--cards">
+          <caption class="fy-sr">Utilisation and cost rate per person, September 2026</caption>
+          <thead><tr><th scope="col">Person</th><th scope="col">Role</th><th scope="col" class="fy-num">Billable</th><th scope="col" class="fy-num">Utilisation</th><th scope="col" class="fy-num">Cost rate</th><th scope="col" class="fy-num">Time at cost</th></tr></thead>
+          <tbody class="fy-stagger"><tr>
+  <td data-card="title"><span class="fy-row" style="gap: 8px"><span class="fy-avatar fy-avatar--sm">DL</span>Daniel Lim</span></td>
+  <td data-card="meta" class="fy-secondary">Senior software engineer</td>
+  <td class="fy-num" data-card="hide">48 h</td>
+  <td data-card="amount" class="fy-num" style="min-width: 120px"><span class="fy-row" style="justify-content: flex-end; gap: 8px"><span class="fy-progress fy-from-medium" style="width: 60px"><span style="width: 28%"></span></span>27.7%</span></td>
+  <td class="fy-num" data-card="status"><a href="#payroll/cost-rates" style="color: inherit">S$51.37/h</a></td>
+  <td class="fy-num" data-card="hide"><a href="#projects/time?person=daniel" style="color: inherit">2,465.76</a></td>
+</tr><tr>
+  <td data-card="title"><span class="fy-row" style="gap: 8px"><span class="fy-avatar fy-avatar--sm">PN</span>Priya Nair</span></td>
+  <td data-card="meta" class="fy-secondary">Head of customer success</td>
+  <td class="fy-num" data-card="hide">76 h</td>
+  <td data-card="amount" class="fy-num" style="min-width: 120px"><span class="fy-row" style="justify-content: flex-end; gap: 8px"><span class="fy-progress fy-from-medium" style="width: 60px"><span style="width: 44%"></span></span>43.8%</span></td>
+  <td class="fy-num" data-card="status"><a href="#payroll/cost-rates" style="color: inherit">S$47.32/h</a></td>
+  <td class="fy-num" data-card="hide"><a href="#projects/time?person=priya" style="color: inherit">3,596.32</a></td>
+</tr><tr>
+  <td data-card="title"><span class="fy-row" style="gap: 8px"><span class="fy-avatar fy-avatar--sm">WJ</span>Wei Jie Ong</span></td>
+  <td data-card="meta" class="fy-secondary">Engineering lead</td>
+  <td class="fy-num" data-card="hide">36 h</td>
+  <td data-card="amount" class="fy-num" style="min-width: 120px"><span class="fy-row" style="justify-content: flex-end; gap: 8px"><span class="fy-progress fy-from-medium" style="width: 60px"><span style="width: 21%"></span></span>20.8%</span></td>
+  <td class="fy-num" data-card="status"><a href="#payroll/cost-rates" style="color: inherit">S$65.60/h</a></td>
+  <td class="fy-num" data-card="hide"><a href="#projects/time?person=wei" style="color: inherit">2,361.60</a></td>
+</tr><tr>
+  <td data-card="title"><span class="fy-row" style="gap: 8px"><span class="fy-avatar fy-avatar--sm">CY</span>Chen Yu</span></td>
+  <td data-card="meta" class="fy-secondary">Data scientist</td>
+  <td class="fy-num" data-card="hide">44 h</td>
+  <td data-card="amount" class="fy-num" style="min-width: 120px"><span class="fy-row" style="justify-content: flex-end; gap: 8px"><span class="fy-progress fy-from-medium" style="width: 60px"><span style="width: 25%"></span></span>25.4%</span></td>
+  <td class="fy-num" data-card="status"><a href="#payroll/cost-rates" style="color: inherit">S$51.99/h</a></td>
+  <td class="fy-num" data-card="hide"><a href="#projects/time?person=chen" style="color: inherit">2,287.56</a></td>
+</tr><tr>
+  <td data-card="title"><span class="fy-row" style="gap: 8px"><span class="fy-avatar fy-avatar--sm">SK</span>Sarah Koh</span></td>
+  <td data-card="meta" class="fy-secondary">Office and people manager</td>
+  <td class="fy-num" data-card="hide">20 h</td>
+  <td data-card="amount" class="fy-num" style="min-width: 120px"><span class="fy-row" style="justify-content: flex-end; gap: 8px"><span class="fy-progress fy-from-medium" style="width: 60px"><span style="width: 12%"></span></span>11.5%</span></td>
+  <td class="fy-num" data-card="status"><a href="#payroll/cost-rates" style="color: inherit">S$33.53/h</a></td>
+  <td class="fy-num" data-card="hide"><a href="#projects/time?person=sarah" style="color: inherit">670.60</a></td>
+</tr><tr>
+  <td data-card="title"><span class="fy-row" style="gap: 8px"><span class="fy-avatar fy-avatar--sm">HR</span>Hafiz Rahman</span></td>
+  <td data-card="meta" class="fy-secondary">Customer support specialist</td>
+  <td class="fy-num" data-card="hide">0 h</td>
+  <td data-card="amount" class="fy-num" style="min-width: 120px"><span class="fy-row" style="justify-content: flex-end; gap: 8px"><span class="fy-progress fy-from-medium" style="width: 60px"><span style="width: 0%"></span></span>0.0%</span></td>
+  <td class="fy-num" data-card="status"><a href="#payroll/cost-rates" style="color: inherit">S$26.02/h</a></td>
+  <td class="fy-num" data-card="hide"><a href="#projects/time?person=hafiz" style="color: inherit">0.00</a></td>
+</tr></tbody>
+        </table>
+      </div>
+      <p class="fy-small fy-muted">Available hours: 40 a week, 173.33 in September (no public holiday), less recorded leave. Cost rate: monthly salary, employer CPF and SDL ÷ 173.33.</p>
+    </section>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Utilisation and reconciliation">
+      
+<section class="fy-card" aria-labelledby="ut-title">
+  <div class="fy-card__head"><h2 class="fy-h3" id="ut-title">Utilisation, September</h2><div class="fy-segmented" role="radiogroup" aria-label="Show utilisation, september as"><button type="button" role="radio" aria-checked="true">Chart</button><button type="button" role="radio" aria-checked="false">Table</button></div><button class="fy-iconbtn" type="button" aria-label="Export utilisation, september: PNG, XLSX or CSV"><i data-icon="download"></i></button></div>
+  <div class="fy-card__body fy-stack fy-stack--3">
+    
+    <svg class="fy-chart" viewBox="0 0 320 162" role="img" aria-label="Utilisation in September: Priya Nair 43.8%, the highest; Hafiz Rahman 0%, who works on customer success; the team averaged 21.5% of 173.33 available hours each.">
+<line class="axis" x1="96" y1="2" x2="96" y2="160"></line>
+<text x="0" y="21">Priya Nair</text>
+<path class="fy-bar fy-c1" d="M96,10 L171,10 Q174,10 174,13 L174,21 Q174,24 171,24 L96,24 Z"></path>
+<text x="180" y="21">44%</text>
+<text x="0" y="47">Daniel Lim</text>
+<path class="fy-bar fy-c1" d="M96,36 L142.3,36 Q145.3,36 145.3,39 L145.3,47 Q145.3,50 142.3,50 L96,50 Z"></path>
+<text x="151.3" y="47">28%</text>
+<text x="0" y="73">Chen Yu</text>
+<path class="fy-bar fy-c1" d="M96,62 L138.2,62 Q141.2,62 141.2,65 L141.2,73 Q141.2,76 138.2,76 L96,76 Z"></path>
+<text x="147.2" y="73">25%</text>
+<text x="0" y="99">Wei Jie Ong</text>
+<path class="fy-bar fy-c1" d="M96,88 L130,88 Q133,88 133,91 L133,99 Q133,102 130,102 L96,102 Z"></path>
+<text x="139" y="99">21%</text>
+<text x="0" y="125">Sarah Koh</text>
+<path class="fy-bar fy-c1" d="M96,114 L113.5,114 Q116.5,114 116.5,117 L116.5,125 Q116.5,128 113.5,128 L96,128 Z"></path>
+<text x="122.5" y="125">12%</text>
+<text x="0" y="151">Hafiz Rahman</text>
+<path class="fy-bar fy-c1" d="M96,140 L97,140 Q98,140 98,141 L98,153 Q98,154 97,154 L96,154 Z"></path>
+<text x="102" y="151">0%</text>
+</svg>
+    <p class="fy-small fy-muted">Billable hours ÷ available hours. Product work is not billable, so 20 to 45% is expected here.</p>
+  </div>
+</section>
+      <section class="fy-card" aria-labelledby="sg-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="sg-title">Checks</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--warning"><i data-icon="triangle-alert" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Small group: Operations</span><span class="fy-list__meta" style="white-space: normal">It has 1 person, so a department total would show one person’s pay. Combine it with another department before you share this report.</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="git-compare" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Payroll lines tagged to projects</span><span class="fy-list__meta" style="white-space: normal">The September pay run, PR-2026-09, tags S$670.60 of Sarah Koh’s pay to the Lumen Health pilot. It is listed here to reconcile and left out of direct costs, so staff cost is not counted twice.</span></span>
+            <a class="fy-num" href="#payroll/pay-runs/PR-2026-09">670.60</a></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="message-square"></i>Ask</button>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export</button>
+  </div>
+</div>

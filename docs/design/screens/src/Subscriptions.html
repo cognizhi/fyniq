@@ -1,0 +1,47 @@
+<!-- fyniq-screen {"nav": "sales", "title": "Subscriptions", "mode": "expert", "heights": {"compact": 1550, "medium": 1200, "expanded": 1000}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#sales">Sales</a><i data-icon="chevron-right"></i><span>Subscriptions</span></nav>
+      <h1 class="fy-h1">Subscriptions and contracts</h1>
+      <p class="fy-secondary">Plans we invoice ourselves, and plans Stripe bills for us, mirrored here read-only.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <span class="fy-chip fy-chip--good"><i data-icon="plug"></i>Stripe connected · synced 09:40</span>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="plus"></i>New subscription</button>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--2 fy-stagger">
+    <div class="fy-tile"><span class="fy-tile__label">Booked MRR<button class="fy-info" type="button" aria-label="About booked MRR" aria-expanded="false"><i data-icon="info"></i></button></span><span class="fy-tile__value fy-num">5,924.04<small>SGD</small></span><span class="fy-tile__meta">Subscription revenue recognised in September, from the ledger</span></div>
+    <div class="fy-tile"><span class="fy-tile__label">Contracted MRR<button class="fy-info" type="button" aria-label="About contracted MRR" aria-expanded="false"><i data-icon="info"></i></button></span><span class="fy-tile__value fy-num">6,814.04<small>SGD</small></span><span class="fy-tile__meta">Signed and active on 1 Nov, including Lumen Health's plan that starts then</span></div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>2 items parked for the accountant</strong><span class="fy-small">Fyniq could not decide how to book them: a usage-based price and a trial with a paid add-on. Grace Ho has them in her queue.</span></div>
+    <div class="fy-banner__action"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#sales/subscriptions?view=parked">See parked items</a></div>
+  </div>
+
+  <div class="fy-tablewrap">
+    <table class="fy-table fy-table--cards">
+      <thead><tr><th scope="col">Customer</th><th scope="col">Plan</th><th scope="col" class="fy-from-expanded">Billed by</th><th scope="col">Status</th><th scope="col" class="fy-from-medium">Service period</th><th scope="col" class="fy-from-expanded">Next invoice</th><th scope="col" class="fy-from-expanded">Collection</th></tr></thead>
+      <tbody class="fy-stagger">
+        <tr><td data-card="title"><a href="#sales/subscriptions/sub-0003">Acme Analytics Pte Ltd</a></td><td data-card="meta">Platform, S$36,000 a year</td><td data-card="hide" class="fy-from-expanded">Fyniq</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td><td data-card="hide" class="fy-from-medium">Jul 2026–Jun 2027</td><td data-card="hide" class="fy-from-expanded">1 Jul 2027</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#sales/subscriptions/sub-0007">Orbital Freight Asia Pte Ltd</a></td><td data-card="meta">Dashboards Pro, US$1,200 a month</td><td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--outline"><i data-icon="eye"></i>Stripe · mirror</span></td><td data-card="status"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Past due</span></td><td data-card="hide" class="fy-from-medium">1–31 Oct</td><td data-card="hide" class="fy-from-expanded">1 Nov</td><td data-card="hide" class="fy-from-expanded">Attempt 2 of 4 · next 15 Oct</td></tr>
+        <tr><td data-card="title"><a href="#sales/subscriptions/sub-0005">Harbourfront Dental Group</a></td><td data-card="meta">Starter × 6 clinics, S$294 a month</td><td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--outline"><i data-icon="eye"></i>Stripe · mirror</span></td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td><td data-card="hide" class="fy-from-medium">1–31 Oct</td><td data-card="hide" class="fy-from-expanded">1 Nov</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#sales/subscriptions/sub-0004">Kopi Labs Pte Ltd</a></td><td data-card="meta">Support, S$4,800 a year</td><td data-card="hide" class="fy-from-expanded">Fyniq</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Active</span></td><td data-card="hide" class="fy-from-medium">Aug 2026–Jul 2027</td><td data-card="hide" class="fy-from-expanded">1 Aug 2027</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#sales/subscriptions/sub-0009">Lumen Health Pte Ltd</a></td><td data-card="meta">Growth, S$890 a month + SSO add-on</td><td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--outline"><i data-icon="eye"></i>Stripe · mirror</span></td><td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Trial · parked</span></td><td data-card="hide" class="fy-from-medium">Trial to 31 Oct</td><td data-card="hide" class="fy-from-expanded">1 Nov</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+        <tr><td data-card="title"><a href="#sales/subscriptions?plan=starter-self-serve">Self-serve customers (14)</a></td><td data-card="meta">Starter, S$49 a month</td><td data-card="hide" class="fy-from-expanded"><span class="fy-chip fy-chip--outline"><i data-icon="eye"></i>Stripe · mirror</span></td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>13 active · 1 cancelled</span></td><td data-card="hide" class="fy-from-medium">Monthly</td><td data-card="hide" class="fy-from-expanded">Various</td><td data-card="hide" class="fy-from-expanded">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section class="fy-card" aria-labelledby="sub-amend">
+    <div class="fy-card__head"><h2 class="fy-h3" id="sub-amend">Amendments</h2><span class="fy-tag fy-tag--expert">P2</span></div>
+    <ul class="fy-list">
+      <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="arrow-up-right"></i></span><span class="fy-list__main"><span class="fy-list__title">Harbourfront Dental: 4 to 6 clinics</span><span class="fy-list__meta fy-wrap">From 1 Sep · S$196 to S$294 a month · order form attached</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Applied</span></li>
+    </ul>
+  </section>
+  <p class="fy-small fy-muted">Stripe rows are a read-only mirror: change them in Stripe, and Fyniq books what Stripe invoices and collects.</p>
+</div>

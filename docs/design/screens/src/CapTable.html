@@ -1,0 +1,242 @@
+<!-- fyniq-screen {"nav": "equity", "title": "Who owns the company", "mode": "basic", "heights": {"compact": 2300, "medium": 2000, "expanded": 1300}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Equity</span>
+      <h1 class="fy-h1"><span class="fy-basic-only">Who owns the company</span><span class="fy-expert-only">Cap table</span></h1>
+      <p class="fy-secondary">Computed from the equity register, never edited by hand. As at 13 Oct 2026.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="download"></i>Export</button>
+      <a class="fy-btn fy-btn--primary fy-basic-only" href="#equity/rounds"><i data-icon="calculator"></i>Try a funding round</a>
+      <a class="fy-btn fy-btn--primary fy-expert-only" href="#equity/transactions/new"><i data-icon="plus"></i>New transaction</a>
+    </div>
+  </div>
+
+  <nav class="fy-tabs fy-expert-only" aria-label="Cap table views">
+    <a href="#equity" aria-current="page">Cap table</a>
+    <a href="#equity/holders">Holders</a>
+    <a href="#equity/classes">Classes</a>
+    <a href="#equity/transactions">Transactions</a>
+    <a href="#equity/instruments">SAFEs and notes</a>
+    <a href="#equity/options">Option pool</a>
+  </nav>
+
+  <div class="fy-row fy-row--wrap" style="gap: var(--space-3); align-items: flex-end">
+    <div class="fy-field" style="width: 168px">
+      <label class="fy-label" for="ct-asat">As at</label>
+      <input class="fy-input" id="ct-asat" value="13 Oct 2026" readonly="readonly">
+    </div>
+    <div class="fy-field fy-expert-only" style="width: 168px">
+      <label class="fy-label" for="ct-compare">Compare with</label>
+      <input class="fy-input" id="ct-compare" value="31 Dec 2025" readonly="readonly">
+    </div>
+    <div class="fy-segmented fy-expert-only" role="radiogroup" aria-label="Count">
+      <button type="button" role="radio" aria-checked="false">Issued</button>
+      <button type="button" role="radio" aria-checked="true">Fully diluted</button>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="ct-chart-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="ct-chart-title">Ownership</h2>
+          <div class="fy-segmented" role="radiogroup" aria-label="Show as">
+            <button type="button" role="radio" aria-checked="true">Chart</button>
+            <button type="button" role="radio" aria-checked="false">Table</button>
+          </div>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-stack fy-stack--2">
+            <p class="fy-small fy-muted">Issued · 9,000,000 shares</p>
+            <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 28px; border-radius: 4px" role="img" aria-label="Issued shares: Mei Lin Tan 50.00%, Arjun Rao 50.00%.">
+              <rect class="fy-bar fy-c1" x="0" y="0" width="497" height="10"></rect>
+              <rect class="fy-bar fy-c2" x="500" y="0" width="500" height="10"></rect>
+            </svg>
+          </div>
+          <div class="fy-stack fy-stack--2 fy-expert-only">
+            <p class="fy-small fy-muted">Fully diluted · 10,666,666 shares</p>
+            <svg class="fy-chart" viewBox="0 0 1000 10" preserveAspectRatio="none" style="height: 28px; border-radius: 4px" role="img" aria-label="Fully diluted: Mei Lin Tan and Arjun Rao 42.19% each, options granted 3.98%, unallocated pool 5.39%, Lion Rock Ventures SAFE 6.25%.">
+              <rect class="fy-bar fy-c1" x="0" y="0" width="418.875" height="10"></rect>
+              <rect class="fy-bar fy-c2" x="421.875" y="0" width="418.875" height="10"></rect>
+              <rect class="fy-bar fy-c3" x="843.75" y="0" width="36.844" height="10"></rect>
+              <rect class="fy-bar fy-c4" x="883.594" y="0" width="50.906" height="10"></rect>
+              <rect class="fy-bar fy-c5" x="937.5" y="0" width="62.5" height="10"></rect>
+            </svg>
+          </div>
+          <div class="fy-legend fy-basic-only">
+            <span><i class="fy-legend__key fy-swatch-1"></i>Mei Lin Tan <span class="fy-num fy-strong">50.00%</span></span>
+            <span><i class="fy-legend__key fy-swatch-2"></i>Arjun Rao <span class="fy-num fy-strong">50.00%</span></span>
+          </div>
+          <div class="fy-legend fy-expert-only">
+            <span><i class="fy-legend__key fy-swatch-1"></i>Mei Lin Tan <span class="fy-num fy-strong">42.19%</span></span>
+            <span><i class="fy-legend__key fy-swatch-2"></i>Arjun Rao <span class="fy-num fy-strong">42.19%</span></span>
+            <span><i class="fy-legend__key fy-swatch-3"></i>Options granted <span class="fy-num fy-strong">3.98%</span></span>
+            <span><i class="fy-legend__key fy-swatch-4"></i>Unallocated pool <span class="fy-num fy-strong">5.39%</span></span>
+            <span><i class="fy-legend__key fy-swatch-5"></i>Lion Rock Ventures SAFE <span class="fy-num fy-strong">6.25%</span></span>
+          </div>
+          <p class="fy-small fy-muted fy-expert-only">Fully diluted counts granted options, the unallocated ESOP 2026 pool and the SAFE as converted at its cap price of S$0.7500. Percentages are exact, shown to 2 decimals.</p>
+        </div>
+      </section>
+
+      <div class="fy-grid fy-grid--2 fy-basic-only">
+        <div class="fy-tile">
+          <span class="fy-tile__label"><i data-icon="user-round"></i>My holding<button class="fy-info" type="button" aria-label="About my holding" aria-expanded="false"><i data-icon="info"></i></button></span>
+          <a class="fy-tile__value fy-num" href="#equity/holders/mei-lin-tan" style="color: var(--text-primary)">50.00<small>%</small></a>
+          <span class="fy-tile__meta">4,500,000 ordinary shares since 2 Sep 2024</span>
+          <span class="fy-tile__meta">Counting the SAFE and employees' options as shares: <span class="fy-num fy-strong">42.19%</span></span>
+        </div>
+        <a class="fy-tile" href="#equity/instruments">
+          <span class="fy-tile__label"><i data-icon="handshake"></i>Latest round</span>
+          <span class="fy-tile__value fy-num">500,000.00<small>SGD</small></span>
+          <span class="fy-tile__meta">SAFE from Lion Rock Ventures · 18 Jun 2026</span>
+          <span class="fy-tile__meta">Becomes shares at the next priced round, at a valuation of at most S$8,000,000</span>
+        </a>
+      </div>
+
+      <section class="fy-card fy-basic-only" aria-labelledby="ct-basic-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ct-basic-title">Shareholders</h2><span class="fy-badge fy-badge--quiet">2</span></div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Shareholder</th><th scope="col">Type of share</th><th scope="col" class="fy-num">Shares</th><th scope="col" class="fy-num">Owns</th></tr></thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title"><a href="#equity/holders/mei-lin-tan">Mei Lin Tan</a> <span class="fy-muted fy-small">(you)</span></td>
+              <td data-card="meta">Ordinary<span class="fy-only-compact"> · 4,500,000 shares</span></td>
+              <td data-card="hide" class="fy-num"><a href="#equity/transactions?holder=mei-lin-tan">4,500,000</a></td>
+              <td data-card="amount" class="fy-num fy-strong">50.00%</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#equity/holders/arjun-rao">Arjun Rao</a></td>
+              <td data-card="meta">Ordinary<span class="fy-only-compact"> · 4,500,000 shares</span></td>
+              <td data-card="hide" class="fy-num"><a href="#equity/transactions?holder=arjun-rao">4,500,000</a></td>
+              <td data-card="amount" class="fy-num fy-strong">50.00%</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__body fy-stack fy-stack--2" style="border-top: 1px solid var(--border)">
+          <h3 class="fy-h3">Promised, not yet shares</h3>
+          <ul class="fy-list">
+            <li class="fy-list__item" style="padding-left: 0; padding-right: 0">
+              <span class="fy-list__icon"><i data-icon="handshake" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">Lion Rock Ventures</span><span class="fy-list__meta">S$500,000 SAFE · about 6.25% once it converts</span></span>
+            </li>
+            <li class="fy-list__item" style="padding-left: 0; padding-right: 0">
+              <span class="fy-list__icon"><i data-icon="ticket" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">Employee options, ESOP 2026</span><span class="fy-list__meta">1,000,000 set aside · 425,000 given to 7 people</span></span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="fy-stack fy-stack--3 fy-expert-only" aria-labelledby="ct-table-title">
+        <div class="fy-section__head">
+          <h2 class="fy-h3" id="ct-table-title">By holder and class</h2>
+          <span class="fy-small fy-muted">Select a figure to see its transactions and evidence</span>
+        </div>
+        <div class="fy-tablewrap">
+          <table class="fy-table fy-statement">
+            <thead>
+              <tr>
+                <th scope="col">Holder</th><th scope="col">Class</th>
+                <th scope="col" class="fy-num">Issued</th><th scope="col" class="fy-num">Issued %</th><th scope="col" class="fy-num">Voting %</th>
+                <th scope="col" class="fy-num">Options, SAFEs</th><th scope="col" class="fy-num">Fully diluted</th><th scope="col" class="fy-num">FD %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="#equity/holders/mei-lin-tan">Mei Lin Tan</a></td><td>Ordinary</td>
+                <td class="fy-num"><a href="#equity/transactions?holder=mei-lin-tan">4,500,000</a></td><td class="fy-num">50.00</td><td class="fy-num">50.00</td>
+                <td class="fy-num fy-muted">–</td><td class="fy-num">4,500,000</td><td class="fy-num fy-strong">42.19</td>
+              </tr>
+              <tr>
+                <td><a href="#equity/holders/arjun-rao">Arjun Rao</a></td><td>Ordinary</td>
+                <td class="fy-num"><a href="#equity/transactions?holder=arjun-rao">4,500,000</a></td><td class="fy-num">50.00</td><td class="fy-num">50.00</td>
+                <td class="fy-num fy-muted">–</td><td class="fy-num">4,500,000</td><td class="fy-num fy-strong">42.19</td>
+              </tr>
+              <tr>
+                <td style="white-space: nowrap"><a href="#equity/holders/lion-rock-ventures">Lion Rock Ventures</a></td><td style="white-space: nowrap">SAFE at S$0.7500</td>
+                <td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td>
+                <td class="fy-num"><a href="#equity/instruments/safe-001">666,666</a></td><td class="fy-num">666,666</td><td class="fy-num fy-strong">6.25</td>
+              </tr>
+              <tr>
+                <td style="white-space: nowrap"><a href="#equity/options">Option holders (7)</a></td><td style="white-space: nowrap">ESOP 2026, granted</td>
+                <td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td>
+                <td class="fy-num"><a href="#equity/options">425,000</a></td><td class="fy-num">425,000</td><td class="fy-num fy-strong">3.98</td>
+              </tr>
+              <tr>
+                <td style="white-space: nowrap">Unallocated pool</td><td style="white-space: nowrap">ESOP 2026</td>
+                <td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td><td class="fy-num fy-muted">–</td>
+                <td class="fy-num"><a href="#equity/options">575,000</a></td><td class="fy-num">575,000</td><td class="fy-num fy-strong">5.39</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total</td><td></td>
+                <td class="fy-num">9,000,000</td><td class="fy-num">100.00</td><td class="fy-num">100.00</td>
+                <td class="fy-num">1,666,666</td><td class="fy-num">10,666,666</td><td class="fy-num">100.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="fy-plain">
+          <i data-icon="git-compare" class="fy-muted"></i>
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-strong">Since 31 Dec 2025</span>
+            <span class="fy-small fy-secondary">Issued shares unchanged at 9,000,000. Added: the ESOP 2026 pool of 1,000,000 (20 Jan) and the Lion Rock Ventures SAFE (18 Jun). Mei Lin Tan fully diluted: <span class="fy-num">50.00%</span> → <span class="fy-num">42.19%</span> (<span class="fy-num">−7.81</span> points).</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="fy-banner fy-banner--info" role="status">
+        <i data-icon="calendar-clock" class="fy-i--20"></i>
+        <div class="fy-banner__text">
+          <span class="fy-strong">15,000 shares waiting for ACRA</span>
+          <span class="fy-small">Nurul Aziz exercised her options on 8 Oct (<a href="#equity/transactions/eq-0005">EQ-0005</a>). The shares count here from the day ACRA registers them, not before.</span>
+        </div>
+      </div>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Checks and access">
+      <section class="fy-card" aria-labelledby="ct-checks-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ct-checks-title">Checks</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>4 OK</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Paid-up capital matches the books</span><span class="fy-list__meta" style="white-space: normal"><span class="fy-basic-only">Register and books both S$90,000.00</span><span class="fy-expert-only">Register S$90,000.00 · 3010 + 3020 S$90,000.00</span></span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Matches</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Matches ACRA's register of members</span><span class="fy-list__meta" style="white-space: normal">Extract of 6 Jan 2026 · 2 members · <a href="#equity/reconcile">Upload a newer one</a></span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Matches</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Controllers, over 25%</span><span class="fy-list__meta" style="white-space: normal">Mei Lin Tan and Arjun Rao · on the register</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Up to date</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Exempt private company</span><span class="fy-list__meta" style="white-space: normal">2 members, no company as a member</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Yes</span>
+          </li>
+        </ul>
+        <div class="fy-card__foot">
+          <p class="fy-small fy-muted">If the books or ACRA disagree with the register, the difference shows here and on Checks, with the transaction to fix it.</p>
+        </div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="ct-access-title">
+        <div class="fy-row"><i data-icon="lock" class="fy-muted"></i><h2 class="fy-h3" id="ct-access-title">Restricted information</h2></div>
+        <p class="fy-small fy-secondary">Only people with equity access see this page: you, Arjun Rao and Grace Ho. The assistant can't read equity data unless an Owner allows it.</p>
+        <div class="fy-row fy-row--wrap">
+          <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="file-spreadsheet"></i>XLSX</button>
+          <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="file-down"></i>PDF</button>
+          <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#settings/access">Who has access</a>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary fy-basic-only" href="#equity/rounds"><i data-icon="calculator"></i>Try a funding round</a>
+    <a class="fy-btn fy-btn--primary fy-expert-only" href="#equity/transactions/new"><i data-icon="plus"></i>New transaction</a>
+  </div>
+</div>

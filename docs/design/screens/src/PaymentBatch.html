@@ -1,0 +1,202 @@
+<!-- fyniq-screen {"nav": "purchases", "title": "Payment batch", "mode": "basic", "heights": {"compact": 3000, "medium": 2200, "expanded": 1450}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#purchases">Purchases</a><i data-icon="chevron-right"></i><a href="#purchases/payment-batches">Payment batches</a></nav>
+      <h1 class="fy-h1">Fri 16 Oct suppliers</h1>
+      <div class="fy-row fy-row--wrap">
+        <span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Blocked: approve again</span>
+        <span class="fy-small fy-secondary">Suppliers and claims · pays Fri 16 Oct from DBS Business Multi-Currency</span>
+      </div>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button" disabled="disabled"><i data-icon="lock"></i>Release</button>
+      <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Ask Arjun Rao to approve again</button>
+      <button class="fy-iconbtn" type="button" aria-label="More actions"><i data-icon="ellipsis"></i></button>
+    </div>
+  </div>
+
+  <div class="fy-grid fy-grid--2">
+    <div class="fy-tile">
+      <span class="fy-tile__label">To pay</span>
+      <span class="fy-tile__value fy-num">3,251.82<small>SGD</small></span>
+      <span class="fy-tile__meta">3 payments: 2 bills, 1 claim</span>
+    </div>
+    <div class="fy-tile">
+      <span class="fy-tile__label">On hold</span>
+      <span class="fy-tile__value fy-num">632.60<small>SGD</small></span>
+      <span class="fy-tile__meta">2 payments, not paid in this batch · 3,884.42 across all 5 items</span>
+    </div>
+  </div>
+
+  <ol class="fy-steps" aria-label="Batch progress">
+    <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Prepared</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">2</span>Approve again</li>
+    <li class="fy-step"><span class="fy-step__n">3</span>Release</li>
+    <li class="fy-step"><span class="fy-step__n">4</span>Paid</li>
+  </ol>
+
+  <div class="fy-banner fy-banner--critical" role="alert">
+    <i data-icon="shield-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>Release is blocked: the batch changed after it was approved</strong>
+      <span class="fy-small">Ho &amp; Partners LLP's bank details changed at 08:40 today (version 2 to 3), after Arjun Rao approved yesterday at 17:05. A payment approved before a bank-detail change always needs approving again, even once the change itself is approved. Ask Arjun to approve again, or remove that payment.</span>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <div class="fy-tabs" role="tablist" aria-label="Batch">
+        <button type="button" role="tab" aria-selected="true">Items<span class="fy-badge fy-badge--quiet">5</span></button>
+        <button type="button" role="tab" aria-selected="false">Bank file</button>
+        <button type="button" role="tab" aria-selected="false" class="fy-expert-only">Ledger impact</button>
+        <button type="button" role="tab" aria-selected="false">Evidence</button>
+        <button type="button" role="tab" aria-selected="false">Activity</button>
+      </div>
+
+      <section class="fy-card" aria-labelledby="items-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="items-title">Payments in this batch</h2>
+          <span class="fy-small fy-muted">SGD</span>
+        </div>
+        <div style="overflow-x: auto">
+          <table class="fy-table fy-table--cards">
+            <thead><tr><th scope="col">Payee</th><th scope="col">Document</th><th scope="col">Bank details</th><th scope="col" style="text-align: right">Amount</th><th scope="col">Status</th></tr></thead>
+            <tbody class="fy-stagger">
+              <tr>
+                <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Ho &amp; Partners LLP<div class="fy-small fy-muted" style="font-weight: 400">Approved before the bank change: needs approving again</div></td>
+                <td data-card="meta" style="white-space: nowrap"><a href="#purchases/bill-0920">BILL-0920</a></td>
+                <td data-card="meta">Version 3 <span class="fy-small" style="color: var(--status-critical)">changed today, 08:40</span></td>
+                <td data-card="amount" class="fy-num">2,398.00</td>
+                <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Blocked</span></td>
+              </tr>
+              <tr>
+                <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Grab for Business</td>
+                <td data-card="meta" style="white-space: nowrap"><a href="#purchases/bill-0924">BILL-0924</a></td>
+                <td data-card="meta">Version 1 <span class="fy-small fy-muted">since 2 Feb</span></td>
+                <td data-card="amount" class="fy-num">667.52</td>
+                <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Ready</span></td>
+              </tr>
+              <tr>
+                <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Daniel Lim</td>
+                <td data-card="meta" style="white-space: nowrap"><a href="#purchases/claims/clm-0044">CLM-0044</a></td>
+                <td data-card="meta">Version 1 <span class="fy-small fy-muted">since 3 Mar</span></td>
+                <td data-card="amount" class="fy-num">186.30</td>
+                <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Ready</span></td>
+              </tr>
+              <tr>
+                <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Chen Yu<div class="fy-small fy-muted" style="font-weight: 400">IR21 clearance: all money due is held until IRAS says it can be released</div></td>
+                <td data-card="meta" style="white-space: nowrap"><a href="#purchases/claims/clm-0042">CLM-0042</a></td>
+                <td data-card="meta">Version 1 <span class="fy-small fy-muted">since 2 Jun</span></td>
+                <td data-card="amount" class="fy-num fy-muted">212.60</td>
+                <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="circle-pause"></i>On hold</span></td>
+              </tr>
+              <tr>
+                <td data-card="title" style="padding-top: var(--space-2); padding-bottom: var(--space-2)">Chen Yu<div class="fy-small fy-muted" style="font-weight: 400">IR21 clearance, as above</div></td>
+                <td data-card="meta" style="white-space: nowrap"><a href="#purchases/claims/clm-0043">CLM-0043</a></td>
+                <td data-card="meta">Version 1 <span class="fy-small fy-muted">since 2 Jun</span></td>
+                <td data-card="amount" class="fy-num fy-muted">420.00</td>
+                <td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="circle-pause"></i>On hold</span></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr><td data-card="title">To pay</td><td data-card="hide"></td><td data-card="hide"></td><td data-card="amount" class="fy-num">3,251.82</td><td data-card="hide"></td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="fy-card__foot" style="flex-wrap: wrap">
+          <button class="fy-btn fy-btn--destructive fy-btn--sm" type="button" style="color: var(--destructive)"><i data-icon="x"></i>Remove Ho &amp; Partners LLP</button>
+          <span class="fy-small fy-muted">Removing it also changes the batch, so it still needs approving again.</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="file-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="file-title">Bank file and payment</h2>
+        </div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="file-down" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">DBS bulk payment file (GIRO and FAST)</span><span class="fy-list__meta" style="white-space: normal">Created when the batch is released; you upload it to DBS IDEAL</span></span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" disabled="disabled">Export</button>
+          </li>
+          <li class="fy-list__item fy-expert-only">
+            <span class="fy-list__icon"><i data-icon="hash" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">File hash (SHA-256)</span><span class="fy-list__meta" style="white-space: normal">Recorded with the release, so the uploaded file can be checked against it</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="image-up" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Bank confirmation</span><span class="fy-list__meta" style="white-space: normal">Recommended: a screenshot or file from DBS after you upload</span></span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="landmark" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Marked paid by the bank feed</span><span class="fy-list__meta" style="white-space: normal">When the DBS feed shows the 3,251.82 debit</span></span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="fy-card fy-expert-only" aria-labelledby="li-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="li-title">Ledger impact at payment</h2></div>
+        <table class="fy-table fy-table--compact fy-ledger">
+          <thead><tr><th scope="col">Account</th><th scope="col" style="text-align: right">Debit</th><th scope="col" style="text-align: right">Credit</th></tr></thead>
+          <tbody>
+            <tr><td><span class="fy-acct">2010</span>Accounts payable</td><td class="fy-num">3,065.52</td><td></td></tr>
+            <tr><td><span class="fy-acct">2150</span>Expense claims payable</td><td class="fy-num">186.30</td><td></td></tr>
+            <tr><td><span class="fy-acct">1010</span>DBS Business Multi-Currency</td><td></td><td class="fy-num">3,251.82</td></tr>
+          </tbody>
+          <tfoot><tr><td>Total</td><td class="fy-num">3,251.82</td><td class="fy-num">3,251.82</td></tr></tfoot>
+        </table>
+      </section>
+      <p class="fy-plain fy-basic-only fy-small"><i data-icon="info"></i>When paid, this settles S$3,065.52 of supplier bills and S$186.30 of claims from DBS.</p>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Approvals">
+      <section class="fy-card" aria-labelledby="ap-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="ap-title">Approvals</h2>
+          <button class="fy-info" type="button" aria-label="About who can approve and release" aria-expanded="false"><i data-icon="info"></i></button>
+        </div>
+        <div class="fy-card__body">
+          <ol class="fy-timeline" style="padding-left: 28px">
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span>
+              <span class="fy-strong">Prepared by Priya Nair</span>
+              <span class="fy-small fy-muted">12 Oct, 16:30 · 5 items from approved bills and claims</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot" style="border-color: var(--status-critical); color: var(--status-critical)"><i data-icon="rotate-ccw"></i></span>
+              <span class="fy-strong">Approved by Arjun Rao, no longer valid</span>
+              <span class="fy-small fy-muted">12 Oct, 17:05 with a passkey · the batch changed today at 08:40</span>
+              <span class="fy-small fy-muted fy-expert-only">Signed envelope <span class="fy-mono">9f2c…e41a</span>; current <span class="fy-mono">41d8…07bc</span></span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="key-round"></i></span>
+              <span class="fy-strong">Release by Mei Lin Tan</span>
+              <span class="fy-small fy-muted">With a passkey. You neither prepared nor approved this batch, so you can release it.</span>
+            </li>
+            <li class="fy-timeline__item">
+              <span class="fy-timeline__dot"><i data-icon="landmark"></i></span>
+              <span class="fy-strong">Paid</span>
+              <span class="fy-small fy-muted">When the DBS feed shows the debit</span>
+            </li>
+          </ol>
+        </div>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Founder mode: preparing, approving and releasing are done by different people (SOD-2).</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="hold-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="hold-title">Why 2 payments are on hold</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon fy-list__icon--warning"><i data-icon="circle-pause" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">IR21 clearance hold</span><span class="fy-list__meta" style="white-space: normal">Chen Yu leaves on 30 Nov. His two claims, S$632.60, are held until IRAS says the money can be released.</span></span>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button" style="color: var(--primary-foreground)"><i data-icon="send"></i>Ask Arjun to approve again</button>
+  </div>
+</div>

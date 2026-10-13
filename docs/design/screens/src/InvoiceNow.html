@@ -1,0 +1,179 @@
+<!-- fyniq-screen {"nav": "compliance", "title": "InvoiceNow", "mode": "expert", "heights": {"compact": 2950, "medium": 2200, "expanded": 1400}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#compliance">Compliance</a><i data-icon="chevron-right"></i><span>InvoiceNow</span></nav>
+      <h1 class="fy-h1">InvoiceNow submissions</h1>
+      <p class="fy-secondary">Every document in a GST return reaches IRAS through the Access Point, or has a recorded exclusion. Each is due by the earlier of the return's filing date and due date.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="refresh-cw"></i>Retry queued now</button>
+      <a class="fy-btn fy-btn--primary" href="#compliance/invoicenow?status=failed"><i data-icon="wrench"></i>Fix 2 failed</a>
+    </div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="unplug" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <strong>The Access Point has been degraded since 08:40</strong>
+      <span class="fy-small">4 submissions are queued and resend automatically every 15 minutes. If the outage would make the Jul–Sep return late, the Owner and the tax agent can file with the gap recorded.</span>
+    </div>
+    <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#compliance/gst/2026-q3">GST return</a>
+  </div>
+
+  <section class="fy-card" aria-labelledby="cov-title">
+    <div class="fy-card__head"><h2 class="fy-h3" id="cov-title">Coverage by return period</h2><button class="fy-info" type="button" aria-label="About coverage" aria-expanded="false"><i data-icon="info"></i></button></div>
+    <div class="fy-card__body">
+      <div class="fy-grid fy-grid--3">
+        <a class="fy-stack fy-stack--2" href="#compliance/invoicenow?period=2026-q3" style="color: inherit">
+          <span class="fy-row fy-row--between"><span class="fy-strong">Jul–Sep 2026</span><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>6 open</span></span>
+          <span class="fy-progress fy-progress--warning" role="img" aria-label="171 of 177 covered"><span style="width: 96.6%"></span></span>
+          <span class="fy-small fy-muted"><span class="fy-num">171 of 177</span> covered · 162 acknowledged · 9 excluded · 4 queued · 2 failed · due by 31 Oct</span>
+        </a>
+        <a class="fy-stack fy-stack--2" href="#compliance/invoicenow?period=2026-q2" style="color: inherit">
+          <span class="fy-row fy-row--between"><span class="fy-strong">Apr–Jun 2026</span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Complete</span></span>
+          <span class="fy-progress fy-progress--good" role="img" aria-label="151 of 151 covered"><span style="width: 100%"></span></span>
+          <span class="fy-small fy-muted"><span class="fy-num">151 of 151</span> covered · 144 acknowledged · 7 excluded</span>
+        </a>
+        <a class="fy-stack fy-stack--2" href="#compliance/invoicenow?period=2026-q4" style="color: inherit">
+          <span class="fy-row fy-row--between"><span class="fy-strong">Oct–Dec 2026</span><span class="fy-small fy-muted">In progress</span></span>
+          <span class="fy-progress" role="img" aria-label="38 of 41 covered so far"><span style="width: 92.7%"></span></span>
+          <span class="fy-small fy-muted"><span class="fy-num">38 of 41</span> so far · 3 queued</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="sub-title">
+        <div class="fy-tabs" role="tablist" aria-label="Submissions" style="padding: 0 var(--space-2)">
+          <button type="button" role="tab" aria-selected="true">Open<span class="fy-badge fy-badge--quiet">6</span></button>
+          <button type="button" role="tab" aria-selected="false">Acknowledged<span class="fy-badge fy-badge--quiet">162</span></button>
+          <button type="button" role="tab" aria-selected="false">Exclusions<span class="fy-badge fy-badge--quiet">9</span></button>
+        </div>
+        <h2 class="fy-sr" id="sub-title">Open submissions, Jul–Sep 2026</h2>
+        <table class="fy-table fy-table--cards">
+          <thead>
+            <tr><th scope="col">Document</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col" class="fy-from-expanded">Due by</th></tr>
+          </thead>
+          <tbody class="fy-stagger">
+            <tr>
+              <td data-card="title"><a href="#sales/inv-0128">INV-0128 · Acme Analytics</a><br><span class="fy-small fy-error" style="font-weight: 500"><i data-icon="circle-x"></i>Receiver's Peppol ID was not found. Check the customer's Peppol ID, then retry.</span></td>
+              <td data-card="meta">Peppol sale</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Failed</span></td>
+              <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Oct</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#sales/inv-0132">INV-0132 · Harbourfront Dental Group</a><br><span class="fy-small fy-error" style="font-weight: 500"><i data-icon="circle-x"></i>The buyer's UEN doesn't match ACRA's records. Check it on the contact, then retry.</span></td>
+              <td data-card="meta">Solution-extracted sale, customer not on the network</td>
+              <td data-card="status"><span class="fy-chip fy-chip--critical"><i data-icon="circle-x"></i>Failed</span></td>
+              <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Oct</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#purchases/bill-0897">BILL-0897 · SP Group</a></td>
+              <td data-card="meta">Peppol purchase</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Queued</span></td>
+              <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Oct</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#purchases/aggregates/2026-09">Staff claims and card lines, Sep</a></td>
+              <td data-card="meta">Aggregated: 23 claims and card lines</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Queued</span></td>
+              <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Oct</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#sales/cn-0012">CN-0012 · Harbourfront Dental Group</a></td>
+              <td data-card="meta">Credit note</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Queued</span></td>
+              <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Oct</td>
+            </tr>
+            <tr>
+              <td data-card="title"><a href="#sales/inv-0125">INV-0125 · Orbital Freight Asia</a></td>
+              <td data-card="meta">Resubmission, same document UUID</td>
+              <td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Queued</span></td>
+              <td data-card="hide" class="fy-from-expanded" style="white-space: nowrap">31 Oct</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot">
+          <span class="fy-small fy-muted">Acknowledged items keep the IRAS acknowledgement ID as proof of receipt, for example INV-0129 to Lumen Health: <span class="fy-mono">A26-0930-118274</span>.</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="exc-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="exc-title">Exclusions, Jul–Sep 2026</h2><span class="fy-badge fy-badge--quiet">9</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="ban" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Blocked input tax</span><span class="fy-list__meta">5 bills coded BL · e.g. BILL-0881, staff family transport</span></span>
+            <span class="fy-num fy-strong">5</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="package" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Import permit</span><span class="fy-list__meta">1 import permit, laptops, coded IM</span></span>
+            <span class="fy-num fy-strong">1</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="landmark" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Bank interest, no invoice issued <span class="fy-tag">verify</span></span><span class="fy-list__meta">3 exempt interest credits, coded ES</span></span>
+            <span class="fy-num fy-strong">3</span>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__icon"><i data-icon="arrow-right-left" class="fy-i--20"></i></span>
+            <span class="fy-list__main"><span class="fy-list__title">Reverse charge · non-registered suppliers</span><span class="fy-list__meta">None this period: reverse charge is off</span></span>
+            <span class="fy-num fy-muted">0</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Access Point and inbound">
+      <section class="fy-card" aria-labelledby="ap-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ap-title">Access Point</h2><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Degraded</span></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <dl class="fy-dl">
+            <div><dt>Since</dt><dd>Today 08:40</dd></div>
+            <div><dt>Last successful send</dt><dd>08:38</dd></div>
+            <div><dt>Next retry</dt><dd>10:15</dd></div>
+            <div><dt>Our Peppol ID</dt><dd><span class="fy-mono">0195:SGUEN202412345K</span></dd></div>
+          </dl>
+          <p class="fy-small fy-muted">An IMDA-accredited Access Point, connected under Settings, Integrations. Its support for solution-extracted and aggregated submissions was confirmed before registration <span class="fy-tag">verify</span></p>
+          <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#settings/integrations/peppol"><i data-icon="plug-zap"></i>Connection health</a>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="in-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="in-title">Inbound Peppol invoices</h2><span class="fy-badge fy-badge--quiet">3 today</span></div>
+        <ul class="fy-list">
+          <li>
+            <a class="fy-list__item" href="#purchases/bill-0926">
+              <span class="fy-list__icon fy-list__icon--brand"><i data-icon="file-down" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">SP Group</span><span class="fy-list__meta">Draft BILL-0926 · S$412.66</span></span>
+              <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+            </a>
+          </li>
+          <li>
+            <a class="fy-list__item" href="#purchases/bill-0927">
+              <span class="fy-list__icon fy-list__icon--brand"><i data-icon="file-down" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">WeWork Singapore</span><span class="fy-list__meta">Draft BILL-0927 · S$7,412.40</span></span>
+              <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+            </a>
+          </li>
+          <li>
+            <a class="fy-list__item" href="#purchases/bill-0928">
+              <span class="fy-list__icon fy-list__icon--brand"><i data-icon="file-down" class="fy-i--20"></i></span>
+              <span class="fy-list__main"><span class="fy-list__title">Google Workspace</span><span class="fy-list__meta">Draft BILL-0928 · S$1,284.00</span></span>
+              <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+            </a>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Inbound invoices become draft bills. Nothing posts until someone approves it.</span></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--primary" href="#compliance/invoicenow?status=failed"><i data-icon="wrench"></i>Fix 2 failed</a>
+  </div>
+</div>

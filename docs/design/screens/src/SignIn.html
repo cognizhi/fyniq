@@ -1,0 +1,140 @@
+<!-- fyniq-screen {"layout": "bare", "title": "Sign in", "mode": "basic", "heights": {"compact": 2260, "medium": 2120, "expanded": 2020}} -->
+<div class="fy-bare fy-bare--split fy-enter">
+  <aside class="fy-bare__aside" aria-label="About Fyniq" style="justify-content: flex-start; gap: 120px">
+    <a class="fy-brand" href="#home"><span class="fy-brand__mark" aria-hidden="true">f</span><span class="fy-brand__word">Fyniq</span></a>
+    <div class="fy-stack fy-stack--6" style="max-width: 460px">
+      <p style="font-size: var(--fs-3xl); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1">Intelligence behind every number</p>
+      <p class="fy-lead">Accounting, compliance and planning for Singapore start-ups. Every figure opens to its source, and the assistant says where its numbers come from.</p>
+      <ul class="fy-stack fy-stack--3">
+        <li class="fy-row fy-row--top"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="list-tree" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong">Traceable figures</span><span class="fy-secondary fy-small">Select any number to see the entries and documents behind it.</span></span></li>
+        <li class="fy-row fy-row--top"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="user-check" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong">People decide</span><span class="fy-secondary fy-small">The assistant only proposes. Nothing posts until a named person approves it.</span></span></li>
+        <li class="fy-row fy-row--top"><span class="fy-list__icon fy-list__icon--brand"><i data-icon="shield-check" class="fy-i--20"></i></span><span class="fy-stack fy-stack--2" style="gap: 2px"><span class="fy-strong">Two-step sign-in for everyone</span><span class="fy-secondary fy-small">A passkey or an authenticator app, never SMS.</span></span></li>
+      </ul>
+    </div>
+    <div class="fy-row fy-row--wrap fy-small fy-muted" style="gap: var(--space-4); margin-top: auto">
+      <span>Hosted on Google Cloud, Singapore</span><a href="#privacy">Privacy</a><a href="#status">Service status</a><span>v0.4.0</span>
+    </div>
+  </aside>
+
+  <main class="fy-bare__main" style="grid-template-columns: minmax(0, 1fr)">
+    <div class="fy-bare__card">
+      <div class="fy-stack fy-stack--2 fy-until-expanded" style="align-items: center; text-align: center">
+        <a class="fy-brand" href="#home"><span class="fy-brand__mark" aria-hidden="true">f</span><span class="fy-brand__word">Fyniq</span></a>
+        <p class="fy-small fy-muted">Intelligence behind every number</p>
+      </div>
+
+      <div class="fy-banner fy-banner--info" role="status">
+        <i data-icon="clock" class="fy-i--20"></i>
+        <div class="fy-banner__text">
+          <span class="fy-strong">You were signed out</span>
+          <span class="fy-small fy-secondary">Your session ended after 30 minutes without activity. Sign in again and you go back to the page you were on.</span>
+        </div>
+      </div>
+
+      <section class="fy-card fy-card--pad fy-stack" aria-labelledby="signin-title">
+        <ol class="fy-steps" aria-label="Sign-in steps">
+          <li class="fy-step" aria-current="step"><span class="fy-step__n">1</span>Sign in</li>
+          <li class="fy-step"><span class="fy-step__n">2</span>Confirm it’s you</li>
+        </ol>
+        <div class="fy-row" style="gap: var(--space-3)">
+          <span class="fy-org__logo" aria-hidden="true" style="width: 40px; height: 40px; border-radius: var(--radius-m); font-size: var(--fs-lg)">C</span>
+          <div class="fy-stack fy-stack--2" style="gap: 0">
+            <h1 class="fy-h2" id="signin-title">Sign in to Cognizhi Pte Ltd</h1>
+            <span class="fy-small fy-muted">fyniq.cognizhi.com</span>
+          </div>
+        </div>
+
+        <button class="fy-btn fy-btn--primary fy-btn--lg fy-btn--block" type="button" style="color: var(--primary-foreground)"><i data-icon="fingerprint-pattern" class="fy-i--20"></i>Sign in with a passkey</button>
+        <p class="fy-help" style="margin-top: calc(var(--space-2) * -1)">Fastest and safest. Use Touch ID, Face ID, Windows Hello or a security key.</p>
+
+        <div class="fy-row" style="gap: var(--space-3)"><span class="fy-divider fy-grow"></span><span class="fy-small fy-muted">or continue with</span><span class="fy-divider fy-grow"></span></div>
+
+        <div class="fy-stack fy-stack--2">
+          <button class="fy-btn fy-btn--secondary fy-btn--lg fy-btn--block" type="button" style="justify-content: flex-start"><span class="fy-org__logo" aria-hidden="true">G</span>Continue with Google</button>
+          <button class="fy-btn fy-btn--secondary fy-btn--lg fy-btn--block" type="button" style="justify-content: flex-start"><span class="fy-org__logo" aria-hidden="true">Z</span><span class="fy-grow" style="text-align: left">Continue with Zoho</span><span class="fy-small fy-muted fy-from-medium">accounts.zoho.com</span></button>
+          <button class="fy-btn fy-btn--secondary fy-btn--lg fy-btn--block" type="button" aria-disabled="true" aria-describedby="sso-off" style="justify-content: flex-start"><span class="fy-org__logo" aria-hidden="true"><i data-icon="building"></i></span>Ho &amp; Partners SSO</button>
+          <p class="fy-help fy-row" id="sso-off" style="gap: 4px"><i data-icon="circle-pause"></i>Turned off by the Super admin. Use another way to sign in.</p>
+        </div>
+
+        <div class="fy-divider"></div>
+
+        <div class="fy-stack fy-stack--3">
+          <h2 class="fy-h3">Email and password</h2>
+          <div class="fy-field">
+            <label class="fy-label" for="si-email">Email</label>
+            <input class="fy-input" id="si-email" type="email" autocomplete="username" value="meilin@cognizhi.com" readonly="readonly">
+          </div>
+          <div class="fy-field">
+            <div class="fy-row fy-row--between"><label class="fy-label" for="si-password">Password</label><a class="fy-small" href="#recover/password">Forgot password?</a></div>
+            <div class="fy-inputgroup">
+              <input class="fy-input" id="si-password" type="password" autocomplete="current-password" placeholder="Your password" aria-describedby="si-password-help">
+              <button class="fy-iconbtn" type="button" aria-label="Show password" aria-pressed="false"><i data-icon="eye"></i></button>
+            </div>
+            <span class="fy-help" id="si-password-help">Paste and password managers work here.</span>
+          </div>
+          <button class="fy-btn fy-btn--secondary fy-btn--block" type="button">Continue</button>
+        </div>
+
+        <p class="fy-small fy-muted fy-row fy-row--top" style="gap: 6px"><i data-icon="link"></i><span>A new sign-in method joins your account only after you confirm it’s you with your passkey or code. A matching email alone never links accounts.</span></p>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack" aria-labelledby="mfa-title">
+        <ol class="fy-steps" aria-label="Sign-in steps">
+          <li class="fy-step fy-step--done"><span class="fy-step__n"><i data-icon="check"></i></span>Signed in</li>
+          <li class="fy-step" aria-current="step"><span class="fy-step__n">2</span>Confirm it’s you</li>
+        </ol>
+
+        <div class="fy-banner fy-banner--critical" role="alert" tabindex="-1" aria-labelledby="mfa-err-title">
+          <i data-icon="circle-x" class="fy-i--20"></i>
+          <div class="fy-banner__text">
+            <span class="fy-strong" id="mfa-err-title">There is a problem</span>
+            <a class="fy-small" href="#mfa-code">The 6-digit code is wrong or has expired. Enter the newest code from your authenticator app.</a>
+          </div>
+        </div>
+
+        <div class="fy-stack fy-stack--2">
+          <h2 class="fy-h2" id="mfa-title">Confirm it’s you</h2>
+          <p class="fy-secondary">Fyniq asks for its own second step, whichever way you signed in.</p>
+        </div>
+
+        <button class="fy-btn fy-btn--primary fy-btn--lg fy-btn--block" type="button" style="color: var(--primary-foreground)"><i data-icon="fingerprint-pattern" class="fy-i--20"></i>Use my passkey</button>
+
+        <div class="fy-row" style="gap: var(--space-3)"><span class="fy-divider fy-grow"></span><span class="fy-small fy-muted">or enter a code</span><span class="fy-divider fy-grow"></span></div>
+
+        <div class="fy-field">
+          <label class="fy-label" for="mfa-code">Code from your authenticator app</label>
+          <input class="fy-input fy-mono" id="mfa-code" inputmode="numeric" autocomplete="one-time-code" value="481 207" readonly="readonly" aria-invalid="true" aria-describedby="mfa-code-err mfa-code-help" style="letter-spacing: 0.2em; font-size: var(--fs-lg)">
+          <span class="fy-error" id="mfa-code-err"><i data-icon="circle-x"></i>This code didn’t match. Codes change every 30 seconds; use the one showing now.</span>
+          <span class="fy-help" id="mfa-code-help">You can paste the code. 2 tries left, then sign-in pauses for 15 minutes and we email you.</span>
+        </div>
+        <button class="fy-btn fy-btn--secondary fy-btn--block" type="button">Verify code</button>
+
+        <div class="fy-row fy-row--between fy-row--wrap fy-small">
+          <a href="#recover">Lost your authenticator?</a>
+          <a href="#sign-in">Use a different account</a>
+        </div>
+        <p class="fy-small fy-muted">No text messages: Fyniq never sends codes by SMS.</p>
+      </section>
+
+      <section class="fy-card fy-card--sunken fy-card--pad fy-stack fy-stack--3" aria-labelledby="invite-title">
+        <div class="fy-row" style="gap: var(--space-3)">
+          <span class="fy-avatar">AR</span>
+          <div class="fy-stack fy-stack--2" style="gap: 0">
+            <h2 class="fy-h3" id="invite-title">Joining by invitation</h2>
+            <span class="fy-small fy-muted">When you open an invitation link, this card replaces the banner.</span>
+          </div>
+        </div>
+        <p class="fy-secondary">Arjun Rao invited <span class="fy-strong">grace@hopartners.sg</span> to Cognizhi Pte Ltd as Accountant. Sign in with any method above using that email; you set up your passkey next. The invitation expires on 20 Oct 2026.</p>
+        <p class="fy-small fy-muted fy-row fy-row--top" style="gap: 6px"><i data-icon="lock"></i><span>Joining by email domain is off. Only invited people can join this organisation.</span></p>
+      </section>
+
+      <section class="fy-banner fy-banner--warning" aria-labelledby="locked-title">
+        <i data-icon="lock" class="fy-i--20"></i>
+        <div class="fy-banner__text">
+          <span class="fy-strong" id="locked-title">If sign-in is paused</span>
+          <span class="fy-small fy-secondary">After 5 wrong codes we pause sign-in to this account for 15 minutes and email you. Wait, then try again, or use account recovery.</span>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>

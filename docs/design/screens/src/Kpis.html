@@ -1,0 +1,33 @@
+<!-- fyniq-screen {"nav": "reports", "title": "KPIs", "mode": "basic", "heights": {"compact": 1300, "medium": 900, "expanded": 800}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#reports">Reports</a><i data-icon="chevron-right"></i><span>KPIs</span></nav>
+      <h1 class="fy-h1">Start-up KPIs</h1>
+      <p class="fy-secondary">September 2026, from the ledger and contracts. Each figure explains how it is worked out.</p>
+    </div>
+    <div class="fy-pagehead__actions"><div class="fy-segmented" role="radiogroup" aria-label="Period"><button type="button" role="radio" aria-checked="true">Month</button><button type="button" role="radio" aria-checked="false">Quarter</button></div></div>
+  </div>
+  <div class="fy-grid fy-grid--tiles fy-stagger">
+    <a class="fy-tile" href="#kpis/mrr-booked"><span class="fy-tile__label">Booked MRR<button class="fy-info" type="button" aria-label="About booked MRR" aria-expanded="false"><i data-icon="info"></i></button></span><span class="fy-tile__value fy-num">52,400<small>SGD</small></span><span class="fy-tile__meta"><span class="fy-delta fy-delta--up"><i data-icon="arrow-up-right"></i>6.2%</span>subscriptions invoiced this month</span></a>
+    <a class="fy-tile" href="#kpis/mrr-contracted"><span class="fy-tile__label">Contracted MRR<button class="fy-info" type="button" aria-label="About contracted MRR" aria-expanded="false"><i data-icon="info"></i></button></span><span class="fy-tile__value fy-num">58,900<small>SGD</small></span><span class="fy-tile__meta">Includes Orbital Freight, live 1 Nov</span></a>
+    <a class="fy-tile" href="#kpis/burn"><span class="fy-tile__label">Net burn</span><span class="fy-tile__value fy-num">38,214<small>SGD/mo</small></span><span class="fy-tile__meta">Average Jul–Sep</span></a>
+    <a class="fy-tile" href="#kpis/runway"><span class="fy-tile__label">Runway</span><span class="fy-tile__value fy-num">10.8<small>months</small></span><span class="fy-tile__meta">Cash ÷ net burn</span></a>
+  </div>
+  <section class="fy-card" aria-labelledby="kpi-all">
+    <div class="fy-card__head"><h2 class="fy-h3" id="kpi-all">All KPIs</h2><span class="fy-tag fy-tag--expert fy-basic-only">More in Expert</span></div>
+    <div class="fy-tablewrap" style="border: 0; border-radius: 0">
+      <table class="fy-table fy-table--cards">
+        <thead><tr><th scope="col">KPI</th><th scope="col" class="fy-num">September</th><th scope="col" class="fy-num">August</th><th scope="col" class="fy-expert-only">How it is worked out</th><th scope="col" class="fy-from-expanded">Benchmark (P2)</th></tr></thead>
+        <tbody>
+          <tr><td data-card="title">ARR (booked)</td><td class="fy-num" data-card="amount">628,800</td><td class="fy-num" data-card="hide">592,200</td><td class="fy-expert-only" data-card="meta">Booked MRR × 12</td><td class="fy-from-expanded" data-card="hide">—</td></tr>
+          <tr><td data-card="title">Gross margin</td><td class="fy-num" data-card="amount">83.6%</td><td class="fy-num" data-card="hide">83.8%</td><td class="fy-expert-only" data-card="meta">(Revenue − cost of sales) ÷ revenue; cost of sales is hosting, AI and API usage, delivery contractors and payment fees</td><td class="fy-from-expanded" data-card="hide">70–78% · SaaS seed, 2026, n=184</td></tr>
+          <tr><td data-card="title">ARPA</td><td class="fy-num" data-card="amount">13,100</td><td class="fy-num" data-card="hide">12,333</td><td class="fy-expert-only" data-card="meta">Booked MRR ÷ 4 paying customers</td><td class="fy-from-expanded" data-card="hide">—</td></tr>
+          <tr><td data-card="title">Customer churn</td><td class="fy-num" data-card="amount">0.0%</td><td class="fy-num" data-card="hide">0.0%</td><td class="fy-expert-only" data-card="meta">Customers lost ÷ customers at start</td><td class="fy-from-expanded" data-card="hide">≤ 2% monthly</td></tr>
+          <tr><td data-card="title">Burn multiple</td><td class="fy-num" data-card="amount">1.4</td><td class="fy-num" data-card="hide">1.6</td><td class="fy-expert-only" data-card="meta">Net burn ÷ net new ARR</td><td class="fy-from-expanded" data-card="hide">&lt; 2.0</td></tr>
+          <tr><td data-card="title">CAC</td><td class="fy-num" data-card="amount">—</td><td class="fy-num" data-card="hide">—</td><td class="fy-expert-only" data-card="meta">Not defined: no sales and marketing costs tagged yet. Fix it: tag the S&amp;M department</td><td class="fy-from-expanded" data-card="hide">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

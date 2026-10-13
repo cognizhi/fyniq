@@ -1,0 +1,282 @@
+# communication/email-and-notifications Specification
+
+## Purpose
+How Fyniq reaches people and receives mail: the outside-service capabilities with their launch adapters and local substitutes, outbound and inbound email, the notification centre and preferences, announcement banners, Slack and Zoho Cliq, asking from chat, and the one event stream behind every channel. Derived from PRD-001 §8.24.
+
+## Requirements
+
+### Requirement: Outside services behind interchangeable adapters
+Every outside service SHALL sit behind a capability interface with interchangeable adapters, so that a provider is a configuration choice, not a code change.
+
+Source: PRD-001 §8.24
+
+#### Scenario: The founders' providers are adapters
+- **WHEN** the organisation uses Google and Zoho accounts, Zoho ZeptoMail and Resend for email, and Slack or Zoho Cliq
+- **THEN** each of them is used through an adapter
+- **AND** none is hard-wired
+
+#### Scenario: Changing provider is configuration
+- **WHEN** an organisation switches from one provider of a capability to another
+- **THEN** it changes configuration, not code
+
+### Requirement: Launch adapters and local substitutes
+The system SHALL ship, for each outside-service capability, the adapters at launch and the local substitute (ADR-T4) listed in the §8.24 capabilities table, each in its phase.
+
+Source: PRD-001 §8.24
+
+#### Scenario: Sign-in
+- **WHEN** sign-in adapters are offered (P1)
+- **THEN** they are Google, Zoho, any OpenID Connect provider, email and password, and SAML in Enterprise mode
+- **AND** the local substitute is the Firebase Authentication emulator with mock providers only, real Zoho and Google sign-in being tested in staging
+
+#### Scenario: Outbound email
+- **WHEN** outbound email adapters are offered (P1)
+- **THEN** they are Zoho ZeptoMail (renamed Zoho CPaaS in September 2026 [verify]), Resend and generic SMTP
+- **AND** the local substitute is Mailpit
+
+#### Scenario: Inbound email for capture addresses
+- **WHEN** inbound email adapters are offered (P1)
+- **THEN** they are Resend receiving (webhook, then fetch the message) and mailbox polling over IMAP (e.g. a Zoho Mail mailbox)
+- **AND** the local substitute is Mailpit plus a local webhook
+
+#### Scenario: Messaging
+- **WHEN** messaging adapters are offered (P2)
+- **THEN** they are Slack, Zoho Cliq and a generic incoming webhook
+- **AND** the local substitute is a local message sink at `/dev/messages`
+
+#### Scenario: Ticketing
+- **WHEN** ticketing adapters are offered (P2)
+- **THEN** they are Jira Cloud, Linear, GitHub Issues, Zoho Desk or Zoho Projects, ServiceNow (P3) and a generic webhook
+- **AND** the local substitute is a local ticket sink at `/dev/tickets`
+
+### Requirement: FR-INT-21 Outbound email
+The system SHALL send email through adapters for Zoho ZeptoMail, Resend and generic SMTP (Mailpit locally), with a sender address per purpose, a primary provider and a failover; the platform renders its own templates and providers only deliver.
+
+Source: PRD-001 §8.24 · Priority M · Phase P1
+
+#### Scenario: Sender address per purpose
+- **WHEN** email is sent
+- **THEN** it uses the sender address set for its purpose: notifications, invoices and quotes, reminders, or security
+
+#### Scenario: Sending domain is checked daily
+- **WHEN** the email settings are viewed
+- **THEN** the sending domain's SPF, DKIM and DMARC status is shown
+- **AND** the status is checked daily
+
+#### Scenario: Provider webhooks update status and suppression
+- **WHEN** a provider webhook arrives
+- **THEN** its signature is verified and it is deduplicated
+- **AND** it updates the message's status and the suppression list
+
+#### Scenario: Providers that never report delivered
+- **GIVEN** ZeptoMail reports opens, clicks, bounces and complaints only, and Resend also reports delivered and delayed
+- **WHEN** a message's status is tracked
+- **THEN** the status model allows for a provider that never reports "delivered"
+
+#### Scenario: Idempotent sends through the outbox
+- **WHEN** a message is sent
+- **THEN** the send follows the outbox contract (ADR-T7)
+- **AND** Resend receives the `Idempotency-Key` where available
+- **AND** ZeptoMail, which has none, receives the outbox key in `client_reference`, used for matching only and preventing nothing
+
+#### Scenario: Unknown result is reconciled before a retry
+- **WHEN** the result of a send is unknown
+- **THEN** it is reconciled before any retry [verify Resend's idempotency window]
+
+#### Scenario: Failover only for sends not accepted
+- **WHEN** the primary provider fails
+- **THEN** a send fails over to the second provider only when it is known not to have been accepted
+
+#### Scenario: Test send and sandboxes
+- **WHEN** an email provider is set up
+- **THEN** a test send is available
+- **AND** in staging each provider's sandbox is used
+
+#### Scenario: Message log without bodies
+- **WHEN** a message is sent
+- **THEN** it is logged with recipient, template, status and provider
+- **AND** no body is stored beyond what the record needs
+
+#### Scenario: Providers outside Singapore need a transfer assessment
+- **GIVEN** neither provider documents a Singapore region (ZeptoMail: US, EU, AU, IN, CN, JP; Resend sends from US, EU, São Paulo or Tokyo and keeps account data and logs in the US)
+- **WHEN** a provider is to be used
+- **THEN** it is first in the data inventory with a PDPA transfer assessment
+
+#### Scenario: G4-073 Crash after the provider accepted a message
+- **WHEN** the worker crashes after the email provider accepted a message; separately, a scheduled-posting task runs twice, and a task exhausts its retries
+- **THEN** the message row becomes unknown-outcome and is reconciled, not re-sent blind or failed over
+- **AND** the posting exists once
+- **AND** the exhausted row shows as dead on Checks with replay
+
+### Requirement: FR-INT-22 Inbound email
+The system SHALL receive email for the capture addresses (FR-DOC-12) through an inbound adapter and store everything received as untrusted documents (AI-18).
+
+Source: PRD-001 §8.24 · Priority M · Phase P1
+
+#### Scenario: Message received with its authentication results
+- **WHEN** a message arrives through a provider's webhook or by IMAP polling
+- **THEN** its SPF, DKIM and DMARC results are kept with it
+
+#### Scenario: Attachments are scanned
+- **WHEN** a received message has attachments
+- **THEN** they are scanned (ClamAV)
+
+#### Scenario: Unknown senders are quarantined
+- **WHEN** a message comes from an unknown sender
+- **THEN** it goes to a quarantine list for a person to accept
+
+#### Scenario: Bank report from an unexpected sender
+- **WHEN** a bank report arrives from a sender other than the bank's registered address
+- **THEN** it is quarantined for a person to accept (UC-BNK-01)
+
+#### Scenario: Inbound adapters
+- **WHEN** an inbound adapter is chosen
+- **THEN** it is Resend receiving (generally available since November 2025 [verify]; the webhook carries metadata and the message is fetched through the API) or IMAP polling of a mailbox
+- **AND** ZeptoMail is not offered, because it is send-only
+
+### Requirement: FR-NTF-01 Notification centre
+The system SHALL give every user a notification centre: a bell with the unread count, and notifications that each carry a type, a severity, the record it is about and the time.
+
+Source: PRD-001 §8.24 · Priority M · Phase P1
+
+#### Scenario: Bell with unread count
+- **GIVEN** a user has unread notifications
+- **WHEN** any page is shown
+- **THEN** the bell shows the unread count
+
+#### Scenario: Read, unread and archive
+- **WHEN** the user works through notifications
+- **THEN** each can be marked read or unread, or archived
+
+#### Scenario: Inbox and notifications differ
+- **WHEN** something waits for the user to act (an approval, task, proposal or fix)
+- **THEN** it is in the Inbox
+- **AND** notifications only say what happened
+
+#### Scenario: Actionable notification links to the Inbox
+- **WHEN** a notification is actionable
+- **THEN** it links to its Inbox item
+
+### Requirement: FR-NTF-02 Notification preferences
+Each user SHALL set notification preferences per event type: channels, immediate delivery or a daily or weekly digest, and quiet hours.
+
+Source: PRD-001 §8.24 · Priority M · Phase P1
+
+#### Scenario: Channels
+- **WHEN** a user sets the channels for an event type
+- **THEN** in-app is always on, email can be chosen, and Slack or Cliq can be chosen when connected
+
+#### Scenario: Digest and quiet hours
+- **WHEN** a user chooses a daily or weekly digest, or sets quiet hours
+- **THEN** notifications of that event type follow that choice instead of arriving immediately
+
+#### Scenario: Organisation defaults
+- **WHEN** a new organisation is created
+- **THEN** its notification defaults ship with recommended values (FR-ORG-08)
+
+#### Scenario: Security notifications cannot be turned off
+- **WHEN** a user tries to turn off a security notification (new-device sign-in, MFA or role change)
+- **THEN** it cannot be turned off
+
+### Requirement: FR-NTF-03 Announcement banners
+The Super admin (for everyone) and the Owner or Administrator (for one organisation) SHALL be able to publish announcement banners, and publishing SHALL be audited.
+
+Source: PRD-001 §8.24 · Priority M · Phase P1
+
+#### Scenario: What a banner holds
+- **WHEN** a banner is published
+- **THEN** it has a message and a link, a severity (info, warning, critical), an audience (everyone, roles), a start and an end time, and whether it can be dismissed
+
+#### Scenario: Critical banners cannot be dismissed
+- **WHEN** a banner is critical
+- **THEN** it cannot be dismissed
+
+#### Scenario: Where banners sit
+- **WHEN** a banner is active for a user
+- **THEN** it sits under the header on every page
+
+#### Scenario: Platform banners
+- **WHEN** there is a maintenance window, an incident or a new release
+- **THEN** the platform adds its own banner, including the "What's new" release note (FR-UX-35)
+
+#### Scenario: Accessible banners
+- **WHEN** a banner is shown
+- **THEN** info and warning banners use `role="status"` and only a critical banner uses `role="alert"`
+- **AND** the banner never covers the focused element (SC 2.4.11)
+
+#### Scenario: Dismissals are stored per user
+- **WHEN** a user dismisses a banner
+- **THEN** the dismissal is stored for that user on the server
+
+#### Scenario: Publishing is audited
+- **WHEN** a banner is published
+- **THEN** the publication is audited
+
+### Requirement: FR-NTF-04 Slack and Zoho Cliq
+The system SHALL offer an optional organisation-level Slack or Zoho Cliq connection per workspace that posts messages carrying deep links into the web app, and approvals SHALL never happen in chat.
+
+Source: PRD-001 §8.24 · Priority S · Phase P2
+
+#### Scenario: Slack posts with a bot token
+- **WHEN** Slack is connected
+- **THEN** a private Slack app posts with a bot token (`chat.postMessage`, scope `chat:write`)
+- **AND** incoming webhooks are not used, because they are fixed to one channel
+
+#### Scenario: Zoho Cliq posts through its REST API
+- **WHEN** Zoho Cliq is connected
+- **THEN** a Cliq bot posts to channels and users through the Cliq REST API (OAuth scope `ZohoCliq.Webhooks.CREATE`)
+- **AND** messages are queued and batched to stay within 50 requests a minute per user
+
+#### Scenario: Routing and direct messages
+- **WHEN** an event occurs
+- **THEN** routing rules send its event type to a channel, for example approvals to #finance and company-secretary runs to #compliance
+- **AND** users who linked their chat account also get direct messages
+
+#### Scenario: Approvals open the web app
+- **WHEN** a chat message concerns an approval
+- **THEN** its button opens the web app, where step-up applies (FR-APR-03/04)
+
+#### Scenario: Content level minimal by default
+- **WHEN** a chat connection is created
+- **THEN** its content level is minimal ("2 approvals waiting", no amounts or names)
+- **AND** standard (amounts and counterparties) can be chosen only after the chat provider is in the data inventory with a PDPA transfer assessment
+
+#### Scenario: Chat providers and Singapore residency
+- **WHEN** the transfer assessment of a chat provider is made
+- **THEN** it takes into account that Slack offers Singapore data residency on its Business+ and Enterprise plans and Cliq documents no Singapore data centre
+
+#### Scenario: Fallback to email
+- **WHEN** a chat delivery fails
+- **THEN** the message falls back to email
+
+### Requirement: FR-NTF-05 One event stream
+Notifications, digests, banners for incidents, chat messages and webhooks SHALL all be produced from the same events (FR-INT-12), so channels are interchangeable.
+
+Source: PRD-001 §8.24 · Priority M · Phase P1
+
+#### Scenario: One event feeds every channel
+- **WHEN** an event is emitted
+- **THEN** notifications, digests, incident banners, chat messages and webhooks about it are produced from that same event
+
+#### Scenario: Delivery attempts are logged and retried
+- **WHEN** a delivery is attempted on any channel
+- **THEN** the attempt is logged
+- **AND** a failed attempt is retried
+
+#### Scenario: Test message per channel
+- **WHEN** a channel is set up
+- **THEN** a test message can be sent on it
+
+### Requirement: FR-NTF-06 Ask from chat
+Linked users SHALL be able to ask the assistant read-only questions in Slack or Cliq through the same tools, permissions and exclusions as the assistant, as an `agent`-class client (§9.7).
+
+Source: PRD-001 §8.24 · Priority C · Phase P3
+
+#### Scenario: Read-only answers in chat
+- **GIVEN** a user who linked their chat account
+- **WHEN** the user asks the assistant a question in Slack or Cliq
+- **THEN** it is answered read-only through the same tools, permissions and exclusions
+
+#### Scenario: Answers follow the content level
+- **WHEN** an answer is posted in chat
+- **THEN** it follows the connection's content level

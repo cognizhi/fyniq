@@ -1,0 +1,154 @@
+<!-- fyniq-screen {"nav": "projects", "title": "Timesheet", "mode": "basic", "heights": {"compact": 2500, "medium": 1900, "expanded": 1300}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#projects">Projects</a><i data-icon="chevron-right"></i><span>Timesheet</span></nav>
+      <h1 class="fy-h1">Timesheet</h1>
+      <div class="fy-row">
+        <button class="fy-iconbtn" type="button" aria-label="Previous week"><i data-icon="chevron-left" class="fy-i--20"></i></button>
+        <span class="fy-strong">12 to 18 Oct 2026</span>
+        <button class="fy-iconbtn" type="button" aria-label="Next week"><i data-icon="chevron-right" class="fy-i--20"></i></button>
+        <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+      </div>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="copy"></i>Copy last week's rows</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit week</button>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Timesheet views">
+    <button type="button" role="tab" aria-selected="true">My week</button>
+    <button type="button" role="tab" aria-selected="false">Approve team<span class="fy-badge">2</span></button>
+  </div>
+
+  <section class="fy-card" aria-labelledby="timer-title" style="border-color: var(--primary)">
+    <div class="fy-card__body fy-row fy-row--wrap" style="gap: var(--space-3) var(--space-4)">
+      <span class="fy-list__icon fy-list__icon--brand"><i data-icon="timer" class="fy-i--20"></i></span>
+      <div class="fy-stack fy-grow" style="gap: 2px; min-width: 200px">
+        <h2 class="fy-h3" id="timer-title">Lumen Health pilot · Clinical workflow design</h2>
+        <span class="fy-small fy-muted" id="ts-timer-note">Running since 07:03 · billable · feeds Tuesday 13 Oct</span>
+      </div>
+      <span class="fy-num fy-strong" style="font-size: var(--fs-2xl); letter-spacing: -0.02em" role="timer" aria-label="2 hours 15 minutes">2 h 15 min</span>
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="square"></i>Stop</button>
+    </div>
+  </section>
+
+  <div class="fy-banner fy-banner--warning" role="note">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Last week has no time on Friday 9 Oct</span>
+      <span class="fy-small fy-secondary">Add the hours you worked, or mark the day as leave, then submit the week of 5 Oct.</span>
+    </div>
+    <div class="fy-row fy-row--wrap">
+      <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Add time</button>
+      <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Mark as leave</button>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="grid-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="grid-title">Hours this week</h2>
+          <span class="fy-num fy-strong">10.25 h</span>
+          <span class="fy-small fy-muted fy-from-medium">of 40 standard</span>
+        </div>
+        <div class="fy-only-compact fy-stack fy-stack--3" style="padding: var(--space-3) var(--space-4)">
+          <div class="fy-segmented" role="radiogroup" aria-label="Day" style="display: flex; overflow-x: auto">
+            <button type="button" role="radio" aria-checked="false">Mon 8.0</button>
+            <button type="button" role="radio" aria-checked="true">Tue 2.3</button>
+            <button type="button" role="radio" aria-checked="false">Wed</button>
+            <button type="button" role="radio" aria-checked="false">Thu</button>
+            <button type="button" role="radio" aria-checked="false">Fri</button>
+          </div>
+          <span class="fy-small fy-muted">Tuesday 13 Oct · Sat and Sun from the menu</span>
+        </div>
+        <ul class="fy-list fy-only-compact">
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">Lumen Health pilot</span><span class="fy-list__meta">Clinical workflow design · billable · timer running</span></span>
+            <label class="fy-sr" for="tsc-lumen">Hours, Lumen Health pilot, Tuesday</label>
+            <input class="fy-input fy-num" id="tsc-lumen" value="2.25" readonly="readonly" style="width: 72px; text-align: right; border-color: var(--primary)">
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">Lumen Health pilot</span><span class="fy-list__meta">Steering meetings · billable</span></span>
+            <label class="fy-sr" for="tsc-steer">Hours, steering meetings, Tuesday</label>
+            <input class="fy-input fy-num" id="tsc-steer" placeholder="0" style="width: 72px; text-align: right">
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">Acme data platform</span><span class="fy-list__meta">Data migration review · billable</span></span>
+            <label class="fy-sr" for="tsc-acme">Hours, Acme data migration review, Tuesday</label>
+            <input class="fy-input fy-num" id="tsc-acme" placeholder="0" style="width: 72px; text-align: right">
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-list__main"><span class="fy-list__title">Product R&amp;D</span><span class="fy-list__meta">Roadmap · not billable</span></span>
+            <label class="fy-sr" for="tsc-rd">Hours, Product R and D roadmap, Tuesday</label>
+            <input class="fy-input fy-num" id="tsc-rd" placeholder="0" style="width: 72px; text-align: right">
+          </li>
+        </ul>
+<div class="fy-tablewrap fy-from-medium" style="border: 0; border-radius: 0">
+  <table class="fy-table fy-statement">
+    <thead><tr><th scope="col">Project · task</th><th scope="col">Billable</th><th scope="col" class="fy-num">Mon 12</th><th scope="col" class="fy-num">Tue 13</th><th scope="col" class="fy-num">Wed 14</th><th scope="col" class="fy-num">Thu 15</th><th scope="col" class="fy-num">Fri 16</th><th scope="col" class="fy-num">Sat 17</th><th scope="col" class="fy-num">Sun 18</th><th scope="col" class="fy-num">Total</th><th scope="col"><span class="fy-sr">Note</span></th></tr></thead>
+    <tbody>
+      <tr><td style="white-space: nowrap"><span class="fy-stack" style="gap: 0"><span class="fy-strong">Lumen Health pilot</span><span class="fy-small fy-muted">Clinical workflow design</span></span></td><td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Billable: Lumen Health pilot, Clinical workflow design"><i data-icon="check"></i></button></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-design-12">Lumen Health pilot, Clinical workflow design, Mon 12 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-design-12" value="3.00" readonly="readonly" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-design-13">Lumen Health pilot, Clinical workflow design, Tue 13 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-design-13" value="2.25" readonly="readonly" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary)" aria-describedby="ts-timer-note"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-design-14">Lumen Health pilot, Clinical workflow design, Wed 14 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-design-14" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-design-15">Lumen Health pilot, Clinical workflow design, Thu 15 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-design-15" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-design-16">Lumen Health pilot, Clinical workflow design, Fri 16 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-design-16" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-design-17">Lumen Health pilot, Clinical workflow design, Sat 17 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-design-17" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); background: var(--surface-2)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-design-18">Lumen Health pilot, Clinical workflow design, Sun 18 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-design-18" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); background: var(--surface-2)"></td><td class="fy-num fy-strong">5.25</td><td><button class="fy-iconbtn" type="button" aria-label="Note: Workshop prep with Lumen"><i data-icon="message-square-text"></i></button></td></tr>
+      <tr><td style="white-space: nowrap"><span class="fy-stack" style="gap: 0"><span class="fy-strong">Lumen Health pilot</span><span class="fy-small fy-muted">Steering meetings</span></span></td><td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Billable: Lumen Health pilot, Steering meetings"><i data-icon="check"></i></button></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-steer-12">Lumen Health pilot, Steering meetings, Mon 12 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-steer-12" value="1.00" readonly="readonly" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-steer-13">Lumen Health pilot, Steering meetings, Tue 13 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-steer-13" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-steer-14">Lumen Health pilot, Steering meetings, Wed 14 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-steer-14" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-steer-15">Lumen Health pilot, Steering meetings, Thu 15 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-steer-15" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-steer-16">Lumen Health pilot, Steering meetings, Fri 16 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-steer-16" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-steer-17">Lumen Health pilot, Steering meetings, Sat 17 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-steer-17" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); background: var(--surface-2)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-lumen-steer-18">Lumen Health pilot, Steering meetings, Sun 18 Oct, hours</label><input class="fy-input fy-num" id="ts-lumen-steer-18" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); background: var(--surface-2)"></td><td class="fy-num fy-strong">1.00</td><td><button class="fy-iconbtn" type="button" aria-label="Add a note"><i data-icon="message-square-plus"></i></button></td></tr>
+      <tr><td style="white-space: nowrap"><span class="fy-stack" style="gap: 0"><span class="fy-strong">Acme data platform</span><span class="fy-small fy-muted">Data migration review</span></span></td><td><button class="fy-check" type="button" role="checkbox" aria-checked="true" aria-label="Billable: Acme data platform, Data migration review"><i data-icon="check"></i></button></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-acme-mig-12">Acme data platform, Data migration review, Mon 12 Oct, hours</label><input class="fy-input fy-num" id="ts-acme-mig-12" value="1.50" readonly="readonly" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-acme-mig-13">Acme data platform, Data migration review, Tue 13 Oct, hours</label><input class="fy-input fy-num" id="ts-acme-mig-13" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-acme-mig-14">Acme data platform, Data migration review, Wed 14 Oct, hours</label><input class="fy-input fy-num" id="ts-acme-mig-14" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-acme-mig-15">Acme data platform, Data migration review, Thu 15 Oct, hours</label><input class="fy-input fy-num" id="ts-acme-mig-15" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-acme-mig-16">Acme data platform, Data migration review, Fri 16 Oct, hours</label><input class="fy-input fy-num" id="ts-acme-mig-16" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-acme-mig-17">Acme data platform, Data migration review, Sat 17 Oct, hours</label><input class="fy-input fy-num" id="ts-acme-mig-17" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); background: var(--surface-2)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-acme-mig-18">Acme data platform, Data migration review, Sun 18 Oct, hours</label><input class="fy-input fy-num" id="ts-acme-mig-18" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); background: var(--surface-2)"></td><td class="fy-num fy-strong">1.50</td><td><button class="fy-iconbtn" type="button" aria-label="Note: Sign-off call with Acme"><i data-icon="message-square-text"></i></button></td></tr>
+      <tr><td style="white-space: nowrap"><span class="fy-stack" style="gap: 0"><span class="fy-strong">Product R&amp;D</span><span class="fy-small fy-muted">Roadmap</span></span></td><td><button class="fy-check" type="button" role="checkbox" aria-checked="false" aria-label="Billable: Product R&amp;D, Roadmap"></button></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-rd-road-12">Product R&amp;D, Roadmap, Mon 12 Oct, hours</label><input class="fy-input fy-num" id="ts-rd-road-12" value="2.50" readonly="readonly" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-rd-road-13">Product R&amp;D, Roadmap, Tue 13 Oct, hours</label><input class="fy-input fy-num" id="ts-rd-road-13" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-rd-road-14">Product R&amp;D, Roadmap, Wed 14 Oct, hours</label><input class="fy-input fy-num" id="ts-rd-road-14" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-rd-road-15">Product R&amp;D, Roadmap, Thu 15 Oct, hours</label><input class="fy-input fy-num" id="ts-rd-road-15" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-rd-road-16">Product R&amp;D, Roadmap, Fri 16 Oct, hours</label><input class="fy-input fy-num" id="ts-rd-road-16" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-rd-road-17">Product R&amp;D, Roadmap, Sat 17 Oct, hours</label><input class="fy-input fy-num" id="ts-rd-road-17" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); background: var(--surface-2)"></td><td class="fy-num" style="padding: 0 4px"><label class="fy-sr" for="ts-rd-road-18">Product R&amp;D, Roadmap, Sun 18 Oct, hours</label><input class="fy-input fy-num" id="ts-rd-road-18" placeholder="" style="height: 32px; min-height: 32px; width: 58px; text-align: right; padding: 0 6px; font-size: var(--fs-sm); background: var(--surface-2)"></td><td class="fy-num fy-strong">2.50</td><td><button class="fy-iconbtn" type="button" aria-label="Add a note"><i data-icon="message-square-plus"></i></button></td></tr>
+    </tbody>
+    <tfoot><tr><td>Day total</td><td></td><td class="fy-num">8.00</td><td class="fy-num">2.25</td><td class="fy-num">–</td><td class="fy-num">–</td><td class="fy-num">–</td><td class="fy-num">–</td><td class="fy-num">–</td><td class="fy-num">10.25</td><td></td></tr></tfoot>
+  </table>
+</div>
+        <div class="fy-card__foot">
+          <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="plus"></i>Add a row</button>
+          <span class="fy-small fy-muted fy-grow fy-from-medium">Type hours as decimals or 1:30. Tab moves across the week.</span>
+        </div>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Weeks and approvals">
+      <section class="fy-card" aria-labelledby="weeks-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="weeks-title">Your recent weeks</h2></div>
+        <ul class="fy-list fy-stagger">
+          <li><a class="fy-list__item" href="#projects/timesheet/2026-10-12" aria-current="true">
+            <span class="fy-list__main"><span class="fy-list__title">12 to 18 Oct</span><span class="fy-list__meta">10.25 h so far</span></span>
+            <span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Draft</span>
+          </a></li>
+          <li><a class="fy-list__item" href="#projects/timesheet/2026-10-05">
+            <span class="fy-list__main"><span class="fy-list__title">5 to 11 Oct</span><span class="fy-list__meta">32.0 h · Friday empty</span></span>
+            <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Missing day</span>
+          </a></li>
+          <li><a class="fy-list__item" href="#projects/timesheet/2026-09-28">
+            <span class="fy-list__main"><span class="fy-list__title">28 Sep to 4 Oct</span><span class="fy-list__meta">40.0 h · approved by Arjun Rao</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="lock"></i>Approved</span>
+          </a></li>
+          <li><a class="fy-list__item" href="#projects/timesheet/2026-09-21">
+            <span class="fy-list__main"><span class="fy-list__title">21 to 27 Sep</span><span class="fy-list__meta">38.5 h · 6.0 h invoiced on INV-0146</span></span>
+            <span class="fy-chip fy-chip--good"><i data-icon="lock"></i>Approved</span>
+          </a></li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Approved and invoiced hours are locked. To change one, add a correction: it reverses the original entry.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="appr-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="appr-title">Team weeks to approve</h2><span class="fy-badge">2</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item">
+            <span class="fy-avatar" aria-hidden="true">PN</span>
+            <span class="fy-list__main"><span class="fy-list__title">Priya Nair · 5 to 11 Oct</span><span class="fy-list__meta">12.0 h on Lumen Health pilot · all billable</span></span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Approve</button>
+          </li>
+          <li class="fy-list__item">
+            <span class="fy-avatar" aria-hidden="true">DL</span>
+            <span class="fy-list__main"><span class="fy-list__title">Daniel Lim · 5 to 11 Oct</span><span class="fy-list__meta">6.5 h on Lumen Health pilot · 1 note</span></span>
+            <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Approve</button>
+          </li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">You approve time on projects you manage. Nobody approves their own week; Arjun Rao approves yours.</span></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="send"></i>Submit week</button>
+  </div>
+</div>

@@ -1,0 +1,87 @@
+<!-- fyniq-screen {"nav": "accounting", "title": "Settle a balance", "mode": "expert", "heights": {"compact": 2900, "medium": 2200, "expanded": 1500}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#accounting">Accounting</a><i data-icon="chevron-right"></i><a href="#accounting/directors">Director accounts</a><i data-icon="chevron-right"></i><span>Settle</span></nav>
+      <div class="fy-row fy-row--wrap"><h1 class="fy-h1">Settle Mei Lin Tan's loan</h1><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Awaiting approval</span></div>
+      <p class="fy-secondary">S$20,000.00 of S$24,600.00 owed on the loan from director · requested by Mei Lin Tan on 6 Oct</p>
+    </div>
+  </div>
+
+  <ol class="fy-steps fy-steps--wrap" aria-label="Settlement progress">
+    <li class="fy-step fy-step--done"><span class="fy-step__n">1</span>Route</li>
+    <li class="fy-step fy-step--done"><span class="fy-step__n">2</span>Details</li>
+    <li class="fy-step" aria-current="step"><span class="fy-step__n">3</span>Evidence and approval</li>
+    <li class="fy-step"><span class="fy-step__n">4</span>Effective</li>
+  </ol>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="ds-route">
+        <h2 class="fy-h3" id="ds-route">How the balance is settled</h2>
+        <p class="fy-small fy-muted">General information about each route, not advice. Grace Ho can explain what suits Cognizhi.</p>
+        <div class="fy-stack fy-stack--2" role="radiogroup" aria-labelledby="ds-route">
+          <div class="fy-choice" role="radio" aria-checked="false"><span class="fy-radio" aria-hidden="true"></span><span class="fy-stack fy-stack--2"><span class="fy-strong">Repay in cash</span><span class="fy-small fy-muted">Money leaves the bank; the loan goes down. No tax on a loan repayment.</span></span></div>
+          <div class="fy-choice" role="radio" aria-checked="false"><span class="fy-radio" aria-hidden="true"></span><span class="fy-stack fy-stack--2"><span class="fy-strong">Keep as a loan</span><span class="fy-small fy-muted">Nothing posts. The balance is confirmed again at year end.</span></span></div>
+          <div class="fy-choice" role="radio" aria-checked="true"><span class="fy-radio" aria-hidden="true"></span><span class="fy-stack fy-stack--2"><span class="fy-strong">Convert to shares</span><span class="fy-small">The loan becomes share capital on the date ACRA records the allotment. Needs shareholders' approval, a board resolution and a conversion agreement.</span></span></div>
+          <div class="fy-choice" role="radio" aria-checked="false"><span class="fy-radio" aria-hidden="true"></span><span class="fy-stack fy-stack--2"><span class="fy-strong">Waive</span><span class="fy-small fy-muted">She gives up the amount. It posts to capital contribution<span class="fy-expert-only"> (Cr <span class="fy-mono">3300</span>)</span> or other income, with a reason.</span></span></div>
+          <div class="fy-choice" role="radio" aria-checked="false"><span class="fy-radio" aria-hidden="true"></span><span class="fy-stack fy-stack--2"><span class="fy-strong">Convert to a SAFE</span><span class="fy-small fy-muted">The loan becomes a SAFE on the same terms as Lion Rock Ventures' unless the board sets others.</span></span></div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="ds-detail">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ds-detail">Conversion details</h2></div>
+        <div class="fy-card__body fy-form fy-form--2">
+          <div class="fy-field"><label class="fy-label" for="ds-amt">Amount converted (SGD)</label><input class="fy-input fy-num" id="ds-amt" value="20,000.00" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="ds-class">Share class</label><input class="fy-input" id="ds-class" value="Ordinary" readonly="readonly"></div>
+          <div class="fy-field"><label class="fy-label" for="ds-price">Price per share (SGD)<button class="fy-info" type="button" aria-label="About the price basis" aria-expanded="false"><i data-icon="info"></i></button></label><input class="fy-input fy-num" id="ds-price" value="0.80" readonly="readonly"><span class="fy-help">No priced round yet, so the board set it: the SAFE cap of S$8,000,000 over 10,000,000 fully diluted shares.</span></div>
+          <div class="fy-field"><label class="fy-label" for="ds-cap">She converts as</label><input class="fy-input" id="ds-cap" value="Lender" readonly="readonly"><span class="fy-help">Not as an employee, so no pay or CPF arises.</span></div>
+        </div>
+        <div class="fy-card__foot fy-row fy-row--wrap fy-row--between">
+          <span class="fy-stack" style="gap: 0"><span class="fy-tile__label">Shares to allot</span><span class="fy-num fy-strong" style="font-size: var(--fs-xl)">25,000</span></span>
+          <span class="fy-small fy-muted">Rounded down to whole shares<span class="fy-expert-only"> (<span class="fy-mono">RND-SHARE</span>)</span>; S$0.00 remainder stays on the loan</span>
+        </div>
+      </section>
+
+      <section class="fy-card fy-expert-only" aria-labelledby="ds-post">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ds-post">Posts on the ACRA register date</h2><span class="fy-small fy-muted">Never backdated</span></div>
+        <table class="fy-table fy-table--compact fy-ledger">
+          <thead><tr><th scope="col">Account</th><th scope="col" style="text-align: right">Debit</th><th scope="col" style="text-align: right">Credit</th></tr></thead>
+          <tbody>
+            <tr><td><span class="fy-acct">2500</span>Loan from director</td><td class="fy-num">20,000.00</td><td></td></tr>
+            <tr><td><span class="fy-acct">3010</span>Share capital, ordinary</td><td></td><td class="fy-num">20,000.00</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <p class="fy-plain fy-basic-only fy-small"><i data-icon="info"></i>When ACRA records the shares, S$20,000.00 moves from what the company owes Mei Lin Tan to her shareholding.</p>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Evidence and approvals">
+      <section class="fy-card" aria-labelledby="ds-ev">
+        <div class="fy-card__head"><h2 class="fy-h3" id="ds-ev">Evidence</h2><span class="fy-small fy-muted">3 of 4</span></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title fy-wrap">Shareholders' approval to issue shares</span><span class="fy-list__meta">Signed 8 Oct</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Board resolution</span><span class="fy-list__meta">Signed 8 Oct</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check"></i></span><span class="fy-list__main"><span class="fy-list__title">Conversion agreement</span><span class="fy-list__meta">Ho &amp; Partners template</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--warning"><i data-icon="triangle-alert"></i></span><span class="fy-list__main"><span class="fy-list__title fy-wrap">Mei Lin Tan's balance confirmation</span><span class="fy-list__meta fy-wrap">Missing: she has not yet confirmed S$31,240.00 at 31 Dec 2025</span></span></li>
+        </ul>
+        <div class="fy-card__foot"><span class="fy-chip fy-chip--serious"><i data-icon="clock-alert"></i>Approval lapses at the next AGM</span><span class="fy-small fy-muted">by 30 Jun 2027</span></div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="ds-appr">
+        <h2 class="fy-h3" id="ds-appr">Approvals</h2>
+        <p class="fy-small">Mei Lin Tan benefits, so she can't approve. Arjun Rao also holds shares, so Grace Ho reviews as well.</p>
+        <ul class="fy-stack fy-stack--2" style="list-style: none; padding: 0">
+          <li class="fy-row"><span class="fy-avatar fy-avatar--sm" aria-hidden="true">AR</span><span class="fy-grow fy-small">Arjun Rao, director</span><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Waiting</span></li>
+          <li class="fy-row"><span class="fy-avatar fy-avatar--sm" aria-hidden="true">GH</span><span class="fy-grow fy-small">Grace Ho, accountant review</span><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Waiting</span></li>
+        </ul>
+        <p class="fy-small fy-muted">Approving posts nothing. Step 4 records the ACRA lodgement reference and register date, and posts on that date.</p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar">
+    <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="undo-2"></i>Withdraw</button>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="paperclip"></i>Add evidence</button>
+  </div>
+</div>

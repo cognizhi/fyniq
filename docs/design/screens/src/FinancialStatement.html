@@ -1,0 +1,155 @@
+<!-- fyniq-screen {"nav": "reports", "title": "Profit and loss", "mode": "expert", "heights": {"compact": 3500, "medium": 3000, "expanded": 2200}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#reports">Reports</a><i data-icon="chevron-right"></i><span>Financial statements</span></nav>
+      <h1 class="fy-h1">Profit and loss</h1>
+      <p class="fy-secondary">Cognizhi Pte Ltd · September 2026 · SGD</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="printer"></i>Print</button>
+      <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="message-square"></i>Ask about this</button>
+      <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export</button>
+    </div>
+  </div>
+
+  <div class="fy-tabs" role="tablist" aria-label="Statement">
+    <button type="button" role="tab" aria-selected="true">Profit and loss</button>
+    <button type="button" role="tab" aria-selected="false">Balance sheet</button>
+    <button type="button" role="tab" aria-selected="false">Cash flow</button>
+    <button type="button" role="tab" aria-selected="false" class="fy-expert-only">Trial balance</button>
+  </div>
+
+  <div class="fy-row fy-row--wrap" style="gap: var(--space-3)">
+    <div class="fy-field" style="flex: 1 1 150px; max-width: 220px"><label class="fy-label" for="fs-period">Period</label><select class="fy-select" id="fs-period"><option>September 2026</option><option>Q3 2026</option><option>Year to date</option><option>FY2026</option><option>Custom…</option></select></div>
+    <div class="fy-field" style="flex: 1 1 150px; max-width: 260px"><label class="fy-label" for="fs-compare">Compare with</label><select class="fy-select" id="fs-compare"><option>August 2026 and budget</option><option>Prior year</option><option>Forecast (Base)</option><option>None</option></select></div>
+    <div class="fy-field fy-expert-only" style="flex: 1 1 150px; max-width: 200px"><label class="fy-label" for="fs-cols">Columns</label><select class="fy-select" id="fs-cols"><option>Total</option><option>By month</option><option>By department</option><option>By project</option></select></div>
+    <div class="fy-field fy-expert-only" style="flex: 0 0 auto"><span class="fy-label" id="fs-view">Expenses by</span><div class="fy-segmented" role="radiogroup" aria-labelledby="fs-view"><button type="button" role="radio" aria-checked="true">Group</button><button type="button" role="radio" aria-checked="false">Function</button></div></div>
+  </div>
+
+  <div class="fy-banner fy-banner--warning" role="status">
+    <i data-icon="triangle-alert" class="fy-i--20"></i>
+    <div class="fy-banner__text"><strong>September is not closed yet</strong><span class="fy-small">Figures can still change until Grace Ho finishes the close (4 of 7 steps). August is closed and locked.</span></div>
+    <a class="fy-btn fy-btn--ghost fy-btn--sm fy-from-medium" href="#accounting/close/2026-09">Open the close</a>
+  </div>
+
+  <section aria-labelledby="pl-title" class="fy-stack fy-stack--3">
+    <div class="fy-row fy-row--between fy-row--wrap">
+      <h2 class="fy-h3" id="pl-title">September 2026 <span class="fy-muted fy-small" style="font-weight: 500">· provisional</span></h2>
+      <span class="fy-small fy-muted">Select any figure to see where it comes from</span>
+    </div>
+    <div class="fy-tablewrap">
+      <table class="fy-table fy-table--compact fy-statement">
+        <caption class="fy-sr">Profit and loss for September 2026 in SGD, with August 2026 and the budget</caption>
+        <thead><tr>
+          <th scope="col" style="min-width: 190px">SGD</th>
+          <th scope="col" class="fy-num">Sep 2026</th>
+          <th scope="col" class="fy-num fy-expert-only">Aug 2026</th>
+          <th scope="col" class="fy-num fy-expert-only">% of revenue</th>
+          <th scope="col" class="fy-num fy-expert-only">Budget</th>
+          <th scope="col" class="fy-num fy-expert-only">Variance</th>
+          <th scope="col" class="fy-num fy-expert-only">Var %</th>
+        </tr></thead>
+        <tbody>
+<tr class="fy-group"><td><button type="button" aria-expanded="true" aria-controls="g-rev" style="display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font-weight: 600"><i data-icon="chevron-down"></i>Revenue</button></td><td colspan="6"></td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">4010</span> Subscription revenue</td><td class="fy-num"><a href="#trace/subscription-revenue-sep" style="color: inherit">61,800.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/subscription-revenue-aug" style="color: inherit">59,600.00</a></td><td class="fy-num fy-expert-only">71.7%</td><td class="fy-num fy-expert-only"><a href="#trace/subscription-revenue-budget" style="color: inherit">60,000.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/subscription-revenue-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+1,800.00</a></td><td class="fy-num fy-expert-only">+3.0%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">4020</span> Services revenue</td><td class="fy-num"><a href="#trace/services-revenue-sep" style="color: inherit">24,440.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/services-revenue-aug" style="color: inherit">23,515.00</a></td><td class="fy-num fy-expert-only">28.3%</td><td class="fy-num fy-expert-only"><a href="#trace/services-revenue-budget" style="color: inherit">24,000.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/services-revenue-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+440.00</a></td><td class="fy-num fy-expert-only">+1.8%</td></tr>
+<tr class="fy-strong"><td style="min-width: 190px">Total revenue</td><td class="fy-num"><a href="#trace/revenue-sep" style="color: inherit">86,240.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/revenue-aug" style="color: inherit">83,115.00</a></td><td class="fy-num fy-expert-only">100.0%</td><td class="fy-num fy-expert-only"><a href="#trace/revenue-budget" style="color: inherit">84,000.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/revenue-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+2,240.00</a></td><td class="fy-num fy-expert-only">+2.7%</td></tr>
+<tr class="fy-basic-only"><td colspan="7" class="fy-small fy-secondary" style="white-space: normal; padding-top: 6px; padding-bottom: 10px"><span class="fy-row fy-row--top"><i data-icon="info"></i><span>What customers paid for in September, before any costs: monthly subscription fees and set-up or project work.</span></span></td></tr>
+<tr class="fy-group"><td><button type="button" aria-expanded="true" aria-controls="g-cos" style="display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font-weight: 600"><i data-icon="chevron-down"></i>Cost of sales</button></td><td colspan="6"></td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">5010</span> Cloud hosting</td><td class="fy-num"><a href="#trace/cloud-hosting-sep" style="color: inherit">2,625.14</a></td><td class="fy-num fy-expert-only"><a href="#trace/cloud-hosting-aug" style="color: inherit">2,254.50</a></td><td class="fy-num fy-expert-only">3.0%</td><td class="fy-num fy-expert-only"><a href="#trace/cloud-hosting-budget" style="color: inherit">2,700.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/cloud-hosting-variance" style="justify-content: flex-end"><i data-icon="arrow-down-right"></i>−74.86</a></td><td class="fy-num fy-expert-only">−2.8%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">5020</span> AI and API usage</td><td class="fy-num"><a href="#trace/ai-and-api-usage-sep" style="color: inherit">3,918.75</a></td><td class="fy-num fy-expert-only"><a href="#trace/ai-and-api-usage-aug" style="color: inherit">3,644.20</a></td><td class="fy-num fy-expert-only">4.5%</td><td class="fy-num fy-expert-only"><a href="#trace/ai-and-api-usage-budget" style="color: inherit">3,600.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/ai-and-api-usage-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+318.75</a></td><td class="fy-num fy-expert-only">+8.9%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">5030</span> Delivery contractors</td><td class="fy-num"><a href="#trace/delivery-contractors-sep" style="color: inherit">6,400.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/delivery-contractors-aug" style="color: inherit">6,400.00</a></td><td class="fy-num fy-expert-only">7.4%</td><td class="fy-num fy-expert-only"><a href="#trace/delivery-contractors-budget" style="color: inherit">6,400.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/delivery-contractors-variance" style="justify-content: flex-end"><i data-icon="minus"></i>0.00</a></td><td class="fy-num fy-expert-only">0.0%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">5040</span> Payment processing fees</td><td class="fy-num"><a href="#trace/payment-processing-fees-sep" style="color: inherit">1,182.30</a></td><td class="fy-num fy-expert-only"><a href="#trace/payment-processing-fees-aug" style="color: inherit">1,139.65</a></td><td class="fy-num fy-expert-only">1.4%</td><td class="fy-num fy-expert-only"><a href="#trace/payment-processing-fees-budget" style="color: inherit">1,200.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/payment-processing-fees-variance" style="justify-content: flex-end"><i data-icon="arrow-down-right"></i>−17.70</a></td><td class="fy-num fy-expert-only">−1.5%</td></tr>
+<tr class="fy-strong"><td style="min-width: 190px">Total cost of sales</td><td class="fy-num"><a href="#trace/cost-of-sales-sep" style="color: inherit">14,126.19</a></td><td class="fy-num fy-expert-only"><a href="#trace/cost-of-sales-aug" style="color: inherit">13,438.35</a></td><td class="fy-num fy-expert-only">16.4%</td><td class="fy-num fy-expert-only"><a href="#trace/cost-of-sales-budget" style="color: inherit">13,900.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/cost-of-sales-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+226.19</a></td><td class="fy-num fy-expert-only">+1.6%</td></tr>
+<tr class="fy-basic-only"><td colspan="7" class="fy-small fy-secondary" style="white-space: normal; padding-top: 6px; padding-bottom: 10px"><span class="fy-row fy-row--top"><i data-icon="info"></i><span>Costs that grow with each customer: cloud hosting, AI usage, delivery contractors and card fees.</span></span></td></tr>
+<tr class="fy-strong"><td style="min-width: 190px">Gross profit</td><td class="fy-num"><a href="#trace/gross-profit-sep" style="color: inherit">72,113.81</a></td><td class="fy-num fy-expert-only"><a href="#trace/gross-profit-aug" style="color: inherit">69,676.65</a></td><td class="fy-num fy-expert-only">83.6%</td><td class="fy-num fy-expert-only"><a href="#trace/gross-profit-budget" style="color: inherit">70,100.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/gross-profit-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+2,013.81</a></td><td class="fy-num fy-expert-only">+2.9%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px">Gross margin<button class="fy-info" type="button" aria-label="About gross margin" aria-expanded="false"><i data-icon="info"></i></button></td><td class="fy-num">83.6%</td><td class="fy-num fy-expert-only">83.8%</td><td class="fy-num fy-expert-only"></td><td class="fy-num fy-expert-only">83.5%</td><td class="fy-num fy-expert-only">+0.2 pts</td><td class="fy-num fy-expert-only"></td></tr>
+<tr class="fy-basic-only"><td colspan="7" class="fy-small fy-secondary" style="white-space: normal; padding-top: 6px; padding-bottom: 10px"><span class="fy-row fy-row--top"><i data-icon="info"></i><span>Out of every S$100 of revenue, S$83.62 is left after the costs of serving customers.</span></span></td></tr>
+<tr class="fy-group"><td><button type="button" aria-expanded="true" aria-controls="g-opx" style="display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font-weight: 600"><i data-icon="chevron-down"></i>Operating expenses</button></td><td colspan="6"></td></tr>
+<tr><td class="fy-sub" style="min-width: 190px">People: salaries, CPF, SDL, benefits</td><td class="fy-num"><a href="#trace/people-sep" style="color: inherit">48,947.50</a></td><td class="fy-num fy-expert-only"><a href="#trace/people-aug" style="color: inherit">44,437.50</a></td><td class="fy-num fy-expert-only">56.8%</td><td class="fy-num fy-expert-only"><a href="#trace/people-budget" style="color: inherit">49,000.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/people-variance" style="justify-content: flex-end"><i data-icon="arrow-down-right"></i>−52.50</a></td><td class="fy-num fy-expert-only">−0.1%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">6060</span> Contract staff</td><td class="fy-num"><a href="#trace/contract-staff-sep" style="color: inherit">23,000.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/contract-staff-aug" style="color: inherit">27,510.00</a></td><td class="fy-num fy-expert-only">26.7%</td><td class="fy-num fy-expert-only"><a href="#trace/contract-staff-budget" style="color: inherit">23,000.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/contract-staff-variance" style="justify-content: flex-end"><i data-icon="minus"></i>0.00</a></td><td class="fy-num fy-expert-only">0.0%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">6110</span> Rent and office (WeWork Singapore)</td><td class="fy-num"><a href="#trace/rent-and-office-sep" style="color: inherit">6,480.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/rent-and-office-aug" style="color: inherit">6,480.00</a></td><td class="fy-num fy-expert-only">7.5%</td><td class="fy-num fy-expert-only"><a href="#trace/rent-and-office-budget" style="color: inherit">6,480.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/rent-and-office-variance" style="justify-content: flex-end"><i data-icon="minus"></i>0.00</a></td><td class="fy-num fy-expert-only">0.0%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">6120</span> Software subscriptions</td><td class="fy-num"><a href="#trace/software-subscriptions-sep" style="color: inherit">2,140.60</a></td><td class="fy-num fy-expert-only"><a href="#trace/software-subscriptions-aug" style="color: inherit">2,098.40</a></td><td class="fy-num fy-expert-only">2.5%</td><td class="fy-num fy-expert-only"><a href="#trace/software-subscriptions-budget" style="color: inherit">2,100.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/software-subscriptions-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+40.60</a></td><td class="fy-num fy-expert-only">+1.9%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">6150</span> Marketing and design</td><td class="fy-num"><a href="#trace/marketing-and-design-sep" style="color: inherit">9,850.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/marketing-and-design-aug" style="color: inherit">11,240.00</a></td><td class="fy-num fy-expert-only">11.4%</td><td class="fy-num fy-expert-only"><a href="#trace/marketing-and-design-budget" style="color: inherit">8,500.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/marketing-and-design-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+1,350.00</a></td><td class="fy-num fy-expert-only">+15.9%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">6510</span> Accounting fees (Ho &amp; Partners LLP)</td><td class="fy-num"><a href="#trace/accounting-fees-sep" style="color: inherit">2,200.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/accounting-fees-aug" style="color: inherit">2,200.00</a></td><td class="fy-num fy-expert-only">2.6%</td><td class="fy-num fy-expert-only"><a href="#trace/accounting-fees-budget" style="color: inherit">2,200.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/accounting-fees-variance" style="justify-content: flex-end"><i data-icon="minus"></i>0.00</a></td><td class="fy-num fy-expert-only">0.0%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">6310</span> Local travel</td><td class="fy-num"><a href="#trace/local-travel-sep" style="color: inherit">612.40</a></td><td class="fy-num fy-expert-only"><a href="#trace/local-travel-aug" style="color: inherit">488.10</a></td><td class="fy-num fy-expert-only">0.7%</td><td class="fy-num fy-expert-only"><a href="#trace/local-travel-budget" style="color: inherit">600.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/local-travel-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+12.40</a></td><td class="fy-num fy-expert-only">+2.1%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px">Insurance, bank charges and other</td><td class="fy-num"><a href="#trace/insurance-bank-and-other-sep" style="color: inherit">674.20</a></td><td class="fy-num fy-expert-only"><a href="#trace/insurance-bank-and-other-aug" style="color: inherit">668.90</a></td><td class="fy-num fy-expert-only">0.8%</td><td class="fy-num fy-expert-only"><a href="#trace/insurance-bank-and-other-budget" style="color: inherit">620.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/insurance-bank-and-other-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+54.20</a></td><td class="fy-num fy-expert-only">+8.7%</td></tr>
+<tr class="fy-strong"><td style="min-width: 190px">Total operating expenses</td><td class="fy-num"><a href="#trace/operating-expenses-sep" style="color: inherit">93,904.70</a></td><td class="fy-num fy-expert-only"><a href="#trace/operating-expenses-aug" style="color: inherit">95,122.90</a></td><td class="fy-num fy-expert-only">108.9%</td><td class="fy-num fy-expert-only"><a href="#trace/operating-expenses-budget" style="color: inherit">92,500.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/operating-expenses-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+1,404.70</a></td><td class="fy-num fy-expert-only">+1.5%</td></tr>
+<tr class="fy-basic-only"><td colspan="7" class="fy-small fy-secondary" style="white-space: normal; padding-top: 6px; padding-bottom: 10px"><span class="fy-row fy-row--top"><i data-icon="info"></i><span>The cost of running the company: the team, the office, tools, marketing and advisers.</span></span></td></tr>
+<tr class="fy-strong"><td style="min-width: 190px">EBITDA</td><td class="fy-num"><a href="#trace/ebitda-sep" style="color: inherit">−21,790.89</a></td><td class="fy-num fy-expert-only"><a href="#trace/ebitda-aug" style="color: inherit">−25,446.25</a></td><td class="fy-num fy-expert-only">−25.3%</td><td class="fy-num fy-expert-only"><a href="#trace/ebitda-budget" style="color: inherit">−22,400.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/ebitda-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+609.11</a></td><td class="fy-num fy-expert-only">+2.7%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">6610</span> Depreciation expense</td><td class="fy-num"><a href="#trace/depreciation-sep" style="color: inherit">1,036.11</a></td><td class="fy-num fy-expert-only"><a href="#trace/depreciation-aug" style="color: inherit">1,057.06</a></td><td class="fy-num fy-expert-only">1.2%</td><td class="fy-num fy-expert-only"><a href="#trace/depreciation-budget" style="color: inherit">1,000.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/depreciation-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+36.11</a></td><td class="fy-num fy-expert-only">+3.6%</td></tr>
+<tr class="fy-strong"><td style="min-width: 190px">Operating result</td><td class="fy-num"><a href="#trace/operating-result-sep" style="color: inherit">−22,827.00</a></td><td class="fy-num fy-expert-only"><a href="#trace/operating-result-aug" style="color: inherit">−26,503.31</a></td><td class="fy-num fy-expert-only">−26.5%</td><td class="fy-num fy-expert-only"><a href="#trace/operating-result-budget" style="color: inherit">−23,400.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/operating-result-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+573.00</a></td><td class="fy-num fy-expert-only">+2.4%</td></tr>
+<tr class="fy-group"><td><button type="button" aria-expanded="true" aria-controls="g-oth" style="display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font-weight: 600"><i data-icon="chevron-down"></i>Other income and expenses</button></td><td colspan="6"></td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">7010</span> Interest income</td><td class="fy-num"><a href="#trace/interest-income-sep" style="color: inherit">312.40</a></td><td class="fy-num fy-expert-only"><a href="#trace/interest-income-aug" style="color: inherit">298.60</a></td><td class="fy-num fy-expert-only">0.4%</td><td class="fy-num fy-expert-only"><a href="#trace/interest-income-budget" style="color: inherit">200.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/interest-income-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+112.40</a></td><td class="fy-num fy-expert-only">+56.2%</td></tr>
+<tr><td class="fy-sub" style="min-width: 190px"><span class="fy-mono fy-muted fy-expert-only">7030</span> FX &amp; rounding differences</td><td class="fy-num"><a href="#trace/fx-and-rounding-sep" style="color: inherit">−86.15</a></td><td class="fy-num fy-expert-only"><a href="#trace/fx-and-rounding-aug" style="color: inherit">142.30</a></td><td class="fy-num fy-expert-only">−0.1%</td><td class="fy-num fy-expert-only"><a href="#trace/fx-and-rounding-budget" style="color: inherit">0.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/fx-and-rounding-variance" style="justify-content: flex-end"><i data-icon="arrow-down-right"></i>−86.15</a></td><td class="fy-num fy-expert-only"><span class="fy-muted" title="No budget for this line">–</span></td></tr>
+        </tbody>
+        <tfoot><tr><td style="min-width: 190px">Net loss for the month</td><td class="fy-num"><a href="#trace/net-sep" style="color: inherit">−22,600.75</a></td><td class="fy-num fy-expert-only"><a href="#trace/net-aug" style="color: inherit">−26,062.41</a></td><td class="fy-num fy-expert-only">−26.2%</td><td class="fy-num fy-expert-only"><a href="#trace/net-budget" style="color: inherit">−23,200.00</a></td><td class="fy-num fy-expert-only"><a class="fy-delta fy-delta--flat" href="#trace/net-variance" style="justify-content: flex-end"><i data-icon="arrow-up-right"></i>+599.25</a></td><td class="fy-num fy-expert-only">+2.6%</td></tr></tfoot>
+      </table>
+    </div>
+    <p class="fy-small fy-muted">Variance is actual minus budget: a plus on a cost line means we spent more than planned. Arrows and signs carry the direction; colours never do.</p>
+  </section>
+
+  <div class="fy-grid fy-grid--3 fy-stagger">
+    
+<section class="fy-card" aria-labelledby="trace-title">
+  <div class="fy-card__head">
+    <span class="fy-list__icon fy-list__icon--brand"><i data-icon="scan-search" class="fy-i--20"></i></span>
+    <h2 class="fy-h3" id="trace-title">Trace: Cloud hosting, September 2026</h2>
+    <button class="fy-iconbtn" type="button" aria-label="Close trace"><i data-icon="x"></i></button>
+  </div>
+  <div class="fy-card__body fy-stack fy-stack--3">
+    <nav class="fy-breadcrumb" aria-label="Trace path"><a href="#reports/pl">Profit and loss</a><i data-icon="chevron-right"></i><a href="#trace/cloud-hosting-sep">Cloud hosting</a><i data-icon="chevron-right"></i><span>Ledger lines</span></nav>
+    <div class="fy-row fy-row--between"><span class="fy-secondary">Cloud hosting</span><span class="fy-num fy-strong">S$2,625.14</span></div>
+    <ul class="fy-list" style="margin: 0 calc(var(--space-4) * -1)">
+      <li><a class="fy-list__item" href="#accounting/journals/jnl-0240">
+        <span class="fy-list__main"><span class="fy-list__title">JNL-0240 · September AWS usage accrued</span><span class="fy-list__meta">30 Sep · <span class="fy-expert-only">Dr 5010 · Cr 2050 · </span>net of GST, until the bill is approved</span></span>
+        <span class="fy-num">2,625.14</span></a></li>
+      <li><a class="fy-list__item" href="#purchases/bills/bill-0918">
+        <span class="fy-list__main"><span class="fy-list__title">BILL-0918 · Amazon Web Services</span><span class="fy-list__meta">Source document · due 20 Oct · prepared by Arjun Rao</span></span>
+        <span class="fy-chip fy-chip--warning"><i data-icon="stamp"></i>Awaiting approval</span></a></li>
+    </ul>
+    <p class="fy-small fy-muted">When Mei Lin approves BILL-0918, the bill posts and the accrual reverses on 1 Oct. September stays at S$2,625.14; the S$236.26 GST is claimed with the bill.</p>
+    <div class="fy-row"><a class="fy-btn fy-btn--secondary fy-btn--sm" href="#trace/cloud-hosting-sep/history"><i data-icon="list-clock"></i>History</a><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#reports/general-ledger?account=5010">Open in general ledger</a></div>
+  </div>
+</section>
+    
+<section class="fy-card" aria-labelledby="about-title">
+  <div class="fy-card__head"><h2 class="fy-h3" id="about-title">About this statement</h2></div>
+  <dl class="fy-dl fy-card__body" style="grid-template-columns: minmax(0, 1fr)">
+    <div><dt>Title</dt><dd><span class="fy-chip fy-chip--neutral"><i data-icon="pencil-line"></i>Management statements</span> until the policies are approved</dd></div>
+    <div><dt>Framework</dt><dd>SFRS for Small Entities, edition in force for FY2026</dd></div>
+    <div><dt>Accounting policies</dt><dd class="fy-row fy-row--wrap"><span>Waiting for Grace Ho to approve the FY2026 policies</span><a href="#settings/accounting-policies">Review</a></dd></div>
+    <div><dt>As at<button class="fy-info" type="button" aria-label="About ledger revisions" aria-expanded="false"><i data-icon="info"></i></button></dt><dd>Ledger revision 18,412 · 13 Oct 2026, 09:12</dd></div>
+    <div><dt>Parameters</dt><dd>Month, Sep 2026 · vs Aug 2026 and budget FY2026 Revised · all departments</dd></div>
+    <div class="fy-expert-only"><dt>Re-run</dt><dd>As at revision 17,960 (August close) shows August’s names and groups; today’s layout is labelled <span class="fy-chip fy-chip--neutral"><i data-icon="refresh-cw"></i>Restated presentation</span></dd></div>
+    <div class="fy-expert-only"><dt>Platform</dt><dd class="fy-mono">v0.14.2 · 4be91c7</dd></div>
+  </dl>
+</section>
+    
+<section class="fy-card" aria-labelledby="pack-title">
+  <div class="fy-card__head"><h2 class="fy-h3" id="pack-title">The other statements</h2></div>
+  <div class="fy-card__body fy-stack fy-stack--3">
+    <div class="fy-row fy-row--between"><a class="fy-strong" href="#reports/balance-sheet">Balance sheet, 30 Sep</a><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Balances</span></div>
+    <table class="fy-table fy-table--compact">
+      <caption class="fy-sr">Balance check at 30 September 2026, SGD</caption>
+      <tbody>
+        <tr><td>What we own</td><td class="fy-num"><a href="#reports/balance-sheet#assets" style="color: inherit">532,744.39</a></td></tr>
+        <tr><td>What we owe</td><td class="fy-num"><a href="#reports/balance-sheet#liabilities" style="color: inherit">604,026.89</a></td></tr>
+        <tr><td>Equity <span class="fy-muted fy-small">(the S$500,000 SAFE is a liability)</span></td><td class="fy-num"><a href="#reports/balance-sheet#equity" style="color: inherit">−71,282.50</a></td></tr>
+        <tr><td>Difference</td><td class="fy-num">0.00</td></tr>
+      </tbody>
+    </table>
+    <p class="fy-small fy-muted">Equity moved from −48,681.75 to −71,282.50: the September loss. No shares were issued for cash or for anything else.</p>
+    <hr class="fy-divider">
+    <div class="fy-row fy-row--between"><a class="fy-strong" href="#reports/cash-flow">Cash flow, September</a><span class="fy-num"><a href="#reports/cash-flow" style="color: inherit">−18,405.00</a></span></div>
+    <p class="fy-small fy-muted">Operating −15,138.85 · equipment −3,180.00 · exchange rates −86.15. Non-cash financing (conversions, waivers) is listed separately: none in September.</p>
+  </div>
+</section>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="message-square"></i>Ask</button>
+    <button class="fy-btn fy-btn--primary" type="button"><i data-icon="download"></i>Export</button>
+  </div>
+</div>
