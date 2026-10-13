@@ -97,6 +97,15 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1 (a, b); P2 (c)
 - **THEN** its models are listed with the user's grant (AI-80)
 - **AND** a plan whose grant cannot list models cannot be connected
 
+#### Scenario: Per-model quota rates
+- **GIVEN** a plan that draws its quota at different rates per model
+- **WHEN** usage is metered against the quota
+- **THEN** each model's rate is recorded with its source, the plan's published terms
+
+#### Scenario: Command-line seats refused
+- **WHEN** someone tries to connect a seat used through a provider's own command-line agent (Claude Code, Codex, Copilot CLI)
+- **THEN** the connection is refused, because it has no list endpoint and is reserved for that agent
+
 #### Scenario: Consumer-app tokens refused
 - **WHEN** someone tries to connect consumer-plan credentials whose terms reserve them for the provider's own apps, or a chat session or cookie
 - **THEN** the connection is refused
@@ -221,6 +230,11 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **WHEN** Fyniq runs in local mode
 - **THEN** it uses a deterministic stub or an OpenAI-compatible server on the machine, never a cloud provider key (DEV-07)
 
+#### Scenario: Credentials only in headers
+- **WHEN** Fyniq calls a provider to list models, probe or send a request
+- **THEN** the credential travels in a request header, never in a URL
+- **AND** any error text from the call is scrubbed of credentials before it is logged or shown
+
 ### Requirement: AI-80 Model lists come from the provider
 The system SHALL ship no list of models: each connection's models SHALL come from the provider's own list endpoint, read with the connection's credential of any kind, and a connection whose credential cannot list models SHALL NOT be enabled.
 
@@ -240,10 +254,24 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **WHEN** someone tries to enable the connection
 - **THEN** it is refused with `AI_MODEL_LIST_UNAVAILABLE`, and there is no manual model entry
 
-#### Scenario: Region and account confirmed by a probe
-- **GIVEN** a list that does not say whether a model is enabled for the account or offered in the connection's region
-- **WHEN** the model would be offered
-- **THEN** the adapter first confirms it with a minimal probe request on synthetic text
+#### Scenario: Probe before a model is allowed
+- **WHEN** an Owner picks a listed model for a connection's allow-list
+- **THEN** a probe on that connection (a few tokens of synthetic text) must succeed first, because a list says what exists, not what this credential, plan tier, project or region may call
+- **AND** probes run only for picked models, never against the whole list
+
+#### Scenario: Nothing hidden by its name
+- **WHEN** a provider's list is shown
+- **THEN** it is narrowed only by what the provider reports (capabilities, modalities, generation methods)
+- **AND** where the provider reports nothing, every listed model is shown, and name patterns may sort the list but never remove a model from it
+
+#### Scenario: Whole list, page by page
+- **WHEN** a provider returns its list in pages
+- **THEN** every page is read to the end, with a page cap
+
+#### Scenario: A plan's roster from the plan's endpoint
+- **GIVEN** a subscription plan connection
+- **WHEN** its models are listed
+- **THEN** the roster comes from the plan's own endpoint with the plan's key, before the connection is enabled, so the probe has a model to call
 
 #### Scenario: Reported capabilities are hints
 - **WHEN** the list reports a model's limits or capabilities
@@ -274,14 +302,18 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **THEN** it is queued for the evals of every agent whose route uses that connection, on synthetic fixtures within the eval runner's budget, and the results appear on the connection
 - **AND** adding it to the allow-list or to a route stays a human decision
 
+#### Scenario: Not callable
+- **WHEN** a listed model fails with an access or not-found error
+- **THEN** it is shown as not callable and handled like a model no longer listed, until a read or a probe succeeds again
+
 ### Requirement: AI-82 Prices come from a named source
-Each model's price SHALL record its source, in order: the provider's list, Google's billing catalogue, Fyniq's sourced model price list, or an Owner-entered price with a second approver; a model with no price SHALL NOT serve a route on a usage-based connection.
+Each model's price SHALL record its source, in order: the provider's list, Google's billing catalogue, LiteLLM's public price catalogue, or an Owner-entered price with a second approver; a model with no price SHALL NOT serve a route on a usage-based connection.
 
 Source: PRD-001 §9.9.1 · Priority M · Phase P1
 
 #### Scenario: Price sources
 - **WHEN** a model's price is needed
-- **THEN** it comes from the provider's list (OpenRouter, xAI or a LiteLLM gateway's `/model/info`), else Google's Cloud Billing Catalog for Agent Platform, else Fyniq's model price list (effective-dated, with the provider's pricing-page URL and the date it was checked), else a price the Owner entered with a second approver, labelled "entered by"
+- **THEN** it comes from the provider's list (OpenRouter, xAI or a LiteLLM gateway's `/model/info`), else Google's Cloud Billing Catalog for Agent Platform, else LiteLLM's public model price catalogue, else a price the Owner entered with a second approver, labelled "entered by"
 - **AND** the source is shown with the price
 
 #### Scenario: No price, no usage-based route
@@ -293,3 +325,16 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 #### Scenario: Price version kept per request
 - **WHEN** a request's cost is computed
 - **THEN** it keeps the price version it used, and the provider's invoice stays the record
+
+#### Scenario: Catalogue match confidence
+- **WHEN** a price comes from LiteLLM's catalogue, read daily in the background
+- **THEN** the match is labelled exact or normalised (after removing a provider prefix or a version-date suffix)
+- **AND** a normalised match needs an Owner's confirmation before it prices a usage-based route
+
+#### Scenario: No guessed prices
+- **WHEN** no source matches a model
+- **THEN** it stays visibly unpriced
+
+#### Scenario: Owner prices kept
+- **WHEN** a later read finds a price for a model the Owner priced
+- **THEN** the Owner's price is not overwritten, and each price change is one audited event by the system user

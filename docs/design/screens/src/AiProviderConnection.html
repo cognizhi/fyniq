@@ -1,4 +1,4 @@
-<!-- fyniq-screen {"nav": "settings", "title": "OpenAI API", "mode": "expert", "heights": {"compact": 5150, "medium": 4000, "expanded": 3000}} -->
+<!-- fyniq-screen {"nav": "settings", "title": "OpenAI API", "mode": "expert", "heights": {"compact": 5350, "medium": 4100, "expanded": 3000}} -->
 <div class="fy-page fy-enter">
   <div class="fy-pagehead">
     <div class="fy-pagehead__text">
@@ -91,11 +91,11 @@
           <h3 class="fy-small fy-strong" id="allowed-label">Allowed on this connection</h3>
         </div>
         <table class="fy-table fy-table--cards" aria-labelledby="allowed-label">
-          <thead><tr><th scope="col">Model</th><th scope="col">On OpenAI's list</th><th scope="col">Qualification</th></tr></thead>
+          <thead><tr><th scope="col">Model</th><th scope="col">Callable with this key</th><th scope="col">Qualification</th></tr></thead>
           <tbody>
             <tr>
               <td data-card="title">GPT-5<span class="fy-small fy-muted fy-mono" style="display: block; font-weight: 400">gpt-5-2025-08-07 · pinned</span><span class="fy-small fy-secondary fy-wrap" style="display: block; font-weight: 400">To prove after approval: tool calling, structured output, streaming, prompt caching</span></td>
-              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Listed 08:53</span></td>
+              <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Probe passed 08:54</span></td>
               <td data-card="meta"><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Not run: after approval</span></td>
             </tr>
           </tbody>
@@ -110,12 +110,12 @@
             <input class="fy-input" id="mod-search" type="search" placeholder="Search OpenAI's list">
           </div>
           <ul class="fy-list fy-card fy-card--flat" aria-labelledby="other-label">
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title fy-mono">gpt-5-mini-2025-08-07</span><span class="fy-list__meta">Listed 08:53 · not allowed</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-label="Allow gpt-5-mini-2025-08-07"><i data-icon="list-plus"></i>Allow</button></li>
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title fy-mono">gpt-5-nano-2025-08-07</span><span class="fy-list__meta">Listed 08:53 · not allowed</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-label="Allow gpt-5-nano-2025-08-07"><i data-icon="list-plus"></i>Allow</button></li>
+            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title fy-mono fy-wrap">gpt-5-mini-2025-08-07</span><span class="fy-list__meta">Listed 08:53 · not allowed</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-label="Allow gpt-5-mini-2025-08-07"><i data-icon="list-plus"></i>Allow</button></li>
+            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title fy-mono fy-wrap">gpt-5-nano-2025-08-07</span><span class="fy-list__meta">Listed 08:53 · not allowed</span></span><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-label="Allow gpt-5-nano-2025-08-07"><i data-icon="list-plus"></i>Allow</button></li>
           </ul>
           <a class="fy-small" href="#settings/ai/providers/openai/models">Show 81 more</a>
         </div>
-        <div class="fy-card__foot"><span class="fy-small fy-muted">Model names come only from OpenAI's list; nobody types one in. Allowing a model needs a second Owner, and it serves no agent until it passes that agent's evals. OpenAI's list gives names only, so the adapter's tests prove each capability after approval; one they cannot prove counts as absent.</span></div>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Model names come only from OpenAI's list, and none is hidden by its name. Allowing one first sends it a short probe with synthetic text, then needs a second Owner; it serves no agent until it passes that agent's evals. OpenAI's list gives names only, so the adapter's tests prove each capability after approval; one they cannot prove counts as absent.</span></div>
       </section>
 
       <section class="fy-card" aria-labelledby="bill-title" id="billing">
@@ -145,7 +145,7 @@
             </button>
           </div>
           <table class="fy-table fy-table--compact">
-            <caption class="fy-small fy-muted" style="text-align: left; padding-bottom: var(--space-2)">GPT-5, US$ per million tokens · OpenAI's list has no prices, so these come from Fyniq's model price list, version 2026-10-06, taken from OpenAI's pricing page</caption>
+            <caption class="fy-small fy-muted" style="text-align: left; padding-bottom: var(--space-2)">GPT-5, US$ per million tokens · OpenAI's list has no prices, so these come from LiteLLM's public price catalogue, read today at 06:00 · exact match</caption>
             <thead><tr><th scope="col">Tokens</th><th scope="col" class="fy-num" style="text-align: right">Price (USD)</th></tr></thead>
             <tbody>
               <tr><td>Input</td><td class="fy-num">1.25</td></tr>
@@ -215,7 +215,7 @@
 
       <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="test-title">
         <h2 class="fy-h3" id="test-title">Connection test</h2>
-        <p class="fy-small fy-secondary">The key already listed OpenAI's models at 08:53. The full test runs after approval: one short request with no company data, then pass or fail with the reason.</p>
+        <p class="fy-small fy-secondary">The key listed OpenAI's models at 08:53, and GPT-5 answered a short probe at 08:54; neither sent company data. The full test runs after approval: tool calling, structured output and streaming, then pass or fail with the reason.</p>
         <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" aria-disabled="true" style="align-self: flex-start; opacity: 0.6"><i data-icon="plug-zap"></i>Test connection</button>
       </section>
 
@@ -224,6 +224,7 @@
         <div class="fy-card__body">
           <ol class="fy-timeline" style="padding-left: 28px">
             <li class="fy-timeline__item"><span class="fy-timeline__dot"><i data-icon="hourglass"></i></span><span class="fy-strong fy-small">Sent to Arjun Rao for approval</span><span class="fy-small fy-muted">Mei Lin Tan · today 08:55</span></li>
+            <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong fy-small">GPT-5 answered the probe</span><span class="fy-small fy-muted">Fyniq · today 08:54 · synthetic text, no company data</span></li>
             <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong fy-small">Model list read: 84 models</span><span class="fy-small fy-muted">Fyniq · today 08:53 · GPT-5 picked by Mei Lin Tan</span></li>
             <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong fy-small">API key stored</span><span class="fy-small fy-muted">Mei Lin Tan · today 08:52 · shown once, now masked</span></li>
             <li class="fy-timeline__item"><span class="fy-timeline__dot fy-timeline__dot--good"><i data-icon="check"></i></span><span class="fy-strong fy-small">Terms captured as evidence</span><span class="fy-small fy-muted">Mei Lin Tan · today 08:47</span></li>
