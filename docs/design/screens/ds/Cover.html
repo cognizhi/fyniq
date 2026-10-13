@@ -1,0 +1,54 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&amp;display=swap">
+<style>
+  html, body { margin: 0; background: var(--background); }
+  .cover { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--background); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+  .cover svg { position: absolute; inset: 0; }
+  .brand { fill: var(--primary); }
+  .ai { fill: var(--ai); }
+  .ink { fill: var(--text-primary); }
+  .grid { fill: var(--border-strong); }
+  .tile { rx: var(--radius-l); }
+  .unit { rx: var(--radius-s); }
+  .text { position: absolute; left: 40px; bottom: 36px; width: 440px; }
+  .name { margin: 0; font-size: 120px; line-height: 0.92; font-weight: 600; letter-spacing: -0.045em; color: var(--text-primary); }
+  .line { margin: 12px 0 0; font-size: 14px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="cover">
+  <svg viewBox="0 0 960 288" width="960" height="288" aria-hidden="true">
+    <!--
+      blocks: brand teal (primary) 168×240, AI violet (ai) 112×112, ink (text-primary) 104×112 — teal leads, violet is the AI signal, ink is the figures
+      arrangement: one tall teal slab with two satellites on a 24 px gutter, flush to a modular grid right of x = 480
+      pattern: "geometric, modular, dense UI → tiles cut by the radius tokens, some merged two-wide": a 4 px dot grid at the space-4 (16 px) pitch under five ledger-like tiles, two merged wide like table rows
+      steps and radii: gutters space-6 (24), tile units 48 = space-6 × 2, corners radius-l (10) on blocks and radius-s (4) on tiles
+    -->
+    <g>
+      <circle class="grid" cx="696" cy="168" r="1.5"></circle><circle class="grid" cx="712" cy="168" r="1.5"></circle><circle class="grid" cx="728" cy="168" r="1.5"></circle>
+      <circle class="grid" cx="744" cy="168" r="1.5"></circle><circle class="grid" cx="760" cy="168" r="1.5"></circle><circle class="grid" cx="776" cy="168" r="1.5"></circle>
+      <circle class="grid" cx="792" cy="168" r="1.5"></circle><circle class="grid" cx="808" cy="168" r="1.5"></circle><circle class="grid" cx="824" cy="168" r="1.5"></circle>
+      <circle class="grid" cx="840" cy="168" r="1.5"></circle><circle class="grid" cx="856" cy="168" r="1.5"></circle><circle class="grid" cx="872" cy="168" r="1.5"></circle>
+      <circle class="grid" cx="888" cy="168" r="1.5"></circle><circle class="grid" cx="904" cy="168" r="1.5"></circle><circle class="grid" cx="920" cy="168" r="1.5"></circle>
+      <circle class="grid" cx="936" cy="168" r="1.5"></circle>
+    </g>
+    <rect class="brand tile" x="504" y="24" width="168" height="240"></rect>
+    <rect class="ai tile" x="696" y="24" width="112" height="112"></rect>
+    <rect class="ink tile" x="832" y="24" width="104" height="112"></rect>
+    <rect class="ink unit" x="696" y="192" width="104" height="24"></rect>
+    <rect class="brand unit" x="824" y="192" width="112" height="24"></rect>
+    <rect class="ink unit" x="696" y="240" width="48" height="24"></rect>
+    <rect class="ai unit" x="768" y="240" width="48" height="24"></rect>
+    <rect class="ink unit" x="840" y="240" width="96" height="24"></rect>
+  </svg>
+  <div class="text">
+    <h1 class="name">Fyniq</h1>
+    <p class="line">Intelligence behind every number</p>
+  </div>
+</div>
+</body>
+</html>

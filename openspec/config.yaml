@@ -1,0 +1,44 @@
+schema: spec-driven
+
+# Project context: constraints an agent cannot infer from the code. Every /opsx workflow reads it.
+context: |
+  Fyniq is an accounting, compliance, reporting and planning platform for a Singapore start-up
+  (PRD-001, docs/prd/prd-001-fyniq-platform.md). The PRD is the source of truth: openspec/specs/ is
+  derived from it (scripts/prdspec.py, openspec/sources/prd-001.json and its lock). A new or changed
+  requirement first gets a PRD row and ID (never renumber; tag (rev 0.N)); then its spec changes.
+  Main specs hold the APPROVED requirements, built or not; each carries "Source: PRD-001 §x ·
+  Priority M|S|C · Phase P0–P3". A requirement is built when tests carry "// req: <ID>".
+  Requirement headers are "<ID> <title>" (e.g. "FR-GL-08 Period locks") and never change casually.
+  Golden rules in AGENTS.md bind every change: exact-decimal money, the database as the backstop,
+  two implementations that agree, API-first, AI proposes and humans decide, closed by default,
+  every change audited, tenancy on every row, local mode always works.
+  Every screen is designed in Claude Design before it is built (docs/design/screens, the
+  fyniq-openspec skill): five frames (desktop, tablet, foldable open, phone, foldable folded) in
+  light and dark, Basic and Expert, minimal switchable motion (FR-UX-37, FR-UX-38).
+
+rules:
+  proposal:
+    - Cite the PRD rows (IDs and section) the change implements or changes; if none exist, stop and add them to the PRD first.
+    - Say which screens in docs/design/screens/inventory.json the change adds or alters.
+    - A change that only builds already-approved requirements sets skip_specs true in .openspec.yaml.
+  specs:
+    - Requirement header "<anchor> <title>"; description at most ~450 characters with SHALL or MUST; the exact Source line printed by "python3 scripts/prdspec.py show <ID>".
+    - Every clause of the PRD row lands in the description or a scenario; nothing invented; keep [verify] and [proposed] tags.
+    - Reuse existing capability paths (openspec list --specs); never invent a near-duplicate.
+  design:
+    - Reference ADRs in PRD §12.0 by ID; a superseded decision gets a new ADR, never an edit.
+    - Name the ports and adapters touched (ADR-T8) and the audit events emitted (AUD-01).
+  tasks:
+    - Each task names the requirement IDs it satisfies and the test that proves them (// req: <ID>).
+    - Include the screen fragment, help keys and user-guide page for any UI task.
+    - Finish with make check (and make test from P0).
+
+operations:
+  apply:
+    guidance:
+      - Load the matching fyniq-* skill before changing code (AGENTS.md table).
+      - Never weaken a database constraint, RLS policy, MCP scope or AI never-list item to make a task pass.
+  archive:
+    guidance:
+      - Run python3 scripts/prdspec.py coverage and stamp the anchors whose specs the archive changed.
+      - make check passes before the archive is committed.
