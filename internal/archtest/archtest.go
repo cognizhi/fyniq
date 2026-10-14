@@ -167,3 +167,83 @@ func TransactionCalls(filename string, src []byte) ([]string, error) {
 	})
 	return out, nil
 }
+
+// MoneyPackages are the packages where money is computed: no binary floating point may appear in
+// them (ENG-10).
+var MoneyPackages = []string{
+	"internal/domain/money", "internal/domain/rounding", "internal/domain/ledger",
+	"internal/domain/journal", "internal/domain/balance",
+}
+
+// floatFuncs are the standard-library calls that produce or read binary floating point.
+var floatFuncs = map[string]map[string]bool{
+	"strconv": {"ParseFloat": true, "FormatFloat": true, "AppendFloat": true},
+	"math":    {"Float64bits": true, "Float64frombits": true, "Float32bits": true, "Float32frombits": true},
+}
+
+// FloatUses returns each use of binary floating point in src: the float32 and float64 types,
+// floating-point literals, the math package and the strconv float functions (ENG-10).
+func FloatUses(filename string, src []byte) ([]string, error) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, filename, src, parser.SkipObjectResolution)
+	if err != nil {
+		return nil, err
+	}
+	names := map[string]string{} // local name → import path
+	var out []string
+	for _, imp := range f.Imports {
+		path, _ := strconv.Unquote(imp.Path.Value)
+		name := path
+		if i := strings.LastIndex(path, "/"); i >= 0 {
+			name = path[i+1:]
+		}
+		if imp.Name != nil {
+			name = imp.Name.Name
+		}
+		names[name] = path
+		if path == "math" || path == "math/big" {
+			out = append(out, fmt.Sprintf("%s: imports %s: money code uses apd decimals only (ENG-10)", fset.Position(imp.Pos()), path))
+		}
+	}
+	ast.Inspect(f, func(n ast.Node) bool {
+		switch x := n.(type) {
+		case *ast.Ident:
+			if x.Name == "float32" || x.Name == "float64" || x.Name == "complex64" || x.Name == "complex128" {
+				out = append(out, fmt.Sprintf("%s: %s in money code (ENG-10)", fset.Position(x.Pos()), x.Name))
+			}
+		case *ast.BasicLit:
+			if x.Kind == token.FLOAT || x.Kind == token.IMAG {
+				out = append(out, fmt.Sprintf("%s: floating-point literal %s in money code (ENG-10)", fset.Position(x.Pos()), x.Value))
+			}
+		case *ast.SelectorExpr:
+			if id, ok := x.X.(*ast.Ident); ok && floatFuncs[names[id.Name]][x.Sel.Name] {
+				out = append(out, fmt.Sprintf("%s: %s.%s in money code (ENG-10)", fset.Position(x.Pos()), id.Name, x.Sel.Name))
+			}
+		}
+		return true
+	})
+	return out, nil
+}
+
+// BalanceReaders may call UnitOfWork.Balances(): the balance service, the storage adapter and the
+// storage conformance suite. Everything else asks the balance service (ENG-04).
+var BalanceReaders = []string{"internal/domain/balance", "internal/adapters/postgres", "internal/ports/porttest"}
+
+// BalanceCalls returns each call of .Balances() in src.
+func BalanceCalls(filename string, src []byte) ([]string, error) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, filename, src, parser.SkipObjectResolution)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	ast.Inspect(f, func(n ast.Node) bool {
+		if call, ok := n.(*ast.CallExpr); ok {
+			if sel, ok := call.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "Balances" && len(call.Args) == 0 {
+				out = append(out, fmt.Sprintf("%s: reads balances outside the balance service (ENG-04)", fset.Position(sel.Pos())))
+			}
+		}
+		return true
+	})
+	return out, nil
+}

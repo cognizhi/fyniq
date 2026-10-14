@@ -120,6 +120,50 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (I
 	return i, err
 }
 
+const listAccounts = `-- name: ListAccounts :many
+SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account ORDER BY code
+`
+
+type ListAccountsRow struct {
+	ID       uuid.UUID
+	Code     string
+	Name     string
+	Type     string
+	ParentID *uuid.UUID
+	IsGroup  bool
+	IsActive bool
+	Version  int32
+}
+
+func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
+	rows, err := q.db.Query(ctx, listAccounts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAccountsRow
+	for rows.Next() {
+		var i ListAccountsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Type,
+			&i.ParentID,
+			&i.IsGroup,
+			&i.IsActive,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setAccountActive = `-- name: SetAccountActive :one
 UPDATE fyniq.account SET is_active = $1, version = version + 1
 WHERE id = $2

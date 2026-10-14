@@ -79,6 +79,7 @@ func count(t *testing.T, org uuid.UUID, table string) int {
 }
 
 // req: INV-01
+// req: ENG-22
 // req: QA-ENG-05
 func TestAttackUnbalancedEntriesFailAtCommit(t *testing.T) {
 	ctx := context.Background()
@@ -524,5 +525,34 @@ func TestAttackAFailedWriteMidCommandLeavesNoPartialRows(t *testing.T) {
 	})
 	if rev != 0 {
 		t.Errorf("revision %d after the failed command; want 0", rev)
+	}
+}
+
+// req: INV-02
+// req: QA-ENG-05
+func TestAttackDocumentVersionsAndStatusesCannotBeRewound(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack documents Pte Ltd")
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		d, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"lines":[]}`)})
+		if err == nil {
+			err = u.Documents().SetStatus(ctx, d.ID, storage.DocumentPosted)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct{ role, stmt, state string }{
+		{"fyniq_migrator", "UPDATE fyniq.document_version SET payload = '{}'", "FY002"},
+		{"fyniq_migrator", "DELETE FROM fyniq.document_version", "FY002"},
+		{"fyniq_api", "UPDATE fyniq.document_version SET payload = '{}'", "42501"},
+		{"fyniq_api", "UPDATE fyniq.document SET status = 'draft'", "FY051"},
+		{"fyniq_api", "UPDATE fyniq.document SET type = 'invoice'", "42501"},
+		{"fyniq_migrator", "UPDATE fyniq.document SET type = 'journal', created_at = now() - interval '1 day'", "FY050"},
+		{"fyniq_api", "UPDATE fyniq.document SET current_version = 2", "23503"},
+		{"fyniq_ai", "INSERT INTO fyniq.document (type) VALUES ('journal')", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.role+": "+c.stmt, err, c.state)
 	}
 }

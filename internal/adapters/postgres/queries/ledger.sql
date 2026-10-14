@@ -31,3 +31,6 @@ FROM fyniq.journal_line WHERE entry_id = $1 ORDER BY line_no;
 
 -- name: GetLedgerRevision :one
 SELECT revision FROM fyniq.ledger_revision;
+
+-- name: GetEntryIDByIdentity :one
+SELECT id FROM fyniq.journal_entry WHERE posting_identity = $1;

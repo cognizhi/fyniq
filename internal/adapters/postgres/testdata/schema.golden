@@ -26,6 +26,18 @@ currencies | name | text | null |
 currency | code | text | not null | 
 currency | minor_units | smallint | not null | 
 currency | name | text | not null | 
+document | organisation_id | uuid | not null | current_org()
+document | id | uuid | not null | uuidv7()
+document | type | text | not null | 
+document | status | text | not null | 'draft'::text
+document | current_version | integer | not null | 1
+document | created_at | timestamp with time zone | not null | now()
+document_version | organisation_id | uuid | not null | current_org()
+document_version | id | uuid | not null | uuidv7()
+document_version | document_id | uuid | not null | 
+document_version | version | integer | not null | 
+document_version | payload | jsonb | not null | 
+document_version | created_at | timestamp with time zone | not null | now()
 idempotency_key | organisation_id | uuid | not null | current_org()
 idempotency_key | id | uuid | not null | uuidv7()
 idempotency_key | client_id | text | not null | 
@@ -127,6 +139,30 @@ currency | currency_minor_units_range | CHECK (((minor_units >= 0) AND (minor_un
 currency | currency_name_length | CHECK (((length(name) >= 1) AND (length(name) <= 100)))
 currency | currency_name_not_null | NOT NULL name
 currency | currency_pkey | PRIMARY KEY (code)
+document | document_created_at_not_null | NOT NULL created_at
+document | document_current_version_fkey | FOREIGN KEY (organisation_id, id, current_version) REFERENCES document_version(organisation_id, document_id, version) DEFERRABLE INITIALLY DEFERRED
+document | document_current_version_not_null | NOT NULL current_version
+document | document_current_version_positive | CHECK ((current_version > 0))
+document | document_id_not_null | NOT NULL id
+document | document_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+document | document_organisation_id_not_null | NOT NULL organisation_id
+document | document_pkey | PRIMARY KEY (organisation_id, id)
+document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
+document | document_status_not_null | NOT NULL status
+document | document_type_known | CHECK ((type = 'journal'::text))
+document | document_type_not_null | NOT NULL type
+document_version | document_version_created_at_not_null | NOT NULL created_at
+document_version | document_version_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+document_version | document_version_document_id_not_null | NOT NULL document_id
+document_version | document_version_id_not_null | NOT NULL id
+document_version | document_version_key | UNIQUE (organisation_id, document_id, version)
+document_version | document_version_organisation_id_not_null | NOT NULL organisation_id
+document_version | document_version_payload_not_null | NOT NULL payload
+document_version | document_version_payload_object | CHECK ((jsonb_typeof(payload) = 'object'::text))
+document_version | document_version_payload_size | CHECK ((octet_length((payload)::text) <= 1048576))
+document_version | document_version_pkey | PRIMARY KEY (organisation_id, id)
+document_version | document_version_positive | CHECK ((version > 0))
+document_version | document_version_version_not_null | NOT NULL version
 idempotency_key | idempotency_key_client_id_not_null | NOT NULL client_id
 idempotency_key | idempotency_key_client_key | UNIQUE (organisation_id, client_id, key)
 idempotency_key | idempotency_key_client_length | CHECK (((length(client_id) >= 1) AND (length(client_id) <= 200)))
@@ -246,6 +282,9 @@ CREATE UNIQUE INDEX balance_key ON fyniq.balance USING btree (organisation_id, a
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
+CREATE UNIQUE INDEX document_pkey ON fyniq.document USING btree (organisation_id, id)
+CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
+CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
 CREATE UNIQUE INDEX idempotency_key_pkey ON fyniq.idempotency_key USING btree (organisation_id, id)
 CREATE UNIQUE INDEX journal_entry_pkey ON fyniq.journal_entry USING btree (organisation_id, id)
@@ -262,6 +301,10 @@ CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
+CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
+CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_entry_no_truncate BEFORE TRUNCATE ON fyniq.journal_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
@@ -275,31 +318,35 @@ CREATE TRIGGER organisation_guard BEFORE UPDATE ON fyniq.organisation FOR EACH R
 CREATE TRIGGER period_guard BEFORE UPDATE ON fyniq.period FOR EACH ROW EXECUTE FUNCTION period_guard()
 
 ## policies
-account | tenant_isolation | 42 | (organisation_id = current_org()) | (organisation_id = current_org())
-balance | tenant_isolation | 42 | (organisation_id = current_org()) | (organisation_id = current_org())
-idempotency_key | tenant_isolation | 42 | (organisation_id = current_org()) | (organisation_id = current_org())
-journal_entry | tenant_isolation | 42 | (organisation_id = current_org()) | (organisation_id = current_org())
-journal_line | tenant_isolation | 42 | (organisation_id = current_org()) | (organisation_id = current_org())
-ledger_revision | tenant_isolation | 42 | (organisation_id = current_org()) | (organisation_id = current_org())
-organisation | tenant_isolation | 42 | (organisation_id = current_org()) | (organisation_id = current_org())
-period | tenant_isolation | 42 | (organisation_id = current_org()) | (organisation_id = current_org())
+account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+organisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
 ## functions
-account_guard() → trigger | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | 85b01568dbabe687758f205a5d1d738b
-balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | 115 | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
-check_entry_balanced() → trigger | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
-current_org() → uuid | security invoker | 115 |  | ccd639871b0224831bc4e64411db643e
-journal_entry_assign() → trigger | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
-journal_immutable() → trigger | security invoker | 118 | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
-journal_line_balances() → trigger | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
-journal_line_check() → trigger | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | a08448dfac396ac97236dad4b8dbc36e
-ledger_revision_guard() → trigger | security invoker | 118 | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
-lock_ledger() → bigint | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
-organisation_created() → trigger | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
-organisation_guard() → trigger | security invoker | 118 | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
-period_guard() → trigger | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
-rebuild_balances() → bigint | security definer | 118 | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
-require_org() → uuid | security invoker | 115 | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
+account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 85b01568dbabe687758f205a5d1d738b
+balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
+check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
+current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
+document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae8d292019dce37ac1cadb594f5dbe0c
+document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
+journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
+journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
+journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
+journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a08448dfac396ac97236dad4b8dbc36e
+ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
+lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
+organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
+organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
+period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
+rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
+require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
 
 ## extensions
 btree_gist | fyniq_ext

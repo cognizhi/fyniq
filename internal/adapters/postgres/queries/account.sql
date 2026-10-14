@@ -13,3 +13,6 @@ SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.
 UPDATE fyniq.account SET is_active = sqlc.arg(is_active), version = version + 1
 WHERE id = sqlc.arg(id)
 RETURNING id, code, name, type, parent_id, is_group, is_active, version;
+
+-- name: ListAccounts :many
+SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account ORDER BY code;

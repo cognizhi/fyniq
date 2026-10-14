@@ -42,10 +42,11 @@ func (u *unitOfWork) Organisation(ctx context.Context) (storage.Organisation, er
 		BaseMinorUnits: int(row.BaseMinorUnits), Version: int(row.Version)}, nil
 }
 
-func (u *unitOfWork) Accounts() storage.Accounts { return accounts{u} }
-func (u *unitOfWork) Periods() storage.Periods   { return periods{u} }
-func (u *unitOfWork) Ledger() storage.Ledger     { return ledger{u} }
-func (u *unitOfWork) Balances() storage.Balances { return balances{u} }
+func (u *unitOfWork) Accounts() storage.Accounts   { return accounts{u} }
+func (u *unitOfWork) Periods() storage.Periods     { return periods{u} }
+func (u *unitOfWork) Documents() storage.Documents { return documents{u} }
+func (u *unitOfWork) Ledger() storage.Ledger       { return ledger{u} }
+func (u *unitOfWork) Balances() storage.Balances   { return balances{u} }
 
 // ------------------------------------------------------------------ accounts
 
@@ -99,6 +100,71 @@ func (r accounts) SetActive(ctx context.Context, id uuid.UUID, active bool) (sto
 		return storage.Account{}, mapError(err)
 	}
 	return toAccount(row.ID, row.Code, row.Name, row.Type, row.ParentID, row.IsGroup, row.IsActive, row.Version), nil
+}
+
+func (r accounts) List(ctx context.Context) ([]storage.Account, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ListAccounts(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Account, 0, len(rows))
+	for _, a := range rows {
+		out = append(out, toAccount(a.ID, a.Code, a.Name, a.Type, a.ParentID, a.IsGroup, a.IsActive, a.Version))
+	}
+	return out, nil
+}
+
+// ------------------------------------------------------------------ documents
+
+type documents struct{ u *unitOfWork }
+
+func (r documents) Create(ctx context.Context, d storage.NewDocument) (storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Document{}, err
+	}
+	row, err := r.u.q.InsertDocument(ctx, string(d.Type))
+	if err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	if err := r.u.q.InsertDocumentVersion(ctx, sqlcdb.InsertDocumentVersionParams{DocumentID: row.ID, Version: row.CurrentVersion, Payload: d.Payload}); err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+		Version: int(row.CurrentVersion), Payload: d.Payload}, nil
+}
+
+func (r documents) Get(ctx context.Context, id uuid.UUID) (storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Document{}, err
+	}
+	row, err := r.u.q.GetDocument(ctx, id)
+	if err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+		Version: int(row.CurrentVersion), Payload: row.Payload}, nil
+}
+
+func (r documents) Lock(ctx context.Context, id uuid.UUID) (storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Document{}, err
+	}
+	row, err := r.u.q.LockDocument(ctx, id)
+	if err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+		Version: int(row.CurrentVersion), Payload: row.Payload}, nil
+}
+
+func (r documents) SetStatus(ctx context.Context, id uuid.UUID, to storage.DocumentStatus) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	return mapError(r.u.q.SetDocumentStatus(ctx, sqlcdb.SetDocumentStatusParams{ID: id, Status: string(to)}))
 }
 
 // ------------------------------------------------------------------ periods
@@ -246,6 +312,17 @@ func (r ledger) Entry(ctx context.Context, id uuid.UUID) (storage.Entry, error) 
 		e.Lines = append(e.Lines, line)
 	}
 	return e, nil
+}
+
+func (r ledger) ByIdentity(ctx context.Context, postingIdentity string) (storage.Entry, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Entry{}, err
+	}
+	id, err := r.u.q.GetEntryIDByIdentity(ctx, postingIdentity)
+	if err != nil {
+		return storage.Entry{}, mapError(err)
+	}
+	return r.Entry(ctx, id)
 }
 
 func (r ledger) Revision(ctx context.Context) (int64, error) {

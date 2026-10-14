@@ -10,10 +10,10 @@ AI answer comes through **one balance service** (ENG-04). If the ledger is right
 the balance service, the reports cannot disagree. Measures from other sources (subscriptions, time,
 the equity register) are named measures that declare their source (FR-KPI-03, PRD rev 0.8).
 
-> **Status:** the database backstop exists (`db/migrations`, `internal/ports/storage`,
-> `internal/adapters/postgres`; error codes and roles in `db/README.md`); the engine, money and
-> oracle arrive with the next P0 changes. The paths below are the PRD §12.4 layout. Treat
-> them as the contract. When the code lands, keep this skill in step with it.
+> **Status:** built in P0: the database backstop (`db/`, `internal/ports/storage`,
+> `internal/adapters/postgres`; roles and error codes in `db/README.md`) and the money, rounding,
+> engine, manual journal and balance service under `internal/domain/` (p0-money-posting-engine).
+> The oracle (`oracle/`) is next. P1 sources add rule sets beside the manual journal.
 
 ## Mental model
 
@@ -37,10 +37,11 @@ document version ──► posting engine (pure) ──► journal_entry + journ
 
 | Path | Holds |
 |---|---|
-| `internal/money/` | `Money` (cockroachdb/apd v3 decimal + ISO 4217 code), currency minor units, the named rounding and allocation policies |
-| `internal/engine/` | One rule set per source (`banktxn`, `invoice`, `bill`, `payrun`, `asset`, `journal`, `claim`, `fxreval`, …), each versioned |
-| `internal/ledger/` | `post_entry()`, entry and line types, idempotency keys, reversal helpers |
-| `internal/balance/` | The balance service: account × period × dimension-set × currency, "as at" a ledger revision (ENG-46, FR-RPT-08) |
+| `internal/domain/money/` | `Money` (cockroachdb/apd v3 decimal + ISO 4217 currency), strict parsing (ENG-44), `Rate`, decimal-string JSON (ENG-12); no float anywhere (an architecture test, ENG-10) |
+| `internal/domain/rounding/` | The named policies (`RND-FX`, `ALLOC-EVEN`, `ALLOC-PRORATA` today; the statutory ones with their P1 sources) |
+| `internal/domain/ledger/` | The pure engine: `PostJournal`, `Reverse`, posting identities, validation codes `LEDGER-nn` (ENG-22); P1 rule sets join it, each versioned |
+| `internal/domain/journal/` | The manual journal document: create, post, reverse, each in one unit of work (ENG-02) |
+| `internal/domain/balance/` | The balance service (ENG-04): trial balances from the materialised balances; dimension sets and "as at" revisions come with reporting (ENG-46, FR-RPT-08) |
 | `internal/params/` | Lookup of the parameter-pack version in force at a tax point or pay month (ENG-31) |
 | `db/migrations/` | Tables, `NUMERIC` precision per column family, the constraints and triggers behind INV-01…06 |
 | `oracle/` | The **independent** Python reference ledger (QA-ENG-01) |

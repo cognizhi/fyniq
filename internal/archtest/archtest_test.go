@@ -163,3 +163,110 @@ func TestOnlyTheUnitOfWorkBeginsOrEndsTransactions(t *testing.T) {
 		t.Fatalf("want 2 planted calls (Begin, Commit), got %v, %v", planted, err)
 	}
 }
+
+// goFiles calls fn with every non-test Go file under dir (relative to the repository root).
+func goFiles(t *testing.T, dir string, fn func(rel string, src []byte)) {
+	t.Helper()
+	root := repoRoot(t)
+	err := filepath.WalkDir(filepath.Join(root, dir), func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			switch d.Name() {
+			case "testdata", "node_modules", ".git", ".data":
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		src, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(root, path)
+		fn(rel, src)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// req: ENG-10
+func TestNoFloatingPointInMoneyCode(t *testing.T) {
+	var found []string
+	for _, dir := range MoneyPackages {
+		goFiles(t, dir, func(rel string, src []byte) {
+			uses, err := FloatUses(rel, src)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found = append(found, uses...)
+		})
+	}
+	if len(found) > 0 {
+		t.Fatalf("binary floating point in money code:\n%s", strings.Join(found, "\n"))
+	}
+	planted := []byte("package x\nimport (\"math\"; s \"strconv\")\nvar a float64 = 1.5\nfunc f() { _ = math.Pi; _, _ = s.ParseFloat(\"1\", 64); var b float32; _ = b }\n")
+	uses, err := FloatUses("x.go", planted)
+	if err != nil || len(uses) != 5 {
+		t.Fatalf("want 5 planted uses (math, float64, 1.5, ParseFloat, float32), got %d: %v", len(uses), uses)
+	}
+}
+
+// req: ENG-04
+func TestOnlyTheBalanceServiceReadsBalances(t *testing.T) {
+	var found []string
+	goFiles(t, ".", func(rel string, src []byte) {
+		for _, allowed := range BalanceReaders {
+			if strings.HasPrefix(filepath.ToSlash(rel), allowed+"/") {
+				return
+			}
+		}
+		calls, err := BalanceCalls(rel, src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found = append(found, calls...)
+	})
+	if len(found) > 0 {
+		t.Fatalf("balances read outside the balance service:\n%s", strings.Join(found, "\n"))
+	}
+	// No query of the adapter sums journal lines: the balances come from the cache the database keeps.
+	queries, err := filepath.Glob(filepath.Join(repoRoot(t), "internal", "adapters", "postgres", "queries", "*.sql"))
+	if err != nil || len(queries) == 0 {
+		t.Fatalf("no queries found: %v", err)
+	}
+	for _, q := range queries {
+		src, _ := os.ReadFile(q)
+		for _, stmt := range strings.Split(string(src), "-- name:") {
+			lower := strings.ToLower(stmt)
+			if strings.Contains(lower, "journal_line") && strings.Contains(lower, "sum(") {
+				t.Errorf("%s sums journal lines: ledger figures come from the balance service (ENG-04)", filepath.Base(q))
+			}
+		}
+	}
+	if calls, _ := BalanceCalls("x.go", []byte("package x\nfunc f(u U) { u.Balances().ForPeriod(nil, x) }\n")); len(calls) != 1 {
+		t.Fatalf("want 1 planted call, got %v", calls)
+	}
+}
+
+// req: QA-ENG-04
+func TestMutationTestingCoversMoneyRoundingAndTheEngine(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join(repoRoot(t), "Makefile"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mk := string(src)
+	for _, want := range []string{"internal/domain/money", "internal/domain/rounding", "internal/domain/ledger", "--threshold-efficacy 90"} {
+		if !strings.Contains(mk, want) {
+			t.Errorf("make mutation no longer has %q: QA-ENG-04 needs money, rounding and the engine at 90%% or more", want)
+		}
+	}
+	if !strings.Contains(mk, "@$(MAKE) --no-print-directory mutation") {
+		t.Error("make ci no longer runs make mutation (QA-ENG-04)")
+	}
+}

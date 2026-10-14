@@ -27,9 +27,9 @@ PostgreSQL 17+ that passes the conformance and attack suites (NFR-PORT-02).
 | Role | Logs in as | May |
 |---|---|---|
 | `fyniq_migrator` | the `migrate` job only | Own every object, create the roles below. Created by the environment before the first run: locally by `migrate up` in the local build, in the cloud by p0-infra-opentofu |
-| `fyniq_api` | the `api` service | Read the tenant tables; create organisations, accounts, periods and journal entries; close and reopen periods |
+| `fyniq_api` | the `api` service | Read the tenant tables; create organisations, accounts, periods, documents and journal entries; close and reopen periods; post and reverse documents |
 | `fyniq_worker` | `worker` and the jobs | Read; post scheduled entries; verify and rebuild the balances cache; delete expired idempotency keys |
-| `fyniq_executor` | the proposal executor | Read; post the entries of approved proposals |
+| `fyniq_executor` | the proposal executor | Read; create and post the documents and entries of approved proposals |
 | `fyniq_ai` | the AI orchestrator | Nothing: no table grant, no write, ever (AI-P2, CMP-AI-01). Inserting proposals arrives with the proposal tables in P1 |
 | `fyniq_readonly` | investigations and reports | Read |
 
@@ -70,7 +70,8 @@ uses the password `fyniq-local-only`, valid nowhere else (SEC-12).
 | INV-08 balances cache = lines | `journal_line_balances` in the posting statement; `balance_differences()`, `rebuild_balances()` | `TestRandomPostingsKeepTheCacheAndTrialBalanceExact` |
 | INV-09 trial balance nets to zero | Follows from INV-01 | the same test |
 | ENG-46 gap-free ledger revision | `journal_entry_assign` takes the next revision under the revision row's lock; `ledger_revision_guard` | `TestRaceRevisionsAreGapFreeAndAsAtIsStable` |
-| ENG-47 lock order | Revision row, then period; `lock_ledger()` for close and reopen; `period_guard` records the revision at close | the race tests |
+| ENG-47 lock order | The source document `FOR UPDATE`, then the revision row, then the period; `lock_ledger()` for close and reopen; `period_guard` records the revision at close | the race tests |
+| Documents (§11.4, FR-GL-12) | `document_version` rows immutable; `document_guard`: draft → posted → reversed only, type fixed, version only forward; the current version must exist (deferred FK) | `TestAttackDocumentVersionsAndStatusesCannotBeRewound` |
 
 INV-07, INV-10, INV-11 and INV-13 arrive with their modules in P1; INV-12 with p0-audit-chain.
 
@@ -94,5 +95,7 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY040 | STORAGE-ACCOUNT-01 | An account's code and type cannot change |
 | FY041 | STORAGE-ACCOUNT-02 | The account tree is invalid (parent not a group, a cycle, a group with postings) |
 | FY046 | STORAGE-REV-01 | The ledger revision only increases by one |
+| FY050, FY052 | STORAGE-DOC-01 | A document's type cannot change, nor its version go back |
+| FY051 | STORAGE-DOC-02 | A document moves only draft → posted → reversed |
 | 40001, 40P01 | STORAGE-RETRY-01 | Serialisation failure or deadlock: retry with the same Idempotency-Key (ENG-47) |
 | 55P03 | STORAGE-LOCK-01 | A lock wait exceeded the unit of work's lock timeout (5 s by default, ENG-47) |
