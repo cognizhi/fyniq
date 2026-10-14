@@ -261,7 +261,7 @@ Source: PRD-001 §F.1
 
 #### Scenario: Framework mapping
 - **WHEN** the control is listed in the control registry
-- **THEN** it is mapped to COSO P10, SOC2 PI1 and the Companies Act (register of members) [verify section]
+- **THEN** it is mapped to COSO P10, SOC2 PI1 and the Companies Act (ACRA's electronic register of members)
 
 ### Requirement: CTL-AUD-01 Every state change emits an audit event in the same transaction
 Every state change SHALL emit an audit event in the same transaction. The control is checked on every change in CI and nightly, with the test report kept as evidence.

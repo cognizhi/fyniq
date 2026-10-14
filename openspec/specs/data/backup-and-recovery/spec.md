@@ -41,7 +41,7 @@ Source: PRD-001 §11.8 · Priority M · Phase P1
 
 #### Scenario: Singapore data boundary for P3
 - **WHEN** P3 is planned
-- **THEN** the Assured Workloads Singapore data-boundary package is evaluated [verify fit and cost]
+- **THEN** the Assured Workloads Singapore Data Boundary package (free tier) is evaluated for fit against the products used
 
 ### Requirement: DR-04 Disaster-recovery copy and posture
 A disaster-recovery copy outside Singapore SHALL be made only after a documented PDPA transfer-limitation assessment (§14).
@@ -132,7 +132,7 @@ Source: PRD-001 §11.9
 
 #### Scenario: Which financial year counts
 - **WHEN** the retention of a record is computed
-- **THEN** it runs from the end of the financial year in which the transactions it records are completed, Companies Act s199(2) [verify]
+- **THEN** it runs from the end of the financial year in which the transactions it records are completed, Companies Act s199(1) and (2A)
 
 #### Scenario: Default and legal hold
 - **WHEN** no other retention is set

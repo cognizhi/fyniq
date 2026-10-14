@@ -89,7 +89,7 @@ Source: PRD-001 §10.6 · Priority M · Phase P1
 
 #### Scenario: Deposit that is part payment
 - **WHEN** a deposit that is part payment is received
-- **THEN** it is taxed when received [verify]
+- **THEN** it is taxed when received
 
 #### Scenario: Security deposit
 - **WHEN** a security deposit is received
@@ -105,11 +105,11 @@ Source: PRD-001 §10.6 · Priority M · Phase P1
 
 #### Scenario: Input-tax return period from the claim-date policy
 - **WHEN** input tax is claimed
-- **THEN** its return period comes from the organisation's claim-date policy: the invoice date, or the date the invoice is recorded [verify]
+- **THEN** its return period comes from the organisation's claim-date policy: the invoice date, or the date the invoice is recorded, used consistently
 
 #### Scenario: Supplies spanning a registration, deregistration or rate change
 - **WHEN** a supply spans a GST registration, deregistration or rate change
-- **THEN** it follows the transitional rules in the pack [verify]
+- **THEN** it follows the transitional rules in the pack
 
 #### Scenario: Spreads never move GST
 - **WHEN** a document's revenue or cost is spread over several periods
@@ -135,7 +135,7 @@ Source: PRD-001 §10.6 · Priority M · Phase P1
 - **GIVEN** a service invoiced monthly and a GST registration that takes effect mid-service
 - **WHEN** the invoices are posted
 - **THEN** invoices with a tax point before the registration date carry no GST
-- **AND** later ones do, under the pack's transitional rule [verify]
+- **AND** later ones do, under the pack's transitional rule
 
 #### Scenario: G4-021 Supplier invoice recorded after the return was filed
 - **GIVEN** a supplier invoice dated in Q1 and recorded in Q2 after the Q1 return was filed

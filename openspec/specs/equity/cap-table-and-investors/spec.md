@@ -64,7 +64,7 @@ Source: PRD-001 §8.23 · Priority M · Phase P1
 #### Scenario: Transfer between holders
 - **WHEN** shares are transferred between holders
 - **THEN** no entry is made in the company's books
-- **AND** share duty on the transfer document is the parties' matter, on the higher of price and net asset value [verify rate]
+- **AND** share duty on the transfer document is the parties' matter, at 0.2% of the higher of price and net asset value
 
 #### Scenario: Transfer takes effect at ACRA
 - **WHEN** a transfer's ACRA tasks open
@@ -157,7 +157,7 @@ Source: PRD-001 §8.23 · Priority S · Phase P1 (register) / P2 (expense, IR8A)
 #### Scenario: Expense and IR8A data in P2
 - **GIVEN** phase P2
 - **WHEN** grants exist
-- **THEN** share-based payment expense schedules (FR-EQ-13) and the employee share-gains data for IR8A (Appendix 8B [verify]) are produced
+- **THEN** share-based payment expense schedules (FR-EQ-13) and the employee share-gains data for IR8A (Appendix 8B, taxable on exercise) are produced
 
 ### Requirement: FR-EQ-20 Cap table at any date
 The system SHALL compute the cap table at any date from the equity transactions; it is never edited directly.

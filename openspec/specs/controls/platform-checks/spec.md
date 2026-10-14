@@ -627,6 +627,11 @@ Source: PRD-001 §C.2
 - **WHEN** no payslip has been issued within 3 working days of a salary payment
 - **THEN** the check flags it as due
 
+#### Scenario: Without Nemura
+- **GIVEN** a company that pays staff without Nemura
+- **WHEN** salary is paid
+- **THEN** the check confirms the FR-PAY-15 arrangement is recorded, since Fyniq issues no payslips
+
 #### Scenario: Payslip issued in time
 - **WHEN** the payslip is issued within 3 working days of the salary payment
 - **THEN** the check does not flag it

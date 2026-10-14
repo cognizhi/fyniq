@@ -65,7 +65,7 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **AND** CTL-AUD-03 passes
 
 ### Requirement: FR-DOC-04 Issued documents kept with a hash
-Generated documents (invoices, payslips, reports) SHALL be stored as issued, with a hash, so a re-issued copy can be proven identical.
+Generated documents (invoices, Nemura's payslips, reports) SHALL be stored as issued, with a hash, so a re-issued copy can be proven identical.
 
 Source: PRD-001 §8.16 · Priority M · Phase P1
 

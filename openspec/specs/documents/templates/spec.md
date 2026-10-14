@@ -104,7 +104,7 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **AND** in Founder mode it is self-approved with the weekly review
 
 ### Requirement: FR-TPL-05 Document types
-The system SHALL provide templates for invoices, quotes, credit notes, receipts, customer statements, reminder letters, remittance advice, purchase orders and, in P2, payslips, plus email templates.
+The system SHALL provide templates for invoices, quotes, credit notes, receipts, customer statements, reminder letters, remittance advice, purchase orders and, in P2, payslips (used by Nemura through the shared engine; Fyniq issues none), plus email templates.
 
 Source: PRD-001 §8.25 · Priority M · Phase P1
 

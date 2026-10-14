@@ -170,7 +170,7 @@ Source: PRD-001 §8.24 · Priority M · Phase P0 (Zoho issuer check, §17.3) / P
 
 #### Scenario: Live Zoho sign-in is a P0 exit test
 - **WHEN** P0 exits
-- **THEN** a live sign-in through each configured Zoho data centre has passed (§17.3 item 7), since the issuer format in Zoho's tokens is not confirmed [verify]
+- **THEN** a live sign-in through each configured Zoho data centre has passed (§17.3 item 7), since only the discovery issuers (`https://accounts.zoho.<tld>` per data centre) are confirmed, not the `iss` in a real token
 
 #### Scenario: Identities keyed by issuer and subject
 - **WHEN** a user signs in through any provider

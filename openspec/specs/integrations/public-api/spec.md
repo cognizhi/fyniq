@@ -124,7 +124,7 @@ Source: PRD-001 §8.18.1 · Priority M · Phase P1
 - **THEN** the error lists every invalid field at once
 
 ### Requirement: FR-INT-08 Idempotency
-Every `POST` that creates or changes state SHALL accept an `Idempotency-Key` header, stored 24 hours per client [verify the status of the IETF idempotency-key draft at P0].
+Every `POST` that creates or changes state SHALL accept an `Idempotency-Key` header, stored 24 hours per client (the IETF draft expired without an RFC; Fyniq's contract defines the header).
 
 Source: PRD-001 §8.18.1 · Priority M · Phase P1
 
@@ -259,7 +259,7 @@ Source: PRD-001 §8.18.1 · Priority S · Phase P2
 - **AND** the client writes no SQL
 
 ### Requirement: FR-INT-16 Rate limits and quotas
-The API SHALL signal rate limits and quotas with `RateLimit` / `RateLimit-Policy` headers [verify the IETF draft status at P0] and `Retry-After` on 429.
+The API SHALL signal rate limits and quotas with `RateLimit` / `RateLimit-Policy` headers (an IETF draft) and `Retry-After` on 429.
 
 Source: PRD-001 §8.18.1 · Priority M · Phase P1
 

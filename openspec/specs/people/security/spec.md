@@ -103,7 +103,7 @@ Source: PRD-002 §20 · Priority M · Phase P1
 
 #### Scenario: Evaluative opinions
 - **WHEN** a candidate asks for the opinions formed about them
-- **THEN** opinions kept solely for evaluation are withheld, and the exception is recorded [verify the current PDPC edition with the DPO]
+- **THEN** opinions kept solely for evaluation are withheld, and the exception is recorded (PDPC Selected Topics guidelines §6.10, revised 23 May 2024)
 
 #### Scenario: Withdrawal of consent
 - **WHEN** an employee withdraws consent

@@ -39,7 +39,7 @@ Source: PRD-001 §8.22
 #### Scenario: Waive
 - **WHEN** a founder waives their balance as a shareholder and receives nothing
 - **THEN** the posting is Dr 2500 / Cr 3300 capital contribution, with a deed of waiver or written resolution
-- **AND** it has no tax effect for the founder; for the company a waived non-trade loan is generally capital (IRAS ruled so for one applicant in 2026), while waiving an amount the company deducted earlier (pay, fees) may be taxable [verify]
+- **AND** it has no tax effect for the founder; for the company a waived non-trade loan is generally capital (IRAS Advance Ruling Summary 15/2026, binding only on that applicant), while waiving an amount the company deducted earlier (pay, fees) may be taxable [verify]
 
 #### Scenario: Convert to a SAFE or convertible note
 - **WHEN** a founder's balance is converted to a SAFE or convertible note

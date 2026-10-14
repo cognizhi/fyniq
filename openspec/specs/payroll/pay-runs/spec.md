@@ -23,7 +23,7 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 - **THEN** each employee has employee CPF, employer CPF, SDL, SHG, net pay and total cost
 
 ### Requirement: FR-PAY-02 CPF contributions
-The system SHALL compute CPF by residency, PR year and age band from effective-dated tables, with the Ordinary and Additional Wage ceilings, graduated rates and CPF Board rounding [re-verify every January].
+The system SHALL compute CPF by residency, PR year and age band from effective-dated tables, with the Ordinary and Additional Wage ceilings, graduated rates and CPF Board rounding, re-checked every January.
 
 Source: PRD-001 §8.7 · Priority M · Phase P1
 
@@ -92,7 +92,7 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 #### Scenario: Organisation with only foreign employees
 - **GIVEN** an organisation whose employees are all foreign employees
 - **WHEN** its SDL is paid
-- **THEN** it is paid directly to the agency CPF Board names [verify]
+- **THEN** it is paid directly to the Skills and Workforce Development Agency (SWDA)
 
 #### Scenario: G4-002 Off-cycle bonus in the same month
 - **GIVEN** the G.2 March employees in one run
@@ -168,11 +168,11 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 #### Scenario: Recalculation with actual OW
 - **WHEN** December or the employee's last month of employment, whichever is earlier, is run
 - **THEN** CPF on AW is recalculated with the actual OW and any shortfall is added to that month
-- **AND** any excess raises a refund task, with the employee's share repaid to the employee [verify against the CPF Board AW guidance]
+- **AND** any excess raises a refund task, with the employee's share repaid to the employee, after the employer's refund application to CPF Board
 
 #### Scenario: SPR start date and full-rate election are effective-dated
 - **WHEN** an employee's SPR start date (PR year) or a joint election to contribute at full rates is recorded
-- **THEN** it is effective-dated and carries its evidence [verify]
+- **THEN** it is effective-dated and carries its evidence (graduated G/G by default; F/G or F/F after a joint application)
 
 #### Scenario: Overrides and corrections belong to the employee-month
 - **WHEN** an override (FR-PAY-06) or a correction is made for an employee
@@ -200,7 +200,7 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 - **AND** the liabilities post to 2100 Salaries payable and 2110 CPF & SDL payable
 
 ### Requirement: FR-PAY-08 Itemised payslips and key employment terms
-The system SHALL produce itemised payslips with the 12 MOM items and SHALL generate key employment terms (KETs).
+Itemised payslips with the 12 MOM items and key employment terms (KETs) SHALL be produced by Nemura or the payroll provider, never by Fyniq; Fyniq SHALL record how a company without Nemura meets them (FR-PAY-15).
 
 Source: PRD-001 §8.7 · Priority M · Phase P2
 
@@ -219,7 +219,13 @@ Source: PRD-001 §8.7 · Priority M · Phase P2
 
 #### Scenario: KETs generator
 - **WHEN** key employment terms are needed for an employee
-- **THEN** the KETs generator produces them
+- **THEN** Nemura's KETs generator produces them (PRD-002 NM-LTR-06), or the payroll provider's
+
+#### Scenario: A company without Nemura
+- **GIVEN** a company on Fyniq that pays staff without Nemura
+- **WHEN** a pay run is approved for payment
+- **THEN** Fyniq has recorded how payslips and KETs are met (a named provider or a documented manual process) under FR-PAY-15
+- **AND** Fyniq itself issues no payslip
 
 ### Requirement: FR-PAY-09 CPF submission file
 The system SHALL produce a CPF submission file for EZPay / One-Stop Payroll, as there is no public CPF API.
@@ -248,8 +254,8 @@ Source: PRD-001 §8.7 · Priority M from 5 employees; else S · Phase P2 / P1 (I
 #### Scenario: IR21 applicability
 - **WHEN** an employee ceases employment, is posted overseas or leaves Singapore for more than 3 months
 - **THEN** IR21 applies to non-citizen employees per IRAS
-- **AND** to SPRs only when leaving permanently or posted overseas [verify]
-- **AND** an exemption is recorded with its reason
+- **AND** to SPRs only when leaving permanently or posted overseas (otherwise a Letter of Undertaking)
+- **AND** an exemption is recorded with its reason, such as 60 days or less worked in the calendar year (not for a director), or a posting of 3 to 6 months returning to the same employer
 
 #### Scenario: IR21 filing deadline
 - **WHEN** IR21 applies
@@ -315,7 +321,7 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 - **THEN** it is a blocking error (✖) at approval
 
 ### Requirement: FR-PAY-16 Salary deduction limits
-For employees covered by the Employment Act [verify coverage], the pay run SHALL check salary deductions, separately from the journal, against the kinds MOM allows, the 50% limit and the limits on recovering advances, and SHALL name the rule a breach breaks.
+For employees covered by the Employment Act, the pay run SHALL check salary deductions, separately from the journal, against the kinds MOM allows, the 50% limit and the limits on recovering advances, and SHALL name the rule a breach breaks.
 
 Source: PRD-001 §8.7 · Priority M · Phase P1
 
@@ -336,7 +342,7 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 
 #### Scenario: Advance open at termination
 - **GIVEN** an employee leaves with an advance not yet recovered
-- **WHEN** the final pay run is computed, while it is not settled whether the advance limits apply to final pay [verify with the accountant, G4-007]
+- **WHEN** the final pay run is computed, while it is not settled whether the 12-month and 25% instalment limits stop the rest of an advance being recovered from final pay (the 50% cap does not apply on termination)
 - **THEN** the pay run recovers no more of the advance from final pay than the employee has consented to in writing
 - **AND** it shows the open advance for a person to decide
 
@@ -372,7 +378,7 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 
 #### Scenario: Commission paid less often than monthly
 - **WHEN** commission is paid less often than monthly
-- **THEN** its CPF class follows CPF Board's guidance on commission [verify]
+- **THEN** it is ordinary wages only when it is for the month and payable by the 14th of the next month, additional wages otherwise
 
 ### Requirement: FR-PAY-18 What a run pays out
 A run SHALL keep separate totals for gross wages, contributions, deductions authorised under FR-PAY-16, non-wage reimbursements and monies held under FR-PAY-10, and SHALL compute each person's amount to disburse as net pay + reimbursements − held monies, each source item used once.
@@ -454,7 +460,7 @@ Source: PRD-001 §G.2
 
 #### Scenario: PR aged 60 to 65 in March
 - **GIVEN** 2026 CPF rates
-- **WHEN** a PR aged 60–65 from the third year of PR status (full rates; first- and second-year rates are graduated, ENG-30 [verify]), opted out of SHG, is paid gross 4,000.00 in March
+- **WHEN** a PR aged 60–65 from the third year of PR status (full rates; first- and second-year rates are graduated, ENG-30), opted out of SHG, is paid gross 4,000.00 in March
 - **THEN** EE CPF is 500, ER CPF 500, SDL 10.00 and net 3,500
 
 #### Scenario: Employee aged 65 to 70 in March
@@ -481,7 +487,7 @@ Source: PRD-001 §G.2
 - **GIVEN** an employee is paid gross 700.00 in March, below the S$750 floor
 - **WHEN** the expected values are pinned
 - **THEN** its CPF-dependent values are re-derived by hand from the CPF Board tables with graduated rates (FR-PAY-02), not taken from the workbook's row (EE 140, ER 119, net 560), which shows the workbook's ⚠ that graduated rates were not applied
-- **AND** its SDL stays 2.00 (the minimum for remuneration up to S$800 [verify]; SDL does not depend on the graduated CPF rates), so the March SDL total of S$70.75 and the S$70 payable stand
+- **AND** its SDL stays 2.00 (the minimum for an employee earning less than S$800; SDL does not depend on the graduated CPF rates), so the March SDL total of S$70.75 and the S$70 payable stand
 - **AND** the parity test (QA-MIG-01) lists the row in the migration difference register (FR-MIG-02) instead of expecting the workbook's figures
 
 #### Scenario: Wage 700 with overrides in April
@@ -493,7 +499,7 @@ Source: PRD-001 §G.2
 - **GIVEN** 2026 CPF rates
 - **WHEN** an employee aged ≤ 55 is paid gross 7,000.00 in April
 - **THEN** EE CPF is 1,400, ER CPF 1,190, SDL 11.25, SHG 5.00 and net 5,595
-- **AND** the fund and band behind the S$5.00 are confirmed against the CDAC, ECF, MBMF and SINDA tables in the statutory pack before the value is pinned [verify]
+- **AND** the April SHG value is re-derived from the pack for the employee's fund, since S$5.00 is no band at a S$7,000 wage
 
 #### Scenario: March SDL payable
 - **WHEN** the SDL payable for March is computed for the G.2 March employees

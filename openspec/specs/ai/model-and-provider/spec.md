@@ -13,6 +13,7 @@ Source: PRD-001 §9.9 · Priority M · Phase P1
 #### Scenario: Option A is the default at go-live
 - **WHEN** the assistant goes live with the default option
 - **THEN** it uses Claude Opus 4.6 for the chat and agent loop and Sonnet 4.6 for high-volume classification, on the Singapore endpoint
+- **AND** until all three Google pages confirm Sonnet 4.6's processing in Singapore, classification of personal data uses Opus 4.6
 
 #### Scenario: Option B
 - **WHEN** Option B is chosen

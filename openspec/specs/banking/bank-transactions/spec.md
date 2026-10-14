@@ -37,7 +37,7 @@ Source: PRD-001 §8.4 · Priority M · Phase P1 (CSV/XLSX/OFX) / P2
 - **THEN** document AI extracts its lines
 
 ### Requirement: FR-BNK-03 Bank feeds
-The system SHALL take bank feeds through bank APIs, using only the connector kinds of FR-BNK-15, for the Singapore banks Cognizhi uses (DBS, OCBC, UOB, and neo-banks such as Aspire, Airwallex, Wise) [verify available APIs and partners], as detailed in FR-BNK-15…18.
+The system SHALL take bank feeds through bank APIs, using only the connector kinds of FR-BNK-15, for the Singapore banks Cognizhi uses (DBS, OCBC, UOB, and neo-banks such as Aspire, Airwallex, Wise; OCBC's and Aspire's account APIs to confirm with each bank), as detailed in FR-BNK-15…18.
 
 Source: PRD-001 §8.4 · Priority S · Phase P2
 
@@ -221,7 +221,7 @@ Source: PRD-001 §8.4 · Priority S · Phase P1 (file) / P2 (API)
 
 #### Scenario: Bulk-payment file or bank API
 - **WHEN** an approved batch is paid
-- **THEN** a bank bulk-payment file is exported in the GIRO/FAST formats of the banks used [verify], or the payment is initiated through the bank API (P2)
+- **THEN** a bank bulk-payment file is exported in the formats of the banks used (DBS UFF; UOB UFF or ISO 20022; OCBC's from the relationship manager), or the payment is initiated through the bank API (P2)
 
 #### Scenario: Marked paid from the feed
 - **WHEN** the feed shows the debit for a batch
@@ -355,7 +355,7 @@ Source: PRD-001 §8.4 · Priority M · Phase P1 / P2
 
 #### Scenario: Phase 2 prerequisites
 - **WHEN** Phase 2 is set up
-- **THEN** it needs PGP keys in Secret Manager and KMS, a static egress IP (Cloud NAT) for the bank's allowlist, and an HTTPS endpoint for notifications [verify Singapore RAPID security and whether notifications are pushed or polled]
+- **THEN** it needs PGP keys in Secret Manager and KMS, a static egress IP (Cloud NAT) for the bank's allowlist, and an HTTPS endpoint for notifications (RAPID is REST/JSON with PGP; whether inward credit confirmations are pushed or polled is confirmed with DBS)
 
 ### Requirement: FR-BNK-18 Wise and Airwallex
 The system SHALL connect Wise and Airwallex with read-only API keys (scoped where offered), reading balance statements and transactions and receiving signed balance webhooks.

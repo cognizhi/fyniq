@@ -129,13 +129,13 @@ Source: PRD-001 §8.6 · Priority C · Phase P2
 - **AND** the differences are shown
 
 ### Requirement: FR-AP-11 Withholding tax on non-resident payments
-The system SHALL keep records of withholding tax on payments to non-resident service providers and support the S45 form [verify].
+The system SHALL keep records of withholding tax on payments to non-resident service providers and support the S45 form.
 
 Source: PRD-001 §8.6 · Priority C · Phase P3
 
 #### Scenario: Withholding tax records and S45 support
 - **WHEN** tax is withheld on a payment to a non-resident service provider
-- **THEN** the withholding is recorded and S45 form support is provided [verify]
+- **THEN** the withholding is recorded and S45 form support is provided
 
 ### Requirement: FR-AP-19 Non-resident payments: withholding-tax applicability
 The system SHALL record each supplier's tax residence and, on a bill from a non-resident supplier, the nature of the payment and the tax agent's decision, kept as evidence (FR-DOC-05) and reused for that supplier and nature.
@@ -163,7 +163,7 @@ Source: PRD-001 §8.6 · Priority M when paying non-resident suppliers; else S �
 #### Scenario: Tax withheld
 - **WHEN** tax is withheld on a bill
 - **THEN** the bill posts the gross expense, the net to the supplier and the tax to a withholding-tax payable account
-- **AND** a statutory-calendar task is created [verify the IRAS filing and payment date]
+- **AND** a statutory-calendar task is created for the 15th of the second month after the date of payment
 
 #### Scenario: S45 filing stays manual
 - **WHEN** a withholding tax has to be filed

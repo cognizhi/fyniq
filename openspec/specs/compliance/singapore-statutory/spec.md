@@ -288,7 +288,7 @@ Source: PRD-001 §14.2
 
 #### Scenario: Share duty
 - **WHEN** shares change hands
-- **THEN** share duty applies to transfers, and secondary sources say none on new issues [verify]
+- **THEN** share duty (0.2%) applies to transfer documents, and IRAS's pages do not charge allotments of new shares
 
 #### Scenario: Founder pay and CPF
 - **WHEN** founder pay is recorded
@@ -359,6 +359,10 @@ Source: PRD-001 §14.2
 - **WHEN** CPF is computed for 2026
 - **THEN** the employer/employee rates are ≤55: 17/20; 55–60: 16/18; 60–65: 12.5/12.5; 65–70: 9/7.5; >70: 7.5/5
 
+#### Scenario: 2027 rates for senior workers
+- **WHEN** wages earned from 1 Jan 2027 are paid to an employee above 55
+- **THEN** above 55 to 60 pays 16.5/19 and above 60 to 65 pays 13/13, the other bands unchanged
+
 #### Scenario: Age band change
 - **WHEN** an employee has a birthday that moves them into a new age band
 - **THEN** the new band applies from the first day of the month after the birthday
@@ -418,7 +422,8 @@ Source: PRD-001 §14.2
 
 #### Scenario: Key employment terms
 - **WHEN** an employee is hired
-- **THEN** the key employment terms (17 items) are given within 14 days
+- **THEN** the key employment terms (17 items, plus the optional place of work) are given within 14 days
+- **AND** this covers employees under the Employment Act employed since 1 Apr 2016 on a contract of 2 weeks or longer, part-timers included
 
 #### Scenario: Employment records kept
 - **WHEN** employment records are retained

@@ -76,7 +76,7 @@ Source: PRD-002 §12 · Priority M · Phase P2
 
 #### Scenario: Basis
 - **WHEN** a candidate applies
-- **THEN** their data is used to assess the application on deemed consent [verify the current PDPC edition with the DPO]
+- **THEN** their data is used to assess the application on deemed consent (PDPC Selected Topics guidelines §6.2, revised 23 May 2024)
 - **AND** keeping them for future roles needs separate consent, which they can withdraw
 
 #### Scenario: Opinions

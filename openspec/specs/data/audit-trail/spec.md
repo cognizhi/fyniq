@@ -261,5 +261,5 @@ Source: PRD-001 §11.5 · Priority M · Phase P1
 #### Scenario: G4-070 Shredded cohort and a restore from an older backup
 - **WHEN** one cohort of an employee's data expires and is shredded, and a monthly backup from before the shredding is restored into the drill project
 - **THEN** the shredded values stay unreadable after the restore
-- **AND** the employee's later payslips and all ledger amounts stay readable
+- **AND** all ledger amounts stay readable
 - **AND** the anonymisation register is re-applied before the copy opens

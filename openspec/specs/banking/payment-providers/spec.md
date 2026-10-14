@@ -199,7 +199,7 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 #### Scenario: Which fees carry GST
 - **WHEN** input GST on provider fees is considered
 - **THEN** Stripe charges GST on certain fees with a monthly tax invoice
-- **AND** whether processing fees and HitPay's fees carry GST is not confirmed [verify]
+- **AND** Stripe's GST covers fees such as Connect, Terminal hardware and Radar, added to the fee; whether processing fees and HitPay's fees carry GST is not confirmed
 
 #### Scenario: Monthly tax invoice never posts a second fee expense
 - **WHEN** a provider's monthly tax invoice is matched to that month's fees
@@ -208,7 +208,7 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 
 #### Scenario: Tax invoice that does not agree
 - **WHEN** a provider's tax invoice does not agree to the month's fees
-- **THEN** it is ⚠ (C.2 #50) [verify how Stripe and HitPay collect GST on their fees]
+- **THEN** it is ⚠ (C.2 #50)
 
 #### Scenario: Month-end provider fees and their GST (UC-PSP-04)
 - **GIVEN** fees were expensed per transaction during the month
@@ -248,7 +248,7 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 
 #### Scenario: Automatic, manual and instant payouts
 - **WHEN** Stripe payouts are reconciled
-- **THEN** the itemised report needs automatic payouts, and with manual payouts the payout's contents come from the provider's balance data [verify]
+- **THEN** the itemised report needs automatic payouts, and with manual payouts the payout's contents come from the provider's balance data
 - **AND** instant payouts are not supported in P1, because Stripe cannot say which transactions they contain
 
 #### Scenario: Negative balance or bank debit

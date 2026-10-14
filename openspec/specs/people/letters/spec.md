@@ -87,13 +87,18 @@ Source: PRD-002 §11 · Priority S · Phase P2
 - **THEN** both versions and their states stay traceable
 
 ### Requirement: NM-LTR-06 KETs
-KETs SHALL be generated from the offer and the record and issued within 14 days of the start for employment of 14 days or more, and missing KETs SHALL be ✖ on Checks.
+KETs SHALL be generated from the offer and the record and issued within 14 days of the start for employment of 14 days or more (a contract of 2 weeks or longer, under the Employment Act), and missing KETs SHALL be ✖ on Checks.
 
 Source: PRD-002 §11 · Priority M · Phase P1
 
 #### Scenario: Missing KETs
 - **WHEN** a person started 14 days ago and has no issued KETs
 - **THEN** Checks shows ✖ (N.1 #1)
+
+#### Scenario: Short contract
+- **GIVEN** a part-timer on a 3-week contract who works 6 days in it
+- **WHEN** KETs are due
+- **THEN** they are issued within 14 days, because the contract's length counts, not the days worked
 
 #### Scenario: Letters off
 - **GIVEN** Letters is off

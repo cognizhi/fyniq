@@ -401,7 +401,7 @@ Source: PRD-001 §F.5
 
 #### Scenario: Payslip delivery test
 - **WHEN** the payslip delivery test runs
-- **THEN** it confirms that no payslip is protected with a password based on the NRIC
+- **THEN** it confirms that no payslip Nemura delivers is protected with a password based on the NRIC
 - **AND** the test report is kept as evidence
 
 #### Scenario: Framework mapping

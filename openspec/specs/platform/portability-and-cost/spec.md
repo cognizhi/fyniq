@@ -69,7 +69,7 @@ Source: PRD-001 §12.12
 - **THEN** OpenTelemetry sends it to Cloud Logging, Monitoring and Trace (GCP), CloudWatch (AWS), Azure Monitor (Azure), or the console (local)
 
 ### Requirement: Database extensions and Singapore regions on every cloud
-The platform's database extensions (`pgcrypto`, `pgaudit`, `pg_partman`, `pg_cron`) SHALL be ones available on RDS, Aurora and Azure Flexible Server for PostgreSQL 17–18 (the versions NFR-PORT-02 and §11.3 target) [verify 18 on each], and a deployment on each cloud SHALL be able to use a Singapore region.
+The platform's database extensions (`pgcrypto`, `pgaudit`, `pg_partman`, `pg_cron`) SHALL be ones available on RDS, Aurora and Azure Flexible Server for PostgreSQL 17–18 (the versions NFR-PORT-02 and §11.3 target; 18 is available on each), and a deployment on each cloud SHALL be able to use a Singapore region.
 
 Source: PRD-001 §12.12
 

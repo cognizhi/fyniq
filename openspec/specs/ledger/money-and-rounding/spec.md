@@ -183,7 +183,7 @@ Source: PRD-001 §10.4
 - **AND** net = gross − GST
 
 ### Requirement: RND-CPF CPF rounding
-Total CPF SHALL be rounded to the dollar half-up, the employee share rounded down to the dollar and the employer share the difference, on the employee-month total (rules from the CPF Board [verify each year] and the workbook).
+Total CPF SHALL be rounded to the dollar half-up, the employee share rounded down to the dollar and the employer share the difference, on the employee-month total (rules from the CPF Board, re-checked each January, and the workbook).
 
 Source: PRD-001 §10.4
 
@@ -214,7 +214,7 @@ Source: PRD-001 §10.4
 - **THEN** total is 313, EE 125 and ER 188 (as G.2), not 312 / 124
 
 ### Requirement: RND-CPF-GRAD CPF graduated range
-For total wages from S$50 to S$750 a month (the graduated range), total and employee CPF SHALL follow the CPF Board formulas for the wage band, then the dollar rounding of `RND-CPF` (CPF Board [verify each January]).
+For total wages from S$50 to S$750 a month (the graduated range), total and employee CPF SHALL follow the CPF Board formulas for the wage band, then the dollar rounding of `RND-CPF` (CPF Board, re-checked each January).
 
 Source: PRD-001 §10.4
 

@@ -55,7 +55,7 @@ Source: PRD-001 §8.9 · Priority M · Phase P1
 - **THEN** that part is removed from the register with its gain or loss, and the rest stays in the register
 
 ### Requirement: FR-FA-04 Asset reports and capital allowances
-The system SHALL report NBV, accumulated depreciation and the movement schedule (for the financial statements), and SHALL produce a tax capital allowance schedule (S19, S19A [verify]).
+The system SHALL report NBV, accumulated depreciation and the movement schedule (for the financial statements), and SHALL produce a tax capital allowance schedule (S19, S19A).
 
 Source: PRD-001 §8.9 · Priority S · Phase P2
 
@@ -65,4 +65,4 @@ Source: PRD-001 §8.9 · Priority S · Phase P2
 
 #### Scenario: Capital allowance schedule
 - **WHEN** the tax capital allowance schedule is produced
-- **THEN** it follows S19 and S19A [verify]
+- **THEN** it follows S19 (working life, 20% initial allowance), S19A(1) (3 years) or S19A(10A) (assets up to S$5,000, at most S$30,000 a year)

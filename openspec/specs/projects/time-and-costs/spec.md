@@ -190,7 +190,7 @@ Source: PRD-001 §8.10 · Priority S · Phase P2
 #### Scenario: Re-confirmed for the third edition
 - **GIVEN** the SFRS for Small Entities third edition applies from periods starting 1 Jan 2027 and moves revenue to a simplified five-step model
 - **WHEN** such a period begins
-- **THEN** the method is re-confirmed [verify the third-edition text]
+- **THEN** the method is re-confirmed against the third edition's five-step revenue model
 
 ### Requirement: FR-PRJ-12 Project reports
 The system SHALL report profitability per project, customer and person (revenue − time at cost − direct costs), utilisation, realisation, unbilled work and budget burn, with drill to time entries and costs; time at cost is a management view.

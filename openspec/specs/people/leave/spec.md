@@ -124,13 +124,17 @@ Source: PRD-002 §8 · Priority M · Phase P1
 - **THEN** gross pay follows PRD-001 Appendix B.3
 
 ### Requirement: NM-LV-09 Leave into the books
-Leave taken SHALL update available hours in Fyniq, and an optional month-end leave liability accrual SHALL go to Fyniq as a journal for approval.
+Leave taken SHALL update available hours in Fyniq, and a month-end leave liability accrual for carried-forward leave, on by default, SHALL go to Fyniq as a journal for approval.
 
 Source: PRD-002 §8 · Priority S · Phase P1 / P2 (accrual)
 
 #### Scenario: Available hours
 - **WHEN** leave is approved and taken
 - **THEN** Fyniq's available hours for that person drop by those hours (PRD-001 FR-PRJ-12)
+
+#### Scenario: Default accrual
+- **WHEN** a month ends and carried-forward leave is above the accountant's materiality floor
+- **THEN** the accrual goes to Fyniq as a draft journal for approval
 
 #### Scenario: The policy decides recognition
 - **WHEN** the automatic accrual is off
@@ -197,7 +201,7 @@ Source: PRD-002 §8 · Priority M · Phase P1
 
 #### Scenario: Consultation fees
 - **WHEN** a consultation fee must be reimbursed
-- **THEN** it goes to Fyniq's claims (PRD-001 FR-AP-17) or a recorded manual route [verify the scope]
+- **THEN** it goes to Fyniq's claims (PRD-001 FR-AP-17) or a recorded manual route, for fees the employer must pay: at least one day of paid sick leave, an MC from a public institution or the company's doctor, and 3 months' service
 
 ### Requirement: NM-LV-13 Leave ledger
 Every leave balance change SHALL be a ledger entry with its leave year and source; a pending request SHALL reserve its days in the same transaction as the balance check; intervals SHALL NOT overlap; cancellations SHALL return days to their year; changes after an approved pay run SHALL be next-run inputs.

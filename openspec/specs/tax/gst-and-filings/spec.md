@@ -71,7 +71,7 @@ Source: PRD-001 §8.11 · Priority M · Phase P1 (F5) / P2 (F7, F8)
 - **THEN** it goes to the adjustment queue (FR-TAX-12)
 
 ### Requirement: FR-TAX-03 Filing
-The system SHALL lock the return period on filing, record the filing reference and keep the filed return as an immutable version; from P2 it SHALL submit through the IRAS GST filing API where available [verify].
+The system SHALL lock the return period on filing, record the filing reference and keep the filed return as an immutable version; from P2 it SHALL submit through IRAS's GST return API.
 
 Source: PRD-001 §8.11 · Priority M · Phase P1 (record) / P2 (API)
 
@@ -95,7 +95,7 @@ Source: PRD-001 §8.11 · Priority M · Phase P1 (record) / P2 (API)
 - **THEN** that lock is separate from the ledger period lock (FR-GL-08)
 
 #### Scenario: Submission through the IRAS API
-- **GIVEN** phase P2 and the IRAS GST filing API is available [verify]
+- **GIVEN** phase P2 and access to IRAS's GST return API
 - **WHEN** a return is filed
 - **THEN** it is submitted through that API
 
@@ -216,7 +216,7 @@ Source: PRD-001 §8.11 · Priority M when GST-registered; else S · Phase P1
 
 #### Scenario: IRAS tests propose the route
 - **WHEN** the queue assesses its items
-- **THEN** it applies IRAS's tests from the `sg-gst` pack (net GST error over all affected periods up to S$3,000, and other boxes up to 5% of Box 4; never for Box 12 errors) [verify each year]
+- **THEN** it applies IRAS's tests from the `sg-gst` pack (net GST error over all affected periods up to S$3,000, and other boxes up to 5% of Box 4; never for Box 12 errors), re-checked each year
 - **AND** it proposes "next F5" or "F7"
 
 #### Scenario: The tax agent decides

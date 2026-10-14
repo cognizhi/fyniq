@@ -48,7 +48,7 @@ Source: PRD-001 §12.8
 
 #### Scenario: Sign-in and MFA
 - **WHEN** the local stack runs in place of Identity Platform (sign-in, TOTP MFA)
-- **THEN** it uses the Firebase Authentication emulator, with the same REST API and token format [verify the emulator's TOTP MFA support at P0; fallback: a dev-only OIDC issuer in the `local` build]
+- **THEN** it uses the Firebase Authentication emulator, with the same REST API and token format (its TOTP MFA support is doubtful, so a dev-only OIDC issuer in the `local` build is the expected fallback, confirmed at P0)
 - **AND** passkeys (WebAuthn, our own code) work on `localhost`, which browsers treat as a secure context
 
 #### Scenario: OAuth server

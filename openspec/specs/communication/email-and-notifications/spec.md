@@ -31,7 +31,7 @@ Source: PRD-001 §8.24
 
 #### Scenario: Outbound email
 - **WHEN** outbound email adapters are offered (P1)
-- **THEN** they are Zoho ZeptoMail (renamed Zoho CPaaS in September 2026 [verify]), Resend and generic SMTP
+- **THEN** they are Zoho CPaaS (formerly ZeptoMail), Resend and generic SMTP
 - **AND** the local substitute is Mailpit
 
 #### Scenario: Inbound email for capture addresses
@@ -81,7 +81,7 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 
 #### Scenario: Unknown result is reconciled before a retry
 - **WHEN** the result of a send is unknown
-- **THEN** it is reconciled before any retry [verify Resend's idempotency window]
+- **THEN** it is reconciled before any retry, within Resend's 24-hour idempotency window
 
 #### Scenario: Failover only for sends not accepted
 - **WHEN** the primary provider fails
@@ -131,7 +131,7 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 
 #### Scenario: Inbound adapters
 - **WHEN** an inbound adapter is chosen
-- **THEN** it is Resend receiving (generally available since November 2025 [verify]; the webhook carries metadata and the message is fetched through the API) or IMAP polling of a mailbox
+- **THEN** it is Resend receiving (documented without a beta label; the webhook carries metadata and the message is fetched through the API) or IMAP polling of a mailbox
 - **AND** ZeptoMail is not offered, because it is send-only
 
 ### Requirement: FR-NTF-01 Notification centre

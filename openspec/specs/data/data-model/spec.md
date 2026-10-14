@@ -170,7 +170,7 @@ Source: PRD-001 §11.4
 - **AND** its currency code is stored beside it
 
 ### Requirement: Effective-dated reference data
-Parameter packs, account attributes and salary history SHALL use validity periods with PostgreSQL 18 temporal keys (`WITHOUT OVERLAPS`, `PERIOD` foreign keys; needs `btree_gist` [verify on Cloud SQL]) or an equivalent exclusion constraint.
+Parameter packs, account attributes and salary history SHALL use validity periods with PostgreSQL 18 temporal keys (`WITHOUT OVERLAPS`, `PERIOD` foreign keys; needs `btree_gist`, available on Cloud SQL) or an equivalent exclusion constraint.
 
 Source: PRD-001 §11.4
 

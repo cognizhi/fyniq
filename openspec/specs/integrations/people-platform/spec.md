@@ -132,6 +132,11 @@ Source: PRD-001 §8.26 · Priority S · Phase P1 / P2 (accrual)
 - **WHEN** a month ends
 - **THEN** the accrual arrives as a draft journal for approval
 
+#### Scenario: Default accrual policy
+- **GIVEN** the default policy: a monthly accrual of carried-forward leave
+- **WHEN** the month's accrual is below the accountant's materiality floor
+- **THEN** no journal is proposed
+
 #### Scenario: Leave obligation at close
 - **GIVEN** the accounting policy requires untaken leave to be recognised, and the automatic accrual is off
 - **WHEN** the month is closed

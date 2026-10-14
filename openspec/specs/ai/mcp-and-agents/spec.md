@@ -405,7 +405,7 @@ Source: PRD-001 §9.7 · Priority C · Phase P3
 - **AND** the call is logged
 
 ### Requirement: MCP is a thin transport, open by design and closed by default
-The MCP server SHALL be a thin transport over the same tool registry the in-app assistant uses, adding no new data path; any MCP-capable agent can be connected, but nothing is connected until an Owner allows it. MCP references follow the current specification's authorisation part [verify the revision in force at P0].
+The MCP server SHALL be a thin transport over the same tool registry the in-app assistant uses, adding no new data path; any MCP-capable agent can be connected, but nothing is connected until an Owner allows it. MCP references follow the current specification's authorisation part (revision 2026-07-28 on 14 Oct 2026; re-checked at P0).
 
 Source: PRD-001 §9.7
 
@@ -420,7 +420,7 @@ Source: PRD-001 §9.7
 
 #### Scenario: Specification revision checked at P0
 - **WHEN** P0 starts
-- **THEN** the MCP specification revision in force is confirmed (the 2025-06-18 revision made servers OAuth resource servers with RFC 9728 metadata and RFC 8707 audience binding; the 2025-11-25 revision added Client ID Metadata Documents) [verify]
+- **THEN** the MCP specification revision in force is confirmed (the 2025-06-18 revision made servers OAuth resource servers with RFC 9728 metadata and RFC 8707 audience binding; the 2025-11-25 revision added Client ID Metadata Documents; the 2026-07-28 revision adds `iss` checks and deprecates dynamic client registration)
 
 #### Scenario: MCP red-team cases
 - **WHEN** QA-MCP-01 runs

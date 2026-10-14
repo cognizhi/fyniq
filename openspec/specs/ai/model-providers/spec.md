@@ -112,7 +112,7 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1 (a, b); P2 (c)
 
 #### Scenario: OpenAI plan connections (P2)
 - **WHEN** an OpenAI plan connection is linked
-- **THEN** its models come from the SDK's `chatgpt.listModels()` for the active connection
+- **THEN** its models come from `GET /v1/models` with the user's access token, keeping the entries whose `visibility` is `list`
 - **AND** inference needs the `chatgpt.tokens.use.direct` grant, and an identity sign-in alone grants none
 - **AND** it stays gated on the terms, eligibility and data handling (checked 14 Oct 2026)
 
@@ -220,7 +220,7 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **THEN** it is re-qualified at least weekly, and the route shows ⚠ until it passes
 
 #### Scenario: Aliases recognised from the list
-- **WHEN** the provider's model list marks a name as an alias of another model
+- **WHEN** the provider's model list marks a name as an alias of another model, as OpenRouter's `alias_target` does for its `~latest` aliases
 - **THEN** the route treats it as a moving alias without anyone having to say so
 
 #### Scenario: The model that answered

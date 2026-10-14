@@ -97,7 +97,7 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **AND** the USD open balance stays 6,000; INV-05 accepts base-only lines only from the revaluation source
 
 ### Requirement: FR-GL-05 FX rates
-The system SHALL take FX rates from an automatic daily feed (e.g. MAS reference rates [verify source and licence]) plus manual overrides with audit, and SHALL record the rate source on every converted amount.
+The system SHALL take FX rates from an automatic daily feed (e.g. MAS rates from its API catalogue, redistribution confirmed with MAS) plus manual overrides with audit, and SHALL record the rate source on every converted amount.
 
 Source: PRD-001 §8.8 · Priority M · Phase P1
 
