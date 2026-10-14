@@ -6157,7 +6157,8 @@
     "NM-PPL-03",
     "NM-ONB-01",
     "NM-PAY-03",
-    "NM-LV-10"
+    "NM-LV-10",
+    "NM-PACK-07"
    ],
    "purpose": "The people team's landing page: today's requests, who is away, joiners and leavers, the pay calendar and checks, with no company financial figures.",
    "content": [
@@ -6268,7 +6269,8 @@
     "NM-LV-05",
     "NM-LV-06",
     "NM-LV-03",
-    "NM-PACK-05"
+    "NM-PACK-05",
+    "NM-LV-12"
    ],
    "purpose": "Approve leave and see the month at a glance.",
    "content": [
@@ -6503,7 +6505,8 @@
     "NM-FEAT-02",
     "NM-FEAT-03",
     "NM-FEAT-04",
-    "NM-EXT-01"
+    "NM-EXT-01",
+    "NM-FEAT-05"
    ],
    "purpose": "Turn Nemura's features on or off, or use another system for one.",
    "content": [
@@ -6536,7 +6539,8 @@
     "NM-PACK-02",
     "NM-PACK-05",
     "NM-PACK-06",
-    "NM-PACK-03"
+    "NM-PACK-03",
+    "NM-PACK-07"
    ],
    "purpose": "The law and calendars Nemura uses for Singapore, each with its source and status.",
    "content": [
@@ -6568,7 +6572,8 @@
    "requirements": [
     "NM-PACK-04",
     "NM-LV-01",
-    "NM-LV-02"
+    "NM-LV-02",
+    "NM-PACK-08"
    ],
    "purpose": "Company leave rules on top of the law; anything below the statutory minimum is refused.",
    "content": [
@@ -6636,7 +6641,8 @@
     "NM-AI-02",
     "NM-AI-03",
     "NM-AI-04",
-    "NM-AI-05"
+    "NM-AI-05",
+    "NM-AI-06"
    ],
    "purpose": "What the people assistant may do, which knowledge it uses, and where its model runs.",
    "content": [
@@ -6717,6 +6723,44 @@
    "states": [
     "mapping incomplete",
     "re-import with changes"
+   ]
+  },
+  {
+   "id": "personal-claims",
+   "file": "PersonalClaims",
+   "title": "My claims (personal workspace)",
+   "canvas": "people-link",
+   "module": "Personal",
+   "route": "/me",
+   "kind": "dashboard",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-UX-39",
+    "FR-AP-14",
+    "FR-AP-15",
+    "FR-AP-17",
+    "FR-PPL-02",
+    "NM-ESS-05",
+    "NM-ONB-02"
+   ],
+   "purpose": "Where an employee who only claims lands in Fyniq: their own claims and the expense policy, with no finance tooling in view.",
+   "content": [
+    "What the company owes you",
+    "New claim from a receipt",
+    "Your claims",
+    "Before you claim: the expense policy in short",
+    "Back to People"
+   ],
+   "states": [
+    "first claim (empty)",
+    "claim returned to fix",
+    "approver: To approve",
+    "finance link opened: not part of your access",
+    "not invited yet (from Nemura's Claims tile)"
    ]
   }
  ]

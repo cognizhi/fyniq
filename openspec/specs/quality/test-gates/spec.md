@@ -53,6 +53,19 @@ Source: PRD-001 §16.2
 - **WHEN** CI runs
 - **THEN** the merge is blocked
 
+### Requirement: QA-API-04 Cross-product contract tests
+Fyniq and Nemura SHALL share contract fixtures for every event and call of PRD-002 Appendix E, a shared schema change SHALL fail CI without its compatibility test and PRD update, and the review's adverse cases SHALL run as contract tests.
+
+Source: PRD-001 §16.2
+
+#### Scenario: Schema change without a test
+- **WHEN** a shared event schema changes without a compatibility test or the PRD update
+- **THEN** CI fails
+
+#### Scenario: Adverse cases
+- **WHEN** the contract suite runs
+- **THEN** it covers a forged or altered approval, the same person in both apps, versions out of order, a split bank outcome, a resignation on pay day, a bank change after approval, unlinking with work in flight and restoring one side
+
 ### Requirement: QA-MCP-01 MCP security suite
 An MCP security suite SHALL test the write, tool-surface, token, origin, injection, payroll-scope, rate-limit and kill-switch protections of the MCP server, and a failure SHALL block the merge.
 
@@ -308,6 +321,11 @@ Source: PRD-001 §16.2
 #### Scenario: G4-001 Phase move or unparseable Phase cell
 - **WHEN** a requirement row says "(rev 0.N: P1" in its text while its Phase cell says P2, or has a Phase cell the extractor cannot parse
 - **THEN** `scripts/trace_requirements.py` fails and names the row
+
+#### Scenario: Both PRDs
+- **WHEN** the extractor runs
+- **THEN** it reads PRD-001 and PRD-002
+- **AND** it lists the PRD-001 rows Nemura implements at their phase in PRD-002 NM-PAY-07
 
 ### Requirement: QA-SEC-03 Authorisation matrix
 An authorisation-matrix test SHALL cover every role × every endpoint × allowed/denied, including field masking and the segregation-of-duties rules per team mode.

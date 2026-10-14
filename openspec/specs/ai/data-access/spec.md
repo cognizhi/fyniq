@@ -49,6 +49,12 @@ Source: PRD-001 §9.4 · Priority M · Phase P1
 - **THEN** they may add exclusions but cannot remove NRIC/FIN, full bank account numbers, passwords, secrets, authentication data or full home addresses
 - **AND** the payroll switch is the only setting that widens what is sent
 
+#### Scenario: Own pay in Nemura
+- **GIVEN** an employee without the payroll role, in Nemura
+- **WHEN** they ask about their own payslip
+- **THEN** by default the explanation is deterministic and no pay figure is sent to a model
+- **AND** only with own-pay explanations enabled are their own figures sent (PRD-002 NM-AI-06), and never anyone else's pay
+
 ### Requirement: AI-03 Curated semantic layer
 Read tools SHALL query a curated semantic layer of named measures and dimensions (e.g. `revenue`, `net_burn`, `ar_outstanding` by `customer`, `month`), compiled to SQL by platform code.
 

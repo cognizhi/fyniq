@@ -276,6 +276,11 @@ Source: PRD-001 §8.7 · Priority M from 5 employees; else S · Phase P2 / P1 (I
 - **AND** from 3 March the claim, the salary and any batch are held (C.2 #44), and nothing is paid until IRAS's notification
 - **AND** recovering the advance from final pay is checked against FR-PAY-16 (termination case [verify with the accountant])
 
+#### Scenario: Hold with Nemura linked
+- **GIVEN** Nemura is linked
+- **WHEN** a payment to an employee is released in Fyniq
+- **THEN** the hold lives in Nemura and Fyniq checks it at that release (FR-PPL-13)
+
 ### Requirement: FR-PAY-11 Salary payment batch
 The system SHALL pay salaries through a salary payment batch (FR-BNK-12).
 
@@ -350,6 +355,46 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 - **THEN** it is a blocking error (✖): an instalment of S$1,500 is over 25% of S$4,000
 - **AND** recovery in three instalments of S$1,000 passes
 
+### Requirement: FR-PAY-17 Wage classes by facts, not names
+Each pay item SHALL carry its employment period, payable date, nature and CPF applicability, and SHALL be ordinary wages only when it is for the month's employment and payable by the 14th of the next month, additional wages otherwise; a name or type SHALL only suggest a default.
+
+Source: PRD-001 §8.7 · Priority M · Phase P1
+
+#### Scenario: Same name, different facts
+- **GIVEN** two pay items both called "Commission": one for October's sales payable on 28 Oct, one for the year's sales payable next March
+- **WHEN** the October and March runs classify them
+- **THEN** the first is ordinary wages and the second additional wages
+- **AND** the employee-month CPF and the year to date agree with the oracle (FR-PAY-14)
+
+#### Scenario: Classes kept apart
+- **WHEN** a pay item is classified
+- **THEN** its tax (IR8A), SDL and payslip classes are kept apart from its CPF class
+
+#### Scenario: Commission paid less often than monthly
+- **WHEN** commission is paid less often than monthly
+- **THEN** its CPF class follows CPF Board's guidance on commission [verify]
+
+### Requirement: FR-PAY-18 What a run pays out
+A run SHALL keep separate totals for gross wages, contributions, deductions authorised under FR-PAY-16, non-wage reimbursements and monies held under FR-PAY-10, and SHALL compute each person's amount to disburse as net pay + reimbursements − held monies, each source item used once.
+
+Source: PRD-001 §8.7 · Priority M · Phase P1
+
+#### Scenario: Advance recovery and a booked claim in one run
+- **GIVEN** an approved S$300 advance recovery and a S$100 claim already booked to 2150, both in the October run
+- **WHEN** the run is posted
+- **THEN** the person's disbursement falls by S$300 and rises by S$100
+- **AND** 1250 is cleared by S$300 and 2150 by S$100, each exactly once
+- **AND** wage expense is unchanged and the S$100 is not CPF wages
+
+#### Scenario: Held monies
+- **GIVEN** a person under a tax-clearance hold
+- **WHEN** the run is calculated
+- **THEN** their held monies stay in 2100, flagged, and are not in the amount to disburse
+
+#### Scenario: Oracle
+- **WHEN** a run's totals are computed
+- **THEN** the oracle computes the same totals to the cent (Appendix B.3)
+
 ### Requirement: FR-PAY-13 Payroll data is restricted
 Payroll data, including data derived from it, SHALL be visible only to Payroll administrators and Owners by default.
 
@@ -386,6 +431,11 @@ Source: PRD-001 §8.7 · Priority M · Phase P1
 - **THEN** Checks warns about the one-person group
 - **AND** the Bookkeeper sees no per-person cost rate
 - **AND** AI log entries with payroll data are masked for roles without payroll rights
+
+#### Scenario: Salary payment lines
+- **GIVEN** a salary payment batch in Fyniq
+- **WHEN** a user without the salary-payments right opens it
+- **THEN** they see the batch total, the number of people and the release state, not the lines (FR-PPL-17)
 
 ### Requirement: Hand-pinned payroll results
 The pay run SHALL reproduce the hand-pinned payroll results of Appendix G.2 (2026 CPF rates, from `tests/test_edge_posting.py`); the SDL figures are per employee, before the employer-month rounding (`RND-SDL`), and net is gross − employee CPF − SHG.

@@ -1,0 +1,116 @@
+<!-- fyniq-screen {"nav": "my-claims", "title": "My claims", "mode": "basic", "persona": "employee", "integrated": true, "heights": {"compact": 1650, "medium": 1500, "expanded": 1150}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Daniel Lim · Cognizhi Pte Ltd</span>
+      <h1 class="fy-h1">My claims</h1>
+      <p class="fy-secondary">Costs you paid for the company, and when you get them back.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#me/claims/new/mileage"><i data-icon="car"></i>Mileage trip</a>
+      <a class="fy-btn fy-btn--primary" href="#me/claims/new"><i data-icon="receipt"></i>New claim</a>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="owed-title">
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-tile__label" id="owed-title">What the company owes you</div>
+          <div class="fy-row fy-row--wrap" style="align-items: baseline; gap: var(--space-3)">
+            <span class="fy-tile__value fy-num" style="color: var(--text-primary)"><span class="fy-muted" style="font-size: var(--fs-md)">S$</span>186.30</span>
+            <span class="fy-small fy-muted">1 claim · paid by bank transfer</span>
+          </div>
+          <div class="fy-row fy-row--between"><span class="fy-row"><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>Scheduled</span><span class="fy-small fy-muted">USB-C dock and cables · paid on Fri 16 Oct</span></span><span class="fy-num">186.30</span></div>
+        </div>
+      </section>
+
+      <section class="fy-card fy-only-compact" aria-labelledby="new-title-c">
+        <div class="fy-card__head"><h2 class="fy-h3" id="new-title-c">New claim from a receipt</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-grid fy-grid--2" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2)">
+            <button class="fy-btn fy-btn--secondary fy-btn--lg" type="button"><i data-icon="camera"></i>Camera</button>
+            <button class="fy-btn fy-btn--secondary fy-btn--lg" type="button"><i data-icon="image"></i>Photos</button>
+          </div>
+          <p class="fy-small fy-muted">Or forward the receipt email to <span class="fy-mono" style="overflow-wrap: anywhere">daniel@claims.cognizhi.in.fyniq.app</span></p>
+        </div>
+      </section>
+
+      <section class="fy-stack fy-stack--3" aria-labelledby="list-title">
+        <div class="fy-section__head"><h2 class="fy-h2" id="list-title">Your claims</h2></div>
+        <div class="fy-card" style="overflow: hidden">
+          <table class="fy-table fy-table--cards">
+            <thead>
+              <tr>
+                <th scope="col">Claim</th>
+                <th scope="col" class="fy-from-expanded">Number</th>
+                <th scope="col">Date</th>
+                <th scope="col" class="fy-from-expanded">Category</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="fy-num">Amount (SGD)</th>
+              </tr>
+            </thead>
+            <tbody class="fy-stagger">
+              <tr>
+                <td data-card="title"><a href="#me/claims/clm-0044" style="color: var(--text-primary)">USB-C dock and cables</a></td>
+                <td data-card="hide" class="fy-from-expanded fy-mono">CLM-0044</td>
+                <td data-card="meta">3 Oct<span class="fy-only-compact"> · Office equipment · CLM-0044</span></td>
+                <td data-card="hide" class="fy-from-expanded">Office equipment</td>
+                <td data-card="status"><span class="fy-chip fy-chip--info"><i data-icon="calendar-clock"></i>Scheduled</span></td>
+                <td data-card="amount" class="fy-num">186.30</td>
+              </tr>
+              <tr>
+                <td data-card="title"><a href="#me/claims/clm-0038" style="color: var(--text-primary)">Notion</a></td>
+                <td data-card="hide" class="fy-from-expanded fy-mono">CLM-0038</td>
+                <td data-card="meta">9 Sep<span class="fy-only-compact"> · Software and subscriptions · CLM-0038</span></td>
+                <td data-card="hide" class="fy-from-expanded">Software and subscriptions</td>
+                <td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td>
+                <td data-card="amount" class="fy-num">145.80</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fy-small fy-muted">A claim goes to Wei Jie Ong, then to finance, and is paid by bank transfer in the next claims batch.</p>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="New claim and the expense policy">
+      <section class="fy-card fy-from-medium" aria-labelledby="new-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="new-title">New claim from a receipt</h2></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-dropzone">
+            <i data-icon="receipt" class="fy-i--32"></i>
+            <strong style="color: var(--text-primary)">Drop a receipt here</strong>
+            <span class="fy-small">Paste a screenshot with <span class="fy-kbd">Ctrl</span> <span class="fy-kbd">V</span>, or <a href="#me/claims/new">choose a file</a></span>
+          </div>
+          <div class="fy-stack fy-stack--2">
+            <span class="fy-small fy-muted">Or forward the receipt email to</span>
+            <div class="fy-row"><span class="fy-mono fy-small fy-grow" style="overflow-wrap: anywhere">daniel@claims.cognizhi.in.fyniq.app</span><button class="fy-iconbtn" type="button" aria-label="Copy the address"><i data-icon="copy"></i></button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="pol-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="pol-title">Before you claim</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="receipt-text" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">A receipt with every claim</span><span class="fy-list__meta">Within 60 days of the expense</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="utensils" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Meals up to S$50 a person</span><span class="fy-list__meta">Above that, add who came</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="car-taxi-front" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Local travel up to S$100 a trip</span><span class="fy-list__meta">Car mileage at S$0.60 a km</span></span></li>
+          <li class="fy-list__item"><span class="fy-list__icon"><i data-icon="app-window" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Software up to S$200 a claim</span><span class="fy-list__meta">Above that, an Owner approves too</span></span></li>
+        </ul>
+        <div class="fy-card__foot"><a class="fy-small" href="#me/expense-policy">The whole expense policy</a></div>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="here-title" style="background: var(--surface-2)">
+        <h2 class="fy-h3" id="here-title">Only your claims are here</h2>
+        <p class="fy-small fy-secondary">This is your own space in Fyniq. Your pay, leave and letters are in People.</p>
+        <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#people" style="align-self: flex-start"><i data-icon="users"></i>Back to People</a>
+      </section>
+    </aside>
+  </div>
+
+  <div class="fy-actionbar fy-only-compact">
+    <a class="fy-btn fy-btn--secondary" href="#me/claims/new/mileage"><i data-icon="car"></i>Mileage</a>
+    <a class="fy-btn fy-btn--primary" href="#me/claims/new"><i data-icon="camera"></i>Snap a receipt</a>
+  </div>
+</div>

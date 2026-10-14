@@ -46,11 +46,30 @@ Source: PRD-002 §10 · Priority M · Phase P1
 - **THEN** each request shows its step (received, with HR, ready) and its due date
 
 ### Requirement: NM-ESS-05 Claims link
-When linked to Fyniq, the Claims tile SHALL open Fyniq's My claims with the same sign-in; otherwise it SHALL link to the company's expense tool or be hidden.
+When linked to Fyniq, the Claims tile SHALL open Fyniq's personal workspace with the same sign-in, never the finance workspace; a person not yet invited SHALL be told how to get access; otherwise it SHALL link to the company's expense tool or be hidden.
 
 Source: PRD-002 §10 · Priority M · Phase P1
 
 #### Scenario: Linked
 - **GIVEN** Nemura is linked to Fyniq
 - **WHEN** an employee taps Claims
-- **THEN** Fyniq's My claims opens without another sign-in
+- **THEN** Fyniq's My claims opens in the personal workspace without another sign-in (PRD-001 FR-UX-39)
+
+#### Scenario: Not invited yet
+- **GIVEN** an employee without a Fyniq account
+- **WHEN** they tap Claims
+- **THEN** they see "You don't have Fyniq access yet" with a button that asks HR, never a refused page
+
+### Requirement: NM-ESS-06 After leaving
+A leaver SHALL keep a narrow, authenticated account for their own documents for the record-keeping period, with re-issue on request, and email links SHALL only deliver documents.
+
+Source: PRD-002 §10 · Priority M · Phase P1
+
+#### Scenario: Leaver account
+- **GIVEN** Chen Yu's last day was Mon 30 Nov 2026
+- **WHEN** he signs in to his leaver account in March 2027
+- **THEN** he sees only his own payslips, IR8A and letters, with no other access
+
+#### Scenario: Retention ends
+- **WHEN** the record-keeping period ends
+- **THEN** the account ends, and the documents follow their retention (NM-SEC-05)

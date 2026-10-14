@@ -15,14 +15,14 @@ Source: PRD-002 §13 · Priority M · Phase P2
 - **THEN** its progress shows under the team goal
 
 ### Requirement: NM-PRF-02 KPIs
-Role KPIs SHALL have targets and a source, entered or read from Fyniq's permitted metrics, and a KPI showing a company financial figure SHALL be visible only to people who may see it in Fyniq.
+Role KPIs SHALL have targets and a source, entered or read from Fyniq's permitted metrics, and a KPI built on a company financial figure SHALL show only its status in Nemura.
 
 Source: PRD-002 §13 · Priority S · Phase P2
 
 #### Scenario: Financial KPI hidden
 - **GIVEN** a KPI reads revenue from Fyniq
-- **WHEN** an employee without that right in Fyniq views the goals page
-- **THEN** the KPI's figure is hidden
+- **WHEN** anyone views the goals page in Nemura
+- **THEN** the KPI shows only its status (on track, behind), and its figure is in Fyniq
 
 ### Requirement: NM-PRF-03 Check-ins and feedback
 One-to-one notes and feedback SHALL be private to the two people and HR unless shared.

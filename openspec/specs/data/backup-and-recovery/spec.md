@@ -102,6 +102,10 @@ Source: PRD-001 §11.8 · Priority M · Phase P1
 - **AND** there is no duplicate posting, email or provider call
 - **AND** a Cloud Run job started before the restore is linked to its row
 
+#### Scenario: With Nemura linked
+- **WHEN** a drill runs while Nemura is linked
+- **THEN** it also restores one app alone and checks the cross-app reconciliation (FR-PPL-19)
+
 ### Requirement: DR-07 Attachment storage
 Attachments SHALL be kept in a regional Cloud Storage bucket in Singapore with object versioning and a retention policy matching the retention table (§11.9).
 
@@ -246,4 +250,3 @@ Source: PRD-001 §11.8
 - **GIVEN** the per-cohort key-encryption-key approach is used
 - **WHEN** a cohort is shredded
 - **THEN** the versions of its key-encryption key in Cloud KMS are destroyed
-

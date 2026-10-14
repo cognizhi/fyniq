@@ -6,7 +6,7 @@ Roles, landing pages and the experience in Nemura: its own design system, ease o
 ## Requirements
 
 ### Requirement: Permission matrix
-Each Nemura role SHALL hold only the rights PRD-002 Appendix B gives it.
+Each Nemura role SHALL hold only the rights PRD-002 Appendix B gives it, per field and action, and nobody SHALL approve their own request, change, pay or role.
 
 Source: PRD-002 §B
 
@@ -17,6 +17,18 @@ Source: PRD-002 §B
 #### Scenario: AI
 - **WHEN** the assistant acts for a user
 - **THEN** it never exceeds that user's rights and only drafts letters, posts and summaries
+
+#### Scenario: Payroll without medical data
+- **WHEN** the Payroll administrator opens a person
+- **THEN** they see the NRIC for filings and the bank details, and no medical or disciplinary record
+
+#### Scenario: Interviewer
+- **WHEN** an interviewer opens hiring
+- **THEN** they see only the candidates assigned to them
+
+#### Scenario: Administrator
+- **WHEN** the Administrator manages roles
+- **THEN** they cannot grant payroll, signing or Owner rights
 
 ### Requirement: NM-ROLE-01 Roles are Nemura's own
 Nemura's roles SHALL be assigned per organisation with Appendix B's rights, SHALL never grant rights in Fyniq or the reverse, and a person with rights in both SHALL see the workspace switch.
@@ -36,6 +48,10 @@ Source: PRD-002 §3 · Priority M · Phase P1
 - **WHEN** an HR officer signs in
 - **THEN** they land on People home, which shows no ledger, bank, revenue or cash figure
 
+#### Scenario: Financial KPI
+- **WHEN** a KPI is built on a company financial figure
+- **THEN** Nemura shows only its status (NM-PRF-02)
+
 ### Requirement: NM-ROLE-03 Line managers
 Line managers SHALL come from the effective-dated reporting line, approve their reports' leave and requests, and see their reports' leave, schedule and goals but never pay.
 
@@ -46,13 +62,30 @@ Source: PRD-002 §3 · Priority M · Phase P1
 - **THEN** they see leave, schedule and goals, and no pay
 
 ### Requirement: NM-ROLE-04 Segregation
-The preparer of a pay run SHALL NOT approve it, the person who changes a salary bank account SHALL NOT approve the change, and the Owner SHALL be the second person when HR is one person.
+The preparer of a pay run SHALL NOT approve it or approve or release its salary batch in Fyniq, the person who changes a salary bank account SHALL NOT approve the change, and the Owner SHALL be the second person when HR is one person.
 
 Source: PRD-002 §3 · Priority M · Phase P1
 
 #### Scenario: Preparer cannot approve
 - **WHEN** the person who prepared a pay run tries to approve it
 - **THEN** the approval is refused (SOD-4)
+
+#### Scenario: Across apps
+- **WHEN** the run's preparer tries to release its salary batch in Fyniq
+- **THEN** it is refused (NM-INT-07)
+
+### Requirement: NM-ROLE-05 No self-escalation
+Nobody SHALL approve their own request, change, pay or role, and granting payroll, signatory or Owner rights SHALL need the Owner and a second approver.
+
+Source: PRD-002 §3 · Priority M · Phase P1
+
+#### Scenario: HR administrator grants themselves payroll
+- **WHEN** an HR administrator tries to give themselves the Payroll administrator role
+- **THEN** it is refused, and the grant needs the Owner and a second approver
+
+#### Scenario: Own leave
+- **WHEN** a line manager applies for leave
+- **THEN** they cannot approve it themselves
 
 ### Requirement: NM-UX-01 Nemura's own design system
 Nemura SHALL use its own design system with Fyniq's semantic token names, tokens only, contrast validated in four themes, and AI content always violet with the AI badge.
@@ -80,6 +113,11 @@ Source: PRD-002 §19 · Priority M · Phase P1
 #### Scenario: Switch
 - **WHEN** the Owner switches from People to Finance
 - **THEN** Fyniq opens on the page she last used there
+
+#### Scenario: Employees who only claim
+- **GIVEN** an employee whose Fyniq rights are personal only
+- **WHEN** they use Nemura
+- **THEN** no switch is shown; the Claims tile is their way across, and Fyniq's header brings them Back to People
 
 ### Requirement: NM-UX-04 Help on every screen
 Every Nemura screen SHALL have help keys, tooltips, guide pages in `docs/user-guide/nemura/` and a first-run tour for employees and for the people team.

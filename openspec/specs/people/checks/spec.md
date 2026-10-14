@@ -69,12 +69,12 @@ Source: PRD-002 §N.1
 - **THEN** the check shows ⚠
 
 ### Requirement: N.1 #8 Pack not ready
-The system SHALL flag for review next year's holiday calendar not loaded by 1 Dec, or a [verify] pack value used by a live policy (NM-PACK-02, NM-PACK-05).
+The system SHALL flag for review next year's holiday calendar not loaded by 1 Dec (NM-PACK-05); a [verify] pack value used by a live policy moved to N.1 #13 as a block.
 
 Source: PRD-002 §N.1
 
-#### Scenario: To confirm in use
-- **WHEN** a live leave policy uses a pack value marked [verify]
+#### Scenario: Calendar missing
+- **WHEN** next year's calendar is not loaded on 1 Dec
 - **THEN** the check shows ⚠
 
 ### Requirement: N.1 #9 Payslip late
@@ -105,10 +105,41 @@ Source: PRD-002 §N.1
 - **THEN** the check shows ⚠
 
 ### Requirement: N.1 #12 Records waiting for deletion
-The system SHALL flag for review records past their retention date waiting for the reviewed deletion job (NM-SEC-05).
+The system SHALL flag for review records past their retention date waiting for the reviewed deletion job, and SHALL block once their review date has passed (NM-SEC-05).
 
 Source: PRD-002 §N.1
 
 #### Scenario: Waiting
 - **WHEN** records are past their retention date and not yet deleted
 - **THEN** the check shows ⚠
+
+#### Scenario: Review date passed
+- **WHEN** records are still waiting after their review date
+- **THEN** the check shows ✖
+
+### Requirement: N.1 #13 Unverified pack value in use
+The system SHALL block a live calculation that needs a pack value that is not verified and has no recorded company decision (NM-PACK-07).
+
+Source: PRD-002 §N.1
+
+#### Scenario: Unverified value
+- **WHEN** an employee applies for unpaid infant care leave and its entitlement is still researched, with no company decision
+- **THEN** the check shows ✖
+
+### Requirement: N.1 #14 Salary payment not paid
+The system SHALL block on a salary payment that is rejected, returned or whose outcome is unknown (NM-PAY-10).
+
+Source: PRD-002 §N.1
+
+#### Scenario: Rejected payment
+- **WHEN** the bank rejects one person's salary payment
+- **THEN** the check shows ✖ until it is paid or resolved
+
+### Requirement: N.1 #15 Final pay or notification due
+The system SHALL flag as due a final salary, final payslip or MOM retrenchment notification due within 3 working days or late (NM-PAY-08).
+
+Source: PRD-002 §N.1
+
+#### Scenario: Final pay due
+- **WHEN** a leaver's final salary is due in 2 working days
+- **THEN** the check shows ⏰

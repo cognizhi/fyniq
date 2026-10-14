@@ -14,6 +14,11 @@ Source: PRD-002 §18 · Priority M · Phase P1
 - **WHEN** the assistant answers a question that needs a person's pay
 - **THEN** the request goes only to a route allowed for payroll data, by default in-Singapore processing (AI-75)
 
+#### Scenario: Storage-only region
+- **GIVEN** a provider region that stores data in Singapore but processes it elsewhere
+- **WHEN** a payroll question is routed
+- **THEN** that region is not used (PRD-001 AI-88)
+
 ### Requirement: NM-AI-02 Skills baked in
 The assistant SHALL answer leave, pay-day, payslip and policy questions from the person's records and the cited pack and handbook, and SHALL draft letters, job posts, interview questions, review summaries and flexible-work replies as proposals.
 
@@ -26,6 +31,10 @@ Source: PRD-002 §18 · Priority M · Phase P1 / P2 (hiring, reviews)
 #### Scenario: Draft, not send
 - **WHEN** an HR officer asks for a letter
 - **THEN** the assistant drafts it as a proposal for the HR officer to edit and approve
+
+#### Scenario: Payslip lines
+- **WHEN** an employee asks about a payslip line
+- **THEN** NM-AI-06 applies
 
 ### Requirement: NM-AI-03 Knowledge
 The pack, the handbook and policies, and Nemura's guide SHALL be compiled into the knowledge base and cited; statutory rules SHALL come from the pack, and a [verify] rule SHALL be answered with "to confirm with HR".
@@ -47,16 +56,38 @@ Source: PRD-002 §18 · Priority M · Phase P1
 
 #### Scenario: Red team
 - **WHEN** the red-team suite runs
-- **THEN** no never-list action succeeds (PRD-001 QA-AI-02)
+- **THEN** no never-list action succeeds (PRD-001 QA-AI-03)
 
 ### Requirement: NM-AI-05 Fairness
-The assistant SHALL never screen, rank or score candidates or employees, never use a protected characteristic, and SHALL flag such criteria in drafts.
+The assistant SHALL never use a protected characteristic to screen, rank, score or evaluate anyone, SHALL flag such criteria in drafts, and SHALL take statutory eligibility from the pack's deterministic tools, which return the result and the rule.
 
 Source: PRD-002 §18 · Priority M · Phase P2
 
 #### Scenario: Ranking refused
 - **WHEN** a recruiter asks the assistant to rank candidates
 - **THEN** it refuses and offers an interview kit instead
+
+#### Scenario: Eligibility explained
+- **WHEN** an employee asks whether they can take childcare leave
+- **THEN** the answer comes from the pack's tool, with the result and the rule, and no detail about other people or facts not needed
+
+### Requirement: NM-AI-06 Own pay
+By default the assistant SHALL explain a payslip line from its rule while the app shows the person's own figures, sending no pay figure to a model; an Owner with a second approver MAY enable own-pay explanations that send only the asking person's figures on a payroll-allowed route.
+
+Source: PRD-002 §18 · Priority M · Phase P1
+
+#### Scenario: Default
+- **WHEN** Daniel Lim asks why his employee CPF is S$1,520.00
+- **THEN** the assistant explains the rule and the app shows his figure, and no figure is sent to a model
+
+#### Scenario: Enabled
+- **GIVEN** own-pay explanations are enabled
+- **WHEN** he asks
+- **THEN** only his own payslip figures are sent, on a route allowed for payroll data
+
+#### Scenario: Someone else's pay
+- **WHEN** he asks about a colleague's pay
+- **THEN** the assistant refuses
 
 ### Requirement: people.draft_letter Draft a letter
 The catalogue SHALL include `people.draft_letter`: a letter from a template for a request, with fields filled from the record, approved by an HR officer.

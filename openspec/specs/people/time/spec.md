@@ -25,6 +25,10 @@ Source: PRD-002 §15 · Priority M · Phase P1
 - **WHEN** 4 hours of overtime are approved
 - **THEN** they are paid at not less than 1.5 times the hourly basic rate in the next pay run
 
+#### Scenario: Hours from records
+- **WHEN** overtime is paid
+- **THEN** its hours come from NM-TIM-04's records
+
 ### Requirement: NM-TIM-03 Clocking and timesheets
 Clocking on a phone or kiosk, shift rosters and timesheets SHALL feed overtime, and project time SHALL stay in Fyniq when linked.
 
@@ -33,3 +37,21 @@ Source: PRD-002 §15 · Priority C · Phase P3
 #### Scenario: Timesheet to overtime
 - **WHEN** a timesheet with approved overtime is submitted
 - **THEN** the overtime becomes a pay-run input
+
+### Requirement: NM-TIM-04 Hours worked and special days
+For Part IV employees, overtime, rest-day and public-holiday work SHALL be recorded per day, approved and used once by a pay run, and paid by its branch; work beyond the monthly limit SHALL stay recorded and paid and be flagged for HR.
+
+Source: PRD-002 §15 · Priority M · Phase P1
+
+#### Scenario: Used once
+- **WHEN** approved hours are in the October run
+- **THEN** they cannot enter another run
+
+#### Scenario: Rest-day work
+- **GIVEN** a Part IV employee works on their designated rest day at the employer's request
+- **WHEN** their pay is calculated
+- **THEN** the rest-day branch for work at the employer's request applies [verify the rates]
+
+#### Scenario: Beyond the monthly limit
+- **WHEN** a month's overtime goes beyond the limit
+- **THEN** the hours stay recorded and are paid, and HR sees ⚠ to act on

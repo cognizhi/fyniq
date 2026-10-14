@@ -16,14 +16,27 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **THEN** it shows whether the role is in the plan, and no other financial figure
 
 ### Requirement: NM-REC-02 Job posts
-Job posts SHALL be published on a careers page, MyCareersFuture postings SHALL be recorded with their date as evidence, and for a covered Employment Pass hire the offer letter SHALL be blocked until 14 days of advertising have passed unless an exemption is recorded.
+Job posts SHALL be published on a careers page, MyCareersFuture postings SHALL be recorded with their date as evidence, and for a covered Employment Pass or S Pass hire the offer letter SHALL be blocked until 14 consecutive days of advertising have passed unless an exemption is recorded.
 
 Source: PRD-002 §12 · Priority M · Phase P2
 
 #### Scenario: Fair Consideration Framework
-- **GIVEN** an Employment Pass hire covered by the framework, posted on MyCareersFuture on Mon 5 Oct
+- **GIVEN** an Employment Pass or S Pass hire covered by the framework, posted on MyCareersFuture on Mon 5 Oct
 - **WHEN** a recruiter tries to issue an offer on Fri 16 Oct
 - **THEN** the offer letter is blocked until the 14 days have passed, unless an exemption is recorded
+
+#### Scenario: Material change
+- **WHEN** the advert's salary changes
+- **THEN** a new advert is needed, and its 14 days start again
+
+#### Scenario: Old advert
+- **WHEN** an advert closed more than 3 months ago is offered as evidence
+- **THEN** it is refused
+
+#### Scenario: Exemption
+- **GIVEN** a company with fewer than 10 employees
+- **WHEN** it hires an Employment Pass holder
+- **THEN** the exemption is recorded with its evidence, and the offer is not blocked
 
 ### Requirement: NM-REC-03 Fair wording
 Job posts and interview questions SHALL be checked for criteria that the fair-employment guidelines and the Workplace Fairness Act prohibit, unless a genuine occupational requirement is recorded.
@@ -51,6 +64,15 @@ Source: PRD-002 §12 · Priority M · Phase P2
 #### Scenario: Retention
 - **WHEN** an unsuccessful candidate's data passes 6 months without consent to keep it
 - **THEN** it is queued for the reviewed deletion, and Checks shows ⚠ if it waits (N.1 #11)
+
+#### Scenario: Basis
+- **WHEN** a candidate applies
+- **THEN** their data is used to assess the application on deemed consent [verify the current PDPC edition with the DPO]
+- **AND** keeping them for future roles needs separate consent, which they can withdraw
+
+#### Scenario: Opinions
+- **WHEN** a candidate asks for their data
+- **THEN** opinions formed only to evaluate them are not released (NM-SEC-07)
 
 ### Requirement: NM-REC-06 Offer to hire
 An accepted offer SHALL turn the candidate into a person record with a start date and an onboarding plan, and SHALL track the work pass application date.

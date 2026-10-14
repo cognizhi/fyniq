@@ -522,10 +522,12 @@ Source: PRD-001 §B.3
 #### Scenario: Ordinary wages for CPF
 - **WHEN** ordinary wages for CPF are computed
 - **THEN** OW = min(max(0, basic + allowances + OT − unpaid leave), OW ceiling)
+- **AND** an item counts only when FR-PAY-17's facts make it ordinary wages
 
 #### Scenario: Additional wages for CPF
 - **WHEN** additional wages for CPF are computed
-- **THEN** AW = bonus/commission, limited by the annual AW ceiling (new: the workbook did not enforce it)
+- **THEN** additional wages are the items FR-PAY-17 classes as such (an annual bonus is the usual case), limited by the annual AW ceiling (new: the workbook did not enforce it)
+- **AND** a commission is not additional wages by its name
 
 ### Requirement: CPF, SDL and SHG in a pay run
 Payroll SHALL compute CPF with `RND-CPF` and graduated rates, SDL with `RND-SDL` for all employees, and SHG from the SHG table unless the employee opted out.
@@ -548,18 +550,26 @@ Source: PRD-001 §B.3
 - **THEN** it comes from the SHG table by fund and wage (new: the workbook used a flat amount)
 
 ### Requirement: Posting a pay run
-A pay run SHALL post the gross by department, the employer CPF and the SDL as expenses, the net pay to 2100 and the CPF, SDL and SHG due to 2110.
+A pay run SHALL post the gross by department, the employer CPF and the SDL as expenses, the amount to disburse and any held monies to 2100 and the CPF, SDL and SHG due to 2110, with deductions and reimbursements on their own accounts.
 
 Source: PRD-001 §B.3
 
 #### Scenario: Net pay
 - **WHEN** net pay is computed
-- **THEN** net pay = gross − EE CPF − SHG
+- **THEN** net pay = gross − EE CPF − SHG − deductions authorised under FR-PAY-16
+- **AND** the amount to disburse = net pay + non-wage reimbursements (FR-AP-17) − monies held (FR-PAY-10) (FR-PAY-18)
 
 #### Scenario: Pay-run legs
 - **WHEN** a pay run is posted
 - **THEN** it posts Dr salary account (by department) gross; Dr 6020 ER CPF; Dr 6030 SDL
 - **AND** Cr 2100 net pay; Cr 2110 EE CPF + ER CPF + SDL + SHG
+
+#### Scenario: Deductions, reimbursements and held monies
+- **GIVEN** a run with an advance recovered, another authorised deduction, a booked claim paid with the salary and a held person
+- **WHEN** it is posted
+- **THEN** it posts Cr 1250 for the advance, Cr the deduction's own account (for example a court order's payee) and Dr 2150 for the claim
+- **AND** Cr 2100 is the amount to disburse plus the held monies, which stay in 2100, flagged, until released
+- **AND** gross + ER CPF + SDL + reimbursements = advances recovered + other deductions + 2100 + 2110
 
 ### Requirement: Depreciation
 Depreciation SHALL post monthly, Dr 6610 and Cr 1590, as an `ALLOC-EVEN` split of cost less residual over the useful life in months.

@@ -18,6 +18,18 @@ Source: PRD-002 §4
 - **WHEN** Nemura and Fyniq exchange data
 - **THEN** they use outbox events and Fyniq's public API, never a shared database or a private endpoint
 
+#### Scenario: Payroll formulas
+- **WHEN** Nemura calculates pay
+- **THEN** it uses PRD-001 Appendix B.3's formulas (ADR-N2; Appendix F is PRD-001's control registry)
+
+#### Scenario: One identity, two sessions
+- **WHEN** a person signs in
+- **THEN** each app keeps its own session made from the shared sign-in, and signing out revokes both (ADR-N3, NM-INT-12)
+
+#### Scenario: Event envelope
+- **WHEN** events pass between the apps
+- **THEN** each carries the envelope of NM-INT-10 (ADR-N5)
+
 ### Requirement: NM-ARC-01 Standalone first
 Nemura SHALL deploy, sign people in and run every feature with no Fyniq installation, producing a payroll journal file and a bank payment file when it is not linked.
 
@@ -31,7 +43,8 @@ Source: PRD-002 §4 · Priority M · Phase P1
 #### Scenario: Files instead of postings
 - **GIVEN** Nemura is not linked to Fyniq
 - **WHEN** a pay run is approved
-- **THEN** it produces a payroll journal file and a bank payment file for any accounting system and bank
+- **THEN** it produces a generic journal CSV and a bank payment file in a supported bank format, each with a manifest
+- **AND** for a bank not on the supported list, the CSV and a manual payment
 
 ### Requirement: NM-ARC-02 One image, own database
 Nemura SHALL ship as one lean, hardened image with its own PostgreSQL database and migrations, and SHALL run locally with the same stack and substitutes as Fyniq.
@@ -68,8 +81,17 @@ Source: PRD-002 §4 · Priority M · Phase P1
 - **WHEN** the link is removed
 - **THEN** the sync stops and neither side's data is deleted
 
+#### Scenario: Linking an organisation that ran standalone
+- **GIVEN** a Nemura organisation on its own identity tenant
+- **WHEN** it is linked to Fyniq
+- **THEN** each person is mapped explicitly, never by email alone (NM-INT-12)
+
+#### Scenario: Unlinking settles first
+- **WHEN** the Owner starts to unlink
+- **THEN** work in flight is settled before the link's credentials are revoked (NM-INT-11)
+
 ### Requirement: NM-ARC-05 Shared rules
-Nemura SHALL follow Fyniq's rules for exact-decimal money, auditing in the same transaction, correction by reversal and payroll checked against an independent oracle.
+Nemura SHALL follow Fyniq's rules for exact-decimal money, auditing in the same transaction, correcting a run by posting the difference of a new version and reversing a posting that should not exist, and payroll checked against an independent oracle.
 
 Source: PRD-002 §4 · Priority M · Phase P1
 
@@ -80,6 +102,24 @@ Source: PRD-002 §4 · Priority M · Phase P1
 #### Scenario: Oracle
 - **WHEN** payroll is calculated
 - **THEN** the Go engine's result equals the Python oracle's to the cent
+
+#### Scenario: Corrections
+- **WHEN** a run is corrected
+- **THEN** a new version posts the difference from what was posted, as PRD-001 B.3 does (NM-PAY-09)
+
+### Requirement: NM-ARC-06 Service identities and the standalone profile
+Nemura's services SHALL each run with their own identity and database role, the people-assistant runtime SHALL hold no pay-run, letter-issue or record-write role, and the standalone profile SHALL run sign-in, pay runs, documents and file exports with no Fyniq service.
+
+Source: PRD-002 §4 · Priority M · Phase P1
+
+#### Scenario: Standalone isolation
+- **GIVEN** every Fyniq service is stopped
+- **WHEN** a company signs in, calculates and approves a run, issues payslips and KETs, and exports the journal and bank files
+- **THEN** all of it works
+
+#### Scenario: The assistant cannot write
+- **WHEN** the people-assistant runtime tries to write a pay run, a record or an issued letter
+- **THEN** its database role refuses it, and it can only insert a proposal
 
 ### Requirement: NM-NFR-01 Region and residency
 Nemura SHALL run in Google Cloud `asia-southeast1`, work offline in local mode once it has code, and scale to zero.
@@ -113,6 +153,10 @@ Source: PRD-002 §21 · Priority M · Phase P1
 - **WHEN** a pay run is approved
 - **THEN** Nemura keeps working and the hand-off waits in its outbox until Fyniq answers
 
+#### Scenario: Pay-day path
+- **WHEN** a pay-day job fails
+- **THEN** NM-NFR-05's alerting applies
+
 ### Requirement: NM-NFR-04 Localisation
 Nemura SHALL use English first and the worksite pack's date, number and currency formats, with templates and packs ready for other languages.
 
@@ -121,3 +165,13 @@ Source: PRD-002 §21 · Priority S · Phase P1
 #### Scenario: Singapore formats
 - **WHEN** a Singapore worksite's dates and amounts are shown
 - **THEN** they use `en-SG` formats and S$
+
+### Requirement: NM-NFR-05 Pay-day path
+Between a run's input cut-off and its pay day, the approval, hand-off and payment-file jobs SHALL alert the Payroll administrator and the Owner within 1 hour of a failure.
+
+Source: PRD-002 §21 · Priority M · Phase P1
+
+#### Scenario: Hand-off fails before pay day
+- **GIVEN** the October run was approved on Fri 23 Oct for pay day Wed 28 Oct
+- **WHEN** the hand-off fails on Mon 26 Oct
+- **THEN** the Payroll administrator and the Owner are alerted within 1 hour

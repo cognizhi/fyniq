@@ -110,6 +110,12 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1 (a, b); P2 (c)
 - **WHEN** someone tries to connect consumer-plan credentials whose terms reserve them for the provider's own apps, or a chat session or cookie
 - **THEN** the connection is refused
 
+#### Scenario: OpenAI plan connections (P2)
+- **WHEN** an OpenAI plan connection is linked
+- **THEN** its models come from the SDK's `chatgpt.listModels()` for the active connection
+- **AND** inference needs the `chatgpt.tokens.use.direct` grant, and an identity sign-in alone grants none
+- **AND** it stays gated on the terms, eligibility and data handling (checked 14 Oct 2026)
+
 ### Requirement: AI-74 Per-agent routes
 Every agent SHALL run on a route of a primary provider and model with ordered fallbacks and the data classes it handles, set by the Owner or Administrator.
 
@@ -154,6 +160,10 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **THEN** AI-02's exclusions apply
 - **AND** no route can point an agent at a connection its data classes do not allow
 
+#### Scenario: Processing evidenced
+- **WHEN** a connection is said to process in Singapore
+- **THEN** that is evidenced per model, endpoint and feature (AI-88)
+
 ### Requirement: AI-76 Failover never lowers protection
 On an error, timeout, rate limit or exhausted quota, the router SHALL try the next route step only if it meets the agent's data classes and capabilities, and otherwise stop with a plain message.
 
@@ -185,7 +195,7 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 #### Scenario: Alerts and hard stops
 - **WHEN** an agent, connection or organisation reaches 80% of its budget
 - **THEN** an alert is raised
-- **AND** at 100% further calls stop (AI-13, AI-67)
+- **AND** at 100% no new call is admitted (AI-13, AI-67, AI-86)
 
 #### Scenario: Provider invoices are bills
 - **WHEN** a provider invoices the organisation
@@ -213,6 +223,10 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **WHEN** the provider's model list marks a name as an alias of another model
 - **THEN** the route treats it as a moving alias without anyone having to say so
 
+#### Scenario: The model that answered
+- **WHEN** the provider reports a different version from the one qualified
+- **THEN** AI-87 applies
+
 ### Requirement: AI-79 Credentials and network
 Provider credentials SHALL be kept in Secret Manager, write-only and rotated, never logged or exposed, and calls SHALL leave only through an egress allow-list per connection.
 
@@ -224,7 +238,7 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 
 #### Scenario: Egress allow-list
 - **WHEN** an agent calls a provider
-- **THEN** the call leaves only to that connection's allow-listed endpoint over TLS, and a self-hosted endpoint is reached over a private network or mutual TLS
+- **THEN** the call leaves only to that connection's allow-listed endpoint over TLS, and a self-hosted endpoint is reached over a private network or mutual TLS as a registered private endpoint (SEC-37)
 
 #### Scenario: Local mode
 - **WHEN** Fyniq runs in local mode
@@ -267,6 +281,7 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 #### Scenario: Whole list, page by page
 - **WHEN** a provider returns its list in pages
 - **THEN** every page is read to the end, with a page cap
+- **AND** whether the read was complete decides what it may remove (AI-84)
 
 #### Scenario: A plan's roster from the plan's endpoint
 - **GIVEN** a subscription plan connection
@@ -276,6 +291,10 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 #### Scenario: Reported capabilities are hints
 - **WHEN** the list reports a model's limits or capabilities
 - **THEN** they are shown and used as hints, and the conformance suite still proves each capability (AI-71)
+
+#### Scenario: Shutdown dates kept
+- **WHEN** OpenAI's list gives a model's `shutdown_date`
+- **THEN** it is kept with the model
 
 ### Requirement: AI-81 The list keeps itself current
 Each listed model SHALL show its state, and a retired or unlisted model SHALL leave allow-lists and routes by itself; the last good list SHALL stay in use when a read fails; newly listed models MAY be qualified automatically.
@@ -287,7 +306,7 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 - **THEN** each is new (first listed in the last 7 days), available, deprecated with its retirement date where the provider gives one, not offered in this region, or no longer listed
 
 #### Scenario: Retired or unlisted model
-- **WHEN** a model on an allow-list is retired or no longer listed
+- **WHEN** a model on an allow-list is retired or no longer listed (after a complete read, AI-84)
 - **THEN** it leaves the allow-list and every route step that names it is skipped, so the agent runs on its next step (AI-76)
 - **AND** Checks shows ⚠ (C.2 #55), and its history and past runs stay
 
@@ -338,3 +357,120 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1
 #### Scenario: Owner prices kept
 - **WHEN** a later read finds a price for a model the Owner priced
 - **THEN** the Owner's price is not overwritten, and each price change is one audited event by the system user
+
+#### Scenario: Ingestion
+- **WHEN** the catalogue is read
+- **THEN** AI-85's rules apply
+
+### Requirement: AI-83 Data classes follow the content
+Every tool result, attachment, knowledge page and stored turn SHALL carry the data classes of its content, set deterministically; before every call and fallback the router SHALL check the connection and any gateway against the union of everything sent, skipping it or stopping without sending.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: Fallback after own-pay facts
+- **GIVEN** a conversation that retrieved the user's own payslip figures
+- **WHEN** the primary connection fails and the only fallback is a business-only or overseas connection
+- **THEN** nothing from the conversation is sent to it
+- **AND** the run stops with a plain message, and the stop is audited
+
+#### Scenario: No declassification
+- **WHEN** the route changes during a conversation
+- **THEN** the classes already in it stay
+
+#### Scenario: Traces and evals
+- **WHEN** a trace or eval sink receives content
+- **THEN** it is checked against the same classes
+
+### Requirement: AI-84 Complete reads only
+Each model-list read SHALL be complete, partial or failed; only a complete read SHALL mark a model no longer listed, and a connection without a complete read within its stale limit SHALL stop serving personal and payroll classes.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: A later page fails
+- **GIVEN** a qualified model listed on page 3
+- **WHEN** page 2 fails, or the page cap is reached
+- **THEN** the read is partial and the model stays on the allow-list
+
+#### Scenario: The provider's shutdown date
+- **WHEN** the provider's retirement or shutdown date for a model has passed
+- **THEN** the model leaves the allow-list whatever the read
+
+#### Scenario: Stale limit
+- **GIVEN** no complete read for 14 days (the default)
+- **WHEN** a route carrying payroll data would use the connection
+- **THEN** it is skipped until a complete read succeeds
+
+### Requirement: AI-85 Price catalogue ingestion
+Each downloaded price catalogue SHALL be stored with its digest, time, source and licence check, read as decimal text with its unit, currency and tiers, and a suspicious price drop SHALL keep the previous price until an Owner reviews it.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: Collision or corruption
+- **WHEN** a new model matches an older one only after normalising, or a price is negative, zero or in an unknown unit
+- **THEN** the model is unpriced, or keeps its previous price until an Owner reviews it
+- **AND** nothing lowers its budget charge silently
+
+#### Scenario: Tiers
+- **GIVEN** a request longer than a context length at which the catalogue gives a higher rate
+- **WHEN** it is priced
+- **THEN** the higher rate applies, or the request is unpriced if that tier is missing
+
+#### Scenario: Exact decimals
+- **WHEN** a price is read
+- **THEN** it is parsed from decimal text, never as a binary float
+
+#### Scenario: Reproducible estimates
+- **WHEN** a past request's estimate is recomputed
+- **THEN** it uses the stored catalogue version
+
+### Requirement: AI-86 Budgets as admission control
+Before each call the router SHALL reserve its maximum cost against every applicable budget in one atomic step and refuse calls a budget cannot cover; reservations SHALL settle to actual usage, stay on unknown outcomes, and count probes, evals and retries.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: Concurrent spend
+- **GIVEN** S$5 left in an agent's budget and ten calls that could each cost up to S$1
+- **WHEN** they start together
+- **THEN** at most five are admitted
+
+#### Scenario: Unknown outcome
+- **WHEN** a call's outcome is unknown
+- **THEN** its reservation stays until the provider's usage is reconciled
+
+#### Scenario: Deterministic work continues
+- **WHEN** an AI budget is exhausted
+- **THEN** accounting, checks and deadlines keep working
+
+### Requirement: AI-87 The model that answered
+Every call SHALL record the model requested and the model and version the provider reports; a different reported version SHALL invalidate that step's qualification, and a moving alias with no version SHALL serve only know-how and business classes unless the Owner and a second approver accept the risk.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: A moved alias
+- **GIVEN** an alias qualified on Monday
+- **WHEN** on Tuesday the provider reports a different version for it
+- **THEN** the step's qualification is shown as invalid
+- **AND** it is skipped for personal and payroll classes and ⚠ for the rest until re-qualified
+
+#### Scenario: No version reported
+- **GIVEN** an alias for which the provider reports no version
+- **WHEN** a route carrying payroll data would use it
+- **THEN** it is not allowed, unless the Owner and a second approver accepted the risk for that route
+
+### Requirement: AI-88 Where processing happens is evidenced
+Each connection SHALL record where prompts are processed, apart from where data is stored, per model, endpoint and feature with a dated official source or contract term; unclear evidence SHALL keep it from personal and payroll classes, and a probe SHALL never prove geography.
+
+Source: PRD-001 §9.9.1 · Priority M · Phase P1
+
+#### Scenario: Storage-only region
+- **GIVEN** OpenAI's Singapore region, which stores data in Singapore and processes it elsewhere (checked 14 Oct 2026)
+- **WHEN** a route carrying payroll data would use it
+- **THEN** it is not allowed
+
+#### Scenario: Evidence record
+- **WHEN** a connection is enabled for personal or payroll data
+- **THEN** a dated processing-evidence record is kept, covering gateways, logging, retention and sub-processors
+
+#### Scenario: A probe proves nothing about place
+- **WHEN** a probe succeeds
+- **THEN** it is not taken as evidence of where the request was processed

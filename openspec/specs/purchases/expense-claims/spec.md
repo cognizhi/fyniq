@@ -5,7 +5,6 @@ How employees and directors claim back business spending in Fyniq: the My claims
 
 ## Requirements
 
-
 ### Requirement: FR-AP-07 Expense claims
 The system SHALL let an employee submit expense claims from receipts (mobile), with a category, a project and the GST captured, approved by an approver, posted to 2150 Expense claims payable and reimbursed in a payment batch.
 
@@ -27,7 +26,6 @@ Source: PRD-001 §8.6 · Priority M · Phase P1 (web) / P2 (PWA)
 #### Scenario: Director keeps a claim as a loan
 - **WHEN** a director chooses to keep a claim as a loan to the company
 - **THEN** it is kept as a loan instead of being reimbursed (FR-EQ-02)
-
 
 ### Requirement: FR-AP-08 Corporate card transactions
 The system SHALL import corporate card transactions, by feed or statement, with receipt matching and missing-receipt reminders.
@@ -90,6 +88,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1 (web) / P2 (PWA camera)
 - **WHEN** a user is in Basic mode
 - **THEN** My claims is available to them
 - **AND** approvers handle claims from the Inbox
+
+#### Scenario: Landing for personal-only users
+- **GIVEN** a person whose Fyniq rights are personal only
+- **WHEN** they sign in
+- **THEN** My claims is their landing page, in the personal workspace (FR-UX-39)
 
 ### Requirement: FR-AP-15 Expense policy
 The system SHALL keep an expense policy with per-category limits, receipt and evidence rules (FR-DOC-06), the mileage rate, a claim deadline, approval routing (FR-APR-01) and duplicate-receipt detection across users, shipped with recommended defaults and configurable (FR-ORG-08).

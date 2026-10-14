@@ -223,14 +223,20 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 
 #### Scenario: Available hours
 - **WHEN** a person's available hours are computed
-- **THEN** they are the person's standard hours (organisation setting, effective-dated; default 40 a week, 173.33 a month) minus public holidays
-- **AND** minus recorded leave once FR-PAY-12 exists
+- **THEN** they come from the person's effective-dated working pattern (FR-PPL-07), or the organisation's standard hours (effective-dated; default 40 a week, 173.33 a month) when there is none, minus public holidays on that person's working days
+- **AND** minus leave hours on working days that are not holidays, so no hour is subtracted twice
 
 #### Scenario: G4-049 Salary tagged to a project with logged time
 - **GIVEN** a journal tags S$5,000 of salary to project Acme, and the same people log approved time on Acme that month
 - **WHEN** Acme's profitability is shown
 - **THEN** Acme's cost counts staff cost once (time at cost)
 - **AND** the tagged salary appears on a separate reconciliation line, not in direct costs
+
+#### Scenario: Pattern change, leave across a holiday
+- **GIVEN** a part-timer whose working pattern changes mid-month, and a leave interval that spans a public holiday and is later cancelled in part
+- **WHEN** available hours are computed
+- **THEN** each hour is subtracted at most once
+- **AND** the result is reproducible from the recorded pattern and calendar versions, and planned and actual capacity are shown apart
 
 ### Requirement: Logging and approving project time
 A consultant SHALL be able to log time with the timer and the weekly timesheet grid, submit the week and have the project manager approve it, as in use case UC-PRJ-01 (FR-PRJ-05, FR-PRJ-07).

@@ -71,6 +71,10 @@
       "capability": "experience/devices-and-motion"
     },
     {
+      "match": "FR-UX-39",
+      "capability": "experience/navigation"
+    },
+    {
       "match": "FR-VIZ-.*",
       "capability": "experience/visualisation"
     },

@@ -137,6 +137,28 @@ Source: PRD-001 §13.3 · Priority M · Phase P1
 - **THEN** the request is refused
 - **AND** the test returns pass or fail only, never a response body
 
+#### Scenario: Registered private endpoints
+- **WHEN** the destination is a registered private endpoint
+- **THEN** SEC-37 applies instead
+
+### Requirement: SEC-37 Registered private endpoints
+A destination on a private network SHALL be reachable only after the platform operator registers its address, TLS identity, service, organisation and bound credential; an address an organisation user types SHALL never reach a private network by itself.
+
+Source: PRD-001 §13.3 · Priority M · Phase P1
+
+#### Scenario: Registered model
+- **GIVEN** a self-hosted model registered in the organisation's Singapore network
+- **WHEN** Fyniq calls it
+- **THEN** the call goes over mutual TLS or to the pinned certificate, with no redirects
+
+#### Scenario: Other private targets
+- **WHEN** a typed URL, a redirect or a rebinding DNS name points at the metadata service, an unregistered private range or an internal service
+- **THEN** the request is refused
+
+#### Scenario: Credential bound to its destination
+- **WHEN** a request would send a registered endpoint's credential anywhere else
+- **THEN** it is refused
+
 ### Requirement: SEC-25 Penetration testing and DAST
 The system SHALL have an annual independent penetration test and continuous DAST on staging.
 

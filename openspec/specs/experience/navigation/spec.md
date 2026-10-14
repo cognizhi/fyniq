@@ -23,6 +23,14 @@ Source: PRD-001 §7.1
 - **WHEN** a feature is switched off for the organisation (FR-ORG-06)
 - **THEN** its navigation item (Projects, Equity, Payroll) is hidden
 
+#### Scenario: Items without a right
+- **WHEN** a person has no right in an area
+- **THEN** its navigation item is not shown
+
+#### Scenario: Personal rights only
+- **WHEN** a person's Fyniq rights are personal only
+- **THEN** they get the personal workspace instead of the sidebar (FR-UX-39)
+
 ### Requirement: Navigation items and badges
 Each top-level navigation item SHALL contain the pages of its job and SHALL show its badge where it has one.
 
@@ -60,6 +68,7 @@ Source: PRD-001 §7.1
 - **WHEN** the user opens Payroll
 - **THEN** it holds employees, pay runs, CPF/SDL/SHG, payslips and IR8A
 - **AND** its badge is the due status
+- **AND** with Nemura or an external system it holds the pay runs received or imported, their postings and salary payment batches, with links to Nemura, while employees, payslips and IR8A live there (PRD-002 NM-PAY-07)
 
 #### Scenario: Projects
 - **GIVEN** projects are switched on
@@ -106,6 +115,12 @@ Source: PRD-001 §7.1
 - **THEN** the personal section shows **My claims** (FR-AP-14)
 - **AND** directors also see "Money I put in" (FR-EQ-14)
 - **AND** from P2 it shows **My payslips**
+- **AND** with Nemura, payslips are in Nemura's My pay, reached through the Finance | People switch (PRD-002 NM-ESS-02)
+
+#### Scenario: The whole navigation for personal-only users
+- **GIVEN** a person whose Fyniq rights are personal only
+- **WHEN** they open Fyniq
+- **THEN** the personal section is the whole navigation (FR-UX-39)
 
 ### Requirement: AI assistant side panel
 The AI assistant SHALL be a persistent side panel available on every page and carrying the page's context, not a navigation item.
@@ -608,3 +623,39 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 #### Scenario: Optimistic UI state
 - **WHEN** a user adds a comment, marks a favourite or changes the layout
 - **THEN** the UI may update before the server responds
+
+### Requirement: FR-UX-39 Personal workspace for people who only claim
+A person whose Fyniq rights are personal only SHALL get a separate workspace that lands on My claims, shows only items they have a right to (and To approve for approvers), and SHALL keep search, notifications and the assistant to their own records, the expense policy and help.
+
+Source: PRD-001 §7.2 · Priority M · Phase P1
+
+#### Scenario: Landing
+- **GIVEN** Daniel Lim holds only the Employee role in Fyniq
+- **WHEN** he signs in to Fyniq, or arrives from Nemura's Claims tile
+- **THEN** he lands on My claims, with no Home, Inbox, Basic | Expert switch or finance area in the navigation
+
+#### Scenario: A finance link
+- **WHEN** he opens a link to a finance page, for example a bank account
+- **THEN** he sees a plain "not part of your access" page with a way back, and no names or figures
+
+#### Scenario: Search and the assistant
+- **WHEN** he searches or asks the assistant about money
+- **THEN** only his own claims, the expense policy and help are reached (SEC-34, AI-P1)
+
+#### Scenario: Approver
+- **GIVEN** a line manager who approves their reports' claims and holds no finance role
+- **WHEN** a claim waits for them
+- **THEN** it appears under To approve and opens its approval confirmation with the receipt, never the Purchases module
+
+#### Scenario: Enforced on the server
+- **WHEN** a personal-only user calls a finance API operation directly
+- **THEN** it is refused by permissions and row-level security, whatever the navigation shows
+
+#### Scenario: Back to People
+- **GIVEN** he arrived from Nemura
+- **WHEN** the personal workspace is shown
+- **THEN** the header has Back to People instead of the Finance | People switch
+
+#### Scenario: Rights change
+- **WHEN** he is given a finance role
+- **THEN** his next page load shows the full workspace, and removing the role moves him back
