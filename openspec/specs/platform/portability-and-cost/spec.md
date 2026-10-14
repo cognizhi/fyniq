@@ -82,7 +82,7 @@ Source: PRD-001 §12.12
 - **THEN** a Singapore region is available: `asia-southeast1`, `ap-southeast-1` or Southeast Asia
 
 ### Requirement: Identity tie to Google Cloud
-The platform SHALL keep a portable sign-in path open, because Identity Platform is GCP-only; ADR-T3 stays open on it.
+The platform SHALL keep a portable sign-in path open, because Identity Platform is GCP-only; ADR-T3, accepted, keeps that path available.
 
 Source: PRD-001 §12.12
 
