@@ -14,9 +14,10 @@ the `zh-sheet-accounting` Zoho Sheet workbook and keeps its accounting rules, st
 test philosophy. The line is a promise the code keeps: every figure traces to its source, and AI
 states where each number comes from (golden rules 3 and 5).
 
-**Status: pre-P0.** The repository holds the product spec, the design system, the agent
-skills, the local dependency stack and the release tooling. No application code exists yet.
-P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
+**Status: P0 (Foundation) in progress.** Besides the product spec, the design system, the agent
+skills and the release tooling, the repository has the Go service skeleton, local mode and the web
+shell (p0-repo-skeleton-local-mode). The rest of P0 is planned in `openspec/changes/p0-*` and
+`docs/prd/plans/p0-foundation-2026-10-14.md`.
 
 | Read first | Why |
 |---|---|
@@ -45,7 +46,9 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 | `make spec-check` / `spec-map` / `spec-stale` | OpenSpec specs valid (strict), covering every PRD anchor once and matching the PRD rows (part of `make check`); the PRD → capability map; PRD rows changed since conversion | Today |
 | `make design-kit` / `design-check` / `design-status` | Regenerate the screen kit stylesheet; lint the screen inventory and fragments (part of `make check`); screens designed per canvas | Today |
 | `make review-check` / `review-status` | The review register (`docs/prd/reviews/review-status.json`) names real requirements and screens and no excluded page (part of `make check`); the areas awaiting second review and the pages that show the "Needs additional verification" banner (FR-UX-41) | Today |
-| `make setup`, `dev`, `up`, `down`, `seed`, `reset`, `test`, `test-e2e`, `evals`, `images`, `ci` | The local-mode command contract (PRD §12.8): the full stack and every merge gate, offline | **Arrives in P0** |
+| `make setup` / `dev` / `up` / `down` | Install the pinned toolchain (`mise.toml`), the web dependencies and hooks; run the stack with hot reload (dependencies in Docker, services and Vite on the host); run it from the local images behind Caddy on `localhost:8080` / stop it | Today (P0: Hydra and the sign-in emulator join with p0-identity-oauth-first-run) |
+| `make seed` / `reset` | Write the sample company to `.data/seed/` / delete local data and the database volume | Today |
+| `make test` / `test-e2e` / `evals` / `images` / `ci` | Every merge gate offline (Go in both build flavours, web typecheck, `make check`) / the Playwright smoke test / the AI evals in replay (suites arrive in P1) / build the images (`FLAVOURS=release local`) / what CI runs, in order | Today (gates grow with each P0 change) |
 
 Never invent a command in docs or scripts. If you need a new one, add it to the Makefile with a
 `## description`, and to this table.
@@ -149,7 +152,7 @@ connectors/          connector manifests and code (FR-INT-25)  internal/adapters
 5. Docs are updated (PRD with a `(rev 0.N)` tag, user guide in `docs/user-guide/` with its help
    keys, API reference, runbook, skills).
 6. Conventional Commit with upgrade notes where needed. `make test` passes offline and
-   `make up` still starts (from P0). Today, `make check` passes.
+   `make up` still starts (`make test` includes `make check`).
 
 ## Skills (`.claude/skills/`)
 

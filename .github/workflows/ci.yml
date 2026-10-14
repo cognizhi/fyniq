@@ -1,4 +1,5 @@
-# Checks that run today. P0 extends this workflow to call `make ci` (PRD-001 §12.8).
+# Merge gates (PRD-001 §12.8, §16.2). Job names are required checks on main: rename only together
+# with branch protection. p0-ci-images-release adds images, scans and the release path.
 name: ci
 
 on:
@@ -53,3 +54,60 @@ jobs:
         with:
           persist-credentials: false
       - run: make check
+
+  test:
+    name: Go, web and checks (make test)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      # jdx/mise-action v5.1.2, pinned by commit (SEC-28): installs the toolchain of mise.toml
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: pnpm install --frozen-lockfile
+      - run: make test
+
+  e2e:
+    name: Web smoke test (make test-e2e)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: pnpm install --frozen-lockfile
+      - run: make test-e2e   # uses the runner's Google Chrome; no browser download
+
+  local-mode:
+    name: Local mode timings (make setup && make dev)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      # Only mise itself: `make setup` installs the toolchain inside the timed first run (DEV-01).
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+        with:
+          install: false
+          cache: false
+      - run: scripts/devx-timing.sh
+      - if: failure()
+        run: tail -n 50 .data/devx-*.log .data/dev/*.log || true
+
+  devcontainer:
+    name: Dev container builds
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: docker build -f .devcontainer/Dockerfile -t fyniq-devcontainer .
+      - run: docker run --rm fyniq-devcontainer bash -lc 'cd /tmp/toolchain && mise ls --current'

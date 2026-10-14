@@ -1,0 +1,14 @@
+{
+  "name": "Fyniq",
+  "build": { "dockerfile": "Dockerfile", "context": ".." },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [5173, 8080, 8081, 8025],
+  "postCreateCommand": "mise trust --yes && make setup",
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go", "dbaeumer.vscode-eslint", "redhat.vscode-yaml"]
+    }
+  }
+}

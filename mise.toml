@@ -1,0 +1,18 @@
+# The pinned toolchain (PRD-001 §12.8, DEV-03). `make setup` runs `mise install`; CI installs the
+# same versions with jdx/mise-action, and the dev container bakes them in (.devcontainer/).
+# Change a version here only in a reviewed pull request.
+[tools]
+go = "1.27.1"
+node = "24.21.0"
+pnpm = "10.33.3"
+python = "3.13.7"
+uv = "0.13.1"
+typst = "0.15.1"
+opentofu = "1.13.1"
+golangci-lint = "2.14.0"
+watchexec = "2.8.0"
+"aqua:pressly/goose" = "3.29.0"
+"npm:@fission-ai/openspec" = "1.14.1"
+
+[env]
+OPENSPEC_TELEMETRY = "0"
