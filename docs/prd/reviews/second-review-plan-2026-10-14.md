@@ -14,7 +14,7 @@ revisions of 13–14 Oct 2026 were written with an AI agent at the founder's req
 | When | **Before P0 work starts on each area**, in this order: statutory and payroll; roles, approvals and payments; AI/MCP and identity (before the MCP server is built) | Nothing is built on an unreviewed rule, and the spec is cheapest to change before code exists |
 | Until then | The research and decisions of 14 Oct 2026 are committed to `main`; the review PRs come later | Founder's choice, so the work is saved now |
 
-Decisions taken on the same day that the reviewers confirm rather than make:
+Decisions taken on the same day that the reviewers confirm rather than make (the P0 open questions 6, 9, 11, 13, 30, 36 and 40 are recorded in PRD-001 rev 0.20):
 
 - **Payslips are never in Fyniq.** Without Nemura, payslips and KETs come from the payroll provider or a
   documented manual process, recorded under FR-PAY-15; FR-PAY-08 is superseded for Fyniq (PRD-001 rev 0.19).
@@ -43,6 +43,7 @@ Read with the [verification sweep](../research/verify-sweep-2026-10-14.md), whic
 - [ ] Framework and policies (FR-ORG-10, open question 31): **confirm** SFRS for Small Entities and the revenue policy per Model B case (FR-AR-15, FR-PSP-07)
 - [ ] Leave liability policy and materiality floor (FR-PPL-07, NM-LV-09)
 - [ ] The Singapore pack (PRD-002 Appendix A, 22 topics), government-paid leave schemes (NM-LV-14) and KETs (NM-LTR-06)
+- [ ] **Confirm** the retention the founder chose: 7 years after each object's financial year, a lock that can never be shortened (open question 6, PRD-001 rev 0.20)
 
 ## Area 2 · Roles, approvals and payments (co-founder)
 
@@ -58,7 +59,7 @@ Read with the [verification sweep](../research/verify-sweep-2026-10-14.md), whic
 
 - [ ] Model providers, routes, data classes and egress (AI-70…AI-88, SEC-37); the never-list (§9.6)
 - [ ] Data residency (ADR-T2): Opus 4.6 confirmed in Singapore on all three Google pages; Sonnet 4.6 on two of three; the 5.x models have no Singapore endpoint
-- [ ] MCP (§9.7) against the 2026-07-28 specification: `iss` checks, credentials keyed by issuer, dynamic client registration deprecated; Hydra has no RFC 8707 or Client ID Metadata Document support, so **decide** open question 40 (token exchange: Ory Enterprise Licence, the JWT-bearer grant, or another server such as Keycloak)
+- [ ] MCP (§9.7) against the 2026-07-28 specification: `iss` checks, credentials keyed by issuer, dynamic client registration deprecated; Hydra has no RFC 8707 or Client ID Metadata Document support, so review the founder's path for open question 40 (rev 0.20): the free build pinned, the JWT-bearer grant proved in the P0 identity spike with its limits (only for the user of an MCP token just validated, at most 5 minutes, scopes intersected by the API, the key in KMS), an Enterprise Licence quote alongside, and the final choice before P1's MCP work
 - [ ] Tokens: audience binding, DPoP where clients support it, revocation within 60 seconds (AI-36, AI-38)
 - [ ] Sign-in: the Zoho issuer per data centre (FR-ADM-08, §17.3 item 7); passkeys implemented in the API (Identity Platform has none)
 - [ ] NRIC handling while PDPC's guidance is under review (CMP-PD-07); NRIC never used for authentication after 31 Dec 2026
