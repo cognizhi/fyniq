@@ -15,10 +15,13 @@ x-hardened: &hardened             # our images run as in production (NFR-IMG-02)
   tmpfs: ["/tmp:size=64m"]
   restart: unless-stopped
 
+# Each service connects as its own database role (SEC-03); services without a role get no
+# FYNIQ_DATABASE_URL at all. `migrate up` creates the roles; locally they share the password
+# fyniq-local-only, which is valid nowhere else.
 x-fyniq-env: &fyniq-env
   FYNIQ_ENV: local
   PORT: "8080"
-  FYNIQ_DATABASE_URL: postgres://fyniq:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
+  FYNIQ_DATABASE_URL: ""
   FYNIQ_GCS_ENDPOINT: http://gcs:4443/storage/v1/
   FYNIQ_SMTP_ADDR: mailpit:1025
 
@@ -65,14 +68,20 @@ services:
     profiles: [core]
     restart: "no"
     command: ["up"]
-    environment: { <<: *fyniq-env }
+    environment:
+      <<: *fyniq-env
+      FYNIQ_DATABASE_URL: postgres://fyniq_migrator:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
+      # the container's superuser, used only to create fyniq_migrator in an empty database
+      FYNIQ_DATABASE_ADMIN_URL: postgres://fyniq:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
     depends_on: { postgres: { condition: service_healthy } }
 
   api:
     <<: *hardened
     image: fyniq-api:local
     profiles: [core]
-    environment: { <<: *fyniq-env }
+    environment:
+      <<: *fyniq-env
+      FYNIQ_DATABASE_URL: postgres://fyniq_api:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
     ports: ["127.0.0.1:${FYNIQ_API_PORT:-8081}:8080"]
     depends_on: { migrate: { condition: service_completed_successfully } }
     healthcheck: *health
@@ -81,35 +90,39 @@ services:
     <<: *hardened
     image: fyniq-ai:local
     profiles: [core]
-    environment: { <<: *fyniq-env, FYNIQ_DATABASE_URL: "" }   # no database credential at all (§12.3)
+    environment: { <<: *fyniq-env }   # no database credential at all (§12.3)
     healthcheck: *health
 
   mcp:
     <<: *hardened
     image: fyniq-mcp:local
     profiles: [core]
-    environment: { <<: *fyniq-env, FYNIQ_DATABASE_URL: "" }   # reaches data only through the API (§12.3)
+    environment: { <<: *fyniq-env }   # reaches data only through the API (§12.3)
     healthcheck: *health
 
   worker:
     <<: *hardened
     image: fyniq-worker:local
     profiles: [core]
-    environment: { <<: *fyniq-env }
+    environment:
+      <<: *fyniq-env
+      FYNIQ_DATABASE_URL: postgres://fyniq_worker:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
     healthcheck: *health
 
   executor:                                   # own identity and database role (§12.3)
     <<: *hardened
     image: fyniq-executor:local
     profiles: [core]
-    environment: { <<: *fyniq-env }
+    environment:
+      <<: *fyniq-env
+      FYNIQ_DATABASE_URL: postgres://fyniq_executor:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
     healthcheck: *health
 
   render:
     <<: *hardened
     image: fyniq-render:local
     profiles: [core]
-    environment: { <<: *fyniq-env, FYNIQ_DATABASE_URL: "" }
+    environment: { <<: *fyniq-env }
     healthcheck: *health
 
   web:                                        # the built web app on nginx-unprivileged

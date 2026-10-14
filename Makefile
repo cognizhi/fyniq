@@ -20,7 +20,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test db-lint sqlc test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -55,13 +55,22 @@ reset: ## Stop everything and delete local data: the database volume and .data/
 	@rm -rf .data
 	@echo "✔ local data removed; run make dev to start again"
 
-test: ## Run every merge gate offline: Go in both build flavours, the web typecheck, make check
+test: ## Run every merge gate offline (Docker needed for the database suites): migrations, Go in both flavours, web, make check
+	@$(MAKE) --no-print-directory db-lint
 	@$(MISE) go vet ./...
 	@$(MISE) go vet -tags local ./...
 	@$(MISE) go test ./...
 	@$(MISE) go test -tags local ./...
 	@$(MISE) pnpm -r typecheck
 	@$(MAKE) --no-print-directory check
+
+db-lint: ## Lint the migrations (squawk) and check the adapter's generated queries match them (sqlc)
+	@$(MISE) squawk db/migrations/*.sql
+	@cd internal/adapters/postgres && $(MISE) sqlc diff || { echo "✖ internal/adapters/postgres/sqlcdb is stale: run make sqlc"; exit 1; }
+	@echo "✔ migrations lint clean; generated queries up to date"
+
+sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
+	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
 
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e
