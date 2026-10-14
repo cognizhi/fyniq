@@ -1,8 +1,7 @@
-# Fyniq: the single entry point for local work and CI (PRD-001 §12.8).
+# Fyniq: the single entry point for local work and CI (PRD-001 §12.8, ADR-T4).
 #
-# Available today: the targets below.
-# Arrives in P0 (command contract, ADR-T4): setup, dev, up, down, seed, reset, test,
-# test-e2e, evals, images, ci. See .claude/skills/fyniq-local-dev.
+# The local-mode command contract: setup, dev, up, down, seed, reset, test, test-e2e, evals,
+# images, ci. None of them needs a cloud credential (DEV-02). See .claude/skills/fyniq-local-dev.
 
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -euo pipefail -c
@@ -14,13 +13,75 @@ SCREENS := docs/design/screens
 # OpenSpec CLI: the installed one, else the pinned version through npx (CI)
 OPENSPEC ?= $(shell command -v openspec >/dev/null 2>&1 && echo openspec || echo npx -y @fission-ai/openspec@1.14.1)
 export OPENSPEC_TELEMETRY := 0
+# The pinned toolchain from mise.toml when mise is installed; the tools on PATH otherwise
+MISE := $(shell command -v mise >/dev/null 2>&1 && echo "mise exec --")
+GO_IMAGES := api ai mcp worker executor render migrate jobs
+FLAVOURS ?= release local
+VERSION := $(shell tr -d '[:space:]' < VERSION)
+GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
-	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
-	@echo
-	@echo "  Arriving in P0: setup dev up down seed reset test test-e2e evals images ci"
+	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+setup: ## Install the pinned toolchain (mise), the web dependencies and the git hooks; write .env
+	@if command -v mise >/dev/null 2>&1; then mise install; else echo "⚠ mise is not installed: using the tools on PATH (pinned versions in mise.toml)"; fi
+	@[ -f .env ] || { cp .env.example .env; echo "✔ wrote .env from .env.example"; }
+	@mkdir -p .data/blobs .data/seed .data/dev
+	@$(MISE) go mod download
+	@$(MISE) pnpm install --frozen-lockfile
+	@$(MAKE) --no-print-directory hooks
+
+dev: ## Run the stack with hot reload: dependencies in Docker, the Go services and Vite on the host
+	@$(MAKE) --no-print-directory deps-up
+	@$(MISE) go run -tags local ./cmd/migrate up
+	@$(MAKE) --no-print-directory seed
+	@$(MISE) scripts/dev.sh
+
+up: ## Run the stack from the local flavour of the images, behind Caddy on http://localhost:8080
+	@$(MAKE) --no-print-directory images FLAVOURS=local
+	@$(COMPOSE) --profile core up -d --wait
+	@echo "Fyniq       http://localhost:$${FYNIQ_HTTP_PORT:-8080}   (API http://localhost:$${FYNIQ_API_PORT:-8081}/version)"
+
+down: ## Stop the stack started by `make up` (keeps the database volume)
+	@$(COMPOSE) --profile core down
+
+seed: ## Write the sample company (DEV-04) to .data/seed/company.json
+	@$(MISE) go run -tags local ./cmd/seed --out .data/seed/company.json
+
+reset: ## Stop everything and delete local data: the database volume and .data/
+	@$(COMPOSE) --profile core down -v
+	@rm -rf .data
+	@echo "✔ local data removed; run make dev to start again"
+
+test: ## Run every merge gate offline: Go in both build flavours, the web typecheck, make check
+	@$(MISE) go vet ./...
+	@$(MISE) go vet -tags local ./...
+	@$(MISE) go test ./...
+	@$(MISE) go test -tags local ./...
+	@$(MISE) pnpm -r typecheck
+	@$(MAKE) --no-print-directory check
+
+test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
+	@$(MISE) pnpm --filter @fyniq/web test:e2e
+
+evals: ## Run the AI eval suites in replay mode (the suites arrive in P1)
+	@scripts/evals.sh
+
+images: ## Build the Go and web images (FLAVOURS="release local" by default)
+	@for svc in $(GO_IMAGES); do for f in $(FLAVOURS); do \
+	  tag=$$( [ "$$f" = local ] && echo local || echo "$(VERSION)" ); \
+	  docker build -q -f deploy/docker/Dockerfile.go-service --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
+	    --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t fyniq-$$svc:$$tag . >/dev/null; \
+	  echo "✔ fyniq-$$svc:$$tag"; done; done
+	@docker build -q -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
+
+ci: ## Run what CI runs, in the same order: test, images, test-e2e, evals
+	@$(MAKE) --no-print-directory test
+	@$(MAKE) --no-print-directory images
+	@$(MAKE) --no-print-directory test-e2e
+	@$(MAKE) --no-print-directory evals
 
 check: check-tokens check-config kb-lint spec-check design-check review-check ## Run every check available today (CI runs this)
 

@@ -1,0 +1,22 @@
+/* Semantic tokens only (golden rule 11); tokens.css defines them for every theme. */
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: system-ui, sans-serif;
+}
+
+.shell {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+  line-height: 1.5;
+}
+
+.lead {
+  color: var(--text-secondary);
+}
+
+.api {
+  font-variant-numeric: tabular-nums;
+}

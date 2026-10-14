@@ -1,0 +1,3 @@
+# The web apps (PRD-001 §12.4): apps/web now; apps/nemura-web arrives with Nemura's P1.
+packages:
+  - apps/*

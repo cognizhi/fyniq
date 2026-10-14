@@ -12,13 +12,13 @@ dependency sits behind a Go interface with two adapters: production and local. C
 into builds tagged `local` (DEV-07): each image has a **release** flavour (staging and production
 only) and a **local** flavour from the same commit and Dockerfile (PRD rev 0.8, ADR-T4).
 
-## What exists today vs what arrives in P0
+## What exists today and what the rest of P0 adds
 
-| Today (rev 0.2 bootstrap) | Arrives in P0 |
+| Today (p0-repo-skeleton-local-mode) | Added by later P0 changes |
 |---|---|
-| `deploy/local/compose.yaml` with three dependencies, bound to `127.0.0.1` only: `postgres` (PostgreSQL 18 Alpine; database and user `fyniq`, password `fyniq-local-only`; host port **55432** by default, `FYNIQ_PG_PORT` to change), `mailpit` (UI on 8025, SMTP on 1025; `FYNIQ_MAIL_UI_PORT`, `FYNIQ_SMTP_PORT`) and `gcs` (fake-gcs-server on 4443, `-scheme http`, in-memory; `FYNIQ_GCS_PORT`) | The full stack and profiles (`templates/compose.full.example.yaml`) |
-| `make deps-up`, `make deps-down`, `make deps-logs` | `make setup`, `dev`, `up`, `down`, `seed`, `reset`, `test`, `test-e2e`, `evals`, `images`, `ci` (the command contract below) |
-| `make help`, `check`, `check-tokens`, `check-config`, `hooks`, `prototype` | Dockerfiles in `deploy/docker/` from `templates/` |
+| `deploy/local/compose.yaml`: the dependencies bound to `127.0.0.1` (`postgres` PostgreSQL 18 on host port **55432**, user and database `fyniq`, password `fyniq-local-only`, `FYNIQ_PG_PORT`; `mailpit` UI 8025 and SMTP 1025; `gcs` fake-gcs-server on 4443) and, in profile `core`, our services from the local images (`migrate`, `api`, `ai`, `mcp`, `worker`, `executor`, `render`, `web`) behind **Caddy on 8080** (`deploy/local/Caddyfile`) | Hydra and the sign-in emulator (p0-identity-oauth-first-run); River for the queue (p0-outbox-background-work); the `obs`, `scan` and `partners` profiles |
+| The command contract below; `scripts/dev.sh` runs the services on the host (ports 8081–8086, Vite on 5173) with watchexec reloads | Migrations in `make dev` (p0-database-tenancy-migrations); Tink keysets and Hydra clients in `make setup` |
+| `deploy/docker/Dockerfile.go-service` (release or local `FLAVOUR`) and `Dockerfile.web`, bases pinned by digest; `mise.toml`; `.devcontainer/` | Image budgets, scans, SBOMs and signing in `make images` (p0-ci-images-release) |
 
 `fyniq-local-only` is a **local-only** password for a throw-away container. Never reuse it, and
 never put a real secret in a committed file (SEC-12).
@@ -63,14 +63,14 @@ Our own services always run with `read_only: true`, `user: "65532:65532"`, `cap_
 and a `tmpfs` for `/tmp`, so local runs catch anything that would break under the production
 hardening (NFR-IMG-02).
 
-## The command contract (arrives in P0)
+## The command contract
 
 The Makefile is the single entry point, and CI calls the same targets (`make ci`).
 
 | Command | Must do | Budget |
 |---|---|---|
-| `make setup` | Install the pinned toolchain from `mise.toml`; write `.env` from `.env.example`; create Tink keysets in `.data/keys/`; register Hydra clients for the first-party apps; install git hooks (`make hooks`) | ≤ 10 min first run |
-| `make dev` | Start `core` with hot reload (`air` for Go, Vite HMR); run migrations; seed the **sample company**; print the URLs and sample sign-ins | ≤ 60 s on later runs (DEV-01) |
+| `make setup` | Install the pinned toolchain from `mise.toml`; write `.env` from `.env.example`; install the web dependencies and git hooks (`make hooks`). Later P0 changes add the Tink keysets in `.data/keys/` and the Hydra clients | ≤ 10 min first run |
+| `make dev` | Start the dependencies, run migrations, seed the **sample company**, then the services and Vite on the host with hot reload (watchexec for Go, Vite HMR); print the URLs (sample sign-ins arrive with identity) | ≤ 60 s on later runs (DEV-01) |
 | `make up` / `make down` | Run the stack from the **local flavour of the release images** (same Dockerfile, base and hardening, plus the local adapters; PRD rev 0.8), not dev builds / stop it | — |
 | `make seed` / `make reset` | Reload the sample company / wipe `.data/` and the database | — |
 | `make test` | Every merge gate offline: unit, property, DB invariant attacks (Testcontainers), oracle differential, contract, authz matrix, front-end unit and accessibility | ≤ 10 min (NFR-DEVX-02) |
@@ -169,8 +169,7 @@ not wired into any build yet.
 
 ## Definition of done (changes to local mode or images)
 
-1. `make dev` and `make test` still pass with no cloud credentials (arrives in P0; today:
-   `make deps-up` and `make check`).
+1. `make dev` and `make test` still pass with no cloud credentials.
 2. A new cloud dependency has its interface, both adapters, a substitute-table row (here and in
    PRD §12.8) and a staging check for any fidelity gap.
 3. `make images` passes the budgets; the production image has no local adapter symbols.
