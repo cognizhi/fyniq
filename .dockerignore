@@ -4,6 +4,8 @@
 !go.sum
 !cmd/
 !internal/
+!db/embed.go
+!db/migrations/
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml

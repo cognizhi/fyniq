@@ -11,7 +11,9 @@ typst = "0.15.1"
 opentofu = "1.13.1"
 golangci-lint = "2.14.0"
 watchexec = "2.8.0"
-"aqua:pressly/goose" = "3.29.0"
+"aqua:pressly/goose" = "3.28.0"           # same version as the goose library in go.mod
+sqlc = "1.31.1"
+"npm:squawk-cli" = "2.66.0"
 "npm:@fission-ai/openspec" = "1.14.1"
 
 [env]
