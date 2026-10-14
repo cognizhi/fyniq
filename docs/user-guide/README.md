@@ -1,7 +1,9 @@
-# User guide: Fyniq
+# User guide: Fyniq and Nemura
 
 This folder holds the source of the in-app user guide (PRD-001 §7.9, FR-UX-32). Each Markdown page
-is built into the web app at `/help/<page>` and released with the platform. There is no external
+is built into the web app at `/help/<page>` and released with the platform. Nemura's pages are in
+`nemura/` (PRD-002 NM-UX-04) and are built into Nemura the same way; both are compiled into the
+knowledge base the assistants read (PRD-002 NM-AI-03). There is no external
 help site and no separate CMS. Status: **pre-P0**. Most pages below are planned; the ones that
 exist are marked ✔.
 
@@ -45,11 +47,20 @@ books** (Expert only) · **Common problems** (each ✖ or ⚠ message and its fi
 | Section | Pages |
 |---|---|
 | Getting started | Your first sign-in and the tour · Basic and Expert modes · The Home page · Set up the company (FR-UX-10) · Invite your accountant · Practise in the sample company |
-| Everyday work | Record money in and out · Categorise and match bank lines · Create and send an invoice · Record a bill · Expense claims and costs you paid personally · Approve or reject · The Inbox |
+| Everyday work | Record money in and out · Categorise and match bank lines · Create and send an invoice · Record a bill · ✔ [Claim back money you spent for the company](claims-my-claims.md) · ✔ [Approve your team's claims](claims-approve-team.md) · Approve or reject · The Inbox |
+| Your workspace | What you see and why (each role's workspace, §7.1) · My department for budget holders · My time · My shares and options |
 | Founders and equity | ✔ [Founders' money: what the company owes you, and the options](founders-money.md) · Who owns the company (cap table) · Record a share issue · SAFEs and notes · Model a funding round · Investor records and updates |
-| Payroll | Employees · Run payroll · CPF, SDL and SHG · Payslips and IR8A |
+| Payroll | Pay runs from Nemura or your payroll system · Salary payment batches · Payroll in the books (payslips, CPF and IR8A are in Nemura or the payroll provider's system, never in Fyniq) |
 | Accounting (Expert) | Journals · Chart of accounts · Period close · Fixed assets · Foreign currency · Year end |
 | Reports | Financial statements · Explain a number · Exports · Board pack |
 | Compliance | Statutory calendar · GST returns · Evidence: attach screenshots and files · Audit trail |
 | AI and integrations | Ask the AI · AI proposals and approvals · Connected apps and MCP · The API |
 | Reference | Keyboard shortcuts · Status chips (✔ ⚠ ✖ ⏰ ✎ 🔒) · Glossary · What's new |
+
+## Nemura contents (planned, `nemura/`)
+
+| Section | Pages |
+|---|---|
+| Me | My home · ✔ [Apply for leave](nemura/leave-apply.md) · ✔ [Tell us you're sick](nemura/leave-sick.md) · My pay and payslips · Request a letter · Update my details · After you leave |
+| Managers | Approve leave · The team calendar · Claims (in Fyniq: [Approve your team's claims](claims-approve-team.md)) |
+| People team | People records · Leave policy and the Singapore pack · Government-paid leave claims · Pay runs and approval · Letters and templates · Checks · Access requests · The Fyniq link |
