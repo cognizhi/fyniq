@@ -123,7 +123,7 @@ The system SHALL block a live calculation that needs a pack value that is not ve
 Source: PRD-002 §N.1
 
 #### Scenario: Unverified value
-- **WHEN** an employee applies for unpaid infant care leave and its entitlement is still researched, with no company decision
+- **WHEN** an employee applies for leave whose entitlement is still researched, with no company decision
 - **THEN** the check shows ✖
 
 ### Requirement: N.1 #14 Salary payment not paid

@@ -1,0 +1,41 @@
+<!-- fyniq-screen {"nav": "payroll", "title": "Salary payments", "mode": "basic", "heights": {"compact": 1600, "medium": 1100, "expanded": 1000}} -->
+<div class="fy-page fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#payroll">Payroll</a><i data-icon="chevron-right"></i><span aria-current="page">Salary payments</span></nav>
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <h1 class="fy-h1">Salary payments</h1>
+      <p class="fy-secondary">Salary lines arrive from Nemura with each approved pay run. They are approved and released here like any payment batch.</p>
+    </div>
+  </div>
+
+  <section class="fy-card" aria-labelledby="oct-title">
+    <div class="fy-card__head"><h2 class="fy-h3" id="oct-title">October salaries · pay day Wed 28 Oct</h2><span class="fy-chip fy-chip--neutral"><i data-icon="clock"></i>Waiting for the run</span></div>
+    <div class="fy-card__body fy-stack fy-stack--3">
+      <p class="fy-secondary">The lines arrive when Arjun Rao approves the October run in Nemura (by Fri 23 Oct). Fyniq then checks the approval before anything is posted or paid.</p>
+      <div class="fy-banner fy-banner--warning"><i data-icon="pause" class="fy-i--20"></i><div class="fy-banner__text"><span class="fy-strong">Chen Yu: tax-clearance hold</span><span class="fy-small">Set in Nemura on Thu 1 Oct (version 1). When his line arrives it is held: Fyniq asks Nemura again at release, and pays nothing to him until IRAS's notice is recorded there.</span></div></div>
+    </div>
+  </section>
+
+  <section class="fy-stack fy-stack--3" aria-labelledby="sep-title">
+    <div class="fy-section__head"><h2 class="fy-h2" id="sep-title">September salaries · paid Mon 28 Sep</h2><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></div>
+    <div class="fy-card" style="overflow: hidden">
+      <table class="fy-table fy-table--cards">
+        <thead><tr><th scope="col">Person</th><th scope="col" class="fy-from-medium">Account</th><th scope="col" class="fy-from-expanded">Bank details</th><th scope="col">Status</th><th scope="col" class="fy-num">Net (SGD)</th></tr></thead>
+        <tbody>
+          <tr><td data-card="title">Daniel Lim</td><td data-card="hide" class="fy-from-medium fy-mono">OCBC ••••3307</td><td data-card="hide" class="fy-from-expanded fy-small">Version 1, approved in Nemura</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td><td data-card="amount" class="fy-num">6,077.00</td></tr>
+          <tr><td data-card="title">Priya Nair</td><td data-card="hide" class="fy-from-medium fy-mono">DBS ••••1185</td><td data-card="hide" class="fy-from-expanded fy-small">Version 2, approved in Nemura</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td><td data-card="amount" class="fy-num">5,595.00</td></tr>
+          <tr><td data-card="title">Wei Jie Ong</td><td data-card="hide" class="fy-from-medium fy-mono">DBS ••••4821</td><td data-card="hide" class="fy-from-expanded fy-small">Version 1, approved in Nemura</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td><td data-card="amount" class="fy-num">8,400.00</td></tr>
+          <tr><td data-card="title">Sarah Koh</td><td data-card="hide" class="fy-from-medium fy-mono">UOB ••••6092</td><td data-card="hide" class="fy-from-expanded fy-small">Version 1, approved in Nemura</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td><td data-card="amount" class="fy-num">4,100.00</td></tr>
+          <tr><td data-card="title">Hafiz Rahman</td><td data-card="hide" class="fy-from-medium fy-mono">POSB ••••7713</td><td data-card="hide" class="fy-from-expanded fy-small">Version 1, approved in Nemura</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td><td data-card="amount" class="fy-num">3,500.00</td></tr>
+          <tr><td data-card="title">Chen Yu</td><td data-card="hide" class="fy-from-medium fy-mono">Citibank ••••2240</td><td data-card="hide" class="fy-from-expanded fy-small">Version 1, approved in Nemura</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Paid</span></td><td data-card="amount" class="fy-num">9,000.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fy-small fy-muted">Paid means the DBS feed shows each debit, matched on 28 Sep. A bank file or a posted journal is never taken as payment. If an outcome is unknown, that line cannot be paid again until it is resolved.</p>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="see-title" style="background: var(--surface-2)">
+    <h2 class="fy-h3" id="see-title">Who sees these lines</h2>
+    <p class="fy-small fy-secondary">You see names, accounts and amounts because you hold the salary-payments right. A payment releaser or a controller without it sees the batch total, the number of people and the release state. Account numbers are masked for everyone; Fyniq keeps the bank-detail version from Nemura, and a newer version blocks release until the batch is approved again.</p>
+  </section>
+</div>

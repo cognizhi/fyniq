@@ -1,10 +1,10 @@
-<!-- fyniq-screen {"nav": "settings", "title": "Fyniq link", "mode": "expert", "persona": "admin", "integrated": true, "heights": {"compact": 1450, "medium": 1300, "expanded": 850}} -->
+<!-- fyniq-screen {"nav": "settings", "title": "Fyniq link", "mode": "expert", "persona": "admin", "integrated": true, "heights": {"compact": 1600, "medium": 1400, "expanded": 900}} -->
 <div class="fy-page fy-enter">
   <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#settings">Settings</a><i data-icon="chevron-right"></i><span aria-current="page">Fyniq link</span></nav>
   <div class="fy-pagehead">
     <div class="fy-pagehead__text">
       <div class="fy-row fy-row--wrap" style="gap: var(--space-3)"><h1 class="fy-h1">Linked to Fyniq</h1><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Healthy</span></div>
-      <p class="fy-secondary">Cognizhi Pte Ltd in Fyniq · linked by you on Thu 1 Oct, approved by Arjun Rao</p>
+      <p class="fy-secondary">Cognizhi Pte Ltd in Fyniq · linked by you on Thu 1 Oct, approved by Arjun Rao · link 1, every message signed</p>
     </div>
     <div class="fy-pagehead__actions">
       <button class="fy-btn fy-btn--secondary" type="button"><i data-icon="refresh-cw"></i>Sync now</button>
@@ -15,7 +15,7 @@
     <div class="fy-card fy-card--pad nm-stat nm-stat--md"><span class="nm-stat__label">Last sync</span><span class="nm-stat__value">09:05</span><span class="nm-stat__sub">Today</span></div>
     <div class="fy-card fy-card--pad nm-stat nm-stat--md"><span class="nm-stat__label">Waiting</span><span class="nm-stat__value">0</span><span class="nm-stat__sub">Events to send</span></div>
     <div class="fy-card fy-card--pad nm-stat nm-stat--md"><span class="nm-stat__label">Failed</span><span class="nm-stat__value">0</span><span class="nm-stat__sub">In the last 7 days</span></div>
-    <div class="fy-card fy-card--pad nm-stat nm-stat--md"><span class="nm-stat__label">People in Fyniq</span><span class="nm-stat__value">9</span><span class="nm-stat__sub">Names, teams and dates only</span></div>
+    <div class="fy-card fy-card--pad nm-stat nm-stat--md"><span class="nm-stat__label">People in Fyniq</span><span class="nm-stat__value">9</span><span class="nm-stat__sub">Names, teams, managers and dates; no pay or ID numbers</span></div>
   </div>
 
   <div class="fy-split">
@@ -24,11 +24,12 @@
       <table class="fy-table fy-table--cards">
         <thead><tr><th scope="col">What</th><th scope="col">Direction</th><th scope="col" class="fy-from-expanded">What Fyniq gets</th></tr></thead>
         <tbody>
-          <tr><td data-card="title">People</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="arrow-right"></i>To Fyniq</span></td><td data-card="meta" class="fy-from-expanded fy-small">Name, work email, team, start and leaving dates</td></tr>
+          <tr><td data-card="title">People</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="arrow-right"></i>To Fyniq</span></td><td data-card="meta" class="fy-from-expanded fy-small">Name, work email, team, line manager, start and leaving dates, tax-clearance holds and bank-detail versions (never numbers)</td></tr>
           <tr><td data-card="title">Teams</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="arrow-left"></i>From Fyniq</span></td><td data-card="meta" class="fy-from-expanded fy-small">Fyniq keeps each team's salary account</td></tr>
           <tr><td data-card="title">Approved pay runs</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="arrow-right"></i>To Fyniq</span></td><td data-card="meta" class="fy-from-expanded fy-small">Totals by team, posted as the payroll journal</td></tr>
           <tr><td data-card="title">Salary payments</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="arrow-right"></i>To Fyniq</span></td><td data-card="meta" class="fy-from-expanded fy-small">One line per person, encrypted, for the payment batch</td></tr>
           <tr><td data-card="title">Leave taken</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="arrow-right"></i>To Fyniq</span></td><td data-card="meta" class="fy-from-expanded fy-small">Dates and hours, not the kind of leave</td></tr>
+          <tr><td data-card="title">Payment status</td><td data-card="status"><span class="fy-chip fy-chip--neutral"><i data-icon="arrow-left"></i>From Fyniq</span></td><td data-card="meta" class="fy-from-expanded fy-small">Each person's salary: released, paid, rejected or unknown</td></tr>
         </tbody>
       </table>
       <div class="fy-card__foot"><span class="fy-small fy-muted">Never sent: NRIC or FIN, medical, disciplinary or review data.</span></div>
@@ -42,7 +43,7 @@
       </section>
       <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="ul-title">
         <h2 class="fy-h3" id="ul-title">Unlink</h2>
-        <p class="fy-small fy-secondary">Stops the sync and keeps both sides' records. Needs you and Arjun Rao.</p>
+        <p class="fy-small fy-secondary">Settles everything in flight first: runs approved but not posted, payments with an unknown outcome and open tax-clearance holds, which move to Fyniq. Then the link's keys are revoked and both sides keep their records. Needs you and Arjun Rao.</p>
         <button class="fy-btn fy-btn--destructive fy-btn--sm" type="button" style="align-self: flex-start">Unlink from Fyniq</button>
       </section>
     </aside>

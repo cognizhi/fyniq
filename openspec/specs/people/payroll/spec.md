@@ -36,6 +36,11 @@ Source: PRD-002 §9 · Priority M · Phase P1
 - **WHEN** a run is not approved by its latest approval date
 - **THEN** Checks shows ⏰ (N.1 #2)
 
+#### Scenario: Statutory payment deadlines
+- **GIVEN** a monthly salary period ending Sat 31 Oct
+- **WHEN** the pay day is set
+- **THEN** salary must be paid within 7 days after the period ends, by Sat 7 Nov, and overtime within 14 days, by Sat 14 Nov
+
 #### Scenario: Final pay
 - **WHEN** a person leaves
 - **THEN** their final pay follows NM-PAY-08's deadlines
@@ -91,7 +96,7 @@ Source: PRD-002 §9 · Priority M · Phase P1
 - **THEN** its deadline is NM-PAY-08's for the case
 
 ### Requirement: NM-PAY-07 Delivery map
-Each PRD-001 payroll row SHALL have one owner and one phase when Nemura runs payroll, as PRD-002 §9's delivery map sets out.
+Each PRD-001 payroll row SHALL have one owner, Fyniq's part and one phase when Nemura runs payroll, as PRD-002 §9's delivery map sets out; a company on Fyniq without Nemura SHALL meet the same rules through its external system or recorded manual arrangements.
 
 Source: PRD-002 §9 · Priority M · Phase P1
 
@@ -103,13 +108,44 @@ Source: PRD-002 §9 · Priority M · Phase P1
 - **WHEN** the CPF submission file is not built yet
 - **THEN** a manual CPF EZPay entry is recorded under FR-PAY-15 before a run is approved
 
+#### Scenario: Calculation runs in Nemura
+- **WHEN** Nemura runs payroll
+- **THEN** pay runs and overrides, CPF, year to date, wage classes, SDL, SHG, the foreign worker levy, deductions and totals are calculated in Nemura from P1
+- **AND** Fyniq only posts the run (FR-PPL-04, FR-PPL-09), deductions and totals per Appendix B.3
+
+#### Scenario: Approval in Nemura, verified by Fyniq
+- **WHEN** a run is approved in Nemura
+- **THEN** Fyniq verifies the approval before it posts (FR-PPL-09…11)
+
+#### Scenario: Year-end forms in P2
+- **WHEN** IR8A and AIS are due
+- **THEN** Nemura prepares them from P2; the first AIS is due by 1 March after the first full year
+
+#### Scenario: Clearance hold checked at release
+- **GIVEN** an IR21 clearance hold kept in Nemura (NM-INT-08)
+- **WHEN** Fyniq releases a salary payment batch
+- **THEN** it checks the hold first (FR-PPL-13)
+
+#### Scenario: Salary payments
+- **WHEN** a run is ready to pay
+- **THEN** the payment lines come from Nemura, and approval and release happen in Fyniq (FR-PPL-10, FR-PPL-14)
+
+#### Scenario: Leave balances and the payroll restriction
+- **WHEN** Nemura runs payroll
+- **THEN** leave balances are Nemura's (FR-PAY-12 is superseded by NM-LV-08)
+- **AND** the payroll restriction is kept in Nemura (Appendix B), while Fyniq restricts salary-payment detail (FR-PPL-17)
+
+#### Scenario: Go-live gate
+- **WHEN** a run is about to be approved
+- **THEN** Nemura records the statutory arrangements first, and Fyniq's release waits for them (FR-PAY-15)
+
 #### Scenario: A company without Nemura
 - **GIVEN** a company on Fyniq without Nemura
 - **WHEN** it pays employees
 - **THEN** it meets the same rules through its external system or recorded manual arrangements
 
 ### Requirement: NM-PAY-08 Final pay deadlines by case
-Final pay SHALL be due on the last day after resignation with notice, within 7 days after resignation without notice, and on the last day or within 3 working days after misconduct dismissal or employer termination; only a tax-clearance hold SHALL hold it, and retrenchment notification SHALL be tracked.
+Final pay SHALL be due on the last day after resignation with notice, within 7 days after resignation without notice, and on the last day or within 3 working days after misconduct dismissal or employer termination; only a tax-clearance hold SHALL hold it, and for an employer with at least 10 employees the retrenchment notification to MOM SHALL be tracked.
 
 Source: PRD-002 §9 · Priority M · Phase P1
 

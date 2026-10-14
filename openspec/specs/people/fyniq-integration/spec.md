@@ -27,6 +27,10 @@ Source: PRD-002 §E
 - **WHEN** Fyniq learns a salary payment's state
 - **THEN** it sends `payroll.payments.status` to Nemura
 
+#### Scenario: Line manager in the person event
+- **WHEN** a person's line manager changes in Nemura
+- **THEN** `people.person.upserted` carries the new manager's person ID, so Fyniq routes their next claim to that manager
+
 ### Requirement: NM-INT-01 Sync
 When linked, Nemura SHALL send its events through its outbox for Fyniq to apply idempotently, departments and cost centres SHALL come from Fyniq, and people and their changes SHALL go to Fyniq's employee projection.
 

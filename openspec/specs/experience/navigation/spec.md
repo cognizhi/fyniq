@@ -66,9 +66,9 @@ Source: PRD-001 §7.1
 
 #### Scenario: Payroll
 - **WHEN** the user opens Payroll
-- **THEN** it holds employees, pay runs, CPF/SDL/SHG, payslips and IR8A
+- **THEN** it holds the pay runs received from Nemura or imported, their postings and salary payment batches, with links to Nemura, plus the people projection (department, cost centre, line manager, dates, holds)
 - **AND** its badge is the due status
-- **AND** with Nemura or an external system it holds the pay runs received or imported, their postings and salary payment batches, with links to Nemura, while employees, payslips and IR8A live there (PRD-002 NM-PAY-07)
+- **AND** employees, payslips and IR8A live in Nemura or the payroll provider's system, never in Fyniq (FR-PPL-01, PRD-002 NM-PAY-07)
 
 #### Scenario: Projects
 - **GIVEN** projects are switched on
@@ -114,13 +114,109 @@ Source: PRD-001 §7.1
 - **WHEN** any user opens the sidebar
 - **THEN** the personal section shows **My claims** (FR-AP-14)
 - **AND** directors also see "Money I put in" (FR-EQ-14)
-- **AND** from P2 it shows **My payslips**
-- **AND** with Nemura, payslips are in Nemura's My pay, reached through the Finance | People switch (PRD-002 NM-ESS-02)
+- **AND** it shows My time when Projects is on (FR-PRJ-05) and My shares and options for a person with grants (FR-EQ-19)
+- **AND** it never shows payslips: they are in Nemura's My pay (PRD-002 NM-ESS-02) or the payroll provider's system
 
 #### Scenario: The whole navigation for personal-only users
 - **GIVEN** a person whose Fyniq rights are personal only
 - **WHEN** they open Fyniq
 - **THEN** the personal section is the whole navigation (FR-UX-39)
+
+#### Scenario: What each role sees
+- **WHEN** a role in §7.1's table signs in
+- **THEN** its landing page, navigation and Home match that table (QA-UI-08)
+- **AND** a person with several roles sees the union
+
+### Requirement: Workspace by role
+Each role SHALL land, navigate and see Home as §7.1's table says, derived from Appendix D: an area only where the role holds a right, approve-only rights as Inbox items, and the union for a person with several roles.
+
+Source: PRD-001 §7.1
+
+#### Scenario: Employee
+- **WHEN** a person holding only the Employee role signs in
+- **THEN** they land on My claims in the personal workspace, with My time, My shares and options, Money I put in (directors) and Help
+- **AND** no company figure and no other person's record is shown
+
+#### Scenario: Line manager
+- **WHEN** a line manager holding only the Employee role signs in
+- **THEN** they see the Employee's workspace plus To approve with their reports' claims
+- **AND** a report's claim is visible only while it waits for them
+
+#### Scenario: Budget holder or project manager
+- **WHEN** an Approver for a department or projects signs in
+- **THEN** they land on My department, with Home, Inbox, their projects, their department's reports and budget, and the personal items
+- **AND** company cash, runway and bank, other departments, Sales, Purchases, Contacts, bank details, Payroll, Accounting, Equity, Compliance and Settings are not shown
+- **AND** payroll cost appears only as a department total covering at least 3 people besides the viewer
+
+#### Scenario: Bookkeeper
+- **WHEN** a Bookkeeper signs in
+- **THEN** Home shows books health, bank lines to categorise, documents to finish, deadlines and cash today
+- **AND** the navigation holds Home, Inbox, Sales, Purchases, Contacts, Banking, Accounting (view) and Reports, without Payroll, Projects, Planning, Equity, the Compliance Center or Settings
+
+#### Scenario: AR specialist
+- **WHEN** an AR specialist signs in
+- **THEN** Home shows overdue invoices, receipts to apply and quotes waiting
+- **AND** the navigation holds Home, Inbox, Sales, customers, Banking (view), Projects (revenue and hours) and sales reports, without Purchases, Payroll, Accounting, Planning, Equity or Compliance
+
+#### Scenario: AP specialist
+- **WHEN** an AP specialist signs in
+- **THEN** Home shows bills due, batches to prepare, claims to pay and bank-detail changes waiting
+- **AND** the navigation holds Home, Inbox, Purchases, vendors, Banking (view) and purchase reports, without Sales, Payroll, Accounting, Planning, Equity or Compliance
+
+#### Scenario: Payment releaser
+- **WHEN** a Payment releaser signs in
+- **THEN** Home shows batches waiting for release, bank balances and payments rejected or with an unknown outcome
+- **AND** salary lines appear only as totals, and nothing lets them create or approve a payment
+
+#### Scenario: Payroll administrator
+- **WHEN** a Payroll administrator signs in
+- **THEN** Home shows the next pay run, salary batches, payroll postings and CPF due, with the Finance | People switch when Nemura is linked
+- **AND** Sales, Purchases beyond salary batches, Banking detail, Accounting and Equity are not shown
+
+#### Scenario: Accountant and tax agent
+- **WHEN** an Accountant or a Tax agent signs in
+- **THEN** they get the full Home and every finance area, with Payroll masked and Compliance as view; a Tax agent also gets the GST and tax working papers
+- **AND** Settings administration, user administration and per-person pay unless granted are not shown
+
+#### Scenario: Controller
+- **WHEN** a Controller signs in
+- **THEN** they get the full Home, every finance area and the approval policies and statutory parameters in Settings, without per-person pay unless granted
+
+#### Scenario: Owner
+- **WHEN** an Owner signs in
+- **THEN** everything is shown, and their actions stay under dual control (§6.4)
+
+#### Scenario: Administrator
+- **WHEN** an Administrator signs in
+- **THEN** they land on Settings, with role and integration changes in the Inbox, Reports and Compliance (view)
+- **AND** nothing lets them post or approve a transaction
+
+#### Scenario: Auditor
+- **WHEN** an Auditor signs in
+- **THEN** they land in the time-boxed, read-only Auditor workspace with the engagement's requests, samples and expiry
+- **AND** payroll personal data is hidden unless granted
+
+#### Scenario: Board viewer
+- **WHEN** a Board viewer signs in
+- **THEN** they land on the board pack, with Equity showing their own holding, or all holdings if granted, and no transactions
+
+#### Scenario: Company secretary
+- **WHEN** a Company secretary signs in
+- **THEN** they land on Compliance with statutory deadlines and register updates, and see no transactions, payroll or bank details
+
+#### Scenario: Data protection officer
+- **WHEN** the DPO signs in
+- **THEN** they land on the Compliance Center with data requests due, breaches and retention holds, and Settings as view
+- **AND** transactions are not shown and payroll is masked
+
+#### Scenario: HR officer with Nemura only
+- **WHEN** an HR officer who holds no Fyniq role signs in
+- **THEN** they land on Nemura's People home, and Fyniq is not offered
+
+#### Scenario: Several roles
+- **GIVEN** a person who is both a Bookkeeper and a line manager
+- **WHEN** they sign in
+- **THEN** they see the union: the Bookkeeper's finance workspace, with their reports' claims waiting in the Inbox
 
 ### Requirement: AI assistant side panel
 The AI assistant SHALL be a persistent side panel available on every page and carrying the page's context, not a navigation item.
@@ -492,7 +588,7 @@ Source: PRD-001 §7.2 · Priority S · Phase P1 / P2
 - **THEN** notifications are also sent there
 
 ### Requirement: FR-UX-16 Responsive PWA and offline receipt queue
-The system SHALL offer an installable PWA for approvals, receipt capture (camera), claims, payslips and dashboards, with an offline receipt queue.
+The system SHALL offer an installable PWA for approvals, receipt capture (camera), claims and dashboards, with an offline receipt queue. Payslips are not in Fyniq: they are in Nemura's My pay or the payroll provider's system.
 
 Source: PRD-001 §7.2 · Priority S · Phase P2
 
@@ -625,7 +721,7 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 - **THEN** the UI may update before the server responds
 
 ### Requirement: FR-UX-39 Personal workspace for people who only claim
-A person whose Fyniq rights are personal only SHALL get a separate workspace that lands on My claims, shows only items they have a right to (and To approve for approvers), and SHALL keep search, notifications and the assistant to their own records, the expense policy and help.
+A person whose Fyniq rights are personal only SHALL get a separate workspace that lands on My claims, shows only their own items (claims, time, shares and options, money put in) and, for a line manager, To approve, and SHALL keep search, notifications and the assistant to their own records, the policy and help.
 
 Source: PRD-001 §7.2 · Priority M · Phase P1
 
@@ -642,10 +738,20 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 - **WHEN** he searches or asks the assistant about money
 - **THEN** only his own claims, the expense policy and help are reached (SEC-34, AI-P1)
 
-#### Scenario: Approver
-- **GIVEN** a line manager who approves their reports' claims and holds no finance role
+#### Scenario: Line manager
+- **GIVEN** a line manager who approves their reports' claims and holds only the Employee role in Fyniq
 - **WHEN** a claim waits for them
 - **THEN** it appears under To approve and opens its approval confirmation with the receipt, never the Purchases module
+
+#### Scenario: Delegated approver
+- **GIVEN** a budget holder with the Approver role for their department
+- **WHEN** they sign in
+- **THEN** they get the finance workspace cut to their rights (FR-UX-40), not the personal workspace
+
+#### Scenario: Own time and grants
+- **GIVEN** Projects is on and the employee holds option grants
+- **WHEN** they open the personal workspace
+- **THEN** My time (FR-PRJ-05) and My shares and options (FR-EQ-19) are there too
 
 #### Scenario: Enforced on the server
 - **WHEN** a personal-only user calls a finance API operation directly
@@ -659,3 +765,31 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 #### Scenario: Rights change
 - **WHEN** he is given a finance role
 - **THEN** his next page load shows the full workspace, and removing the role moves him back
+
+### Requirement: FR-UX-40 Every workspace is cut to the person's rights
+Each navigation area SHALL appear only where the person holds a right, approve-only rights SHALL arrive as Inbox items, Home SHALL follow rights, search, exports and the AI SHALL keep the same scope, and the server SHALL enforce every right whatever is shown.
+
+Source: PRD-001 §7.2 · Priority M · Phase P1
+
+#### Scenario: Budget holder's Home
+- **GIVEN** Wei Jie Ong holds the Approver role for Engineering
+- **WHEN** he signs in
+- **THEN** Home is My department: Engineering's budget against actual, its spending, approvals waiting with his limit
+- **AND** no company cash, runway, bank balance or other department appears
+
+#### Scenario: Approve-only rights
+- **GIVEN** a budget holder who may approve bills within their department and limit
+- **WHEN** a bill waits for them
+- **THEN** it arrives in their Inbox, and the Purchases area is not in their navigation
+
+#### Scenario: Department payroll cost
+- **WHEN** a budget holder's department payroll cost covers fewer than 3 people besides them
+- **THEN** it is not shown as a figure (FR-PAY-13)
+
+#### Scenario: Same scope everywhere
+- **WHEN** a budget holder searches, exports or asks the assistant about spending
+- **THEN** only their department's and projects' figures are reached (SEC-34, AI-P1)
+
+#### Scenario: Rights change
+- **WHEN** a person gains or loses a right
+- **THEN** what they see changes at their next page load, and the server enforces the right either way

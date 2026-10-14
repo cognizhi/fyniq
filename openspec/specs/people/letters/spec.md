@@ -46,7 +46,7 @@ Letter types an authorised signatory delegates for automatic issue SHALL be gene
 Source: PRD-002 §11 · Priority S · Phase P1
 
 #### Scenario: Automatic
-- **GIVEN** the signatory has delegated automatic issue of employment confirmation without salary
+- **GIVEN** the signatory has delegated automatic issue of employment confirmation without salary, with a monthly limit and an end date at most 12 months away
 - **WHEN** an employee requests it
 - **THEN** it is ready at once and the issue is logged
 

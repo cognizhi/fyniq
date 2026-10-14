@@ -145,13 +145,17 @@ Source: PRD-001 §6.2
 - **THEN** it is refused
 
 ### Requirement: Payroll administrator role
-The Payroll administrator SHALL handle employees, pay runs, CPF/SDL/SHG, payslips and IR8A, and SHALL NOT approve their own pay run or release salary payments in Standard mode.
+The Payroll administrator SHALL handle, in Fyniq, the pay runs received from Nemura or imported, their postings and salary payment batches, and SHALL NOT approve their own pay run or release salary payments in Standard mode. Employees, payslips and IR8A are kept in Nemura or the payroll provider's system.
 
 Source: PRD-001 §6.2
 
 #### Scenario: Payroll administrator rights
 - **WHEN** the Payroll administrator acts
-- **THEN** they can handle employees, pay runs, CPF/SDL/SHG, payslips and IR8A
+- **THEN** they can handle the pay runs received or imported, their postings and salary payment batches
+
+#### Scenario: Payslips stay outside Fyniq
+- **WHEN** the Payroll administrator looks for an employee's payslip or IR8A
+- **THEN** Fyniq links to Nemura or the payroll provider's system and holds no copy (FR-PPL-01)
 
 #### Scenario: Payroll administrator limits
 - **GIVEN** Standard mode
@@ -186,14 +190,33 @@ Source: PRD-001 §6.2
 - **WHEN** the Approver tries to act outside their department or above their limit
 - **THEN** it is refused
 
+#### Scenario: Scoped finance workspace
+- **WHEN** an Approver signs in
+- **THEN** they work in a finance workspace cut to their department, projects and limits (FR-UX-40)
+
+### Requirement: Line manager is a relationship, not a role
+Whoever is named as a person's line manager SHALL approve that person's claims at the first step from the personal workspace, and the relationship SHALL grant nothing else.
+
+Source: PRD-001 §6.2
+
+#### Scenario: Claim routing
+- **GIVEN** Hafiz Rahman's line manager is Priya Nair, who holds only the Employee role in Fyniq
+- **WHEN** Hafiz submits a claim
+- **THEN** it waits for Priya under To approve in her personal workspace (FR-UX-39, FR-AP-17)
+- **AND** Priya sees no other finance data
+
 ### Requirement: Employee role
-The Employee SHALL submit expense claims and receipts and see their own payslips and claims, and SHALL NOT see anyone else's data.
+The Employee SHALL submit expense claims and receipts and see their own claims, timesheets and grants, and SHALL NOT see anyone else's data. Payslips are in Nemura's My pay or the payroll provider's system, never in Fyniq.
 
 Source: PRD-001 §6.2
 
 #### Scenario: Employee rights
 - **WHEN** the Employee acts
-- **THEN** they can submit expense claims and receipts and see their own payslips and claims
+- **THEN** they can submit expense claims and receipts and see their own claims, timesheets and grants (FR-UX-39)
+
+#### Scenario: Payslips are not in Fyniq
+- **WHEN** the Employee looks for a payslip
+- **THEN** Fyniq's Help points them to Nemura's My pay or the payroll provider's system
 
 #### Scenario: No one else's data
 - **WHEN** the Employee tries to see another person's data
@@ -451,6 +474,10 @@ Source: PRD-001 §D
 - **WHEN** an integration client (FR-INT-02) acts
 - **THEN** it acts only within the scopes the Owner granted
 - **AND** never beyond the user or service account behind it (AI-34)
+
+#### Scenario: The interface follows the matrix
+- **WHEN** a right only approves within a department, amount or project (A (limit), A (dept), A (project manager))
+- **THEN** it arrives as Inbox items, not as a navigation area (FR-UX-40)
 
 ### Requirement: Permission matrix: Users, roles, team mode
 In Standard mode, each role SHALL hold only the rights over users, roles and the team mode that the permission matrix gives it.

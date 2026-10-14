@@ -12,7 +12,7 @@ Source: PRD-002 §14 · Priority M · Phase P2
 
 #### Scenario: Plan from start date
 - **WHEN** a joiner's start date is Mon 2 Nov 2026
-- **THEN** the plan's tasks are due relative to it, KETs by Mon 16 Nov
+- **THEN** the plan's tasks are due relative to it, KETs within 14 days, by Mon 16 Nov
 
 ### Requirement: NM-ONB-02 Accounts
 Every joiner who may claim expenses SHALL be invited to Fyniq with the Employee role only, by a person with the right to invite, from a task raised when the person is added (until onboarding plans exist) or listed when the link starts; Nemura SHALL never grant Fyniq roles itself.
@@ -22,7 +22,7 @@ Source: PRD-002 §14 · Priority M · Phase P1
 #### Scenario: Invite task
 - **GIVEN** Joanne Lee is added in Nemura, starting Mon 2 Nov
 - **WHEN** the record is saved
-- **THEN** People home shows the task "Invite to Fyniq for My claims" for Sarah Koh, who may invite, due Mon 2 Nov
+- **THEN** People home shows the task "Invite to Fyniq for My claims" for Mei Lin Tan, who may invite in Fyniq (Sarah Koh holds only the Employee role there), due Mon 2 Nov
 - **AND** the invitation gives the Employee role only; Nemura grants nothing in Fyniq
 
 #### Scenario: When the link starts

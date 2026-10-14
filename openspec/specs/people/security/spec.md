@@ -64,6 +64,10 @@ Source: PRD-002 §20 · Priority M · Phase P1
 - **THEN** they wait for the reviewed deletion job, never silently deleted, and Checks shows ⚠ while they wait (N.1 #12)
 - **AND** ✖ once the review date (default 30 days) has passed
 
+#### Scenario: Default retention
+- **WHEN** no company policy overrides the pack
+- **THEN** candidate data is kept 6 months and a medical certificate 1 year after the leave
+
 #### Scenario: Proof of deletion
 - **WHEN** records are deleted
 - **THEN** proof of what went and when is kept
@@ -76,6 +80,11 @@ Source: PRD-002 §20 · Priority S · Phase P2
 #### Scenario: Confidential
 - **WHEN** an employee raises a grievance
 - **THEN** only the people handling it can see it, and the outcome is given in writing
+
+#### Scenario: Small firms
+- **GIVEN** a company with fewer than 25 employees, exempt from the Act to start with (MOM, 4 Nov 2025)
+- **WHEN** the grievance channel is set up
+- **THEN** it is still offered, under the Tripartite Guidelines
 
 #### Scenario: Complaint about the handler
 - **GIVEN** a grievance about the HR officer

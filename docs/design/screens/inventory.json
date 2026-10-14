@@ -64,6 +64,10 @@
   {
    "id": "people-link",
    "title": "Fyniq · People and HR link"
+  },
+  {
+   "id": "roles",
+   "title": "Fyniq · Workspaces by role"
   }
  ],
  "screens": [
@@ -94,7 +98,7 @@
     "Header (56 px): organisation switcher 'Cognizhi Pte Ltd ▾' with logo, '⌘K Search…' field, Basic | Expert segmented control (current mode always visible), theme switch (Light, Dark, System), Help button, notification bell with unread count, avatar menu (profile, About dialog with platform version and git SHA, sign out)",
     "Expert sidebar (240 px, collapsible to 64 px icons with tooltips): Home, Inbox (count), Sales (overdue count), Purchases (due count), Contacts, Banking (uncategorised count), Payroll (due status), Projects (over-budget count, feature-switched), Accounting (close status), Reports, Planning, Equity (ACRA tasks due, feature-switched), Compliance (due count); Settings in the footer",
     "Basic sidebar: at most 10 items (Home, Inbox, Sales, Purchases, Contacts, Banking, Reports, Payroll and Projects when allowed, Equity shown as 'Who owns the company')",
-    "Personal section at the top for every user: My claims, Money I put in (directors), My payslips (from P2); favourites and recent items",
+    "Personal section at the top for every user: My claims, My time, My shares and options, Money I put in (directors); favourites and recent items",
     "Compact class (< 600 px; phone 390 × 844, foldable cover 344 × 882): top bar (menu, search, AI) and a bottom bar of at most five destinations: Home, Inbox, the role's main area, Banking, More",
     "Medium class (600–1023 px; foldable unfolded 690 × 840, tablet portrait 834 × 1194): navigation rail with icons and labels; two-pane layouts split at the hinge on spanning devices, nothing placed across it",
     "Expanded class (≥ 1024 px): full sidebar, collapsed to 64 px below 1280 px; AI panel and side-peek dock beside the content",
@@ -1972,7 +1976,7 @@
   {
    "id": "employees",
    "file": "Employees",
-   "title": "Employees",
+   "title": "People (from Nemura)",
    "canvas": "people-ledger",
    "module": "Payroll",
    "route": "/payroll/employees",
@@ -1984,28 +1988,28 @@
    ],
    "mode": "both",
    "requirements": [
-    "FR-EMP-01",
+    "FR-PPL-06",
     "FR-EMP-02",
-    "FR-PAY-13",
-    "CMP-PD-07"
+    "FR-UX-40",
+    "NM-ONB-02",
+    "FR-PAY-13"
    ],
-   "purpose": "Maintain the employee register that pay runs draw from, with personal data protected.",
+   "purpose": "The short record Fyniq keeps of each person: department, line manager, dates, status, holds and Fyniq access, with no pay or ID numbers.",
    "content": [
-    "Columns: name, department, job title, residency (citizen, SPR year 1/2/3+, foreigner), CPF age band, start and end dates, status",
-    "NRIC/FIN partially masked by default; salary columns visible only with payroll rights",
-    "Departments mapped to salary accounts and dimensions",
-    "Leavers with IR21 status chip"
+    "What stays in Nemura",
+    "People with department, line manager, dates, Fyniq access and status",
+    "Departments and where their pay posts"
    ],
    "states": [
-    "empty",
-    "masked (no payroll rights)",
-    "loading"
+    "joining: invitation due",
+    "leaving with a tax-clearance hold",
+    "company without Nemura: people from the payroll provider's file"
    ]
   },
   {
    "id": "employee-record",
    "file": "EmployeeRecord",
-   "title": "Employee record",
+   "title": "Person (from Nemura)",
    "canvas": "people-ledger",
    "module": "Payroll",
    "route": "/payroll/employees/:id",
@@ -2017,33 +2021,30 @@
    ],
    "mode": "both",
    "requirements": [
+    "FR-PPL-06",
     "FR-EMP-01",
-    "FR-PAY-14",
-    "FR-PAY-10",
-    "FR-EQ-04",
     "FR-PRJ-06",
-    "FR-PAY-12"
+    "FR-PPL-13",
+    "FR-PPL-14",
+    "FR-UX-40"
    ],
-   "purpose": "One employee's identity, pay terms, year-to-date CPF state and life-cycle events.",
+   "purpose": "One person's record in Fyniq: what the books use, their project cost rate and their Fyniq access.",
    "content": [
-    "Identity (encrypted, masked), residency and PR start date, date of birth, department, salary and allowances, SHG fund or opt-out, salary bank account (masked)",
-    "Year-to-date OW and AW subject to CPF from 1 January for this employer; AW ceiling (S$102,000 minus OW) remaining",
-    "Directors: founder pay choice per period (no salary, salary paid, salary deferred, director's fee) with the signed decision",
-    "Cessation: IR21 applicability and clearance hold on all monies due",
-    "Cost rate (payroll-derived; visible only with payroll rights)",
-    "Evidence with personal-data class; P3 leave balances"
+    "What the books use",
+    "Project cost rate",
+    "Fyniq access",
+    "Changes from Nemura"
    ],
    "states": [
-    "masked",
-    "leaver",
-    "IR21 hold active",
-    "deferral without pay choice (✖)"
+    "tax-clearance hold on",
+    "bank details changed: unreleased lines blocked",
+    "person-level rate visible with payroll rights"
    ]
   },
   {
    "id": "payroll-overview",
    "file": "Payroll",
-   "title": "Payroll overview and statutory files",
+   "title": "Payroll in the books",
    "canvas": "people-ledger",
    "module": "Payroll",
    "route": "/payroll",
@@ -2056,31 +2057,32 @@
    ],
    "mode": "both",
    "requirements": [
-    "FR-PAY-01",
-    "FR-PAY-09",
-    "FR-PAY-10",
-    "FR-PAY-15",
-    "FR-TAX-07"
+    "FR-PPL-04",
+    "FR-PPL-05",
+    "FR-PPL-08",
+    "FR-PAY-07",
+    "NM-PAY-07",
+    "FR-UX-40"
    ],
-   "purpose": "See pay runs by month and what is due to the CPF Board and IRAS.",
+   "purpose": "Fyniq's part of payroll: runs that arrive from Nemura, what they post, what goes to the CPF Board and the health of the link.",
    "content": [
-    "Pay runs list: month, employees, gross, employer CPF, SDL, net, status (draft, awaiting approval, approved, posted, paid)",
-    "CPF due ⏰ for last month, pay by the 14th; SDL payable rounded down (e.g. March total S$70.75 → S$70)",
-    "Payroll go-live gate: how payslips, KETs, CPF submission, AIS and IR21 are met this month; missing arrangement ✖",
-    "P2: CPF submission file for EZPay / One-Stop Payroll; IR8A / AIS file due 1 March; IR21 workflow",
-    "Start next pay run"
+    "October run: draft in Nemura, figures arrive on approval",
+    "CPF Board, October",
+    "Nemura link health",
+    "Runs in the books, and how each arrived",
+    "What lives in Nemura"
    ],
    "states": [
-    "no pay runs",
-    "go-live gate missing (✖)",
-    "CPF overdue",
-    "loading"
+    "run received and posted",
+    "run refused with a reason",
+    "link failing near pay day",
+    "no payroll source (manual journal)"
    ]
   },
   {
    "id": "pay-run",
    "file": "PayRun",
-   "title": "Pay run",
+   "title": "Pay run from Nemura",
    "canvas": "people-ledger",
    "module": "Payroll",
    "route": "/payroll/runs/:month",
@@ -2093,33 +2095,26 @@
    ],
    "mode": "expert",
    "requirements": [
-    "FR-PAY-01",
-    "FR-PAY-02",
-    "FR-PAY-03",
-    "FR-PAY-04",
-    "FR-PAY-06",
+    "FR-PPL-09",
+    "FR-PPL-10",
+    "FR-PPL-11",
     "FR-PAY-07",
-    "FR-PAY-15",
-    "FR-PAY-16"
+    "FR-PAY-13",
+    "FR-PAY-18"
    ],
-   "purpose": "Calculate, check, approve and post one month's pay with every Singapore rule applied.",
+   "purpose": "One run as Fyniq sees it: its steps, the checks Fyniq makes before posting, and what it posts, without names.",
    "content": [
-    "Grid per employee: gross (salary, allowances, overtime, bonus as AW, unpaid leave), employee CPF, employer CPF, SDL, SHG, net, total cost (e.g. Age ≤ 55, gross 7,600.00, EE 1,520, ER 1,292, SDL 11.25, net 6,077)",
-    "Rates source: CPF pack version, OW ceiling S$8,000, graduated rates S$50–750, age band by birthday month",
-    "Overrides with reason and approval, flagged ⚠",
-    "Salary deductions check (50% cap, advances ≤ 25% over ≤ 12 months, written consent) ✖ with the rule named",
-    "Founder deferral: net pay to 2120 with the CPF, SDL and tax still due in plain words",
-    "Posting preview: salary by department account, employer CPF 6020, SDL 6030, 2100 and 2110",
-    "Approval by someone other than the preparer; then salary payment batch",
-    "Foreign worker levy (e.g. S Pass levy) recorded as an expense where applicable"
+    "Steps from Nemura to payment",
+    "You prepared it: no approving or releasing its salaries",
+    "What Fyniq checks when it arrives",
+    "September's posting, for comparison"
    ],
    "states": [
-    "draft",
-    "awaiting approval",
-    "approved",
-    "posted",
-    "go-live gate blocks approval",
-    "parameter update pending"
+    "waiting for approval in Nemura",
+    "received and verified",
+    "refused: a check failed",
+    "corrected version: difference posted",
+    "closed month: posted in the open month"
    ]
   },
   {
@@ -4248,35 +4243,6 @@
    ]
   },
   {
-   "id": "employee-self-service",
-   "file": "MyPayslips",
-   "title": "My payslips and option grants",
-   "canvas": "settings-admin",
-   "module": "Personal",
-   "route": "/me/payslips",
-   "kind": "page",
-   "phase": "P2",
-   "roles": [
-    "Employee"
-   ],
-   "mode": "basic",
-   "requirements": [
-    "FR-PAY-08",
-    "FR-EQ-24",
-    "FR-UX-16"
-   ],
-   "purpose": "Give each employee their itemised payslips and their own option grants in an MFA-protected area.",
-   "content": [
-    "Payslips by month with the 12 MOM items; open or download (never NRIC-password PDFs); expiring-link variant",
-    "Key employment terms",
-    "My option grants: number, exercise price, vesting progress (from the P1 register)"
-   ],
-   "states": [
-    "no payslips yet",
-    "link expired"
-   ]
-  },
-  {
    "id": "auditor-workspace",
    "file": "AuditorWorkspace",
    "title": "Auditor workspace",
@@ -5397,35 +5363,6 @@
    ]
   },
   {
-   "id": "payslip-generator",
-   "file": "PayslipView",
-   "title": "Itemised payslip",
-   "canvas": "workflows",
-   "module": "Payroll",
-   "route": "/payroll/pay-runs/:id/payslips/:employee",
-   "kind": "record",
-   "phase": "P2",
-   "roles": [
-    "Payroll administrator",
-    "Employee"
-   ],
-   "mode": "both",
-   "requirements": [
-    "FR-PAY-08",
-    "FR-PAY-15"
-   ],
-   "purpose": "The itemised payslip with the 12 MOM items, issued with the salary payment.",
-   "content": [
-    "Payslip for Daniel Lim, October 2026: the 12 MOM items (employer name, employee name, date of payment, basic salary, start and end of salary period, allowances, other payments, deductions, overtime hours and pay, net salary, CPF)",
-    "Issued with pay run PR-2026-10; delivery status (email, self-service)",
-    "Download PDF; employee view vs administrator view"
-   ],
-   "states": [
-    "issued",
-    "draft"
-   ]
-  },
-  {
    "id": "accountant-review",
    "file": "AccountantReview",
    "title": "Accountant's quarterly review",
@@ -6136,6 +6073,95 @@
    ]
   },
   {
+   "id": "nm-report-sick",
+   "file": "NmReportSick",
+   "title": "I'm sick",
+   "canvas": "nemura-me",
+   "module": "For you",
+   "route": "/me/leave/sick",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-LV-12",
+    "NM-LV-06",
+    "NM-LV-11"
+   ],
+   "purpose": "Telling the company you're sick: no approval, the 48-hour rule, the shared outpatient and hospitalisation limit, the certificate.",
+   "content": [
+    "When and which kind",
+    "Balances after today",
+    "Medical certificate",
+    "Tell us within 48 hours"
+   ],
+   "states": [
+    "certificate added later",
+    "hospitalisation leave"
+   ]
+  },
+  {
+   "id": "nm-leaver-home",
+   "file": "NmLeaverHome",
+   "title": "My documents (after leaving)",
+   "canvas": "nemura-me",
+   "module": "For you",
+   "route": "/me",
+   "kind": "dashboard",
+   "phase": "P1",
+   "roles": [
+    "Former employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-ESS-06",
+    "NM-SEC-04",
+    "NM-PAY-04"
+   ],
+   "purpose": "A former employee's narrow account for their own documents until the record-keeping period ends.",
+   "content": [
+    "Payslips",
+    "Letters and forms",
+    "Lost a document?",
+    "Only your documents"
+   ],
+   "states": [
+    "access ended",
+    "document re-issued"
+   ]
+  },
+  {
+   "id": "nm-verify-letter",
+   "file": "NmVerifyLetter",
+   "title": "Check a Cognizhi letter",
+   "canvas": "nemura-me",
+   "module": "Public",
+   "route": "/verify",
+   "kind": "form",
+   "phase": "P2",
+   "roles": [
+    "Recipient (public)"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-LTR-05",
+    "NM-LTR-07"
+   ],
+   "purpose": "Where a bank or embassy checks that a letter is genuine without seeing personal facts.",
+   "content": [
+    "Reference and check code",
+    "Valid, replaced or withdrawn",
+    "Ask the person to share the details"
+   ],
+   "states": [
+    "not found",
+    "replaced by a newer letter",
+    "withdrawn"
+   ]
+  },
+  {
    "id": "nm-people-home",
    "file": "NmPeopleHome",
    "title": "People home",
@@ -6417,6 +6443,130 @@
    "states": [
     "waiting for approval",
     "posting refused"
+   ]
+  },
+  {
+   "id": "nm-govt-claims",
+   "file": "NmGovtClaims",
+   "title": "Government-paid leave",
+   "canvas": "nemura-team",
+   "module": "Leave",
+   "route": "/people/leave/government-paid",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-LV-14",
+    "NM-LV-07",
+    "NM-PPL-07"
+   ],
+   "purpose": "Each government-paid scheme with its own allocation, cap, deadline and claim, apart from the salary owed.",
+   "content": [
+    "Per person and scheme: used, claim, status",
+    "Claims open",
+    "In the books"
+   ],
+   "states": [
+    "claim partly paid",
+    "claim rejected",
+    "sharing changed after 4 weeks"
+   ]
+  },
+  {
+   "id": "nm-checks",
+   "file": "NmChecks",
+   "title": "Checks",
+   "canvas": "nemura-team",
+   "module": "People home",
+   "route": "/people/checks",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator",
+    "Payroll administrator",
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-PACK-07",
+    "NM-PAY-08",
+    "NM-PAY-10",
+    "NM-SEC-05",
+    "NM-INT-04"
+   ],
+   "purpose": "Nemura's 15 checks with what each sees right now.",
+   "content": [
+    "15 checks with their current result"
+   ],
+   "states": [
+    "a check fails",
+    "a check due soon"
+   ]
+  },
+  {
+   "id": "nm-payrun-approval",
+   "file": "NmPayRunApproval",
+   "title": "Approve a pay run",
+   "canvas": "nemura-team",
+   "module": "Payroll",
+   "route": "/people/payroll/pr-2026-10/approve",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Owner"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-PAY-11",
+    "NM-INT-06",
+    "NM-INT-07",
+    "NM-PAY-10",
+    "NM-ROLE-04"
+   ],
+   "purpose": "The approver's view of a run: what changed since last month, what goes out, and the passkey approval Fyniq will check.",
+   "content": [
+    "What changed since September",
+    "What goes out on pay day",
+    "Your approval"
+   ],
+   "states": [
+    "a change without an explanation",
+    "the approver prepared it: refused"
+   ]
+  },
+  {
+   "id": "nm-access-request",
+   "file": "NmAccessRequest",
+   "title": "Access request",
+   "canvas": "nemura-team",
+   "module": "People",
+   "route": "/people/requests/access",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "HR officer",
+    "HR administrator"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "NM-SEC-07",
+    "NM-SEC-02",
+    "NM-REC-05"
+   ],
+   "purpose": "Handling a person's request for their own data: release, redact or withhold each record, with reasons.",
+   "content": [
+    "What he gets, record by record",
+    "Reply in writing",
+    "The data protection officer"
+   ],
+   "states": [
+    "candidate's request",
+    "overdue"
    ]
   },
   {
@@ -6726,10 +6876,47 @@
    ]
   },
   {
+   "id": "salary-batch",
+   "file": "SalaryBatch",
+   "title": "Salary payments",
+   "canvas": "people-link",
+   "module": "Payroll",
+   "route": "/payroll/salary-payments",
+   "kind": "detail",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Payroll administrator",
+    "Payment releaser",
+    "Controller"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-PPL-12",
+    "FR-PPL-13",
+    "FR-PPL-14",
+    "FR-PPL-17",
+    "FR-PAY-11",
+    "FR-BNK-12"
+   ],
+   "purpose": "Salary lines from Nemura, approved and released like any batch, with a state per person, the tax-clearance hold checked at release and masked accounts.",
+   "content": [
+    "October: waiting for the run, Chen Yu held",
+    "September: paid, line by line",
+    "Who sees these lines"
+   ],
+   "states": [
+    "releaser without the salary right: totals only",
+    "bank details changed after approval: blocked",
+    "outcome unknown: no second payment",
+    "rejected or returned line"
+   ]
+  },
+  {
    "id": "personal-claims",
    "file": "PersonalClaims",
    "title": "My claims (personal workspace)",
-   "canvas": "people-link",
+   "canvas": "roles",
    "module": "Personal",
    "route": "/me",
    "kind": "dashboard",
@@ -6761,6 +6948,156 @@
     "approver: To approve",
     "finance link opened: not part of your access",
     "not invited yet (from Nemura's Claims tile)"
+   ]
+  },
+  {
+   "id": "department-home",
+   "file": "DepartmentHome",
+   "title": "My department",
+   "canvas": "roles",
+   "module": "Home",
+   "route": "/",
+   "kind": "dashboard",
+   "phase": "P1",
+   "roles": [
+    "Approver"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-UX-40",
+    "FR-UX-39",
+    "FR-RPT-03",
+    "FR-PLN-01",
+    "FR-PAY-13"
+   ],
+   "purpose": "A budget holder's Home: their department's budget against actual, approvals and spending, with no company cash or other departments.",
+   "content": [
+    "Budget against actual, October so far",
+    "Your team's claims",
+    "Waiting for you",
+    "Engineering items with others",
+    "What you see here"
+   ],
+   "states": [
+    "something waits for approval",
+    "over budget",
+    "project manager: their projects"
+   ]
+  },
+  {
+   "id": "personal-approvals",
+   "file": "PersonalApprovals",
+   "title": "To approve (line manager)",
+   "canvas": "roles",
+   "module": "Personal",
+   "route": "/me/approve",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-UX-39",
+    "FR-AP-17",
+    "FR-APR-02",
+    "FR-APR-03"
+   ],
+   "purpose": "Where a line manager without a finance role approves their reports' claims.",
+   "content": [
+    "The claim, its policy check and the approval steps",
+    "Why you see this",
+    "Recently approved by you"
+   ],
+   "states": [
+    "nothing to approve",
+    "claim outside the policy",
+    "returned with a note"
+   ]
+  },
+  {
+   "id": "personal-time",
+   "file": "PersonalTime",
+   "title": "My time",
+   "canvas": "roles",
+   "module": "Personal",
+   "route": "/me/time",
+   "kind": "form",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-UX-39",
+    "FR-PRJ-05",
+    "FR-PRJ-07"
+   ],
+   "purpose": "An employee's own timesheet in the personal workspace.",
+   "content": [
+    "This week's hours by project",
+    "Last week, approved",
+    "Only your own time"
+   ],
+   "states": [
+    "week submitted",
+    "week returned by the project manager"
+   ]
+  },
+  {
+   "id": "my-shares",
+   "file": "MyShares",
+   "title": "My shares and options",
+   "canvas": "roles",
+   "module": "Personal",
+   "route": "/me/shares",
+   "kind": "detail",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-UX-39",
+    "FR-EQ-19",
+    "FR-EQ-24"
+   ],
+   "purpose": "An employee's own option grant and vesting.",
+   "content": [
+    "Grant, vested options and the next vesting",
+    "Only your grant"
+   ],
+   "states": [
+    "no grant",
+    "options exercised"
+   ]
+  },
+  {
+   "id": "not-part-of-access",
+   "file": "NotPartOfAccess",
+   "title": "Not part of your access",
+   "canvas": "roles",
+   "module": "Personal",
+   "route": "/*",
+   "kind": "empty",
+   "phase": "P1",
+   "roles": [
+    "Employee"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-UX-39",
+    "FR-UX-40",
+    "SEC-34"
+   ],
+   "purpose": "What a person sees when they follow a link outside their access: no names or figures, a way back.",
+   "content": [
+    "Message",
+    "Go to My claims, Back to People",
+    "Who to ask"
+   ],
+   "states": [
+    "finance workspace user: back to Home"
    ]
   }
  ]

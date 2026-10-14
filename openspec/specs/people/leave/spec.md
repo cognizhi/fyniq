@@ -31,6 +31,11 @@ Source: PRD-002 §8 · Priority M · Phase P1
 - **WHEN** a balance is shown
 - **THEN** it is the sum of the person's leave ledger entries (NM-LV-13)
 
+#### Scenario: Sick leave needs 3 months' service
+- **GIVEN** an employee who joined 2 months ago
+- **WHEN** they report sick
+- **THEN** no statutory paid sick leave is granted yet, and the record says from when it will be
+
 ### Requirement: NM-LV-03 Apply in under a minute
 The leave form SHALL show the balance after the request, count the request on its type's basis (NM-LV-11), show who else is away, warn on a clash and refuse a request beyond the balance unless the type allows it.
 
@@ -132,7 +137,7 @@ Source: PRD-002 §8 · Priority S · Phase P1 / P2 (accrual)
 - **THEN** whether untaken leave is recognised still follows the accounting policy (PRD-001 FR-ORG-10, FR-PPL-07)
 
 ### Requirement: NM-LV-10 Flexible work requests
-Formal flexible-work requests SHALL be tracked with the 2-month written reply deadline, a reason for any refusal, and the reply kept.
+Formal flexible-work requests (Tripartite Guidelines, from 1 Dec 2024) SHALL be tracked with the written reply due within 2 months of receipt, a reason for any refusal, and the reply kept.
 
 Source: PRD-002 §8 · Priority M · Phase P1
 
@@ -227,12 +232,18 @@ Source: PRD-002 §8 · Priority M · Phase P1
 
 #### Scenario: Caps by scheme
 - **WHEN** shared parental leave is claimed
-- **THEN** the cap is S$2,500 a week
-- **AND** for childcare days 4–6 the cap is S$500 a day
+- **THEN** the cap is S$2,500 a week, the same as for paternity leave
+- **AND** for childcare days 4–6 and extended childcare leave the cap is S$500 a day
+
+#### Scenario: Split and period of shared parental leave
+- **GIVEN** a child born on 10 Apr 2026
+- **WHEN** the parents change the split within the first 4 weeks after the birth
+- **THEN** the change needs no written agreement, and the leave must be taken within 12 months of the birth
+- **AND** without an agreement on flexible use, it is one continuous block within 26 weeks
 
 #### Scenario: Deadlines by scheme
 - **WHEN** the last day of shared parental leave is 30 Jun 2027
-- **THEN** its claim is due by 30 Sep 2027
+- **THEN** its claim is due by 30 Sep 2027, 3 months after the last day
 - **AND** childcare leave taken in 2026 is claimed by 31 Mar 2027
 
 #### Scenario: Partial or rejected claim

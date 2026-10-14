@@ -1,4 +1,4 @@
-<!-- fyniq-screen {"nav": "settings", "title": "OpenAI API", "mode": "expert", "heights": {"compact": 5350, "medium": 4100, "expanded": 3000}} -->
+<!-- fyniq-screen {"nav": "settings", "title": "OpenAI API", "mode": "expert", "heights": {"compact": 5650, "medium": 4350, "expanded": 3200}} -->
 <div class="fy-page fy-enter">
   <div class="fy-pagehead">
     <div class="fy-pagehead__text">
@@ -87,7 +87,7 @@
       <section class="fy-card" aria-labelledby="mod-title" id="models">
         <div class="fy-card__head"><h2 class="fy-h3" id="mod-title">Models</h2><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="refresh-cw"></i>Refresh from OpenAI</button></div>
         <div class="fy-card__body fy-stack fy-stack--3" style="padding-bottom: 0">
-          <p class="fy-small fy-secondary">OpenAI listed 84 models for this key today at 08:53, with no company data sent. Fyniq has no list of its own: the next read is tomorrow at 06:00, and a model OpenAI stops listing leaves this page and every route by itself.</p>
+          <p class="fy-small fy-secondary">OpenAI listed 84 models for this key today at 08:53, with no company data sent. Fyniq has no list of its own: the next read is tomorrow at 06:00, and a model OpenAI stops listing leaves this page and every route by itself. Today's read was complete (every page, in the usual format); a partial read never removes a model, and OpenAI's shutdown dates are kept with each model.</p>
           <h3 class="fy-small fy-strong" id="allowed-label">Allowed on this connection</h3>
         </div>
         <table class="fy-table fy-table--cards" aria-labelledby="allowed-label">
@@ -145,7 +145,7 @@
             </button>
           </div>
           <table class="fy-table fy-table--compact">
-            <caption class="fy-small fy-muted" style="text-align: left; padding-bottom: var(--space-2)">GPT-5, US$ per million tokens · OpenAI's list has no prices, so these come from LiteLLM's public price catalogue, read today at 06:00 · exact match</caption>
+            <caption class="fy-small fy-muted" style="text-align: left; padding-bottom: var(--space-2)">GPT-5, US$ per million tokens · OpenAI's list has no prices, so these come from LiteLLM's public price catalogue, read today at 06:00 (catalogue version kept with each request) · exact match</caption>
             <thead><tr><th scope="col">Tokens</th><th scope="col" class="fy-num" style="text-align: right">Price (USD)</th></tr></thead>
             <tbody>
               <tr><td>Input</td><td class="fy-num">1.25</td></tr>
@@ -153,6 +153,7 @@
               <tr><td>Output, reasoning included</td><td class="fy-num">10.00</td></tr>
             </tbody>
           </table>
+          <p class="fy-small fy-muted">Prices are read as exact decimals with their unit and every tier the catalogue lists. A price that falls by more than half, or to zero, keeps the old price until an Owner reviews it.</p>
           <div class="fy-row fy-row--between fy-row--wrap">
             <span class="fy-strong">Budget for this connection</span>
             <span class="fy-num">S$30.00 a month · alert at 80% · stops at 100%</span>
@@ -165,6 +166,7 @@
         <div class="fy-card__body fy-stack">
           <dl class="fy-dl">
             <div><dt>Processed in</dt><dd>United States</dd></div>
+            <div><dt>Evidence</dt><dd>OpenAI's data-controls page, checked 14 Oct 2026. Its Singapore region stores data there but processes it elsewhere, so no OpenAI connection may carry personal data or payroll</dd></div>
             <div><dt>Kept by OpenAI</dt><dd>Up to 30 days for abuse monitoring; zero data retention is not granted to this project</dd></div>
             <div><dt>Used for training</dt><dd>No, as declared in the agreement</dd></div>
             <div><dt>Sub-processors</dt><dd>OpenAI's published list, captured with the terms</dd></div>

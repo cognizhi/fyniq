@@ -34,6 +34,10 @@ Source: PRD-001 §8.3 · Priority M · Phase P1
 - **THEN** it keeps only the employee projection of FR-PPL-06, and those fields are held in the other system
 - **AND** the hourly cost-rate override stays in Fyniq
 
+#### Scenario: Line manager
+- **WHEN** an employee's line manager is recorded, effective-dated
+- **THEN** their claims route to that manager at the first step (FR-AP-17)
+
 ### Requirement: FR-EMP-02 Departments mapped to accounts and dimensions
 The system SHALL map each department to salary accounts and dimensions.
 

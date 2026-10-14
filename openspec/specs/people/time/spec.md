@@ -16,7 +16,7 @@ Source: PRD-002 §15 · Priority M · Phase P1
 - **THEN** 3 days are deducted
 
 ### Requirement: NM-TIM-02 Overtime for Part IV employees
-Overtime for employees covered by Part IV SHALL be requested and approved, paid at not less than 1.5 times the hourly basic rate within the monthly limit, and paid within 14 days of the salary period's end.
+Overtime for employees covered by Part IV (workmen up to S$4,500 and non-workmen up to S$2,600 basic monthly salary) SHALL be requested and approved, paid at not less than 1.5 times the hourly basic rate within the monthly limit, and paid within 14 days of the salary period's end.
 
 Source: PRD-002 §15 · Priority M · Phase P1
 
@@ -50,8 +50,8 @@ Source: PRD-002 §15 · Priority M · Phase P1
 #### Scenario: Rest-day work
 - **GIVEN** a Part IV employee works on their designated rest day at the employer's request
 - **WHEN** their pay is calculated
-- **THEN** the rest-day branch for work at the employer's request applies [verify the rates]
+- **THEN** they earn 1 day's salary for up to half their normal daily hours, 2 days' salary for more, and overtime pay beyond their normal hours (MOM)
 
 #### Scenario: Beyond the monthly limit
-- **WHEN** a month's overtime goes beyond the limit
+- **WHEN** a month's overtime goes beyond 72 hours
 - **THEN** the hours stay recorded and are paid, and HR sees ⚠ to act on

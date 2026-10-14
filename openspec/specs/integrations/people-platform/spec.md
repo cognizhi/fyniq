@@ -112,6 +112,7 @@ Source: PRD-001 §8.26 · Priority M · Phase P1
 - **WHEN** a person is synced from Nemura or an external system
 - **THEN** Fyniq keeps the person ID, display name, work email, department, cost centre, start and leaving dates and status, and nothing else from FR-EMP-01
 - **AND** it keeps each person's tax-clearance hold state and version (FR-PPL-13) and bank-detail version (FR-PPL-14), never the account number
+- **AND** it keeps each person's line manager (a person ID), for claim routing (FR-AP-17)
 
 #### Scenario: Cost rates stay
 - **WHEN** a project cost rate is set (FR-PRJ-06)

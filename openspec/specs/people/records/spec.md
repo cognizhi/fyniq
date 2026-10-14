@@ -96,6 +96,11 @@ Source: PRD-002 §7 · Priority M · Phase P1
 - **WHEN** a child's citizenship changes on 1 Jun
 - **THEN** only the periods from 1 Jun are re-evaluated
 
+#### Scenario: Limits per child and older children
+- **WHEN** childcare leave is worked out over the years for one child
+- **THEN** a Singapore Citizen child gives at most 42 days in all, and a non-citizen child at most 14
+- **AND** for a child aged 7–12 the parent gets 2 days of extended childcare leave a year (Appendix A)
+
 ### Requirement: NM-PPL-08 Legal classification per person
 Nemura SHALL keep each person's effective-dated legal classification (contract type, Employment Act and Part IV coverage, residency, retirement cohort), recorded by HR with evidence where it cannot be derived, and rules SHALL read it rather than the worksite alone.
 

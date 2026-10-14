@@ -276,6 +276,19 @@ Source: PRD-001 §16.2
 - **WHEN** CI runs
 - **THEN** the merge is blocked
 
+### Requirement: QA-UI-08 Role walkthroughs
+An end-to-end test per role in PRD-001 §7.1's table SHALL sign in as that role and assert its landing page, navigation, Home blocks and Inbox items, the not-available page for areas outside it, and the API's refusal of the same reads.
+
+Source: PRD-001 §16.2
+
+#### Scenario: Budget holder
+- **WHEN** the budget holder's walkthrough runs
+- **THEN** it lands on My department, finds no Banking, Payroll or Accounting area, sees the not-available page for a bank account link, and the API refuses that read
+
+#### Scenario: Two roles
+- **WHEN** a person holds two roles
+- **THEN** the test asserts they see the union
+
 ### Requirement: QA-TRACE-01 Requirement traceability
 CI SHALL extract every `M` requirement of the current phase from the PRD tables (ID, priority, phase) and list those no test references; the list MUST be empty at the phase gate. The extractor is a P0 script, `scripts/trace_requirements.py`.
 

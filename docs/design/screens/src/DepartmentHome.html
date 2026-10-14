@@ -1,0 +1,73 @@
+<!-- fyniq-screen {"nav": "home", "title": "My department", "mode": "basic", "persona": "budgetholder", "heights": {"compact": 1700, "medium": 1450, "expanded": 900}} -->
+<div class="fy-page fy-enter">
+  <div class="fy-pagehead">
+    <div class="fy-pagehead__text">
+      <span class="fy-eyebrow">Engineering · Tuesday 13 October</span>
+      <h1 class="fy-h1">My department</h1>
+      <p class="fy-secondary">Engineering's spending against its budget, and what waits for you. You approve bills, POs and claims for Engineering up to S$2,000.</p>
+    </div>
+    <div class="fy-pagehead__actions fy-from-medium">
+      <a class="fy-btn fy-btn--secondary" href="#planning/budgets?department=engineering"><i data-icon="trending-up"></i>Engineering budget</a>
+    </div>
+  </div>
+
+  <div class="fy-split">
+    <div class="fy-stack fy-stack--6">
+      <section class="fy-card" aria-labelledby="bva-title">
+        <div class="fy-card__head">
+          <h2 class="fy-h3" id="bva-title">Budget against actual, October so far</h2>
+          <span class="fy-small fy-muted">42% of the month gone</span>
+        </div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <div class="fy-row fy-row--wrap" style="align-items: baseline; gap: var(--space-3)">
+            <span class="fy-tile__value fy-num" style="color: var(--text-primary)"><span class="fy-muted" style="font-size: var(--fs-md)">S$</span>1,771.73</span>
+            <span class="fy-small fy-muted">of 8,545.00 · 21% used</span>
+          </div>
+          <div class="fy-progress fy-progress--good" role="img" aria-label="21% of the October budget used, with 42% of the month gone"><span style="width: 21%"></span></div>
+        </div>
+        <table class="fy-table fy-table--cards">
+          <thead><tr><th scope="col">Line</th><th scope="col" class="fy-num">Budget</th><th scope="col" class="fy-num">Actual</th><th scope="col" class="fy-from-medium">Note</th></tr></thead>
+          <tbody>
+            <tr><td data-card="title">AI and API usage</td><td data-card="meta" class="fy-num">3,500.00</td><td data-card="amount" class="fy-num">1,369.43</td><td data-card="hide" class="fy-from-medium fy-small fy-secondary">October's third of the prepaid Anthropic credits (BILL-0917)</td></tr>
+            <tr><td data-card="title">Developer tools</td><td data-card="meta" class="fy-num">1,100.00</td><td data-card="amount" class="fy-num">216.00</td><td data-card="hide" class="fy-from-medium fy-small fy-secondary">Figma seats, October</td></tr>
+            <tr><td data-card="title">Equipment</td><td data-card="meta" class="fy-num">600.00</td><td data-card="amount" class="fy-num">186.30</td><td data-card="hide" class="fy-from-medium fy-small fy-secondary">Daniel Lim's dock (CLM-0044)</td></tr>
+            <tr><td data-card="title">Cloud hosting</td><td data-card="meta" class="fy-num">3,045.00</td><td data-card="amount" class="fy-num">0.00</td><td data-card="hide" class="fy-from-medium fy-small fy-secondary">AWS bills October in early November</td></tr>
+            <tr><td data-card="title">Travel and meals</td><td data-card="meta" class="fy-num">300.00</td><td data-card="amount" class="fy-num">0.00</td><td data-card="hide" class="fy-from-medium fy-small fy-secondary">—</td></tr>
+          </tbody>
+        </table>
+        <div class="fy-card__foot"><span class="fy-small fy-muted">Engineering salaries are not shown: the team has 2 people besides you, so a total would reveal their pay.</span></div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="team-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="team-title">Your team's claims</h2><a class="fy-small" href="#inbox?type=claims">All</a></div>
+        <ul class="fy-list">
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Daniel Lim · USB-C dock and cables</span><span class="fy-list__meta">CLM-0044 · approved by you, then finance · paid Fri 16 Oct</span></span><span class="fy-num">186.30</span></li>
+          <li class="fy-list__item"><span class="fy-list__icon fy-list__icon--warning"><i data-icon="pause" class="fy-i--20"></i></span><span class="fy-list__main"><span class="fy-list__title">Chen Yu · 2 claims</span><span class="fy-list__meta">CLM-0042, CLM-0043 · approved; held for his tax clearance</span></span><span class="fy-num">632.60</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <aside class="fy-stack fy-stack--6" aria-label="Waiting and coming up">
+      <section class="fy-card" aria-labelledby="wait-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="wait-title">Waiting for you</h2></div>
+        <div class="fy-card__body fy-row">
+          <span class="fy-list__icon fy-list__icon--good"><i data-icon="circle-check" class="fy-i--20"></i></span>
+          <span class="fy-grow fy-secondary">Nothing to approve. New Engineering items arrive in your Inbox.</span>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="others-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="others-title">Engineering items with others</h2></div>
+        <ul class="fy-list">
+          <li class="fy-list__item" style="align-items: flex-start"><span class="fy-list__main"><span class="fy-list__title fy-wrap">Laptop for the new data scientist</span><span class="fy-list__meta">PO-0016 · Challenger Technologies · above your S$2,000 limit, with Arjun Rao</span></span><span class="fy-num">4,598.00</span></li>
+          <li class="fy-list__item" style="align-items: flex-start"><span class="fy-list__main"><span class="fy-list__title fy-wrap">Cloud hosting, September</span><span class="fy-list__meta">BILL-0918 · AWS · with Mei Lin Tan</span></span><span class="fy-num">2,861.40</span></li>
+        </ul>
+      </section>
+
+      <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="scope-title" style="background: var(--surface-2)">
+        <h2 class="fy-h3" id="scope-title">What you see here</h2>
+        <p class="fy-small fy-secondary">Engineering's budget, spending and approvals, and your own claims and time. Company cash, banking and other departments are not part of your access.</p>
+      </section>
+    </aside>
+  </div>
+</div>

@@ -22,6 +22,22 @@ Overrides MASTER.md for the Home page (PRD §7.1, FR-KPI-01, FR-CTL-02).
 - Expert: adds gross margin and GST tiles, the cash chart with drill-down to ledger lines, and
   unrealised FX.
 
+## By role (PRD-001 FR-UX-40, rev 0.18)
+Home follows the person's rights; the table in PRD-001 §7.1 is the reference.
+- The **pulse card** and the company tiles appear only for people with company-wide report rights
+  (Owner, Controller, Accountant, Tax agent, Bookkeeper, Administrator). A bookkeeper's Home puts their
+  work first (bank lines to categorise, documents to finish) above the pulse card.
+- A department-scoped Approver (budget holder or project manager) gets **My department**: their
+  department's budget against actual (month and year to date), spend by supplier and category, the
+  approvals waiting with their limits, and their projects' hours and margin at role-average rates. Payroll
+  cost appears only as a department total covering at least 3 people besides the viewer (FR-PAY-13).
+  No company cash, runway, bank balance or other department.
+- AP and AR specialists, the payment releaser and the payroll administrator see their own work first:
+  bills due and batches to prepare; overdue invoices and receipts to apply; batches to release and
+  payments with an unknown outcome; the next pay run and salary batches.
+- A board viewer's Home is the board pack. A person with personal rights only has no Home: they land
+  on My claims in the personal workspace (FR-UX-39).
+
 ## Density
 Comfortable regardless of the user's density setting (Home is a reading page).
 

@@ -23,6 +23,11 @@ Source: PRD-002 §A
 - **WHEN** a fact was checked on the official page (for example MOM's 2027 holiday calendar)
 - **THEN** the pack cites that page and the date it was checked
 
+#### Scenario: Maternity split
+- **GIVEN** a mother of a Singapore Citizen 2nd child on government-paid maternity leave
+- **WHEN** the claim is worked out
+- **THEN** the employer pays the first 8 weeks and claims the last 8, up to S$10,000 per 4 weeks and S$20,000 in all (MOM)
+
 ### Requirement: NM-FEAT-01 Feature registry
 People records SHALL always be on, and each optional feature SHALL be turned on or off per organisation (payroll with the Owner and a second approver); a feature that has never been on SHALL NOT be loaded.
 
@@ -178,8 +183,8 @@ Each pack value SHALL be researched, verified (official page captured and checke
 Source: PRD-002 §6 · Priority M · Phase P1
 
 #### Scenario: Unverified statutory input
-- **GIVEN** unpaid infant care leave's 12 days is still researched
-- **WHEN** an employee applies for it
+- **GIVEN** a leave entitlement in the pack is still researched
+- **WHEN** an employee applies for that leave
 - **THEN** the request shows that the entitlement is not verified and waits for HR
 - **AND** Checks shows ✖ (N.1 #13) and gives no "all clear"
 

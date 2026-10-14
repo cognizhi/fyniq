@@ -1,0 +1,52 @@
+<!-- fyniq-screen {"nav": "my-leave", "title": "I'm sick", "mode": "basic", "persona": "employee", "heights": {"compact": 1350, "medium": 1050, "expanded": 1050}} -->
+<div class="fy-page fy-page--narrow fy-enter">
+  <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#me/leave">My leave</a><i data-icon="chevron-right"></i><span aria-current="page">I'm sick</span></nav>
+  <div class="fy-stack fy-stack--2">
+    <h1 class="fy-h1">I'm sick</h1>
+    <p class="fy-secondary">Tell us you're away. There's nothing to approve: Wei Jie Ong and Sarah Koh are told, and Sarah checks your medical certificate.</p>
+  </div>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="when-title">
+    <h2 class="nm-section__title" id="when-title">When?</h2>
+    <div class="fy-form fy-form--2">
+      <div class="fy-field">
+        <label class="fy-label" for="sk-from">First day</label>
+        <input class="fy-input" id="sk-from" type="text" value="Today, Tue 13 Oct">
+      </div>
+      <div class="fy-field">
+        <label class="fy-label" for="sk-to">Last day, if you know it</label>
+        <input class="fy-input" id="sk-to" type="text" value="Tue 13 Oct">
+      </div>
+      <div class="fy-field fy-field--full">
+        <span class="fy-label" id="sk-kind">Kind</span>
+        <div class="fy-segmented" role="radiogroup" aria-labelledby="sk-kind"><button type="button" role="radio" aria-checked="true">Outpatient</button><button type="button" role="radio" aria-checked="false">Hospitalisation</button></div>
+      </div>
+    </div>
+    <div class="fy-grid fy-grid--2">
+      <div class="nm-stat"><span class="nm-stat__value">12<small>outpatient days left</small></span><span class="nm-stat__sub">11 after today</span></div>
+      <div class="nm-stat"><span class="nm-stat__value">58<small>hospitalisation days left</small></span><span class="nm-stat__sub">One limit: outpatient days count towards the 60</span></div>
+    </div>
+  </section>
+
+  <section class="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby="mc-title">
+    <h2 class="nm-section__title" id="mc-title">Medical certificate</h2>
+    <div class="fy-grid fy-grid--2" style="gap: var(--space-2)">
+      <button class="fy-btn fy-btn--secondary fy-btn--lg" type="button"><i data-icon="camera"></i>Photo of the MC</button>
+      <button class="fy-btn fy-btn--secondary fy-btn--lg" type="button"><i data-icon="file-up"></i>e-MC file</button>
+    </div>
+    <p class="fy-small fy-muted">Don't have it yet? Send this now and add it when you're back. Only Sarah sees the certificate.</p>
+  </section>
+
+  <div class="fy-banner fy-banner--info" role="note">
+    <i data-icon="clock" class="fy-i--20"></i>
+    <div class="fy-banner__text">
+      <span class="fy-strong">Tell us within 48 hours</span>
+      <span class="fy-small fy-secondary">That's the law's rule for sick leave. Cognizhi pays sick leave from your first day.</span>
+    </div>
+  </div>
+
+  <div class="fy-actionbar">
+    <a class="fy-btn fy-btn--ghost" href="#me/leave">Cancel</a>
+    <button class="fy-btn fy-btn--primary fy-btn--lg" type="button"><i data-icon="send"></i>Tell Wei Jie and Sarah</button>
+  </div>
+</div>

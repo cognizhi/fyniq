@@ -38,6 +38,15 @@ Source: PRD-002 §12 · Priority M · Phase P2
 - **WHEN** it hires an Employment Pass holder
 - **THEN** the exemption is recorded with its evidence, and the offer is not blocked
 
+#### Scenario: Other exemptions
+- **WHEN** the hire is an Employment Pass at a fixed monthly salary of S$22,500 or more, a role of 1 month or less, or a local or intra-corporate transferee
+- **THEN** the exemption is recorded with its evidence, and the offer is not blocked
+
+#### Scenario: S Pass exemption
+- **GIVEN** a company with fewer than 10 employees
+- **WHEN** it hires an S Pass holder
+- **THEN** the same exemption applies and is recorded with its evidence
+
 ### Requirement: NM-REC-03 Fair wording
 Job posts and interview questions SHALL be checked for criteria that the fair-employment guidelines and the Workplace Fairness Act prohibit, unless a genuine occupational requirement is recorded.
 
