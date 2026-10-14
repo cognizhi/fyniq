@@ -34,6 +34,7 @@ fonts and shell. Icons: <i data-icon="landmark"
 class="fy-i--20"></i> becomes inline Lucide SVG (aria-hidden unless the <i> has aria-label).
 """
 import datetime
+import html
 import html.parser
 import json
 import pathlib
@@ -47,6 +48,8 @@ KIT = HERE / "kit"
 SRC = HERE / "src"
 OUT = HERE / "out"
 INVENTORY = HERE / "inventory.json"
+REVIEW = ROOT / "docs/prd/reviews/review-status.json"   # FR-UX-41: pages awaiting second review
+REVIEW_BANNERS = True   # `heights` measures without the banner; the canvas adds room for it
 ICONS = json.loads((KIT / "lucide-icon-nodes.json").read_text(encoding="utf-8"))
 FONTS = ("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700"
          "&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap")
@@ -254,6 +257,57 @@ class Lint(html.parser.HTMLParser):
             self.err("`{{`/`}}` in text: the canvas treats it as a template hole")
         if EMOJI_RE.search(data):
             self.err(f"emoji or symbol glyph in text ({EMOJI_RE.search(data).group()!r}); use a Lucide icon and a label")
+
+
+def review_banner(screen_id):
+    """The "Needs additional verification" banner (FR-UX-41, NM-UX-06) for a screen whose rules
+    await a second review in docs/prd/reviews/review-status.json, and the number of pending areas
+    it names; ('', 0) when none is pending."""
+    if not REVIEW_BANNERS or not REVIEW.exists():
+        return "", 0
+    reg = json.loads(REVIEW.read_text(encoding="utf-8"))
+    areas = [a for a in reg["areas"] if a["status"] == "pending" and screen_id in a["screens"]]
+    if not areas:
+        return "", 0
+    lines = "".join(f'<span class="fy-small fy-secondary"><span class="fy-strong">{html.escape(a["short"])}.</span> '
+                    f'{html.escape(a["message"])}</span>' for a in areas)
+    return (f'<div class="fy-banner fy-banner--warning" role="note" aria-label="{html.escape(reg["heading"])}">'
+            f'<i data-icon="triangle-alert" class="fy-i--20"></i>'
+            f'<div class="fy-banner__text"><span class="fy-strong">{html.escape(reg["heading"])}</span>{lines}'
+            f'<div class="fy-row fy-row--wrap" style="margin-top: var(--space-2)">'
+            f'<a class="fy-btn fy-btn--secondary fy-btn--sm" href="#help/{reg["help_key"]}">What this means</a></div></div>'
+            f'<button class="fy-iconbtn" type="button" aria-expanded="true" aria-label="Collapse the review banner">'
+            f'<i data-icon="chevron-up"></i></button></div>'), len(areas)
+
+
+def _div_end(text, start):
+    """Index just after the </div> that closes the <div> opening at `start`."""
+    depth = 0
+    for m in re.finditer(r"<div\b|</div>", text[start:]):
+        depth += 1 if m.group(0) != "</div>" else -1
+        if depth == 0:
+            return start + m.end()
+    return len(text)
+
+
+def with_review_banner(screen_id, main, settings):
+    """Insert the review banner directly under the page header (or the block holding the h1), and
+    add room for it to the frame heights (measured: about 160 px per class plus 20–60 px per area)."""
+    banner, n = review_banner(screen_id)
+    if not banner:
+        return main
+    h = settings.setdefault("heights", {})
+    for cls, base, per in (("compact", 200, 60), ("medium", 140, 40), ("expanded", 140, 20)):
+        if h.get(cls):
+            h[cls] += base + per * n
+    m = re.search(r'<div class="fy-pagehead[ "]', main)
+    if m:
+        at = _div_end(main, m.start())
+    else:
+        h1 = main.find("<h1")
+        opens = [o.start() for o in re.finditer(r"<div\b", main[:max(h1, 0)])]
+        at = next((e for e in (_div_end(main, o) for o in reversed(opens)) if e > h1), 0) if h1 >= 0 else 0
+    return main[:at] + "\n" + banner + main[at:]
 
 
 def read_fragment(path):
@@ -845,6 +899,7 @@ def cmd_canvas(args):
     pages, boards, order, notes, page_y = [], {}, [], {}, {}
     for s in screens:
         settings, main, ai = read_fragment(SRC / f"{s['file']}.html")
+        main = with_review_banner(s["id"], main, settings)
         mode = settings.get("mode") or ("basic" if s.get("mode") == "basic" else "expert")
         settings["mode"] = mode
         main, ai = expand_icons(main), expand_icons(ai)
@@ -919,6 +974,7 @@ def cmd_canvas(args):
 def device_markup(screen, theme, product="fyniq"):
     """The screen as plain HTML (no canvas runtime), for local previews."""
     settings, main, ai = read_fragment(SRC / f"{screen['file']}.html")
+    main = with_review_banner(screen["id"], main, settings)
     mode = settings.get("mode") or ("basic" if screen.get("mode") == "basic" else "expert")
     settings["mode"] = mode
     main, ai = expand_icons(main), expand_icons(ai)
@@ -987,6 +1043,8 @@ def cmd_heights(args):
     import math
     import shutil
     import subprocess
+    global REVIEW_BANNERS
+    REVIEW_BANNERS = False
     names = [a for a in args if not a.startswith("--")]
     if not names:
         raise SystemExit("usage: build.py heights <File>… [--write]")

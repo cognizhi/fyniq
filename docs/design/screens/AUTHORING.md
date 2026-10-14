@@ -49,6 +49,11 @@ Nemura also has `owner` (Arjun Rao) and `leaver` (Nurul Aziz, own documents only
 | `layout` | `bare` for screens without the app shell (sign-in, first-run set-up, portals, emails). The fragment then provides everything inside the device, starting with `<div class="fy-bare">` or `<div class="fy-bare fy-bare--split">` |
 | `heights` | The content height per class, so the frame shows the whole page (long-screenshot style). Too tall shows empty ground, too short clips; frames never go below the device size. Measure them: `build.py heights <File> --write` (a dialog over the page is not measured: set those by eye with `build.py shots`) |
 
+**Review banner (FR-UX-41).** Never write the "Needs additional verification" banner into a fragment. `build.py`
+inserts it under the page header of every screen the review register (`docs/prd/reviews/review-status.json`) lists for
+a pending area, and adds room for it to the frame heights; `build.py heights` measures without it. When an area is
+marked reviewed, rebuild and republish its canvases and the banner is gone.
+
 ## 2. Rules the canvas enforces (each one fails silently)
 
 - Close every element (`<span></span>`, `<path …></path>`); quote every attribute; void elements

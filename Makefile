@@ -22,7 +22,7 @@ help: ## List the available targets
 	@echo
 	@echo "  Arriving in P0: setup dev up down seed reset test test-e2e evals images ci"
 
-check: check-tokens check-config kb-lint spec-check design-check ## Run every check available today (CI runs this)
+check: check-tokens check-config kb-lint spec-check design-check review-check ## Run every check available today (CI runs this)
 
 check-tokens: ## Design tokens (Fyniq and Nemura) meet WCAG contrast in all four themes (QA-UI-03)
 	@python3 $(DESIGN)/scripts/check_contrast.py
@@ -51,6 +51,12 @@ spec-check: ## OpenSpec specs are valid (strict) and match the PRD: coverage and
 	@$(OPENSPEC) validate --specs --strict --no-interactive
 	@python3 scripts/prdspec.py coverage --summary
 	@python3 scripts/prdspec.py stale --summary
+
+review-check: ## The review register names real requirements and screens, and no excluded page (FR-UX-41, QA-UI-09)
+	@python3 scripts/review_status.py check
+
+review-status: ## Areas awaiting second review and the pages that show the "Needs additional verification" banner
+	@python3 scripts/review_status.py list
 
 spec-map: ## Show how each PRD's anchors map to OpenSpec capabilities
 	@python3 scripts/prdspec.py map

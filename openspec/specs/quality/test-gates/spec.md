@@ -289,6 +289,28 @@ Source: PRD-001 §16.2
 - **WHEN** a person holds two roles
 - **THEN** the test asserts they see the union
 
+### Requirement: QA-UI-09 Needs-verification banner
+A test SHALL read the review register and assert that every page listed for a pending area shows the FR-UX-41 banner naming that area and its reviewer, in Basic and Expert mode; that no page shows it once its area is reviewed; and that excluded pages never show it.
+
+Source: PRD-001 §16.2
+
+#### Scenario: Pending and reviewed areas
+- **WHEN** the test runs against the register
+- **THEN** every page listed for a pending area shows the banner naming the area and its reviewer, in Basic and Expert mode
+- **AND** no page shows it for an area marked reviewed
+
+#### Scenario: Excluded pages
+- **WHEN** the test opens the sign-in, consent, account-recovery and personal-workspace pages
+- **THEN** none shows the banner
+
+#### Scenario: Register check
+- **WHEN** `make check` runs
+- **THEN** it fails if the register names an unknown requirement or screen, a screen that cites none of its area's requirements, an excluded page, or a reviewed area without its pull request
+
+#### Scenario: Blocks merge
+- **WHEN** the test or the register check fails
+- **THEN** the merge is blocked
+
 ### Requirement: QA-TRACE-01 Requirement traceability
 CI SHALL extract every `M` requirement of the current phase from the PRD tables (ID, priority, phase) and list those no test references; the list MUST be empty at the phase gate. The extractor is a P0 script, `scripts/trace_requirements.py`.
 

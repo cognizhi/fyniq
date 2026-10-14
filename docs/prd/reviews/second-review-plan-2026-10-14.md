@@ -4,6 +4,7 @@ AGENTS.md ("Safety") says that anything touching money movement, payee bank deta
 audit trail, tenancy or the AI/MCP write path needs a second human reviewer, whoever wrote it. The
 revisions of 13–14 Oct 2026 were written with an AI agent at the founder's request and are marked
 **Second reviewer required** in both revision histories. This plan records how that review happens.
+(Updated 14 Oct 2026) The review pull requests cover PRD-001 revisions 0.16–0.22 and PRD-002 revisions 0.2–0.6.
 
 ## Decisions (founder, 14 Oct 2026)
 
@@ -11,7 +12,8 @@ revisions of 13–14 Oct 2026 were written with an AI agent at the founder's req
 |---|---|---|
 | Who reviews | **Split by area**: the external accountant / tax agent reviews statutory values and payroll; the co-founder (the other director) reviews roles, approvals and payments; a security reviewer (fractional CTO or consultant) reviews the AI/MCP surface, identity and tenancy | No single reviewer covers tax law, money controls and OAuth security; this matches the PRD's own Reviewers line |
 | How | **One pull request per area**, with the checklist below in its description; merging needs the reviewer's approval. Branch protection on `main` (CTL-CHG-01) is switched on when the review PRs open | The PRD requires an audit trail of changes (CTL-CHG-01, REL-01); comments sit on the exact lines |
-| When | **Before P0 work starts on each area**, in this order: statutory and payroll; roles, approvals and payments; AI/MCP and identity (before the MCP server is built) | Nothing is built on an unreviewed rule, and the spec is cheapest to change before code exists |
+| When | ~~**Before P0 work starts on each area**, in this order: statutory and payroll; roles, approvals and payments; AI/MCP and identity (before the MCP server is built)~~ Superseded below (PRD-001 rev 0.22) | Nothing is built on an unreviewed rule, and the spec is cheapest to change before code exists |
+| When (PRD-001 rev 0.22, founder, 14 Oct 2026) | **Building does not wait.** Each area is built on the best current recommendation and the evidence on file ([verification sweep](../research/verify-sweep-2026-10-14.md)), while its review runs in its pull request. Until that pull request merges, the pages it covers show a **Needs additional verification** banner (FR-UX-41, NM-UX-06), listed in the [review register](review-status.json) | Work keeps moving, and nobody relies on an unreviewed rule without being told |
 | Until then | The research and decisions of 14 Oct 2026 are committed to `main`; the review PRs come later | Founder's choice, so the work is saved now |
 
 Decisions taken on the same day that the reviewers confirm rather than make (the P0 open questions 6, 9, 11, 13, 30, 36 and 40 are recorded in PRD-001 rev 0.20):
@@ -29,6 +31,8 @@ Decisions taken on the same day that the reviewers confirm rather than make (the
 ## Area 1 · Statutory values and payroll (accountant / tax agent)
 
 Read with the [verification sweep](../research/verify-sweep-2026-10-14.md), which gives each source.
+
+- [ ] (rev 0.22) The posting rules (PRD-001 §10.2, Appendix B) and the accounting policies (FR-ORG-10) for the transaction types in the launch subset, and the GST rules (ENG-45, ENG-42, FR-AP-20) where the company is or will be GST-registered (formerly §17.4 item 3)
 
 - [ ] CPF: rates by age band for 2026 and 2027, rounding, OW and AW ceilings, AW refunds, SPR rates (PRD-001 §14.2, FR-PAY-02, FR-PAY-14, RND-CPF)
 - [ ] Wage classes by facts, including commission (FR-PAY-17); deductions, reimbursements and disbursement (FR-PAY-18, B.3)
@@ -60,6 +64,7 @@ Read with the [verification sweep](../research/verify-sweep-2026-10-14.md), whic
 - [ ] Model providers, routes, data classes and egress (AI-70…AI-88, SEC-37); the never-list (§9.6)
 - [ ] Data residency (ADR-T2): Opus 4.6 confirmed in Singapore on all three Google pages; Sonnet 4.6 on two of three; the 5.x models have no Singapore endpoint
 - [ ] MCP (§9.7) against the 2026-07-28 specification: `iss` checks, credentials keyed by issuer, dynamic client registration deprecated; Hydra has no RFC 8707 or Client ID Metadata Document support, so review the founder's path for open question 40 (rev 0.20): the free build pinned, the JWT-bearer grant proved in the P0 identity spike with its limits (only for the user of an MCP token just validated, at most 5 minutes, scopes intersected by the API, the key in KMS), an Enterprise Licence quote alongside, and the final choice before P1's MCP work
+- [ ] (rev 0.21) ADR-T3's restated wording: accepted by the founder (open question 11), with P0 exit item 6 as the proof and a failure reopening it (PRD-001 §12.2.1, §12.12); ADR-D1's row-level security as the tenancy backstop (§11.3, §11.4)
 - [ ] Tokens: audience binding, DPoP where clients support it, revocation within 60 seconds (AI-36, AI-38)
 - [ ] Sign-in: the Zoho issuer per data centre (FR-ADM-08, §17.3 item 7); passkeys implemented in the API (Identity Platform has none)
 - [ ] NRIC handling while PDPC's guidance is under review (CMP-PD-07); NRIC never used for authentication after 31 Dec 2026
@@ -73,3 +78,7 @@ Read with the [verification sweep](../research/verify-sweep-2026-10-14.md), whic
   revision rows it covers.
 - Outcome: the reviewer approves, or requests changes; any change goes into the PRD with a new
   `(rev 0.N)` tag, and the specs are updated and stamped in the same PR.
+- (rev 0.22) The PR sets its area to `reviewed` in the [review register](review-status.json) with its own
+  number, so merging it removes the **Needs additional verification** banner from the area's pages in the
+  next release. The register also lists exactly which pages carry the area's banner: the reviewer can ask
+  for pages to be added or removed in the same PR.

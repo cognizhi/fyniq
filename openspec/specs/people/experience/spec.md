@@ -136,3 +136,16 @@ Source: PRD-002 §19 · Priority M · Phase P1
 #### Scenario: Print
 - **WHEN** an employee prints a payslip
 - **THEN** it prints on the letterhead and reads clearly in black and white
+
+### Requirement: NM-UX-06 Needs additional verification
+Nemura pages SHALL follow PRD-001 FR-UX-41: while the statutory, approval or security rules a page uses await their second review, the page shows the banner, driven by the same register (`docs/prd/reviews/review-status.json`).
+
+Source: PRD-002 §19 · Priority M · Phase P1
+
+#### Scenario: People team pages
+- **WHEN** the people team opens the payroll, pay-run approval, leave-policy, country-pack, checks, onboarding or settings pages while their area's review is pending
+- **THEN** the page shows the "Needs additional verification" banner
+
+#### Scenario: Self-service pages
+- **WHEN** an employee opens My home, My pay, My leave, Ask or the sign-in page
+- **THEN** no banner is shown

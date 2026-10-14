@@ -75,6 +75,10 @@
       "capability": "experience/navigation"
     },
     {
+      "match": "FR-UX-41",
+      "capability": "experience/help"
+    },
+    {
       "match": "FR-VIZ-.*",
       "capability": "experience/visualisation"
     },

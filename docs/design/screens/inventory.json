@@ -6430,7 +6430,8 @@
     "NM-PAY-05",
     "NM-INT-03",
     "NM-PAY-04",
-    "NM-ROLE-04"
+    "NM-ROLE-04",
+    "NM-PAY-01"
    ],
    "purpose": "The month's pay run from the people side: inputs, dates, approval and the hand-off to Fyniq.",
    "content": [
@@ -6526,7 +6527,8 @@
     "NM-INT-06",
     "NM-INT-07",
     "NM-PAY-10",
-    "NM-ROLE-04"
+    "NM-ROLE-04",
+    "NM-PAY-01"
    ],
    "purpose": "The approver's view of a run: what changed since last month, what goes out, and the passkey approval Fyniq will check.",
    "content": [

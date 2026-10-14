@@ -154,3 +154,43 @@ Source: PRD-001 §7.9 · Priority S · Phase P1
 - **WHEN** the user chooses to practise a task from a tour or a guide page
 - **THEN** the sample company opens as a separate, clearly labelled organisation
 - **AND** nothing they do there changes the real books
+
+### Requirement: FR-UX-41 Needs additional verification
+While an area of rules awaits its second review, every page listed for that area in the review register (`docs/prd/reviews/review-status.json`) SHALL show a caveat banner at the top: which rules await review, by whom, and what to check before relying on them.
+
+Source: PRD-001 §7.2 · Priority M · Phase P1
+
+#### Scenario: A listed page while its area is pending
+- **WHEN** a payroll administrator opens a pay run while the statutory review is pending
+- **THEN** a "Needs additional verification" banner says the statutory and payroll rules await review by an accountant or tax agent
+- **AND** it says to check the figures before relying on them or filing them
+
+#### Scenario: Reviewers per area
+- **WHEN** the banner names its reviewer
+- **THEN** statutory values and payroll are reviewed by an accountant or tax agent, roles, approvals and payments by a second director, and AI, MCP, identity and tenancy by a security reviewer, as the review plan (`docs/prd/reviews/second-review-plan-2026-10-14.md`) assigns
+
+#### Scenario: What to check
+- **WHEN** the banner says what to check
+- **THEN** it names the action at risk: filing a figure, releasing a payment or turning a setting on
+
+#### Scenario: Pages never shown the banner
+- **WHEN** a page is a sign-in, consent, account-recovery, personal-workspace (FR-UX-39) or Nemura self-service page
+- **THEN** it never shows the banner
+- **AND** a page is listed only where people prepare, approve or configure the rules under review
+
+#### Scenario: Both modes, collapsible, not switchable
+- **WHEN** the user is in Basic or Expert mode (§7.8)
+- **THEN** the banner shows in both
+- **AND** it can be collapsed to one line but not switched off
+- **AND** it uses the warning status with its icon and label, never AI violet
+- **AND** it links to its help page (help key `review.awaiting-verification`)
+
+#### Scenario: Removed when the review merges
+- **WHEN** the area's review pull request marks the area reviewed in the register and merges
+- **THEN** the first release after that merge no longer shows the banner on the area's pages
+- **AND** the register in the repository is the banner's only source; there is no runtime switch
+
+#### Scenario: Building does not wait
+- **WHEN** an area's review is still pending
+- **THEN** its rules are built on the best current recommendation and the evidence on file (the verification sweep, `docs/prd/research/verify-sweep-2026-10-14.md`)
+- **AND** QA-UI-09 tests the banner

@@ -36,7 +36,7 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 | Command | Does | Status |
 |---|---|---|
 | `make help` | Lists the targets | Today |
-| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the screen inventory and fragments | Today (CI runs it) |
+| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the screen inventory and fragments, the review register | Today (CI runs it) |
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
@@ -44,6 +44,7 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 | `make kb-index` / `kb-lint` / `kb-stale` | Regenerate the knowledge-base index; lint the compiled pages (part of `make check`); list stale pages and uncovered sources (§9.11) | Today |
 | `make spec-check` / `spec-map` / `spec-stale` | OpenSpec specs valid (strict), covering every PRD anchor once and matching the PRD rows (part of `make check`); the PRD → capability map; PRD rows changed since conversion | Today |
 | `make design-kit` / `design-check` / `design-status` | Regenerate the screen kit stylesheet; lint the screen inventory and fragments (part of `make check`); screens designed per canvas | Today |
+| `make review-check` / `review-status` | The review register (`docs/prd/reviews/review-status.json`) names real requirements and screens and no excluded page (part of `make check`); the areas awaiting second review and the pages that show the "Needs additional verification" banner (FR-UX-41) | Today |
 | `make setup`, `dev`, `up`, `down`, `seed`, `reset`, `test`, `test-e2e`, `evals`, `images`, `ci` | The local-mode command contract (PRD §12.8): the full stack and every merge gate, offline | **Arrives in P0** |
 
 Never invent a command in docs or scripts. If you need a new one, add it to the Makefile with a

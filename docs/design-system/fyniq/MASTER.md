@@ -163,6 +163,7 @@ Set by the header theme menu and the command palette; "System" follows `prefers-
 | Form field | Visible label, helper text, error below the field, linked with `aria-describedby`; validates on blur; an error summary takes focus after a failed submit. |
 | Info button and popover | Beside a visible label; see §12. |
 | Walkthrough (tour) | Scrim, spotlight and caption card; see §12. |
+| Review banner ("Needs additional verification", FR-UX-41, rev 0.22) | Warning banner (`triangle-alert` + heading) directly under the page header, on the pages the review register (`docs/prd/reviews/review-status.json`) lists for a pending area; one line per area: bold "<rules> await review by <reviewer>." then what to check. "What this means" opens the help page (`review.awaiting-verification`). A collapse button (`chevron-up`, `aria-expanded`) shrinks it to one line; it cannot be dismissed or switched off, and it shows in Basic and Expert. Never on sign-in, consent, recovery or self-service pages; never AI violet. `build.py` inserts it from the register, so fragments never hard-code it. Nemura follows the same rule (NM-UX-06). |
 
 ## 8. Icons
 

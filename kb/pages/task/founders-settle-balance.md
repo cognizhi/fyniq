@@ -56,3 +56,4 @@ compiled_at: 2026-10-13
 - **✖ Required evidence missing**: attach the resolution, agreement or ACRA acknowledgement the
   step lists. (src: docs/user-guide/founders-money.md#common-problems)
 - Pay-related messages: [[founders.pay-choice]].
+- A **Needs additional verification** banner on these pages: [[review.needs-verification]].
