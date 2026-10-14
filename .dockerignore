@@ -1,0 +1,16 @@
+# Only what the images need reaches the build context (Dockerfile.go-service, Dockerfile.web).
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!apps/web/
+!docs/design-system/fyniq/tokens.css
+!deploy/docker/
+apps/web/node_modules
+apps/web/dist
+apps/web/test-results
+apps/web/playwright-report

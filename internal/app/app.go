@@ -8,9 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/httpserver"
@@ -51,6 +53,9 @@ func Serve(service string, routes func(*httpserver.Server, Deps) error) int {
 	if len(os.Args) > 1 && os.Args[1] == "--version" {
 		fmt.Printf("%s %s (%s, %s build)\n", service, version.Version, version.Commit, runtime.Flavour)
 		return 0
+	}
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		return healthcheck(service)
 	}
 	deps, err := Prepare()
 	if err != nil {
@@ -103,6 +108,27 @@ func Run(tool string, main func(ctx context.Context, deps Deps, args []string) e
 			return 2
 		}
 		fmt.Fprintf(os.Stderr, "%s: %v\n", tool, err)
+		return 1
+	}
+	return 0
+}
+
+// healthcheck probes the service's own /readyz. Distroless images have no shell or curl, so
+// Compose's healthcheck runs `/app healthcheck` instead.
+func healthcheck(service string) int {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	client := http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Get("http://127.0.0.1:" + port + "/readyz")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s healthcheck: %v\n", service, err)
+		return 1
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		fmt.Fprintf(os.Stderr, "%s healthcheck: /readyz answered %d\n", service, resp.StatusCode)
 		return 1
 	}
 	return 0

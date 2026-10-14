@@ -1,12 +1,37 @@
-# Local dependencies available today (PRD-001 §12.8, ADR-T4). Start with `make deps-up`.
-# P0 grows this into the full stack with profiles (core, obs, scan, partners, pubsub);
-# the target shape is .claude/skills/fyniq-local-dev/templates/compose.full.example.yaml.
-# Credentials here are for local use only and never valid anywhere else.
+# The local stack (PRD-001 §12.8, ADR-T4; skill fyniq-local-dev).
+#   make deps-up → the dependencies only: postgres, mailpit, gcs
+#   make up      → the dependencies plus our services, from the local flavour of the images
+#                  (`make images`), behind Caddy on http://localhost:8080
+#   make dev     → the dependencies here; the services run on the host with hot reload
+# Every port binds to 127.0.0.1. Credentials here are for local use only and never valid
+# anywhere else. Hydra and the sign-in emulator join in p0-identity-oauth-first-run.
 name: fyniq
 
+x-hardened: &hardened             # our images run as in production (NFR-IMG-02)
+  read_only: true
+  user: "65532:65532"
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: ["/tmp:size=64m"]
+  restart: unless-stopped
+
+x-fyniq-env: &fyniq-env
+  FYNIQ_ENV: local
+  PORT: "8080"
+  FYNIQ_DATABASE_URL: postgres://fyniq:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
+  FYNIQ_GCS_ENDPOINT: http://gcs:4443/storage/v1/
+  FYNIQ_SMTP_ADDR: mailpit:1025
+
+x-health: &health
+  test: ["CMD", "/app", "healthcheck"]   # no shell in distroless: the binary probes /readyz
+  interval: 3s
+  timeout: 3s
+  retries: 20
+
 services:
+  # ------------------------------------------------------------ dependencies (always)
   postgres:
-    image: postgres:18.6-alpine            # same major as Cloud SQL (ADR-D1); pin by digest in P0
+    image: postgres:18.6-alpine            # same major as Cloud SQL (ADR-D1); pinned by digest in p0-ci-images-release
     environment:
       POSTGRES_DB: fyniq
       POSTGRES_USER: fyniq
@@ -32,6 +57,78 @@ services:
     command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443", "-backend", "memory"]
     ports:
       - "127.0.0.1:${FYNIQ_GCS_PORT:-4443}:4443"
+
+  # ------------------------------------------------------------ our services (profile core)
+  migrate:
+    <<: *hardened
+    image: fyniq-migrate:local
+    profiles: [core]
+    restart: "no"
+    command: ["up"]
+    environment: { <<: *fyniq-env }
+    depends_on: { postgres: { condition: service_healthy } }
+
+  api:
+    <<: *hardened
+    image: fyniq-api:local
+    profiles: [core]
+    environment: { <<: *fyniq-env }
+    ports: ["127.0.0.1:${FYNIQ_API_PORT:-8081}:8080"]
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    healthcheck: *health
+
+  ai:
+    <<: *hardened
+    image: fyniq-ai:local
+    profiles: [core]
+    environment: { <<: *fyniq-env, FYNIQ_DATABASE_URL: "" }   # no database credential at all (§12.3)
+    healthcheck: *health
+
+  mcp:
+    <<: *hardened
+    image: fyniq-mcp:local
+    profiles: [core]
+    environment: { <<: *fyniq-env, FYNIQ_DATABASE_URL: "" }   # reaches data only through the API (§12.3)
+    healthcheck: *health
+
+  worker:
+    <<: *hardened
+    image: fyniq-worker:local
+    profiles: [core]
+    environment: { <<: *fyniq-env }
+    healthcheck: *health
+
+  executor:                                   # own identity and database role (§12.3)
+    <<: *hardened
+    image: fyniq-executor:local
+    profiles: [core]
+    environment: { <<: *fyniq-env }
+    healthcheck: *health
+
+  render:
+    <<: *hardened
+    image: fyniq-render:local
+    profiles: [core]
+    environment: { <<: *fyniq-env, FYNIQ_DATABASE_URL: "" }
+    healthcheck: *health
+
+  web:                                        # the built web app on nginx-unprivileged
+    <<: *hardened
+    image: fyniq-web:local
+    profiles: [core]
+    user: "101:101"
+    tmpfs: ["/tmp:size=16m", "/var/cache/nginx:size=16m"]
+
+  caddy:                                      # one origin, like the production load balancer
+    image: caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    profiles: [core]
+    ports: ["127.0.0.1:${FYNIQ_HTTP_PORT:-8080}:8080"]
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro"]
+    depends_on:
+      api: { condition: service_healthy }
+      ai: { condition: service_healthy }
+      mcp: { condition: service_healthy }
+      web: { condition: service_started }
 
 volumes:
   pgdata:
