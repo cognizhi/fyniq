@@ -10,7 +10,9 @@ AI answer comes through **one balance service** (ENG-04). If the ledger is right
 the balance service, the reports cannot disagree. Measures from other sources (subscriptions, time,
 the equity register) are named measures that declare their source (FR-KPI-03, PRD rev 0.8).
 
-> **Status:** no code exists yet; P0 builds it. The paths below are the PRD §12.4 layout. Treat
+> **Status:** the database backstop exists (`db/migrations`, `internal/ports/storage`,
+> `internal/adapters/postgres`; error codes and roles in `db/README.md`); the engine, money and
+> oracle arrive with the next P0 changes. The paths below are the PRD §12.4 layout. Treat
 > them as the contract. When the code lands, keep this skill in step with it.
 
 ## Mental model
