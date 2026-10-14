@@ -22,7 +22,10 @@ fonts and shell: **Fyniq** (default; `kit/fyniq-ui.css`) or **Nemura** (`kit/nem
 `kit/ui.css` + `kit/nemura.css`). Nemura fragments use the same `fy-` structure plus `nm-` components
 (`docs/design-system/nemura/MASTER.md` §6), and set `persona` (`employee` | `hr` | `admin`) and `integrated`
 (shows the Finance | People switch). A Fyniq fragment may set `workspace: true` for the same switch.
-Nemura pages never show company financial figures (PRD-002 NM-ROLE-02).
+Nemura pages never show company financial figures (PRD-002 NM-ROLE-02). A Fyniq fragment for someone whose
+rights are personal only sets `persona` (`employee` | `approver`) to draw the **personal workspace**
+(PRD-001 FR-UX-39): only their own items and Help, no finance area, Home, Inbox or mode switch; with
+`integrated: true` its header has Back to People instead of the switch (example: `PersonalClaims`).
 
 ```html
 <!-- fyniq-screen {"nav": "banking", "title": "Categorise", "mode": "basic",

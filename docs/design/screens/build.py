@@ -25,7 +25,9 @@ Fragment format (src/<File>.html):
 Settings (all optional): layout "app" | "bare"; nav (active navigation key); title (compact top
 bar); mode "basic" | "expert"; heights per device class (frames grow to fit, never shrink below
 the device); motion "on" | "off"; theme_note (shown on the canvas); for Nemura screens (PRD-002)
-persona "employee" | "hr" | "admin" and integrated true | false (shows the Finance | People switch).
+persona "employee" | "hr" | "admin" and integrated true | false (shows the Finance | People switch); for
+Fyniq screens persona "employee" | "approver" draws the personal workspace (PRD-001 FR-UX-39), where
+integrated adds Back to People.
 A canvas's `product` in inventory.json ("fyniq" by default, or "nemura") picks the tokens, kit,
 fonts and shell. Icons: <i data-icon="landmark"
 class="fy-i--20"></i> becomes inline Lucide SVG (aria-hidden unless the <i> has aria-label).
@@ -555,6 +557,8 @@ def expand_icons(text):
 def shell(screen, settings, main, ai, product="fyniq"):
     if product == "nemura":
         return shell_nemura(screen, settings, main, ai)
+    if settings.get("persona") in FYNIQ_PERSONAL:
+        return shell_personal(screen, settings, main, ai)
     active = settings.get("nav") or MODULE_NAV.get(screen.get("module", ""), "home")
     title = settings.get("title") or screen["title"]
     nav_html, groups = [], {"personal": "For you", "main": "Workspace"}
@@ -607,6 +611,52 @@ def shell(screen, settings, main, ai, product="fyniq"):
     more_cur = ' aria-current="page"' if active not in BOTTOM_FIXED + [slot3] else ""
     items.append(f'<a class="fy-bottom__item" href="#more"{more_cur}>{icon("layout-grid")}<span>More</span></a>')
     bottom = f'<nav class="fy-bottom" aria-label="Main">{"".join(items)}</nav>'
+    ai_attr = ' data-ai="open"' if ai else ""
+    return (f'<div class="fy-app"{ai_attr}>{side}{top}<main class="fy-main" id="main">{main}</main>'
+            f'{ai}{bottom}</div>')
+
+
+# Fyniq's personal workspace (PRD-001 FR-UX-39): for a person whose rights are personal only. No Home,
+# Inbox, finance area or Basic | Expert switch; "integrated" adds Back to People (Nemura)
+FYNIQ_PERSONAL = {  # persona: who, initials, the items they have a right to
+    "employee": ("Daniel Lim", "DL", [("my-claims", "My claims", "receipt-text")]),
+    "approver": ("Wei Jie Ong", "WJ", [("my-claims", "My claims", "receipt-text"),
+                                      ("to-approve", "To approve", "circle-check")]),
+}
+
+
+def shell_personal(screen, settings, main, ai):
+    who, initials, items = FYNIQ_PERSONAL[settings["persona"]]
+    active = settings.get("nav") or items[0][0]
+    title = settings.get("title") or screen["title"]
+    back = settings.get("integrated")
+    nav = ['<div class="fy-nav__group fy-eyebrow">For you</div>'] + [
+        f'<a class="fy-nav__item" href="#{k}"{" aria-current=\"page\"" if k == active else ""}>{icon(ic)}<span class="fy-nav__label">{lbl}</span></a>'
+        for k, lbl, ic in items]
+    foot = (f'<a class="fy-nav__item" href="#help"{" aria-current=\"page\"" if active == "help" else ""}>'
+            f'{icon("life-buoy")}<span class="fy-nav__label">Help</span></a>')
+    side = (f'<nav class="fy-side" aria-label="Main">'
+            f'<a class="fy-brand" href="#me"><span class="fy-brand__mark" aria-hidden="true">f</span><span class="fy-brand__word">Fyniq</span></a>'
+            f'<div class="fy-nav">{"".join(nav)}</div>'
+            f'<div class="fy-side__foot fy-nav">{foot}</div></nav>')
+    back_link = (f'<a class="fy-btn fy-btn--secondary fy-btn--sm fy-from-medium" href="#people">{icon("users")}Back to People</a>'
+                 if back else "")
+    top = (f'<header class="fy-top">'
+           f'<a class="fy-brand" href="#me" aria-label="Fyniq, my claims"><span class="fy-brand__mark" aria-hidden="true">f</span></a>'
+           f'<span class="fy-top__title fy-truncate">{title}</span>'
+           f'<span class="fy-org" aria-label="Organisation: Cognizhi Pte Ltd"><span class="fy-org__logo" aria-hidden="true">C</span><span class="fy-from-expanded">Cognizhi Pte Ltd</span></span>'
+           f'<button class="fy-search fy-from-expanded" type="button">{icon("search")}<span>Search my claims…</span><span class="fy-kbd">⌘K</span></button>'
+           f'<div class="fy-top__actions">{back_link}'
+           f'<button class="fy-iconbtn fy-until-expanded" type="button" aria-label="Search my claims">{icon("search", "fy-i--20")}</button>'
+           f'<button class="fy-iconbtn fy-from-expanded" type="button" aria-label="Theme">{icon("sun-moon", "fy-i--20")}</button>'
+           f'<button class="fy-iconbtn" type="button" aria-label="Notifications, 1 unread">{icon("bell", "fy-i--20")}<span class="fy-badge fy-badge--dot" aria-hidden="true"></span></button>'
+           f'<button class="fy-ask" type="button" aria-label="Ask about my claims">{icon("sparkles")}<span class="fy-from-medium">Ask</span></button>'
+           f'<span class="fy-avatar fy-from-medium" aria-label="{who}">{initials}</span>'
+           f'</div></header>')
+    tabs = ([("people", "People", "users")] if back else []) + items + [("new-claim", "New claim", "plus"), ("help", "Help", "life-buoy")]
+    bottom = ('<nav class="fy-bottom" aria-label="Main">' + "".join(
+        f'<a class="fy-bottom__item" href="#{k}"{" aria-current=\"page\"" if k == active else ""}>{icon(ic)}<span>{lbl}</span></a>'
+        for k, lbl, ic in tabs) + '</nav>')
     ai_attr = ' data-ai="open"' if ai else ""
     return (f'<div class="fy-app"{ai_attr}>{side}{top}<main class="fy-main" id="main">{main}</main>'
             f'{ai}{bottom}</div>')
