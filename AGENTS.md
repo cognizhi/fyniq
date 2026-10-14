@@ -24,6 +24,7 @@ P0 (Foundation) builds the skeleton described in PRD §12 and §17.3.
 | `docs/prd/prd-002-nemura-people.md` | **Nemura**, the optional people platform (its own image, database and sign-in; linked to Fyniq by one sign-in and the Finance \| People switch): records, leave, payroll, self-service, letters, later hiring, performance and onboarding (IDs such as `NM-LV-03`); Fyniq's side is PRD-001 §8.26 |
 | `docs/prd/reviews/prd-001-review-2026-10-12.md` | Why revision 0.2 changed what it did (REV-01…40) |
 | `docs/prd/reviews/prd-001-deep-review-validation-2026-10-13.md` | Why revision 0.8 changed what it did: the deep review (F01–F50, O01–O12) validated claim by claim |
+| `docs/prd/reviews/prd-001-002-deep-review-validation-2026-10-14.md` | Why PRD-001 revision 0.16 and PRD-002 revision 0.2 changed what they did: the second deep review (F2, X2, N2 findings) validated against both PRDs and the official MOM, MSF, CPF Board and OpenAI pages |
 | `docs/design-system/fyniq/MASTER.md` | How the UI looks and behaves; `pages/*.md` override it per page |
 | `docs/design-system/nemura/MASTER.md` | Nemura's own look: professional, modern, with depth (tokens, type, components); behaviour follows Fyniq's MASTER |
 | `openspec/specs/` | The PRD's requirements as OpenSpec specs, one capability per file (`openspec list --specs`); derived from the PRD, which stays the source of truth |
