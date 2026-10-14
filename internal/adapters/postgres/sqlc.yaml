@@ -1,0 +1,35 @@
+# sqlc generates the typed queries of the PostgreSQL adapter (ADR-T8, NFR-PORT-01) from the
+# migrations and queries/. Regenerate with `make sqlc`; `make test` fails when sqlcdb/ is stale.
+version: "2"
+sql:
+  - engine: postgresql
+    schema: ../../../db/migrations
+    queries: queries
+    gen:
+      go:
+        package: sqlcdb
+        out: sqlcdb
+        sql_package: pgx/v5
+        emit_pointers_for_null_types: true
+        emit_exact_table_names: true
+        overrides:
+          - db_type: uuid
+            go_type: github.com/google/uuid.UUID
+          - db_type: uuid
+            nullable: true
+            go_type:
+              import: github.com/google/uuid
+              type: UUID
+              pointer: true
+          # Money and rates cross the adapter as exact decimal text, never as floats (ENG-10).
+          - db_type: pg_catalog.numeric
+            go_type: string
+          - db_type: pg_catalog.numeric
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
+          - db_type: date
+            go_type: time.Time
+          - db_type: timestamptz
+            go_type: time.Time

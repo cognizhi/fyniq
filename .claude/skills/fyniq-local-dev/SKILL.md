@@ -14,10 +14,11 @@ only) and a **local** flavour from the same commit and Dockerfile (PRD rev 0.8, 
 
 ## What exists today and what the rest of P0 adds
 
-| Today (p0-repo-skeleton-local-mode) | Added by later P0 changes |
+| Today (p0-repo-skeleton-local-mode, p0-database-tenancy-migrations) | Added by later P0 changes |
 |---|---|
 | `deploy/local/compose.yaml`: the dependencies bound to `127.0.0.1` (`postgres` PostgreSQL 18 on host port **55432**, user and database `fyniq`, password `fyniq-local-only`, `FYNIQ_PG_PORT`; `mailpit` UI 8025 and SMTP 1025; `gcs` fake-gcs-server on 4443) and, in profile `core`, our services from the local images (`migrate`, `api`, `ai`, `mcp`, `worker`, `executor`, `render`, `web`) behind **Caddy on 8080** (`deploy/local/Caddyfile`) | Hydra and the sign-in emulator (p0-identity-oauth-first-run); River for the queue (p0-outbox-background-work); the `obs`, `scan` and `partners` profiles |
-| The command contract below; `scripts/dev.sh` runs the services on the host (ports 8081–8086, Vite on 5173) with watchexec reloads | Migrations in `make dev` (p0-database-tenancy-migrations); Tink keysets and Hydra clients in `make setup` |
+| The command contract below; `scripts/dev.sh` runs the services on the host (ports 8081–8086, Vite on 5173) with watchexec reloads | Tink keysets and Hydra clients in `make setup` |
+| Migrations (`db/`, its README): `make dev` runs `go run -tags local ./cmd/migrate up`, which in the local build creates `fyniq_migrator` with the container's superuser, applies the migrations and lets each service role log in (password `fyniq-local-only`). In `make up` the `migrate` image does the same, and each service gets its own role's `FYNIQ_DATABASE_URL` (SEC-03) | Cloud roles through IAM database authentication (p0-infra-opentofu) |
 | `deploy/docker/Dockerfile.go-service` (release or local `FLAVOUR`) and `Dockerfile.web`, bases pinned by digest; `mise.toml`; `.devcontainer/` | Image budgets, scans, SBOMs and signing in `make images` (p0-ci-images-release) |
 
 `fyniq-local-only` is a **local-only** password for a throw-away container. Never reuse it, and
@@ -166,6 +167,9 @@ not wired into any build yet.
 | Passkey prompt fails | Use `http://localhost`, not a LAN IP; WebAuthn needs a secure context |
 | AI tests fail with "cassette not found" | The prompt, tools or model changed: re-record with `FYNIQ_AI_LIVE=1 make evals` on synthetic data, review the diff, commit the cassettes |
 | Container cannot write a file | It runs read-only: write under the declared `tmpfs` or object storage, never the root filesystem |
+| `make test` fails with "postgres adapter tests need Docker" | Start Docker. The database suites (QA-ENG-05) block merge, so they fail rather than skip |
+| `make db-lint` says `sqlcdb` is stale | You changed a query or a migration: `make sqlc`, then commit the generated files |
+| `migrate up` fails with "permission denied to create role" or on `fyniq_migrations` | The database was created by an older run: `make reset` (local data is disposable) |
 
 ## Definition of done (changes to local mode or images)
 

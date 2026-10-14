@@ -1,0 +1,7 @@
+# squawk lints every migration in db/migrations (PRD-001 §12.2; `make test`).
+# goose runs each migration in one transaction.
+assume_in_transaction = true
+pg_version = "18.0"
+# Integer limits matter for keys and counters; ours are UUIDs and bigint revisions. The int and
+# smallint columns hold bounded values (minor units 0-4, line numbers, versions).
+excluded_rules = ["prefer-bigint-over-int", "prefer-bigint-over-smallint"]

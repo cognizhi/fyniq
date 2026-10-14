@@ -16,7 +16,8 @@ states where each number comes from (golden rules 3 and 5).
 
 **Status: P0 (Foundation) in progress.** Besides the product spec, the design system, the agent
 skills and the release tooling, the repository has the Go service skeleton, local mode and the web
-shell (p0-repo-skeleton-local-mode). The rest of P0 is planned in `openspec/changes/p0-*` and
+shell (p0-repo-skeleton-local-mode), and the database backstop with the storage port
+(p0-database-tenancy-migrations: `db/`, `internal/ports/storage`, `internal/adapters/postgres`). The rest of P0 is planned in `openspec/changes/p0-*` and
 `docs/prd/plans/p0-foundation-2026-10-14.md`.
 
 | Read first | Why |
@@ -48,7 +49,8 @@ shell (p0-repo-skeleton-local-mode). The rest of P0 is planned in `openspec/chan
 | `make review-check` / `review-status` | The review register (`docs/prd/reviews/review-status.json`) names real requirements and screens and no excluded page (part of `make check`); the areas awaiting second review and the pages that show the "Needs additional verification" banner (FR-UX-41) | Today |
 | `make setup` / `dev` / `up` / `down` | Install the pinned toolchain (`mise.toml`), the web dependencies and hooks; run the stack with hot reload (dependencies in Docker, services and Vite on the host); run it from the local images behind Caddy on `localhost:8080` / stop it | Today (P0: Hydra and the sign-in emulator join with p0-identity-oauth-first-run) |
 | `make seed` / `reset` | Write the sample company to `.data/seed/` / delete local data and the database volume | Today |
-| `make test` / `test-e2e` / `evals` / `images` / `ci` | Every merge gate offline (Go in both build flavours, web typecheck, `make check`) / the Playwright smoke test / the AI evals in replay (suites arrive in P1) / build the images (`FLAVOURS=release local`) / what CI runs, in order | Today (gates grow with each P0 change) |
+| `make db-lint` / `sqlc` | squawk on the migrations and a check that the adapter's generated queries are current (part of `make test`) / regenerate them | Today |
+| `make test` / `test-e2e` / `evals` / `images` / `ci` | Every merge gate offline (migrations, Go in both build flavours with the database suites in Testcontainers, so Docker must run; web typecheck; `make check`) / the Playwright smoke test / the AI evals in replay (suites arrive in P1) / build the images (`FLAVOURS=release local`) / what CI runs, in order | Today (gates grow with each P0 change) |
 
 Never invent a command in docs or scripts. If you need a new one, add it to the Makefile with a
 `## description`, and to this table.
