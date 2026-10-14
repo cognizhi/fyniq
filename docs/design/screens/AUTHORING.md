@@ -21,11 +21,15 @@ Two products share this kit (PRD-002 ADR-N6). A canvas's `product` in `inventory
 fonts and shell: **Fyniq** (default; `kit/fyniq-ui.css`) or **Nemura** (`kit/nemura-ui.css` = Nemura's tokens +
 `kit/ui.css` + `kit/nemura.css`). Nemura fragments use the same `fy-` structure plus `nm-` components
 (`docs/design-system/nemura/MASTER.md` §6), and set `persona` (`employee` | `hr` | `admin`) and `integrated`
-(shows the Finance | People switch). A Fyniq fragment may set `workspace: true` for the same switch.
+(shows the Finance | People switch). Fyniq's finance shell shows the same switch by default (links, `.fy-workspace`),
+because Cognizhi is linked; a fragment for someone without Nemura rights (an auditor, the Super admin) sets
+`workspace: false`.
 Nemura pages never show company financial figures (PRD-002 NM-ROLE-02). A Fyniq fragment for someone whose
-rights are personal only sets `persona` (`employee` | `approver`) to draw the **personal workspace**
+rights are personal only sets `persona` (`employee` | `linemanager`) to draw the **personal workspace**
 (PRD-001 FR-UX-39): only their own items and Help, no finance area, Home, Inbox or mode switch; with
 `integrated: true` its header has Back to People instead of the switch (example: `PersonalClaims`).
+`persona: "budgetholder"` draws a finance workspace cut to that role's areas (FR-UX-40, `DepartmentHome`).
+Nemura also has `owner` (Arjun Rao) and `leaver` (Nurul Aziz, own documents only).
 
 ```html
 <!-- fyniq-screen {"nav": "banking", "title": "Categorise", "mode": "basic",

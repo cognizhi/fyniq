@@ -26,8 +26,9 @@ Settings (all optional): layout "app" | "bare"; nav (active navigation key); tit
 bar); mode "basic" | "expert"; heights per device class (frames grow to fit, never shrink below
 the device); motion "on" | "off"; theme_note (shown on the canvas); for Nemura screens (PRD-002)
 persona "employee" | "hr" | "admin" and integrated true | false (shows the Finance | People switch); for
-Fyniq screens persona "employee" | "approver" draws the personal workspace (PRD-001 FR-UX-39), where
-integrated adds Back to People.
+Fyniq screens persona "employee" | "linemanager" draws the personal workspace (PRD-001 FR-UX-39), where
+integrated adds Back to People, and persona "budgetholder" a finance workspace cut to the role (FR-UX-40).
+Nemura personas also include "owner" (Arjun Rao) and "leaver" (Nurul Aziz, NM-ESS-06).
 A canvas's `product` in inventory.json ("fyniq" by default, or "nemura") picks the tokens, kit,
 fonts and shell. Icons: <i data-icon="landmark"
 class="fy-i--20"></i> becomes inline Lucide SVG (aria-hidden unless the <i> has aria-label).
@@ -561,10 +562,15 @@ def shell(screen, settings, main, ai, product="fyniq"):
         return shell_personal(screen, settings, main, ai)
     active = settings.get("nav") or MODULE_NAV.get(screen.get("module", ""), "home")
     title = settings.get("title") or screen["title"]
+    scoped = FYNIQ_SCOPED.get(settings.get("persona"))
+    nav_list = NAV
+    if scoped:
+        nav_list = ([(k, *PERSONAL_ITEMS[k], None, None, False, "personal") for k in scoped[3]]
+                    + [(n[0], n[1], n[2], None, None, n[5], n[6]) for n in NAV if n[6] == "main" and n[0] in scoped[2]])
     nav_html, groups = [], {"personal": "For you", "main": "Workspace"}
     for group in ("personal", "main"):
         nav_html.append(f'<div class="fy-nav__group fy-eyebrow">{groups[group]}</div>')
-        for key, label, ic, badge, blabel, expert, g in NAV:
+        for key, label, ic, badge, blabel, expert, g in nav_list:
             if g != group:
                 continue
             cur = ' aria-current="page"' if key == active else ""
@@ -573,17 +579,19 @@ def shell(screen, settings, main, ai, product="fyniq"):
             nav_html.append(f'<a class="{cls}" href="#{key}"{cur}>{icon(ic)}<span class="fy-nav__label">{label}</span>{b}</a>')
     foot = "".join(
         f'<a class="fy-nav__item" href="#{k}"{" aria-current=\"page\"" if k == active else ""}>{icon(ic)}<span class="fy-nav__label">{lbl}</span></a>'
-        for k, lbl, ic in FOOT)
+        for k, lbl, ic in FOOT if not scoped or k == "help")
     side = (f'<nav class="fy-side" aria-label="Main">'
             f'<a class="fy-brand" href="#home"><span class="fy-brand__mark" aria-hidden="true">f</span><span class="fy-brand__word">Fyniq</span></a>'
             f'<div class="fy-nav">{"".join(nav_html)}</div>'
             f'<div class="fy-side__foot fy-nav">{foot}</div></nav>')
     mode = settings.get("mode", "expert")
     # PRD-001 FR-PPL-02: the Finance | People switch, for people with rights in Fyniq and Nemura
-    workspace = ('<div class="fy-segmented fy-from-medium" role="radiogroup" aria-label="Workspace">'
-                 f'<button type="button" role="radio" aria-checked="true">{icon("landmark")}Finance</button>'
-                 f'<button type="button" role="radio" aria-checked="false">{icon("users")}People</button></div>'
-                 if settings.get("workspace") else "")
+    # On by default: Cognizhi is linked to Nemura and these people hold rights in both; "workspace": false
+    # turns it off for people without Nemura rights (an auditor, the Super admin)
+    workspace = ('<nav class="fy-workspace fy-from-medium" aria-label="Workspace">'
+                 f'<a href="#finance" aria-current="page">{icon("landmark")}Finance</a>'
+                 f'<a href="#people">{icon("users")}People</a></nav>'
+                 if settings.get("workspace", True) else "")
     seg = (f'<div class="fy-segmented" role="radiogroup" aria-label="Experience mode">'
            f'<button type="button" role="radio" aria-checked="{"true" if mode == "basic" else "false"}">Basic</button>'
            f'<button type="button" role="radio" aria-checked="{"true" if mode == "expert" else "false"}">Expert</button></div>')
@@ -599,16 +607,17 @@ def shell(screen, settings, main, ai, product="fyniq"):
            f'<button class="fy-iconbtn fy-from-expanded" type="button" aria-label="Theme">{icon("sun-moon", "fy-i--20")}</button>'
            f'<button class="fy-iconbtn" type="button" aria-label="Notifications, 3 unread">{icon("bell", "fy-i--20")}<span class="fy-badge fy-badge--dot" aria-hidden="true"></span></button>'
            f'<button class="fy-ask" type="button" aria-label="Ask the AI assistant">{icon("sparkles")}<span class="fy-from-medium">Ask</span></button>'
-           f'<span class="fy-avatar fy-from-medium" aria-label="Mei Lin Tan">ML</span>'
+           f'<span class="fy-avatar fy-from-medium" aria-label="{scoped[0] if scoped else "Mei Lin Tan"}">{scoped[1] if scoped else "ML"}</span>'
            f'</div></header>')
     slot3 = active if active not in ("home", "inbox", "banking") and active in {n[0] for n in NAV} else "sales"
     items = []
-    for key in BOTTOM_FIXED[:2] + [slot3] + BOTTOM_FIXED[3:]:
-        n = next(n for n in NAV if n[0] == key)
+    bottom_keys = scoped[2][:4] if scoped else BOTTOM_FIXED[:2] + [slot3] + BOTTOM_FIXED[3:]
+    for key in bottom_keys:
+        n = next(n for n in nav_list if n[0] == key)
         cur = ' aria-current="page"' if key == active else ""
         b = f'<span class="fy-badge" aria-label="{n[4]}">{n[3]}</span>' if n[3] else ""
         items.append(f'<a class="fy-bottom__item" href="#{key}"{cur}>{icon(n[2])}<span>{n[1]}</span>{b}</a>')
-    more_cur = ' aria-current="page"' if active not in BOTTOM_FIXED + [slot3] else ""
+    more_cur = ' aria-current="page"' if active not in list(bottom_keys) else ""
     items.append(f'<a class="fy-bottom__item" href="#more"{more_cur}>{icon("layout-grid")}<span>More</span></a>')
     bottom = f'<nav class="fy-bottom" aria-label="Main">{"".join(items)}</nav>'
     ai_attr = ' data-ai="open"' if ai else ""
@@ -618,15 +627,23 @@ def shell(screen, settings, main, ai, product="fyniq"):
 
 # Fyniq's personal workspace (PRD-001 FR-UX-39): for a person whose rights are personal only. No Home,
 # Inbox, finance area or Basic | Expert switch; "integrated" adds Back to People (Nemura)
-FYNIQ_PERSONAL = {  # persona: who, initials, the items they have a right to
-    "employee": ("Daniel Lim", "DL", [("my-claims", "My claims", "receipt-text")]),
-    "approver": ("Wei Jie Ong", "WJ", [("my-claims", "My claims", "receipt-text"),
-                                      ("to-approve", "To approve", "circle-check")]),
+PERSONAL_ITEMS = {  # PRD-001 §7.1: the personal section
+    "my-claims": ("My claims", "receipt-text"), "my-time": ("My time", "clock"),
+    "my-shares": ("My shares and options", "chart-pie"), "to-approve": ("To approve", "circle-check"),
+}
+FYNIQ_PERSONAL = {  # persona: who, initials, the items they have a right to (FR-UX-39)
+    "employee": ("Daniel Lim", "DL", ["my-claims", "my-time", "my-shares"]),
+    "linemanager": ("Priya Nair", "PN", ["my-claims", "my-time", "to-approve"]),
+}
+FYNIQ_SCOPED = {  # FR-UX-40: a finance workspace cut to the role's rights
+    "budgetholder": ("Wei Jie Ong", "WJ", ["home", "inbox", "reports", "planning"],
+                     ["my-claims", "my-time"]),
 }
 
 
 def shell_personal(screen, settings, main, ai):
-    who, initials, items = FYNIQ_PERSONAL[settings["persona"]]
+    who, initials, keys = FYNIQ_PERSONAL[settings["persona"]]
+    items = [(k, *PERSONAL_ITEMS[k]) for k in keys]
     active = settings.get("nav") or items[0][0]
     title = settings.get("title") or screen["title"]
     back = settings.get("integrated")
@@ -684,27 +701,32 @@ NEMURA_PERSONA = {  # who the screen shows, their initials, and the compact tab 
     "employee": ("Daniel Lim", "DL", ["me", "my-leave", "my-pay", "my-requests"]),
     "hr": ("Sarah Koh", "SK", ["team-home", "people", "leave", "letters"]),
     "admin": ("Mei Lin Tan", "ML", ["team-home", "people", "leave", "payroll"]),
+    "owner": ("Arjun Rao", "AR", ["team-home", "people", "leave", "payroll"]),
+    "leaver": ("Nurul Aziz", "NA", ["me"]),  # NM-ESS-06: own documents only
 }
 
 
 def shell_nemura(screen, settings, main, ai):
     persona = settings.get("persona", "hr")
     who, initials, tabs = NEMURA_PERSONA[persona]
-    active = settings.get("nav") or ("me" if persona == "employee" else "team-home")
+    active = settings.get("nav") or ("me" if persona in ("employee", "leaver") else "team-home")
     title = settings.get("title") or screen["title"]
-    groups = [("personal", "For you")] + ([] if persona == "employee" else [("team", "People team")])
+    personal_only = persona in ("employee", "leaver")
+    groups = [("personal", "For you")] + ([] if personal_only else [("team", "People team")])
     nav_html = []
     for group, glabel in groups:
         nav_html.append(f'<div class="fy-nav__group fy-eyebrow">{glabel}</div>')
         for key, label, ic, badge, blabel, g in NEMURA_NAV:
-            if g != group:
+            if g != group or (persona == "leaver" and key not in tabs):
                 continue
+            if persona == "leaver":
+                label, badge = "My documents", None
             cur = ' aria-current="page"' if key == active else ""
             b = f'<span class="fy-badge" aria-label="{blabel}">{badge}</span>' if badge else ""
             nav_html.append(f'<a class="fy-nav__item" href="#{key}"{cur}>{icon(ic)}<span class="fy-nav__label">{label}</span>{b}</a>')
     foot = "".join(
         f'<a class="fy-nav__item" href="#{k}"{" aria-current=\"page\"" if k == active else ""}>{icon(ic)}<span class="fy-nav__label">{lbl}</span></a>'
-        for k, lbl, ic in NEMURA_FOOT if persona != "employee" or k == "help")
+        for k, lbl, ic in NEMURA_FOOT if not personal_only or k == "help")
     side = (f'<nav class="fy-side" aria-label="Main">'
             f'<a class="fy-brand" href="#me"><span class="fy-brand__mark" aria-hidden="true">n</span><span class="fy-brand__word">nemura</span></a>'
             f'<div class="fy-nav">{"".join(nav_html)}</div>'
@@ -731,7 +753,7 @@ def shell_nemura(screen, settings, main, ai):
         n = next(n for n in NEMURA_NAV if n[0] == key)
         cur = ' aria-current="page"' if key == active else ""
         b = f'<span class="fy-badge" aria-label="{n[4]}">{n[3]}</span>' if n[3] else ""
-        label = n[1].replace("My ", "").capitalize() if persona == "employee" else n[1]
+        label = ("Documents" if persona == "leaver" else n[1].replace("My ", "").capitalize()) if persona in ("employee", "leaver") else n[1]
         items.append(f'<a class="fy-bottom__item" href="#{key}"{cur}>{icon(n[2])}<span>{label}</span>{b}</a>')
     more_cur = ' aria-current="page"' if active not in tabs else ""
     items.append(f'<a class="fy-bottom__item" href="#more"{more_cur}>{icon("layout-grid")}<span>More</span></a>')

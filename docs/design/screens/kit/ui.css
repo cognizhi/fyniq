@@ -292,6 +292,12 @@ td.fy-num, th.fy-num, .fy-right { text-align: right; }
                        color: var(--text-secondary); font-size: var(--fs-sm); font-weight: 500; }
 .fy-segmented button[aria-checked="true"], .fy-segmented button[aria-pressed="true"], .fy-segmented button[aria-selected="true"] {
   background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow-1); }
+/* The Finance | People switch (PRD-001 FR-PPL-02, PRD-002 NM-UX-03): two links, the current app marked */
+.fy-workspace { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--radius-m); background: var(--surface-3); }
+.fy-workspace a { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 var(--space-3); border-radius: 5px;
+                  color: var(--text-secondary); font-size: var(--fs-sm); font-weight: 500; }
+.fy-workspace a:hover { text-decoration: none; color: var(--text-primary); }
+.fy-workspace a[aria-current="page"] { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow-1); }
 
 .fy-tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
 .fy-tabs button, .fy-tabs a { position: relative; height: 40px; padding: 0 var(--space-3); border: 0; background: none;
