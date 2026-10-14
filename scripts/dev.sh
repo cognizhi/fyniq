@@ -31,8 +31,9 @@ for svc in "${!PORTS[@]}"; do
   # Build, then exec the binary, so a stop signal reaches the service itself.
   run="go build -tags local -o .data/dev/bin/$svc ./cmd/$svc && exec .data/dev/bin/$svc"
   if [ "$reload" = on ]; then
+    # watchexec runs the command string through sh itself.
     PORT="${PORTS[$svc]}" watchexec --restart --quiet --exts go --watch cmd --watch internal \
-      -- sh -c "$run" >>".data/dev/$svc.log" 2>&1 &
+      -- "$run" >>".data/dev/$svc.log" 2>&1 &
   else
     PORT="${PORTS[$svc]}" sh -c "$run" >>".data/dev/$svc.log" 2>&1 &
   fi

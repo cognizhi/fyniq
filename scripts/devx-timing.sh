@@ -31,9 +31,12 @@ pid=$(start_dev)
 wait_for 120 ready || { echo "✖ the stack was not ready within 2 minutes on the second run" >&2; stop_dev "$pid"; exit 1; }
 later=$(since "$t")
 
+# A real edit, so the measure includes recompiling and relinking, not only the build cache.
 before=$(restarts)
+cp internal/version/version.go .data/version.go.orig
+trap 'cp .data/version.go.orig internal/version/version.go' EXIT
 t=$(now)
-touch internal/version/version.go
+printf '\n// devx-timing %s\n' "$t" >>internal/version/version.go
 wait_for 60 sh -c "[ \$(grep -c 'listening on' .data/dev/api.log) -gt $before ] && curl -fsS localhost:8081/healthz >/dev/null" \
   || { echo "✖ the api did not restart after a Go change; is watchexec installed?" >&2; stop_dev "$pid"; exit 1; }
 reload=$(since "$t")
