@@ -88,3 +88,7 @@ for roles, rules and error codes.
   fail, never skip, when Docker is missing.
 - **Versions.** pgx 5.11.0, goose 3.28.0 (3.29.0 was three days old, so the goose CLI pin in
   `mise.toml` moved back to match), testcontainers-go 0.44.0, sqlc 1.31.1, squawk 2.66.0.
+- **Task 4.3 is open.** On 14 Oct the founders disabled the `ci` workflow (`gh workflow disable ci`)
+  and asked for the gates to run locally until it returns. The suites run in `make test`, which
+  fails when any of them fails, and the last CI run of this change passed every job. "Blocks merge
+  in CI" is proved once `ci` is enabled again and `Go, web and checks (make test)` is a required check.
