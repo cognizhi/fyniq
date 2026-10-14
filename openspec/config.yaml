@@ -30,7 +30,7 @@ rules:
     - Reference ADRs in PRD §12.0 by ID; a superseded decision gets a new ADR, never an edit.
     - Name the ports and adapters touched (ADR-T8) and the audit events emitted (AUD-01).
   tasks:
-    - Each task names the requirement IDs it satisfies and the test that proves them (// req: <ID>).
+    - "Each task names the requirement IDs it satisfies and the test that proves them (// req: <ID>)."
     - Include the screen fragment, help keys and user-guide page for any UI task.
     - Finish with make check (and make test from P0).
 
