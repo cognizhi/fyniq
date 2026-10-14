@@ -92,3 +92,6 @@ for roles, rules and error codes.
   and asked for the gates to run locally until it returns. The suites run in `make test`, which
   fails when any of them fails, and the last CI run of this change passed every job. "Blocks merge
   in CI" is proved once `ci` is enabled again and `Go, web and checks (make test)` is a required check.
+  (Done the same day: the repository went public, `ci` was enabled again, and
+  `Go, web and checks (make test)` became a required check on `main` beside the commit and design
+  checks, so a failing attack or race test blocks the merge.)

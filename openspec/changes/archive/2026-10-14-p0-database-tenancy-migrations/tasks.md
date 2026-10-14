@@ -24,4 +24,4 @@
 
 - [x] 4.1 Define `StoragePort` and `UnitOfWork` and implement them in `internal/adapters/postgres` with pgx v5 and sqlc; test `// req: NFR-PORT-01` and `// req: NFR-PORT-07`
 - [x] 4.2 Write the storage conformance suite and run it against PostgreSQL 18 with Testcontainers; test `// req: NFR-PORT-04` and `// req: NFR-PORT-02`
-- [ ] 4.3 Collect the attack and race tests under `make test` as the QA-ENG-05 suite; verify it blocks merge in CI (`// req: QA-ENG-05`), then `make check`
+- [x] 4.3 Collect the attack and race tests under `make test` as the QA-ENG-05 suite; verify it blocks merge in CI (`// req: QA-ENG-05`), then `make check`

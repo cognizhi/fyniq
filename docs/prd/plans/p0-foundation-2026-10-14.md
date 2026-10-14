@@ -34,9 +34,10 @@ the "Needs additional verification" banner (FR-UX-41).
 Changes 1 to 7 need nothing from outside, so they can be built now. Changes 8 to 11 each have a founder
 step listed above. Starting those steps now keeps them off the critical path.
 
-Progress (14 Oct 2026): change 1 is built (pull request #8) and archived in
-`openspec/changes/archive/2026-10-14-p0-repo-skeleton-local-mode/`. Branch protection on `main`, the
-founder step for change 11, is on: a pull request with one approval and the two required checks.
+Progress (14 Oct 2026): changes 1 and 2 are built (pull requests #8 and #10) and archived in
+`openspec/changes/archive/`. Branch protection on `main`, the founder step for change 11, is on: a pull
+request with one approval and three required checks (commit messages, design tokens, and `make test`,
+which runs the database attack and race suites).
 
 ## Exit criteria (§17.3) and the changes that prove them
 
