@@ -1,17 +1,30 @@
 #!/usr/bin/env bash
 # `make dev`: run the Go services and the web app on the host with hot reload (NFR-DEVX-03).
-# The dependencies run in Docker (`make deps-up`). Each Go service is rebuilt and restarted on a
-# change to a .go file through watchexec; Vite applies web changes by hot module reload. Logs go
-# to .data/dev/. Without watchexec (mise installs it) the services run without reload.
+# The dependencies run in Docker (`make deps-up`). One watchexec rebuilds every Go service in a
+# single `go build` (shared packages compile once) and restarts them on a change to a .go file;
+# Vite applies web changes by hot module reload. Logs go to .data/dev/. Without watchexec (mise
+# installs it) the services run without reload.
+#   scripts/dev.sh             start the stack
+#   scripts/dev.sh --services  (used by watchexec) start the built services and wait
 set -euo pipefail
-set -m   # each background job gets its own process group, so stopping it stops its children
 cd "$(dirname "$0")/.."
 [ -f .env ] && set -a && . ./.env && set +a
 export FYNIQ_ENV="${FYNIQ_ENV:-local}"
 mkdir -p .data/dev/bin
 
-# One host port per service; Vite proxies /api to the api.
+SERVICES=(api ai mcp worker executor render)
 declare -A PORTS=([api]="${FYNIQ_API_PORT:-8081}" [ai]=8082 [mcp]=8083 [worker]=8084 [executor]=8085 [render]=8086)
+
+if [ "${1:-}" = --services ]; then
+  trap 'kill $(jobs -p) 2>/dev/null || true; wait' TERM INT EXIT
+  for svc in "${SERVICES[@]}"; do
+    PORT="${PORTS[$svc]}" ".data/dev/bin/$svc" >>".data/dev/$svc.log" 2>&1 &
+  done
+  wait
+  exit 0
+fi
+
+set -m   # each background job gets its own process group, so stopping it stops its children
 pids=()
 cleanup() {
   trap - INT TERM EXIT
@@ -20,25 +33,18 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
+build="go build -tags local -o .data/dev/bin/ $(printf './cmd/%s ' "${SERVICES[@]}")"
 if command -v watchexec >/dev/null 2>&1; then
   reload=on
+  # watchexec runs the command string through sh itself and restarts it on every change.
+  watchexec --restart --quiet --exts go --watch cmd --watch internal \
+    -- "$build && exec scripts/dev.sh --services" >>.data/dev/build.log 2>&1 &
 else
   reload=off
   echo "⚠ watchexec is not installed (mise installs it): Go services will not restart on changes" >&2
+  sh -c "$build && exec scripts/dev.sh --services" >>.data/dev/build.log 2>&1 &
 fi
-
-for svc in "${!PORTS[@]}"; do
-  # Build, then exec the binary, so a stop signal reaches the service itself.
-  run="go build -tags local -o .data/dev/bin/$svc ./cmd/$svc && exec .data/dev/bin/$svc"
-  if [ "$reload" = on ]; then
-    # watchexec runs the command string through sh itself.
-    PORT="${PORTS[$svc]}" watchexec --restart --quiet --exts go --watch cmd --watch internal \
-      -- "$run" >>".data/dev/$svc.log" 2>&1 &
-  else
-    PORT="${PORTS[$svc]}" sh -c "$run" >>".data/dev/$svc.log" 2>&1 &
-  fi
-  pids+=($!)
-done
+pids+=($!)
 
 FYNIQ_API_PORT="${PORTS[api]}" pnpm --filter @fyniq/web dev >>.data/dev/web.log 2>&1 &
 pids+=($!)
