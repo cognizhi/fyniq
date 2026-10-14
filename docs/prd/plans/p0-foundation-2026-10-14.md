@@ -59,6 +59,9 @@ which runs the database attack and race suites).
   engine code").
 - **Second human reviewer.** Code that touches money movement, payee bank details, approvals, the audit
   trail, tenancy or the AI/MCP write path needs a second human reviewer, whoever wrote it (AGENTS.md).
+  (14 Oct 2026: waived before production by the founders; development pull requests are auto-approved
+  and auto-merged when the required checks pass. The column above records where a person should still
+  look, and the rule returns before the first production deploy.)
   Rev 0.22 lifted the spec-review gate on building, not this one.
 - **Requirement IDs in tests** (`// req: <ID>`), and `make check` and `make test` green before every
   merge (QA-TRACE-01, golden rule 14).
