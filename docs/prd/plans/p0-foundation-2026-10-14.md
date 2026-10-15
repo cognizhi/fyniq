@@ -34,9 +34,10 @@ the "Needs additional verification" banner (FR-UX-41).
 Changes 1 to 7 need nothing from outside, so they can be built now. Changes 8 to 11 each have a founder
 step listed above. Starting those steps now keeps them off the critical path.
 
-Progress (15 Oct 2026): changes 1 to 4 are built and archived in `openspec/changes/archive/` (pull
-requests #8, #10, #13, #14, #16 and #18); change 5, the audit chain, is built (#15) apart from its staging
-and checks-catalogue tasks; change 6 is half built (#17). Branch protection on `main`, the founder step for
+Progress (15 Oct 2026): changes 1 to 4 and 7 are built and archived in `openspec/changes/archive/` (pull
+requests #8, #10, #13, #14, #16, #18, #22 and #23); change 5, the audit chain, is built (#15) apart from its
+staging and checks-catalogue tasks; change 6, background work, is built (#17, #21) apart from its Cloud Tasks
+and scale-to-zero tasks, which wait for change 9. Branch protection on `main`, the founder step for
 change 11, is on: a pull request with one approval and three required checks (commit messages, design tokens,
 and `make test`, which runs the database attack and race suites and the differential gate). Before
 production, development pull requests are approved by a workflow and merge automatically (AGENTS.md).
