@@ -19,9 +19,15 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** it cannot be posted
 
 #### Scenario: Foreign-currency journal balances per currency
-- **GIVEN** a foreign-currency journal
-- **WHEN** it does not balance in each of its currencies
+- **GIVEN** a foreign-currency journal, whose lines are all in one currency other than the base
+- **WHEN** it does not balance in that currency
 - **THEN** it cannot be posted
+
+#### Scenario: Unbalanced in base after RND-FX
+- **GIVEN** a foreign-currency journal that balances in its currency
+- **WHEN** `RND-FX` leaves it unbalanced in base
+- **THEN** it is refused (ENG-24)
+- **AND** the preparer adds a base-currency line to 7030 FX and rounding, which the engine never adds itself
 
 #### Scenario: Preparer and approver recorded
 - **WHEN** a manual journal is posted
@@ -233,7 +239,7 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** the report is exported, or the line's source document opens
 
 ### Requirement: FR-GL-12 Posted documents are never edited in place
-Posted documents SHALL never be edited in place: an edit in an open period SHALL create a new version, posted as reversal and replacement entries, and a void SHALL be a reversal with a reason.
+Posted documents SHALL never be edited in place: an edit in an open period SHALL create a new version, posted as reversal and replacement entries, and a void SHALL be a reversal with a reason. A reversal SHALL negate the stored lines, be dated on or after the entry in an open period and happen at most once (from P0 for manual journals).
 
 Source: PRD-001 §8.8 · Priority M · Phase P1
 
@@ -246,6 +252,20 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 #### Scenario: Void is a reversal with a reason
 - **WHEN** a posted document is voided
 - **THEN** it is reversed, and the reason is recorded
+
+#### Scenario: A reversal negates the stored lines
+- **WHEN** an entry is reversed (from P0 for manual journals)
+- **THEN** the reversal negates every stored line of the entry, amount and base amount as stored
+- **AND** nothing is re-converted (ENG-14)
+
+#### Scenario: A reversal's date
+- **WHEN** a reversal is dated before the entry's posting date, or in a closed period
+- **THEN** it is refused (INV-03)
+
+#### Scenario: At most one reversal
+- **GIVEN** an entry that has been reversed
+- **WHEN** it is reversed again
+- **THEN** the second reversal is refused
 
 ### Requirement: FR-GL-13 Intercompany journals and eliminations
 The system SHALL support intercompany journals and eliminations.

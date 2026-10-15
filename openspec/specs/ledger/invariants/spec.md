@@ -82,6 +82,12 @@ Source: PRD-001 §10.7
 - **WHEN** a line's base amount differs from amount × rate rounded under `RND-FX`
 - **THEN** the database rejects it through its CHECK constraints and trigger
 
+#### Scenario: Base amount that rounds to zero
+- **GIVEN** a non-zero line whose base amount rounds to 0.00 under `RND-FX`
+- **WHEN** it is posted
+- **THEN** it is consistent and posts with base amount 0.00
+- **AND** a manual journal line whose amount is zero is refused (ENG-24)
+
 #### Scenario: Base-only line from FX revaluation is accepted
 - **GIVEN** a base-only line (transaction-currency amount 0, base amount not 0)
 - **WHEN** it comes from the FX-revaluation source or its automatic reversal, on an account flagged as a monetary foreign-currency item (FR-GL-04), in an entry whose base-only lines are offset by the unrealised-FX account
@@ -136,6 +142,11 @@ Source: PRD-001 §10.7
 #### Scenario: Verified nightly and on Checks
 - **WHEN** the nightly verification runs or Checks are shown
 - **THEN** each subledger is compared with its control account
+
+#### Scenario: Manual journal to a control account
+- **WHEN** a manual journal posts to a control account
+- **THEN** it posts
+- **AND** from P1 it shows ⚠ naming the subledger it moves (ENG-21)
 
 #### Scenario: G4-036 GST roll-forward over a quarter
 - **GIVEN** a quarter with output tax, input tax, a payment to IRAS and a refund
@@ -222,3 +233,8 @@ Source: PRD-001 §10.7
 #### Scenario: Per-person sub-ledgers equal 2500 and 2120
 - **WHEN** the nightly verification runs
 - **THEN** the per-person sub-ledgers equal accounts 2500 and 2120
+
+#### Scenario: Manual journal to share capital, from P0
+- **WHEN** a manual journal line posts to a share-capital account (3010, 3020)
+- **THEN** it is refused, from P0
+- **AND** the chart of accounts marks which accounts are share capital

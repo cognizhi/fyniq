@@ -50,6 +50,16 @@ Source: PRD-001 §10.1 · Priority M · Phase P0
 - **WHEN** a journal line is posted
 - **THEN** it carries the account, amount, currency, base amount, FX rate and source, dimensions, posting date (accounting date) and recorded time
 
+#### Scenario: A base-currency line's rate
+- **WHEN** a journal line in the base currency is posted
+- **THEN** it stores rate 1 with source "base"
+- **AND** a rate entered on it is refused with a field error
+
+#### Scenario: A converted line always has a source
+- **WHEN** a journal line not in the base currency is posted
+- **THEN** it carries a rate and its source
+- **AND** a rate typed on the document has the source "document" (ENG-40)
+
 ### Requirement: ENG-04 Single source of truth
 Every report, KPI, dashboard tile, check and AI answer SHALL read the ledger through the balance service, and no report SHALL re-implement posting logic.
 
