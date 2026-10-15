@@ -84,6 +84,18 @@ type FyniqDocumentVersion struct {
 	CreatedAt      time.Time
 }
 
+type FyniqHeartbeat struct {
+	Name     string
+	LastBeat time.Time
+	Detail   *string
+}
+
+type FyniqHeartbeats struct {
+	Name     string
+	LastBeat time.Time
+	Detail   *string
+}
+
 type FyniqIdempotencyKey struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -94,6 +106,30 @@ type FyniqIdempotencyKey struct {
 	ResponseBody   []byte
 	CreatedAt      time.Time
 	ExpiresAt      time.Time
+}
+
+type FyniqJobSlot struct {
+	Job            string
+	Slot           time.Time
+	State          string
+	Holder         *string
+	Execution      *string
+	LeaseExpiresAt *time.Time
+	ClaimedAt      time.Time
+	FinishedAt     *time.Time
+	Detail         *string
+}
+
+type FyniqJobSlots struct {
+	Job            string
+	Slot           time.Time
+	State          string
+	Holder         *string
+	Execution      *string
+	LeaseExpiresAt *time.Time
+	ClaimedAt      time.Time
+	FinishedAt     *time.Time
+	Detail         *string
 }
 
 type FyniqJournalEntry struct {

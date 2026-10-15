@@ -114,3 +114,42 @@ func (r outbox) Finish(ctx context.Context, id uuid.UUID, holder string, state s
 	}
 	return mapError(err)
 }
+
+type sweeping struct{ u *unitOfWork }
+
+func (u *unitOfWork) Sweeping() storage.Sweeping { return sweeping{u} }
+
+func (r sweeping) Due(ctx context.Context, now, pendingBefore time.Time) ([]storage.OutboxRow, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.DueOutbox(ctx, sqlcdb.DueOutboxParams{PendingBefore: pendingBefore, Now: &now})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.OutboxRow, len(rows))
+	for i, row := range rows {
+		out[i] = toOutbox(row.ID, row.WorkerClass, row.Kind, row.Payload, row.BusinessKey, row.State, row.Attempts, row.MaxAttempts,
+			row.Dispatches, row.TaskName, row.LeaseHolder, row.LeaseExpiresAt, row.DeadlineAt, row.LastError)
+	}
+	return out, nil
+}
+
+func (r sweeping) MarkDead(ctx context.Context, id uuid.UUID, reason string) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	_, err := r.u.q.MarkOutboxDead(ctx, sqlcdb.MarkOutboxDeadParams{ID: id, LastError: &reason})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil // finished or dead meanwhile
+	}
+	return mapError(err)
+}
+
+func (r sweeping) AfterRestore(ctx context.Context) (int64, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	n, err := r.u.q.OutboxAfterRestore(ctx)
+	return n, mapError(err)
+}

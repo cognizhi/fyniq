@@ -24,7 +24,7 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 
 // globalTables are the installation-scoped tables (§11.4): no organisation_id, no grant to any
 // application role. Add a table here only with its access model in db/README.md.
-var globalTables = []string{"currency", "tenant_directory"}
+var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain"}
@@ -235,7 +235,8 @@ func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 		case (priv == "UPDATE" || priv == "DELETE") && strings.HasPrefix(object, "audit_"):
 			t.Errorf("%s holds %s on %s: the audit trail is append-only (AUD-08)", grantee, priv, object)
 		case writes[priv] && (strings.HasPrefix(object, "balance") || strings.HasPrefix(object, "ledger_revision") ||
-			strings.HasPrefix(object, "currency") || strings.HasPrefix(object, "tenant") || object == "audit_chain"):
+			strings.HasPrefix(object, "currency") || strings.HasPrefix(object, "tenant") || object == "audit_chain" ||
+			strings.HasPrefix(object, "job_slot") || strings.HasPrefix(object, "heartbeat")):
 			t.Errorf("%s holds %s on %s: only the ledger's own functions write it", grantee, priv, object)
 		}
 	}

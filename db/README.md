@@ -48,7 +48,10 @@ uses the password `fyniq-local-only`, valid nowhere else (SEC-12).
   `set_config('app.org_id', …, true)` first in every transaction; unset, it matches no row.
 - **Global tables** have no grant; services read them through views. Today: `currency` (view
   `currencies`, every service) and `tenant_directory` (view `tenants`, the worker only: the list of
-  organisations the jobs run for). Add one only with its access model here and in the test's list.
+  organisations the jobs run for; the API's tick reads it too), `job_slot` (view `job_slots`) and
+`heartbeat` (view `heartbeats`), which the tick and the jobs change only through the functions
+`claim_job_slot`, `skip_job_slots`, `started_job_slot`, `finish_job_slot`, `latest_job_slot` and
+`beat` (§12.11). Add one only with its access model here and in the test's list.
 - **Audit** (§11.5, AUD-01, AUD-08): a migration that adds a table holding business records adds a
   `require_audit` constraint trigger to it, and the adapter records an event for every write to it.
   Audited today: organisations, accounts, periods, documents (with their versions) and journal
