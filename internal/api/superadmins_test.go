@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authn"
@@ -243,6 +244,22 @@ func TestSuperAdmins(t *testing.T) {
 		}
 		return err
 	})
+	// Every event of the installation's trail matches the AUD-01 schema, as the organisations' do.
+	c := jsonschema.NewCompiler()
+	c.AssertFormat()
+	schema, err := c.Compile("../../contracts/audit/audit-event.v1.schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for line := range strings.Lines(trail.String()) {
+		v, err := jsonschema.UnmarshalJSON(strings.NewReader(line))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := schema.Validate(v); err != nil {
+			t.Errorf("an installation event does not match the AUD-01 schema: %v\n%s", err, line)
+		}
+	}
 	type event struct {
 		Action string `json:"action"`
 		Actor  struct{ Type, ID string }
@@ -263,7 +280,7 @@ func TestSuperAdmins(t *testing.T) {
 			t.Errorf("the installation's trail has no %s by %s", action, actor)
 		}
 	}
-	if !strings.Contains(trail.String(), `"action":"super_admin.deployment_recovery_issued"`) || !strings.Contains(trail.String(), `Mei Ling Tan, Wei Jie Lim`) {
+	if !by["super_admin.deployment_recovery_issued service:fyniq_migrator"] || !strings.Contains(trail.String(), `Mei Ling Tan, Wei Jie Lim`) {
 		t.Errorf("the deployment recovery is not in the trail with its two operators:\n%s", trail.String())
 	}
 	for _, c := range shown {
