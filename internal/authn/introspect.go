@@ -57,7 +57,8 @@ type cached struct {
 var _ Authenticator = (*Introspector)(nil)
 
 // Authenticate implements Authenticator.
-func (i *Introspector) Authenticate(ctx context.Context, authorization string) (Principal, error) {
+func (i *Introspector) Authenticate(ctx context.Context, c Credentials) (Principal, error) {
+	authorization := c.Authorization
 	token, ok := strings.CutPrefix(authorization, "Bearer ")
 	if !ok || token == "" || strings.HasPrefix(token, DevPrefix) {
 		return Principal{}, ErrUnauthenticated
@@ -105,6 +106,9 @@ func (i *Introspector) principal(in ports.Introspection, now time.Time) (Princip
 		return Principal{}, errors.Join(ErrUnauthenticated, fmt.Errorf("the grant is older than 90 days, or undated: authorise the client again (AI-38)"))
 	}
 	p := Principal{Via: ViaToken, Subject: in.Subject, Client: in.ClientID, Scopes: in.Scopes}
+	if id, err := uuid.Parse(in.Subject); err == nil { // consent names the user by their ID (the session's)
+		p.UserID = id
+	}
 	switch class, _ := in.Claims["class"].(string); class {
 	case ClassUser, ClassIntegration, ClassAgent:
 		p.Class = class
@@ -129,20 +133,27 @@ func (i *Introspector) principal(in ports.Introspection, now time.Time) (Princip
 	return p, nil
 }
 
-// Local is the local build's authenticator: a dev token goes to Dev, anything else to OAuth (nil when
-// the OAuth server is not configured). The two never see each other's tokens.
+// Local is the local build's authenticator: a dev token goes to Dev, any other bearer token to OAuth
+// (nil when the OAuth server is not configured), and a request without an Authorization header to
+// Sessions (nil without a database). None sees another's credentials.
 type Local struct {
-	Dev   Authenticator
-	OAuth Authenticator
+	Dev      Authenticator
+	OAuth    Authenticator
+	Sessions Authenticator
 }
 
 // Authenticate implements Authenticator.
-func (l Local) Authenticate(ctx context.Context, authorization string) (Principal, error) {
-	if strings.HasPrefix(authorization, "Bearer "+DevPrefix) {
-		return l.Dev.Authenticate(ctx, authorization)
+func (l Local) Authenticate(ctx context.Context, c Credentials) (Principal, error) {
+	switch {
+	case strings.HasPrefix(c.Authorization, "Bearer "+DevPrefix):
+		return l.Dev.Authenticate(ctx, Credentials{Authorization: c.Authorization})
+	case c.Authorization != "":
+		if l.OAuth == nil {
+			return Principal{}, ErrUnauthenticated
+		}
+		return l.OAuth.Authenticate(ctx, Credentials{Authorization: c.Authorization})
+	case l.Sessions != nil:
+		return l.Sessions.Authenticate(ctx, Credentials{Cookie: c.Cookie})
 	}
-	if l.OAuth == nil {
-		return Principal{}, ErrUnauthenticated
-	}
-	return l.OAuth.Authenticate(ctx, authorization)
+	return Principal{}, ErrUnauthenticated
 }

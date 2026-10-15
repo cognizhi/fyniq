@@ -10,6 +10,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -f .env ] && set -a && . ./.env && set +a
 export FYNIQ_ENV="${FYNIQ_ENV:-local}"
+# The browser is on Vite's origin, which proxies /api: sign-in sends it back there.
+export FYNIQ_PUBLIC_ORIGIN="${FYNIQ_PUBLIC_ORIGIN:-http://localhost:${FYNIQ_WEB_PORT:-5173}}"
 mkdir -p .data/dev/bin
 
 SERVICES=(api ai mcp worker executor render)

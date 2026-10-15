@@ -90,6 +90,7 @@ services:
       FYNIQ_OAUTH_ADMIN_URL: http://oauth:4445              # Hydra's admin API: never through Caddy
       FYNIQ_API_AUDIENCE: http://localhost:8080/api
       FYNIQ_MCP_AUDIENCE: http://localhost:8080/mcp
+      FYNIQ_PUBLIC_ORIGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}   # where the browser is: sign-in sends it back here
     ports: ["127.0.0.1:${FYNIQ_API_PORT:-8081}:8080"]
     depends_on: { migrate: { condition: service_completed_successfully } }
     healthcheck: *health

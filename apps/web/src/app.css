@@ -20,3 +20,39 @@ body {
 .api {
   font-variant-numeric: tabular-nums;
 }
+
+.problem {
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--status-critical);
+  background: var(--status-critical-subtle);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.button {
+  display: inline-block;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius-m); /* buttons */
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--primary-hover);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}

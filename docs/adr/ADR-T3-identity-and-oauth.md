@@ -42,7 +42,11 @@ asks ("the Hydra version and edition are pinned").
   comes from the client's record (AI-34), never from the request.
 - **Who signs in.** Until the SignIn port (Identity Platform), the login and consent pages identify the
   user by the local build's dev tokens, which only tests and local tools send. **The release build accepts
-  no credential at all** until memberships and the SignIn port exist.
+  no credential at all** until memberships and the SignIn port exist. (As built, slice 4a: the login and
+  consent pages read the web app's first-party session cookie, begun through the SignIn port; locally its
+  adapter is a dev OpenID Connect issuer. Hydra's subject is the person's user ID, the subject a role
+  change or a recovery revokes. The release build stays closed until the Identity Platform adapter,
+  slice 4b. Details in `openspec/changes/p0-identity-oauth-first-run/design.md`, "Sign-in, as built".)
 
 ## Proven (P0 exit item 6, first part)
 

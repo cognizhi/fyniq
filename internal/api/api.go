@@ -11,6 +11,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -38,6 +39,7 @@ type Deps struct {
 	Outbox       *outbox.Dispatcher   // queues background work, such as token revocations; nil when there is none
 	Clock        ports.Clock
 	Auth         authn.Authenticator
+	SignIn       ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
 	Log          *slog.Logger
 	Version      string // the platform version: the document's info.version
 }
@@ -94,15 +96,19 @@ func Config(version string) huma.Config {
 			Description: "http://localhost:8080/api behind Caddy (make up); http://localhost:8081 for the api service (make dev)"}}}}
 	cfg.Tags = []*huma.Tag{
 		{Name: "Installation", Description: "First-run setup of a new installation (FR-ADM-06)."},
+		{Name: "Session", Description: "Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08)."},
 		{Name: "Organisation", Description: "The organisation your session is in."},
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
 		{Name: "Journals", Description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."},
 	}
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
-		"bearer": {Type: "http", Scheme: "bearer", Description: "An access token from Fyniq's OAuth server (ADR-T3). " +
-			"Until it arrives, the local build accepts the local issuer's dev tokens and a release build accepts none."},
+		"bearer": {Type: "http", Scheme: "bearer", Description: "An access token from Fyniq's OAuth server (ADR-T3), for integrations and MCP " +
+			"clients. The local build also accepts the local issuer's dev tokens."},
+		"session": {Type: "apiKey", In: "cookie", Name: authn.SessionCookie(true), Description: "The web app's first-party session (SEC-05, SEC-08), " +
+			"set by signing in at /auth/signin: an HttpOnly cookie the web app never reads (fyniq_session on http://localhost). A request it " +
+			"authenticates may change state only from the web app's own origin (Sec-Fetch-Site: same-origin)."},
 	}
-	cfg.Security = []map[string][]string{{"bearer": {}}}
+	cfg.Security = []map[string][]string{{"bearer": {}}, {"session": {}}}
 	cfg.OnAddOperation = append(cfg.OnAddOperation, describeErrors)
 	return cfg
 }
@@ -125,6 +131,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerJournals(a)
 	registerSetup(a)
 	registerSuperAdmins(a)
+	registerSession(a)
 	return a
 }
 
@@ -146,6 +153,9 @@ func register[I, O any](a *API, p authz.Policy, op huma.Operation, codes []strin
 	}
 	a.policies[p.Operation] = p
 	codes = append(slices.Clone(codes), commonCodes...)
+	if !p.Public && !authn.Safe(op.Method) {
+		codes = append(codes, CodeCrossSite) // a write the session cookie authenticates must come from the web app
+	}
 	slices.Sort(codes)
 	codes = slices.Compact(codes)
 	statuses := map[int]bool{}
@@ -241,16 +251,35 @@ func (a *API) authenticate(ctx huma.Context, next func(huma.Context)) {
 		next(ctx)
 		return
 	}
-	p, err := a.deps.Auth.Authenticate(ctx.Context(), ctx.Header("Authorization"))
+	creds := authn.Credentials{Authorization: ctx.Header("Authorization"), Cookie: ctx.Header("Cookie")}
+	p, err := a.deps.Auth.Authenticate(ctx.Context(), creds)
+	if err != nil && !errors.Is(err, authn.ErrUnauthenticated) {
+		logFailure(ctx.Context(), err)
+		_ = huma.WriteErr(a.API, ctx, http.StatusInternalServerError, "", problem(CodeFailure,
+			"Your sign-in could not be checked.", "Try again in a moment."))
+		return
+	}
 	if err != nil {
 		ctx.SetHeader("WWW-Authenticate", `Bearer realm="fyniq"`)
 		_ = huma.WriteErr(a.API, ctx, http.StatusUnauthorized, "", problem(CodeUnauthenticated,
-			"The request has no valid access token.", "Sign in again and send the request with a bearer token."))
+			"The request has no valid access token or session.", "Sign in again, or send the request with a bearer token."))
+		return
+	}
+	// The session cookie is ambient: any site could make a browser send it. A request it authenticates may
+	// change state only from the web app's own origin (CSRF; OWASP Fetch Metadata).
+	if creds.Authorization == "" && !authn.Safe(ctx.Method()) && ctx.Header("Sec-Fetch-Site") != "same-origin" {
+		a.deps.Log.Warn("api.refused", "operation", ctx.Operation().OperationID, "code", CodeCrossSite, "subject", p.Subject,
+			"request_id", requestID(ctx.Context()))
+		_ = huma.WriteErr(a.API, ctx, http.StatusForbidden, "", problem(CodeCrossSite,
+			"The request was sent from another site with your Fyniq session.", "Do it in Fyniq itself."))
 		return
 	}
 	c := authn.WithPrincipal(ctx.Context(), p)
 	audit := storage.AuditFrom(c)
 	actor := &storage.Actor{Type: "user", ID: p.Subject}
+	if p.UserID != uuid.Nil {
+		actor.ID = p.UserID.String() // a person is their user, whichever sign-in they used (AUD-01)
+	}
 	switch p.Class {
 	case authn.ClassIntegration:
 		actor.Type = "integration"

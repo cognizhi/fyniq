@@ -70,6 +70,12 @@ var matrixCalls = map[string]matrixCall{
 		return e.call(http.MethodPost, "/v1/super-admins/recovery", tok, map[string]any{"recovery_code": "NEVER-A-VALID-RECOVERY-CODE-0",
 			"confirmation_code": "NEVER-A-VALID-CONFIRMATION-0"}), nil
 	},
+	"listSignInProviders": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/sign-in-providers", tok, nil), nil
+	},
+	"getSession": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/session", tok, nil), nil
+	},
 	"reverseJournal": func(e *env, tok string) (response, func() bool) {
 		id, tag := e.postedJournal("10.00")
 		r := e.call(http.MethodPost, "/v1/journals/"+id+"/reverse", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
@@ -86,7 +92,7 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 	switch {
 	case p.Public:
 		return true, false
-	case p.Capability == authz.Setup || p.Capability == authz.SuperAdmins: // any person; never the AI
+	case p.Capability == authz.Setup || p.Capability == authz.SuperAdmins || p.Capability == authz.Session: // any person; never the AI
 		return role != authz.AI, false
 	}
 	col := authz.Column(role)

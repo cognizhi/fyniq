@@ -79,8 +79,8 @@ func (d *DevTokens) Issue(p authn.Principal, ttl time.Duration) (string, error) 
 }
 
 // Authenticate implements authn.Authenticator: a bearer dev token, signed and not expired.
-func (d *DevTokens) Authenticate(_ context.Context, authorization string) (authn.Principal, error) {
-	token, ok := strings.CutPrefix(authorization, "Bearer ")
+func (d *DevTokens) Authenticate(_ context.Context, cred authn.Credentials) (authn.Principal, error) {
+	token, ok := strings.CutPrefix(cred.Authorization, "Bearer ")
 	if !ok || !strings.HasPrefix(token, devPrefix) {
 		return authn.Principal{}, authn.ErrUnauthenticated
 	}

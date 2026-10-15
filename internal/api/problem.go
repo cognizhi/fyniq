@@ -61,6 +61,7 @@ var LedgerCodes = []string{ledger.CodeNoDate, ledger.CodeTooFewLines, ledger.Cod
 // The API's own codes. The domain's codes (JOURNAL-*, LEDGER-*, MONEY-*, STORAGE-*) pass through.
 const (
 	CodeUnauthenticated   = "API-AUTH-01"        // no valid credentials
+	CodeCrossSite         = "API-AUTH-02"        // a state change the session cookie authenticated, sent from another site
 	CodeForbidden         = "API-AUTHZ-01"       // the caller's roles hold no right for the operation
 	CodeNoOrganisation    = "API-AUTHZ-02"       // the caller is not in an organisation
 	CodeNoPolicy          = "API-AUTHZ-03"       // the operation has no policy: refused (SEC-02)
@@ -92,6 +93,7 @@ var codeFacts = map[string]struct {
 	Title  string
 }{
 	CodeUnauthenticated:        {401, "Sign-in required"},
+	CodeCrossSite:              {403, "Sent from another site"},
 	CodeForbidden:              {403, "Not allowed for your roles"},
 	CodeNoOrganisation:         {403, "No organisation"},
 	CodeNoPolicy:               {403, "Operation not authorised"},

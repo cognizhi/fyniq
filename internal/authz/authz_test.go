@@ -143,19 +143,20 @@ func TestParseCell(t *testing.T) {
 	}
 }
 
-// Only the installation's operations (setup, Super admins) bypass the organisation, and only the setup
-// status needs no credential.
+// Only the installation's operations (setup, Super admins) and the caller's own session bypass the
+// organisation, and only the setup status and the sign-in providers need no credential.
 // req: SEC-02
 // asvs: V8.2.1
 func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 	for op, p := range authz.Policies {
-		installation := p.Capability == authz.Setup || p.Capability == authz.SuperAdmins
-		public, noOrg := op == "getSetupStatus", installation && op != "getSetupStatus"
+		installation := p.Capability == authz.Setup || p.Capability == authz.SuperAdmins || p.Capability == authz.Session
+		public := op == "getSetupStatus" || op == "listSignInProviders"
+		noOrg := installation && !public
 		if p.Public != public || p.NoOrganisation != noOrg {
 			t.Errorf("%s: Public %v, NoOrganisation %v; want %v, %v", op, p.Public, p.NoOrganisation, public, noOrg)
 		}
 		if installation && authz.Decide(p, []authz.Role{authz.SuperAdmin}, true).Allowed {
-			t.Errorf("%s: the AI may not set up the installation or change its Super admins", op)
+			t.Errorf("%s: the AI may not set up the installation, change its Super admins or hold a session", op)
 		}
 	}
 	if d := authz.Decide(authz.CompleteSetup, nil, true); d.Allowed {

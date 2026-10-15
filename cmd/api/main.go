@@ -18,17 +18,20 @@ import (
 	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/version"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
-// Set by the local build (local.go): the API's own tick, the local issuer's dev tokens and, when the
-// OAuth server is configured, its tokens and the login and consent flow. The release build accepts
-// no credential until memberships and the SignIn port arrive (p0-identity-oauth-first-run).
+// Set by the local build (local.go): the API's own tick; the local issuer's dev tokens, the sessions of
+// its dev sign-in page and, when the OAuth server is configured, its tokens and the login and consent
+// flow. The release build accepts no credential until the Identity Platform adapter of the SignIn port
+// arrives (p0-identity-oauth-first-run, slice 4b). sessions is nil without a database.
 var (
 	startLocalTick   func(t outbox.Ticker)
-	newAuthenticator func(clock ports.Clock) authn.Authenticator
-	registerOAuth    func(s *httpserver.Server, clock ports.Clock)
+	newAuthenticator func(clock ports.Clock, sessions storage.Sessions) authn.Authenticator
+	registerSignIn   func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions) ports.SignIn
+	registerOAuth    func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions)
 )
 
 func main() {
@@ -38,13 +41,20 @@ func main() {
 // routes adds the API's routes to s.
 func routes(s *httpserver.Server, deps app.Deps) error {
 	d := api.Deps{Clock: deps.Clock, Auth: authn.NotYet{}, Log: logging.New(os.Stderr, slog.LevelInfo), Version: version.Version}
+	kit, err := wiring.Build(context.Background(), "api", deps.Clock)
+	var sessions storage.Sessions
+	if err == nil {
+		sessions = kit.Store
+	}
 	if newAuthenticator != nil {
-		d.Auth = newAuthenticator(deps.Clock)
+		d.Auth = newAuthenticator(deps.Clock, sessions)
+	}
+	if registerSignIn != nil {
+		d.SignIn = registerSignIn(s, deps.Clock, sessions)
 	}
 	if registerOAuth != nil {
-		registerOAuth(s, deps.Clock)
+		registerOAuth(s, deps.Clock, sessions)
 	}
-	kit, err := wiring.Build(context.Background(), "api", deps.Clock)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "api: serving without a database or background work:", err)
 		api.New(s, d) // without a store it accepts no credentials: the document only

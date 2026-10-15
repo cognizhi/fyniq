@@ -52,7 +52,8 @@ type tokens struct {
 	m  map[string]authn.Principal
 }
 
-func (f *tokens) Authenticate(_ context.Context, authorization string) (authn.Principal, error) {
+func (f *tokens) Authenticate(_ context.Context, c authn.Credentials) (authn.Principal, error) {
+	authorization := c.Authorization
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	p, ok := f.m[strings.TrimPrefix(authorization, "Bearer ")]

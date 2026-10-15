@@ -8,6 +8,9 @@ import type { components, paths } from "./schema";
 export type Problem = components["schemas"]["Problem"];
 export type Organisation = components["schemas"]["Organisation"];
 export type Money = components["schemas"]["Money"]; // decimal strings: never parse into a number for arithmetic
+export type Session = components["schemas"]["SessionInfo"];
+export type SignInProvider = components["schemas"]["SignInProvider"];
 
 // In `make dev` Vite proxies /api to the API; with `make up` and in the cloud one origin serves both.
+// The browser sends the session cookie with every call (same origin); the app never reads it.
 export const api = createClient<paths>({ baseUrl: "/api" });

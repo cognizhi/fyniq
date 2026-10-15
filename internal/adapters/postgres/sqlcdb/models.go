@@ -283,3 +283,16 @@ type FyniqUserMembership struct {
 	CreatedAt      time.Time
 	Version        int32
 }
+
+type FyniqUserSession struct {
+	TokenHash  []byte
+	Issuer     string
+	Subject    string
+	Provider   string
+	UserID     *uuid.UUID
+	CreatedAt  time.Time
+	LastSeenAt time.Time
+	ExpiresAt  time.Time
+	StepUpAt   *time.Time
+	EndedAt    *time.Time
+}

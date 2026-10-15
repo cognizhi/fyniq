@@ -30,8 +30,7 @@ sign-in are revoked (AI-38). Everything is recorded in the installation's audit 
 1. The Super admin who lost access signs in to Fyniq with the **new** sign-in they will keep from now
    on. They are not a Super admin under that sign-in yet.
 2. The **other** Super admin signs in, passes step-up, and confirms the recovery
-   (`POST /v1/super-admins/{user_id}/recovery-confirmations`; the Super admins screen arrives with the
-   SignIn port). Fyniq shows a one-time confirmation code, valid **24 hours**.
+   (`POST /v1/super-admins/{user_id}/recovery-confirmations`; the Super admins screen arrives later). Fyniq shows a one-time confirmation code, valid **24 hours**.
 3. The other Super admin gives the confirmation code to the person **by a channel they trust** (in
    person, a call), never in a shared channel or a ticket.
 4. The person enters one of their printed recovery codes and the confirmation code
@@ -77,8 +76,9 @@ operators are whoever runs the stack. In the cloud they are the two founders (op
 - **No cooling-off yet.** SEC-35's 24-hour cooling-off period (no approvals, payments, role or
   sign-in changes) arrives with approvals in P1; until then, review the recovered account's activity
   in the trail for the next 24 hours.
-- **Sessions:** first-party sessions arrive with the SignIn port; until then, revoking the replaced
-  sign-ins' tokens is the whole of "revoke all sessions and tokens".
+- **Sessions:** the recovery ends every first-party session of the Super admin except the one that
+  recovered, and revokes the replaced sign-ins' tokens: that is "revoke all sessions and tokens". The
+  trail's `super_admin.recovered` event says how many sessions it ended (`sessions_ended`).
 - **If the nightly check fails** (`superadmins.verify`: no active Super admin can sign in;
   `control.check.failed` with CTL-IAM-07 in the installation's trail), follow way B.
 
