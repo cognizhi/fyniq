@@ -53,6 +53,17 @@ func (q *Queries) GetEntry(ctx context.Context, id uuid.UUID) (GetEntryRow, erro
 	return i, err
 }
 
+const getEntryIDByIdentity = `-- name: GetEntryIDByIdentity :one
+SELECT id FROM fyniq.journal_entry WHERE posting_identity = $1
+`
+
+func (q *Queries) GetEntryIDByIdentity(ctx context.Context, postingIdentity string) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getEntryIDByIdentity, postingIdentity)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getEntryLines = `-- name: GetEntryLines :many
 SELECT id, line_no, account_id, currency, amount, fx_rate, fx_rate_source, base_currency, base_amount, description
 FROM fyniq.journal_line WHERE entry_id = $1 ORDER BY line_no

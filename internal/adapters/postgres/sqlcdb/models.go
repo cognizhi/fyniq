@@ -47,6 +47,24 @@ type FyniqCurrency struct {
 	Name       string
 }
 
+type FyniqDocument struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	CreatedAt      time.Time
+}
+
+type FyniqDocumentVersion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	Version        int32
+	Payload        []byte
+	CreatedAt      time.Time
+}
+
 type FyniqIdempotencyKey struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

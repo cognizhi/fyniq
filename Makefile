@@ -16,11 +16,13 @@ export OPENSPEC_TELEMETRY := 0
 # The pinned toolchain from mise.toml when mise is installed; the tools on PATH otherwise
 MISE := $(shell command -v mise >/dev/null 2>&1 && echo "mise exec --")
 GO_IMAGES := api ai mcp worker executor render migrate jobs
+# Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
+MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger
 FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test db-lint sqlc test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test mutation db-lint sqlc test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -69,6 +71,10 @@ db-lint: ## Lint the migrations (squawk) and check the adapter's generated queri
 	@cd internal/adapters/postgres && $(MISE) sqlc diff || { echo "✖ internal/adapters/postgres/sqlcdb is stale: run make sqlc"; exit 1; }
 	@echo "✔ migrations lint clean; generated queries up to date"
 
+mutation: ## Mutation tests on money, rounding and the engine (QA-ENG-04): efficacy of at least 90% per package; part of make ci
+	@for p in $(MUTATION_PKGS); do echo "== $$p"; \
+	  $(MISE) gremlins unleash ./$$p --workers 4 --timeout-coefficient 6 --threshold-efficacy 90 || exit 1; done
+
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
 
@@ -86,8 +92,9 @@ images: ## Build the Go and web images (FLAVOURS="release local" by default)
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
 	@docker build -q -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
 
-ci: ## Run what CI runs, in the same order: test, images, test-e2e, evals
+ci: ## Run what CI runs, in the same order: test, mutation, images, test-e2e, evals
 	@$(MAKE) --no-print-directory test
+	@$(MAKE) --no-print-directory mutation
 	@$(MAKE) --no-print-directory images
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals

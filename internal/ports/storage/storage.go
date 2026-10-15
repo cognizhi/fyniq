@@ -34,6 +34,7 @@ type UnitOfWork interface {
 	Organisation(ctx context.Context) (Organisation, error)
 	Accounts() Accounts
 	Periods() Periods
+	Documents() Documents
 	Ledger() Ledger
 	Balances() Balances
 }
@@ -44,6 +45,21 @@ type Accounts interface {
 	Get(ctx context.Context, id uuid.UUID) (Account, error)
 	ByCode(ctx context.Context, code string) (Account, error)
 	SetActive(ctx context.Context, id uuid.UUID, active bool) (Account, error)
+	// List returns every account, by code.
+	List(ctx context.Context) ([]Account, error)
+}
+
+// Documents are the source documents and their immutable versions (§11.4).
+type Documents interface {
+	// Create saves a new document as a draft at version 1 with its payload (a JSON object).
+	Create(ctx context.Context, d NewDocument) (Document, error)
+	// Get returns a document at its current version.
+	Get(ctx context.Context, id uuid.UUID) (Document, error)
+	// Lock is Get with the document's row locked until commit: ENG-47 step 1, taken before the
+	// ledger lock by any command that changes the document.
+	Lock(ctx context.Context, id uuid.UUID) (Document, error)
+	// SetStatus moves a document draft → posted → reversed; the database refuses any other move.
+	SetStatus(ctx context.Context, id uuid.UUID, to DocumentStatus) error
 }
 
 // Periods are the accounting periods.
@@ -63,6 +79,8 @@ type Ledger interface {
 	// revision (ENG-46) and the period, and refuses an unbalanced entry at commit (INV-01).
 	Append(ctx context.Context, e NewEntry) (Entry, error)
 	Entry(ctx context.Context, id uuid.UUID) (Entry, error)
+	// ByIdentity returns the entry posted with a posting identity.
+	ByIdentity(ctx context.Context, postingIdentity string) (Entry, error)
 	// Revision is the organisation's current ledger revision.
 	Revision(ctx context.Context) (int64, error)
 }
@@ -161,6 +179,37 @@ type Period struct {
 	Version        int
 }
 
+// DocumentType is a kind of source document. P0 has the manual journal.
+type DocumentType string
+
+// The document types.
+const DocumentJournal DocumentType = "journal"
+
+// DocumentStatus is where a document is in its life (FR-GL-12).
+type DocumentStatus string
+
+// The document statuses.
+const (
+	DocumentDraft    DocumentStatus = "draft"
+	DocumentPosted   DocumentStatus = "posted"
+	DocumentReversed DocumentStatus = "reversed"
+)
+
+// NewDocument is what Documents.Create needs.
+type NewDocument struct {
+	Type    DocumentType
+	Payload []byte
+}
+
+// Document is a source document at its current version.
+type Document struct {
+	ID      uuid.UUID
+	Type    DocumentType
+	Status  DocumentStatus
+	Version int
+	Payload []byte
+}
+
 // Source is where an entry comes from (ENG-03).
 type Source struct {
 	Type    string // e.g. "manual_journal", "invoice"
@@ -257,6 +306,8 @@ const (
 	CodeAccountFixed   = "STORAGE-ACCOUNT-01"
 	CodeAccountTree    = "STORAGE-ACCOUNT-02"
 	CodeOrganisation   = "STORAGE-ORG-01"
+	CodeDocument       = "STORAGE-DOC-01"       // a document's type cannot change, or its version go back
+	CodeDocumentStatus = "STORAGE-DOC-02"       // a document cannot move to that status
 	CodeDuplicate      = "STORAGE-DUPLICATE-01" // posting identity, account code or reversal already used
 	CodeRetry          = "STORAGE-RETRY-01"     // deadlock or serialisation failure: retry with the same key
 	CodeLockTimeout    = "STORAGE-LOCK-01"      // waited longer than the lock timeout (ENG-47)

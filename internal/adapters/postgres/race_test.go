@@ -298,7 +298,7 @@ func abs(x int64) int64 {
 	return x
 }
 
-func money(cents int64) storage.Decimal {
+func asDecimal(cents int64) storage.Decimal {
 	sign := ""
 	if cents < 0 {
 		sign, cents = "-", -cents
@@ -326,16 +326,16 @@ func TestRandomPostingsKeepTheCacheAndTrialBalanceExact(t *testing.T) {
 				rate := rates[rng.IntN(len(rates))]
 				base := roundHalfAway(cents*rate, 10_000)
 				baseSum += base
-				e.Lines = append(e.Lines, storage.NewLine{AccountID: accounts[rng.IntN(3)], Currency: "USD", Amount: money(cents),
-					FXRate: storage.Decimal(fmt.Sprintf("%d.%04d", rate/10_000, rate%10_000)), FXRateSource: "test", BaseAmount: money(base)})
+				e.Lines = append(e.Lines, storage.NewLine{AccountID: accounts[rng.IntN(3)], Currency: "USD", Amount: asDecimal(cents),
+					FXRate: storage.Decimal(fmt.Sprintf("%d.%04d", rate/10_000, rate%10_000)), FXRateSource: "test", BaseAmount: asDecimal(base)})
 			} else {
 				baseSum += cents
-				e.Lines = append(e.Lines, storage.NewLine{AccountID: accounts[rng.IntN(3)], Currency: "SGD", Amount: money(cents),
-					FXRate: "1", FXRateSource: "base", BaseAmount: money(cents)})
+				e.Lines = append(e.Lines, storage.NewLine{AccountID: accounts[rng.IntN(3)], Currency: "SGD", Amount: asDecimal(cents),
+					FXRate: "1", FXRateSource: "base", BaseAmount: asDecimal(cents)})
 			}
 		}
-		e.Lines = append(e.Lines, storage.NewLine{AccountID: accounts[rng.IntN(3)], Currency: "SGD", Amount: money(-baseSum),
-			FXRate: "1", FXRateSource: "base", BaseAmount: money(-baseSum)})
+		e.Lines = append(e.Lines, storage.NewLine{AccountID: accounts[rng.IntN(3)], Currency: "SGD", Amount: asDecimal(-baseSum),
+			FXRate: "1", FXRateSource: "base", BaseAmount: asDecimal(-baseSum)})
 		if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 			_, err := u.Ledger().Append(ctx, e)
 			return err

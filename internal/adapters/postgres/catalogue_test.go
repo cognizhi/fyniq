@@ -355,12 +355,12 @@ SELECT pg_get_indexdef(i.indexrelid) FROM pg_index i JOIN pg_class c ON c.oid = 
 SELECT pg_get_triggerdef(g.oid) FROM pg_trigger g JOIN pg_class c ON c.oid = g.tgrelid
   JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'fyniq' AND NOT g.tgisinternal ORDER BY 1`)
 	section("policies", `
-SELECT c.relname, p.polname, p.polcmd, pg_get_expr(p.polqual, p.polrelid), pg_get_expr(p.polwithcheck, p.polrelid)
+SELECT c.relname, p.polname, p.polcmd::text, pg_get_expr(p.polqual, p.polrelid), pg_get_expr(p.polwithcheck, p.polrelid)
   FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid ORDER BY 1, 2`)
 	section("functions", `
 SELECT p.proname || '(' || pg_get_function_arguments(p.oid) || ') → ' || pg_get_function_result(p.oid),
        CASE WHEN p.prosecdef THEN 'security definer' ELSE 'security invoker' END,
-       p.provolatile, coalesce(array_to_string(p.proconfig, ','), ''), md5(p.prosrc)
+       p.provolatile::text, coalesce(array_to_string(p.proconfig, ','), ''), md5(p.prosrc)
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'fyniq' ORDER BY 1`)
 	section("extensions", `SELECT e.extname, n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
  WHERE e.extname <> 'plpgsql' ORDER BY 1`)
