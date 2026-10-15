@@ -1,0 +1,18 @@
+# CTL-FIN-01: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-01
+section: "F.1"
+control: "Every journal entry balances"
+mapping: "SOC2 PI1; COSO P10"
+automated_check: "Database deferred trigger + property tests; nightly TB recomputation"
+frequency: "CI, N"
+evidence: "Test reports; verification log"
+owner: Controller
+checks:
+  - frequency: CI
+    status: running
+    how: "make test"
+    evidence: "INV-01 trigger and property tests; CI log"
+  - frequency: N
+    status: planned
+    arrives: "p0-compliance-as-code (the nightly runner)"

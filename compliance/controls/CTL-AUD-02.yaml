@@ -1,0 +1,15 @@
+# CTL-AUD-02: PRD-001 Appendix F (F.2). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AUD-02
+section: "F.2"
+control: "Audit hash chain intact and anchored hourly (signed, WORM)"
+mapping: "ISO 8.15, 5.33; SOC2 CC7.2"
+automated_check: "Nightly chain verification against KMS-signed anchors"
+frequency: "N"
+evidence: "Verification log"
+owner: Owner
+checks:
+  - frequency: N
+    status: running
+    how: "job audit.verify"
+    evidence: "verification log and heartbeat (jobs heartbeat-check)"

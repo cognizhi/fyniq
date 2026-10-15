@@ -1,0 +1,14 @@
+# CTL-IAM-04: PRD-001 Appendix F (F.3). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-IAM-04
+section: "F.3"
+control: "No service-account keys; Workload Identity Federation for CI"
+mapping: "ISO 8.2, 8.5; SOC2 CC6.1"
+automated_check: "Org policy `iam.disableServiceAccountKeyCreation` enforced; daily drift"
+frequency: "D"
+evidence: "Policy snapshot"
+owner: Administrator
+checks:
+  - frequency: D
+    status: planned
+    arrives: "p0-infra-opentofu"

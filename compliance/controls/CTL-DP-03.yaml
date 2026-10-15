@@ -1,0 +1,14 @@
+# CTL-DP-03: PRD-001 Appendix F (F.5). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-DP-03
+section: "F.5"
+control: "No NRIC or secrets in logs, analytics or AI traces"
+mapping: "ISO 8.12; PDPA"
+automated_check: "Sensitive Data Protection scans: zero NRIC-pattern hits"
+frequency: "W"
+evidence: "Scan report"
+owner: DPO
+checks:
+  - frequency: W
+    status: planned
+    arrives: "P1"

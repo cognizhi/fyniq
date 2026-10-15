@@ -1,0 +1,14 @@
+# CTL-CHG-06: PRD-001 Appendix F (F.4). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-CHG-06
+section: "F.4"
+control: "SBOM per release"
+mapping: "ISO 8.28; SOC2 CC7.1"
+automated_check: "Release pipeline step"
+frequency: "E"
+evidence: "SBOM"
+owner: Owner
+checks:
+  - frequency: E
+    status: planned
+    arrives: "p0-ci-images-release (the release workflow)"

@@ -1,0 +1,14 @@
+# CTL-IAM-01: PRD-001 Appendix F (F.3). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-IAM-01
+section: "F.3"
+control: "MFA enforced for every user; passkey step-up for approvals"
+mapping: "ISO 8.5; SOC2 CC6.1; CE; ASVS V6"
+automated_check: "Nightly: users without MFA = 0"
+frequency: "N"
+evidence: "Report"
+owner: Administrator
+checks:
+  - frequency: N
+    status: planned
+    arrives: "p0-identity-oauth-first-run"

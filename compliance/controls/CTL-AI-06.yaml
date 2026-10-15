@@ -1,0 +1,17 @@
+# CTL-AI-06: PRD-001 Appendix F (F.7). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AI-06
+section: "F.7"
+control: "AI exclusions enforced (no NRIC, bank numbers, payroll unless enabled)"
+mapping: "PDPA; OWASP LLM02"
+automated_check: "Redaction tests; trace scans (CTL-DP-03)"
+frequency: "CI, W"
+evidence: "Reports"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: W
+    status: planned
+    arrives: "P1"

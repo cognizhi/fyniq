@@ -1,0 +1,19 @@
+# CTL-CHG-01: PRD-001 Appendix F (F.4). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-CHG-01
+section: "F.4"
+control: "Protected branches; two-person review (author ≠ approver) for production changes"
+mapping: "ISO 8.32, 8.4; SOC2 CC8.1"
+automated_check: "Repository settings check; merge audit"
+frequency: "D, CI"
+evidence: "Settings snapshot; PR records"
+owner: Owner
+checks:
+  - frequency: D
+    status: running
+    how: "ci Repository settings and merge audit (CTL-CHG-01)"
+    evidence: "CI artefact control-ctl-chg-01 (90 days; the evidence bucket arrives with p0-infra-opentofu): main's protection, its required checks and each merge's approvers"
+  - frequency: CI
+    status: running
+    how: "ci Repository settings and merge audit (CTL-CHG-01)"
+    evidence: "the same check on every push to main; GitHub refuses a merge without an approval (branch protection)"

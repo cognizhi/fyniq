@@ -1,0 +1,20 @@
+# CTL-FIN-12: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-12
+section: "F.1"
+control: "(rev 0.3) Equity register integrity: the cap table is computed only from approved, evidenced equity transactions; register paid-up capital equals 3010 + 3020; the register reconciles to ACRA's register of members"
+mapping: "COSO P10; SOC2 PI1; Companies Act; (rev 0.19) ACRA's electronic register of members for private companies (ACRA's pages cite no section; checked 14 Oct 2026)"
+automated_check: "INV-13 trigger tests; nightly reconciliation of the register to 3010 + 3020 (rev 0.11); check on each uploaded ACRA extract"
+frequency: "CI, N, E"
+evidence: "Reconciliation log; transaction evidence"
+owner: Controller
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: N
+    status: planned
+    arrives: "P1"
+  - frequency: E
+    status: planned
+    arrives: "P1"

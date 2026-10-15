@@ -1,0 +1,17 @@
+# CTL-FIN-08: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-08
+section: "F.1"
+control: "Payments and payee bank changes are dual-controlled"
+mapping: "COSO P8; SOC2 CC6.1"
+automated_check: "Self-approval rejection test; nightly check that every released payment has two distinct approvers (rev 0.8: or is a founder break-glass release within FM-8's limits, with its post-review open or completed on time)"
+frequency: "CI, N"
+evidence: "Approval records"
+owner: Controller
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: N
+    status: planned
+    arrives: "P1"

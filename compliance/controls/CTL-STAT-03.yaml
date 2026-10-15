@@ -1,0 +1,14 @@
+# CTL-STAT-03: PRD-001 Appendix F (F.8). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-STAT-03
+section: "F.8"
+control: "AIS by 1 March; IR21 (rev 0.11) at least one month before cessation (FR-PAY-10, §14.2, G4-007; was \"before cessation\")"
+mapping: "Income Tax Act (IRAS)"
+automated_check: "Calendar monitor; IR21 gate"
+frequency: "D"
+evidence: "Submission record"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "P1"

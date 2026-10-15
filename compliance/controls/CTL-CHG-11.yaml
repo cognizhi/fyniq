@@ -1,0 +1,15 @@
+# CTL-CHG-11: PRD-001 Appendix F (F.4). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-CHG-11
+section: "F.4"
+control: "(rev 0.2) GitHub Actions pinned by SHA; least-privilege workflow permissions (SEC-28)"
+mapping: "ISO 8.30, 8.28; SOC2 CC8.1"
+automated_check: "Workflow lint (e.g. zizmor or actionlint)"
+frequency: "CI"
+evidence: "Lint report"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "make scan"
+    evidence: "actionlint and zizmor reports; the workflow rules in archtest"

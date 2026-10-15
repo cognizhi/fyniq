@@ -213,6 +213,7 @@ func TestEveryOperationIsDocumented(t *testing.T) {
 
 // Every operation has its policy from the one table, and every policy its operation (SEC-02).
 // req: SEC-02
+// asvs: V8.2.1, V8.3.1
 func TestEveryOperationHasItsPolicy(t *testing.T) {
 	a := testAPI(t)
 	registered := a.Policies()

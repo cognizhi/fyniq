@@ -1,0 +1,14 @@
+# CTL-CHG-04: PRD-001 Appendix F (F.4). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-CHG-04
+section: "F.4"
+control: "Signed images with provenance; only attested images deploy"
+mapping: "ISO 8.32; SOC2 CC8.1"
+automated_check: "Binary Authorization enforcement check"
+frequency: "D"
+evidence: "Attestations"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "p0-infra-opentofu (signing) and P1 (Binary Authorization, SEC-22)"

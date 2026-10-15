@@ -284,3 +284,46 @@ func NetworkCalls(filename string, src []byte) []string {
 	}
 	return out
 }
+
+// securityReq is a requirement whose tests are security tests (SEC-20): SEC-*, QA-SEC-*, QA-MCP-*,
+// CTL-IAM-* and the invariant attack suites (QA-ENG-05).
+var securityReq = regexp.MustCompile(`^(SEC-\d+|QA-SEC-\d+|QA-MCP-\d+|CTL-IAM-\d+|QA-ENG-05)$`)
+
+// ASVSViolations returns each security test in src without an ASVS 5.0 ID, and each `// asvs:` ID
+// that ASVS 5.0 does not have. valid holds the IDs (docs/security/asvs-5.0.tsv).
+func ASVSViolations(filename string, src []byte, valid map[string]bool) []string {
+	var out []string
+	lines := strings.Split(string(src), "\n")
+	for i, line := range lines {
+		name, ok := strings.CutPrefix(line, "func Test")
+		if !ok {
+			continue
+		}
+		name = "Test" + name[:strings.IndexAny(name+"(", "(")]
+		var reqs, ids []string
+		for j := i - 1; j >= 0 && strings.HasPrefix(lines[j], "//"); j-- {
+			if r, ok := strings.CutPrefix(lines[j], "// req: "); ok {
+				reqs = append(reqs, strings.TrimSpace(r))
+			}
+			if a, ok := strings.CutPrefix(lines[j], "// asvs: "); ok {
+				for _, id := range strings.Split(a, ",") {
+					ids = append(ids, strings.TrimSpace(id))
+				}
+			}
+		}
+		security := false
+		for _, r := range reqs {
+			// SEC-20 is the lifecycle itself: its test checks the tags, it is not a security test.
+			security = security || (securityReq.MatchString(r) && r != "SEC-20")
+		}
+		if security && len(ids) == 0 {
+			out = append(out, fmt.Sprintf("%s:%d: %s is a security test (%s) without an `// asvs:` ID (SEC-20)", filename, i+1, name, strings.Join(reqs, ", ")))
+		}
+		for _, id := range ids {
+			if !valid[id] {
+				out = append(out, fmt.Sprintf("%s:%d: %s carries %q, which is not an ASVS 5.0 requirement (docs/security/asvs-5.0.tsv)", filename, i+1, name, id))
+			}
+		}
+	}
+	return out
+}

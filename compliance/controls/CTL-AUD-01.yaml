@@ -1,0 +1,18 @@
+# CTL-AUD-01: PRD-001 Appendix F (F.2). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AUD-01
+section: "F.2"
+control: "Every state change emits an audit event in the same transaction"
+mapping: "ISO 8.15; SOC2 CC7.2; Companies Act s199"
+automated_check: "CI test per command; nightly row-capture vs event reconciliation"
+frequency: "CI, N"
+evidence: "Test report"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "make test"
+    evidence: "AUD-08 same-transaction tests; CI log"
+  - frequency: N
+    status: planned
+    arrives: "P1"

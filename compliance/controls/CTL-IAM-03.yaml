@@ -1,0 +1,14 @@
+# CTL-IAM-03: PRD-001 Appendix F (F.3). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-IAM-03
+section: "F.3"
+control: "No standing privileged cloud access; just-in-time elevation logged"
+mapping: "ISO 8.2; SOC2 CC6.1"
+automated_check: "Daily: no human holds Owner/Editor on prod projects"
+frequency: "D"
+evidence: "IAM snapshot"
+owner: Administrator
+checks:
+  - frequency: D
+    status: planned
+    arrives: "p0-infra-opentofu"

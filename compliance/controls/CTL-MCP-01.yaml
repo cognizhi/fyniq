@@ -1,0 +1,17 @@
+# CTL-MCP-01: PRD-001 Appendix F (F.7a). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-MCP-01
+section: "F.7a"
+control: "Agent-class tokens cannot write except by `propose` (AI-34)"
+mapping: "AG (bound risks); OWASP ASI02–03"
+automated_check: "QA-MCP-01; nightly sample of agent-class writes = 0"
+frequency: "CI, N"
+evidence: "Test report"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: N
+    status: planned
+    arrives: "P1"

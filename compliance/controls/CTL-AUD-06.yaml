@@ -1,0 +1,17 @@
+# CTL-AUD-06: PRD-001 Appendix F (F.2). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AUD-06
+section: "F.2"
+control: "(rev 0.3) Evidence is append-only once its record is approved, hashed in the audit trail and retention-locked"
+mapping: "ISO 5.33, 8.15; SOC2 CC7.2"
+automated_check: "CI: removing evidence from an approved record fails; nightly hash re-verification (C.2 #31)"
+frequency: "CI, N"
+evidence: "Verification log"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: N
+    status: planned
+    arrives: "P1"

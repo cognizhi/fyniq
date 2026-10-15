@@ -1,0 +1,17 @@
+# CTL-AI-09: PRD-001 Appendix F (F.7). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AI-09
+section: "F.7"
+control: "(rev 0.6) Scheduled agents stay inside their skill: tool calls only from the pinned allowlist, outputs only reports, tasks and proposals, schedule and enablement changes audited and dual-controlled, runs reproducible"
+mapping: "AG (bound autonomy); OWASP LLM06 (excessive agency)"
+automated_check: "CI: skill hash pinned and the never-list test per agent; nightly check that every run's tool calls are in its allowlist"
+frequency: "CI, N"
+evidence: "Run reports; pinned hashes"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: N
+    status: planned
+    arrives: "P1"

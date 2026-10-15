@@ -1,0 +1,14 @@
+# CTL-RES-03: PRD-001 Appendix F (F.6). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-RES-03
+section: "F.6"
+control: "SLO monitoring and alerting"
+mapping: "ISO 8.16; SOC2 A1.1, CC7.2"
+automated_check: "Burn-rate alerts configured"
+frequency: "D"
+evidence: "Config; incident log"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "p0-infra-opentofu"

@@ -1,0 +1,21 @@
+# CTL-FIN-07: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-07
+section: "F.1"
+control: "Segregation of duties per team mode; Founder-mode compensating controls operate"
+mapping: "ISO 5.3; SOC2 CC6.1; COSO P10"
+automated_check: "Authorisation-matrix tests; nightly SoD-conflict scan; overdue-review check (FM-3)"
+frequency: "CI, N, W"
+evidence: "Scan output; review sign-offs"
+owner: Controller
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestAuthorisationMatrix"
+    evidence: "authorisation matrix (QA-SEC-03); CI log"
+  - frequency: N
+    status: planned
+    arrives: "P1"
+  - frequency: W
+    status: planned
+    arrives: "P1"

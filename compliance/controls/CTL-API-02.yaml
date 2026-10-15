@@ -1,0 +1,17 @@
+# CTL-API-02: PRD-001 Appendix F (F.7a). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-API-02
+section: "F.7a"
+control: "Integration clients have an owner, a class, an expiry and least-privilege scopes"
+mapping: "ISO 5.15, 5.18; SOC2 CC6.1–6.3"
+automated_check: "Nightly: expired or ownerless clients = 0; quarterly review"
+frequency: "N, Q"
+evidence: "Client inventory"
+owner: Owner
+checks:
+  - frequency: N
+    status: planned
+    arrives: "p0-identity-oauth-first-run"
+  - frequency: Q
+    status: planned
+    arrives: "p0-identity-oauth-first-run"

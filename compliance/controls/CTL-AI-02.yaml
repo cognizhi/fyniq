@@ -1,0 +1,14 @@
+# CTL-AI-02: PRD-001 Appendix F (F.7). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AI-02
+section: "F.7"
+control: "Every executed proposal has a matching human approval with a valid payload hash"
+mapping: "AG (human checkpoints); ETA"
+automated_check: "Nightly reconciliation; alert if any exception (target 0)"
+frequency: "N"
+evidence: "Reconciliation log"
+owner: Owner
+checks:
+  - frequency: N
+    status: planned
+    arrives: "P1"

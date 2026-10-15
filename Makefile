@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers image-scan oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls image-scan oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -128,7 +128,10 @@ ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, 
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals
 
-check: check-tokens check-config kb-lint spec-check design-check review-check scan-waivers ## Run every check available today (CI runs this)
+check: check-tokens check-config kb-lint spec-check design-check review-check scan-waivers controls ## Run every check available today (CI runs this)
+
+controls: ## The control registry (compliance/controls/) has a file for every Appendix F control, with the PRD's text
+	@python3 scripts/controls.py check
 
 scan-waivers: ## The scan waivers are well formed, and the scan and image rules hold on planted findings (the scans themselves: make scan, make images)
 	@python3 scripts/scan.py --self-test

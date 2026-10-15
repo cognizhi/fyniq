@@ -34,6 +34,7 @@ func TestReleaseBuildRefusesALinkedLocalAdapter(t *testing.T) {
 }
 
 // req: SEC-16
+// asvs: V13.4.2, V15.2.3
 func TestLocalBuildNeverRunsInStagingOrProduction(t *testing.T) {
 	for env, want := range map[Env]string{
 		EnvLocal: "", EnvCI: "", EnvDev: "",

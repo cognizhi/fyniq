@@ -1,0 +1,14 @@
+# CTL-RES-04: PRD-001 Appendix F (F.6). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-RES-04
+section: "F.6"
+control: "Security Command Center high/critical findings fixed within SLA"
+mapping: "ISO 8.8; SOC2 CC7.1; CT"
+automated_check: "Daily overdue-finding check"
+frequency: "D"
+evidence: "Findings report"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "P1"

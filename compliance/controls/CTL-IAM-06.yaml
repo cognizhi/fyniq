@@ -1,0 +1,15 @@
+# CTL-IAM-06: PRD-001 Appendix F (F.3). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-IAM-06
+section: "F.3"
+control: "Authorisation matrix holds for every role and endpoint"
+mapping: "ISO 5.15; SOC2 CC6.1; ASVS V8 (L3)"
+automated_check: "QA-SEC-03"
+frequency: "CI"
+evidence: "Test report"
+owner: Administrator
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestAuthorisationMatrix"
+    evidence: "authorisation matrix; CI log"

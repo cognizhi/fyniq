@@ -1,0 +1,18 @@
+# CTL-CHG-09: PRD-001 Appendix F (F.4). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-CHG-09
+section: "F.4"
+control: "(rev 0.2) No local adapters in staging or production (DEV-07)"
+mapping: "ISO 8.31; SOC2 CC8.1"
+automated_check: "Symbol check on production images; start-up refusal test"
+frequency: "CI, E (deploy)"
+evidence: "Test report"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "make images"
+    evidence: "release images without local adapters (CI log); start-up refusal test in make test"
+  - frequency: E
+    status: planned
+    arrives: "p0-ci-images-release (the release workflow)"

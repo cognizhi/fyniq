@@ -303,6 +303,7 @@ func TestCursorListsAndValueFormats(t *testing.T) {
 }
 
 // req: SEC-02
+// asvs: V8.2.1, V8.4.1, V16.3.2
 func TestTheAPIRefusesWhatNoPolicyAllows(t *testing.T) {
 	e := newEnv(t)
 	other := newEnv(t)
@@ -367,6 +368,7 @@ func TestTheAPIRefusesWhatNoPolicyAllows(t *testing.T) {
 // The masked view (Appendix D's M) through the HTTP layer, on a planted capability: no P0 endpoint
 // has an M cell yet.
 // req: QA-SEC-03
+// asvs: V8.2.3, V15.3.1
 func TestMaskedFieldsThroughTheAPI(t *testing.T) {
 	e := newEnv(t)
 	const planted authz.Capability = "Vendor bank details (planted)"

@@ -1,0 +1,18 @@
+# CTL-FIN-02: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-02
+section: "F.1"
+control: "Posted ledger and audit tables are immutable"
+mapping: "ISO 5.33, 8.15; SOC2 PI1, CC7.2; Companies Act s199"
+automated_check: "CI: application roles lack UPDATE/DELETE/TRUNCATE; attack tests (QA-ENG-05)"
+frequency: "CI, N ((rev 0.11) N: the nightly grant snapshot and immutability verification, §10.7)"
+evidence: "Grant snapshot; test report"
+owner: Controller
+checks:
+  - frequency: CI
+    status: running
+    how: "make test"
+    evidence: "grant snapshot and attack suites (QA-ENG-05); CI log"
+  - frequency: N
+    status: planned
+    arrives: "p0-compliance-as-code (the nightly runner)"

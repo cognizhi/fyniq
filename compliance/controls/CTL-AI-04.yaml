@@ -1,0 +1,14 @@
+# CTL-AI-04: PRD-001 Appendix F (F.7). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AI-04
+section: "F.7"
+control: "Catalogue changes dual-approved; excluded task types rejected"
+mapping: "AG; ISO 8.32"
+automated_check: "Catalogue tests"
+frequency: "CI"
+evidence: "Change records"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"

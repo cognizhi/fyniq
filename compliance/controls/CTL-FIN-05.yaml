@@ -1,0 +1,15 @@
+# CTL-FIN-05: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-05
+section: "F.1"
+control: "Engine equals the independent reference ledger"
+mapping: "SOC2 PI1"
+automated_check: "Differential tests on golden and generated data"
+frequency: "CI"
+evidence: "Test report"
+owner: Controller
+checks:
+  - frequency: CI
+    status: running
+    how: "make differential"
+    evidence: "differential run; CI artefact shrunk-scenario on failure"

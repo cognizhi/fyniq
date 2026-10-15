@@ -1,0 +1,17 @@
+# CTL-RES-05: PRD-001 Appendix F (F.6). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-RES-05
+section: "F.6"
+control: "(rev 0.8) Scheduler heartbeat alert configured and Scheduler jobs enabled (NFR-OBS-02)"
+mapping: "ISO 8.16; SOC2 A1.1, CC7.2"
+automated_check: "Daily configuration check of the absence policy, its notification channel and the Scheduler jobs; quarterly test that disabling the tick in staging raises the alert"
+frequency: "D, Q"
+evidence: "Configuration snapshot; test record"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "p0-infra-opentofu"
+  - frequency: Q
+    status: planned
+    arrives: "p0-infra-opentofu"

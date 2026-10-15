@@ -1,0 +1,14 @@
+# CTL-RES-01: PRD-001 Appendix F (F.6). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-RES-01
+section: "F.6"
+control: "HA, PITR and backups configured as specified"
+mapping: "ISO 8.13; SOC2 A1.2"
+automated_check: "Daily config check"
+frequency: "D"
+evidence: "Snapshot"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "p0-infra-opentofu"

@@ -1,0 +1,14 @@
+# CTL-STAT-02: PRD-001 Appendix F (F.8). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-STAT-02
+section: "F.8"
+control: "CPF paid by the 14th"
+mapping: "CPF Act"
+automated_check: "Monitor from the 10th"
+frequency: "D"
+evidence: "Payment record"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "P1"

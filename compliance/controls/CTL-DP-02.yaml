@@ -1,0 +1,15 @@
+# CTL-DP-02: PRD-001 Appendix F (F.5). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-DP-02
+section: "F.5"
+control: "Sensitive fields envelope-encrypted and masked (NRIC, bank numbers, salaries)"
+mapping: "ISO 8.11; PDPA protection; SOC2 C1, P"
+automated_check: "API masking tests"
+frequency: "CI"
+evidence: "Test report"
+owner: DPO
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestMaskedFieldsThroughTheAPI"
+    evidence: "masking through the API on a planted capability; CI log"

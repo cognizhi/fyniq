@@ -1,0 +1,14 @@
+# CTL-DP-04: PRD-001 Appendix F (F.5). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-DP-04
+section: "F.5"
+control: "NRIC never used for authentication or file passwords"
+mapping: "PDPA (PDPC/CSA advisory)"
+automated_check: "Lint rule and test on payslip delivery ((rev 0.19, founder decision 14 Oct 2026) Nemura's payslip delivery, PRD-002 NM-PAY-04)"
+frequency: "CI"
+evidence: "Test report"
+owner: DPO
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
