@@ -1,11 +1,14 @@
-# Merge gates (PRD-001 §12.8, §16.2). Job names are required checks on main: rename only together
-# with branch protection. p0-ci-images-release adds images, scans and the release path.
+# Merge gates (PRD-001 §12.8, §16.2), one job per step of `make ci` (archtest checks it). Job names
+# are required checks on main: rename only together with branch protection. The release path
+# (signing, Artifact Registry, staging by digest) arrives with p0-infra-opentofu.
 name: ci
 
 on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: "23 2 * * 1"   # weekly: rebuild the images and rescan everything with fresh vulnerability data (NFR-IMG-03)
 
 permissions: {}
 
@@ -118,6 +121,37 @@ jobs:
           name: security-scan-reports   # the evidence (compliance-as-code)
           path: .data/scan/
           retention-days: 90
+
+  images:
+    name: Images and local mode (make images, QA-LOCAL-01)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: make images        # both flavours: budgets, non-root, no shell, no local adapter in release (§12.9)
+      - run: make image-scan    # SBOM and grype per release image (SEC-21)
+      - run: scripts/local-smoke.sh   # QA-LOCAL-01: make up from the local images, no cloud credentials
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: image-reports   # SBOMs and scans: the evidence (CTL-CHG-08)
+          path: .data/images/
+          retention-days: 90
+
+  evals:
+    name: AI evals (make evals)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: make evals   # replay mode; the suites arrive in P1
 
   e2e:
     name: Web smoke test (make test-e2e)

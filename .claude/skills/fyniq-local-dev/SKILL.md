@@ -21,7 +21,7 @@ only) and a **local** flavour from the same commit and Dockerfile (PRD rev 0.8, 
 | Migrations (`db/`, its README): `make dev` runs `go run -tags local ./cmd/migrate up`, which in the local build creates `fyniq_migrator` with the container's superuser, applies the migrations and lets each service role log in (password `fyniq-local-only`). In `make up` the `migrate` image does the same, and each service gets its own role's `FYNIQ_DATABASE_URL` (SEC-03) | Cloud roles through IAM database authentication (p0-infra-opentofu) |
 | Background work (ADR-T7): the API ticks itself every 5 minutes (`FYNIQ_TICK_INTERVAL`, `off` to stop), sweeps the outbox and starts the platform jobs (audit anchoring hourly, verification nightly) on the worker's `/jobs`; tasks go to the worker's and executor's `/tasks` with local tokens. `go run -tags local ./cmd/jobs heartbeat-check` fails when the tick or a job stopped beating; `jobs outbox-after-restore` is the step after a database restore | Cloud Scheduler, Cloud Tasks and Cloud Run jobs, and Cloud Monitoring's absence alert (p0-infra-opentofu) |
 | The audit jobs: `FYNIQ_DATABASE_URL=<the fyniq_worker URL> go run -tags local ./cmd/jobs audit-anchor` (or `audit-verify`). Locally the anchors go to `.data/blobs/audit-anchors/` and are signed with the Ed25519 key in `.data/keys/audit-anchor.ed25519` (created on first use, mode 0600, never committed) | Cloud Storage with Bucket Lock and Cloud KMS signing (p0-infra-opentofu); hourly and nightly scheduling (p0-outbox-background-work) |
-| `deploy/docker/Dockerfile.go-service` (release or local `FLAVOUR`) and `Dockerfile.web`, bases pinned by digest; `mise.toml`; `.devcontainer/` | Image budgets, scans, SBOMs and signing in `make images` (p0-ci-images-release) |
+| `deploy/docker/Dockerfile.go-service` (release or local `FLAVOUR`) and `Dockerfile.web`, bases pinned by digest; `mise.toml`; `.devcontainer/` | Signing and deployment by digest, with Artifact Registry (p0-infra-opentofu); budgets, hardening checks, SBOMs and scans are in `make images` and `make image-scan` |
 
 `fyniq-local-only` is a **local-only** password for a throw-away container. Never reuse it, and
 never put a real secret in a committed file (SEC-12).
@@ -79,7 +79,7 @@ The Makefile is the single entry point, and CI calls the same targets (`make ci`
 | `make test` | Every merge gate offline: unit, property, DB invariant attacks (Testcontainers), oracle differential, contract, authz matrix, front-end unit and accessibility | ≤ 10 min (NFR-DEVX-02) |
 | `make test-e2e` | Playwright journeys against `make up` (QA-E2E-01) | — |
 | `make evals` | AI golden, proposal and red-team suites; replay by default, `FYNIQ_AI_LIVE=1` for live | — |
-| `make images` | Build every image, enforce `image-budgets.yaml`, scan, produce SBOMs | — |
+| `make images` | Build every image in both flavours and check it: the budgets of `deploy/docker/budgets.json`, non-root, no shell, no local adapter in a release binary (`make image-scan` adds the SBOMs and the grype scan) | — |
 | `make ci` | Exactly what CI runs, in the same order | — |
 
 Today, `make deps-up` starts only the three dependencies above and prints their URLs
@@ -137,7 +137,7 @@ Never point a local MCP client at staging or production with test credentials.
 | NFR-IMG-01 | Multi-stage; runtime has only the binary and static assets: no compiler, shell, package manager or source |
 | NFR-IMG-02 | UID 65532, read-only root filesystem, explicit `tmpfs`, no capabilities |
 | NFR-IMG-03 | Bases pinned by digest; automated update PRs; weekly rebuilds |
-| NFR-IMG-04 | Budgets enforced by `make images` from `image-budgets.yaml`; changed only by a reviewed PR |
+| NFR-IMG-04 | Budgets enforced by `make images` from `deploy/docker/budgets.json`, which archtest keeps equal to the PRD's §12.9 table; changed only by a reviewed PR |
 | NFR-IMG-05 | SBOM (syft), scan with no unwaived critical/high (grype or Trivy), cosign signature, SLSA provenance; deploy by digest |
 | NFR-IMG-06 | `/healthz`, `/readyz`, `/version` (SemVer, git SHA, build time) used by Cloud Run probes |
 | NFR-IMG-07 | Reproducible: same commit → same digest (`SOURCE_DATE_EPOCH`, no timestamps in layers) |
@@ -148,7 +148,7 @@ write-side package is imported.
 
 Templates for P0 are in `templates/`: `Dockerfile.go-service`, `Dockerfile.web`,
 `compose.full.example.yaml`, `Caddyfile.example` and `image-budgets.yaml`. They are references,
-not wired into any build yet.
+not wired into any build: the budgets in force are `deploy/docker/budgets.json`.
 
 ### When an image is over budget
 

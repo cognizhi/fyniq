@@ -39,7 +39,7 @@ x-health: &health
 services:
   # ------------------------------------------------------------ dependencies (always)
   postgres:
-    image: postgres:18.6-alpine            # same major as Cloud SQL (ADR-D1); pinned by digest in p0-ci-images-release
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873   # same major as Cloud SQL (ADR-D1)
     environment:
       POSTGRES_DB: fyniq
       POSTGRES_USER: fyniq
@@ -55,13 +55,13 @@ services:
       retries: 30
 
   mailpit:                                    # catches every outgoing email; UI at http://localhost:8025
-    image: axllent/mailpit:v1.31
+    image: axllent/mailpit:v1.31@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
     ports:
       - "127.0.0.1:${FYNIQ_MAIL_UI_PORT:-8025}:8025"
       - "127.0.0.1:${FYNIQ_SMTP_PORT:-1025}:1025"
 
   gcs:                                        # Cloud Storage JSON API emulator (Bucket Lock is not emulated)
-    image: fsouza/fake-gcs-server:1.56
+    image: fsouza/fake-gcs-server:1.56@sha256:797ce226d62f947c009dc40246b30cfb456b8473d8241407f9d6f2c04e4d69ef
     command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443", "-backend", "memory"]
     ports:
       - "127.0.0.1:${FYNIQ_GCS_PORT:-4443}:4443"
