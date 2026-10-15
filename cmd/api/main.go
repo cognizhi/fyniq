@@ -51,10 +51,11 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		return nil
 	}
 	d.Store, d.Installation = kit.Store, kit.Store
+	d.Outbox = &outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
 	api.New(s, d)
 	s.AddReadiness("database", kit.Store.Ping)
 	t := outbox.Ticker{Store: kit.Store, Platform: kit.Store, Jobs: kit.Jobs, Clock: deps.Clock, Holder: app.Holder("api"),
-		Schedules: outbox.PlatformSchedules, Dispatcher: outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}}
+		Schedules: outbox.PlatformSchedules, Dispatcher: *d.Outbox}
 	s.HandleFunc("POST /internal/tick", func(w http.ResponseWriter, r *http.Request) {
 		if kit.Tokens.Verify(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), "scheduler") != nil {
 			http.Error(w, "only the Scheduler may call the tick", http.StatusForbidden)

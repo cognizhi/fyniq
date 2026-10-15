@@ -246,6 +246,18 @@ type FyniqSuperAdmin struct {
 	RemovedAt *time.Time
 }
 
+type FyniqSuperAdminGrant struct {
+	CodeHash  []byte
+	Kind      string
+	UserID    *uuid.UUID
+	CreatedBy *uuid.UUID
+	IssuedBy  *string
+	CreatedAt time.Time
+	ExpiresAt *time.Time
+	UsedAt    *time.Time
+	UsedBy    *uuid.UUID
+}
+
 type FyniqTenantDirectory struct {
 	OrganisationID uuid.UUID
 	CreatedAt      time.Time

@@ -19,11 +19,13 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/pgtest"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 )
 
@@ -85,7 +87,8 @@ func newEnv(t *testing.T) *env {
 	e := &env{t: t, store: store, books: porttest.NewBooks(t, store, fmt.Sprintf("API %d Pte Ltd", orgs)),
 		clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)), tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}}
 	mux := http.NewServeMux()
-	e.api = New(mux, Deps{Store: store, Installation: store, Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test"})
+	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: local.NewMemory(), Clock: e.clock},
+		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test"})
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e

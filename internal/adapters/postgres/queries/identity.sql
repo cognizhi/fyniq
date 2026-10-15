@@ -37,3 +37,35 @@ SELECT a.id, a.membership_id, a.role, a.expires_at, a.revoked_at
  WHERE m.user_id = sqlc.arg(user_id) AND m.status = 'active' AND a.revoked_at IS NULL
    AND (a.expires_at IS NULL OR a.expires_at > sqlc.arg(now))
  ORDER BY a.role;
+
+-- name: InstallationOrg :one
+SELECT coalesce(fyniq.installation_org(), '00000000-0000-0000-0000-000000000000')::uuid AS organisation_id;
+
+-- name: SuperAdminForIdentity :one
+SELECT coalesce(fyniq.super_admin_for_identity(sqlc.arg(issuer)::text, sqlc.arg(subject)::text), '00000000-0000-0000-0000-000000000000')::uuid AS user_id;
+
+-- name: CountSuperAdmins :one
+SELECT fyniq.count_super_admins()::integer AS active;
+
+-- name: InviteSuperAdmin :exec
+SELECT fyniq.invite_super_admin(sqlc.arg(by_user)::uuid, sqlc.arg(code_hash)::bytea, sqlc.arg(now)::timestamptz, sqlc.arg(expires_at)::timestamptz);
+
+-- name: SetRecoveryCodes :exec
+SELECT fyniq.set_recovery_codes(sqlc.arg(user_id)::uuid, sqlc.arg(code_hashes)::bytea[], sqlc.arg(now)::timestamptz);
+
+-- name: ConfirmSuperAdminRecovery :exec
+SELECT fyniq.confirm_super_admin_recovery(sqlc.arg(by_user)::uuid, sqlc.arg(for_user)::uuid, sqlc.arg(code_hash)::bytea,
+  sqlc.arg(now)::timestamptz, sqlc.arg(expires_at)::timestamptz);
+
+-- name: IssueDeploymentRecovery :exec
+SELECT fyniq.issue_deployment_recovery(sqlc.arg(user_id)::uuid, sqlc.arg(code_hash)::bytea, sqlc.arg(operators)::text,
+  sqlc.arg(now)::timestamptz, sqlc.arg(expires_at)::timestamptz);
+
+-- name: AcceptSuperAdminInvitation :one
+SELECT fyniq.accept_super_admin_invitation(sqlc.arg(code_hash)::bytea, sqlc.arg(display_name)::text, sqlc.arg(issuer)::text,
+  sqlc.arg(subject)::text, sqlc.arg(now)::timestamptz)::uuid AS user_id;
+
+-- name: RecoverSuperAdmin :one
+SELECT r.recovered::uuid AS user_id, r.via::text AS via, r.removed_subjects::text[] AS removed_subjects
+  FROM fyniq.recover_super_admin(sqlc.narg(recovery_hash)::bytea, sqlc.arg(confirmation_hash)::bytea, sqlc.arg(issuer)::text,
+       sqlc.arg(subject)::text, sqlc.arg(now)::timestamptz) AS r;

@@ -35,6 +35,7 @@ type SetupResult struct {
 	UserID                     string `json:"user_id" format:"uuid" doc:"Your user: the Super admin." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	OrganisationID             string `json:"organisation_id" format:"uuid" doc:"The first organisation, of which you are the Owner." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"`
 	InstallationOrganisationID string `json:"installation_organisation_id" format:"uuid" doc:"The installation's own audit trail." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d03"`
+	RecoveryCodes
 }
 
 type setupStatusOutput struct{ Body SetupStatus }
@@ -60,8 +61,9 @@ func registerSetup(a *API) {
 		OperationID: "completeSetup", Method: http.MethodPost, Path: "/v1/setup", Tags: []string{"Installation"}, DefaultStatus: http.StatusCreated,
 		Summary: "Complete first-run setup",
 		Description: "Claims a new installation with the one-time setup code created at deployment (FR-ADM-06). You become the Super admin " +
-			"and the Owner of the first organisation; the installation's own audit trail is created with it. Side effects: your user and " +
-			"sign-in identity, the Super admin, two organisations, your membership and role, audit events. Works once: a wrong or used " +
+			"and the Owner of the first organisation, and receive your ten recovery codes, shown once (open question 36); the installation's " +
+			"own audit trail is created with it. Side effects: your user and sign-in identity, the Super admin and their recovery codes, two " +
+			"organisations, your membership and role, audit events. Works once: a wrong or used " +
 			"code changes nothing. Needs a person signed in to Fyniq; an OAuth client or the AI is refused. It takes no Idempotency-Key: " +
 			"the code itself makes it one-time.",
 	}, []string{CodeSetupRefused, CodeSessionRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeUnavailable, storage.CodeAmount},
@@ -74,9 +76,11 @@ func registerSetup(a *API) {
 				return nil, problem(CodeSessionRequired, "First-run setup needs a person signed in to Fyniq, not an OAuth client or the AI.",
 					"Sign in to Fyniq in the browser and complete the setup there.")
 			}
+			codes, hashes := setupcode.NewSet(setupcode.RecoveryCodes)
 			res, err := a.deps.Installation.CompleteSetup(ctx, storage.NewSetup{CodeHash: setupcode.Hash(in.Body.SetupCode),
 				DisplayName: in.Body.DisplayName, Issuer: p.Issuer, Subject: p.Subject,
-				OrganisationName: in.Body.Organisation.Name, BaseCurrency: in.Body.Organisation.BaseCurrency})
+				OrganisationName: in.Body.Organisation.Name, BaseCurrency: in.Body.Organisation.BaseCurrency,
+				RecoveryCodeHashes: hashes, Now: a.deps.Clock.Now()})
 			if storage.CodeOf(err) == storage.CodeSetup {
 				a.deps.Log.Warn("api.setup.refused", "request_id", requestID(ctx)) // never the code
 				return nil, problem(CodeSetupRefused, "The setup code is not valid, or this installation is set up already.",
@@ -86,6 +90,6 @@ func registerSetup(a *API) {
 				return nil, err
 			}
 			return &completeSetupOutput{Body: SetupResult{UserID: res.UserID.String(), OrganisationID: res.OrganisationID.String(),
-				InstallationOrganisationID: res.InstallationOrganisationID.String()}}, nil
+				InstallationOrganisationID: res.InstallationOrganisationID.String(), RecoveryCodes: recoveryCodes(codes)}}, nil
 		})
 }

@@ -34,6 +34,10 @@ const (
 	// Setup is first-run setup (FR-ADM-06): not an Appendix D row either. Its status is public; completing
 	// it needs the one-time setup code and a person signed in, never the AI.
 	Setup Capability = "(installation setup)"
+	// SuperAdmins are the installation's Super admins and their one-time codes (FR-ADM-06/07/09): not
+	// an Appendix D row. Who may act is the database's record of Super admins, step-up and the codes;
+	// never the AI.
+	SuperAdmins Capability = "(Super admins)"
 )
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
@@ -67,7 +71,8 @@ type Policy struct {
 	// Note is what the policy does not enforce yet and where it will, stated in the contract.
 	Note string
 	// Public operations need no credential at all; NoOrganisation ones need a principal but no
-	// organisation. Only the setup operations are either (a test keeps it so).
+	// organisation. Only the installation's operations (setup, Super admins) are either (a test keeps
+	// it so).
 	Public, NoOrganisation bool
 }
 
@@ -93,9 +98,27 @@ var (
 		Note: "Needs the one-time setup code and a first-party sign-in; an OAuth client or the AI is refused."}
 )
 
+const superAdminNote = "Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. " +
+	"P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1)."
+
+var (
+	CreateSuperAdminInvitation = Policy{Operation: "createSuperAdminInvitation", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+		Note: superAdminNote}
+	AcceptSuperAdminInvitation = Policy{Operation: "acceptSuperAdminInvitation", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+		Note: "Needs a valid invitation and a person signed in to Fyniq; an OAuth client or the AI is refused."}
+	ReplaceRecoveryCodes = Policy{Operation: "replaceSuperAdminRecoveryCodes", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+		Note: superAdminNote}
+	ConfirmSuperAdminRecovery = Policy{Operation: "confirmSuperAdminRecovery", Capability: SuperAdmins, Need: Approve, NoOrganisation: true,
+		Note: superAdminNote + " The other Super admin confirms; nobody confirms their own recovery."}
+	RecoverSuperAdmin = Policy{Operation: "recoverSuperAdmin", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+		Note: "Needs two proofs (SEC-35): a recovery code with the other Super admin's confirmation, or the deployment's two-person recovery; " +
+			"and a person signed in to Fyniq. An OAuth client or the AI is refused."}
+)
+
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, ListAccounts, GetAccount, CreateJournal, GetJournal, PostJournal, ReverseJournal,
-	GetSetupStatus, CompleteSetup)
+	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
+	ConfirmSuperAdminRecovery, RecoverSuperAdmin)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
@@ -123,9 +146,9 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 	if p.Operation == "" {
 		return Decision{Reason: "the operation has no policy"}
 	}
-	if p.Capability == Setup { // the setup code and a person's sign-in decide; the AI never sets up
+	if p.Capability == Setup || p.Capability == SuperAdmins { // the codes, the database and a person's sign-in decide
 		if ai {
-			return Decision{Reason: "the AI cannot set up the installation"}
+			return Decision{Reason: "the AI cannot set up the installation or change its Super admins"}
 		}
 		return Decision{Allowed: true, Right: p.Need}
 	}

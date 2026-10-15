@@ -46,6 +46,7 @@ type UnitOfWork interface {
 	Balances() Balances
 	Audit() Audit
 	Members() Members
+	SuperAdmins() SuperAdmins
 	Idempotency() Idempotency
 	Outbox() Outbox
 	Sweeping() Sweeping
@@ -324,15 +325,17 @@ const (
 	CodeAccountFixed   = "STORAGE-ACCOUNT-01"
 	CodeAccountTree    = "STORAGE-ACCOUNT-02"
 	CodeOrganisation   = "STORAGE-ORG-01"
-	CodeDocument       = "STORAGE-DOC-01"       // a document's type cannot change, or its version go back
-	CodeDocumentStatus = "STORAGE-DOC-02"       // a document cannot move to that status
-	CodeAudit          = "STORAGE-AUDIT-01"     // the audit trail cannot change, or a change has no audit event
-	CodeOutbox         = "STORAGE-OUTBOX-01"    // an outbox row cannot change what it is, or move to that state
-	CodeSetup          = "STORAGE-SETUP-01"     // the setup code is not valid, or setup is done
-	CodeMembership     = "STORAGE-MEMBER-01"    // a membership or role assignment cannot be made or changed that way
-	CodeDuplicate      = "STORAGE-DUPLICATE-01" // posting identity, account code or reversal already used
-	CodeRetry          = "STORAGE-RETRY-01"     // deadlock or serialisation failure: retry with the same key
-	CodeLockTimeout    = "STORAGE-LOCK-01"      // waited longer than the lock timeout (ENG-47)
+	CodeDocument       = "STORAGE-DOC-01"        // a document's type cannot change, or its version go back
+	CodeDocumentStatus = "STORAGE-DOC-02"        // a document cannot move to that status
+	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
+	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
+	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done
+	CodeMembership     = "STORAGE-MEMBER-01"     // a membership or role assignment cannot be made or changed that way
+	CodeSuperAdmin     = "STORAGE-SUPERADMIN-01" // at most two Super admins in P0, never none; removed, never changed
+	CodeGrant          = "STORAGE-GRANT-01"      // an invitation or recovery code is not valid, used or expired
+	CodeDuplicate      = "STORAGE-DUPLICATE-01"  // posting identity, account code or reversal already used
+	CodeRetry          = "STORAGE-RETRY-01"      // deadlock or serialisation failure: retry with the same key
+	CodeLockTimeout    = "STORAGE-LOCK-01"       // waited longer than the lock timeout (ENG-47)
 	CodeRevision       = "STORAGE-REV-01"
 	CodeInvalid        = "STORAGE-INPUT-01" // the request itself is malformed
 	CodeStorageFailure = "STORAGE-FAILURE-01"

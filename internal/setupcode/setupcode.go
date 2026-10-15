@@ -1,6 +1,7 @@
-// Package setupcode makes and reads the one-time first-run setup code (FR-ADM-06): 128 random bits as
-// 26 base-32 characters, shown in groups for typing. Only its SHA-256 is stored; the code is printed
-// once, at deployment, and never logged.
+// Package setupcode makes and reads one-time codes: the first-run setup code (FR-ADM-06), and the
+// Super admins' invitations, recovery codes and recovery confirmations (FR-ADM-09): 128 random bits as
+// 26 base-32 characters, shown in groups for typing. Only a code's SHA-256 is stored; the code is shown
+// once and never logged.
 package setupcode
 
 import (
@@ -27,4 +28,16 @@ func Hash(typed string) []byte {
 	clean := strings.NewReplacer("-", "", " ", "", "\t", "").Replace(strings.ToUpper(strings.TrimSpace(typed)))
 	sum := sha256.Sum256([]byte(clean))
 	return sum[:]
+}
+
+// RecoveryCodes is how many printed recovery codes a Super admin keeps (open question 36).
+const RecoveryCodes = 10
+
+// NewSet returns n new codes, grouped for display, and their hashes.
+func NewSet(n int) (display []string, hashes [][]byte) {
+	for range n {
+		d, h := New()
+		display, hashes = append(display, d), append(hashes, h)
+	}
+	return display, hashes
 }

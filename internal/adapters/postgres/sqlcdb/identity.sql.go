@@ -12,6 +12,32 @@ import (
 	"github.com/google/uuid"
 )
 
+const acceptSuperAdminInvitation = `-- name: AcceptSuperAdminInvitation :one
+SELECT fyniq.accept_super_admin_invitation($1::bytea, $2::text, $3::text,
+  $4::text, $5::timestamptz)::uuid AS user_id
+`
+
+type AcceptSuperAdminInvitationParams struct {
+	CodeHash    []byte
+	DisplayName string
+	Issuer      string
+	Subject     string
+	Now         time.Time
+}
+
+func (q *Queries) AcceptSuperAdminInvitation(ctx context.Context, arg AcceptSuperAdminInvitationParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, acceptSuperAdminInvitation,
+		arg.CodeHash,
+		arg.DisplayName,
+		arg.Issuer,
+		arg.Subject,
+		arg.Now,
+	)
+	var user_id uuid.UUID
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
 const claimSetup = `-- name: ClaimSetup :one
 SELECT fyniq.claim_setup($1::bytea, $2::text, $3::text, $4::text)::uuid AS user_id
 `
@@ -33,6 +59,41 @@ func (q *Queries) ClaimSetup(ctx context.Context, arg ClaimSetupParams) (uuid.UU
 	var user_id uuid.UUID
 	err := row.Scan(&user_id)
 	return user_id, err
+}
+
+const confirmSuperAdminRecovery = `-- name: ConfirmSuperAdminRecovery :exec
+SELECT fyniq.confirm_super_admin_recovery($1::uuid, $2::uuid, $3::bytea,
+  $4::timestamptz, $5::timestamptz)
+`
+
+type ConfirmSuperAdminRecoveryParams struct {
+	ByUser    uuid.UUID
+	ForUser   uuid.UUID
+	CodeHash  []byte
+	Now       time.Time
+	ExpiresAt time.Time
+}
+
+func (q *Queries) ConfirmSuperAdminRecovery(ctx context.Context, arg ConfirmSuperAdminRecoveryParams) error {
+	_, err := q.db.Exec(ctx, confirmSuperAdminRecovery,
+		arg.ByUser,
+		arg.ForUser,
+		arg.CodeHash,
+		arg.Now,
+		arg.ExpiresAt,
+	)
+	return err
+}
+
+const countSuperAdmins = `-- name: CountSuperAdmins :one
+SELECT fyniq.count_super_admins()::integer AS active
+`
+
+func (q *Queries) CountSuperAdmins(ctx context.Context) (int32, error) {
+	row := q.db.QueryRow(ctx, countSuperAdmins)
+	var active int32
+	err := row.Scan(&active)
+	return active, err
 }
 
 const getMembershipByUser = `-- name: GetMembershipByUser :one
@@ -128,6 +189,62 @@ func (q *Queries) InsertRoleAssignment(ctx context.Context, arg InsertRoleAssign
 	return i, err
 }
 
+const installationOrg = `-- name: InstallationOrg :one
+SELECT coalesce(fyniq.installation_org(), '00000000-0000-0000-0000-000000000000')::uuid AS organisation_id
+`
+
+func (q *Queries) InstallationOrg(ctx context.Context) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, installationOrg)
+	var organisation_id uuid.UUID
+	err := row.Scan(&organisation_id)
+	return organisation_id, err
+}
+
+const inviteSuperAdmin = `-- name: InviteSuperAdmin :exec
+SELECT fyniq.invite_super_admin($1::uuid, $2::bytea, $3::timestamptz, $4::timestamptz)
+`
+
+type InviteSuperAdminParams struct {
+	ByUser    uuid.UUID
+	CodeHash  []byte
+	Now       time.Time
+	ExpiresAt time.Time
+}
+
+func (q *Queries) InviteSuperAdmin(ctx context.Context, arg InviteSuperAdminParams) error {
+	_, err := q.db.Exec(ctx, inviteSuperAdmin,
+		arg.ByUser,
+		arg.CodeHash,
+		arg.Now,
+		arg.ExpiresAt,
+	)
+	return err
+}
+
+const issueDeploymentRecovery = `-- name: IssueDeploymentRecovery :exec
+SELECT fyniq.issue_deployment_recovery($1::uuid, $2::bytea, $3::text,
+  $4::timestamptz, $5::timestamptz)
+`
+
+type IssueDeploymentRecoveryParams struct {
+	UserID    uuid.UUID
+	CodeHash  []byte
+	Operators string
+	Now       time.Time
+	ExpiresAt time.Time
+}
+
+func (q *Queries) IssueDeploymentRecovery(ctx context.Context, arg IssueDeploymentRecoveryParams) error {
+	_, err := q.db.Exec(ctx, issueDeploymentRecovery,
+		arg.UserID,
+		arg.CodeHash,
+		arg.Operators,
+		arg.Now,
+		arg.ExpiresAt,
+	)
+	return err
+}
+
 const listLiveRoles = `-- name: ListLiveRoles :many
 SELECT a.id, a.membership_id, a.role, a.expires_at, a.revoked_at
   FROM fyniq.role_assignment a JOIN fyniq.user_membership m ON m.organisation_id = a.organisation_id AND m.id = a.membership_id
@@ -175,6 +292,39 @@ func (q *Queries) ListLiveRoles(ctx context.Context, arg ListLiveRolesParams) ([
 	return items, nil
 }
 
+const recoverSuperAdmin = `-- name: RecoverSuperAdmin :one
+SELECT r.recovered::uuid AS user_id, r.via::text AS via, r.removed_subjects::text[] AS removed_subjects
+  FROM fyniq.recover_super_admin($1::bytea, $2::bytea, $3::text,
+       $4::text, $5::timestamptz) AS r
+`
+
+type RecoverSuperAdminParams struct {
+	RecoveryHash     []byte
+	ConfirmationHash []byte
+	Issuer           string
+	Subject          string
+	Now              time.Time
+}
+
+type RecoverSuperAdminRow struct {
+	UserID          uuid.UUID
+	Via             string
+	RemovedSubjects []string
+}
+
+func (q *Queries) RecoverSuperAdmin(ctx context.Context, arg RecoverSuperAdminParams) (RecoverSuperAdminRow, error) {
+	row := q.db.QueryRow(ctx, recoverSuperAdmin,
+		arg.RecoveryHash,
+		arg.ConfirmationHash,
+		arg.Issuer,
+		arg.Subject,
+		arg.Now,
+	)
+	var i RecoverSuperAdminRow
+	err := row.Scan(&i.UserID, &i.Via, &i.RemovedSubjects)
+	return i, err
+}
+
 const revokeRoleAssignment = `-- name: RevokeRoleAssignment :one
 UPDATE fyniq.role_assignment SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL
 RETURNING id, membership_id, role
@@ -191,6 +341,21 @@ func (q *Queries) RevokeRoleAssignment(ctx context.Context, id uuid.UUID) (Revok
 	var i RevokeRoleAssignmentRow
 	err := row.Scan(&i.ID, &i.MembershipID, &i.Role)
 	return i, err
+}
+
+const setRecoveryCodes = `-- name: SetRecoveryCodes :exec
+SELECT fyniq.set_recovery_codes($1::uuid, $2::bytea[], $3::timestamptz)
+`
+
+type SetRecoveryCodesParams struct {
+	UserID     uuid.UUID
+	CodeHashes [][]byte
+	Now        time.Time
+}
+
+func (q *Queries) SetRecoveryCodes(ctx context.Context, arg SetRecoveryCodesParams) error {
+	_, err := q.db.Exec(ctx, setRecoveryCodes, arg.UserID, arg.CodeHashes, arg.Now)
+	return err
 }
 
 const setSetupCode = `-- name: SetSetupCode :exec
@@ -211,6 +376,22 @@ func (q *Queries) SetupDone(ctx context.Context) (bool, error) {
 	var done bool
 	err := row.Scan(&done)
 	return done, err
+}
+
+const superAdminForIdentity = `-- name: SuperAdminForIdentity :one
+SELECT coalesce(fyniq.super_admin_for_identity($1::text, $2::text), '00000000-0000-0000-0000-000000000000')::uuid AS user_id
+`
+
+type SuperAdminForIdentityParams struct {
+	Issuer  string
+	Subject string
+}
+
+func (q *Queries) SuperAdminForIdentity(ctx context.Context, arg SuperAdminForIdentityParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, superAdminForIdentity, arg.Issuer, arg.Subject)
+	var user_id uuid.UUID
+	err := row.Scan(&user_id)
+	return user_id, err
 }
 
 const userForIdentity = `-- name: UserForIdentity :one

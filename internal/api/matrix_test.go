@@ -51,6 +51,25 @@ var matrixCalls = map[string]matrixCall{
 		return e.call(http.MethodPost, "/v1/setup", tok, map[string]any{"setup_code": "NEVER-A-VALID-SETUP-CODE-0",
 			"display_name": "Matrix", "organisation": map[string]any{"name": "Matrix Pte Ltd", "base_currency": "SGD"}}), nil
 	},
+	// The Super admins' operations: no matrix principal is a Super admin in the database and no code
+	// is valid, so allowed means the API looked past the policy (a refused code, or its Super admin
+	// check), refused means the policy's 403.
+	"createSuperAdminInvitation": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/super-admins/invitations", tok, nil), nil
+	},
+	"acceptSuperAdminInvitation": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/super-admins", tok, map[string]any{"invitation_code": "NEVER-A-VALID-INVITATION-0", "display_name": "Matrix"}), nil
+	},
+	"replaceSuperAdminRecoveryCodes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/super-admins/recovery-codes", tok, nil), nil
+	},
+	"confirmSuperAdminRecovery": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/super-admins/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01/recovery-confirmations", tok, nil), nil
+	},
+	"recoverSuperAdmin": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/super-admins/recovery", tok, map[string]any{"recovery_code": "NEVER-A-VALID-RECOVERY-CODE-0",
+			"confirmation_code": "NEVER-A-VALID-CONFIRMATION-0"}), nil
+	},
 	"reverseJournal": func(e *env, tok string) (response, func() bool) {
 		id, tag := e.postedJournal("10.00")
 		r := e.call(http.MethodPost, "/v1/journals/"+id+"/reverse", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
@@ -67,7 +86,7 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 	switch {
 	case p.Public:
 		return true, false
-	case p.Capability == authz.Setup: // any person; never the AI
+	case p.Capability == authz.Setup || p.Capability == authz.SuperAdmins: // any person; never the AI
 		return role != authz.AI, false
 	}
 	col := authz.Column(role)
@@ -116,13 +135,14 @@ func TestAuthorisationMatrix(t *testing.T) {
 		for _, op := range slices.Sorted(maps.Keys(policies)) {
 			want, _ := expected(t, rows, role, policies[op])
 			r, unchanged := matrixCalls[op](e, tok)
+			beyondPolicy := r.Status == http.StatusForbidden && (r.problemCode() == CodeNotSuperAdmin || r.problemCode() == CodeStepUpRequired)
 			switch {
-			case want && policies[op].NoOrganisation && (r.Status == http.StatusUnauthorized || r.Status == http.StatusForbidden):
+			case want && policies[op].NoOrganisation && (r.Status == http.StatusUnauthorized || (r.Status == http.StatusForbidden && !beyondPolicy)):
 				t.Errorf("%s × %s: allowed, the API answered %d %s", role, op, r.Status, r.problemCode())
 			case want && !policies[op].NoOrganisation && (r.Status < 200 || r.Status > 299):
 				t.Errorf("%s × %s: Appendix D allows it, the API answered %d %s", role, op, r.Status, r.problemCode())
-			case !want && r.Status != http.StatusForbidden:
-				t.Errorf("%s × %s: Appendix D refuses it, the API answered %d", role, op, r.Status)
+			case !want && (r.Status != http.StatusForbidden || beyondPolicy):
+				t.Errorf("%s × %s: Appendix D refuses it, the API answered %d %s", role, op, r.Status, r.problemCode())
 			case !want && unchanged != nil && !unchanged():
 				t.Errorf("%s × %s: refused, but the record changed", role, op)
 			}

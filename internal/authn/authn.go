@@ -8,6 +8,7 @@ package authn
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -42,6 +43,19 @@ type Principal struct {
 	// Scopes are what an OAuth token was granted (AI-37); empty for a first-party session. Mapping
 	// scopes to operations arrives with the scope catalogue in P1; until then roles decide.
 	Scopes []string
+	// StepUpAt is when the person last passed step-up authentication in this session (FR-ADM-07;
+	// passkey or TOTP from P1, FR-ADM-02, SEC-01); zero when never. Only a session has one. Set by
+	// the authenticator: the release build sets it with the SignIn port, the local build from the dev
+	// token.
+	StepUpAt time.Time
+}
+
+// StepUpWindow is how recent a step-up must be for an operation that needs one.
+const StepUpWindow = 5 * time.Minute
+
+// SteppedUp reports whether the principal is a session that passed step-up within StepUpWindow of now.
+func (p Principal) SteppedUp(now time.Time) bool {
+	return p.Via == ViaSession && !p.StepUpAt.IsZero() && !p.StepUpAt.After(now) && now.Sub(p.StepUpAt) <= StepUpWindow
 }
 
 // AI reports whether the principal is the AI acting for its subject (AI-34).

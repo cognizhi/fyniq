@@ -11,8 +11,9 @@ owner: Administrator
 checks:
   - frequency: CI
     status: running
-    how: "test TestFirstRunSetup"
-    evidence: "setup-wizard tests (no code, wrong code, two at once, reused code, a new code after setup, OAuth clients and the AI refused); CI artefact test-report (90 days)"
+    how: "make test"
+    evidence: "TestFirstRunSetup, the setup-wizard tests (no code, wrong code, two at once, reused code, a new code after setup, OAuth clients and the AI refused), and TestSuperAdmins, the Super admin change tests (step-up, OAuth clients and the AI refused, at most two, never none, two-proof recovery, deployment recovery, every change in the installation's trail, no code in a log); CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "p0-identity-oauth-first-run (the nightly count of Super admins, with the second Super admin)"
+    status: running
+    how: "job superadmins.verify"
+    evidence: "the night's compliance.evidence record (compliance/evidence/<date>/ in the evidence store); control.check.failed in the installation's trail when no Super admin can sign in"
