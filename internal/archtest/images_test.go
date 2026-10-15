@@ -144,7 +144,7 @@ func TestComposeHardensOurServices(t *testing.T) {
 	}
 	ours := 0
 	for name, s := range compose.Services {
-		if !strings.HasPrefix(s.Image, "fyniq-") {
+		if !strings.HasPrefix(s.Image, "fyniq-") && !strings.HasPrefix(s.Image, "oryd/hydra:") { // ours, and the OAuth server
 			continue
 		}
 		ours++
@@ -158,7 +158,7 @@ func TestComposeHardensOurServices(t *testing.T) {
 				name, s.ReadOnly, s.User, s.CapDrop, s.SecurityOpt, s.Tmpfs, s.Volumes)
 		}
 	}
-	if ours < 8 {
-		t.Fatalf("only %d of our services in the local stack", ours)
+	if ours < 10 {
+		t.Fatalf("only %d of our services (and the OAuth server's) in the local stack", ours)
 	}
 }

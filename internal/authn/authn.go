@@ -1,7 +1,8 @@
-// Package authn says who is calling the API: the principal behind a bearer token. Sign-in, the
-// OAuth server and memberships arrive with p0-identity-oauth-first-run (ADR-T3); until then the
-// release build refuses every token, and the local build accepts the local issuer's dev tokens
-// (internal/adapters/local), which carry the principal's organisation and roles themselves.
+// Package authn says who is calling the API: the principal behind a bearer token. The release build
+// refuses every token until memberships and the SignIn port arrive (p0-identity-oauth-first-run); the
+// local build accepts the local issuer's dev tokens (internal/adapters/local) and, when the OAuth
+// server is configured, Hydra's access tokens for the API's audience (Introspector), never one for
+// the other.
 package authn
 
 import (
@@ -28,6 +29,9 @@ type Principal struct {
 	Class        string       // user, integration or agent
 	Organisation uuid.UUID    // the organisation the session is in; Nil outside any
 	Roles        []authz.Role // the subject's roles in that organisation
+	// Scopes are what an OAuth token was granted (AI-37); empty for a first-party session. Mapping
+	// scopes to operations arrives with the scope catalogue in P1; until then roles decide.
+	Scopes []string
 }
 
 // AI reports whether the principal is the AI acting for its subject (AI-34).

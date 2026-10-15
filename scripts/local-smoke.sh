@@ -33,6 +33,10 @@ doc=$(curl -fsS "$origin/api/v1/openapi.json") || fail "no API document at $orig
 python3 -c 'import json,sys; d=json.loads(sys.argv[1]); assert "/v1/journals" in d["paths"], list(d["paths"])' "$doc" \
   || fail "the API document lacks the journals"
 
+discovery=$(curl -fsS "$origin/oauth/.well-known/openid-configuration") || fail "the OAuth server does not answer at $origin/oauth/"
+python3 -c 'import json,sys; d=json.loads(sys.argv[1]); assert d["issuer"]==sys.argv[2]+"/oauth/", d["issuer"]; assert "S256" in d["code_challenge_methods_supported"], d' \
+  "$discovery" "$origin" || fail "the OAuth server's discovery is wrong: $discovery"
+
 headers=$(curl -sS -o /dev/null -D - "$origin/api/v1/organisation")
 grep -q "^HTTP/1.1 401" <<<"$headers" || fail "an unauthenticated call was not refused with 401: $headers"
 grep -qi "^content-type: application/problem+json" <<<"$headers" || fail "the refusal is not problem details: $headers"

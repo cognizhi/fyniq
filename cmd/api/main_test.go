@@ -20,6 +20,9 @@ import (
 var infrastructure = []string{
 	"GET /healthz", "GET /readyz", "GET /version", "POST /internal/tick",
 	"GET /v1/openapi.json", "GET /v1/openapi.yaml", "GET /v1/openapi-3.0.json", "GET /v1/openapi-3.0.yaml",
+	// The OAuth server's login and consent pages (ADR-T3): browser steps of the authorisation flow, not
+	// API operations.
+	"GET /auth/login", "GET /auth/consent", "POST /auth/consent",
 }
 
 // Every route the API serves is a documented operation or named infrastructure: no private
@@ -27,6 +30,7 @@ var infrastructure = []string{
 // req: QA-API-03
 func TestEveryRouteIsDocumented(t *testing.T) {
 	t.Setenv("FYNIQ_TICK_INTERVAL", "off")
+	t.Setenv("FYNIQ_OAUTH_ADMIN_URL", "http://127.0.0.1:9") // registers the login and consent pages in the local build
 	t.Setenv("FYNIQ_DATA_DIR", t.TempDir())
 	s := httpserver.New(version.Info{Service: "api"})
 	if err := routes(s, app.Deps{Clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC))}); err != nil {
