@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Check every commit message in a git range with the commit-msg hook (PRD-001 REL-01).
+# req: REL-01
+# req: CTL-CHG-10
 # Usage: scripts/check-commits.sh <range>     e.g. origin/main..HEAD
 set -euo pipefail
 range="${1:?usage: check-commits.sh <git range>}"

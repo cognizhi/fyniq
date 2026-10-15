@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -24,6 +26,14 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"idempotency.purge": func(ctx context.Context) error {
 			_, err := PurgeIdempotencyKeys(ctx, k.Store, clock.Now())
+			return err
+		},
+		"ledger.verify": func(ctx context.Context) error {
+			_, err := balance.VerifyAll(ctx, k.Store)
+			return err
+		},
+		"compliance.evidence": func(ctx context.Context) error {
+			_, err := compliance.RecordEvidence(ctx, k.Store, k.Blobs, clock.Now())
 			return err
 		},
 	}

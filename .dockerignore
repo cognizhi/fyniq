@@ -6,6 +6,10 @@
 !internal/
 !db/embed.go
 !db/migrations/
+!compliance/registry.go
+!compliance/evidence.go
+!compliance/control.schema.json
+!compliance/controls/
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml

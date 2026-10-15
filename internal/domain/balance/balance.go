@@ -6,6 +6,7 @@ package balance
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/google/uuid"
@@ -59,4 +60,49 @@ func Trial(ctx context.Context, u storage.UnitOfWork, base money.Currency, perio
 	}
 	sort.Slice(tb.Rows, func(i, j int) bool { return tb.Rows[i].AccountID.String() < tb.Rows[j].AccountID.String() })
 	return tb, nil
+}
+
+// ActionCheckFailed is the audit action of a control check that failed (PRD-001 Appendix F).
+const ActionCheckFailed = "control.check.failed"
+
+// Verification is one organisation's nightly comparison of its balances with its journal lines.
+type Verification struct {
+	Organisation uuid.UUID
+	Differences  int
+}
+
+// VerifyAll recomputes every organisation's balances from its journal lines and compares them with
+// the cache (INV-08; the nightly check of CTL-FIN-01). A difference is recorded in that organisation's
+// audit trail as control.check.failed, and the run fails: the ledger is then an incident to
+// investigate (fyniq-bug-fix), never to "fix" by rebuilding the cache unseen.
+func VerifyAll(ctx context.Context, store storage.Store) ([]Verification, error) {
+	orgs, err := store.Organisations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []Verification
+	failed := 0
+	for _, org := range orgs {
+		v := Verification{Organisation: org}
+		err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			diffs, err := u.Balances().Differences(ctx)
+			if err != nil || len(diffs) == 0 {
+				return err
+			}
+			v.Differences = len(diffs)
+			return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionCheckFailed, ObjectType: "organisation", ObjectID: org,
+				Changes: map[string][2]any{"control": {nil, "CTL-FIN-01"}, "check": {nil, "ledger.verify"}, "balance_differences": {nil, len(diffs)}}})
+		})
+		if err != nil {
+			return out, fmt.Errorf("organisation %s: %w", org, err)
+		}
+		out = append(out, v)
+		if v.Differences > 0 {
+			failed++
+		}
+	}
+	if failed > 0 {
+		return out, fmt.Errorf("%d organisation(s) whose balances differ from their journal lines (INV-08)", failed)
+	}
+	return out, nil
 }

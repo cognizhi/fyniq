@@ -12,4 +12,4 @@ checks:
   - frequency: N
     status: running
     how: "job audit.verify"
-    evidence: "verification log and heartbeat (jobs heartbeat-check)"
+    evidence: "the night's compliance.evidence record (compliance/evidence/<date>/ in the evidence store); audit.verification.completed in each organisation's trail; heartbeat"

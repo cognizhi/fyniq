@@ -12,7 +12,8 @@ checks:
   - frequency: CI
     status: running
     how: "make test"
-    evidence: "INV-01 trigger and property tests; CI log"
+    evidence: "INV-01 trigger and property tests; CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "p0-compliance-as-code (the nightly runner)"
+    status: running
+    how: "job ledger.verify"
+    evidence: "the night's compliance.evidence record (compliance/evidence/<date>/ in the evidence store); control.check.failed in the organisation's audit trail on a difference"

@@ -127,6 +127,8 @@ def check(version: str, flavours: list[str]) -> int:
 # req: NFR-IMG-01
 # req: NFR-IMG-02
 # req: DEV-07
+# req: CTL-CHG-09
+# req: CTL-CHG-08
 def self_test() -> None:
     good = {"User": "65532:65532", "Entrypoint": ["/app"]}
     if judge("api", "release", "fyniq-api:0", 5_000_000, good, ["app", "etc/passwd"], b"main"):

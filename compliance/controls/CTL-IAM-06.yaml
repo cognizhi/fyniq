@@ -12,4 +12,4 @@ checks:
   - frequency: CI
     status: running
     how: "test TestAuthorisationMatrix"
-    evidence: "authorisation matrix; CI log"
+    evidence: "authorisation matrix; CI artefact test-report (90 days)"

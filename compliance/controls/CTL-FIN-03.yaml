@@ -12,7 +12,7 @@ checks:
   - frequency: CI
     status: running
     how: "make test"
-    evidence: "INV-03 trigger tests; CI log"
+    evidence: "INV-03 trigger tests; CI artefact test-report (90 days)"
   - frequency: N
     status: planned
     arrives: "P1"

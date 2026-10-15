@@ -45,6 +45,7 @@ func run(t *testing.T, bin string, env ...string) (int, string) {
 
 // req: DEV-07
 // req: SEC-16
+// req: CTL-CHG-09
 // asvs: V13.4.2, V15.2.3
 func TestBuildFlavoursRefuseTheWrongEnvironment(t *testing.T) {
 	if testing.Short() {

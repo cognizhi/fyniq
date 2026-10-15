@@ -6,6 +6,7 @@
 //	jobs run-slot <job> <slot>   run a platform job's slot (RFC 3339) and report it to its slot and heartbeat
 //	jobs heartbeat-check         fail when the tick or a platform job has stopped beating (the absence alert)
 //	jobs outbox-after-restore    after a database restore: every unfinished outbox row waits for reconciliation
+//	jobs controls                list every check of the control registry and how it runs (the dry run)
 //
 // FYNIQ_DATABASE_URL is the worker's role; the local build defaults it.
 package main
@@ -17,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -24,12 +26,21 @@ import (
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
-const usage = "usage: jobs audit-anchor | audit-verify | run-slot <job> <slot> | heartbeat-check | outbox-after-restore"
+const usage = "usage: jobs audit-anchor | audit-verify | run-slot <job> <slot> | heartbeat-check | outbox-after-restore | controls"
 
 func main() {
 	os.Exit(app.Run("jobs", func(ctx context.Context, deps app.Deps, args []string) error {
 		if len(args) == 0 {
-			fmt.Fprintln(os.Stderr, "jobs: audit-anchor, audit-verify, run-slot, heartbeat-check, outbox-after-restore")
+			fmt.Fprintln(os.Stderr, "jobs: audit-anchor, audit-verify, run-slot, heartbeat-check, outbox-after-restore, controls")
+			return nil
+		}
+		if args[0] == "controls" { // the runner's dry run: every check of the registry, no database needed
+			plan, err := compliance.Plan()
+			if err != nil {
+				return err
+			}
+			fmt.Println("CONTROL      FRQ STATUS   OWNER          HOW, OR WHEN IT ARRIVES")
+			fmt.Println(strings.Join(plan, "\n"))
 			return nil
 		}
 		kit, err := wiring.Build(ctx, "jobs", deps.Clock)

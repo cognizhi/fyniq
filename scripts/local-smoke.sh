@@ -37,10 +37,39 @@ headers=$(curl -sS -o /dev/null -D - "$origin/api/v1/organisation")
 grep -q "^HTTP/1.1 401" <<<"$headers" || fail "an unauthenticated call was not refused with 401: $headers"
 grep -qi "^content-type: application/problem+json" <<<"$headers" || fail "the refusal is not problem details: $headers"
 
+# SEC-15 across services: synthetic NRIC/FIN numbers, a bank account number and bearer tokens go to the
+# stack in headers, the query and bodies, including a refusal the API logs with the caller's subject;
+# then no service's log may hold any of them in full. The dev token is minted with the local issuer's
+# key, which is valid nowhere else.
+# req: SEC-15
+python3 - "$origin" <<'PY' || fail "a log holds a secret, a token, an NRIC or a bank number (SEC-15)"
+import base64, hashlib, hmac, json, subprocess, sys, time, urllib.request, uuid
+origin = sys.argv[1]
+nric, fin, bank, secret = "S1234567D", "F7654321N", "123-456789-001", "sk-live_local9f8e7d6c5b4a"
+claims = {"sub": f"user-{nric}", "client": "web", "class": "user", "org": str(uuid.uuid4()), "roles": ["employee"], "exp": int(time.time()) + 600}
+msg = "fyniq-dev." + base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+token = msg + "." + base64.urlsafe_b64encode(hmac.new(b"fyniq-local-only-dev-token-key", msg.encode(), hashlib.sha256).digest()).rstrip(b"=").decode()
+body = json.dumps({"memo": f"refund {nric} to {bank} with {secret}", "lines": []}).encode()
+for auth in (f"Bearer {token}", f"Bearer {secret}", f"Bearer x.{nric}.y"):
+    req = urllib.request.Request(f"{origin}/api/v1/journals?note={fin}&account={bank}", data=body, method="POST",
+                                 headers={"Authorization": auth, "Content-Type": "application/json", "X-Customer": nric})
+    try:
+        urllib.request.urlopen(req, timeout=10)
+    except urllib.error.HTTPError as e:
+        assert e.code in (401, 403), e.code
+logs = subprocess.run(["docker", "compose", "-f", "deploy/local/compose.yaml", "--profile", "core", "logs", "--no-color"],
+                      capture_output=True, text=True, check=True).stdout
+assert "api.refused" in logs, "the refusal was not logged, so the masking was not exercised"
+leaks = [v for v in (nric, fin, bank, secret, token) if v in logs]
+if leaks:
+    print("leaked:", [v[:6] + "…" for v in leaks], file=sys.stderr)
+    sys.exit(1)
+PY
+
 unhealthy=$(docker compose -f deploy/local/compose.yaml --profile core ps --format '{{.Service}} {{.State}} {{.Health}}' \
   | awk '$1 != "migrate" && ($2 != "running" || ($3 != "" && $3 != "healthy"))')
 [ -z "$unhealthy" ] || fail "services not running and healthy: $unhealthy"
 migrated=$(docker compose -f deploy/local/compose.yaml --profile core ps -a --format '{{.Service}} {{.ExitCode}}' | awk '$1 == "migrate" {print $2}')
 [ "$migrated" = 0 ] || fail "the migrate job exited with ${migrated:-nothing}"
 
-echo "✔ QA-LOCAL-01: the stack runs from the local images with no cloud credentials; web, API, document and refusals answer through $origin"
+echo "✔ QA-LOCAL-01: the stack runs from the local images with no cloud credentials; web, API, document and refusals answer through $origin, and no log holds a secret, token, NRIC or bank number (SEC-15)"
