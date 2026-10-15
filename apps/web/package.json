@@ -15,7 +15,8 @@
   "dependencies": {
     "openapi-fetch": "0.17.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "lodash": "4.17.11"
   },
   "devDependencies": {
     "@playwright/test": "1.64.0",
