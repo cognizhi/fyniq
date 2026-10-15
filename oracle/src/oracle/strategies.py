@@ -12,9 +12,9 @@ rounding. The intent is never an expected figure; the properties use it only to 
 generator and the rules agree about which documents must post and which must not.
 
 Shapes whose rule PRD-001 leaves open are never generated, so the differential test does not hinge
-on them (see ``test/differential/README.md``): a rate on a base-currency line, a rate without its
-source, a base amount beyond 16 integer digits, a foreign line whose base amount rounds to zero,
-and a reversal dated before its document.
+on them (see ``test/differential/README.md``): a rate on a base-currency line, a base amount beyond
+16 integer digits, a foreign line whose base amount rounds to zero, and a reversal dated before its
+document. Every rate carries its source, as the format requires; no account carries a role.
 """
 
 from __future__ import annotations

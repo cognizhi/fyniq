@@ -16,8 +16,9 @@ rule below; otherwise it is rejected whole and posts no line (ENG-21 ✖):
 2. At least two lines.
 3. No line is zero.
 4. Every line posts to an existing, active, non-group (postable) account (INV-04).
-5. Every line not in the base currency has a rate and its source (ENG-13, ENG-40); a line in the base
-   currency has neither (the format says they are present only for other currencies).
+5. Every line not in the base currency has a rate (ENG-13); a line in the base currency has neither a
+   rate nor its source (ENG-03). A rate always comes with its source (ENG-40): the scenario format
+   requires it, so a rate without one makes the scenario invalid, not the journal rejected.
 6. Its base amounts fit NUMERIC(20,4) (§11.3).
 7. It balances in the base currency, summing the stored base amounts (INV-01, INV-05).
 8. When every line shares one currency, it also balances in that currency (INV-01).
@@ -148,7 +149,7 @@ class Ledger:
             if not account.active:
                 raise Rejected("inactive-account")
 
-        # Rule 5 (ENG-13, ENG-40), then RND-FX for every line not in the base currency.
+        # Rule 5 (ENG-13, ENG-03), then RND-FX for every line not in the base currency.
         posted: list[PostedLine] = []
         for line, (amount, rate) in zip(document.lines, parsed, strict=True):
             if line.currency == base:
@@ -158,8 +159,6 @@ class Ledger:
             else:
                 if rate is None:
                     raise Rejected("missing-rate")
-                if line.fx_rate_source is None:
-                    raise Rejected("missing-rate-source")
                 base_amount = money.rnd_fx(amount, rate, self.base_minor)
             # Rule 6 (§11.3): a stored base amount is NUMERIC(20,4) too.
             if base_amount.copy_abs() >= money.AMOUNT_LIMIT:

@@ -53,6 +53,7 @@ class Account:
     type: str
     group: bool
     active: bool
+    role: str | None = None  # "share-capital" (INV-13), or none
 
 
 @dataclass(frozen=True)
@@ -174,7 +175,7 @@ def scenario_from_json(data: Any) -> Scenario:
         _shape(_ACCOUNT, raw["code"], f"accounts/{i}/code")
         if raw["code"] in accounts:
             raise ScenarioError(f"accounts/{i}: the code {raw['code']!r} appears twice")
-        accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"])
+        accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"], raw.get("role"))
 
     documents: list[Document] = []
     seen: set[str] = set()

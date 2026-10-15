@@ -66,19 +66,6 @@ def test_a_foreign_line_without_a_rate_is_rejected():
 
 
 # req: QA-ENG-01
-def test_a_foreign_rate_without_its_source_is_rejected():
-    _refused(
-        journal(
-            "JNL-0001",
-            "2026-01-05",
-            line("1010", "USD", "100.00", "1.3472", source=None),
-            line("4010", "SGD", "-134.72"),
-        ),
-        "missing-rate-source",
-    )
-
-
-# req: QA-ENG-01
 def test_a_rate_on_a_base_currency_line_is_rejected():
     _refused(
         journal("JNL-0001", "2026-01-05", line("1010", "SGD", "10.00", "1"), line("4010", "SGD", "-10.00")),

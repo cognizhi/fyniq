@@ -39,7 +39,11 @@ from `cmd/seed` (2.4) and the merge gate (3.1).
 
 - Account types: asset, liability, equity, revenue, expense. Amounts are signed decimal strings
   (debit positive, credit negative) at most at the currency's minor units; `fx_rate` (at most 10
-  decimals, positive) and `fx_rate_source` are present only on lines not in the base currency.
+  decimals, positive) and `fx_rate_source` are present only on lines not in the base currency, and
+  a rate always comes with its source (PRD-001 rev 0.24).
+- An account may carry a `role`. The only role is `share-capital`, for the accounts a manual
+  journal may not post to (INV-13; 3010 and 3020 in the default chart). Until both sides refuse
+  those lines (change `p0-manual-journal-rules`), no golden or generated scenario carries a role.
 - Documents post in array order; then each reversal reverses the posted entry of its document on
   its date. Every date falls in a calendar-month period, and all periods are open.
 
@@ -51,7 +55,8 @@ There are two kinds of failure, and they must not be confused:
 runner should fail the same way). The input is not a `fyniq-scenario@1` document:
 
 - it breaks `scenario.schema.json` (a missing or extra key, a wrong type, a JSON number where a string
-  is required, a document type other than `manual_journal`, more than 4 minor units, an ID with `/`);
+  is required, a document type other than `manual_journal`, more than 4 minor units, an ID with `/`,
+  an account role other than `share-capital`, or an `fx_rate` without its `fx_rate_source`);
 - a name, ID, account code or currency code does not match its pattern as a whole string (Python's
   `re` lets `$` match before a final newline, so the oracle checks `"JNL-0001\n"` again; RE2 refuses it);
 - a JSON object repeats a key, or the JSON holds `NaN` or `Infinity`;
@@ -71,8 +76,8 @@ only when it meets every rule:
 2. At least two lines.
 3. No line is zero (in its own currency).
 4. Every account exists, is active and is not a group account (INV-04).
-5. Every line not in the base currency has `fx_rate` and `fx_rate_source`; a base-currency line has
-   neither.
+5. Every line not in the base currency has `fx_rate` (and so its source); a base-currency line has
+   neither `fx_rate` nor `fx_rate_source` (ENG-03).
 6. Every base amount has fewer than 17 integer digits (NUMERIC(20,4)).
 7. The base amounts, each computed by `RND-FX` (round(amount × rate, the base currency's minor units),
    half away from zero), sum to zero. A base-currency line's base amount is its amount.
@@ -121,7 +126,6 @@ The oracle makes these choices. The generator does **not** produce the ambiguous
 | Shape | Oracle | Generated |
 |---|---|---|
 | A rate (or rate source) on a base-currency line | Rejected (the format says they are present only for other currencies) | Not generated |
-| A rate without `fx_rate_source` | Rejected (ENG-13: a conversion needs a rate and its source) | Not generated |
 | A non-zero foreign line whose base amount rounds to zero (JPY 1 × 0.001) | Posts; the base amount is `0.00` (rule 3 is about the line's own currency) | Not generated |
 | A computed base amount of 17 or more integer digits | Rejected (it does not fit NUMERIC(20,4)) | Not generated |
 | A reversal dated before its document | Posts on its own date (every period is open) | Not generated |
