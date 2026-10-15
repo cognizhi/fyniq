@@ -126,3 +126,36 @@ func TestTheReleaseChainTakesNoDevToken(t *testing.T) {
 		t.Fatalf("an unconfigured release build: %v", err)
 	}
 }
+
+// A delegated token (open question 40, option (b)) is always the AI acting for its subject, with the
+// person's organisation and roles read now, and is refused when it lives longer than 5 minutes or its
+// subject is not a user.
+// req: AI-36
+// req: AI-34
+// asvs: V10.3.1
+func TestADelegatedTokenIsTheAIWithThePersonsRightsNow(t *testing.T) {
+	user, org := uuid.New(), uuid.New()
+	now := time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)
+	roles := []authz.Role{authz.Accountant}
+	f := &fakeOAuth{tokens: map[string]ports.Introspection{
+		"delegated": {Active: true, Subject: user.String(), ClientID: "mcp-delegation", Audiences: []string{"https://api"}, IssuedAt: now,
+			ExpiresAt: now.Add(5 * time.Minute), Claims: map[string]any{"class": "user", "roles": []any{"owner"}}},
+		"long": {Active: true, Subject: user.String(), ClientID: "mcp-delegation", Audiences: []string{"https://api"}, IssuedAt: now,
+			ExpiresAt: now.Add(time.Hour)},
+		"not-a-user": {Active: true, Subject: "someone", ClientID: "mcp-delegation", Audiences: []string{"https://api"}, IssuedAt: now,
+			ExpiresAt: now.Add(time.Minute)},
+	}}
+	in := &authn.Introspector{OAuth: f, Audience: "https://api", Clock: clock.NewFrozen(now.Add(time.Second)), Delegation: &authn.Delegation{
+		Client: "mcp-delegation",
+		Lookup: func(_ context.Context, u uuid.UUID) (uuid.UUID, []authz.Role, error) { return org, roles, nil },
+	}}
+	p, err := in.Authenticate(context.Background(), authn.Credentials{Authorization: "Bearer delegated"})
+	if err != nil || !p.AI() || p.UserID != user || p.Organisation != org || len(p.Roles) != 1 || p.Roles[0] != authz.Accountant {
+		t.Fatalf("the delegated principal: %+v, %v (claims must not count: class user, roles owner)", p, err)
+	}
+	for _, tok := range []string{"long", "not-a-user"} {
+		if _, err := in.Authenticate(context.Background(), authn.Credentials{Authorization: "Bearer " + tok}); !errors.Is(err, authn.ErrUnauthenticated) {
+			t.Errorf("%s: %v", tok, err)
+		}
+	}
+}
