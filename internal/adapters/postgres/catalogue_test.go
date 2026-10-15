@@ -13,6 +13,8 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/cognizhi/fyniq/internal/domain/money"
 )
 
 // These tests read the database catalogue, so a table, column, grant or function added by a later
@@ -367,4 +369,18 @@ SELECT p.proname || '(' || pg_get_function_arguments(p.oid) || ') → ' || pg_ge
 	section("extensions", `SELECT e.extname, n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
  WHERE e.extname <> 'plpgsql' ORDER BY 1`)
 	golden(t, "schema.golden", b.String())
+}
+
+// The money package and the database know the same currencies, with the same minor units.
+func TestTheCurrencyListMatchesTheDatabase(t *testing.T) {
+	want := money.Currencies()
+	got := map[string]int{}
+	for _, r := range rows(t, conn(t, "fyniq"), "SELECT code, minor_units FROM fyniq.currency ORDER BY code") {
+		var units int
+		_, _ = fmt.Sscan(r[1], &units)
+		got[r[0]] = units
+	}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("the database has %v; internal/domain/money has %v", got, want)
+	}
 }

@@ -2,6 +2,7 @@ package differential
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -192,6 +193,56 @@ func TestComparatorFindsAOneCentDifference(t *testing.T) {
 	oracle.TrialBalance["2026-01"]["8010"] = "0.00"
 	if err := Compare(engine, oracle); err != nil {
 		t.Errorf("equal amounts written differently: %v", err)
+	}
+}
+
+// The Go half of the shared format (task 2.1): every golden scenario passes the schema, every
+// engine result passes the result schema, and invalid scenarios are refused as the oracle refuses
+// them.
+//
+// req: QA-ENG-02
+func TestScenarioAndResultSchemas(t *testing.T) {
+	files, _ := filepath.Glob(filepath.Join(golden, "*.json"))
+	if len(files) < 3 {
+		t.Fatalf("golden scenarios: %v", files)
+	}
+	for _, f := range files {
+		b, _ := os.ReadFile(f)
+		s, err := ParseScenario(b)
+		if err != nil {
+			t.Errorf("%s: %v", filepath.Base(f), err)
+			continue
+		}
+		res := run(t, s)
+		out, _ := json.Marshal(res)
+		if err := CheckResult(out); err != nil {
+			t.Errorf("the engine's result for %s breaks result.schema.json: %v", filepath.Base(f), err)
+		}
+	}
+	// A scenario that posts nothing still gives lists, never null.
+	empty, err := ParseScenario([]byte(`{"schema":"fyniq-scenario@1","name":"empty","base_currency":"SGD","currencies":{"SGD":2},"accounts":[],"documents":[],"reversals":[]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, _ := json.Marshal(run(t, empty))
+	if err := CheckResult(out); err != nil {
+		t.Errorf("an empty scenario's result breaks result.schema.json: %v (%s)", err, out)
+	}
+	base := `{"schema":"fyniq-scenario@1","name":"x","base_currency":"SGD","currencies":{"SGD":2},` +
+		`"accounts":[{"code":"1010","type":"asset","group":false,"active":true}],"documents":[%s],"reversals":[]}`
+	doc := `{"type":"manual_journal","id":"JNL-1","version":1,"date":"%s","memo":"","lines":[]}`
+	for name, in := range map[string]string{
+		"a repeated key":           strings.Replace(fmt.Sprintf(base, ""), `"name":"x"`, `"name":"x","name":"y"`, 1),
+		"an unknown key":           strings.Replace(fmt.Sprintf(base, ""), `"name":"x"`, `"name":"x","extra":1`, 1),
+		"a date that is not real":  fmt.Sprintf(base, fmt.Sprintf(doc, "2026-02-30")),
+		"two documents with an ID": fmt.Sprintf(base, fmt.Sprintf(doc, "2026-02-01")+","+fmt.Sprintf(doc, "2026-02-02")),
+		"an undeclared base":       strings.Replace(fmt.Sprintf(base, ""), `"base_currency":"SGD"`, `"base_currency":"USD"`, 1),
+		"an amount as a number":    fmt.Sprintf(base, `{"type":"manual_journal","id":"JNL-1","version":1,"date":"2026-02-01","memo":"","lines":[{"account":"1010","currency":"SGD","amount":1}]}`),
+	} {
+		var invalid *InvalidError
+		if _, err := ParseScenario([]byte(in)); !errors.As(err, &invalid) {
+			t.Errorf("%s: want an invalid scenario, got %v", name, err)
+		}
 	}
 }
 

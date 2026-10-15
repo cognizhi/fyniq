@@ -51,6 +51,7 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | `make seed` / `reset` | Write the sample company to `.data/seed/` / delete local data and the database volume | Today |
 | `make mutation` | Mutation tests (gremlins) on money, the rounding policies and the posting engine: at least 90% efficacy per package (QA-ENG-04); part of `make ci` and its own CI job, not of `make test` | Today |
 | `make db-lint` / `sqlc` | squawk on the migrations and a check that the adapter's generated queries are current (part of `make test`) / regenerate them | Today |
+| `make differential` | The full differential run (QA-ENG-02): Hypothesis searches 1,000 generated scenarios for one where the Go engine and the oracle disagree, shrinks it and saves it as a golden case; part of `make ci` and its own CI job. A fixed-seed sample and every golden case run in `make test` | Today |
 | `make oracle-test` | The independent Python oracle's own tests (QA-ENG-01): hand-worked journals, the scenario schemas in `test/differential/`, Hypothesis properties (part of `make test`; `ORACLE_HYPOTHESIS_PROFILE=thorough` runs more examples) | Today |
 | `make test` / `test-e2e` / `evals` / `images` / `ci` | Every merge gate offline (migrations, Go in both build flavours with the database suites in Testcontainers, so Docker must run; web typecheck; the oracle; `make check`) / the Playwright smoke test / the AI evals in replay (suites arrive in P1) / build the images (`FLAVOURS=release local`) / what CI runs, in order | Today (gates grow with each P0 change) |
 

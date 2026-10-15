@@ -126,7 +126,7 @@ func RunEngine(s Scenario) (Result, error) {
 		codeOf[id] = a.Code
 	}
 
-	res := Result{Schema: ResultSchema, Name: s.Name, Rejected: []string{}, TrialBalance: map[string]map[string]string{}}
+	res := Result{Schema: ResultSchema, Name: s.Name, Entries: []Entry{}, Rejected: []string{}, TrialBalance: map[string]map[string]string{}}
 	totals := map[string]map[string]money.Money{}
 	record := func(doc, kind string, e ledger.Entry) {
 		out := Entry{Document: doc, Kind: kind, PostingDate: e.PostingDate.Format(time.DateOnly)}
@@ -148,7 +148,7 @@ func RunEngine(s Scenario) (Result, error) {
 
 	posted := map[string]ledger.Entry{}
 	for _, d := range s.Documents {
-		j, ok := journalOf(d, base)
+		j, ok := journalOf(d, base, s.Currencies)
 		if !ok || d.Type != "manual_journal" {
 			res.Rejected = append(res.Rejected, d.ID)
 			continue
@@ -187,17 +187,27 @@ func RunEngine(s Scenario) (Result, error) {
 	return res, nil
 }
 
-// journalOf reads a scenario document into the engine's form. Amounts and rates are parsed with the
-// strict rules of ENG-44; one that fails makes the document rejected, as the API would refuse it.
-func journalOf(d Document, base money.Currency) (ledger.Journal, bool) {
+// journalOf reads a scenario document into the engine's form, with the format's rules for lines
+// (test/differential/README.md): each line's currency is one the scenario declares; a base-currency
+// line has no rate, and any other line has a rate and its source; amounts and rates are parsed with
+// the strict rules of ENG-44. A line that breaks them makes the document rejected, as the API would
+// refuse it.
+func journalOf(d Document, base money.Currency, declared map[string]int) (ledger.Journal, bool) {
 	date, err := time.Parse(time.DateOnly, d.Date)
 	if err != nil {
 		return ledger.Journal{}, false
 	}
 	j := ledger.Journal{ID: stableID("document", d.ID), Version: max(d.Version, 1), Date: date, Memo: d.Memo}
 	for _, l := range d.Lines {
+		if _, ok := declared[l.Currency]; !ok {
+			return ledger.Journal{}, false
+		}
 		cur, err := money.Lookup(l.Currency)
 		if err != nil {
+			return ledger.Journal{}, false
+		}
+		isBase, hasRate := l.Currency == base.Code, l.FXRate != "" || l.FXRateSource != ""
+		if isBase && hasRate || !isBase && (l.FXRate == "" || l.FXRateSource == "") {
 			return ledger.Journal{}, false
 		}
 		amount, err := money.Parse(l.Amount, cur)
@@ -206,7 +216,7 @@ func journalOf(d Document, base money.Currency) (ledger.Journal, bool) {
 		}
 		line := ledger.JournalLine{AccountID: stableID("account", l.Account), Amount: amount}
 		if l.FXRate != "" {
-			r, err := money.ParseRate(l.FXRate, cur, base, cmp.Or(l.FXRateSource, "scenario"))
+			r, err := money.ParseRate(l.FXRate, cur, base, l.FXRateSource)
 			if err != nil {
 				return ledger.Journal{}, false
 			}

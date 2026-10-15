@@ -7,8 +7,12 @@ import (
 	"github.com/cockroachdb/apd/v3"
 )
 
-// RateScale is the most decimal places an exchange rate keeps: NUMERIC(20,10) (§11.3, ENG-11).
-const RateScale = 10
+// RateScale is the most decimal places an exchange rate keeps, and RateIntegerDigits the most digits
+// before the point: NUMERIC(20,10) (§11.3, ENG-11).
+const (
+	RateScale         = 10
+	RateIntegerDigits = 10
+)
 
 // Rate is an exchange rate: how many units of To one unit of From is worth, and where the rate
 // came from (ENG-13, ENG-40). It is always positive.
@@ -25,6 +29,11 @@ func ParseRate(s string, from, to Currency, source string) (Rate, error) {
 	d, err := parseDecimal(s, "fx_rate", RateScale, "an exchange rate")
 	if err != nil {
 		return Rate{}, err
+	}
+	if digits := int(d.NumDigits()) + int(d.Exponent); digits > RateIntegerDigits {
+		return Rate{}, &Error{Code: CodeRange, Field: "fx_rate",
+			Message: fmt.Sprintf("the exchange rate %s has %d digits before the decimal point; the most is %d", s, digits, RateIntegerDigits),
+			Fix:     "Check the rate and its direction: it is the base currency per unit of the line's currency"}
 	}
 	if d.Sign() <= 0 {
 		return Rate{}, &Error{Code: CodeRate, Field: "fx_rate", Message: fmt.Sprintf("the exchange rate %s is not positive", s),

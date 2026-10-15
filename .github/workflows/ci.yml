@@ -81,6 +81,23 @@ jobs:
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: make mutation   # QA-ENG-04: efficacy of at least 90% on money, rounding and the engine
 
+  differential:
+    name: Differential tests (make differential)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: make differential   # QA-ENG-02: 1,000 generated scenarios; a disagreement is shrunk and saved
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: shrunk-scenario
+          path: test/differential/golden/shrunk-*.json
+
   e2e:
     name: Web smoke test (make test-e2e)
     runs-on: ubuntu-latest
