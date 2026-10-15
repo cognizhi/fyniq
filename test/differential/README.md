@@ -132,6 +132,13 @@ The oracle makes these choices. The generator does **not** produce the ambiguous
 
 ## Commands
 
+The comparison itself (QA-ENG-02): `make test` runs `TestTheEngineAgreesWithTheOracle`
+(`internal/differential`), which posts every golden scenario and 60 generated with a fixed seed
+through both implementations; `make differential` lets Hypothesis search 1,000 more
+(`FYNIQ_DIFFERENTIAL_EXAMPLES`) and saves the smallest disagreeing scenario as
+`golden/shrunk-<hash>.json`, to be committed as a golden case once the cause is fixed. The engine's
+side reads scenarios with the same schemas (`schemas.go` embeds them) and runs as `cmd/scenario-run`.
+
 ```bash
 uv run --project oracle python -m oracle run <scenario.json>        # result on stdout; status 2 if invalid
 uv run --project oracle python -m oracle generate --seed <n> --count <n> --out <dir>   # <dir>/gen-<seed>-<i>.json

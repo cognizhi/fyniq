@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cockroachdb/apd/v3"
 	"pgregory.net/rapid"
 )
 
@@ -190,4 +191,19 @@ func ExampleMoney_String() {
 	m, _ := Parse("-1234.5", MustLookup("SGD"))
 	fmt.Println(m)
 	// Output: -1234.50
+}
+
+// req: ENG-44
+// req: ENG-11
+func TestRatesAndComputedAmountsStayInsideTheirColumns(t *testing.T) {
+	if _, err := ParseRate("12345678901", usd, sgd, "feed"); code(err) != CodeRange {
+		t.Errorf("an 11-digit rate: want %s (NUMERIC(20,10) holds 10 integer digits), got %v", CodeRange, err)
+	}
+	if _, err := ParseRate("1234567890.0123456789", usd, sgd, "feed"); err != nil {
+		t.Errorf("a rate at the column's limits: %v", err)
+	}
+	big, _, _ := apd.NewFromString("12345678901234567") // 17 integer digits
+	if _, err := FromRounded(big, sgd); code(err) != CodeRange {
+		t.Errorf("a computed amount of 17 integer digits: want %s, got %v", CodeRange, err)
+	}
 }

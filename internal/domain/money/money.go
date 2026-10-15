@@ -22,13 +22,14 @@ type Currency struct {
 func (c Currency) String() string { return c.Code }
 
 // The currencies Fyniq knows, the same list as the database's currency table
-// (db/migrations/000002), from the ISO 4217 list maintained by SIX.
+// (db/migrations/000002 and 000008; TestTheCurrencyListMatchesTheDatabase), from the ISO 4217 list
+// maintained by SIX.
 var currencies = func() map[string]Currency {
 	out := map[string]Currency{}
 	for code, units := range map[string]int{
-		"AUD": 2, "BHD": 3, "CAD": 2, "CHF": 2, "CNY": 2, "EUR": 2, "GBP": 2, "HKD": 2, "IDR": 2,
-		"INR": 2, "JPY": 0, "KRW": 0, "KWD": 3, "MYR": 2, "NZD": 2, "PHP": 2, "SGD": 2, "THB": 2,
-		"TWD": 2, "USD": 2, "VND": 0,
+		"AUD": 2, "BHD": 3, "CAD": 2, "CHF": 2, "CLF": 4, "CNY": 2, "EUR": 2, "GBP": 2, "HKD": 2,
+		"IDR": 2, "INR": 2, "JPY": 0, "KRW": 0, "KWD": 3, "MYR": 2, "NZD": 2, "OMR": 3, "PHP": 2,
+		"SGD": 2, "THB": 2, "TND": 3, "TWD": 2, "USD": 2, "VND": 0,
 	} {
 		out[code] = Currency{Code: code, MinorUnits: units}
 	}
@@ -185,8 +186,14 @@ func fromDecimal(d *apd.Decimal, cur Currency) Money {
 }
 
 // FromRounded stores a value a named rounding policy has already rounded to cur's minor units.
-// It refuses anything with more decimals, so it cannot be used to round.
+// It refuses anything with more decimals, so it cannot be used to round, and anything a stored amount
+// cannot hold (MaxIntegerDigits).
 func FromRounded(d *apd.Decimal, cur Currency) (Money, error) {
+	if digits := int(d.NumDigits()) + int(d.Exponent); !d.IsZero() && digits > MaxIntegerDigits {
+		return Money{}, &Error{Code: CodeRange, Field: "amount",
+			Message: fmt.Sprintf("%s has %d digits before the decimal point; a stored amount holds %d", d.Text('f'), digits, MaxIntegerDigits),
+			Fix:     "Check the amount and the rate"}
+	}
 	if -int(d.Exponent) > cur.MinorUnits {
 		var trimmed apd.Decimal
 		if _, _, err := ctx.Reduce(&trimmed, d); err != nil || -int(trimmed.Exponent) > cur.MinorUnits {

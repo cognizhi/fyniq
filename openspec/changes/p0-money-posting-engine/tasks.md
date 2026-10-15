@@ -17,5 +17,5 @@
 
 ## 3. First posting source and mutation tests
 
-- [ ] 3.1 Add the manual journal as the first posting source (draft, post, reverse); golden tests from the sample company pass, and the oracle agrees (p0-python-oracle-differential)
+- [x] 3.1 Add the manual journal as the first posting source (draft, post, reverse); golden tests from the sample company pass, and the oracle agrees (p0-python-oracle-differential)
 - [x] 3.2 Run gremlins on money, rounding and the engine in `make ci` and record reviewed survivors; verify `// req: QA-ENG-04` in the CI log, then `make check` and `make test`

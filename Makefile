@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test mutation db-lint sqlc oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test mutation differential db-lint sqlc oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -76,6 +76,10 @@ mutation: ## Mutation tests on money, rounding and the engine (QA-ENG-04): effic
 	@for p in $(MUTATION_PKGS); do echo "== $$p"; \
 	  $(MISE) gremlins unleash ./$$p --workers 4 --timeout-coefficient 6 --threshold-efficacy 90 || exit 1; done
 
+differential: ## The full differential run (QA-ENG-02): Hypothesis looks for a scenario where the engine and the oracle disagree, and saves the shrunk one as a golden case
+	@mkdir -p .data/bin && $(MISE) go build -tags local -o .data/bin/scenario-run ./cmd/scenario-run
+	@cd oracle && FYNIQ_SCENARIO_RUN=$(CURDIR)/.data/bin/scenario-run $(MISE) uv run --locked python -m pytest -q -p no:cacheprovider ../test/differential/test_engine_agrees.py
+
 oracle-test: ## Run the independent oracle's own tests: hand-worked journals, the scenario schemas, Hypothesis properties (QA-ENG-01)
 	@cd oracle && $(MISE) uv run --locked python -m pytest -q
 
@@ -96,9 +100,10 @@ images: ## Build the Go and web images (FLAVOURS="release local" by default)
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
 	@docker build -q -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
 
-ci: ## Run what CI runs, in the same order: test, mutation, images, test-e2e, evals
+ci: ## Run what CI runs, in the same order: test, mutation, differential, images, test-e2e, evals
 	@$(MAKE) --no-print-directory test
 	@$(MAKE) --no-print-directory mutation
+	@$(MAKE) --no-print-directory differential
 	@$(MAKE) --no-print-directory images
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals

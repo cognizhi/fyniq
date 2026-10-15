@@ -7,10 +7,10 @@
 
 ## 2. Differential harness
 
-- [ ] 2.1 Define the scenario JSON format, with a schema checked in both languages; verify with a round-trip test in Go and Python (Python half done: `test/differential/` schemas and README, the oracle's round-trip test)
+- [x] 2.1 Define the scenario JSON format, with a schema checked in both languages; verify with a round-trip test in Go and Python (Python half done: `test/differential/` schemas and README, the oracle's round-trip test)
 - [x] 2.2 Add `cmd/scenario-run` (local build only) so the engine reads a scenario and writes its results as JSON; verify against a golden file
 - [x] 2.3 Write the comparator that diffs the trial balance, subledgers and report figures to the cent and prints the first difference; test `// req: QA-ENG-02` plants a one-cent difference and expects a failure
-- [ ] 2.4 Generate golden data sets from `cmd/seed` (`// req: DEV-04`) and add Hypothesis strategies for many currencies, precision boundaries and reversals; a fixed-seed sample runs in `make test`, the full count in `make ci` (Python half done: `oracle/src/oracle/strategies.py` and `python -m oracle generate`)
+- [x] 2.4 Generate golden data sets from `cmd/seed` (`// req: DEV-04`) and add Hypothesis strategies for many currencies, precision boundaries and reversals; a fixed-seed sample runs in `make test`, the full count in `make ci` (Python half done: `oracle/src/oracle/strategies.py` and `python -m oracle generate`)
 
 ## 3. Gate
 
