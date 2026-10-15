@@ -92,6 +92,27 @@ def test_a_structurally_invalid_scenario_is_refused_whole(change, match):
     _invalid(_changed(change), match)
 
 
+# req: QA-ENG-02
+def test_a_rate_without_its_source_makes_the_scenario_invalid():
+    # PRD-001 rev 0.24 (ENG-03, ENG-40): a converted amount always travels with its source, so a rate
+    # without one is malformed input, not a journal to reject. The schema says so for both sides.
+    _invalid(_changed(lambda d: d["documents"][0]["lines"][0].pop("fx_rate_source")), "fx_rate_source")
+    # Only one way round: a source without a rate leaves a line without its rate (rule 5), so the
+    # journal is rejected, and so is the reversal of it.
+    data = _changed(lambda d: d["documents"][0]["lines"][0].pop("fx_rate"))
+    assert Ledger(scenario_from_json(data)).result()["rejected"] == ["JNL-0001", "JNL-0001/reversal"]
+
+
+# req: QA-ENG-02
+def test_an_account_may_carry_the_share_capital_role_and_no_other():
+    share_capital = {"code": "3010", "type": "equity", "group": False, "active": True, "role": "share-capital"}
+    parsed = scenario_from_json(_changed(lambda d: d["accounts"].append(share_capital)))
+    assert parsed.accounts["3010"].role == "share-capital"
+    assert parsed.accounts["1010"].role is None
+    _invalid(_changed(lambda d: d["accounts"][0].update(role="capital")), "accounts/0/role")
+    _invalid(_changed(lambda d: d["accounts"][0].update(role=None)), "accounts/0/role")
+
+
 # req: QA-ENG-01
 def test_json_is_read_strictly():
     text = json.dumps(EXAMPLE)

@@ -34,7 +34,11 @@
           "code": {"$ref": "#/$defs/accountCode"},
           "type": {"enum": ["asset", "liability", "equity", "revenue", "expense"]},
           "group": {"description": "A group (parent) account cannot be posted to (INV-04).", "type": "boolean"},
-          "active": {"type": "boolean"}
+          "active": {"type": "boolean"},
+          "role": {
+            "description": "Optional. \"share-capital\" marks an account a manual journal may not post to (INV-13, PRD-001 rev 0.24), such as 3010 and 3020 in the default chart.",
+            "enum": ["share-capital"]
+          }
         }
       }
     },
@@ -87,15 +91,16 @@
       }
     },
     "journalLine": {
-      "description": "Every value is a string, so no parser reads it as a binary float. Whether the account exists, the currency is known, the amount is a plain decimal at most at the currency's minor units and within 16 integer digits, and the rate is a plain positive decimal with at most 10 decimals, is a posting rule: a line that breaks one is rejected with its document.",
+      "description": "Every value is a string, so no parser reads it as a binary float. Whether the account exists, the currency is known, the amount is a plain decimal at most at the currency's minor units and within 16 integer digits, and the rate is a plain positive decimal with at most 10 decimals, is a posting rule: a line that breaks one is rejected with its document. A rate without its source is malformed input instead: the scenario is invalid (PRD-001 rev 0.24).",
       "type": "object",
       "additionalProperties": false,
       "required": ["account", "currency", "amount"],
+      "dependentRequired": {"fx_rate": ["fx_rate_source"]},
       "properties": {
         "account": {"type": "string"},
         "currency": {"type": "string"},
         "amount": {"description": "Signed: debit positive, credit negative.", "type": "string"},
-        "fx_rate": {"description": "Base per unit of the line's currency. Only on lines not in the base currency.", "type": "string"},
+        "fx_rate": {"description": "Base per unit of the line's currency. Only on lines not in the base currency, and always with fx_rate_source.", "type": "string"},
         "fx_rate_source": {"description": "Where the rate came from (ENG-40), e.g. \"document\". Only with fx_rate.", "type": "string", "minLength": 1}
       }
     }

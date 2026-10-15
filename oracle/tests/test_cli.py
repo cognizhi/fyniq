@@ -47,6 +47,27 @@ def test_run_refuses_an_invalid_scenario_with_status_2(tmp_path):
     assert missing.returncode == 2 and "cannot read" in missing.stderr
 
 
+# req: QA-ENG-02
+def test_run_refuses_a_rate_without_its_source_with_status_2(tmp_path):
+    path = tmp_path / "no-source.json"
+    path.write_text(
+        json.dumps(
+            scenario(
+                journal(
+                    "JNL-0001",
+                    "2026-01-05",
+                    line("1010", "USD", "100.00", "1.3472", source=None),
+                    line("4010", "SGD", "-134.72"),
+                )
+            )
+        )
+    )
+    done = _oracle("run", str(path))
+    assert done.returncode == 2
+    assert done.stdout == ""
+    assert "fx_rate_source" in done.stderr
+
+
 # req: QA-ENG-01
 def test_generate_writes_named_scenarios_that_the_oracle_reads(tmp_path):
     out = tmp_path / "generated"

@@ -2,7 +2,7 @@
 
 ## 1. Scenario format (the oracle session)
 
-- [ ] 1.1 In `test/differential/scenario.schema.json`, add `role` to `accounts[]` (optional, enum `share-capital`) and `dependentRequired: {"fx_rate": ["fx_rate_source"]}` to `journalLine`, and update the README's Scenario section. The oracle reads `role` (and ignores it until 3.2) and exits 2 on a rate without a source. Verify with a new invalid-scenario test `# req: QA-ENG-02` and `make oracle-test`; the Go round trip still passes in `make test`
+- [x] 1.1 In `test/differential/scenario.schema.json`, add `role` to `accounts[]` (optional, enum `share-capital`) and `dependentRequired: {"fx_rate": ["fx_rate_source"]}` to `journalLine`, and update the README's Scenario section. The oracle reads `role` (and ignores it until 3.2) and exits 2 on a rate without a source. Verify with a new invalid-scenario test `# req: QA-ENG-02` and `make oracle-test`; the Go round trip still passes in `make test`
 
 ## 2. Engine (the engine session; revise with `/opsx:update` before applying)
 
