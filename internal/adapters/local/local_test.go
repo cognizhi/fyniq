@@ -3,9 +3,20 @@
 package local
 
 import (
+	"context"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
+	"time"
+
+	"github.com/cognizhi/fyniq/internal/clock"
 
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
@@ -57,8 +68,93 @@ func TestSignerConformance(t *testing.T) {
 }
 
 // req: NFR-PORT-04
+// req: One outbox contract for every adapter
 func TestQueueConformance(t *testing.T) {
-	porttest.Queue(t, func(t *testing.T) ports.Queue { return NewMemory() })
+	t.Run("memory", func(t *testing.T) {
+		porttest.Queue(t, func(t *testing.T) (ports.Queue, func(string, int) []ports.Task) {
+			m := NewMemory()
+			return m, func(class string, n int) []ports.Task {
+				var out []ports.Task
+				for range n {
+					task, err := m.Next(context.Background(), class)
+					if err != nil {
+						t.Fatalf("Next(%s): %v", class, err)
+					}
+					out = append(out, task)
+				}
+				return out
+			}
+		})
+	})
+	t.Run("push", func(t *testing.T) {
+		tokens := NewHMACTokens([]byte("local-only-test-key"), clock.NewFrozen(time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)), time.Hour)
+		var mu sync.Mutex
+		got := map[string][]ports.Task{}
+		targets := map[string]string{}
+		for _, class := range []string{"worker", "executor", "jobs"} {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tokens.Verify(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), class) != nil {
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
+				body, _ := io.ReadAll(r.Body)
+				mu.Lock()
+				got[class] = append(got[class], ports.Task{Queue: class, Name: r.Header.Get("X-CloudTasks-TaskName"), Payload: body})
+				mu.Unlock()
+			}))
+			t.Cleanup(srv.Close)
+			targets[class] = srv.URL
+		}
+		p := NewPush(targets, tokens, 3, time.Millisecond)
+		porttest.Queue(t, func(t *testing.T) (ports.Queue, func(string, int) []ports.Task) {
+			return p, func(class string, n int) []ports.Task {
+				p.Wait()
+				mu.Lock()
+				defer mu.Unlock()
+				return got[class]
+			}
+		})
+	})
+}
+
+// req: Proposal executor queue isolation
+func TestTaskTokensConformance(t *testing.T) {
+	c := clock.NewFrozen(time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC))
+	tokens := NewHMACTokens([]byte("local-only-test-key"), c, time.Hour)
+	porttest.TaskTokens(t, tokens)
+	tok, _ := tokens.Token("worker")
+	c.Advance(2 * time.Hour)
+	if err := tokens.Verify(tok, "worker"); !errors.Is(err, ports.ErrUnauthorised) {
+		t.Fatalf("an expired token was accepted: %v", err)
+	}
+}
+
+// req: One outbox contract for every adapter
+func TestPushRetriesUntilTheHandlerAccepts(t *testing.T) {
+	tokens := NewHMACTokens([]byte("local-only-test-key"), clock.NewFrozen(time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)), time.Hour)
+	var calls int
+	var mu sync.Mutex
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		calls++
+		n := calls
+		mu.Unlock()
+		if r.Header.Get("X-CloudTasks-TaskRetryCount") != strconv.Itoa(n-1) {
+			t.Errorf("attempt %d carried retry count %s", n, r.Header.Get("X-CloudTasks-TaskRetryCount"))
+		}
+		if n < 3 {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer srv.Close()
+	p := NewPush(map[string]string{"worker": srv.URL}, tokens, 5, time.Millisecond)
+	if err := p.Enqueue(context.Background(), ports.Task{Queue: "worker", Name: "retry-me", Payload: []byte("{}")}); err != nil {
+		t.Fatal(err)
+	}
+	p.Wait()
+	if calls != 3 {
+		t.Fatalf("%d deliveries; want 3 (two failures, then success)", calls)
+	}
 }
 
 // req: DEV-07

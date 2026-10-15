@@ -41,7 +41,7 @@ Source: PRD-001 §12.12
 
 #### Scenario: Queue and timer
 - **WHEN** work is queued or timed
-- **THEN** it uses Cloud Tasks plus the Cloud Scheduler tick (GCP); EventBridge Scheduler (one-time and cron) plus ECS RunTask, with SQS for short delays (AWS); Storage Queues or Service Bus scheduled messages plus Container Apps jobs (Azure); or River (local)
+- **THEN** it uses Cloud Tasks plus the Cloud Scheduler tick (GCP); EventBridge Scheduler (one-time and cron) plus ECS RunTask, with SQS for short delays (AWS); Storage Queues or Service Bus scheduled messages plus Container Apps jobs (Azure); or the push dispatcher with Cloud Tasks semantics (local; rev 0.23), with River for self-hosting
 
 #### Scenario: Database
 - **WHEN** the database runs

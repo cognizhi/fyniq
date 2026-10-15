@@ -20,11 +20,12 @@ import (
 // unitOfWork holds one transaction's queries. Repositories reach the database only through q, which
 // can run statements but cannot begin, commit or roll back (NFR-PORT-07).
 type unitOfWork struct {
-	q       *sqlcdb.Queries
-	store   *Store
-	org     uuid.UUID
-	pending []audit.Event // written just before commit (flush)
-	done    bool
+	q           *sqlcdb.Queries
+	store       *Store
+	org         uuid.UUID
+	pending     []audit.Event // written just before commit (flush)
+	afterCommit []func(ctx context.Context)
+	done        bool
 }
 
 var _ storage.UnitOfWork = (*unitOfWork)(nil)

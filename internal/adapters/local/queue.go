@@ -10,23 +10,35 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
-// Memory is an in-process queue for tests and `make dev`. River replaces it as the local
-// adapter in p0-outbox-background-work (ADR-T7).
+// Memory is an in-process queue that holds tasks instead of delivering them: the test double of
+// the Queue port. Local mode delivers with Push.
 type Memory struct {
-	mu     sync.Mutex
-	queues map[string][]ports.Task
-	seen   map[string]bool
+	mu      sync.Mutex
+	classes map[string]bool
+	queues  map[string][]ports.Task
+	seen    map[string]bool
 }
 
-// NewMemory returns an empty queue.
-func NewMemory() *Memory {
-	return &Memory{queues: map[string][]ports.Task{}, seen: map[string]bool{}}
+// NewMemory returns an empty queue for the given worker classes (worker, executor and jobs by
+// default).
+func NewMemory(classes ...string) *Memory {
+	if len(classes) == 0 {
+		classes = []string{"worker", "executor", "jobs"}
+	}
+	m := &Memory{classes: map[string]bool{}, queues: map[string][]ports.Task{}, seen: map[string]bool{}}
+	for _, c := range classes {
+		m.classes[c] = true
+	}
+	return m
 }
 
 // Enqueue adds t unless a task with the same name was already enqueued.
 func (m *Memory) Enqueue(_ context.Context, t ports.Task) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if !m.classes[t.Queue] {
+		return fmt.Errorf("no worker class %q", t.Queue)
+	}
 	if m.seen[t.Name] {
 		return nil
 	}

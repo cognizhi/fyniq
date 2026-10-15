@@ -25,6 +25,9 @@ fyniq_api       EXECUTE   lock_ledger()
 fyniq_api       INSERT    organisation (base_currency, base_minor_units, name)
 fyniq_api       SELECT    organisation
 fyniq_api       UPDATE    organisation (name, version)
+fyniq_api       INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
+fyniq_api       SELECT    outbox
+fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_api       INSERT    period (ends_on, starts_on)
 fyniq_api       SELECT    period
 fyniq_api       UPDATE    period (status, version)
@@ -45,6 +48,9 @@ fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currenc
 fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_revision
 fyniq_executor  SELECT    organisation
+fyniq_executor  INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
+fyniq_executor  SELECT    outbox
+fyniq_executor  UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_executor  SELECT    period
 fyniq_executor  USAGE     schema fyniq
 fyniq_readonly  SELECT    account
@@ -61,6 +67,7 @@ fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    organisation
+fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    period
 fyniq_readonly  USAGE     schema fyniq
 fyniq_worker    SELECT    account
@@ -82,6 +89,9 @@ fyniq_worker    SELECT    journal_line
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    SELECT    organisation
+fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
+fyniq_worker    SELECT    outbox
+fyniq_worker    UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_worker    SELECT    period
 fyniq_worker    EXECUTE   rebuild_balances()
 fyniq_worker    USAGE     schema fyniq

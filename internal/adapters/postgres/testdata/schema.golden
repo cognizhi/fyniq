@@ -98,6 +98,24 @@ organisation | base_currency | text | not null |
 organisation | base_minor_units | smallint | not null | 
 organisation | version | integer | not null | 1
 organisation | created_at | timestamp with time zone | not null | now()
+outbox | organisation_id | uuid | not null | current_org()
+outbox | id | uuid | not null | uuidv7()
+outbox | worker_class | text | not null | 
+outbox | kind | text | not null | 
+outbox | payload | jsonb | not null | '{}'::jsonb
+outbox | business_key | text | null | 
+outbox | state | text | not null | 'pending'::text
+outbox | attempts | integer | not null | 0
+outbox | max_attempts | integer | not null | 5
+outbox | dispatches | integer | not null | 0
+outbox | task_name | text | null | 
+outbox | job_execution | text | null | 
+outbox | lease_holder | text | null | 
+outbox | lease_expires_at | timestamp with time zone | null | 
+outbox | deadline_at | timestamp with time zone | null | 
+outbox | last_error | text | null | 
+outbox | created_at | timestamp with time zone | not null | now()
+outbox | updated_at | timestamp with time zone | not null | now()
 period | organisation_id | uuid | not null | current_org()
 period | id | uuid | not null | uuidv7()
 period | starts_on | date | not null | 
@@ -297,6 +315,30 @@ organisation | organisation_pkey | PRIMARY KEY (organisation_id)
 organisation | organisation_version_not_null | NOT NULL version
 organisation | organisation_version_positive | CHECK ((version > 0))
 organisation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+outbox | outbox_attempts_not_null | NOT NULL attempts
+outbox | outbox_attempts_range | CHECK (((attempts >= 0) AND ((max_attempts >= 1) AND (max_attempts <= 100))))
+outbox | outbox_business_key | UNIQUE (organisation_id, kind, business_key)
+outbox | outbox_business_key_length | CHECK (((length(business_key) >= 1) AND (length(business_key) <= 500)))
+outbox | outbox_created_at_not_null | NOT NULL created_at
+outbox | outbox_dispatches_not_negative | CHECK ((dispatches >= 0))
+outbox | outbox_dispatches_not_null | NOT NULL dispatches
+outbox | outbox_id_not_null | NOT NULL id
+outbox | outbox_kind_format | CHECK (((kind ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'::text) AND (length(kind) <= 100)))
+outbox | outbox_kind_not_null | NOT NULL kind
+outbox | outbox_last_error_length | CHECK ((length(last_error) <= 2000))
+outbox | outbox_lease_whole | CHECK (((lease_holder IS NULL) = (lease_expires_at IS NULL)))
+outbox | outbox_max_attempts_not_null | NOT NULL max_attempts
+outbox | outbox_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+outbox | outbox_organisation_id_not_null | NOT NULL organisation_id
+outbox | outbox_payload_not_null | NOT NULL payload
+outbox | outbox_payload_object | CHECK (((jsonb_typeof(payload) = 'object'::text) AND (octet_length((payload)::text) <= 262144)))
+outbox | outbox_pkey | PRIMARY KEY (organisation_id, id)
+outbox | outbox_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'dispatched'::text, 'running'::text, 'done'::text, 'failed'::text, 'unknown_outcome'::text, 'dead'::text])))
+outbox | outbox_state_not_null | NOT NULL state
+outbox | outbox_task_name_length | CHECK ((length(task_name) <= 500))
+outbox | outbox_updated_at_not_null | NOT NULL updated_at
+outbox | outbox_worker_class_known | CHECK ((worker_class = ANY (ARRAY['worker'::text, 'executor'::text, 'jobs'::text])))
+outbox | outbox_worker_class_not_null | NOT NULL worker_class
 period | period_closed_revision | CHECK (((status = 'closed'::text) = (closed_revision IS NOT NULL)))
 period | period_closed_revision_not_negative | CHECK ((closed_revision >= 0))
 period | period_created_at_not_null | NOT NULL created_at
@@ -326,6 +368,7 @@ CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (o
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
+CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
 CREATE UNIQUE INDEX account_code_key ON fyniq.account USING btree (organisation_id, code)
 CREATE UNIQUE INDEX account_pkey ON fyniq.account USING btree (organisation_id, id)
@@ -349,6 +392,8 @@ CREATE UNIQUE INDEX journal_line_entry_line_key ON fyniq.journal_line USING btre
 CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
 CREATE UNIQUE INDEX organisation_pkey ON fyniq.organisation USING btree (organisation_id)
+CREATE UNIQUE INDEX outbox_business_key ON fyniq.outbox USING btree (organisation_id, kind, business_key)
+CREATE UNIQUE INDEX outbox_pkey ON fyniq.outbox USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
 CREATE UNIQUE INDEX tenant_directory_pkey ON fyniq.tenant_directory USING btree (organisation_id)
 
@@ -382,6 +427,9 @@ CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_rev
 CREATE TRIGGER organisation_created AFTER INSERT ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_created()
 CREATE TRIGGER organisation_guard BEFORE UPDATE ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_guard()
 CREATE TRIGGER organisation_registered AFTER INSERT ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_registered()
+CREATE TRIGGER outbox_guard BEFORE UPDATE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_guard()
+CREATE TRIGGER outbox_no_delete BEFORE DELETE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_no_delete()
+CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON fyniq.outbox FOR EACH STATEMENT EXECUTE FUNCTION outbox_no_delete()
 CREATE TRIGGER period_guard BEFORE UPDATE ON fyniq.period FOR EACH ROW EXECUTE FUNCTION period_guard()
 
 ## policies
@@ -396,6 +444,7 @@ journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (orga
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
 ## functions
@@ -417,6 +466,8 @@ lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq,
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
 organisation_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d82a943b556593182602dbe5a532147
+outbox_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 58b04bc5d8e9853cd11acce22f3b6723
+outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1366cfa8290e64e2804d4cb992c01d1f
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f50a71180c705d84f04bcfca78d59e44

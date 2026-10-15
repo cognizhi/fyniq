@@ -30,6 +30,8 @@ var fyCodes = map[string]string{
 	"FY052": storage.CodeDocument,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
+	"FY070": storage.CodeOutbox,
+	"FY071": storage.CodeOutbox,
 }
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
@@ -37,6 +39,7 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"journal_entry_posting_identity_key": {storage.CodeDuplicate, "this posting was already made: its posting identity is in use"},
 	"journal_entry_reverses_key":         {storage.CodeDuplicate, "that entry was already reversed"},
 	"account_code_key":                   {storage.CodeDuplicate, "an account with this code already exists"},
+	"outbox_business_key":                {storage.CodeDuplicate, "this work is already queued: its business key is in use"},
 	"period_no_overlap":                  {storage.CodePeriodDates, "the period overlaps another period"},
 	"journal_line_amount_scale":          {storage.CodeAmount, "an amount has more decimals than its currency allows, or is not a number"},
 	"journal_line_base_amount_scale":     {storage.CodeAmount, "a base amount has more decimals than the base currency allows, or is not a number"},

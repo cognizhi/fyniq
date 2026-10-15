@@ -40,6 +40,10 @@ type UnitOfWork interface {
 	Ledger() Ledger
 	Balances() Balances
 	Audit() Audit
+	Outbox() Outbox
+	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
+	// rollback. The outbox dispatches its rows this way.
+	AfterCommit(fn func(ctx context.Context))
 }
 
 // Accounts is the chart of accounts (minimal in P0; FR-COA-02 adds the attributes in P1).
@@ -312,6 +316,7 @@ const (
 	CodeDocument       = "STORAGE-DOC-01"       // a document's type cannot change, or its version go back
 	CodeDocumentStatus = "STORAGE-DOC-02"       // a document cannot move to that status
 	CodeAudit          = "STORAGE-AUDIT-01"     // the audit trail cannot change, or a change has no audit event
+	CodeOutbox         = "STORAGE-OUTBOX-01"    // an outbox row cannot change what it is, or move to that state
 	CodeDuplicate      = "STORAGE-DUPLICATE-01" // posting identity, account code or reversal already used
 	CodeRetry          = "STORAGE-RETRY-01"     // deadlock or serialisation failure: retry with the same key
 	CodeLockTimeout    = "STORAGE-LOCK-01"      // waited longer than the lock timeout (ENG-47)
