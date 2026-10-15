@@ -14,4 +14,4 @@
 
 ## 3. Gate
 
-- [ ] 3.1 Make any disagreement block the merge in CI and save the shrunk failing scenario as a new golden case; verify by a deliberately failing branch, then `make check` and `make test`
+- [x] 3.1 Make any disagreement block the merge in CI and save the shrunk failing scenario as a new golden case; verify by a deliberately failing branch, then `make check` and `make test`
