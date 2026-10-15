@@ -39,6 +39,17 @@ func (q *Queries) GetDocument(ctx context.Context, id uuid.UUID) (GetDocumentRow
 	return i, err
 }
 
+const getDocumentStatusForUpdate = `-- name: GetDocumentStatusForUpdate :one
+SELECT status FROM fyniq.document WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) GetDocumentStatusForUpdate(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getDocumentStatusForUpdate, id)
+	var status string
+	err := row.Scan(&status)
+	return status, err
+}
+
 const insertDocument = `-- name: InsertDocument :one
 INSERT INTO fyniq.document (type) VALUES ($1) RETURNING id, type, status, current_version
 `

@@ -28,7 +28,7 @@ PostgreSQL 17+ that passes the conformance and attack suites (NFR-PORT-02).
 |---|---|---|
 | `fyniq_migrator` | the `migrate` job only | Own every object, create the roles below. Created by the environment before the first run: locally by `migrate up` in the local build, in the cloud by p0-infra-opentofu |
 | `fyniq_api` | the `api` service | Read the tenant tables; create organisations, accounts, periods, documents and journal entries; close and reopen periods; post and reverse documents |
-| `fyniq_worker` | `worker` and the jobs | Read; post scheduled entries; verify and rebuild the balances cache; delete expired idempotency keys |
+| `fyniq_worker` | `worker` and the jobs | Read; post scheduled entries; verify and rebuild the balances cache; delete expired idempotency keys; list the organisations (`tenants`) and read the audit trail to anchor and verify it |
 | `fyniq_executor` | the proposal executor | Read; create and post the documents and entries of approved proposals |
 | `fyniq_ai` | the AI orchestrator | Nothing: no table grant, no write, ever (AI-P2, CMP-AI-01). Inserting proposals arrives with the proposal tables in P1 |
 | `fyniq_readonly` | investigations and reports | Read |
@@ -46,8 +46,14 @@ uses the password `fyniq-local-only`, valid nowhere else (SEC-12).
   foreign-key checks bypass row-level security; `ENABLE` and `FORCE ROW LEVEL SECURITY` with the one
   policy `organisation_id = fyniq.current_org()`. The unit of work sets
   `set_config('app.org_id', …, true)` first in every transaction; unset, it matches no row.
-- **Global tables** have no `organisation_id` and no grant; services read them through views. Today:
-  `currency` (view `currencies`). Add one only with its access model here and in the test's list.
+- **Global tables** have no grant; services read them through views. Today: `currency` (view
+  `currencies`, every service) and `tenant_directory` (view `tenants`, the worker only: the list of
+  organisations the jobs run for). Add one only with its access model here and in the test's list.
+- **Audit** (§11.5, AUD-01, AUD-08): a migration that adds a table holding business records adds a
+  `require_audit` constraint trigger to it, and the adapter records an event for every write to it.
+  Audited today: organisations, accounts, periods, documents (with their versions) and journal
+  entries (with their lines). Not audited, as derived data or caches: balances, the ledger revision,
+  the audit chain head and idempotency keys.
 - **Money** (§11.3): amounts `NUMERIC(20,4)` with the currency's minor units on the row and
   `CHECK (amount <> 'NaN' AND amount = trunc(amount, minor_units))`; FX rates `NUMERIC(20,10)`,
   positive and not NaN. Unconstrained `NUMERIC` fails the catalogue test.
@@ -70,7 +76,9 @@ uses the password `fyniq-local-only`, valid nowhere else (SEC-12).
 | INV-08 balances cache = lines | `journal_line_balances` in the posting statement; `balance_differences()`, `rebuild_balances()` | `TestRandomPostingsKeepTheCacheAndTrialBalanceExact` |
 | INV-09 trial balance nets to zero | Follows from INV-01 | the same test |
 | ENG-46 gap-free ledger revision | `journal_entry_assign` takes the next revision under the revision row's lock; `ledger_revision_guard` | `TestRaceRevisionsAreGapFreeAndAsAtIsStable` |
-| ENG-47 lock order | The source document `FOR UPDATE`, then the revision row, then the period; `lock_ledger()` for close and reopen; `period_guard` records the revision at close | the race tests |
+| ENG-47 lock order | The source document `FOR UPDATE`, then the revision row, then the period, then the audit chain head (events are written just before commit); `lock_ledger()` for close and reopen; `period_guard` records the revision at close | the race tests |
+| INV-12 audit chain | `audit_event_append` chains every event, `SHA-256(prev_hash ‖ body)`, under the chain head's lock; events and the head are immutable (`FY060`); format in `contracts/audit/` | `TestTamperingWithTheTrailIsDetected`, `TestTheChainStaysLinearUnderConcurrentWrites` |
+| AUD-08 no change without its event | `require_audit` constraint triggers at commit (`FY061`); no role can update, delete or truncate the trail, or turn triggers off | `TestAttackChangesWithoutAnAuditEventFail` |
 | Documents (§11.4, FR-GL-12) | `document_version` rows immutable; `document_guard`: draft → posted → reversed only, type fixed, version only forward; the current version must exist (deferred FK) | `TestAttackDocumentVersionsAndStatusesCannotBeRewound` |
 
 INV-07, INV-10, INV-11 and INV-13 arrive with their modules in P1; INV-12 with p0-audit-chain.
@@ -97,5 +105,7 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY046 | STORAGE-REV-01 | The ledger revision only increases by one |
 | FY050, FY052 | STORAGE-DOC-01 | A document's type cannot change, nor its version go back |
 | FY051 | STORAGE-DOC-02 | A document moves only draft → posted → reversed |
+| FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
+| FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | 40001, 40P01 | STORAGE-RETRY-01 | Serialisation failure or deadlock: retry with the same Idempotency-Key (ENG-47) |
 | 55P03 | STORAGE-LOCK-01 | A lock wait exceeded the unit of work's lock timeout (5 s by default, ENG-47) |

@@ -23,6 +23,25 @@ type FyniqAccount struct {
 	CreatedAt      time.Time
 }
 
+type FyniqAuditChain struct {
+	OrganisationID uuid.UUID
+	Seq            int64
+	HeadHash       []byte
+}
+
+type FyniqAuditEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Seq            int64
+	Body           string
+	PrevHash       []byte
+	Hash           []byte
+	CreatedXact    int64
+	Action         *string
+	ObjectType     *string
+	ObjectID       *uuid.UUID
+}
+
 type FyniqBalance struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -135,5 +154,15 @@ type FyniqPeriod struct {
 	Status         string
 	ClosedRevision *int64
 	Version        int32
+	CreatedAt      time.Time
+}
+
+type FyniqTenantDirectory struct {
+	OrganisationID uuid.UUID
+	CreatedAt      time.Time
+}
+
+type FyniqTenants struct {
+	OrganisationID uuid.UUID
 	CreatedAt      time.Time
 }

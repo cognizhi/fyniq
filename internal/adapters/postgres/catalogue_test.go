@@ -22,10 +22,10 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 
 // globalTables are the installation-scoped tables (§11.4): no organisation_id, no grant to any
 // application role. Add a table here only with its access model in db/README.md.
-var globalTables = []string{"currency"}
+var globalTables = []string{"currency", "tenant_directory"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
-var onePerOrganisation = []string{"organisation", "ledger_revision"}
+var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain"}
 
 var serviceRoles = []string{"fyniq_api", "fyniq_worker", "fyniq_executor", "fyniq_ai", "fyniq_readonly"}
 
@@ -105,7 +105,7 @@ func TestEveryTenantTableForcesRowLevelSecurity(t *testing.T) {
 	for _, r := range tables {
 		name, rls, force, hasOrg, policies, tenantPolicies := r[0], r[1], r[2], r[3], r[4], r[5]
 		if slices.Contains(globalTables, name) {
-			if hasOrg == "true" {
+			if hasOrg == "true" && name != "tenant_directory" { // the directory lists organisations
 				t.Errorf("%s is listed as global but has organisation_id", name)
 			}
 			continue
@@ -230,8 +230,10 @@ func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 			t.Errorf("%s holds %s on %s: the AI and read-only roles never write (AI-P2, CMP-AI-01)", grantee, priv, object)
 		case (priv == "UPDATE" || priv == "DELETE") && (strings.HasPrefix(object, "journal_") || object == "ledger_revision"):
 			t.Errorf("%s holds %s on %s: posted history is append-only (INV-02)", grantee, priv, object)
+		case (priv == "UPDATE" || priv == "DELETE") && strings.HasPrefix(object, "audit_"):
+			t.Errorf("%s holds %s on %s: the audit trail is append-only (AUD-08)", grantee, priv, object)
 		case writes[priv] && (strings.HasPrefix(object, "balance") || strings.HasPrefix(object, "ledger_revision") ||
-			strings.HasPrefix(object, "currency")):
+			strings.HasPrefix(object, "currency") || strings.HasPrefix(object, "tenant") || object == "audit_chain"):
 			t.Errorf("%s holds %s on %s: only the ledger's own functions write it", grantee, priv, object)
 		}
 	}

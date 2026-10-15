@@ -3,6 +3,8 @@
 package local
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -29,6 +31,29 @@ func TestBlobStoreConformance(t *testing.T) {
 		}
 		return d
 	})
+}
+
+// req: NFR-PORT-04
+// req: CTL-AUD-02
+func TestSignerConformance(t *testing.T) {
+	s, err := NewEd25519(make([]byte, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	porttest.Signer(t, s)
+	path := filepath.Join(t.TempDir(), "keys", "audit-anchor.ed25519")
+	a, err := LoadOrCreateEd25519(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	porttest.Signer(t, a)
+	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("the key file is %v, %v; want mode 0600", info.Mode(), err)
+	}
+	b, err := LoadOrCreateEd25519(path)
+	if err != nil || b.KeyID() != a.KeyID() {
+		t.Fatalf("reloading the key gave %q, %v; want the same key %q", b.KeyID(), err, a.KeyID())
+	}
 }
 
 // req: NFR-PORT-04

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cognizhi/fyniq/contracts/audit/audit-event.v1.schema.json",
+  "title": "Fyniq audit event (fyniq-audit-event@1)",
+  "description": "One saved change (PRD-001 §11.5, AUD-01). The body is stored and hashed exactly as written; the database adds seq, prev_hash and hash (see README.md).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "event_id", "organisation_id", "occurred_at", "actor", "on_behalf_of", "originator",
+               "approval_ids", "action", "object", "changes", "reason", "request"],
+  "properties": {
+    "schema": {"const": "fyniq-audit-event@1"},
+    "event_id": {"type": "string", "format": "uuid"},
+    "organisation_id": {"type": "string", "format": "uuid"},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "actor": {"$ref": "#/$defs/actor"},
+    "on_behalf_of": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/actor"}]},
+    "originator": {"type": ["string", "null"], "description": "The AI proposal the change carries out"},
+    "approval_ids": {"type": "array", "items": {"type": "string"}},
+    "action": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"},
+    "object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version"],
+      "properties": {
+        "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "id": {"type": "string", "format": "uuid"},
+        "version": {"type": ["integer", "null"], "minimum": 1}
+      }
+    },
+    "changes": {
+      "type": "object",
+      "description": "field → [before, after]; null means absent. Sensitive values are masked (SEC-15).",
+      "additionalProperties": {"type": "array", "minItems": 2, "maxItems": 2}
+    },
+    "reason": {"type": "string"},
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "ip", "user_agent", "session"],
+      "properties": {
+        "id": {"type": "string"}, "ip": {"type": "string"}, "user_agent": {"type": "string"}, "session": {"type": "string"}
+      }
+    }
+  },
+  "$defs": {
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"enum": ["user", "service", "integration", "scheduler", "ai"]},
+        "id": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

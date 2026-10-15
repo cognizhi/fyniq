@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -84,3 +85,48 @@ func (d *Dir) Delete(_ context.Context, key string) error {
 }
 
 var _ ports.BlobStore = (*Dir)(nil)
+
+// Create writes r under key only if nothing is there yet (O_EXCL); it returns ports.ErrExists
+// otherwise. The bucket's retention lock has no local equivalent: CTL-AUD-03 checks it in staging.
+func (d *Dir) Create(_ context.Context, key string, r io.Reader) error {
+	p, err := d.path(key)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if errors.Is(err, fs.ErrExist) {
+		return fmt.Errorf("blob %s: %w", key, ports.ErrExists)
+	}
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(f, r); err != nil {
+		_ = f.Close()
+		_ = os.Remove(p)
+		return err
+	}
+	return f.Close()
+}
+
+// List returns the keys under prefix, sorted.
+func (d *Dir) List(_ context.Context, prefix string) ([]string, error) {
+	var keys []string
+	err := filepath.WalkDir(d.root, func(p string, e fs.DirEntry, err error) error {
+		if err != nil || e.IsDir() || strings.HasPrefix(e.Name(), ".put-") {
+			return err
+		}
+		rel, err := filepath.Rel(d.root, p)
+		if err != nil {
+			return err
+		}
+		if key := filepath.ToSlash(rel); strings.HasPrefix(key, prefix) {
+			keys = append(keys, key)
+		}
+		return nil
+	})
+	sort.Strings(keys)
+	return keys, err
+}

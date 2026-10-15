@@ -1,7 +1,9 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -10,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
+	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -17,8 +20,11 @@ import (
 // unitOfWork holds one transaction's queries. Repositories reach the database only through q, which
 // can run statements but cannot begin, commit or roll back (NFR-PORT-07).
 type unitOfWork struct {
-	q    *sqlcdb.Queries
-	done bool
+	q       *sqlcdb.Queries
+	store   *Store
+	org     uuid.UUID
+	pending []audit.Event // written just before commit (flush)
+	done    bool
 }
 
 var _ storage.UnitOfWork = (*unitOfWork)(nil)
@@ -66,6 +72,12 @@ func (r accounts) Create(ctx context.Context, a storage.NewAccount) (storage.Acc
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
+	v := int(row.Version)
+	if err := r.u.event(ctx, "account.created", "account", row.ID, &v, map[string][2]any{
+		"code": {nil, row.Code}, "name": {nil, row.Name}, "type": {nil, row.Type},
+		"parent_id": {nil, row.ParentID}, "is_group": {nil, row.IsGroup}, "is_active": {nil, row.IsActive}}); err != nil {
+		return storage.Account{}, err
+	}
 	return toAccount(row.ID, row.Code, row.Name, row.Type, row.ParentID, row.IsGroup, row.IsActive, row.Version), nil
 }
 
@@ -95,9 +107,21 @@ func (r accounts) SetActive(ctx context.Context, id uuid.UUID, active bool) (sto
 	if err := r.u.check(); err != nil {
 		return storage.Account{}, err
 	}
+	before, err := r.u.q.GetAccount(ctx, id)
+	if err != nil {
+		return storage.Account{}, mapError(err)
+	}
 	row, err := r.u.q.SetAccountActive(ctx, sqlcdb.SetAccountActiveParams{ID: id, IsActive: active})
 	if err != nil {
 		return storage.Account{}, mapError(err)
+	}
+	action, v := "account.deactivated", int(row.Version)
+	if active {
+		action = "account.activated"
+	}
+	if err := r.u.event(ctx, action, "account", row.ID, &v, map[string][2]any{
+		"is_active": {before.IsActive, row.IsActive}, "version": {before.Version, row.Version}}); err != nil {
+		return storage.Account{}, err
 	}
 	return toAccount(row.ID, row.Code, row.Name, row.Type, row.ParentID, row.IsGroup, row.IsActive, row.Version), nil
 }
@@ -132,6 +156,15 @@ func (r documents) Create(ctx context.Context, d storage.NewDocument) (storage.D
 	if err := r.u.q.InsertDocumentVersion(ctx, sqlcdb.InsertDocumentVersionParams{DocumentID: row.ID, Version: row.CurrentVersion, Payload: d.Payload}); err != nil {
 		return storage.Document{}, mapError(err)
 	}
+	payload, err := jsonValue(d.Payload)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	v := int(row.CurrentVersion)
+	if err := r.u.event(ctx, "document.created", "document", row.ID, &v, map[string][2]any{
+		"type": {nil, row.Type}, "status": {nil, row.Status}, "payload": {nil, payload}}); err != nil {
+		return storage.Document{}, err
+	}
 	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
 		Version: int(row.CurrentVersion), Payload: d.Payload}, nil
 }
@@ -164,7 +197,14 @@ func (r documents) SetStatus(ctx context.Context, id uuid.UUID, to storage.Docum
 	if err := r.u.check(); err != nil {
 		return err
 	}
-	return mapError(r.u.q.SetDocumentStatus(ctx, sqlcdb.SetDocumentStatusParams{ID: id, Status: string(to)}))
+	before, err := r.u.q.GetDocumentStatusForUpdate(ctx, id)
+	if err != nil {
+		return mapError(err)
+	}
+	if err := r.u.q.SetDocumentStatus(ctx, sqlcdb.SetDocumentStatusParams{ID: id, Status: string(to)}); err != nil {
+		return mapError(err)
+	}
+	return r.u.event(ctx, "document."+string(to), "document", id, nil, map[string][2]any{"status": {before, string(to)}})
 }
 
 // ------------------------------------------------------------------ periods
@@ -183,6 +223,11 @@ func (r periods) Create(ctx context.Context, p storage.NewPeriod) (storage.Perio
 	row, err := r.u.q.InsertPeriod(ctx, sqlcdb.InsertPeriodParams{StartsOn: dateOf(p.StartsOn), EndsOn: dateOf(p.EndsOn)})
 	if err != nil {
 		return storage.Period{}, mapError(err)
+	}
+	v := int(row.Version)
+	if err := r.u.event(ctx, "period.created", "period", row.ID, &v, map[string][2]any{
+		"starts_on": {nil, day(row.StartsOn)}, "ends_on": {nil, day(row.EndsOn)}, "status": {nil, row.Status}}); err != nil {
+		return storage.Period{}, err
 	}
 	return toPeriod(row.ID, row.StartsOn, row.EndsOn, row.Status, row.ClosedRevision, row.Version), nil
 }
@@ -230,6 +275,14 @@ func (r periods) setStatus(ctx context.Context, id uuid.UUID, to storage.PeriodS
 	row, err := r.u.q.SetPeriodStatus(ctx, sqlcdb.SetPeriodStatusParams{ID: id, Status: string(to)})
 	if err != nil {
 		return storage.Period{}, mapError(err)
+	}
+	action, v := "period.closed", int(row.Version)
+	if to == storage.PeriodOpen {
+		action = "period.reopened"
+	}
+	if err := r.u.event(ctx, action, "period", row.ID, &v, map[string][2]any{
+		"status": {cur.Status, row.Status}, "closed_revision": {cur.ClosedRevision, row.ClosedRevision}}); err != nil {
+		return storage.Period{}, err
 	}
 	return toPeriod(row.ID, row.StartsOn, row.EndsOn, row.Status, row.ClosedRevision, row.Version), nil
 }
@@ -281,7 +334,29 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 			return storage.Entry{}, mapError(err)
 		}
 	}
-	return r.Entry(ctx, row.ID)
+	posted, err := r.Entry(ctx, row.ID)
+	if err != nil {
+		return storage.Entry{}, err
+	}
+	lines := make([]any, len(posted.Lines))
+	for i, l := range posted.Lines {
+		lines[i] = map[string]any{"line_no": l.LineNo, "account_id": l.AccountID.String(), "currency": l.Currency,
+			"amount": string(l.Amount), "fx_rate": string(l.FXRate), "fx_rate_source": l.FXRateSource,
+			"base_currency": l.BaseCurrency, "base_amount": string(l.BaseAmount), "description": l.Description}
+	}
+	var reverses any
+	if posted.ReversesEntryID != nil {
+		reverses = posted.ReversesEntryID.String()
+	}
+	if err := r.u.event(ctx, "journal_entry.posted", "journal_entry", posted.ID, nil, map[string][2]any{
+		"posting_identity": {nil, posted.PostingIdentity}, "posting_date": {nil, day(posted.PostingDate)},
+		"period_id": {nil, posted.PeriodID.String()}, "ledger_revision": {nil, posted.LedgerRevision},
+		"source":       {nil, map[string]any{"type": posted.Source.Type, "id": posted.Source.ID, "version": posted.Source.Version}},
+		"rule_version": {nil, posted.RuleVersion}, "reverses_entry_id": {nil, reverses}, "memo": {nil, posted.Memo},
+		"lines": {nil, lines}}); err != nil {
+		return storage.Entry{}, err
+	}
+	return posted, nil
 }
 
 func (r ledger) Entry(ctx context.Context, id uuid.UUID) (storage.Entry, error) {
@@ -382,7 +457,10 @@ func (r balances) Rebuild(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 	n, err := r.u.q.RebuildBalances(ctx)
-	return n, mapError(err)
+	if err != nil {
+		return 0, mapError(err)
+	}
+	return n, r.u.event(ctx, "balance.rebuilt", "organisation", r.u.org, nil, map[string][2]any{"rows": {nil, n}})
 }
 
 // ------------------------------------------------------------------ helpers
@@ -394,6 +472,17 @@ func dateOf(t time.Time) time.Time {
 }
 
 func day(t time.Time) string { return t.Format(time.DateOnly) }
+
+// jsonValue decodes a JSON document for an audit change, keeping numbers exact (json.Number).
+func jsonValue(b []byte) (any, error) {
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("the document is not valid JSON: %v", err)}
+	}
+	return v, nil
+}
 
 // notFound reports pgx's "no rows" as the ports' ErrNotFound.
 func notFound(err error) bool {

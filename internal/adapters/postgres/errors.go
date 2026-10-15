@@ -28,6 +28,8 @@ var fyCodes = map[string]string{
 	"FY050": storage.CodeDocument,
 	"FY051": storage.CodeDocumentStatus,
 	"FY052": storage.CodeDocument,
+	"FY060": storage.CodeAudit,
+	"FY061": storage.CodeAudit,
 }
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.

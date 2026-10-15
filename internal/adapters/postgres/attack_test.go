@@ -4,6 +4,7 @@ package postgres_test
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"testing"
 
@@ -19,13 +20,34 @@ import (
 
 var allRoles = append([]string{"fyniq_migrator"}, serviceRoles...)
 
-// entry inserts a journal entry directly, as a writer that skips the posting engine would.
+// entry inserts a journal entry directly, as a writer that skips the posting engine would. Like any
+// correct writer it also writes the entry's audit event, so the attacks reach the invariant they aim
+// at; TestAttackChangesWithoutAnAuditEventFail covers the event's absence.
 func entry(ctx context.Context, tx pgx.Tx, identity, date string) (uuid.UUID, error) {
 	var id uuid.UUID
 	err := tx.QueryRow(ctx, `
 INSERT INTO fyniq.journal_entry (posting_date, posting_identity, source_type, source_id, source_version, rule_version)
 VALUES ($1, $2, 'attack', $2, 1, 'attack@1') RETURNING id`, date, identity).Scan(&id)
-	return id, err
+	if err != nil {
+		return id, err
+	}
+	return id, auditRaw(ctx, tx, "journal_entry.posted", "journal_entry", id)
+}
+
+// auditRaw writes a minimal audit event about an object with raw SQL, for the organisation of the
+// transaction.
+func auditRaw(ctx context.Context, tx pgx.Tx, action, objectType string, id uuid.UUID) error {
+	eventID := uuid.Must(uuid.NewV7())
+	var org string
+	if err := tx.QueryRow(ctx, "SELECT current_setting('app.org_id')").Scan(&org); err != nil {
+		return err
+	}
+	body := fmt.Sprintf(`{"schema":"fyniq-audit-event@1","event_id":%q,"organisation_id":%q,"occurred_at":"2026-10-14T00:00:00Z",`+
+		`"actor":{"type":"user","id":"attack-test"},"on_behalf_of":null,"originator":null,"approval_ids":[],"action":%q,`+
+		`"object":{"type":%q,"id":%q,"version":null},"changes":{},"reason":"","request":{"id":"","ip":"","user_agent":"","session":""}}`,
+		eventID, org, action, objectType, id)
+	_, err := tx.Exec(ctx, "INSERT INTO fyniq.audit_event (id, body) VALUES ($1, $2)", eventID, body)
+	return err
 }
 
 // line inserts one journal line directly.

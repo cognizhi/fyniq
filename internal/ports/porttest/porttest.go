@@ -55,6 +55,52 @@ func BlobStore(t *testing.T, build func(t *testing.T) ports.BlobStore) {
 	if err := b.Put(ctx, "../escape.txt", bytes.NewBufferString("x")); err == nil {
 		t.Fatalf("Put(../escape.txt): want an error for a key outside the store")
 	}
+	// Create is write-once (audit anchors).
+	if err := b.Create(ctx, "anchors/org/1.json", bytes.NewBufferString("first")); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if err := b.Create(ctx, "anchors/org/1.json", bytes.NewBufferString("second")); !errors.Is(err, ports.ErrExists) {
+		t.Fatalf("Create over an existing blob: want ErrExists, got %v", err)
+	}
+	if err := b.Create(ctx, "anchors/org/2.json", bytes.NewBufferString("x")); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if err := b.Put(ctx, "other/3.json", bytes.NewBufferString("x")); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	keys, err := b.List(ctx, "anchors/org/")
+	if err != nil || len(keys) != 2 || keys[0] != "anchors/org/1.json" || keys[1] != "anchors/org/2.json" {
+		t.Fatalf("List(anchors/org/) = %v, %v; want the two anchors, sorted", keys, err)
+	}
+	rc, err = b.Get(ctx, "anchors/org/1.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, _ = io.ReadAll(rc)
+	_ = rc.Close()
+	if string(data) != "first" {
+		t.Fatalf("the write-once blob was overwritten: %q", data)
+	}
+}
+
+// Signer checks a Signer adapter (CTL-AUD-02).
+func Signer(t *testing.T, s ports.Signer) {
+	t.Helper()
+	ctx := context.Background()
+	msg := []byte(`{"seq":1}`)
+	sig, err := s.Sign(ctx, msg)
+	if err != nil || s.KeyID() == "" {
+		t.Fatalf("Sign = %x, %v (key %q)", sig, err, s.KeyID())
+	}
+	if err := s.Verify(s.KeyID(), msg, sig); err != nil {
+		t.Fatalf("Verify of a good signature: %v", err)
+	}
+	if err := s.Verify(s.KeyID(), []byte(`{"seq":2}`), sig); !errors.Is(err, ports.ErrBadSignature) {
+		t.Fatalf("Verify of a changed message: want ErrBadSignature, got %v", err)
+	}
+	if err := s.Verify("another-key", msg, sig); !errors.Is(err, ports.ErrBadSignature) {
+		t.Fatalf("Verify under another key: want ErrBadSignature, got %v", err)
+	}
 }
 
 // Queue checks a Queue adapter.

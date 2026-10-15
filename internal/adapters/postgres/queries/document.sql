@@ -20,3 +20,6 @@ FOR UPDATE OF d;
 
 -- name: SetDocumentStatus :exec
 UPDATE fyniq.document SET status = sqlc.arg(status) WHERE id = sqlc.arg(id);
+
+-- name: GetDocumentStatusForUpdate :one
+SELECT status FROM fyniq.document WHERE id = $1 FOR UPDATE;
