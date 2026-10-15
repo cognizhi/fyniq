@@ -2,11 +2,13 @@
 // signs the user in for an authorisation request, and GET and POST /auth/consent show and record what
 // the user grants a client (AI-36, AI-37).
 //
-// Who is at the browser comes from SignedIn: the first-party session. Until the SignIn port and
-// memberships arrive (p0-identity-oauth-first-run), that is the local build's dev tokens in the
-// Authorization header, which only tests and local tools send; the release build refuses every sign-in.
-// The consent screen (P1) reads GET /auth/consent's JSON. Consent is never remembered, so every client
-// asks every time; with the first-party session cookie (P1) POST /auth/consent also checks a CSRF token.
+// Who is at the browser comes from SignedIn: the first-party session cookie (internal/signin), or in the
+// local build a dev token in the Authorization header, which only tests and local tools send. A browser
+// without a session is sent to sign in and comes back. The OAuth server knows a person by their user ID,
+// the subject a role change or a recovery revokes (AI-38), so a session whose identity has no user yet
+// cannot sign in to a client. The consent screen (P1) reads GET /auth/consent's JSON. Consent is never
+// remembered, so every client asks every time; a POST /auth/consent the session cookie authenticates
+// must come from the web app's own origin (Fetch Metadata), since the cookie is ambient.
 package oauthflow
 
 import (
@@ -31,6 +33,8 @@ const (
 	CodeSignIn      = "AUTH-FLOW-03" // nobody is signed in
 	CodeOtherUser   = "AUTH-FLOW-04" // the signed-in user is not the request's
 	CodeFailure     = "AUTH-FLOW-05" // the OAuth server failed
+	CodeNoAccount   = "AUTH-FLOW-06" // the signed-in identity has no Fyniq user yet
+	CodeCrossSite   = "AUTH-FLOW-07" // a consent sent from another site with the session cookie
 )
 
 // Flow is the login and consent app.
@@ -41,6 +45,19 @@ type Flow struct {
 	APIAudience string
 	MCPAudience string
 	Log         *slog.Logger
+	// SignInPage is where a browser without a session signs in (the web app, "/"), and Base where the
+	// API is mounted for the browser ("/api"), so the browser comes back to the login. Without a page, a
+	// request without a session is refused with 401.
+	SignInPage, Base string
+}
+
+// subject is how the OAuth server knows the person: their user ID. Only a dev token or a test's
+// credential, sent in the Authorization header, may sign in without one, under its own subject.
+func subject(p authn.Principal, c authn.Credentials) (string, bool) {
+	if p.UserID != uuid.Nil {
+		return p.UserID.String(), true
+	}
+	return p.Subject, c.Authorization != "" && p.Subject != ""
 }
 
 // Register adds the routes to mux.
@@ -130,17 +147,29 @@ func (f Flow) login(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	p, err := f.SignedIn.Authenticate(r.Context(), r.Header.Get("Authorization"))
+	creds := authn.FromRequest(r)
+	p, err := f.SignedIn.Authenticate(r.Context(), creds)
 	if err != nil {
+		if creds.Authorization == "" && f.SignInPage != "" { // a browser: sign in, then come back here
+			back := f.Base + "/auth/login?" + url.Values{"login_challenge": {challenge}}.Encode()
+			http.Redirect(w, r, f.SignInPage+"?"+url.Values{"return_to": {back}}.Encode(), http.StatusSeeOther)
+			return
+		}
 		writeProblem(w, http.StatusUnauthorized, CodeSignIn, "Nobody is signed in to Fyniq.", "Sign in to Fyniq, then return to the app that sent you here.")
 		return
 	}
-	if req.Skip && req.Subject != p.Subject {
+	sub, ok := subject(p, creds)
+	if !ok {
+		writeProblem(w, http.StatusForbidden, CodeNoAccount, "You are signed in, but you have no Fyniq account yet.",
+			"Ask a Fyniq administrator for an invitation, then start again.")
+		return
+	}
+	if req.Skip && req.Subject != sub {
 		writeProblem(w, http.StatusForbidden, CodeOtherUser, "Another user is signed in for this request.", "Sign out, then start again.")
 		return
 	}
 	f.redirect(w, r, func() (string, error) {
-		return f.OAuth.AcceptLogin(r.Context(), challenge, ports.LoginAcceptance{Subject: p.Subject})
+		return f.OAuth.AcceptLogin(r.Context(), challenge, ports.LoginAcceptance{Subject: sub})
 	})
 }
 
@@ -155,12 +184,17 @@ func (f Flow) consent(w http.ResponseWriter, r *http.Request, challenge string) 
 		f.failed(w, err)
 		return c, authn.Principal{}, false
 	}
-	p, err := f.SignedIn.Authenticate(r.Context(), r.Header.Get("Authorization"))
+	creds := authn.FromRequest(r)
+	p, err := f.SignedIn.Authenticate(r.Context(), creds)
 	if err != nil {
 		writeProblem(w, http.StatusUnauthorized, CodeSignIn, "Nobody is signed in to Fyniq.", "Sign in to Fyniq, then return to the app that sent you here.")
 		return c, p, false
 	}
-	if p.Subject != c.Subject {
+	if r.Method == http.MethodPost && creds.Authorization == "" && !authn.SameOrigin(r.Header) {
+		writeProblem(w, http.StatusForbidden, CodeCrossSite, "The consent was sent from another site.", "Give consent on Fyniq's own consent screen.")
+		return c, p, false
+	}
+	if sub, ok := subject(p, creds); !ok || sub != c.Subject {
 		writeProblem(w, http.StatusForbidden, CodeOtherUser, "The consent belongs to another user.", "Sign in as the user who started it.")
 		return c, p, false
 	}

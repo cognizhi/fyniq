@@ -191,6 +191,16 @@ user_membership | user_id | uuid | not null |
 user_membership | status | text | not null | 'active'::text
 user_membership | created_at | timestamp with time zone | not null | now()
 user_membership | version | integer | not null | 1
+user_session | token_hash | bytea | not null | 
+user_session | issuer | text | not null | 
+user_session | subject | text | not null | 
+user_session | provider | text | not null | 
+user_session | user_id | uuid | null | 
+user_session | created_at | timestamp with time zone | not null | 
+user_session | last_seen_at | timestamp with time zone | not null | 
+user_session | expires_at | timestamp with time zone | not null | 
+user_session | step_up_at | timestamp with time zone | null | 
+user_session | ended_at | timestamp with time zone | null | 
 
 ## constraints
 account | account_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$'::text))
@@ -500,6 +510,23 @@ user_membership | user_membership_user_id_not_null | NOT NULL user_id
 user_membership | user_membership_user_key | UNIQUE (organisation_id, user_id)
 user_membership | user_membership_version_not_null | NOT NULL version
 user_membership | user_membership_version_positive | CHECK ((version > 0))
+user_session | user_session_created_at_not_null | NOT NULL created_at
+user_session | user_session_ended_after_start | CHECK ((ended_at >= created_at))
+user_session | user_session_expires_at_not_null | NOT NULL expires_at
+user_session | user_session_expiry_after_start | CHECK ((expires_at > created_at))
+user_session | user_session_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
+user_session | user_session_issuer_not_null | NOT NULL issuer
+user_session | user_session_last_seen_at_not_null | NOT NULL last_seen_at
+user_session | user_session_pkey | PRIMARY KEY (token_hash)
+user_session | user_session_provider_length | CHECK (((length(provider) >= 1) AND (length(provider) <= 100)))
+user_session | user_session_provider_not_null | NOT NULL provider
+user_session | user_session_seen_after_start | CHECK ((last_seen_at >= created_at))
+user_session | user_session_step_up_before_start | CHECK ((step_up_at <= created_at))
+user_session | user_session_subject_length | CHECK (((length(subject) >= 1) AND (length(subject) <= 500)))
+user_session | user_session_subject_not_null | NOT NULL subject
+user_session | user_session_token_hash_not_null | NOT NULL token_hash
+user_session | user_session_token_sha256 | CHECK ((length(token_hash) = 32))
+user_session | user_session_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 
 ## indexes
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
@@ -516,6 +543,7 @@ CREATE INDEX super_admin_grant_created_by_idx ON fyniq.super_admin_grant USING b
 CREATE INDEX super_admin_grant_used_by_idx ON fyniq.super_admin_grant USING btree (used_by)
 CREATE INDEX super_admin_grant_user_idx ON fyniq.super_admin_grant USING btree (user_id, kind)
 CREATE INDEX user_identity_user_idx ON fyniq.user_identity USING btree (user_id)
+CREATE INDEX user_session_user_idx ON fyniq.user_session USING btree (user_id) WHERE (ended_at IS NULL)
 CREATE UNIQUE INDEX account_code_key ON fyniq.account USING btree (organisation_id, code)
 CREATE UNIQUE INDEX account_pkey ON fyniq.account USING btree (organisation_id, id)
 CREATE UNIQUE INDEX app_user_pkey ON fyniq.app_user USING btree (user_id)
@@ -553,6 +581,7 @@ CREATE UNIQUE INDEX tenant_directory_pkey ON fyniq.tenant_directory USING btree 
 CREATE UNIQUE INDEX user_identity_pkey ON fyniq.user_identity USING btree (issuer, subject)
 CREATE UNIQUE INDEX user_membership_pkey ON fyniq.user_membership USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_membership_user_key ON fyniq.user_membership USING btree (organisation_id, user_id)
+CREATE UNIQUE INDEX user_session_pkey ON fyniq.user_session USING btree (token_hash)
 
 ## triggers
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
@@ -631,6 +660,8 @@ count_super_admins() → integer | security definer | s | search_path=pg_catalog
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae8d292019dce37ac1cadb594f5dbe0c
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
+end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
+end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
 finish_job_slot(p_job text, p_slot timestamp with time zone, p_ok boolean, p_detail text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ad4500fb0fd68beae2aba5eb5653db8b
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
@@ -657,10 +688,12 @@ require_grant_audit() → trigger | security definer | v | search_path=pg_catalo
 require_installation_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f9c3cec49b84db3497dc1be8e78f5180
 require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
 require_super_admin(p_user uuid) → void | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c817be869461445bf3e2ff0f94e5b146
+session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1fa557346732ac0de88a7a7d9407fedc
 set_recovery_codes(p_user uuid, p_hashes bytea[], p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa0ec035edd7677410f7fb3b8de88b51
 set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1401833c664206cef80dad827e0bd549
 setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c
 skip_job_slots(p_job text, p_slots timestamp with time zone[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8f2a4dc16b9baa48f2314e6e58698273
+start_session(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 44d3805f8ddaf3abbe864b9aaf1ea4dc
 started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7
 super_admin_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | dc4916e4ee7460c18329392b923b6a4a
 super_admin_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 69611a1d7f11f9c63fa128f901944024

@@ -589,6 +589,51 @@ components:
         - date
         - reason
       type: object
+    SessionInfo:
+      additionalProperties: false
+      properties:
+        organisation_id:
+          description: The organisation your session is in; absent when you are a member of none.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+          format: uuid
+          type: string
+        provider:
+          description: The sign-in provider of a browser session (FR-ADM-08); absent for a local dev token.
+          examples:
+            - google
+          type: string
+        roles:
+          description: Your roles in that organisation (PRD-001 §7.1); they are read on every request, so a change applies at once.
+          items:
+            description: A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.
+            examples:
+              - owner
+            type: string
+          type:
+            - array
+            - "null"
+        stepped_up_until:
+          description: Until when your last step-up (a second factor at sign-in) counts for the actions that need one; absent when it does not.
+          examples:
+            - "2026-10-15T09:05:00Z"
+          format: date-time
+          type: string
+        super_admin:
+          description: Whether you are a Super admin of this installation (FR-ADM-07).
+          examples:
+            - false
+          type: boolean
+        user_id:
+          description: Your Fyniq user; absent until you have one (a new installation before setup, or before you accept an invitation).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - roles
+        - super_admin
+      type: object
     SetupRequest:
       additionalProperties: false
       properties:
@@ -664,6 +709,36 @@ components:
       required:
         - done
       type: object
+    SignInProvider:
+      additionalProperties: false
+      properties:
+        id:
+          description: "The provider's ID: the web app sends the browser to /api/auth/signin?provider=<id> to sign in with it."
+          examples:
+            - google
+          type: string
+        name:
+          description: The provider's name, as the sign-in page shows it.
+          examples:
+            - Google
+          type: string
+      required:
+        - id
+        - name
+      type: object
+    SignInProviders:
+      additionalProperties: false
+      properties:
+        items:
+          description: The providers, in the order to offer them; empty when sign-in is not configured.
+          items:
+            $ref: "#/components/schemas/SignInProvider"
+          type:
+            - array
+            - "null"
+      required:
+        - items
+      type: object
     SuperAdminInvitation:
       additionalProperties: false
       properties:
@@ -707,9 +782,14 @@ components:
       type: object
   securitySchemes:
     bearer:
-      description: An access token from Fyniq's OAuth server (ADR-T3). Until it arrives, the local build accepts the local issuer's dev tokens and a release build accepts none.
+      description: An access token from Fyniq's OAuth server (ADR-T3), for integrations and MCP clients. The local build also accepts the local issuer's dev tokens.
       scheme: bearer
       type: http
+    session:
+      description: "The web app's first-party session (SEC-05, SEC-08), set by signing in at /auth/signin: an HttpOnly cookie the web app never reads (fyniq_session on http://localhost). A request it authenticates may change state only from the web app's own origin (Sec-Fetch-Site: same-origin)."
+      in: cookie
+      name: __Host-fyniq_session
+      type: apiKey
 info:
   contact:
     name: Fyniq
@@ -940,7 +1020,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
         "409":
           content:
             application/problem+json:
@@ -982,6 +1062,7 @@ paths:
         - Journals
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1137,7 +1218,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
         "404":
           content:
             application/problem+json:
@@ -1185,6 +1266,7 @@ paths:
         - Journals
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1297,7 +1379,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
         "404":
           content:
             application/problem+json:
@@ -1357,6 +1439,7 @@ paths:
         - Journals
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1452,6 +1535,63 @@ paths:
       x-fyniq-permission:
         capability: (membership)
         right: V
+  /v1/session:
+    get:
+      description: "Who you are signed in as: the provider, your user, the organisation your session is in, your roles there, whether you are a Super admin and until when your step-up counts (SEC-05, FR-ADM-07). The web app reads it after signing in; a 401 means it should show the sign-in page. Needs a person signed in; an OAuth client or the AI is refused. Read-only; no side effects."
+      operationId: getSession
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionInfo"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here."
+      summary: Get your session
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-UNAVAILABLE-01
+      x-fyniq-permission:
+        capability: (your session)
+        note: Needs a person signed in to Fyniq; an OAuth client or the AI is refused.
+        right: V
   /v1/setup:
     get:
       description: "Says whether first-run setup has been completed (FR-ADM-06). Public: it needs no credential, so the web app can show the setup wizard on a new installation. Read-only; no side effects."
@@ -1542,7 +1682,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in."
         "409":
           content:
             application/problem+json:
@@ -1584,6 +1724,7 @@ paths:
         - Installation
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1600,6 +1741,56 @@ paths:
         capability: (installation setup)
         note: Needs the one-time setup code and a first-party sign-in; an OAuth client or the AI is refused.
         right: C
+  /v1/sign-in-providers:
+    get:
+      description: "The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the local sign-in page in local mode. Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects."
+      operationId: listSignInProviders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignInProviders"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      security:
+        - {}
+      summary: List the sign-in providers
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-INPUT-02
+      x-fyniq-permission:
+        capability: (your session)
+        right: V
   /v1/super-admins:
     post:
       description: "Redeems a Super admin's invitation: you (a new user, or the one your sign-in belongs to) become a Super admin and receive your ten recovery codes, shown once (FR-ADM-06/09). Side effects: your user and sign-in identity when new, the Super admin, the recovery codes, events in the installation's trail. A wrong, used or expired invitation changes nothing. It takes no Idempotency-Key: a response with a code is never stored, and sending it again makes a new code that replaces the first."
@@ -1634,7 +1825,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in."
         "409":
           content:
             application/problem+json:
@@ -1676,6 +1867,7 @@ paths:
         - Installation
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1714,7 +1906,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin."
         "409":
           content:
             application/problem+json:
@@ -1744,6 +1936,7 @@ paths:
         - Installation
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1792,7 +1985,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in."
         "409":
           content:
             application/problem+json:
@@ -1834,6 +2027,7 @@ paths:
         - Installation
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1871,7 +2065,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin."
         "422":
           content:
             application/problem+json:
@@ -1895,6 +2089,7 @@ paths:
         - Installation
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1941,7 +2136,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin."
         "409":
           content:
             application/problem+json:
@@ -1971,6 +2166,7 @@ paths:
         - Installation
       x-fyniq-error-codes:
         - API-AUTH-01
+        - API-AUTH-02
         - API-AUTHZ-01
         - API-AUTHZ-02
         - API-AUTHZ-03
@@ -1987,6 +2183,7 @@ paths:
         right: A
 security:
   - bearer: []
+  - session: []
 servers:
   - description: "The installation's API: the web app's origin with /api (one origin serves both), or the api service itself in make dev."
     url: "{origin}"
@@ -1997,6 +2194,8 @@ servers:
 tags:
   - description: First-run setup of a new installation (FR-ADM-06).
     name: Installation
+  - description: "Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08)."
+    name: Session
   - description: The organisation your session is in.
     name: Organisation
   - description: "Accounts: what the ledger posts to (PRD-001 §8.2)."

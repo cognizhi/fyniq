@@ -23,6 +23,9 @@ var infrastructure = []string{
 	// The OAuth server's login and consent pages (ADR-T3): browser steps of the authorisation flow, not
 	// API operations.
 	"GET /auth/login", "GET /auth/consent", "POST /auth/consent",
+	// Signing in to the web app (SEC-05, SEC-08): browser navigations to a provider and back, and the
+	// sign-out form; and in the local build the dev sign-in page that stands in for the provider (§12.8).
+	"GET /auth/signin", "GET /auth/callback", "POST /auth/signout", "GET /auth/dev/authorize", "POST /auth/dev/authorize",
 }
 
 // Every route the API serves is a documented operation or named infrastructure: no private

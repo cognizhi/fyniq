@@ -31,7 +31,7 @@ never put a real secret in a committed file (SEC-12).
 | Production | Local substitute | Fidelity notes |
 |---|---|---|
 | Cloud SQL PostgreSQL 18 | `postgres:18` container, same extensions, password auth instead of IAM | Testcontainers uses the same image |
-| Identity Platform (sign-in, TOTP) | Firebase Authentication emulator [verify TOTP MFA support at P0; fallback: a dev OIDC issuer in the `local` build] | Passkeys work on `localhost` (secure context) |
+| Identity Platform (sign-in, TOTP) | (as built, p0-identity-oauth-first-run slice 4a) The **fallback**: a dev OpenID Connect issuer in the `local` build's API (`/api/auth/dev/authorize`), since the Firebase emulator fails TOTP enrolment (PRD §12.8 rev 0.19). Its page asks who you are and whether you passed a second factor, and issues an ID token the callback checks like any provider's. *Superseded:* the Firebase Authentication emulator | Anyone running the stack can sign in as anyone; the real provider's issuer, MFA and account linking are tested in staging. Passkeys work on `localhost` (secure context) |
 | Ory Hydra (ADR-T3) | The same Hydra image | Identical |
 | Cloud KMS | Tink keysets in `.data/keys/` (git-ignored), created by `make setup` | Same algorithms; key custody differs by design |
 | Cloud Storage | `fake-gcs-server` | Production client library unchanged. **Bucket Lock cannot be emulated**: CTL-AUD-03 checks it in staging and production |
@@ -43,7 +43,7 @@ never put a real secret in a committed file (SEC-12).
 | Load balancer, Cloud Armor, CDN | Caddy, one origin (`templates/Caddyfile.example`) | Same cookies and CSP; WAF tested in staging |
 | Email provider | Mailpit (`http://localhost:8025`) | Templates and links end to end |
 | Slack, Zoho Cliq (rev 0.6, P2) | A message sink at `/dev/messages` in the local `api`, with the same payloads | Routing and content level end to end |
-| Sign-in providers (rev 0.6) | The Firebase Authentication emulator shows a mock sign-in page for any provider ID (Google, Zoho, `oidc.*`); real provider sign-in is tested in staging | Provider linking, MFA after sign-in (the emulator's TOTP support is unconfirmed) |
+| Sign-in providers (rev 0.6) | (as built) One provider, `local`, on the dev issuer's page, with the dev tokens' issuer, so a page sign-in and a dev token with the same subject are one identity. *Superseded:* the Firebase Authentication emulator's mock page for any provider ID; real provider sign-in (Google, Zoho) is tested in staging | Provider linking, the provider's own issuer (FR-ADM-08 is unit-tested against several), MFA after sign-in |
 | Malware scanning | EICAR-rejecting stub; `scan` profile runs real ClamAV | — |
 | Peppol AP, bank APIs, Stripe | Prism mocks from `contracts/partners/`; `stripe-mock` | Contract-level; partner sandboxes in staging |
 | Observability | `obs` profile: OTel Collector and Jaeger | Same instrumentation |
@@ -56,7 +56,7 @@ check for anything the substitute cannot prove (risk R17).
 
 | Profile | Services |
 |---|---|
-| *(default)* `core` | postgres, auth emulator, hydra, gcs, mailpit, api, ai, mcp, worker, executor, web (Vite in `make dev`, the image in `make up`), caddy |
+| *(default)* `core` | postgres, hydra, gcs, mailpit, api (with the local sign-in page), ai, mcp, worker, executor, web (Vite in `make dev`, the image in `make up`), caddy |
 | `obs` | otel-collector, jaeger |
 | `scan` | clamav |
 | `partners` | prism (Peppol AP, bank), stripe-mock |

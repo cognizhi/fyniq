@@ -62,7 +62,11 @@ through `invite_super_admin`, `accept_super_admin_invitation`, `set_recovery_cod
 `installation_org` and `count_super_admins` (the API and the worker) and
 `issue_deployment_recovery` (the migrator: the two-person recovery,
 `docs/runbooks/super-admin-recovery.md`). At most two Super admins in P0 and never none
-(`super_admin_guard`); a Super admin is removed, never changed or deleted.
+(`super_admin_guard`); a Super admin is removed, never changed or deleted. The web app's first-party
+sessions (000013): `user_session` (each session token as its SHA-256, with the sign-in identity, the
+provider and the step-up time), reached only through `start_session`, `session_for`, `end_session` and
+`end_user_sessions` (the API); `session_for` reads the identity's user, organisation and live roles on
+every request, one organisation at a time under its row-level security.
 Add one only with its access model here and in the test's list.
 - **The installation organisation** (`organisation.kind = 'installation'`, one per installation,
   created by first-run setup) holds only the installation's audit trail: setup and Super-admin events.

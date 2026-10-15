@@ -1,13 +1,15 @@
-// Package authn says who is calling the API: the principal behind a bearer token. The release build
-// refuses every token until memberships and the SignIn port arrive (p0-identity-oauth-first-run); the
-// local build accepts the local issuer's dev tokens (internal/adapters/local) and, when the OAuth
-// server is configured, Hydra's access tokens for the API's audience (Introspector), never one for
-// the other.
+// Package authn says who is calling the API: the principal behind a bearer token or the web app's
+// first-party session cookie (Sessions; SEC-05, SEC-08). The release build refuses every credential
+// until the Identity Platform adapter of the SignIn port arrives (p0-identity-oauth-first-run); the
+// local build accepts the local issuer's dev tokens (internal/adapters/local), sessions begun with its
+// dev sign-in and, when the OAuth server is configured, Hydra's access tokens for the API's audience
+// (Introspector), never one for the other.
 package authn
 
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,9 +35,13 @@ const (
 
 // Principal is an authenticated caller.
 type Principal struct {
-	Via          string       // ViaSession or ViaToken, set by the authenticator
-	Issuer       string       // who vouched for Subject: set by the authenticator, never read from a token
-	Subject      string       // the user (or service account)
+	Via     string // ViaSession or ViaToken, set by the authenticator
+	Issuer  string // who vouched for Subject: set by the authenticator, never read from a token
+	Subject string // the sign-in identity's subject (a session), or the token's subject (a user ID or service account)
+	// UserID is the Fyniq user behind the principal: set for a session whose identity has a user and for
+	// an OAuth token issued to a user; Nil otherwise (before setup, and for the local dev tokens).
+	UserID       uuid.UUID
+	Provider     string       // the sign-in provider of a first-party session (FR-ADM-08); empty otherwise
 	Client       string       // the OAuth client the call came through
 	Class        string       // user, integration or agent
 	Organisation uuid.UUID    // the organisation the session is in; Nil outside any
@@ -64,16 +70,28 @@ func (p Principal) AI() bool { return p.Class == ClassAgent }
 // ErrUnauthenticated is a request without valid credentials.
 var ErrUnauthenticated = errors.New("no valid credentials")
 
-// Authenticator reads a request's credentials: its Authorization header.
+// Credentials are what a request presents: its Authorization header and its Cookie header, either of
+// which may be empty. A bearer token in Authorization wins; the session cookie counts only without one.
+type Credentials struct {
+	Authorization string
+	Cookie        string
+}
+
+// FromRequest returns a request's credentials.
+func FromRequest(r *http.Request) Credentials {
+	return Credentials{Authorization: r.Header.Get("Authorization"), Cookie: r.Header.Get("Cookie")}
+}
+
+// Authenticator reads a request's credentials.
 type Authenticator interface {
-	Authenticate(ctx context.Context, authorization string) (Principal, error)
+	Authenticate(ctx context.Context, c Credentials) (Principal, error)
 }
 
 // NotYet is the release build's authenticator until p0-identity-oauth-first-run: it accepts no one.
 type NotYet struct{}
 
 // Authenticate implements Authenticator.
-func (NotYet) Authenticate(context.Context, string) (Principal, error) {
+func (NotYet) Authenticate(context.Context, Credentials) (Principal, error) {
 	return Principal{}, errors.Join(ErrUnauthenticated,
 		errors.New("sign-in arrives with the identity and OAuth server (ADR-T3); this build accepts no credentials yet"))
 }

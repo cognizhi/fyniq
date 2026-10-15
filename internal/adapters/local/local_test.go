@@ -187,7 +187,7 @@ func TestDevTokensCarryThePrincipalAndRefuseForgeries(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	p, err := issuer.Authenticate(ctx, "Bearer "+tok)
+	p, err := issuer.Authenticate(ctx, authn.Credentials{Authorization: "Bearer " + tok})
 	if err != nil || p.Subject != "user-1" || p.Organisation != org || len(p.Roles) != 1 || p.Roles[0] != authz.Accountant || p.Class != authn.ClassUser {
 		t.Fatalf("Authenticate = %+v, %v", p, err)
 	}
@@ -200,12 +200,12 @@ func TestDevTokensCarryThePrincipalAndRefuseForgeries(t *testing.T) {
 		"roles changed in the token": "Bearer fyniq-dev." + body[:len(body)-2] + "xx." + sig,
 		"a task token instead":       "Bearer worker.9999999999.abc",
 	} {
-		if _, err := issuer.Authenticate(ctx, header); !errors.Is(err, authn.ErrUnauthenticated) {
+		if _, err := issuer.Authenticate(ctx, authn.Credentials{Authorization: header}); !errors.Is(err, authn.ErrUnauthenticated) {
 			t.Errorf("%s: accepted (%v)", name, err)
 		}
 	}
 	c.Advance(2 * time.Hour)
-	if _, err := issuer.Authenticate(ctx, "Bearer "+tok); !errors.Is(err, authn.ErrUnauthenticated) {
+	if _, err := issuer.Authenticate(ctx, authn.Credentials{Authorization: "Bearer " + tok}); !errors.Is(err, authn.ErrUnauthenticated) {
 		t.Errorf("an expired token was accepted: %v", err)
 	}
 }
@@ -221,7 +221,7 @@ func TestDevTokensStampTheirIssuer(t *testing.T) {
 	m := hmac.New(sha256.New, key)
 	m.Write([]byte(msg))
 	tok := msg + "." + base64.RawURLEncoding.EncodeToString(m.Sum(nil))
-	p, err := NewDevTokens(key, c).Authenticate(context.Background(), "Bearer "+tok)
+	p, err := NewDevTokens(key, c).Authenticate(context.Background(), authn.Credentials{Authorization: "Bearer " + tok})
 	if err != nil || p.Issuer != DevIssuer || p.Via != authn.ViaSession || p.Subject != "u1" {
 		t.Fatalf("a dev token claiming another issuer: %+v, %v", p, err)
 	}

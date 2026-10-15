@@ -284,9 +284,17 @@ func (r superAdmins) Recover(ctx context.Context, rec storage.Recovery) (storage
 	if err := r.u.q.SetRecoveryCodes(ctx, sqlcdb.SetRecoveryCodesParams{UserID: row.UserID, CodeHashes: rec.RecoveryCodeHashes, Now: rec.Now}); err != nil {
 		return storage.Recovered{}, mapError(err)
 	}
-	out := storage.Recovered{UserID: row.UserID, Via: row.Via, RemovedSubjects: row.RemovedSubjects}
+	// SEC-35: the recovery ends every first-party session of the user but those of the sign-in recovering,
+	// including those of the sign-ins it replaced.
+	ended, err := r.u.q.EndUserSessions(ctx, sqlcdb.EndUserSessionsParams{UserID: row.UserID, KeepIssuer: rec.Issuer, KeepSubject: rec.Subject,
+		RemovedSubjects: row.RemovedSubjects, Now: rec.Now})
+	if err != nil {
+		return storage.Recovered{}, mapError(err)
+	}
+	out := storage.Recovered{UserID: row.UserID, Via: row.Via, RemovedSubjects: row.RemovedSubjects, SessionsEnded: int(ended)}
 	return out, r.u.event(as(ctx, row.UserID), "super_admin.recovered", "super_admin", row.UserID, nil, map[string][2]any{
 		"via": {nil, row.Via}, "issuer": {nil, rec.Issuer}, "identities_replaced": {nil, len(row.RemovedSubjects)},
+		"sessions_ended":     {nil, int(ended)},
 		"recovery_code_used": {nil, rec.RecoveryCodeHash != nil}, "recovery_codes": {nil, len(rec.RecoveryCodeHashes)}})
 }
 

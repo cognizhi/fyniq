@@ -97,6 +97,44 @@ type Recovered struct {
 	// RemovedSubjects are the subjects of the sign-in identities the recovery replaced: their tokens
 	// must be revoked (AI-38).
 	RemovedSubjects []string
+	// SessionsEnded is how many of the user's first-party sessions the recovery ended: all but those of
+	// the identity recovering (SEC-35).
+	SessionsEnded int
+}
+
+// Sessions are the web app's first-party sessions (SEC-05, SEC-08): the browser holds an opaque token
+// in an HttpOnly cookie, and the store keeps only its SHA-256. They are the installation's, outside any
+// organisation's unit of work.
+type Sessions interface {
+	// StartSession records a new session for a sign-in identity, with the provider used (FR-ADM-08).
+	StartSession(ctx context.Context, s NewSession) error
+	// Session returns the live session behind a token's hash at now, or ports.ErrNotFound: unknown,
+	// ended, idle for longer than idle, or past its expiry. The identity's user, their organisation and
+	// their live roles are read at that moment, so a role change applies at the next request.
+	Session(ctx context.Context, tokenHash []byte, now time.Time, idle time.Duration) (Session, error)
+	// EndSession ends a session: its holder signed out.
+	EndSession(ctx context.Context, tokenHash []byte, now time.Time) error
+}
+
+// NewSession is what StartSession needs. TokenHash is the SHA-256 of the session token: the token
+// itself never reaches the store.
+type NewSession struct {
+	TokenHash                 []byte
+	Issuer, Subject, Provider string
+	// StepUpAt is when the sign-in passed a second factor (SEC-01); zero when it passed none.
+	StepUpAt     time.Time
+	Now, Expires time.Time
+}
+
+// Session is a live session.
+type Session struct {
+	Issuer, Subject, Provider string
+	// UserID is the identity's user, Nil before it has one (before first-run setup or an invitation);
+	// Organisation is the user's organisation, Nil when they are a member of none.
+	UserID, Organisation uuid.UUID
+	Roles                []string // the user's live roles in Organisation
+	StepUpAt             time.Time
+	ExpiresAt            time.Time
 }
 
 // Members are an organisation's memberships and role assignments (§11.4). A role change goes with a

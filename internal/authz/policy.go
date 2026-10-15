@@ -38,6 +38,9 @@ const (
 	// an Appendix D row. Who may act is the database's record of Super admins, step-up and the codes;
 	// never the AI.
 	SuperAdmins Capability = "(Super admins)"
+	// Session is the caller's own sign-in (SEC-05): not an Appendix D row either. The providers to sign
+	// in with are public; a session reads only itself, and the AI has none.
+	Session Capability = "(your session)"
 )
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
@@ -115,10 +118,16 @@ var (
 			"and a person signed in to Fyniq. An OAuth client or the AI is refused."}
 )
 
+var (
+	ListSignInProviders = Policy{Operation: "listSignInProviders", Capability: Session, Need: View, Public: true}
+	GetSession          = Policy{Operation: "getSession", Capability: Session, Need: View, NoOrganisation: true,
+		Note: "Needs a person signed in to Fyniq; an OAuth client or the AI is refused."}
+)
+
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, ListAccounts, GetAccount, CreateJournal, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
-	ConfirmSuperAdminRecovery, RecoverSuperAdmin)
+	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
@@ -146,9 +155,9 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 	if p.Operation == "" {
 		return Decision{Reason: "the operation has no policy"}
 	}
-	if p.Capability == Setup || p.Capability == SuperAdmins { // the codes, the database and a person's sign-in decide
+	if p.Capability == Setup || p.Capability == SuperAdmins || p.Capability == Session { // the codes, the database and a person's sign-in decide
 		if ai {
-			return Decision{Reason: "the AI cannot set up the installation or change its Super admins"}
+			return Decision{Reason: "the AI cannot set up the installation, change its Super admins or hold a session"}
 		}
 		return Decision{Allowed: true, Right: p.Need}
 	}

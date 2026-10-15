@@ -19,6 +19,8 @@ fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, status)
 fyniq_api       INSERT    document_version (document_id, payload, version)
 fyniq_api       SELECT    document_version
+fyniq_api       EXECUTE   end_session()
+fyniq_api       EXECUTE   end_user_sessions()
 fyniq_api       EXECUTE   finish_job_slot()
 fyniq_api       SELECT    heartbeats
 fyniq_api       INSERT    idempotency_key (client_id, expires_at, key, request_hash)
@@ -48,9 +50,11 @@ fyniq_api       INSERT    role_assignment (expires_at, membership_id, role)
 fyniq_api       SELECT    role_assignment
 fyniq_api       UPDATE    role_assignment (revoked_at)
 fyniq_api       USAGE     schema fyniq
+fyniq_api       EXECUTE   session_for()
 fyniq_api       EXECUTE   set_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()
+fyniq_api       EXECUTE   start_session()
 fyniq_api       EXECUTE   started_job_slot()
 fyniq_api       EXECUTE   super_admin_for_identity()
 fyniq_api       SELECT    tenants
