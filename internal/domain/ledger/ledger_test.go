@@ -138,6 +138,26 @@ func TestEveryValidationCodeIsReachable(t *testing.T) {
 				{AccountID: sales.ID, Amount: amt(t, "-104", jpy), Rate: &r}}}
 		}, "lines"},
 		CodeTooLong: {func() Journal { j := sale(t, "1.00"); j.Memo = long; return j }, "memo"},
+		CodeRateOnBase: {func() Journal {
+			j := sale(t, "1.00")
+			j.Lines[0].Rate = &money.Rate{From: sgd, To: sgd, Source: "document"}
+			return j
+		}, "lines[1].fx_rate"},
+		CodeBaseRange: {func() Journal {
+			r, _ := money.ParseRate("10", usd, sgd, "document")
+			big := amt(t, "9999999999999999.99", usd)
+			return Journal{ID: docID, Version: 1, Date: day, Lines: []JournalLine{
+				{AccountID: usdBank.ID, Amount: big, Rate: &r}, {AccountID: sales.ID, Amount: amt(t, "-1.00", sgd)}}}
+		}, "lines[1].amount"},
+	}
+	shareCapitalCase := func() Journal { j := sale(t, "1.00"); j.Lines[1].AccountID = shareCapital.ID; return j }
+	if _, err := PostJournal(shareCapitalCase(), withShareCapital()); err == nil || !err.(Problems).Has(CodeShareCapital) {
+		t.Errorf("%s: got %v", CodeShareCapital, err)
+	}
+	if e, _ := PostJournal(sale(t, "1.00"), settings); e.Lines != nil {
+		if _, err := Reverse(e, day.AddDate(0, 0, -1), ""); err == nil || !err.(Problems).Has(CodeReversalDate) {
+			t.Errorf("%s: got %v", CodeReversalDate, err)
+		}
 	}
 	for code, c := range cases {
 		_, err := PostJournal(c.j(), settings)
@@ -157,7 +177,7 @@ func TestEveryValidationCodeIsReachable(t *testing.T) {
 	}
 	// Every code the engine declares is covered here.
 	for _, code := range []string{CodeNoDate, CodeTooFewLines, CodeZeroLine, CodeUnknownAccount, CodeGroupAccount,
-		CodeInactiveAccount, CodeMissingRate, CodeWrongRate, CodeUnbalancedBase, CodeUnbalancedCur, CodeTooLong} {
+		CodeInactiveAccount, CodeMissingRate, CodeWrongRate, CodeUnbalancedBase, CodeUnbalancedCur, CodeTooLong, CodeRateOnBase, CodeBaseRange} {
 		if _, ok := cases[code]; !ok {
 			t.Errorf("no case for %s", code)
 		}

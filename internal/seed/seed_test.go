@@ -60,7 +60,8 @@ func TestJournalsBalance(t *testing.T) {
 // req: DEV-08
 func TestOnlySyntheticVocabulary(t *testing.T) {
 	v := vocab(t)
-	allowed := map[string]bool{Schema: true, OrganisationName: true, "SGD": true, AsOf.Format("2006-01-02T15:04:05Z07:00"): true}
+	allowed := map[string]bool{Schema: true, OrganisationName: true, "SGD": true, AsOf.Format("2006-01-02T15:04:05Z07:00"): true,
+		"share-capital": true} // the format's account role (INV-13), not a name
 	for code, names := range v.Accounts {
 		allowed[code] = true
 		for _, n := range names {
@@ -100,4 +101,28 @@ func TestOnlySyntheticVocabulary(t *testing.T) {
 		t.Fatal(err)
 	}
 	walk("company", out)
+}
+
+// The default chart marks 3010 and 3020 as share capital, and no sample journal posts to them: share
+// capital changes only through the register of share issues or opening balances (INV-13, rev 0.24).
+// req: INV-13
+// req: DEV-04
+func TestTheSampleJournalsLeaveShareCapitalAlone(t *testing.T) {
+	c := Generate(vocab(t), 7, 400)
+	marked := map[string]bool{}
+	for _, a := range c.Accounts {
+		if a.Role == "share-capital" {
+			marked[a.Code] = true
+		}
+	}
+	if !marked["3010"] || !marked["3020"] || len(marked) != 2 {
+		t.Fatalf("share-capital accounts: %v; want 3010 and 3020", marked)
+	}
+	for _, j := range c.Journals {
+		for _, l := range j.Lines {
+			if marked[l.Account] {
+				t.Fatalf("%s posts to share capital %s", j.ID, l.Account)
+			}
+		}
+	}
 }

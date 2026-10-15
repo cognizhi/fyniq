@@ -56,7 +56,8 @@ func problemContentType(ct string) string {
 // LedgerCodes are the engine's validation codes: posting a journal can return any of them.
 var LedgerCodes = []string{ledger.CodeNoDate, ledger.CodeTooFewLines, ledger.CodeZeroLine, ledger.CodeUnknownAccount,
 	ledger.CodeGroupAccount, ledger.CodeInactiveAccount, ledger.CodeMissingRate, ledger.CodeWrongRate, ledger.CodeUnbalancedBase,
-	ledger.CodeUnbalancedCur, ledger.CodeTooLong, ledger.CodeNotPosted}
+	ledger.CodeUnbalancedCur, ledger.CodeTooLong, ledger.CodeNotPosted, ledger.CodeRateOnBase, ledger.CodeBaseRange,
+	ledger.CodeShareCapital, ledger.CodeReversalDate}
 
 // The API's own codes. The domain's codes (JOURNAL-*, LEDGER-*, MONEY-*, STORAGE-*) pass through.
 const (
@@ -132,12 +133,17 @@ var codeFacts = map[string]struct {
 	ledger.CodeUnbalancedCur:   {422, "A currency does not balance"},
 	ledger.CodeTooLong:         {422, "A text is too long"},
 	ledger.CodeNotPosted:       {422, "The entry is not posted"},
+	ledger.CodeRateOnBase:      {422, "A base-currency line has a rate"},
+	ledger.CodeBaseRange:       {422, "A base amount is too large"},
+	ledger.CodeShareCapital:    {422, "A line posts to share capital"},
+	ledger.CodeReversalDate:    {422, "The reversal is dated before its entry"},
 	money.CodeNotDecimal:       {422, "An amount is not a plain decimal"},
 	money.CodePrecision:        {422, "An amount has too many decimals"},
 	money.CodeRange:            {422, "An amount is too large"},
 	money.CodeCurrency:         {422, "A currency is not valid"},
 	money.CodeRate:             {422, "An exchange rate is not valid"},
 	storage.CodeUnbalanced:     {422, "The entry does not balance"},
+	storage.CodeShareCapital:   {422, "A manual journal cannot post to share capital"},
 	storage.CodeImmutable:      {409, "Posted history cannot change"},
 	storage.CodePeriodClosed:   {409, "The period is closed"},
 	storage.CodeAccountNotPost: {422, "The account cannot take postings"},

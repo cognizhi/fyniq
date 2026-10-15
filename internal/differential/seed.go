@@ -29,7 +29,7 @@ func FromSeed(c seed.Company, name string) Scenario {
 	s := Scenario{Schema: ScenarioSchema, Name: name, BaseCurrency: c.Organisation.BaseCurrency,
 		Currencies: map[string]int{c.Organisation.BaseCurrency: 2}, Documents: []Document{}, Reversals: []Reversal{}}
 	for _, a := range c.Accounts {
-		s.Accounts = append(s.Accounts, Account{Code: a.Code, Type: accountType(a.Code), Active: true})
+		s.Accounts = append(s.Accounts, Account{Code: a.Code, Type: accountType(a.Code), Active: true, Role: a.Role})
 	}
 	for _, j := range c.Journals {
 		d := Document{Type: "manual_journal", ID: j.ID, Version: 1, Date: j.Date}

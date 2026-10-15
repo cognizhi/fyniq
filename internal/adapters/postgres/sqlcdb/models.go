@@ -21,6 +21,7 @@ type FyniqAccount struct {
 	IsActive       bool
 	Version        int32
 	CreatedAt      time.Time
+	Role           *string
 }
 
 type FyniqAppUser struct {

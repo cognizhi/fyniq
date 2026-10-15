@@ -18,6 +18,7 @@ var fyCodes = map[string]string{
 	"FY004": storage.CodeAccountNotPost,
 	"FY005": storage.CodeAmount,
 	"FY006": storage.CodeNoTenant,
+	"FY007": storage.CodeShareCapital,
 	"FY014": storage.CodeOrganisation,
 	"FY021": storage.CodeNoTenant,
 	"FY030": storage.CodeNoPeriod,

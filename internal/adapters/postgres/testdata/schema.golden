@@ -11,6 +11,7 @@ account | is_group | boolean | not null | false
 account | is_active | boolean | not null | true
 account | version | integer | not null | 1
 account | created_at | timestamp with time zone | not null | now()
+account | role | text | null | 
 app_user | user_id | uuid | not null | uuidv7()
 app_user | display_name | text | not null | 
 app_user | status | text | not null | 'active'::text
@@ -217,6 +218,7 @@ account | account_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES o
 account | account_organisation_id_not_null | NOT NULL organisation_id
 account | account_parent_fkey | FOREIGN KEY (organisation_id, parent_id) REFERENCES account(organisation_id, id)
 account | account_pkey | PRIMARY KEY (organisation_id, id)
+account | account_role_known | CHECK ((role = 'share-capital'::text))
 account | account_type_known | CHECK ((type = ANY (ARRAY['asset'::text, 'liability'::text, 'equity'::text, 'revenue'::text, 'expense'::text])))
 account | account_type_not_null | NOT NULL type
 account | account_version_not_null | NOT NULL version
@@ -646,7 +648,7 @@ user_membership | tenant_isolation | * | (organisation_id = current_org()) | (or
 
 ## functions
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
-account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 85b01568dbabe687758f205a5d1d738b
+account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 43e72f5648b5fa958cff6d3a0aab58c8
 audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 91e817a2872fcf6bd69bb233274ae47b
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
@@ -669,7 +671,7 @@ issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now tim
 journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
-journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a08448dfac396ac97236dad4b8dbc36e
+journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa57168cbf58f452c6da510c88fcfb2f
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
