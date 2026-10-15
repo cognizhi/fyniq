@@ -64,6 +64,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0   # the release tags: oasdiff compares the API contract with the last release (QA-API-02)
       # jdx/mise-action v5.1.2, pinned by commit (SEC-28): installs the toolchain of mise.toml
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: pnpm install --frozen-lockfile

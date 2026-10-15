@@ -489,6 +489,9 @@ components:
       scheme: bearer
       type: http
 info:
+  contact:
+    name: Fyniq
+    url: https://github.com/cognizhi/fyniq
   description: |-
     Fyniq's public API. The web app uses only this API (FR-INT-01).
 
@@ -1228,3 +1231,17 @@ paths:
         right: V
 security:
   - bearer: []
+servers:
+  - description: "The installation's API: the web app's origin with /api (one origin serves both), or the api service itself in make dev."
+    url: "{origin}"
+    variables:
+      origin:
+        default: http://localhost:8080/api
+        description: http://localhost:8080/api behind Caddy (make up); http://localhost:8081 for the api service (make dev)
+tags:
+  - description: The organisation your session is in.
+    name: Organisation
+  - description: "Accounts: what the ledger posts to (PRD-001 §8.2)."
+    name: Chart of accounts
+  - description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."
+    name: Journals

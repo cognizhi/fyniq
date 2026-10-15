@@ -15,6 +15,7 @@ watchexec = "2.8.0"
 sqlc = "1.31.1"
 "npm:squawk-cli" = "2.66.0"
 "go:github.com/go-gremlins/gremlins/cmd/gremlins" = "0.6.0"   # mutation testing (QA-ENG-04)
+"go:github.com/oasdiff/oasdiff" = "1.33.0"                      # breaking changes to the API contract (QA-API-02)
 "npm:@fission-ai/openspec" = "1.14.1"
 
 [env]

@@ -3,8 +3,8 @@
 ## 1. Contract and client
 
 - [x] 1.1 Write `contracts/openapi/fyniq.v1.yaml` with the first endpoints (organisation, accounts read, manual journals) and serve it with huma; CI fails when the generated document differs from the contract; lint `// req: NFR-API-01` asserts a description, examples, permission and error codes on 100% of operations
-- [ ] 1.2 Generate the TypeScript client into `apps/web/src/api` and forbid hand-written fetches in a lint rule; verify the web shell builds against it
-- [ ] 1.3 Add `oasdiff` against the last release's contract; test `// req: QA-API-02` plants a breaking change and expects CI to fail
+- [x] 1.2 Generate the TypeScript client into `apps/web/src/api` and forbid hand-written fetches in a lint rule; verify the web shell builds against it
+- [x] 1.3 Add `oasdiff` against the last release's contract; test `// req: QA-API-02` plants a breaking change and expects CI to fail
 
 ## 2. Conventions middleware
 

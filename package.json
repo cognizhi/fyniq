@@ -11,5 +11,8 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test:e2e": "pnpm -r test:e2e"
+  },
+  "devDependencies": {
+    "@stoplight/spectral-cli": "6.16.3"
   }
 }

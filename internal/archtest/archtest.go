@@ -1,8 +1,9 @@
 // Package archtest enforces the repository's architecture rules as tests, so they run anywhere
 // `go test` runs: no cloud SDK outside internal/adapters/<provider>/ (NFR-PORT-03, ADR-T8), the
 // domain and the ports never depend on an adapter, nothing but internal/clock reads the wall
-// clock (DEV-05), SQL drivers live only in the PostgreSQL adapter (NFR-PORT-01), and only its
-// unit of work begins or ends a transaction (NFR-PORT-07).
+// clock (DEV-05), SQL drivers live only in the PostgreSQL adapter (NFR-PORT-01), only its unit of
+// work begins or ends a transaction (NFR-PORT-07), and the web apps reach the API only through the
+// generated client (QA-API-03).
 package archtest
 
 import (
@@ -10,6 +11,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -246,4 +248,39 @@ func BalanceCalls(filename string, src []byte) ([]string, error) {
 		return true
 	})
 	return out, nil
+}
+
+// networkCall matches the ways browser code reaches a server by hand: fetch, XMLHttpRequest,
+// EventSource, WebSocket, sendBeacon and HTTP libraries. Comments are not code.
+var networkCall = regexp.MustCompile(`\bfetch\s*\(|\bXMLHttpRequest\b|\bnew\s+(EventSource|WebSocket)\b|\bsendBeacon\s*\(|from\s+["'](axios|ky|ofetch|superagent)["']`)
+
+var lineComment = regexp.MustCompile(`//.*$`)
+
+// NetworkCalls returns each hand-written network call in a web source file. The web app calls only
+// documented operations through the generated client in src/api (FR-INT-01, QA-API-03).
+func NetworkCalls(filename string, src []byte) []string {
+	var out []string
+	inBlock := false
+	for i, line := range strings.Split(string(src), "\n") {
+		code := line
+		if inBlock {
+			end := strings.Index(code, "*/")
+			if end < 0 {
+				continue
+			}
+			code, inBlock = code[end+2:], false
+		}
+		if start := strings.Index(code, "/*"); start >= 0 {
+			if end := strings.Index(code[start:], "*/"); end >= 0 {
+				code = code[:start] + code[start+end+2:]
+			} else {
+				code, inBlock = code[:start], true
+			}
+		}
+		code = lineComment.ReplaceAllString(code, "")
+		if m := networkCall.FindString(code); m != "" {
+			out = append(out, fmt.Sprintf("%s:%d: %q: call the API through the generated client (src/api), not by hand (QA-API-03)", filename, i+1, strings.TrimSpace(m)))
+		}
+	}
+	return out
 }

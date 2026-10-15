@@ -1,19 +1,23 @@
 import { useEffect, useState } from "react";
+import { api, type Organisation } from "./api/client";
 
-type Version = { service: string; version: string; commit: string; flavour: string };
+type State = "checking" | "down" | "signed-out" | { organisation: Organisation };
 
-// The P0 shell: it proves the web app builds, loads the design tokens and reaches the API.
-// The screens are built in P1 from docs/design/screens/.
+// The P0 shell: it proves the web app builds, loads the design tokens and reaches the API through the
+// generated client. The screens are built in P1 from docs/design/screens/.
 export function App() {
-  const [api, setApi] = useState<Version | "unreachable" | null>(null);
+  const [state, setState] = useState<State>("checking");
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/version", { signal: controller.signal })
-      .then((r) => (r.ok ? (r.json() as Promise<Version>) : Promise.reject(new Error(String(r.status)))))
-      .then(setApi)
+    api
+      .GET("/v1/organisation", { signal: controller.signal })
+      .then(({ data, response }) => {
+        if (data) setState({ organisation: data });
+        else setState(response.status === 401 ? "signed-out" : "down");
+      })
       .catch((e: unknown) => {
-        if (!(e instanceof DOMException && e.name === "AbortError")) setApi("unreachable");
+        if (!(e instanceof DOMException && e.name === "AbortError")) setState("down");
       });
     return () => controller.abort();
   }, []);
@@ -24,9 +28,10 @@ export function App() {
       <p className="lead">Intelligence behind every number.</p>
       <p>This is the P0 shell of the web app. The screens arrive in P1.</p>
       <p role="status" aria-live="polite" className="api">
-        {api === null && "Checking the API…"}
-        {api === "unreachable" && "The API is not running. Start it with make dev."}
-        {api !== null && api !== "unreachable" && `API ${api.version} (${api.commit}, ${api.flavour} build) is running.`}
+        {state === "checking" && "Checking the API…"}
+        {state === "down" && "The API is not running. Start it with make dev."}
+        {state === "signed-out" && "The API is running. Sign-in arrives with the identity service."}
+        {typeof state === "object" && `Signed in to ${state.organisation.name} (books in ${state.organisation.base_currency}).`}
       </p>
     </main>
   );
