@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -371,5 +372,32 @@ jobs:
 	// pull_request_target, unpinned image, no permissions block, a secret under pull_request_target
 	if len(got) != 8 {
 		t.Fatalf("want 8 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	}
+}
+
+// Every step of `make ci` runs in a CI job, so CI is exactly what `make ci` runs (p0-ci-images-release 1.1).
+// req: SEC-21
+func TestCIRunsEveryStepOfMakeCI(t *testing.T) {
+	root := repoRoot(t)
+	mk, err := os.ReadFile(filepath.Join(root, "Makefile"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	recipe := regexp.MustCompile(`(?ms)^ci:[^\n]*\n((?:\t[^\n]*\n)+)`).FindSubmatch(mk)
+	if recipe == nil {
+		t.Fatal("no ci target in the Makefile")
+	}
+	steps := regexp.MustCompile(`--no-print-directory ([a-z0-9-]+)`).FindAllSubmatch(recipe[1], -1)
+	ci, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "ci.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(steps) < 6 {
+		t.Fatalf("make ci has only %d steps", len(steps))
+	}
+	for _, s := range steps {
+		if !regexp.MustCompile(`(?m)run: make ` + regexp.QuoteMeta(string(s[1])) + `\b`).Match(ci) {
+			t.Errorf("make ci runs `make %s`, but no CI job does", s[1])
+		}
 	}
 }

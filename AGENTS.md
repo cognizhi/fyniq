@@ -38,7 +38,7 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | Command | Does | Status |
 |---|---|---|
 | `make help` | Lists the targets | Today |
-| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the screen inventory and fragments, the review register, the scan waivers | Today (CI runs it) |
+| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the screen inventory and fragments, the review register, the scan waivers and the scan and image rules on planted findings | Today (CI runs it) |
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
@@ -56,7 +56,8 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | `make db-lint` / `sqlc` | squawk on the migrations and a check that the adapter's generated queries are current (part of `make test`) / regenerate them | Today |
 | `make differential` | The full differential run (QA-ENG-02): Hypothesis searches 1,000 generated scenarios for one where the Go engine and the oracle disagree, shrinks it and saves it as a golden case; part of `make ci` and its own CI job. A fixed-seed sample and every golden case run in `make test` | Today |
 | `make oracle-test` | The independent Python oracle's own tests (QA-ENG-01): hand-worked journals, the scenario schemas in `test/differential/`, Hypothesis properties (part of `make test`; `ORACLE_HYPOTHESIS_PROFILE=thorough` runs more examples) | Today |
-| `make test` / `test-e2e` / `evals` / `images` / `ci` | Every merge gate offline (migrations, Go in both build flavours with the database suites in Testcontainers, so Docker must run; web typecheck; the oracle; `make check`) / the Playwright smoke test / the AI evals in replay (suites arrive in P1) / build the images (`FLAVOURS=release local`) / what CI runs, in order | Today (gates grow with each P0 change) |
+| `make test` / `test-e2e` / `evals` / `images` / `ci` | Every merge gate offline (migrations, Go in both build flavours with the database suites in Testcontainers, so Docker must run; web typecheck; the oracle; `make check`) / the Playwright smoke test / the AI evals in replay (suites arrive in P1) / build the images (`FLAVOURS=release local`) and check them against `deploy/docker/budgets.json` and the §12.9 hardening (non-root, no shell, no local adapter in release) / what CI runs, in order, one CI job per step | Today (gates grow with each P0 change) |
+| `make image-scan` | An SPDX SBOM (syft) and a grype scan of each release image; a critical finding fails unless waived. `scripts/local-smoke.sh` is QA-LOCAL-01: `make up` from the local images with no cloud credentials, then smoke checks through Caddy | Today (CI runs both) |
 
 Never invent a command in docs or scripts. If you need a new one, add it to the Makefile with a
 `## description`, and to this table.

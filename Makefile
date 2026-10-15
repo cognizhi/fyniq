@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers image-scan oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -106,27 +106,33 @@ test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 evals: ## Run the AI eval suites in replay mode (the suites arrive in P1)
 	@scripts/evals.sh
 
-images: ## Build the Go and web images (FLAVOURS="release local" by default)
+images: ## Build the Go and web images (FLAVOURS="release local" by default) and check them: budgets, non-root, no shell, no local adapter in release (§12.9)
 	@for svc in $(GO_IMAGES); do for f in $(FLAVOURS); do \
 	  tag=$$( [ "$$f" = local ] && echo local || echo "$(VERSION)" ); \
 	  docker build -q -f deploy/docker/Dockerfile.go-service --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
 	    --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t fyniq-$$svc:$$tag . >/dev/null; \
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
 	@docker build -q -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
+	@python3 scripts/images.py check --version $(VERSION) --flavours "$(FLAVOURS)"
 
-ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, images, test-e2e, evals
+image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical finding fails unless waived (SEC-21)
+	@$(MISE) python3 scripts/images.py scan --version $(VERSION)
+
+ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, images, image-scan, test-e2e, evals
 	@$(MAKE) --no-print-directory test
 	@$(MAKE) --no-print-directory mutation
 	@$(MAKE) --no-print-directory differential
 	@$(MAKE) --no-print-directory scan
 	@$(MAKE) --no-print-directory images
+	@$(MAKE) --no-print-directory image-scan
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals
 
 check: check-tokens check-config kb-lint spec-check design-check review-check scan-waivers ## Run every check available today (CI runs this)
 
-scan-waivers: ## The scan waivers are well formed and the waiver rules hold on planted findings (the scans themselves: make scan)
+scan-waivers: ## The scan waivers are well formed, and the scan and image rules hold on planted findings (the scans themselves: make scan, make images)
 	@python3 scripts/scan.py --self-test
+	@python3 scripts/images.py self-test
 
 check-tokens: ## Design tokens (Fyniq and Nemura) meet WCAG contrast in all four themes (QA-UI-03)
 	@python3 $(DESIGN)/scripts/check_contrast.py

@@ -1,0 +1,14 @@
+{
+  "$comment": "The image size budgets of PRD-001 §12.9 (NFR-IMG-04): compressed size (docker save | gzip) in MB of 1,000,000 bytes. `make images` fails over budget. Change a budget only in a reviewed pull request that changes the PRD's table too; archtest keeps them equal.",
+  "images": {
+    "api": 30,
+    "ai": 30,
+    "mcp": 30,
+    "worker": 30,
+    "executor": 30,
+    "jobs": 30,
+    "migrate": 30,
+    "render": 90,
+    "web": 25
+  }
+}
