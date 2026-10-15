@@ -36,12 +36,14 @@ type Scenario struct {
 	Reversals    []Reversal     `json:"reversals"`
 }
 
-// Account is one account of the scenario's chart.
+// Account is one account of the scenario's chart. Role "share-capital" marks an account a manual
+// journal may not post to (INV-13).
 type Account struct {
 	Code   string `json:"code"`
 	Type   string `json:"type"`
 	Group  bool   `json:"group"`
 	Active bool   `json:"active"`
+	Role   string `json:"role,omitempty"`
 }
 
 // Document is one manual journal version.
@@ -122,7 +124,7 @@ func RunEngine(s Scenario) (Result, error) {
 	codeOf := map[uuid.UUID]string{}
 	for _, a := range s.Accounts {
 		id := stableID("account", a.Code)
-		settings.Accounts[id] = ledger.Account{ID: id, Code: a.Code, Group: a.Group, Active: a.Active}
+		settings.Accounts[id] = ledger.Account{ID: id, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == "share-capital"}
 		codeOf[id] = a.Code
 	}
 

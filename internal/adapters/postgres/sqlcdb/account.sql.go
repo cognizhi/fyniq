@@ -12,7 +12,7 @@ import (
 )
 
 const getAccount = `-- name: GetAccount :one
-SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account WHERE id = $1
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account WHERE id = $1
 `
 
 type GetAccountRow struct {
@@ -24,6 +24,7 @@ type GetAccountRow struct {
 	IsGroup  bool
 	IsActive bool
 	Version  int32
+	Role     *string
 }
 
 func (q *Queries) GetAccount(ctx context.Context, id uuid.UUID) (GetAccountRow, error) {
@@ -38,12 +39,13 @@ func (q *Queries) GetAccount(ctx context.Context, id uuid.UUID) (GetAccountRow, 
 		&i.IsGroup,
 		&i.IsActive,
 		&i.Version,
+		&i.Role,
 	)
 	return i, err
 }
 
 const getAccountByCode = `-- name: GetAccountByCode :one
-SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account WHERE code = $1
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account WHERE code = $1
 `
 
 type GetAccountByCodeRow struct {
@@ -55,6 +57,7 @@ type GetAccountByCodeRow struct {
 	IsGroup  bool
 	IsActive bool
 	Version  int32
+	Role     *string
 }
 
 func (q *Queries) GetAccountByCode(ctx context.Context, code string) (GetAccountByCodeRow, error) {
@@ -69,14 +72,15 @@ func (q *Queries) GetAccountByCode(ctx context.Context, code string) (GetAccount
 		&i.IsGroup,
 		&i.IsActive,
 		&i.Version,
+		&i.Role,
 	)
 	return i, err
 }
 
 const insertAccount = `-- name: InsertAccount :one
-INSERT INTO fyniq.account (code, name, type, parent_id, is_group)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, code, name, type, parent_id, is_group, is_active, version
+INSERT INTO fyniq.account (code, name, type, parent_id, is_group, role)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, code, name, type, parent_id, is_group, is_active, version, role
 `
 
 type InsertAccountParams struct {
@@ -85,6 +89,7 @@ type InsertAccountParams struct {
 	Type     string
 	ParentID *uuid.UUID
 	IsGroup  bool
+	Role     *string
 }
 
 type InsertAccountRow struct {
@@ -96,6 +101,7 @@ type InsertAccountRow struct {
 	IsGroup  bool
 	IsActive bool
 	Version  int32
+	Role     *string
 }
 
 func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (InsertAccountRow, error) {
@@ -105,6 +111,7 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (I
 		arg.Type,
 		arg.ParentID,
 		arg.IsGroup,
+		arg.Role,
 	)
 	var i InsertAccountRow
 	err := row.Scan(
@@ -116,12 +123,13 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (I
 		&i.IsGroup,
 		&i.IsActive,
 		&i.Version,
+		&i.Role,
 	)
 	return i, err
 }
 
 const listAccounts = `-- name: ListAccounts :many
-SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account ORDER BY code
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account ORDER BY code
 `
 
 type ListAccountsRow struct {
@@ -133,6 +141,7 @@ type ListAccountsRow struct {
 	IsGroup  bool
 	IsActive bool
 	Version  int32
+	Role     *string
 }
 
 func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
@@ -153,6 +162,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 			&i.IsGroup,
 			&i.IsActive,
 			&i.Version,
+			&i.Role,
 		); err != nil {
 			return nil, err
 		}
@@ -165,7 +175,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 }
 
 const pageAccounts = `-- name: PageAccounts :many
-SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account
 WHERE code > $1::text ORDER BY code LIMIT $2
 `
 
@@ -183,6 +193,7 @@ type PageAccountsRow struct {
 	IsGroup  bool
 	IsActive bool
 	Version  int32
+	Role     *string
 }
 
 func (q *Queries) PageAccounts(ctx context.Context, arg PageAccountsParams) ([]PageAccountsRow, error) {
@@ -203,6 +214,7 @@ func (q *Queries) PageAccounts(ctx context.Context, arg PageAccountsParams) ([]P
 			&i.IsGroup,
 			&i.IsActive,
 			&i.Version,
+			&i.Role,
 		); err != nil {
 			return nil, err
 		}
@@ -217,7 +229,7 @@ func (q *Queries) PageAccounts(ctx context.Context, arg PageAccountsParams) ([]P
 const setAccountActive = `-- name: SetAccountActive :one
 UPDATE fyniq.account SET is_active = $1, version = version + 1
 WHERE id = $2
-RETURNING id, code, name, type, parent_id, is_group, is_active, version
+RETURNING id, code, name, type, parent_id, is_group, is_active, version, role
 `
 
 type SetAccountActiveParams struct {
@@ -234,6 +246,7 @@ type SetAccountActiveRow struct {
 	IsGroup  bool
 	IsActive bool
 	Version  int32
+	Role     *string
 }
 
 func (q *Queries) SetAccountActive(ctx context.Context, arg SetAccountActiveParams) (SetAccountActiveRow, error) {
@@ -248,6 +261,7 @@ func (q *Queries) SetAccountActive(ctx context.Context, arg SetAccountActivePara
 		&i.IsGroup,
 		&i.IsActive,
 		&i.Version,
+		&i.Role,
 	)
 	return i, err
 }

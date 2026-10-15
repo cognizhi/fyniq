@@ -11,36 +11,47 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/cognizhi/fyniq/internal/differential"
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "usage: scenario-run <scenario.json>")
-		os.Exit(2)
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+// run is the command: the exit status for the arguments, with the result on stdout.
+func run(args []string, stdout, stderr io.Writer) int {
+	if len(args) != 1 {
+		fmt.Fprintln(stderr, "usage: scenario-run <scenario.json>")
+		return 2
 	}
-	b, err := os.ReadFile(os.Args[1])
+	b, err := os.ReadFile(args[0])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "scenario-run:", err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 1
 	}
 	s, err := differential.ParseScenario(b)
 	var invalid *differential.InvalidError
 	if errors.As(err, &invalid) {
-		fmt.Fprintln(os.Stderr, "scenario-run:", err)
-		os.Exit(2)
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 2
+	}
+	if err != nil {
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 1
 	}
 	res, err := differential.RunEngine(s)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "scenario-run:", err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 1
 	}
-	out := json.NewEncoder(os.Stdout)
+	out := json.NewEncoder(stdout)
 	out.SetIndent("", " ")
 	if err := out.Encode(res); err != nil {
-		fmt.Fprintln(os.Stderr, "scenario-run:", err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, "scenario-run:", err)
+		return 1
 	}
+	return 0
 }

@@ -1,22 +1,22 @@
 -- name: InsertAccount :one
-INSERT INTO fyniq.account (code, name, type, parent_id, is_group)
-VALUES (sqlc.arg(code), sqlc.arg(name), sqlc.arg(type), sqlc.narg(parent_id), sqlc.arg(is_group))
-RETURNING id, code, name, type, parent_id, is_group, is_active, version;
+INSERT INTO fyniq.account (code, name, type, parent_id, is_group, role)
+VALUES (sqlc.arg(code), sqlc.arg(name), sqlc.arg(type), sqlc.narg(parent_id), sqlc.arg(is_group), sqlc.narg(role))
+RETURNING id, code, name, type, parent_id, is_group, is_active, version, role;
 
 -- name: GetAccount :one
-SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account WHERE id = $1;
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account WHERE id = $1;
 
 -- name: GetAccountByCode :one
-SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account WHERE code = $1;
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account WHERE code = $1;
 
 -- name: SetAccountActive :one
 UPDATE fyniq.account SET is_active = sqlc.arg(is_active), version = version + 1
 WHERE id = sqlc.arg(id)
-RETURNING id, code, name, type, parent_id, is_group, is_active, version;
+RETURNING id, code, name, type, parent_id, is_group, is_active, version, role;
 
 -- name: ListAccounts :many
-SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account ORDER BY code;
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account ORDER BY code;
 
 -- name: PageAccounts :many
-SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account
 WHERE code > sqlc.arg(after)::text ORDER BY code LIMIT sqlc.arg(page_size);

@@ -1,0 +1,52 @@
+{
+ "schema": "fyniq-scenario-result@1",
+ "name": "scenario-run-decided-rules",
+ "entries": [
+  {
+   "document": "J-SALE",
+   "kind": "post",
+   "posting_date": "2026-10-05",
+   "lines": [
+    {
+     "account": "1010",
+     "currency": "SGD",
+     "amount": "50.00",
+     "base_amount": "50.00"
+    },
+    {
+     "account": "4010",
+     "currency": "SGD",
+     "amount": "-50.00",
+     "base_amount": "-50.00"
+    }
+   ]
+  },
+  {
+   "document": "J-SALE",
+   "kind": "reversal",
+   "posting_date": "2026-10-05",
+   "lines": [
+    {
+     "account": "1010",
+     "currency": "SGD",
+     "amount": "-50.00",
+     "base_amount": "-50.00"
+    },
+    {
+     "account": "4010",
+     "currency": "SGD",
+     "amount": "50.00",
+     "base_amount": "50.00"
+    }
+   ]
+  }
+ ],
+ "rejected": [
+  "J-CAPITAL",
+  "J-ROUNDS-OFF",
+  "J-SALE/reversal"
+ ],
+ "trial_balance": {
+  "2026-10": {}
+ }
+}

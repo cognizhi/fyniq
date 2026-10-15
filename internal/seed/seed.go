@@ -65,7 +65,13 @@ type Org struct {
 type Account struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
+	Role string `json:"role,omitempty"` // "share-capital" for 3010 and 3020 (INV-13)
 }
+
+// ShareCapital are the default chart's share-capital accounts. Only the register of share issues and
+// opening balances post to them, never a manual journal (INV-13, PRD-001 rev 0.24), so the sample
+// company's journals leave them out.
+var ShareCapital = map[string]bool{"3010": true, "3020": true}
 
 // Contact is a customer or vendor.
 type Contact struct {
@@ -108,9 +114,15 @@ func Generate(v *Vocabulary, seed uint64, journals int) Company {
 	c := Company{Schema: Schema, Seed: seed, AsOf: AsOf.Format(time.RFC3339),
 		Organisation: Org{Name: OrganisationName, BaseCurrency: "SGD"}}
 
-	codes := sortedKeys(v.Accounts)
-	for _, code := range codes {
-		c.Accounts = append(c.Accounts, Account{Code: code, Name: v.Accounts[code][0]})
+	var codes []string // the accounts a manual journal may post to
+	for _, code := range sortedKeys(v.Accounts) {
+		a := Account{Code: code, Name: v.Accounts[code][0]}
+		if ShareCapital[code] {
+			a.Role = "share-capital"
+		} else {
+			codes = append(codes, code)
+		}
+		c.Accounts = append(c.Accounts, a)
 	}
 	for i, name := range sortedKeys(v.Contacts) {
 		ct := Contact{ID: fmt.Sprintf("C%04d", i+1), Name: name}

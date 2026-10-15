@@ -157,7 +157,15 @@ type NewAccount struct {
 	Type     AccountType
 	ParentID *uuid.UUID
 	Group    bool
+	Role     AccountRole // fixed once the account exists
 }
+
+// AccountRole marks an account the rules treat specially; empty for most accounts.
+type AccountRole string
+
+// The account roles. A share-capital account changes only through the register of share issues or
+// opening balances: a manual journal line to it is refused (INV-13, from P0).
+const RoleShareCapital AccountRole = "share-capital"
 
 // Account is an account of the chart.
 type Account struct {
@@ -169,6 +177,7 @@ type Account struct {
 	Group    bool
 	Active   bool
 	Version  int
+	Role     AccountRole
 }
 
 // PeriodStatus is open, soft-locked or closed (INV-03; soft locks in FR-GL-09).
@@ -314,6 +323,7 @@ type BalanceDifference struct {
 // to these by the adapter; db/README.md lists both.
 const (
 	CodeUnbalanced     = "STORAGE-INV-01" // the entry does not balance
+	CodeShareCapital   = "STORAGE-INV-13" // a manual journal line to a share-capital account
 	CodeImmutable      = "STORAGE-INV-02" // posted history cannot change
 	CodePeriodClosed   = "STORAGE-INV-03" // the posting date is in a closed period
 	CodeAccountNotPost = "STORAGE-INV-04" // the account is missing, a group or inactive

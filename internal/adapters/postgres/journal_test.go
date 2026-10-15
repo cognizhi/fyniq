@@ -247,7 +247,7 @@ func TestSampleCompanyGoldenTrialBalance(t *testing.T) {
 	var periods []uuid.UUID
 	if err := s.Do(ctx, org.ID, func(ctx context.Context, u storage.UnitOfWork) error {
 		for _, a := range company.Accounts {
-			acc, err := u.Accounts().Create(ctx, storage.NewAccount{Code: a.Code, Name: a.Name, Type: accountType(a.Code)})
+			acc, err := u.Accounts().Create(ctx, storage.NewAccount{Code: a.Code, Name: a.Name, Type: accountType(a.Code), Role: storage.AccountRole(a.Role)})
 			if err != nil {
 				return err
 			}

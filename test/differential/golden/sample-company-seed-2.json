@@ -160,13 +160,15 @@
    "code": "3010",
    "type": "equity",
    "group": false,
-   "active": true
+   "active": true,
+   "role": "share-capital"
   },
   {
    "code": "3020",
    "type": "equity",
    "group": false,
-   "active": true
+   "active": true,
+   "role": "share-capital"
   },
   {
    "code": "3100",
@@ -425,12 +427,12 @@
      "amount": "18599.09"
     },
     {
-     "account": "4090",
+     "account": "5010",
      "currency": "SGD",
      "amount": "94674.22"
     },
     {
-     "account": "6010",
+     "account": "6020",
      "currency": "SGD",
      "amount": "-113273.31"
     }
@@ -444,7 +446,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2999",
+     "account": "2700",
      "currency": "SGD",
      "amount": "456409.10"
     },
@@ -463,17 +465,17 @@
    "memo": "",
    "lines": [
     {
-     "account": "2999",
+     "account": "2700",
      "currency": "SGD",
      "amount": "471393.97"
     },
     {
-     "account": "6420",
+     "account": "6430",
      "currency": "SGD",
      "amount": "138299.28"
     },
     {
-     "account": "4090",
+     "account": "5010",
      "currency": "SGD",
      "amount": "-609693.25"
     }
@@ -487,7 +489,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6430",
+     "account": "6510",
      "currency": "SGD",
      "amount": "71211.50"
     },
@@ -516,7 +518,7 @@
      "amount": "215114.77"
     },
     {
-     "account": "2200",
+     "account": "2150",
      "currency": "SGD",
      "amount": "-215114.77"
     }
@@ -530,12 +532,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "6150",
+     "account": "6210",
      "currency": "SGD",
      "amount": "105728.98"
     },
     {
-     "account": "2500",
+     "account": "2400",
      "currency": "SGD",
      "amount": "-105728.98"
     }
@@ -554,7 +556,7 @@
      "amount": "114851.58"
     },
     {
-     "account": "6120",
+     "account": "6135",
      "currency": "SGD",
      "amount": "-114851.58"
     }
@@ -573,7 +575,7 @@
      "amount": "213728.14"
     },
     {
-     "account": "6120",
+     "account": "6135",
      "currency": "SGD",
      "amount": "-213728.14"
     }
@@ -587,7 +589,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "499126.33"
     },
@@ -611,7 +613,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "4010",
+     "account": "4020",
      "currency": "SGD",
      "amount": "462549.41"
     },
@@ -630,7 +632,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "4020",
+     "account": "4090",
      "currency": "SGD",
      "amount": "258176.03"
     },
@@ -649,7 +651,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6410",
+     "account": "6420",
      "currency": "SGD",
      "amount": "367084.34"
     },
@@ -668,7 +670,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2115",
+     "account": "2110",
      "currency": "SGD",
      "amount": "98894.58"
     },
@@ -687,7 +689,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2110",
+     "account": "2100",
      "currency": "SGD",
      "amount": "230419.71"
     },
@@ -711,12 +713,12 @@
      "amount": "316172.54"
     },
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "1584.62"
     },
     {
-     "account": "6510",
+     "account": "6520",
      "currency": "SGD",
      "amount": "-317757.16"
     }
@@ -730,7 +732,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6060",
+     "account": "6110",
      "currency": "SGD",
      "amount": "411073.52"
     },
@@ -740,7 +742,7 @@
      "amount": "379278.16"
     },
     {
-     "account": "6210",
+     "account": "6310",
      "currency": "SGD",
      "amount": "-790351.68"
     }
@@ -754,12 +756,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "5040",
+     "account": "6010",
      "currency": "SGD",
      "amount": "259962.87"
     },
     {
-     "account": "3020",
+     "account": "3100",
      "currency": "SGD",
      "amount": "-259962.87"
     }
@@ -797,12 +799,12 @@
      "amount": "382041.49"
     },
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "498324.86"
     },
     {
-     "account": "3300",
+     "account": "4010",
      "currency": "SGD",
      "amount": "-880366.35"
     }
@@ -816,12 +818,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "1250",
+     "account": "1210",
      "currency": "SGD",
      "amount": "36365.18"
     },
     {
-     "account": "6060",
+     "account": "6110",
      "currency": "SGD",
      "amount": "194411.01"
     },
@@ -864,7 +866,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2300",
+     "account": "2200",
      "currency": "SGD",
      "amount": "101100.37"
     },
@@ -888,12 +890,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "6020",
+     "account": "6030",
      "currency": "SGD",
      "amount": "52592.14"
     },
     {
-     "account": "6110",
+     "account": "6120",
      "currency": "SGD",
      "amount": "457398.56"
     },
@@ -936,7 +938,7 @@
      "amount": "151710.79"
     },
     {
-     "account": "6510",
+     "account": "6520",
      "currency": "SGD",
      "amount": "-151710.79"
     }
@@ -950,7 +952,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6030",
+     "account": "6050",
      "currency": "SGD",
      "amount": "471316.02"
     },
@@ -998,7 +1000,7 @@
      "amount": "101786.21"
     },
     {
-     "account": "4020",
+     "account": "4090",
      "currency": "SGD",
      "amount": "-101786.21"
     }
@@ -1055,12 +1057,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "6110",
+     "account": "6120",
      "currency": "SGD",
      "amount": "195509.62"
     },
     {
-     "account": "6150",
+     "account": "6210",
      "currency": "SGD",
      "amount": "135204.21"
     },
@@ -1079,12 +1081,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "4010",
+     "account": "4020",
      "currency": "SGD",
      "amount": "152742.83"
     },
     {
-     "account": "3020",
+     "account": "3100",
      "currency": "SGD",
      "amount": "478717.05"
     },
@@ -1122,7 +1124,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6030",
+     "account": "6050",
      "currency": "SGD",
      "amount": "111678.45"
     },
@@ -1146,7 +1148,7 @@
      "amount": "482110.04"
     },
     {
-     "account": "3020",
+     "account": "3100",
      "currency": "SGD",
      "amount": "138726.13"
     },
@@ -1170,7 +1172,7 @@
      "amount": "200516.46"
     },
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "379014.95"
     },
@@ -1213,7 +1215,7 @@
      "amount": "490250.83"
     },
     {
-     "account": "6135",
+     "account": "6140",
      "currency": "SGD",
      "amount": "-490250.83"
     }
@@ -1232,7 +1234,7 @@
      "amount": "269904.39"
     },
     {
-     "account": "4010",
+     "account": "4020",
      "currency": "SGD",
      "amount": "-269904.39"
     }
@@ -1284,17 +1286,17 @@
    "memo": "",
    "lines": [
     {
-     "account": "4020",
+     "account": "4090",
      "currency": "SGD",
      "amount": "142822.26"
     },
     {
-     "account": "4090",
+     "account": "5010",
      "currency": "SGD",
      "amount": "148745.89"
     },
     {
-     "account": "6030",
+     "account": "6050",
      "currency": "SGD",
      "amount": "-291568.15"
     }
@@ -1308,12 +1310,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "3020",
+     "account": "3100",
      "currency": "SGD",
      "amount": "43064.76"
     },
     {
-     "account": "6050",
+     "account": "6060",
      "currency": "SGD",
      "amount": "-43064.76"
     }
@@ -1327,7 +1329,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "4090",
+     "account": "5010",
      "currency": "SGD",
      "amount": "370117.27"
     },
@@ -1361,7 +1363,7 @@
      "amount": "137364.32"
     },
     {
-     "account": "3300",
+     "account": "4010",
      "currency": "SGD",
      "amount": "-179333.93"
     }
@@ -1375,12 +1377,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "5020",
+     "account": "5030",
      "currency": "SGD",
      "amount": "133931.25"
     },
     {
-     "account": "6210",
+     "account": "6310",
      "currency": "SGD",
      "amount": "-133931.25"
     }
@@ -1394,12 +1396,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "5020",
+     "account": "5030",
      "currency": "SGD",
      "amount": "76817.35"
     },
     {
-     "account": "6020",
+     "account": "6030",
      "currency": "SGD",
      "amount": "-76817.35"
     }
@@ -1432,7 +1434,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2300",
+     "account": "2200",
      "currency": "SGD",
      "amount": "211644.05"
     },
@@ -1461,7 +1463,7 @@
      "amount": "90158.90"
     },
     {
-     "account": "2200",
+     "account": "2150",
      "currency": "SGD",
      "amount": "-90158.90"
     }
@@ -1475,7 +1477,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "4020",
+     "account": "4090",
      "currency": "SGD",
      "amount": "185913.72"
     },
@@ -1499,7 +1501,7 @@
      "amount": "69551.96"
     },
     {
-     "account": "2700",
+     "account": "2500",
      "currency": "SGD",
      "amount": "-69551.96"
     }
@@ -1513,12 +1515,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "4010",
+     "account": "4020",
      "currency": "SGD",
      "amount": "39262.97"
     },
     {
-     "account": "3100",
+     "account": "3300",
      "currency": "SGD",
      "amount": "-39262.97"
     }
@@ -1532,7 +1534,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2999",
+     "account": "2700",
      "currency": "SGD",
      "amount": "398139.20"
     },
@@ -1556,7 +1558,7 @@
      "amount": "320572.16"
     },
     {
-     "account": "3100",
+     "account": "3300",
      "currency": "SGD",
      "amount": "473516.21"
     },
@@ -1580,7 +1582,7 @@
      "amount": "432410.94"
     },
     {
-     "account": "5040",
+     "account": "6010",
      "currency": "SGD",
      "amount": "215906.67"
     },
@@ -1604,7 +1606,7 @@
      "amount": "10547.93"
     },
     {
-     "account": "2300",
+     "account": "2200",
      "currency": "SGD",
      "amount": "-10547.93"
     }
@@ -1628,7 +1630,7 @@
      "amount": "419498.21"
     },
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "-843032.17"
     }
@@ -1647,7 +1649,7 @@
      "amount": "216559.46"
     },
     {
-     "account": "5030",
+     "account": "5040",
      "currency": "SGD",
      "amount": "-216559.46"
     }
@@ -1666,12 +1668,12 @@
      "amount": "305129.78"
     },
     {
-     "account": "2100",
+     "account": "2050",
      "currency": "SGD",
      "amount": "313733.91"
     },
     {
-     "account": "1250",
+     "account": "1210",
      "currency": "SGD",
      "amount": "-618863.69"
     }
@@ -1685,7 +1687,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "3300",
+     "account": "4010",
      "currency": "SGD",
      "amount": "294001.70"
     },
@@ -1709,12 +1711,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "6010",
+     "account": "6020",
      "currency": "SGD",
      "amount": "172076.02"
     },
     {
-     "account": "3100",
+     "account": "3300",
      "currency": "SGD",
      "amount": "-172076.02"
     }
@@ -1738,7 +1740,7 @@
      "amount": "79848.03"
     },
     {
-     "account": "6350",
+     "account": "6410",
      "currency": "SGD",
      "amount": "-545142.93"
     }
@@ -1752,17 +1754,17 @@
    "memo": "",
    "lines": [
     {
-     "account": "6010",
+     "account": "6020",
      "currency": "SGD",
      "amount": "829.08"
     },
     {
-     "account": "6050",
+     "account": "6060",
      "currency": "SGD",
      "amount": "310050.56"
     },
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "-310879.64"
     }
@@ -1776,7 +1778,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6520",
+     "account": "6530",
      "currency": "SGD",
      "amount": "425893.33"
     },
@@ -1786,7 +1788,7 @@
      "amount": "207049.71"
     },
     {
-     "account": "5020",
+     "account": "5030",
      "currency": "SGD",
      "amount": "-632943.04"
     }
@@ -1800,7 +1802,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6060",
+     "account": "6110",
      "currency": "SGD",
      "amount": "43971.87"
     },
@@ -1862,7 +1864,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2150",
+     "account": "2120",
      "currency": "SGD",
      "amount": "151019.47"
     },
@@ -1872,7 +1874,7 @@
      "amount": "136846.33"
     },
     {
-     "account": "2999",
+     "account": "2700",
      "currency": "SGD",
      "amount": "-287865.80"
     }
@@ -1905,7 +1907,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2050",
+     "account": "2010",
      "currency": "SGD",
      "amount": "372703.98"
     },
@@ -1991,12 +1993,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "3100",
+     "account": "3300",
      "currency": "SGD",
      "amount": "380984.88"
     },
     {
-     "account": "6520",
+     "account": "6530",
      "currency": "SGD",
      "amount": "-380984.88"
     }
@@ -2015,7 +2017,7 @@
      "amount": "436645.01"
     },
     {
-     "account": "3300",
+     "account": "4010",
      "currency": "SGD",
      "amount": "-436645.01"
     }
@@ -2029,12 +2031,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "6350",
+     "account": "6410",
      "currency": "SGD",
      "amount": "85174.10"
     },
     {
-     "account": "2115",
+     "account": "2110",
      "currency": "SGD",
      "amount": "-85174.10"
     }
@@ -2048,17 +2050,17 @@
    "memo": "",
    "lines": [
     {
-     "account": "4010",
+     "account": "4020",
      "currency": "SGD",
      "amount": "24038.19"
     },
     {
-     "account": "2300",
+     "account": "2200",
      "currency": "SGD",
      "amount": "486574.79"
     },
     {
-     "account": "6050",
+     "account": "6060",
      "currency": "SGD",
      "amount": "-510612.98"
     }
@@ -2072,12 +2074,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "6310",
+     "account": "6320",
      "currency": "SGD",
      "amount": "141399.05"
     },
     {
-     "account": "3100",
+     "account": "3300",
      "currency": "SGD",
      "amount": "-141399.05"
     }
@@ -2115,7 +2117,7 @@
      "amount": "210910.43"
     },
     {
-     "account": "6135",
+     "account": "6140",
      "currency": "SGD",
      "amount": "-210910.43"
     }
@@ -2129,7 +2131,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "3100",
+     "account": "3300",
      "currency": "SGD",
      "amount": "118655.67"
     },
@@ -2153,7 +2155,7 @@
      "amount": "114433.37"
     },
     {
-     "account": "6120",
+     "account": "6135",
      "currency": "SGD",
      "amount": "-114433.37"
     }
@@ -2167,7 +2169,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2350",
+     "account": "2300",
      "currency": "SGD",
      "amount": "304606.72"
     },
@@ -2186,7 +2188,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "3300",
+     "account": "4010",
      "currency": "SGD",
      "amount": "211263.94"
     },
@@ -2210,17 +2212,17 @@
    "memo": "",
    "lines": [
     {
-     "account": "2116",
+     "account": "2115",
      "currency": "SGD",
      "amount": "497713.98"
     },
     {
-     "account": "2116",
+     "account": "2115",
      "currency": "SGD",
      "amount": "2754.67"
     },
     {
-     "account": "5020",
+     "account": "5030",
      "currency": "SGD",
      "amount": "-500468.65"
     }
@@ -2234,7 +2236,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2500",
+     "account": "2400",
      "currency": "SGD",
      "amount": "205224.88"
     },
@@ -2253,7 +2255,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "4020",
+     "account": "4090",
      "currency": "SGD",
      "amount": "413196.06"
     },
@@ -2272,7 +2274,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2120",
+     "account": "2116",
      "currency": "SGD",
      "amount": "468639.52"
     },
@@ -2282,7 +2284,7 @@
      "amount": "335646.88"
     },
     {
-     "account": "5020",
+     "account": "5030",
      "currency": "SGD",
      "amount": "-804286.40"
     }
@@ -2301,7 +2303,7 @@
      "amount": "323581.01"
     },
     {
-     "account": "4020",
+     "account": "4090",
      "currency": "SGD",
      "amount": "-323581.01"
     }
@@ -2320,7 +2322,7 @@
      "amount": "272047.74"
     },
     {
-     "account": "6010",
+     "account": "6020",
      "currency": "SGD",
      "amount": "196924.23"
     },
@@ -2349,7 +2351,7 @@
      "amount": "199074.26"
     },
     {
-     "account": "1250",
+     "account": "1210",
      "currency": "SGD",
      "amount": "-222797.03"
     }
@@ -2363,7 +2365,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2400",
+     "account": "2350",
      "currency": "SGD",
      "amount": "27921.72"
     },
@@ -2397,7 +2399,7 @@
      "amount": "302824.53"
     },
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "-755636.97"
     }
@@ -2440,7 +2442,7 @@
      "amount": "395539.70"
     },
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "404427.69"
     },
@@ -2459,7 +2461,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "2050",
+     "account": "2010",
      "currency": "SGD",
      "amount": "343796.92"
     },
@@ -2488,7 +2490,7 @@
      "amount": "200457.06"
     },
     {
-     "account": "6210",
+     "account": "6310",
      "currency": "SGD",
      "amount": "-623144.14"
     }
@@ -2507,7 +2509,7 @@
      "amount": "67630.36"
     },
     {
-     "account": "6020",
+     "account": "6030",
      "currency": "SGD",
      "amount": "-67630.36"
     }
@@ -2521,12 +2523,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "2500",
+     "account": "2400",
      "currency": "SGD",
      "amount": "371120.69"
     },
     {
-     "account": "6135",
+     "account": "6140",
      "currency": "SGD",
      "amount": "247324.79"
     },
@@ -2550,7 +2552,7 @@
      "amount": "385485.60"
     },
     {
-     "account": "6010",
+     "account": "6020",
      "currency": "SGD",
      "amount": "378158.00"
     },
@@ -2569,12 +2571,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "5010",
+     "account": "5020",
      "currency": "SGD",
      "amount": "180896.48"
     },
     {
-     "account": "2100",
+     "account": "2050",
      "currency": "SGD",
      "amount": "-180896.48"
     }
@@ -2588,7 +2590,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "4010",
+     "account": "4090",
      "currency": "SGD",
      "amount": "119782.30"
     },
@@ -2607,7 +2609,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6310",
+     "account": "6320",
      "currency": "SGD",
      "amount": "349816.64"
     },
@@ -2617,7 +2619,7 @@
      "amount": "102540.14"
     },
     {
-     "account": "4010",
+     "account": "4020",
      "currency": "SGD",
      "amount": "-452356.78"
     }
@@ -2636,7 +2638,7 @@
      "amount": "307375.87"
     },
     {
-     "account": "2116",
+     "account": "2115",
      "currency": "SGD",
      "amount": "-307375.87"
     }
@@ -2684,7 +2686,7 @@
      "amount": "238754.91"
     },
     {
-     "account": "6140",
+     "account": "6150",
      "currency": "SGD",
      "amount": "-357671.18"
     }
@@ -2736,7 +2738,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "5040",
+     "account": "6010",
      "currency": "SGD",
      "amount": "150303.81"
     },
@@ -2760,7 +2762,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "5040",
+     "account": "6010",
      "currency": "SGD",
      "amount": "42788.08"
     },
@@ -2789,7 +2791,7 @@
      "amount": "209588.11"
     },
     {
-     "account": "2150",
+     "account": "2120",
      "currency": "SGD",
      "amount": "-360056.36"
     }
@@ -2803,17 +2805,17 @@
    "memo": "",
    "lines": [
     {
-     "account": "5040",
+     "account": "6010",
      "currency": "SGD",
      "amount": "127132.07"
     },
     {
-     "account": "6135",
+     "account": "6140",
      "currency": "SGD",
      "amount": "204596.97"
     },
     {
-     "account": "6060",
+     "account": "6110",
      "currency": "SGD",
      "amount": "-331729.04"
     }
@@ -2827,7 +2829,7 @@
    "memo": "",
    "lines": [
     {
-     "account": "6120",
+     "account": "6135",
      "currency": "SGD",
      "amount": "285506.62"
     },
@@ -2870,7 +2872,7 @@
      "amount": "98176.74"
     },
     {
-     "account": "6030",
+     "account": "6050",
      "currency": "SGD",
      "amount": "461748.03"
     },
@@ -2908,12 +2910,12 @@
    "memo": "",
    "lines": [
     {
-     "account": "6510",
+     "account": "6520",
      "currency": "SGD",
      "amount": "311821.52"
     },
     {
-     "account": "3020",
+     "account": "3100",
      "currency": "SGD",
      "amount": "-311821.52"
     }

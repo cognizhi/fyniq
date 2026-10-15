@@ -4,7 +4,10 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -26,6 +29,31 @@ import (
 type Money struct {
 	Amount   string `json:"amount" pattern:"^-?(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$" doc:"An exact decimal: debits positive, credits negative; at most the currency's decimals." example:"1250.00"`
 	Currency string `json:"currency" pattern:"^[A-Z]{3}$" doc:"The ISO 4217 currency code." example:"SGD"`
+}
+
+// TransformSchema implements huma.SchemaTransformer: the money-string pattern for each currency, by its
+// minor units (ENG-44 rev 0.24, FR-INT-13). Decimal places count as written, so "12345.0" is not a JPY
+// amount and "100" is a USD one. The schema says so to clients and models; the API checks the same
+// rule itself, with a field error naming the currency.
+func (Money) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	byUnits := map[int][]string{}
+	for code, units := range money.Currencies() {
+		byUnits[units] = append(byUnits[units], code)
+	}
+	for _, units := range slices.Sorted(maps.Keys(byUnits)) {
+		codes := byUnits[units]
+		slices.Sort(codes)
+		pattern := `^-?(0|[1-9][0-9]{0,15})`
+		if units > 0 {
+			pattern += fmt.Sprintf(`(\.[0-9]{1,%d})?`, units)
+		}
+		pattern += `$`
+		s.AllOf = append(s.AllOf, &huma.Schema{Extensions: map[string]any{
+			"if":   map[string]any{"required": []string{"currency"}, "properties": map[string]any{"currency": map[string]any{"enum": codes}}},
+			"then": map[string]any{"properties": map[string]any{"amount": map[string]any{"pattern": pattern}}},
+		}})
+	}
+	return s
 }
 
 func moneyOf(amount storage.Decimal, currency string) Money {
@@ -184,10 +212,13 @@ func registerAccounts(a *API) {
 type JournalLineDraft struct {
 	AccountID    string `json:"account_id" format:"uuid" doc:"The account to post to: a leaf account, active." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	Amount       Money  `json:"amount" doc:"Debit positive, credit negative, in the line's currency."`
-	FXRate       string `json:"fx_rate,omitempty" pattern:"^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?$" doc:"For a line not in the base currency: base currency per unit of the line's currency." example:"1.3472"`
-	FXRateSource string `json:"fx_rate_source,omitempty" maxLength:"100" doc:"Where the rate came from." example:"document"`
+	FXRate       string `json:"fx_rate,omitempty" pattern:"^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?$" doc:"Only for a line not in the base currency: base currency per unit of the line's currency. A base-currency line takes none; posting refuses one (ENG-03)." example:"1.3472"`
+	FXRateSource string `json:"fx_rate_source,omitempty" maxLength:"100" doc:"Where the rate came from. A rate you send is the document's, so its source is document, set for you when you leave it out; any other source is refused (ENG-03, ENG-40)." example:"document"`
 	Description  string `json:"description,omitempty" maxLength:"500" doc:"What the line is for." example:"October office rent"`
 }
+
+// RateSourceDocument is the source of a rate typed on the document (ENG-40).
+const RateSourceDocument = "document"
 
 // JournalDraft is a manual journal as entered. A draft is checked only for its amounts; posting
 // checks the rest (it must balance, its accounts must take postings, its date must be in an open
@@ -301,7 +332,15 @@ func draftOf(in JournalDraft, base money.Currency) (journal.Draft, error) {
 			continue
 		}
 		if l.FXRate != "" || l.FXRateSource != "" {
-			rate, err := money.ParseRate(l.FXRate, cur, base, l.FXRateSource)
+			// A rate the client sends is typed on the document (ENG-03, ENG-40): its source is "document".
+			source := cmp.Or(l.FXRateSource, RateSourceDocument)
+			if source != RateSourceDocument {
+				fields = append(fields, FieldProblem{Code: money.CodeRate, Field: at("fx_rate_source"),
+					Message: fmt.Sprintf("a rate you send is the document's, so its source is %s, not %q", RateSourceDocument, source),
+					Fix:     "Leave fx_rate_source out, or send document"})
+				continue
+			}
+			rate, err := money.ParseRate(l.FXRate, cur, base, source)
 			if err != nil {
 				fields = append(fields, fieldOf(err, at("fx_rate")))
 				continue
@@ -453,7 +492,8 @@ func registerJournals(a *API) {
 
 	postingCodes := []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
 		journal.CodeNotJournal, journal.CodeBadDraft, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed,
-		storage.CodeAccountNotPost, storage.CodeAmount, storage.CodeDocumentStatus, storage.CodeDuplicate, storage.CodeRetry, storage.CodeLockTimeout}
+		storage.CodeAccountNotPost, storage.CodeAmount, storage.CodeDocumentStatus, storage.CodeDuplicate, storage.CodeRetry, storage.CodeLockTimeout,
+		storage.CodeShareCapital}
 	postingCodes = append(postingCodes, LedgerCodes...)
 
 	register(a, authz.PostJournal, huma.Operation{

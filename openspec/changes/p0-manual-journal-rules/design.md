@@ -78,6 +78,25 @@ Three decisions change behaviour:
     against p0-audit-chain whether a refused journal writes an audit event or only returns problem
     details.
 
+## Engine half, as built (the engine session's revision, 15 Oct 2026)
+
+- **Rule 1** ("a currency the organisation uses"): until the multi-currency switch (FR-ORG-06, P1),
+  every ISO 4217 currency Fyniq knows. Each amount and rate passes ENG-44 when the API reads the draft.
+- **Every failure at once**: the balance rules (7, 8) are checked whenever every line has a base amount,
+  so they are reported beside account, rate and length failures. A line without a base amount (no
+  rate, a rate for other currencies, a zero amount, a base out of range) stops only the balance rules.
+- **Codes**: LEDGER-13 (a rate on a base-currency line), LEDGER-14 (a base amount out of range),
+  LEDGER-15 (a line to share capital), LEDGER-16 (a reversal dated before its entry); FY007 and
+  STORAGE-INV-13 for the database's refusal.
+- **The rule version stays `manual_journal@1`**: no journal that still posts produces a different entry.
+  The new rules only refuse journals that P0 never posted in production.
+- **Share capital**: `account.role` (one value, `share-capital`), set at creation and never changed;
+  the posting-source check refuses the `manual_journal` source only, so the register of share issues
+  (P1) can post there. The sample company's default chart marks 3010 and 3020, and its generated
+  journals leave them out, so its golden scenarios stay valid for both sides before group 3.
+- **Rates**: the API gives a typed rate the source "document" and refuses another source.
+- **Audit**: a refused journal writes no audit event; the caller gets problem details (as before).
+
 ## Risks / Trade-offs
 
 - [Both sides misread a decided rule the same way] → each side's tests are worked by hand from the PRD

@@ -260,6 +260,57 @@ func TestAttackPostingToGroupInactiveOrForeignAccountsFails(t *testing.T) {
 	wantState(t, "turn an account with postings into a group", err, "FY041")
 }
 
+// A manual journal line to a share-capital account is refused by the posting-source check, however it
+// is written; another source (the register of share issues, P1) may post there. The mark itself cannot
+// change once the account exists.
+// req: INV-13
+// req: QA-ENG-05
+// asvs: V2.2.3, V2.3.3
+func TestAttackManualJournalToShareCapitalFails(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack INV-13 Pte Ltd")
+	var capital storage.Account
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		capital, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "3010", Name: "Share capital, ordinary", Type: storage.Equity,
+			Role: storage.RoleShareCapital})
+		return err
+	}); err != nil || capital.Role != storage.RoleShareCapital {
+		t.Fatalf("create the share-capital account: %v (%+v)", err, capital)
+	}
+	post := func(source string) error {
+		return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+			var id uuid.UUID
+			if err := tx.QueryRow(ctx, `
+INSERT INTO fyniq.journal_entry (posting_date, posting_identity, source_type, source_id, source_version, rule_version)
+VALUES ('2026-10-14', $1, $2, $1, 1, 'attack@1') RETURNING id`, uuid.NewString(), source).Scan(&id); err != nil {
+				return err
+			}
+			if err := auditRaw(ctx, tx, "journal_entry.posted", "journal_entry", id); err != nil {
+				return err
+			}
+			if err := line(ctx, tx, id, 1, b.Bank.ID, "SGD", "1000.00", "1", "1000.00"); err != nil {
+				return err
+			}
+			return line(ctx, tx, id, 2, capital.ID, "SGD", "-1000.00", "1", "-1000.00")
+		})
+	}
+	wantState(t, "a manual journal line to share capital", post("manual_journal"), "FY007")
+	if err := post("share_issue"); err != nil {
+		t.Errorf("another source could not post to share capital: %v", err)
+	}
+	err := asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "UPDATE fyniq.account SET role = NULL WHERE id = $1", capital.ID)
+		return err
+	})
+	wantState(t, "unmark a share-capital account", err, "FY040")
+	err = asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "UPDATE fyniq.account SET role = 'share-capital' WHERE id = $1", b.Sales.ID)
+		return err
+	})
+	wantState(t, "mark an account as the API", err, "42501")
+}
+
 // nanAttacks try NaN and an out-of-range value in each numeric column; TestEveryNumericColumn…
 // fails when a numeric column has no entry here.
 var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) error{

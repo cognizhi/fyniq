@@ -104,9 +104,11 @@ Add one only with its access model here and in the test's list.
 | INV-12 audit chain | `audit_event_append` chains every event, `SHA-256(prev_hash ‖ body)`, under the chain head's lock; events and the head are immutable (`FY060`); format in `contracts/audit/` | `TestTamperingWithTheTrailIsDetected`, `TestTheChainStaysLinearUnderConcurrentWrites` |
 | AUD-08 no change without its event | `require_audit` constraint triggers at commit (`FY061`); no role can update, delete or truncate the trail, or turn triggers off | `TestAttackChangesWithoutAnAuditEventFail` |
 | Outbox (§12.11, ADR-T7) | `outbox` rows are written in the change's transaction; `outbox_guard` keeps the state machine pending → dispatched → running → done, failed, unknown_outcome or dead (dead → pending for a manual replay), and rows are never deleted | `TestOutboxRowsCommitWithTheirChangeOrNotAtAll`, `TestADeliveredTwiceTaskHasOneEffect` |
+| INV-13 no manual journal to share capital (rev 0.24, from P0) | `account.role = 'share-capital'` (000014), set at creation and fixed by `account_guard` (`FY040`); `journal_line_check` refuses a `manual_journal` line to such an account (`FY007`); other sources (the register of share issues, P1) may post | `TestAttackManualJournalToShareCapitalFails` |
 | Documents (§11.4, FR-GL-12) | `document_version` rows immutable; `document_guard`: draft → posted → reversed only, type fixed, version only forward; the current version must exist (deferred FK) | `TestAttackDocumentVersionsAndStatusesCannotBeRewound` |
 
-INV-07, INV-10, INV-11 and INV-13 arrive with their modules in P1; INV-12 with p0-audit-chain.
+INV-07, INV-10 and INV-11 arrive with their modules in P1, as do INV-13's per-person sub-ledgers and its
+nightly reconciliation; INV-12 with p0-audit-chain.
 
 ## Error codes
 
