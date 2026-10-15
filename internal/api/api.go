@@ -83,6 +83,16 @@ func Config(version string) huma.Config {
 	cfg.OpenAPIPath = "/v1/openapi"
 	cfg.Info.Description = description
 	cfg.Info.License = &huma.License{Name: "MIT", Identifier: "MIT"}
+	cfg.Info.Contact = &huma.Contact{Name: "Fyniq", URL: "https://github.com/cognizhi/fyniq"}
+	cfg.Servers = []*huma.Server{{URL: "{origin}", Description: "The installation's API: the web app's origin with /api " +
+		"(one origin serves both), or the api service itself in make dev.",
+		Variables: map[string]*huma.ServerVariable{"origin": {Default: "http://localhost:8080/api",
+			Description: "http://localhost:8080/api behind Caddy (make up); http://localhost:8081 for the api service (make dev)"}}}}
+	cfg.Tags = []*huma.Tag{
+		{Name: "Organisation", Description: "The organisation your session is in."},
+		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
+		{Name: "Journals", Description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."},
+	}
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		"bearer": {Type: "http", Scheme: "bearer", Description: "An access token from Fyniq's OAuth server (ADR-T3). " +
 			"Until it arrives, the local build accepts the local issuer's dev tokens and a release build accepts none."},

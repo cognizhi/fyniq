@@ -29,8 +29,12 @@ Standard mode, and §7.1 lists 18 roles.
   expired keys hourly; an expired key not yet purged is refused (422), never replayed.
 - **The contract in CI.** huma generates the document; `contracts/openapi/fyniq.v1.yaml` is that document,
   reviewed in the pull request, and `make test` fails while they differ (`make openapi` regenerates it).
-  NFR-API-01 names Spectral; P0 checks the same fields with a Go test over the document (7a), and 1.2/1.3
-  bring the Node tooling (the client, `oasdiff`, Spectral) in a second pull request.
+  NFR-API-01 is checked twice: Spectral over the contract (`contracts/openapi/spectral.yaml`) and a Go test
+  over the code's document, which also wants an example on every body field. `oasdiff` (pinned in
+  mise.toml) compares the contract with the last release's tag in `make test`; CI fetches the tags.
+- **The web app's client.** openapi-typescript generates `apps/web/src/api/schema.d.ts` from the contract,
+  used through openapi-fetch; `make api-check` fails while it is stale, and an archtest refuses hand-written
+  network calls outside `src/api`. The P0 shell reads `getOrganisation` through it (401 until sign-in).
 - **Who is calling, before the OAuth server.** A principal (subject, client, class, organisation, roles)
   behind a bearer token. The release build accepts no token until p0-identity-oauth-first-run; the local
   build accepts the local issuer's dev tokens, which carry the roles themselves.

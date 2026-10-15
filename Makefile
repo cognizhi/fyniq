@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test mutation differential db-lint sqlc openapi oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test mutation differential db-lint sqlc openapi api-check oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -57,13 +57,14 @@ reset: ## Stop everything and delete local data: the database volume and .data/
 	@rm -rf .data
 	@echo "✔ local data removed; run make dev to start again"
 
-test: ## Run every merge gate offline (Docker needed for the database suites): migrations, Go in both flavours, web, the oracle, make check
+test: ## Run every merge gate offline (Docker needed for the database suites): migrations, Go in both flavours, web, the API contract, the oracle, make check
 	@$(MAKE) --no-print-directory db-lint
 	@$(MISE) go vet ./...
 	@$(MISE) go vet -tags local ./...
 	@$(MISE) go test ./...
 	@$(MISE) go test -tags local ./...
 	@$(MISE) pnpm -r typecheck
+	@$(MAKE) --no-print-directory api-check
 	@$(MAKE) --no-print-directory oracle-test
 	@$(MAKE) --no-print-directory check
 
@@ -86,8 +87,15 @@ oracle-test: ## Run the independent oracle's own tests: hand-worked journals, th
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
 
-openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml from the code; review the diff (make test fails while they differ)
+openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml from the code, and the web app's client from it; review the diff
 	@$(MISE) go test ./internal/api -run TestTheContractIsTheCode -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml regenerated"
+	@$(MISE) pnpm --filter @fyniq/web -s gen:api >/dev/null && echo "✔ apps/web/src/api/schema.d.ts regenerated"
+
+api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's generated client is current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
+	@$(MISE) pnpm exec spectral lint contracts/openapi/fyniq.v1.yaml --ruleset contracts/openapi/spectral.yaml --fail-severity warn --quiet \
+	  && echo "✔ the API contract passes Spectral"
+	@$(MISE) pnpm --filter @fyniq/web -s check:api >/dev/null || { echo "✖ apps/web/src/api/schema.d.ts is stale: run pnpm --filter @fyniq/web gen:api"; exit 1; }
+	@echo "✔ the web app's API client matches the contract"
 
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e

@@ -1,0 +1,53 @@
+# NFR-API-01 as Spectral rules, over the contract (`make api-check`, part of `make test`). The Go test
+# internal/api TestEveryOperationIsDocumented checks the same fields on the code's document, plus an
+# example on every field of every body.
+extends: [["spectral:oas", "recommended"]]
+rules:
+  fyniq-operation-described:
+    description: Every operation states its purpose, side effects and the approval policy that may apply.
+    severity: error
+    given: "$.paths[*][get,put,post,patch,delete]"
+    then:
+      - field: summary
+        function: truthy
+      - field: description
+        function: length
+        functionOptions: { min: 40 }
+  fyniq-operation-permission:
+    description: Every operation names the PRD-001 Appendix D capability and the right it needs.
+    severity: error
+    given: "$.paths[*][get,put,post,patch,delete]"
+    then:
+      - field: x-fyniq-permission.capability
+        function: truthy
+      - field: x-fyniq-permission.right
+        function: pattern
+        functionOptions: { match: "^[CAPRVM]$" }
+  fyniq-operation-error-codes:
+    description: Every operation lists the stable error codes it returns.
+    severity: error
+    given: "$.paths[*][get,put,post,patch,delete]"
+    then:
+      field: x-fyniq-error-codes
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          minItems: 1
+          items: { type: string, pattern: "^[A-Z]+(-[A-Z]+)*-[0-9]{2}$" }
+  fyniq-errors-are-problem-details:
+    description: Every error response is RFC 9457 problem details (FR-INT-07).
+    severity: error
+    given: "$.paths[*][*].responses[?(@property.match(/^[45][0-9][0-9]$/))].content"
+    then:
+      field: application/problem+json
+      function: truthy
+  fyniq-parameter-example:
+    description: Every parameter has a description and an example.
+    severity: error
+    given: "$.paths[*][*].parameters[*]"
+    then:
+      - field: description
+        function: truthy
+      - field: schema.examples
+        function: truthy

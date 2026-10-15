@@ -270,3 +270,53 @@ func TestMutationTestingCoversMoneyRoundingAndTheEngine(t *testing.T) {
 		t.Error("make ci no longer runs make mutation (QA-ENG-04)")
 	}
 }
+
+// req: QA-API-03
+// req: FR-INT-01
+func TestTheWebAppsCallTheAPIOnlyThroughTheGeneratedClient(t *testing.T) {
+	root := repoRoot(t)
+	apps, err := filepath.Glob(filepath.Join(root, "apps", "*", "src"))
+	if err != nil || len(apps) == 0 {
+		t.Fatalf("no web apps found: %v", err)
+	}
+	var found []string
+	clients := 0
+	for _, src := range apps {
+		err := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			rel, _ := filepath.Rel(src, path)
+			if d.IsDir() {
+				if rel == "api" { // the generated client and the module around it
+					clients++
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if ext := filepath.Ext(path); ext != ".ts" && ext != ".tsx" {
+				return nil
+			}
+			b, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			r, _ := filepath.Rel(root, path)
+			found = append(found, NetworkCalls(r, b)...)
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(found) > 0 {
+		t.Fatalf("hand-written network calls:\n%s", strings.Join(found, "\n"))
+	}
+	if clients == 0 {
+		t.Fatal("no web app has its generated client in src/api")
+	}
+	planted := []byte("// fetch(\"/in/a/comment\") is fine\n/* new WebSocket(x) */\nconst a = await fetch(\"/v1/x\");\nconst b = new XMLHttpRequest();\nimport ky from \"ky\";\nnavigator.sendBeacon(\"/x\");\nconst c = refetch(1);\n")
+	if got := NetworkCalls("planted.ts", planted); len(got) != 4 {
+		t.Fatalf("want 4 planted calls (fetch, XMLHttpRequest, ky, sendBeacon), got %d: %v", len(got), got)
+	}
+}
