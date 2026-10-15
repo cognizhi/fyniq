@@ -165,9 +165,10 @@ func SetSetupCode(ctx context.Context, migratorURL string, hash []byte) error {
 
 // IssueDeploymentRecovery issues the deployment's two-person recovery for a Super admin
 // (docs/runbooks/super-admin-recovery.md), as the deployment does it: connected as fyniq_migrator. It
-// stores the code's SHA-256 and writes its event, naming the two operators, to the installation's trail.
+// stores the code's SHA-256 and writes its event, naming the two operators, to the installation's trail;
+// the actor is the migrate job's service identity, as the AUD-01 schema names actors.
 func IssueDeploymentRecovery(ctx context.Context, migratorURL string, userID uuid.UUID, codeHash []byte, operators string, now, expires time.Time) error {
-	s, err := Open(ctx, migratorURL, WithActor(storage.Actor{Type: "deployment", ID: "fyniq_migrator"}))
+	s, err := Open(ctx, migratorURL, WithActor(storage.Actor{Type: "service", ID: "fyniq_migrator"}))
 	if err != nil {
 		return err
 	}
