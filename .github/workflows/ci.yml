@@ -140,11 +140,12 @@ jobs:
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: make images        # both flavours: budgets, non-root, no shell, no local adapter in release (§12.9)
       - run: make image-scan    # SBOM and grype per release image (SEC-21)
+      - run: make image-sign    # push by digest to a throwaway registry, sign, attest the SBOM, verify (NFR-IMG-05, SEC-22)
       - run: scripts/local-smoke.sh   # QA-LOCAL-01: make up from the local images, no cloud credentials
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: image-reports   # SBOMs and scans: the evidence (CTL-CHG-08)
+          name: image-reports   # SBOMs, scans and signatures: the evidence (CTL-CHG-08, CTL-CHG-04)
           path: .data/images/
           retention-days: 90
 

@@ -68,7 +68,9 @@ def arrives(cid: str, freq: str) -> str:
     if cid in IDENTITY:
         return "p0-identity-oauth-first-run"
     if cid == "CTL-CHG-04":
-        return "p0-infra-opentofu (signing) and P1 (Binary Authorization, SEC-22)"
+        return ("P1 (Binary Authorization enforces it at deploy, SEC-22; keyless signing into Artifact Registry in the release"
+                " workflow with p0-infra-opentofu). Until then `make image-sign` signs every release image by digest, attests"
+                " its SBOM and verifies both on each pull request (signatures.json in the CI artefact image-reports)")
     if cid == "CTL-CHG-01" and freq == "D":
         return "p0-compliance-as-code (the repository settings check)"
     if cid in ("CTL-CHG-06", "CTL-CHG-09") and freq == "E":
