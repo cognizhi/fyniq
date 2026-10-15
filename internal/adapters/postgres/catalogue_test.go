@@ -25,8 +25,10 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // globalTables are the installation-scoped tables (§11.4): no organisation_id, no grant to any
 // application role. Add a table here only with its access model in db/README.md.
 // app_user, user_identity, installation and super_admin are the installation's people and first-run
-// setup (migration 000010): reached only through SECURITY DEFINER functions.
-var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin"}
+// setup (migration 000010), super_admin_grant the Super admins' one-time codes (000012): reached only
+// through SECURITY DEFINER functions.
+var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
+	"super_admin_grant"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain"}

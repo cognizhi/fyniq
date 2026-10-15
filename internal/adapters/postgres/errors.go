@@ -35,6 +35,9 @@ var fyCodes = map[string]string{
 	"FY080": storage.CodeSetup,
 	"FY081": storage.CodeMembership,
 	"FY082": storage.CodeMembership,
+	"FY083": storage.CodeSuperAdmin,
+	"FY084": storage.CodeSuperAdmin,
+	"FY085": storage.CodeGrant,
 }
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
@@ -44,6 +47,7 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"account_code_key":                   {storage.CodeDuplicate, "an account with this code already exists"},
 	"outbox_business_key":                {storage.CodeDuplicate, "this work is already queued: its business key is in use"},
 	"user_identity_pkey":                 {storage.CodeDuplicate, "this sign-in identity belongs to a user already"},
+	"super_admin_grant_pkey":             {storage.CodeDuplicate, "that code exists already"},
 	"user_membership_user_key":           {storage.CodeDuplicate, "the user is a member already"},
 	"role_assignment_one_live":           {storage.CodeDuplicate, "the member holds that role already"},
 	"role_assignment_role_known":         {storage.CodeMembership, "that is not a role a person can hold (PRD-001 §7.1)"},

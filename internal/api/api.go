@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -33,7 +34,8 @@ import (
 // Deps are what the API needs.
 type Deps struct {
 	Store        storage.Store
-	Installation storage.Installation // first-run setup; nil when there is no database
+	Installation storage.Installation // first-run setup and Super admins; nil when there is no database
+	Outbox       *outbox.Dispatcher   // queues background work, such as token revocations; nil when there is none
 	Clock        ports.Clock
 	Auth         authn.Authenticator
 	Log          *slog.Logger
@@ -66,7 +68,8 @@ Conventions (PRD-001 §8.18.1):
   what is wrong and how to fix it; validation errors list every invalid field at once (FR-INT-07).
 - Every POST that creates or changes state accepts an Idempotency-Key header, kept 24 hours per
   client: a repeat returns the original response; the same key with a different request returns 422
-  (FR-INT-08).
+  (FR-INT-08). The installation's operations that take or return a one-time code (first-run setup,
+  Super admins) take none: the code makes them one-time, and a response with a code is never stored.
 - Versioned records return an ETag; commands that change one require If-Match and return 412 when
   the record changed since, 428 without it (FR-INT-09).
 - Lists are cursor-paginated (page_size up to 500, an opaque next_cursor). Money is a decimal string
@@ -121,6 +124,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerAccounts(a)
 	registerJournals(a)
 	registerSetup(a)
+	registerSuperAdmins(a)
 	return a
 }
 

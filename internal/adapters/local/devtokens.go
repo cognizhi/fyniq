@@ -52,6 +52,7 @@ type devClaims struct {
 	Organisation uuid.UUID    `json:"org"`
 	Roles        []authz.Role `json:"roles"`
 	Expires      int64        `json:"exp"`
+	StepUpAt     int64        `json:"step_up_at,omitempty"` // when the person passed step-up (Unix seconds)
 }
 
 func (d *DevTokens) mac(msg string) string {
@@ -69,7 +70,7 @@ func (d *DevTokens) Issue(p authn.Principal, ttl time.Duration) (string, error) 
 		p.Class = authn.ClassUser
 	}
 	b, err := json.Marshal(devClaims{Subject: p.Subject, Client: p.Client, Class: p.Class, Organisation: p.Organisation,
-		Roles: p.Roles, Expires: d.clock.Now().Add(ttl).Unix()})
+		Roles: p.Roles, Expires: d.clock.Now().Add(ttl).Unix(), StepUpAt: stepUp(p.StepUpAt)})
 	if err != nil {
 		return "", err
 	}
@@ -96,6 +97,17 @@ func (d *DevTokens) Authenticate(_ context.Context, authorization string) (authn
 	if err := json.Unmarshal(b, &c); err != nil || d.clock.Now().Unix() > c.Expires {
 		return authn.Principal{}, authn.ErrUnauthenticated
 	}
-	return authn.Principal{Via: authn.ViaSession, Issuer: DevIssuer, Subject: c.Subject, Client: c.Client, Class: c.Class,
-		Organisation: c.Organisation, Roles: c.Roles}, nil
+	p := authn.Principal{Via: authn.ViaSession, Issuer: DevIssuer, Subject: c.Subject, Client: c.Client, Class: c.Class,
+		Organisation: c.Organisation, Roles: c.Roles}
+	if c.StepUpAt != 0 {
+		p.StepUpAt = time.Unix(c.StepUpAt, 0).UTC()
+	}
+	return p, nil
+}
+
+func stepUp(t time.Time) int64 {
+	if t.IsZero() {
+		return 0
+	}
+	return t.Unix()
 }

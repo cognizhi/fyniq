@@ -79,6 +79,10 @@ const (
 	CodeUnavailable       = "API-UNAVAILABLE-01" // the service is not configured for this
 	CodeSessionRequired   = "API-AUTHZ-04"       // the operation needs a person signed in, not an OAuth client or the AI
 	CodeSetupRefused      = "API-SETUP-01"       // the setup code is not valid, or setup is done
+	CodeStepUpRequired    = "API-AUTHZ-05"       // the operation needs step-up authentication in the last 5 minutes
+	CodeNotSuperAdmin     = "API-AUTHZ-06"       // the operation is for a Super admin
+	CodeCodeRefused       = "API-SUPERADMIN-01"  // an invitation, recovery or confirmation code is not valid, used or expired
+	CodeSuperAdminRefused = "API-SUPERADMIN-02"  // at most two Super admins, never none; nobody confirms their own recovery
 )
 
 // codeFacts are the status and title of every code the API returns, the catalogue the OpenAPI
@@ -106,6 +110,10 @@ var codeFacts = map[string]struct {
 	CodeUnavailable:            {503, "Not available here"},
 	CodeSessionRequired:        {403, "A person must be signed in"},
 	CodeSetupRefused:           {409, "Setup refused"},
+	CodeStepUpRequired:         {403, "Step-up required"},
+	CodeNotSuperAdmin:          {403, "Not a Super admin"},
+	CodeCodeRefused:            {409, "Code refused"},
+	CodeSuperAdminRefused:      {409, "Super admin change refused"},
 	journal.CodeNotJournal:     {404, "Not a manual journal"},
 	journal.CodeNotDraft:       {409, "The journal is not a draft"},
 	journal.CodeNotPosted:      {409, "The journal is not posted"},

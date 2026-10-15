@@ -29,16 +29,13 @@ import (
 	revoke "github.com/cognizhi/fyniq/internal/tokens"
 )
 
-// First-run setup runs once per installation, so these tests have a database of their own.
-// req: FR-ADM-06
-// req: CTL-IAM-07
-// req: SEC-02
-// asvs: V8.2.1, V15.4.2, V2.3.4
-func TestFirstRunSetup(t *testing.T) {
+// freshInstallation is an API over a database of its own: first-run setup runs once per installation.
+func freshInstallation(t *testing.T) (*env, *pgtest.DB) {
+	t.Helper()
 	ctx := context.Background()
 	fresh, err := pgtest.Start(ctx)
 	if err != nil {
-		t.Fatalf("a fresh database for setup: %v", err)
+		t.Fatalf("a fresh database: %v", err)
 	}
 	t.Cleanup(fresh.Stop)
 	st, err := postgres.Open(ctx, fresh.URL("fyniq_api"))
@@ -49,9 +46,21 @@ func TestFirstRunSetup(t *testing.T) {
 	e := &env{t: t, store: st, clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)),
 		tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}}
 	mux := http.NewServeMux()
-	e.api = New(mux, Deps{Store: st, Installation: st, Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.DiscardHandler), Version: "0.0.0-test"})
+	e.api = New(mux, Deps{Store: st, Installation: st, Outbox: &outbox.Dispatcher{Store: st, Queue: local.NewMemory(), Clock: e.clock},
+		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test"})
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
+	return e, fresh
+}
+
+// req: FR-ADM-06
+// req: CTL-IAM-07
+// req: SEC-02
+// asvs: V8.2.1, V15.4.2, V2.3.4
+func TestFirstRunSetup(t *testing.T) {
+	ctx := context.Background()
+	e, fresh := freshInstallation(t)
+	st := e.store
 
 	founder := e.principal(authn.Principal{Subject: "founder-1", Client: "web"})
 	request := func(code string) map[string]any {
@@ -102,6 +111,9 @@ func TestFirstRunSetup(t *testing.T) {
 		winner = 1
 	}
 	won := results[winner]
+	if codes, _ := won.Body["recovery_codes"].([]any); len(codes) != 10 || codes[0] == codes[1] {
+		t.Fatalf("setup gave the Super admin %d recovery codes, want ten different ones: %s", len(codes), won.Raw)
+	}
 	if r := e.call(http.MethodGet, "/v1/setup", "", nil); r.Body["done"] != true {
 		t.Fatalf("after setup: %s", r.Raw)
 	}

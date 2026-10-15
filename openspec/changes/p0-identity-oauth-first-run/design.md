@@ -62,7 +62,29 @@ and no token exchange (checked 14 Oct 2026). §9.7 and open question 40 describe
   AI); the issuer comes from the authenticator, never the token. The code is 130 random bits, stored as
   its SHA-256, created by `migrate setup-code` and refused after setup. A role change (`internal/members`)
   revokes the member's tokens in the same unit of work. The `/install` screen follows the SignIn port.
-- **Audit events emitted.** `setup.completed`, `super_admin.added`, `super_admin.recovery_used`,
+- **Super admins, as built (slice 3b).** The second Super admin joins with a one-time invitation (7 days;
+  a new one replaces an unused one); P0 allows at most two and never none (`super_admin_guard`, FY083/FY084),
+  and the singleton row lock serialises Super admin changes. Each Super admin gets ten printed recovery
+  codes at setup and on joining, and can replace them. Recovery needs two proofs (SEC-35): a recovery code
+  with the other Super admin's confirmation (24 hours), or the deployment's two-person recovery
+  (`migrate super-admin-recovery`, the migrator only, naming two operators, 24 hours;
+  `docs/runbooks/super-admin-recovery.md`). The recovering sign-in replaces the Super admin's others,
+  their codes are replaced, and the replaced sign-ins' tokens (and the user's) are revoked through the
+  outbox. Codes are 130 random bits, stored as SHA-256 in `super_admin_grant`, used once, refused with one
+  answer whatever the reason, and never logged or put in the trail; every grant created or used needs its
+  event in the installation's trail (`require_grant_audit`). Inviting, confirming and replacing codes need
+  an active Super admin in a first-party session who passed step-up in the last 5 minutes
+  (`Principal.StepUpAt`, our choice of window): the local build reads it from the dev token's `step_up_at`;
+  the release build has no step-up until the SignIn port (passkey or TOTP, FR-ADM-02, SEC-01), so these
+  operations stay closed there. Dual control of Super admin changes (FR-ADM-07) is not needed in P0: the
+  only change a second Super admin could dual-control would be a third, which P0 refuses. The nightly
+  `superadmins.verify` (03:00 Singapore time) fails and records `control.check.failed` when no Super admin
+  can sign in (CTL-IAM-07). Not built: FR-ADM-09's notification of every Super admin and Owner on a
+  recovery (notifications, P1; the runbook says to tell them), SEC-35's cooling-off period (approvals, P1),
+  and the setup wizard's prompt for the second Super admin (the `/install` screen).
+- **Audit events emitted.** `setup.completed`, `super_admin.added`, (as built, slice 3b) `super_admin.invitation_created`,
+  `super_admin.recovery_codes_replaced`, `super_admin.recovery_confirmed`, `super_admin.deployment_recovery_issued` and
+  `super_admin.recovered` (planned as `super_admin.recovery_used`),
   `oauth.client.created`, `oauth.tokens.revoke_requested` (AUD-01). (As built: Hydra does not report the
   family revocations it makes on refresh reuse, so `oauth.token.revoked_family` cannot be emitted; the
   client receives `invalid_grant`.)

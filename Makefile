@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup setup-code dev up down seed reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls image-scan oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup setup-code super-admin-recovery dev up down seed reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls image-scan oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -37,6 +37,10 @@ setup: ## Install the pinned toolchain (mise), the web dependencies and the git 
 
 setup-code: ## Create the one-time first-run setup code and print it once (FR-ADM-06); refused once setup is done
 	@$(MISE) go run -tags local ./cmd/migrate setup-code
+
+super-admin-recovery: ## The deployment's two-person recovery for a Super admin: USER_ID=<user id> OPERATORS="<name>, <name>" (FR-ADM-09)
+	@test -n "$(USER_ID)" -a -n "$(OPERATORS)" || { echo 'usage: make super-admin-recovery USER_ID=<user id> OPERATORS="<name>, <name>"'; exit 2; }
+	@$(MISE) go run -tags local ./cmd/migrate super-admin-recovery "$(USER_ID)" "$(OPERATORS)"
 
 dev: ## Run the stack with hot reload: dependencies in Docker, the Go services and Vite on the host
 	@$(MAKE) --no-print-directory deps-up

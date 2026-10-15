@@ -53,7 +53,8 @@ body = json.dumps({"setup_code": code, "display_name": "Smoke Founder", "organis
 req = urllib.request.Request(origin + "/api/v1/setup", data=body, method="POST", headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"})
 with urllib.request.urlopen(req, timeout=10) as r:
     assert r.status == 201, r.status
-    assert json.load(r)["organisation_id"]
+    out = json.load(r)
+    assert out["organisation_id"] and len(out["recovery_codes"]) == 10  # shown once, never printed here
 PY
   [ "$(curl -fsS "$origin/api/v1/setup")" = '{"done":true}' ] || fail "setup completed but the installation does not say so"
 else

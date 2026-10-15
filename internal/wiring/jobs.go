@@ -8,6 +8,7 @@ import (
 	"github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -30,6 +31,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"ledger.verify": func(ctx context.Context) error {
 			_, err := balance.VerifyAll(ctx, k.Store)
+			return err
+		},
+		"superadmins.verify": func(ctx context.Context) error {
+			_, err := superadmin.Verify(ctx, k.Store, k.Store)
 			return err
 		},
 		"compliance.evidence": func(ctx context.Context) error {
