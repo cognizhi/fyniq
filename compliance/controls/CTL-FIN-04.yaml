@@ -1,0 +1,14 @@
+# CTL-FIN-04: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-04
+section: "F.1"
+control: "Subledgers agree with control accounts (AR, AP, payroll, assets, GST)"
+mapping: "SOC2 PI1"
+automated_check: "Nightly verification job"
+frequency: "N"
+evidence: "Verification log"
+owner: Controller
+checks:
+  - frequency: N
+    status: planned
+    arrives: "P1"

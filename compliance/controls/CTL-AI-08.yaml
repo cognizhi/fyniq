@@ -1,0 +1,21 @@
+# CTL-AI-08: PRD-001 Appendix F (F.7). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AI-08
+section: "F.7"
+control: "(rev 0.4) The knowledge base is grounded and access-filtered: published pages pass lint (no stale sources, every number in a cited source, citations resolve); the index is filtered per reader; human edits are never overwritten by a recompile"
+mapping: "AG (data quality); OWASP LLM04 (data and model poisoning)"
+automated_check: "CI `make kb-lint`; nightly reader-filter test; QA-AI-06 before each publish"
+frequency: "CI, N, E"
+evidence: "Lint reports; eval reports"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "make check"
+    evidence: "kb-lint; CI log"
+  - frequency: N
+    status: planned
+    arrives: "P1"
+  - frequency: E
+    status: planned
+    arrives: "P1"

@@ -8,6 +8,7 @@ import (
 )
 
 // req: SEC-15
+// asvs: V16.2.5
 func TestLogsNeverCarrySecretsNRICOrBankNumbers(t *testing.T) {
 	var buf bytes.Buffer
 	log := New(&buf, slog.LevelDebug)

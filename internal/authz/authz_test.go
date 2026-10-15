@@ -10,6 +10,7 @@ import (
 )
 
 // req: QA-SEC-03
+// asvs: V8.1.1
 func TestTheGrantsAreAppendixD(t *testing.T) {
 	columns, rows := authztest.AppendixD(t)
 	for capability, grants := range authz.Grants {
@@ -36,6 +37,7 @@ func TestTheGrantsAreAppendixD(t *testing.T) {
 }
 
 // req: QA-SEC-03
+// asvs: V8.1.1
 func TestEveryRoleOfSection71HasItsColumn(t *testing.T) {
 	columns, _ := authztest.AppendixD(t)
 	labels := authztest.RoleLabels(t)
@@ -73,6 +75,7 @@ func TestEveryRoleOfSection71HasItsColumn(t *testing.T) {
 }
 
 // req: SEC-02
+// asvs: V8.2.1
 func TestDecide(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -105,6 +108,7 @@ func TestDecide(t *testing.T) {
 
 // QA-SEC-03 includes field masking. No P0 endpoint has an M cell, so a planted capability proves it.
 // req: QA-SEC-03
+// asvs: V8.2.3
 func TestMaskedViewMasksTheFields(t *testing.T) {
 	const planted authz.Capability = "Vendor bank details (planted)"
 	authz.Grants[planted] = map[string]authz.Cell{"Auditor": {Rights: "M"}, "Accountant": {Rights: "C"}, "Tax agent": {Rights: "M"}}

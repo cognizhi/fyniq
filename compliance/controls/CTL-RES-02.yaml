@@ -1,0 +1,17 @@
+# CTL-RES-02: PRD-001 Appendix F (F.6). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-RES-02
+section: "F.6"
+control: "Restore drill with ledger and audit-chain verification"
+mapping: "ISO 5.30, 8.13; SOC2 A1.3; CE"
+automated_check: "Automated monthly PITR restore; quarterly full drill"
+frequency: "M, Q"
+evidence: "Drill report"
+owner: Owner
+checks:
+  - frequency: M
+    status: planned
+    arrives: "P1"
+  - frequency: Q
+    status: planned
+    arrives: "P1"

@@ -324,6 +324,7 @@ func TestTheWebAppsCallTheAPIOnlyThroughTheGeneratedClient(t *testing.T) {
 
 // req: SEC-28
 // req: CTL-CHG-11
+// asvs: V15.2.4, V13.3.2
 func TestWorkflowsPinActionsAndLimitTokens(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join(repoRoot(t), ".github", "workflows", "*.yml"))
 	if err != nil || len(files) < 3 {
@@ -377,6 +378,7 @@ jobs:
 
 // Every step of `make ci` runs in a CI job, so CI is exactly what `make ci` runs (p0-ci-images-release 1.1).
 // req: SEC-21
+// asvs: V15.2.1
 func TestCIRunsEveryStepOfMakeCI(t *testing.T) {
 	root := repoRoot(t)
 	mk, err := os.ReadFile(filepath.Join(root, "Makefile"))
@@ -399,5 +401,58 @@ func TestCIRunsEveryStepOfMakeCI(t *testing.T) {
 		if !regexp.MustCompile(`(?m)run: make ` + regexp.QuoteMeta(string(s[1])) + `\b`).Match(ci) {
 			t.Errorf("make ci runs `make %s`, but no CI job does", s[1])
 		}
+	}
+}
+
+// Security tests carry the OWASP ASVS 5.0 requirements they verify (SEC-20, docs/security/README.md).
+// req: SEC-20
+func TestSecurityTestsCarryASVSIDs(t *testing.T) {
+	root := repoRoot(t)
+	tsv, err := os.ReadFile(filepath.Join(root, "docs", "security", "asvs-5.0.tsv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid := map[string]bool{}
+	for _, line := range strings.Split(string(tsv), "\n") {
+		if id, _, ok := strings.Cut(line, "\t"); ok && strings.HasPrefix(id, "V") {
+			valid[id] = true
+		}
+	}
+	if len(valid) != 345 {
+		t.Fatalf("docs/security/asvs-5.0.tsv lists %d requirements; ASVS 5.0.0 has 345", len(valid))
+	}
+	var found []string
+	tagged := 0
+	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && (d.Name() == "node_modules" || d.Name() == ".git" || d.Name() == ".data") {
+			return filepath.SkipDir
+		}
+		if !strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		src, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(root, path)
+		found = append(found, ASVSViolations(rel, src, valid)...)
+		tagged += strings.Count(string(src), "\n// asvs: ")
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(found) > 0 {
+		t.Fatalf("security tests and ASVS IDs:\n%s", strings.Join(found, "\n"))
+	}
+	if tagged < 30 {
+		t.Fatalf("only %d tests carry ASVS IDs", tagged)
+	}
+	planted := []byte("package x\n\n// req: SEC-02\nfunc TestNoASVS(t *T) {}\n\n// req: QA-ENG-05\n// asvs: V8.4.1, V99.1.1\nfunc TestBadID(t *T) {}\n\n// req: FR-GL-01\nfunc TestNotSecurity(t *T) {}\n")
+	if got := ASVSViolations("planted_test.go", planted, valid); len(got) != 2 {
+		t.Fatalf("want 2 planted violations (no ID, an unknown ID), got %v", got)
 	}
 }

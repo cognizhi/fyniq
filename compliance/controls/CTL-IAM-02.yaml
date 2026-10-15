@@ -1,0 +1,17 @@
+# CTL-IAM-02: PRD-001 Appendix F (F.3). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-IAM-02
+section: "F.3"
+control: "Quarterly access review; external users expire"
+mapping: "ISO 5.18; SOC2 CC6.2–6.3; CT"
+automated_check: "Review task generated; expired-but-active users = 0"
+frequency: "Q, N"
+evidence: "Signed review"
+owner: Administrator
+checks:
+  - frequency: Q
+    status: planned
+    arrives: "p0-identity-oauth-first-run"
+  - frequency: N
+    status: planned
+    arrives: "p0-identity-oauth-first-run"

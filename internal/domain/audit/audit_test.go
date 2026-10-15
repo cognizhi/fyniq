@@ -34,6 +34,7 @@ var (
 )
 
 // req: SEC-15
+// asvs: V16.2.5
 func TestSensitiveValuesAreMasked(t *testing.T) {
 	e, err := New(org, at, Actor{"user", "u1"}, "employee.updated", Object{Type: "employee", ID: org}, map[string]Change{
 		"bank_account_number": {"012-345678-9", "123-456789-001"},

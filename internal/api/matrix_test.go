@@ -73,6 +73,7 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 // allowed or refused as Appendix D says, and a refusal changes nothing (§17.3 exit item 2, API half).
 // req: QA-SEC-03
 // req: SEC-02
+// asvs: V8.2.1, V8.3.1
 func TestAuthorisationMatrix(t *testing.T) {
 	e := newEnv(t)
 	_, rows := authztest.AppendixD(t)

@@ -1,0 +1,14 @@
+# CTL-MCP-04: PRD-001 Appendix F (F.7a). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-MCP-04
+section: "F.7a"
+control: "Tokens audience-bound, ≤ 60 min, revoked within 60 s on role change or kill switch (AI-36, AI-38)"
+mapping: "ASVS V10 (OAuth); SOC2 CC6.1"
+automated_check: "QA-MCP-01 revocation timing test"
+frequency: "CI"
+evidence: "Test report"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "p0-identity-oauth-first-run"

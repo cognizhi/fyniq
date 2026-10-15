@@ -103,6 +103,7 @@ func count(t *testing.T, org uuid.UUID, table string) int {
 // req: INV-01
 // req: ENG-22
 // req: QA-ENG-05
+// asvs: V2.2.3, V2.3.3
 func TestAttackUnbalancedEntriesFailAtCommit(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Attack INV-01 Pte Ltd")
@@ -156,6 +157,7 @@ func TestAttackUnbalancedEntriesFailAtCommit(t *testing.T) {
 
 // req: INV-02
 // req: QA-ENG-05
+// asvs: V13.2.2
 func TestAttackPostedHistoryCannotChange(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Attack INV-02 Pte Ltd")
@@ -189,6 +191,7 @@ func TestAttackPostedHistoryCannotChange(t *testing.T) {
 
 // req: INV-03
 // req: QA-ENG-05
+// asvs: V2.3.2
 func TestAttackPostingIntoAClosedPeriodFails(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Attack INV-03 Pte Ltd")
@@ -220,6 +223,7 @@ func TestAttackPostingIntoAClosedPeriodFails(t *testing.T) {
 
 // req: INV-04
 // req: QA-ENG-05
+// asvs: V2.2.3, V8.4.1
 func TestAttackPostingToGroupInactiveOrForeignAccountsFails(t *testing.T) {
 	ctx := context.Background()
 	b, other := books(t, "Attack INV-04 Pte Ltd"), books(t, "Attack INV-04 Other Pte Ltd")
@@ -307,6 +311,7 @@ VALUES ($1, $2, $3, 'SGD', 2, $4::numeric, $5::numeric, 1)`, b.Org, account, b.O
 
 // req: INV-05
 // req: QA-ENG-05
+// asvs: V2.2.1
 func TestAttackAmountsOffScaleNaNOrOutOfRangeFail(t *testing.T) {
 	b := books(t, "Attack INV-05 Pte Ltd")
 	for col, attack := range nanAttacks {
@@ -334,6 +339,7 @@ func TestAttackAmountsOffScaleNaNOrOutOfRangeFail(t *testing.T) {
 // req: INV-06
 // req: SEC-02
 // req: QA-ENG-05
+// asvs: V8.4.1
 func TestAttackCrossTenantReadsAndWritesFail(t *testing.T) {
 	ctx := context.Background()
 	a, b := books(t, "Attack INV-06 A Pte Ltd"), books(t, "Attack INV-06 B Pte Ltd")
@@ -385,6 +391,7 @@ VALUES ($1, $2, 'SGD', 2, 0, 0, 1, $3)`, a.Bank.ID, a.Oct.ID, b.Org)
 
 // req: SEC-02
 // req: QA-ENG-05
+// asvs: V8.4.1
 func TestAttackPooledConnectionWithoutTenantSeesNothing(t *testing.T) {
 	ctx := context.Background()
 	a, b := books(t, "Attack pooled A Pte Ltd"), books(t, "Attack pooled B Pte Ltd")
@@ -464,6 +471,7 @@ func (s stringer) String() string { return string(s) }
 
 // req: QA-ENG-05
 // req: SEC-03
+// asvs: V13.2.2
 func TestAttackTheAIRoleCannotReadOrWrite(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Attack AI Pte Ltd")
@@ -484,6 +492,7 @@ func TestAttackTheAIRoleCannotReadOrWrite(t *testing.T) {
 }
 
 // req: QA-ENG-05
+// asvs: V13.2.2
 func TestAttackGlobalTablesAndLedgerInternalsAreReadOnly(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Attack global Pte Ltd")
@@ -552,6 +561,7 @@ func TestAttackAFailedWriteMidCommandLeavesNoPartialRows(t *testing.T) {
 
 // req: INV-02
 // req: QA-ENG-05
+// asvs: V2.3.1
 func TestAttackDocumentVersionsAndStatusesCannotBeRewound(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Attack documents Pte Ltd")

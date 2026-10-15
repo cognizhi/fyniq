@@ -1,0 +1,15 @@
+# CTL-CHG-03: PRD-001 Appendix F (F.4). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-CHG-03
+section: "F.4"
+control: "SAST, dependency, container and secret scans; critical findings block"
+mapping: "ISO 8.25, 8.28, 8.8; SOC2 CC7.1; CE"
+automated_check: "CI gates"
+frequency: "CI"
+evidence: "Scan reports"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "make scan"
+    evidence: "CI artefact security-scan-reports (90 days)"

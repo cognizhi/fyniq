@@ -1,0 +1,20 @@
+# CTL-FIN-11: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-11
+section: "F.1"
+control: "(rev 0.3) Founders' balances: settlements, conversions and waivers are approved by someone other than the beneficiary (FM-9) with the resolutions attached; share capital changes only through the register of share issues; per-person sub-ledgers agree"
+mapping: "COSO P10; SOC2 PI1; Companies Act s63, s63B, s161, s162"
+automated_check: "CI: approval-matrix and INV-13 trigger tests; nightly reconciliation of the per-person sub-ledgers to 2500 and 2120 (rev 0.11, INV-13); allotment-lodgement monitor"
+frequency: "CI, N, E"
+evidence: "Approval records, resolutions, lodgement evidence"
+owner: Controller
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: N
+    status: planned
+    arrives: "P1"
+  - frequency: E
+    status: planned
+    arrives: "P1"

@@ -93,6 +93,7 @@ SELECT c.relname,
 
 // req: INV-06
 // req: CTL-IAM-05
+// asvs: V8.4.1
 func TestEveryTenantTableForcesRowLevelSecurity(t *testing.T) {
 	c := conn(t, "fyniq")
 	// An empty search_path makes pg_get_expr qualify every name, so the policy must call
@@ -199,6 +200,7 @@ SELECT * FROM tbl UNION ALL SELECT * FROM col UNION ALL SELECT * FROM fn UNION A
 ORDER BY 1, 2, 4, 3`
 
 // req: SEC-03
+// asvs: V13.2.2
 func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 	c := conn(t, "fyniq")
 	var b strings.Builder
@@ -251,6 +253,7 @@ func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 }
 
 // req: SEC-03
+// asvs: V13.2.2
 func TestRolesCannotBypassTheDatabase(t *testing.T) {
 	c := conn(t, "fyniq")
 	for _, r := range rows(t, c, `
@@ -298,6 +301,7 @@ SELECT p.proname, coalesce(array_to_string(p.proconfig, ','), '')
 }
 
 // req: QA-ENG-05
+// asvs: V2.2.1
 func TestEveryNumericColumnHasPrecisionAndRefusesNaN(t *testing.T) {
 	c := conn(t, "fyniq")
 	for _, r := range rows(t, c, `
@@ -320,6 +324,7 @@ SELECT c.relname, a.attname, format_type(a.atttypid, a.atttypmod),
 }
 
 // req: SEC-03
+// asvs: V13.2.2
 func TestNoFunctionIsExecutableByPublic(t *testing.T) {
 	c := conn(t, "fyniq")
 	for _, r := range rows(t, c, `

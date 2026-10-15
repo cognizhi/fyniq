@@ -1,0 +1,14 @@
+# CTL-AI-07: PRD-001 Appendix F (F.7). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AI-07
+section: "F.7"
+control: "Approval-quality metrics reviewed"
+mapping: "AG (automation bias)"
+automated_check: "Monthly report and sign-off"
+frequency: "M"
+evidence: "Signed review"
+owner: Owner
+checks:
+  - frequency: M
+    status: planned
+    arrives: "P1"

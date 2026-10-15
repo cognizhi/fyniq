@@ -1,0 +1,14 @@
+# CTL-AUD-03: PRD-001 Appendix F (F.2). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AUD-03
+section: "F.2"
+control: "Records retained ≥ 7 years after FY end; buckets retention-locked"
+mapping: "ISO 5.33; IRAS; GST; Companies Act"
+automated_check: "Daily: bucket `isLocked=true`, retention ≥ policy; (rev 0.8) for every object committed since the last run, retention mode Locked and retain-until ≥ the expiry computed from its record; no orphans; log buckets locked"
+frequency: "D"
+evidence: "Config snapshot"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "p0-infra-opentofu"

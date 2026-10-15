@@ -1,0 +1,14 @@
+# CTL-STAT-01: PRD-001 Appendix F (F.8). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-STAT-01
+section: "F.8"
+control: "GST F5 filed by the due date; (rev 0.8) every in-scope return item has an IRAS acknowledgement ID or a recorded exclusion, or a contingency filing is approved (FR-TAX-11)"
+mapping: "GST Act; IRAS InvoiceNow requirement"
+automated_check: "Calendar monitor; filing gate"
+frequency: "D"
+evidence: "Filing record"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "P1"

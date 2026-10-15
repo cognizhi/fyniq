@@ -162,6 +162,7 @@ func postgresStore(t *testing.T, role string, c ports.Clock) storage.Store {
 
 // req: AUD-08
 // req: QA-ENG-05
+// asvs: V16.3.3
 func TestAttackChangesWithoutAnAuditEventFail(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "AUD-08 Pte Ltd")
@@ -365,6 +366,7 @@ func readAll(rc interface {
 
 // req: INV-12
 // req: QA-ENG-05
+// asvs: V16.4.2, V15.4.1
 func TestTheChainStaysLinearUnderConcurrentWrites(t *testing.T) {
 	ctx := context.Background()
 	s := store(t, "fyniq_api")
@@ -400,6 +402,7 @@ func TestTheChainStaysLinearUnderConcurrentWrites(t *testing.T) {
 }
 
 // req: SEC-15
+// asvs: V16.2.5
 func TestStoredEventsMaskSensitiveValues(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "SEC-15 Pte Ltd")

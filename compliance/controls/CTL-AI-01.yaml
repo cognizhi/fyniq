@@ -1,0 +1,17 @@
+# CTL-AI-01: PRD-001 Appendix F (F.7). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AI-01
+section: "F.7"
+control: "AI identities hold no write privilege except proposal insert (and knowledge-base drafts by the compiler job, rev 0.4)"
+mapping: "AG (bound risks); OWASP LLM06 / ASI02–03"
+automated_check: "IAM and database grant tests (CMP-AI-01)"
+frequency: "CI, N"
+evidence: "Grant snapshot"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: N
+    status: planned
+    arrives: "P1"

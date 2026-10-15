@@ -1,0 +1,18 @@
+# CTL-FIN-03: PRD-001 Appendix F (F.1). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-FIN-03
+section: "F.1"
+control: "Locked periods cannot change"
+mapping: "SOC2 PI1; COSO P10"
+automated_check: "Trigger test; nightly comparison of signed close snapshots"
+frequency: "CI, N"
+evidence: "Snapshot hashes"
+owner: Controller
+checks:
+  - frequency: CI
+    status: running
+    how: "make test"
+    evidence: "INV-03 trigger tests; CI log"
+  - frequency: N
+    status: planned
+    arrives: "P1"

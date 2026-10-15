@@ -1,0 +1,17 @@
+# CTL-DP-06: PRD-001 Appendix F (F.5). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-DP-06
+section: "F.5"
+control: "Breach runbook with PDPA timers; tabletop twice a year"
+mapping: "PDPA breach notification; ISO 5.24–5.28; SOC2 CC7.3–7.5"
+automated_check: "Exercise task and record"
+frequency: "E ((rev 0.11) each breach or suspected breach), semi-annual (tabletop)"
+evidence: "Exercise report"
+owner: DPO
+checks:
+  - frequency: E
+    status: planned
+    arrives: "P1"
+  - frequency: S
+    status: planned
+    arrives: "P1"

@@ -1,0 +1,14 @@
+# CTL-DP-05: PRD-001 Appendix F (F.5). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-DP-05
+section: "F.5"
+control: "Data inventory, retention schedule and DPIAs current"
+mapping: "PDPA accountability; ISO 5.34"
+automated_check: "Review due date monitored"
+frequency: "Q"
+evidence: "Inventory version"
+owner: DPO
+checks:
+  - frequency: Q
+    status: planned
+    arrives: "P1"

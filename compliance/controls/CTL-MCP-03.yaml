@@ -1,0 +1,17 @@
+# CTL-MCP-03: PRD-001 Appendix F (F.7a). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-MCP-03
+section: "F.7a"
+control: "MCP off by default; enabling it and allowlisting clients are dual-approved (AI-35)"
+mapping: "AG (human checkpoints); ISO 5.15"
+automated_check: "Policy-engine test; audit of enablement events"
+frequency: "CI, E"
+evidence: "Approval records"
+owner: Owner
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "P1"
+  - frequency: E
+    status: planned
+    arrives: "P1"

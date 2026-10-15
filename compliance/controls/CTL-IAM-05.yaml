@@ -1,0 +1,15 @@
+# CTL-IAM-05: PRD-001 Appendix F (F.3). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-IAM-05
+section: "F.3"
+control: "Tenant isolation by row-level security"
+mapping: "ISO 8.3; SOC2 C1, CC6.1; ASVS V8"
+automated_check: "CI cross-tenant attack tests"
+frequency: "CI"
+evidence: "Test report"
+owner: Administrator
+checks:
+  - frequency: CI
+    status: running
+    how: "make test"
+    evidence: "cross-tenant attack tests and the API's cross-tenant test; CI log"

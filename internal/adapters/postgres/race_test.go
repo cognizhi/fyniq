@@ -121,6 +121,7 @@ func period(t *testing.T, s storage.Store, org, id uuid.UUID) storage.Period {
 // req: ENG-47
 // req: INV-03
 // req: QA-ENG-05
+// asvs: V15.4.2
 func TestRacePostingAgainstCloseOfTheSamePeriod(t *testing.T) {
 	s := store(t, "fyniq_api")
 
@@ -171,6 +172,7 @@ func TestRacePostingAgainstCloseOfTheSamePeriod(t *testing.T) {
 
 // req: ENG-47
 // req: QA-ENG-05
+// asvs: V15.4.2
 func TestRaceReopenAgainstPosting(t *testing.T) {
 	s := store(t, "fyniq_api")
 	b := books(t, "Race reopen Pte Ltd")
@@ -205,6 +207,7 @@ func TestRaceReopenAgainstPosting(t *testing.T) {
 
 // req: ENG-46
 // req: QA-ENG-05
+// asvs: V15.4.1
 func TestRaceRevisionsAreGapFreeAndAsAtIsStable(t *testing.T) {
 	ctx := context.Background()
 	s := store(t, "fyniq_api")

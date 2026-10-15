@@ -1,0 +1,15 @@
+# CTL-CHG-08: PRD-001 Appendix F (F.4). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-CHG-08
+section: "F.4"
+control: "(rev 0.2) Images hardened and within budget (§12.9)"
+mapping: "ISO 8.9, 8.19; SOC2 CC7.1; CE"
+automated_check: "`make images` gate; QA-IMG-01"
+frequency: "CI"
+evidence: "Image report"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "make images"
+    evidence: "image sizes and hardening in the CI log; CI artefact image-reports"

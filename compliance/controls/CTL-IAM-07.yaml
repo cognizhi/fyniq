@@ -1,0 +1,17 @@
+# CTL-IAM-07: PRD-001 Appendix F (F.3). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-IAM-07
+section: "F.3"
+control: "(rev 0.6) First-run setup is completed once, with the deployment's one-time setup code; Super admin changes need step-up and, with two Super admins, dual control; sign-ins through any provider still require the platform's MFA"
+mapping: "ISO 5.15–5.18, 8.5; SOC2 CC6.1–6.3"
+automated_check: "CI: setup-wizard tests (no code, reused code, second run); provider sign-in tests with MFA; nightly count of Super admins ≥ 1"
+frequency: "CI, N"
+evidence: "Test reports; audit events"
+owner: Administrator
+checks:
+  - frequency: CI
+    status: planned
+    arrives: "p0-identity-oauth-first-run"
+  - frequency: N
+    status: planned
+    arrives: "p0-identity-oauth-first-run"

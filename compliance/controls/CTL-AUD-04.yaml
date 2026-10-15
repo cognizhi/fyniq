@@ -1,0 +1,14 @@
+# CTL-AUD-04: PRD-001 Appendix F (F.2). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-AUD-04
+section: "F.2"
+control: "Data Access logs enabled for Cloud SQL, KMS, Storage, Secret Manager; sinks to the locked audit bucket"
+mapping: "ISO 8.15, 8.16; SOC2 CC7.2"
+automated_check: "Daily config check"
+frequency: "D"
+evidence: "Config snapshot"
+owner: Owner
+checks:
+  - frequency: D
+    status: planned
+    arrives: "p0-infra-opentofu"

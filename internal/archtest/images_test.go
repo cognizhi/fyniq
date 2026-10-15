@@ -125,6 +125,7 @@ func TestImagesArePinnedByDigest(t *testing.T) {
 // user, no capabilities, no privilege escalation, writable paths only on tmpfs.
 // req: NFR-IMG-02
 // req: SEC-27
+// asvs: V15.2.3
 func TestComposeHardensOurServices(t *testing.T) {
 	var compose struct {
 		Services map[string]struct {
