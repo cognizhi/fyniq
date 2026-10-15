@@ -12,7 +12,7 @@ checks:
   - frequency: CI
     status: running
     how: "make test"
-    evidence: "AUD-08 same-transaction tests; CI log"
+    evidence: "AUD-08 same-transaction tests; CI artefact test-report (90 days)"
   - frequency: N
     status: planned
     arrives: "P1"

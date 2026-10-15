@@ -12,7 +12,7 @@ checks:
   - frequency: CI
     status: running
     how: "make test"
-    evidence: "grant snapshot and attack suites (QA-ENG-05); CI log"
+    evidence: "grant snapshot and attack suites (QA-ENG-05); CI artefact test-report (90 days)"
   - frequency: N
     status: planned
-    arrives: "p0-compliance-as-code (the nightly runner)"
+    arrives: "P1 (the nightly grant snapshot and immutability verification, §10.7)"

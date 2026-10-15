@@ -12,4 +12,4 @@ checks:
   - frequency: CI
     status: running
     how: "make test"
-    evidence: "contract golden, oasdiff, route check; Spectral in make api-check; CI log"
+    evidence: "contract golden, oasdiff, route check; Spectral in make api-check; CI artefact test-report (90 days)"

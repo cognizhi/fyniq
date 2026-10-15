@@ -12,4 +12,4 @@ checks:
   - frequency: CI
     status: running
     how: "make test"
-    evidence: "cross-tenant attack tests and the API's cross-tenant test; CI log"
+    evidence: "cross-tenant attack tests and the API's cross-tenant test; CI artefact test-report (90 days)"

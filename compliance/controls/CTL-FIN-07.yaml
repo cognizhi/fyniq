@@ -12,7 +12,7 @@ checks:
   - frequency: CI
     status: running
     how: "test TestAuthorisationMatrix"
-    evidence: "authorisation matrix (QA-SEC-03); CI log"
+    evidence: "authorisation matrix (QA-SEC-03); CI artefact test-report (90 days)"
   - frequency: N
     status: planned
     arrives: "P1"

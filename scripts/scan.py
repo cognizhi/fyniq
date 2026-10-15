@@ -228,6 +228,8 @@ TOOLS = {"workflows": workflows, "gosec": gosec, "semgrep": semgrep, "gitleaks":
 SCAN_OF = {"actionlint": "workflows", "zizmor": "workflows"}
 
 
+# req: SEC-21
+# req: CTL-CHG-03
 def self_test() -> None:
     today = dt.date(2026, 10, 15)
     w = [Waiver("gosec", "G115", "internal/domain/money/*.go", "bounded by the ISO 4217 table", dt.date(2027, 1, 1)),

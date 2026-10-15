@@ -12,4 +12,4 @@ checks:
   - frequency: CI
     status: running
     how: "test TestMaskedFieldsThroughTheAPI"
-    evidence: "masking through the API on a planted capability; CI log"
+    evidence: "masking through the API on a planted capability; CI artefact test-report (90 days)"

@@ -32,36 +32,37 @@ OWNERS = {"FIN": "Controller", "AUD": "Owner", "IAM": "Administrator", "CHG": "O
 # "test <Go test>" or "ci <CI job name>", with its evidence. Used only to generate a missing file;
 # afterwards the file is the record.
 RUNNING = {
-    ("CTL-FIN-01", "CI"): ("make test", "INV-01 trigger and property tests; CI log"),
-    ("CTL-FIN-02", "CI"): ("make test", "grant snapshot and attack suites (QA-ENG-05); CI log"),
-    ("CTL-FIN-03", "CI"): ("make test", "INV-03 trigger tests; CI log"),
+    ("CTL-FIN-01", "CI"): ("make test", "INV-01 trigger and property tests; CI artefact test-report (90 days)"),
+    ("CTL-FIN-02", "CI"): ("make test", "grant snapshot and attack suites (QA-ENG-05); CI artefact test-report (90 days)"),
+    ("CTL-FIN-03", "CI"): ("make test", "INV-03 trigger tests; CI artefact test-report (90 days)"),
     ("CTL-FIN-05", "CI"): ("make differential", "differential run; CI artefact shrunk-scenario on failure"),
-    ("CTL-FIN-07", "CI"): ("test TestAuthorisationMatrix", "authorisation matrix (QA-SEC-03); CI log"),
-    ("CTL-AUD-01", "CI"): ("make test", "AUD-08 same-transaction tests; CI log"),
-    ("CTL-AUD-02", "N"): ("job audit.verify", "verification log and heartbeat (jobs heartbeat-check)"),
-    ("CTL-IAM-05", "CI"): ("make test", "cross-tenant attack tests and the API's cross-tenant test; CI log"),
-    ("CTL-IAM-06", "CI"): ("test TestAuthorisationMatrix", "authorisation matrix; CI log"),
+    ("CTL-FIN-07", "CI"): ("test TestAuthorisationMatrix", "authorisation matrix (QA-SEC-03); CI artefact test-report (90 days)"),
+    ("CTL-AUD-01", "CI"): ("make test", "AUD-08 same-transaction tests; CI artefact test-report (90 days)"),
+    ("CTL-FIN-01", "N"): ("job ledger.verify", "the night's compliance.evidence record (compliance/evidence/<date>/ in the evidence store); control.check.failed in the organisation's audit trail on a difference"),
+    ("CTL-AUD-02", "N"): ("job audit.verify", "the night's compliance.evidence record (compliance/evidence/<date>/ in the evidence store); audit.verification.completed in each organisation's trail; heartbeat"),
+    ("CTL-IAM-05", "CI"): ("make test", "cross-tenant attack tests and the API's cross-tenant test; CI artefact test-report (90 days)"),
+    ("CTL-IAM-06", "CI"): ("test TestAuthorisationMatrix", "authorisation matrix; CI artefact test-report (90 days)"),
     ("CTL-CHG-01", "CI"): ("ci Auto-approve development changes", "pull request reviews; the approval rule of .github/workflows/auto-approve.yml"),
     ("CTL-CHG-03", "CI"): ("make scan", "CI artefact security-scan-reports (90 days)"),
     ("CTL-CHG-08", "CI"): ("make images", "image sizes and hardening in the CI log; CI artefact image-reports"),
     ("CTL-CHG-09", "CI"): ("make images", "release images without local adapters (CI log); start-up refusal test in make test"),
     ("CTL-CHG-10", "CI"): ("ci Conventional Commits (REL-01)", "commit and title check; CI log"),
     ("CTL-CHG-11", "CI"): ("make scan", "actionlint and zizmor reports; the workflow rules in archtest"),
-    ("CTL-DP-02", "CI"): ("test TestMaskedFieldsThroughTheAPI", "masking through the API on a planted capability; CI log"),
+    ("CTL-DP-02", "CI"): ("test TestMaskedFieldsThroughTheAPI", "masking through the API on a planted capability; CI artefact test-report (90 days)"),
     ("CTL-AI-08", "CI"): ("make check", "kb-lint; CI log"),
-    ("CTL-API-01", "CI"): ("make test", "contract golden, oasdiff, route check; Spectral in make api-check; CI log"),
+    ("CTL-API-01", "CI"): ("make test", "contract golden, oasdiff, route check; Spectral in make api-check; CI artefact test-report (90 days)"),
 }
 
 # When the checks that do not run yet arrive.
 INFRA = {"CTL-AUD-03", "CTL-AUD-04", "CTL-IAM-03", "CTL-IAM-04", "CTL-CHG-02", "CTL-CHG-05", "CTL-DP-01", "CTL-DP-07",
          "CTL-RES-01", "CTL-RES-03", "CTL-RES-05"}
 IDENTITY = {"CTL-IAM-01", "CTL-IAM-02", "CTL-IAM-07", "CTL-API-02", "CTL-MCP-04"}
-RUNNER = {("CTL-FIN-01", "N"), ("CTL-FIN-02", "N")}
+RUNNER = {("CTL-FIN-02", "N")}
 
 
 def arrives(cid: str, freq: str) -> str:
     if (cid, freq) in RUNNER:
-        return "p0-compliance-as-code (the nightly runner)"
+        return "P1 (the nightly grant snapshot and immutability verification, §10.7)"
     if cid in INFRA:
         return "p0-infra-opentofu"
     if cid in IDENTITY:
