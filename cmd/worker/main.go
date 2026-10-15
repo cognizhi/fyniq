@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/tokens"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
@@ -23,8 +25,12 @@ func main() {
 			return nil
 		}
 		s.AddReadiness("database", kit.Store.Ping)
+		kinds := map[string]outbox.Work{}
+		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
+			kinds[tokens.Kind] = tokens.Work(hydra.New(admin)) // AI-38: revoke a user's tokens after a change
+		}
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
-			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: map[string]outbox.Work{}})
+			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds})
 		s.Handle("POST /jobs", &outbox.JobsHandler{Tokens: kit.Tokens, Platform: kit.Store, Clock: deps.Clock,
 			Jobs: kit.PlatformJobs(deps.Clock)})
 		return nil

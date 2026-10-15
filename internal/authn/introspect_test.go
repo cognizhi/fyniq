@@ -33,14 +33,15 @@ func TestTheIntrospectorAcceptsOnlyItsAudience(t *testing.T) {
 	c := clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC))
 	org := uuid.New()
 	exp := c.Now().Add(time.Hour)
-	claims := map[string]any{"class": "user", "org": org.String(), "roles": []any{"accountant", "not_a_role"}}
+	granted := float64(c.Now().Add(-24 * time.Hour).Unix())
+	claims := map[string]any{"class": "user", "org": org.String(), "roles": []any{"accountant", "not_a_role"}, "granted_at": granted}
 	f := &fakeOAuth{tokens: map[string]ports.Introspection{
 		"api-token": {Active: true, Subject: "user-1", ClientID: "cli", Audiences: []string{"https://api"}, Scopes: []string{"fyniq.read.accounting"}, ExpiresAt: exp, Claims: claims},
 		"mcp-token": {Active: true, Subject: "user-1", ClientID: "cli", Audiences: []string{"https://mcp"}, ExpiresAt: exp, Claims: claims},
 		"no-class":  {Active: true, Subject: "user-1", ClientID: "cli", Audiences: []string{"https://api"}, ExpiresAt: exp, Claims: map[string]any{"org": org.String()}},
 		"revoked":   {},
 		"agent-token": {Active: true, Subject: "user-1", ClientID: "agent", Audiences: []string{"https://api"}, ExpiresAt: exp,
-			Claims: map[string]any{"class": "agent", "org": org.String(), "roles": []any{"accountant"}}},
+			Claims: map[string]any{"class": "agent", "org": org.String(), "roles": []any{"accountant"}, "granted_at": granted}},
 	}}
 	in := &authn.Introspector{OAuth: f, Audience: "https://api", Clock: c, TTL: time.Hour} // capped at 30 s
 	ctx := context.Background()
@@ -52,7 +53,8 @@ func TestTheIntrospectorAcceptsOnlyItsAudience(t *testing.T) {
 	if _, err := in.Authenticate(ctx, "Bearer mcp-token"); !errors.Is(err, authn.ErrWrongAudience) || !errors.Is(err, authn.ErrUnauthenticated) {
 		t.Fatalf("an MCP-audience token at the API: %v", err)
 	}
-	for name, header := range map[string]string{"revoked or unknown": "Bearer revoked", "no class": "Bearer no-class", "no scheme": "api-token"} {
+	for name, header := range map[string]string{"revoked or unknown": "Bearer revoked", "no class": "Bearer no-class", "no scheme": "api-token",
+		"a grant older than 90 days (AI-38)": "Bearer old-grant", "an undated grant": "Bearer undated"} {
 		if _, err := in.Authenticate(ctx, header); !errors.Is(err, authn.ErrUnauthenticated) {
 			t.Errorf("%s: %v", name, err)
 		}

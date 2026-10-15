@@ -185,6 +185,19 @@ func (a *Admin) Introspect(ctx context.Context, token string) (ports.Introspecti
 		ExpiresAt: time.Unix(r.Exp, 0).UTC(), Claims: r.Ext}, nil
 }
 
+// RevokeSubject implements ports.OAuthServer: deleting the subject's consent sessions revokes every
+// token issued under them, access and refresh, for every client.
+func (a *Admin) RevokeSubject(ctx context.Context, subject string) error {
+	if subject == "" {
+		return errors.New("hydra: revoke needs a subject")
+	}
+	err := a.do(ctx, http.MethodDelete, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}, "all": {"true"}}, nil, nil, nil)
+	if errors.Is(err, ports.ErrNoChallenge) {
+		return nil // nothing to revoke
+	}
+	return err
+}
+
 // NewClient is what CreateClient registers.
 type NewClient struct {
 	Name         string

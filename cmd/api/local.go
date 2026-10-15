@@ -40,7 +40,7 @@ func init() {
 		if admin == "" {
 			return
 		}
-		oauthflow.Flow{OAuth: hydra.New(admin), SignedIn: devTokens(clock), APIAudience: apiAudience(),
+		oauthflow.Flow{OAuth: hydra.New(admin), SignedIn: devTokens(clock), Clock: clock, APIAudience: apiAudience(),
 			MCPAudience: cmp.Or(os.Getenv("FYNIQ_MCP_AUDIENCE"), "http://localhost:8080/mcp"),
 			Log:         logging.New(os.Stderr, slog.LevelInfo)}.Register(s)
 	}

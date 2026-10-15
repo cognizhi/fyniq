@@ -23,6 +23,8 @@ type OAuthServer interface {
 	RejectConsent(ctx context.Context, challenge string, r OAuthRejection) (redirect string, err error)
 	// Introspect returns what an access token is; an unknown, expired or revoked token is not active.
 	Introspect(ctx context.Context, token string) (Introspection, error)
+	// RevokeSubject revokes every access and refresh token issued to subject, by every client (AI-38).
+	RevokeSubject(ctx context.Context, subject string) error
 }
 
 // ErrNoChallenge is a login or consent challenge the server does not know (expired, or used).

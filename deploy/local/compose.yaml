@@ -116,6 +116,7 @@ services:
     environment:
       <<: *fyniq-env
       FYNIQ_DATABASE_URL: postgres://fyniq_worker:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
+      FYNIQ_OAUTH_ADMIN_URL: http://oauth:4445              # revokes a user's tokens after a change (AI-38)
     healthcheck: *health
 
   executor:                                   # own identity and database role (§12.3)
@@ -160,6 +161,7 @@ services:
       OAUTH2_PKCE_ENFORCED: "true"                         # the authorisation code with PKCE only (AI-36)
       STRATEGIES_ACCESS_TOKEN: opaque                      # introspected, so revocation is seen (AI-38)
       TTL_ACCESS_TOKEN: 1h                                 # at most 60 minutes (AI-38)
+      TTL_REFRESH_TOKEN: 336h                              # 14 days; each use rotates it, so this is the idle expiry (AI-38)
     depends_on: { oauth-migrate: { condition: service_completed_successfully } }
 
   web:                                        # the built web app on nginx-unprivileged
