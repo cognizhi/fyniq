@@ -1,0 +1,98 @@
+# Accepted findings of the security scans (`make scan`, scripts/scan.py; SEC-21, CTL-CHG-03).
+# Each waiver names the tool, the rule and the path (shell globs), says why the finding is accepted
+# and expires. A waiver is reviewed in the pull request that adds or renews it; an expired waiver, or
+# one that matches nothing any more, fails the scan.
+
+# ---------------------------------------------------------------- gosec (SAST)
+
+[[waiver]]
+tool = "gosec"
+rule = "G115"
+path = "internal/domain/money/money.go"
+reason = "int to int32 for an apd exponent: the value is a currency's minor units, 0 to 4 from the ISO 4217 table, never near the int32 range. The code is held at 90% mutation efficacy, so no unreachable branch is added."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gosec"
+rule = "G115"
+path = "internal/domain/rounding/rounding.go"
+reason = "int to int32 for an apd exponent: places is a currency's minor units or a rate's scale, at most 10. Same reasoning as money.go."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gosec"
+rule = "G404"
+path = "internal/seed/seed.go"
+reason = "The sample-company generator is deterministic on purpose: the same seed gives the same synthetic company (DEV-04). Nothing secret comes from it."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gosec"
+rule = "G704"
+path = "internal/app/app.go"
+reason = "The image healthcheck calls its own /readyz on 127.0.0.1 and the PORT of its environment; no request input reaches the URL."
+expires = 2027-04-15
+
+# ---------------------------------------------------------------- gitleaks (secrets)
+
+[[waiver]]
+tool = "gitleaks"
+rule = "generic-api-key"
+path = "internal/logging/logging_test.go"
+reason = "A made-up key the SEC-15 test feeds to the logger to prove it is masked; it was never a credential."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gitleaks"
+rule = "generic-api-key"
+path = "internal/domain/audit/audit_test.go"
+reason = "A made-up key the audit masking test feeds in to prove it is masked; it was never a credential."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gitleaks"
+rule = "generic-api-key"
+path = "openspec/sources/prd-001.lock.json"
+reason = "A SHA-256 of a PRD row in the OpenSpec conversion lock, which the generic rule mistakes for a key."
+expires = 2027-04-15
+
+# ---------------------------------------------------------------- Checkov (container definitions)
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_DOCKER_2"
+path = "deploy/docker/Dockerfile.*"
+reason = "No HEALTHCHECK in the images: the probes are set where the images run (Compose healthchecks, Cloud Run startup and liveness probes on /healthz and /readyz, NFR-IMG-06), and the same Dockerfile builds run-to-completion jobs, which have no endpoint to probe."
+expires = 2027-04-15
+
+# ---------------------------------------------------------------- zizmor (workflows)
+
+[[waiver]]
+tool = "zizmor"
+rule = "dangerous-triggers"
+path = ".github/workflows/auto-approve.yml"
+reason = "pull_request_target runs main's copy of the auto-approval workflow, which never checks out or runs the pull request's code and reads no secret (archtest checks both). The workflow is removed before the first production deploy (CTL-CHG-01)."
+expires = 2027-01-31
+
+# ---------------------------------------------------------------- gosec, local build only
+
+[[waiver]]
+tool = "gosec"
+rule = "G101"
+path = "internal/adapters/postgres/bootstrap_local.go"
+reason = "LocalPassword is the password of throw-away local and test databases, compiled only into the local build (DEV-07) and valid nowhere else (SEC-12)."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gosec"
+rule = "G101"
+path = "internal/adapters/local/devtokens.go"
+reason = "DevTokenKey signs the local issuer's dev tokens; it is compiled only into the local build (DEV-07), and a release build accepts no dev token."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gosec"
+rule = "G703"
+path = "cmd/scenario-run/main.go"
+reason = "A developer tool of the differential tests (local build only) that reads the scenario files its caller names; it serves no requests."
+expires = 2027-04-15

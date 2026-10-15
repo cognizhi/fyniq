@@ -38,7 +38,7 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | Command | Does | Status |
 |---|---|---|
 | `make help` | Lists the targets | Today |
-| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the screen inventory and fragments, the review register | Today (CI runs it) |
+| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the screen inventory and fragments, the review register, the scan waivers | Today (CI runs it) |
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
@@ -46,6 +46,7 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | `make kb-index` / `kb-lint` / `kb-stale` | Regenerate the knowledge-base index; lint the compiled pages (part of `make check`); list stale pages and uncovered sources (§9.11) | Today |
 | `make spec-check` / `spec-map` / `spec-stale` | OpenSpec specs valid (strict), covering every PRD anchor once and matching the PRD rows (part of `make check`); the PRD → capability map; PRD rows changed since conversion | Today |
 | `make openapi` | Regenerate the API contract `contracts/openapi/fyniq.v1.yaml` from the code (huma) and the web app's typed client from it; `make test` fails while the code, the contract and the client differ, so the contract is reviewed in every pull request that changes it | Today |
+| `make scan` | The security scans (SEC-21): gosec, Semgrep, gitleaks, grype, Checkov, licences, actionlint and zizmor; a blocking finding fails unless `compliance/scan-waivers.toml` waives it with a reason and an expiry; reports in `.data/scan/` | Today (CI runs it) |
 | `make api-check` | The contract passes Spectral (NFR-API-01) and the web app's generated client is current; part of `make test`, which also runs `oasdiff` against the last release (QA-API-02) | Today |
 | `make design-kit` / `design-check` / `design-status` | Regenerate the screen kit stylesheet; lint the screen inventory and fragments (part of `make check`); screens designed per canvas | Today |
 | `make review-check` / `review-status` | The review register (`docs/prd/reviews/review-status.json`) names real requirements and screens and no excluded page (part of `make check`); the areas awaiting second review and the pages that show the "Needs additional verification" banner (FR-UX-41) | Today |

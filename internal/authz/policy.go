@@ -154,8 +154,8 @@ func holds(p Policy, roles []Role) (Right, bool) {
 		} else {
 			rights = Grants[p.Capability][col].Rights
 		}
-		for _, have := range rights {
-			got, ok := satisfies(Right(have), p.Need)
+		for i := 0; i < len(rights); i++ {
+			got, ok := satisfies(Right(rights[i]), p.Need)
 			if ok && (!found || rank(got) > rank(best)) {
 				best, found = got, true
 			}

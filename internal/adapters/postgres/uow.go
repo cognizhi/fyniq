@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -334,6 +335,9 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 		p.FxRateSources = append(p.FxRateSources, l.FXRateSource)
 		p.BaseAmounts = append(p.BaseAmounts, string(l.BaseAmount))
 		p.Descriptions = append(p.Descriptions, l.Description)
+	}
+	if e.Source.Version < 1 || e.Source.Version > math.MaxInt32 {
+		return storage.Entry{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("source version %d is out of range", e.Source.Version)}
 	}
 	var memo *string
 	if e.Memo != "" {

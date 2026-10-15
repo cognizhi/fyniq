@@ -320,3 +320,56 @@ func TestTheWebAppsCallTheAPIOnlyThroughTheGeneratedClient(t *testing.T) {
 		t.Fatalf("want 4 planted calls (fetch, XMLHttpRequest, ky, sendBeacon), got %d: %v", len(got), got)
 	}
 }
+
+// req: SEC-28
+// req: CTL-CHG-11
+func TestWorkflowsPinActionsAndLimitTokens(t *testing.T) {
+	files, err := filepath.Glob(filepath.Join(repoRoot(t), ".github", "workflows", "*.yml"))
+	if err != nil || len(files) < 3 {
+		t.Fatalf("workflows: %v %v", files, err)
+	}
+	seen := map[string]bool{}
+	for _, f := range files {
+		src, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, v := range WorkflowViolations(filepath.Base(f), src) {
+			t.Error(v)
+		}
+		for key := range WriteJobs {
+			if strings.HasPrefix(key, filepath.Base(f)+"/") {
+				seen[key] = true
+			}
+		}
+	}
+	for key := range WriteJobs {
+		if !seen[key] {
+			t.Errorf("WriteJobs names %s, whose workflow does not exist: remove it", key)
+		}
+	}
+	planted := []byte(`
+on:
+  pull_request_target:
+  push:
+    branches: [feature]
+permissions: write-all
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker://alpine:3
+      - run: echo ${{ secrets.DEPLOY_KEY }}
+  nothing:
+    runs-on: ubuntu-latest
+`)
+	got := WorkflowViolations("planted.yml", planted)
+	// top-level token, write not allowed, write for unreviewed code, unpinned action, checkout under
+	// pull_request_target, unpinned image, no permissions block, a secret under pull_request_target
+	if len(got) != 8 {
+		t.Fatalf("want 8 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	}
+}

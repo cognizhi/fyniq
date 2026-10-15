@@ -99,6 +99,26 @@ jobs:
           name: shrunk-scenario
           path: test/differential/golden/shrunk-*.json
 
+  scan:
+    name: Security scans (make scan)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0   # gitleaks scans the whole history
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: pnpm install --frozen-lockfile   # the npm licences
+      - run: make scan   # SEC-21, CTL-CHG-03, CTL-CHG-11: a blocking finding without a waiver fails the merge
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: security-scan-reports   # the evidence (compliance-as-code)
+          path: .data/scan/
+          retention-days: 90
+
   e2e:
     name: Web smoke test (make test-e2e)
     runs-on: ubuntu-latest
