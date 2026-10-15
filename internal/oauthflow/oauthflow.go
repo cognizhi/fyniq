@@ -37,6 +37,7 @@ const (
 type Flow struct {
 	OAuth       ports.OAuthServer
 	SignedIn    authn.Authenticator
+	Clock       ports.Clock
 	APIAudience string
 	MCPAudience string
 	Log         *slog.Logger
@@ -205,7 +206,8 @@ func (f Flow) recordConsent(w http.ResponseWriter, r *http.Request) {
 			roles[i] = string(role)
 		}
 		// The claims the API reads back through introspection: a snapshot at consent (authn.Introspector).
-		claims := map[string]any{"class": c.Client.Class, "org": p.Organisation.String(), "roles": roles}
+		// granted_at dates the grant: the API refuses it after 90 days, refreshed or not (AI-38).
+		claims := map[string]any{"class": c.Client.Class, "org": p.Organisation.String(), "roles": roles, "granted_at": f.Clock.Now().Unix()}
 		f.redirect(w, r, func() (string, error) {
 			return f.OAuth.AcceptConsent(r.Context(), challenge, ports.ConsentAcceptance{Scopes: d.Scopes, Audiences: d.Audiences, AccessTokenClaims: claims})
 		})

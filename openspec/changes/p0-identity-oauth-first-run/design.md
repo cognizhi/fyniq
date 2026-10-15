@@ -47,8 +47,15 @@ and no token exchange (checked 14 Oct 2026). §9.7 and open question 40 describe
   requested ones, each the API's or the MCP server's and on the client's record, or consent is refused.
   Consent is never remembered. The pinned version and settings are recorded in
   `docs/adr/ADR-T3-identity-and-oauth.md`.
+- **Token lifetimes and revocation (AI-38), as built.** A refresh rotates the tokens; a reused refresh token
+  revokes its family (Hydra's reuse detection). Refresh tokens last 14 days from their last use. Hydra's
+  Apache-2.0 build has no absolute lifetime for a chain, so consent stamps `granted_at` and the API refuses
+  a grant older than 90 days. A change to a user's grant revokes their tokens through the outbox
+  (`oauth.subject.revoke`, run by the worker), never in the request.
 - **Audit events emitted.** `setup.completed`, `super_admin.added`, `super_admin.recovery_used`,
-  `oauth.client.created`, `oauth.token.revoked_family` (AUD-01).
+  `oauth.client.created`, `oauth.tokens.revoke_requested` (AUD-01). (As built: Hydra does not report the
+  family revocations it makes on refresh reuse, so `oauth.token.revoked_family` cannot be emitted; the
+  client receives `invalid_grant`.)
 - **Ports and adapters.** `SignIn` (Identity Platform, Firebase emulator), `Signer` (KMS, local key) and
   `OAuthServer` (Hydra admin API; local Hydra in Compose).
 

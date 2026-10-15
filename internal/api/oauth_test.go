@@ -23,10 +23,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/oauthflow"
+	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
+	revoke "github.com/cognizhi/fyniq/internal/tokens"
 )
 
 const (
@@ -39,13 +43,15 @@ const (
 type oauthStack struct {
 	t      *testing.T
 	e      *env
+	clock  *clock.Frozen // the API's introspection cache runs on it; Hydra runs on real time
 	admin  *hydra.Admin
 	public *url.URL // Hydra's public port as the host sees it; its issuer is http://hydra.test/
 	srv    *httptest.Server
 	user   string // the signed-in user's dev token
 }
 
-func startOAuth(t *testing.T) *oauthStack {
+// startOAuth starts the stack; ttl is how long the API caches an introspection.
+func startOAuth(t *testing.T, ttl time.Duration) *oauthStack {
 	t.Helper()
 	ctx := context.Background()
 	e := newEnv(t)
@@ -67,12 +73,12 @@ func startOAuth(t *testing.T) *oauthStack {
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 	pub, _ := c.PortEndpoint(ctx, "4444/tcp", "http")
 	adm, _ := c.PortEndpoint(ctx, "4445/tcp", "http")
-	s := &oauthStack{t: t, e: e, admin: hydra.New(adm), srv: srv}
+	s := &oauthStack{t: t, e: e, admin: hydra.New(adm), srv: srv, clock: clock.NewFrozen(clock.System{}.Now())}
 	s.public, _ = url.Parse(pub)
-	dev := e.tokens                                                                                                         // the first-party session, until the SignIn port: dev tokens
-	auth := authn.Local{Dev: dev, OAuth: &authn.Introspector{OAuth: s.admin, Audience: apiAudience, Clock: clock.System{}}} // TTL 0: no cache here
-	New(mux, Deps{Store: e.store, Clock: clock.System{}, Auth: auth, Log: slog.New(slog.DiscardHandler), Version: "0.0.0-test"})
-	oauthflow.Flow{OAuth: s.admin, SignedIn: dev, APIAudience: apiAudience, MCPAudience: mcpAudience}.Register(mux)
+	dev := e.tokens // the first-party session, until the SignIn port: dev tokens
+	auth := authn.Local{Dev: dev, OAuth: &authn.Introspector{OAuth: s.admin, Audience: apiAudience, Clock: s.clock, TTL: ttl}}
+	New(mux, Deps{Store: e.store, Clock: s.clock, Auth: auth, Log: slog.New(slog.DiscardHandler), Version: "0.0.0-test"})
+	oauthflow.Flow{OAuth: s.admin, SignedIn: dev, Clock: clock.System{}, APIAudience: apiAudience, MCPAudience: mcpAudience}.Register(mux)
 	s.user = authn.DevPrefix + uuid.NewString()
 	dev.mu.Lock()
 	dev.m[s.user] = authn.Principal{Subject: "user-oauth-1", Client: "web", Class: authn.ClassUser, Organisation: e.books.Org,
@@ -187,7 +193,7 @@ func (s *oauthStack) call(token string) (int, string) {
 // req: SEC-02
 // asvs: V10.3.1, V10.4.6, V10.7.1
 func TestOAuthTokensAreAudienceBound(t *testing.T) {
-	s := startOAuth(t)
+	s := startOAuth(t, 0) // no cache: every call introspects
 	ctx := context.Background()
 	newClient := func(name, class string, audiences []string, lifespan time.Duration) string {
 		c, err := s.admin.CreateClient(ctx, hydra.NewClient{Name: name, Class: class, Audiences: audiences, RedirectURIs: []string{callback},
@@ -233,6 +239,7 @@ func TestOAuthTokensAreAudienceBound(t *testing.T) {
 
 	tok, _ = s.authorize(shortLived, apiAudience, "openid fyniq.read.accounting", true, "accept")
 	time.Sleep(3 * time.Second) // Hydra's own clock decides the expiry
+	s.clock.Set(clock.System{}.Now())
 	if status, _ := s.call(tok["access_token"].(string)); status != http.StatusUnauthorized {
 		t.Errorf("an expired token: %d", status)
 	}
@@ -244,5 +251,95 @@ func TestOAuthTokensAreAudienceBound(t *testing.T) {
 	_ = resp.Body.Close()
 	if status, _ := s.call(apiToken); status != http.StatusUnauthorized {
 		t.Errorf("a revoked token: %d", status)
+	}
+}
+
+// refresh exchanges a refresh token; it returns the new tokens, or the OAuth error.
+func (s *oauthStack) refresh(clientID, refreshToken string) (map[string]any, string) {
+	s.t.Helper()
+	resp, err := s.browser().PostForm("http://hydra.test/oauth2/token", url.Values{"grant_type": {"refresh_token"},
+		"refresh_token": {refreshToken}, "client_id": {clientID}})
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var out map[string]any
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	if resp.StatusCode != http.StatusOK {
+		e, _ := out["error"].(string)
+		return nil, e
+	}
+	return out, ""
+}
+
+// P0 exit item 6, second part: refresh tokens rotate and a reused one revokes its family; a change to
+// what a user was granted revokes their tokens, and the API denies the next call within 60 seconds.
+// req: AI-38
+// asvs: V10.4.5, V10.4.9, V8.3.2
+func TestTokenLifecycle(t *testing.T) {
+	s := startOAuth(t, authn.MaxCache) // the production cache: 30 seconds
+	ctx := context.Background()
+	c, err := s.admin.CreateClient(ctx, hydra.NewClient{Name: "Lifecycle client", Class: authn.ClassIntegration, Audiences: []string{apiAudience},
+		RedirectURIs: []string{callback}, Scopes: []string{"openid", "offline_access", "fyniq.read.accounting"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, _ := s.authorize(c.ID, apiAudience, "openid offline_access fyniq.read.accounting", true, "accept")
+	second, refused := s.refresh(c.ID, first["refresh_token"].(string))
+	if refused != "" {
+		t.Fatalf("refresh: %s", refused)
+	}
+	if second["refresh_token"] == first["refresh_token"] {
+		t.Fatal("the refresh token did not rotate")
+	}
+	if status, _ := s.call(first["access_token"].(string)); status != http.StatusUnauthorized {
+		t.Errorf("the access token replaced by a refresh still works: %d", status)
+	}
+	if status, _ := s.call(second["access_token"].(string)); status != http.StatusOK {
+		t.Fatalf("the refreshed access token: %d", status)
+	}
+	if _, refused := s.refresh(c.ID, first["refresh_token"].(string)); refused != "invalid_grant" {
+		t.Fatalf("a reused refresh token: %q, want invalid_grant", refused)
+	}
+	s.clock.Advance(authn.MaxCache + time.Second) // past the cache of the call above
+	if status, _ := s.call(second["access_token"].(string)); status != http.StatusUnauthorized {
+		t.Errorf("after a refresh token was reused, its family's access token still works: %d", status)
+	}
+	if _, refused := s.refresh(c.ID, second["refresh_token"].(string)); refused == "" {
+		t.Error("after a refresh token was reused, its family's refresh token still works")
+	}
+
+	// A change to the user's roles asks, in its own unit of work, for their tokens to be revoked; the
+	// worker revokes them; the API's next call after its cache lapses is denied: within 60 seconds.
+	third, _ := s.authorize(c.ID, apiAudience, "openid fyniq.read.accounting", true, "accept")
+	if status, _ := s.call(third["access_token"].(string)); status != http.StatusOK {
+		t.Fatalf("a fresh token: %d", status)
+	}
+	queue := local.NewMemory()
+	var row storage.OutboxRow
+	if err := s.e.store.Do(ctx, s.e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if err := revoke.RevokeAll(ctx, outbox.Dispatcher{Store: s.e.store, Queue: queue, Clock: s.clock}, u, s.e.books.Org,
+			"user-oauth-1", "roles changed"); err != nil {
+			return err
+		}
+		rows, err := u.Sweeping().Due(ctx, s.clock.Now().Add(time.Hour), s.clock.Now().Add(time.Hour))
+		for _, r := range rows {
+			if r.Kind == revoke.Kind {
+				row = r
+			}
+		}
+		return err
+	}); err != nil || row.Kind != revoke.Kind {
+		t.Fatalf("the revocation was not queued with the change: %v", err)
+	}
+	if err := revoke.Work(s.admin)(ctx, s.e.books.Org, row); err != nil { // what the worker runs
+		t.Fatal(err)
+	}
+	if status, _ := s.call(third["access_token"].(string)); status != http.StatusOK {
+		t.Errorf("within the 30-second cache the answer stands: %d", status)
+	}
+	s.clock.Advance(authn.MaxCache + time.Second)
+	if status, _ := s.call(third["access_token"].(string)); status != http.StatusUnauthorized {
+		t.Errorf("31 seconds after the revocation the token still works: %d", status)
 	}
 }

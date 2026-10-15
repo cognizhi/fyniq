@@ -22,6 +22,11 @@ const DevPrefix = "fyniq-dev."
 // MaxCache is the longest an introspection is trusted (ADR-T3: AI-38 revokes within 60 seconds).
 const MaxCache = 30 * time.Second
 
+// MaxGrantAge is the absolute lifetime of a grant (AI-38: refresh tokens expire 90 days after consent).
+// Hydra's Apache-2.0 build rotates refresh tokens with a sliding expiry only, so the API refuses any
+// token whose consent is older, however recently it was refreshed: the client must ask again.
+const MaxGrantAge = 90 * 24 * time.Hour
+
 // ErrWrongAudience is an active token issued for another resource, such as the MCP server (AI-36).
 var ErrWrongAudience = errors.Join(ErrUnauthenticated, errors.New("the token was issued for another audience"))
 
@@ -94,6 +99,10 @@ func (i *Introspector) principal(in ports.Introspection, now time.Time) (Princip
 		return Principal{}, ErrUnauthenticated
 	case !slices.Contains(in.Audiences, i.Audience):
 		return Principal{}, ErrWrongAudience
+	}
+	granted, ok := in.Claims["granted_at"].(float64) // JSON numbers decode as float64; seconds since 1970
+	if !ok || now.Sub(time.Unix(int64(granted), 0)) > MaxGrantAge {
+		return Principal{}, errors.Join(ErrUnauthenticated, fmt.Errorf("the grant is older than 90 days, or undated: authorise the client again (AI-38)"))
 	}
 	p := Principal{Subject: in.Subject, Client: in.ClientID, Scopes: in.Scopes}
 	switch class, _ := in.Claims["class"].(string); class {
