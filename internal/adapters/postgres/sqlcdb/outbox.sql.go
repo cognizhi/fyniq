@@ -12,6 +12,75 @@ import (
 	"github.com/google/uuid"
 )
 
+const dueOutbox = `-- name: DueOutbox :many
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error
+FROM fyniq.outbox
+WHERE (state = 'pending' AND created_at < $1)
+   OR (state IN ('dispatched', 'running', 'failed') AND deadline_at < $2)
+ORDER BY created_at
+LIMIT 500
+`
+
+type DueOutboxParams struct {
+	PendingBefore time.Time
+	Now           *time.Time
+}
+
+type DueOutboxRow struct {
+	ID             uuid.UUID
+	WorkerClass    string
+	Kind           string
+	Payload        []byte
+	BusinessKey    *string
+	State          string
+	Attempts       int32
+	MaxAttempts    int32
+	Dispatches     int32
+	TaskName       *string
+	LeaseHolder    *string
+	LeaseExpiresAt *time.Time
+	DeadlineAt     *time.Time
+	LastError      *string
+}
+
+// The sweep: rows never dispatched (past a grace for the after-commit dispatch), and rows dispatched,
+// running or failed past their deadline. Unknown outcomes and dead rows are never swept (§12.11).
+func (q *Queries) DueOutbox(ctx context.Context, arg DueOutboxParams) ([]DueOutboxRow, error) {
+	rows, err := q.db.Query(ctx, dueOutbox, arg.PendingBefore, arg.Now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DueOutboxRow
+	for rows.Next() {
+		var i DueOutboxRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkerClass,
+			&i.Kind,
+			&i.Payload,
+			&i.BusinessKey,
+			&i.State,
+			&i.Attempts,
+			&i.MaxAttempts,
+			&i.Dispatches,
+			&i.TaskName,
+			&i.LeaseHolder,
+			&i.LeaseExpiresAt,
+			&i.DeadlineAt,
+			&i.LastError,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const finishOutbox = `-- name: FinishOutbox :one
 UPDATE fyniq.outbox
 SET state = $1, lease_holder = NULL, lease_expires_at = NULL, last_error = $2
@@ -210,6 +279,30 @@ func (q *Queries) LeaseOutbox(ctx context.Context, arg LeaseOutboxParams) (Lease
 	return i, err
 }
 
+const markOutboxDead = `-- name: MarkOutboxDead :one
+UPDATE fyniq.outbox SET state = 'dead', lease_holder = NULL, lease_expires_at = NULL, last_error = $1
+WHERE id = $2 AND state NOT IN ('done', 'dead')
+RETURNING id, state, attempts
+`
+
+type MarkOutboxDeadParams struct {
+	LastError *string
+	ID        uuid.UUID
+}
+
+type MarkOutboxDeadRow struct {
+	ID       uuid.UUID
+	State    string
+	Attempts int32
+}
+
+func (q *Queries) MarkOutboxDead(ctx context.Context, arg MarkOutboxDeadParams) (MarkOutboxDeadRow, error) {
+	row := q.db.QueryRow(ctx, markOutboxDead, arg.LastError, arg.ID)
+	var i MarkOutboxDeadRow
+	err := row.Scan(&i.ID, &i.State, &i.Attempts)
+	return i, err
+}
+
 const markOutboxDispatched = `-- name: MarkOutboxDispatched :one
 UPDATE fyniq.outbox
 SET state = 'dispatched', dispatches = dispatches + 1, task_name = $1,
@@ -236,4 +329,19 @@ func (q *Queries) MarkOutboxDispatched(ctx context.Context, arg MarkOutboxDispat
 	var i MarkOutboxDispatchedRow
 	err := row.Scan(&i.ID, &i.State, &i.Dispatches)
 	return i, err
+}
+
+const outboxAfterRestore = `-- name: OutboxAfterRestore :execrows
+UPDATE fyniq.outbox SET state = 'unknown_outcome', lease_holder = NULL, lease_expires_at = NULL,
+       last_error = 'set by the after-restore step: reconcile before any retry'
+WHERE state IN ('pending', 'dispatched', 'running', 'failed')
+`
+
+// After a database restore, nothing unfinished is re-dispatched automatically: it is reconciled first.
+func (q *Queries) OutboxAfterRestore(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, outboxAfterRestore)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

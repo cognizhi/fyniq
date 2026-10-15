@@ -51,6 +51,12 @@ document_version | document_id | uuid | not null |
 document_version | version | integer | not null | 
 document_version | payload | jsonb | not null | 
 document_version | created_at | timestamp with time zone | not null | now()
+heartbeat | name | text | not null | 
+heartbeat | last_beat | timestamp with time zone | not null | 
+heartbeat | detail | text | null | 
+heartbeats | name | text | null | 
+heartbeats | last_beat | timestamp with time zone | null | 
+heartbeats | detail | text | null | 
 idempotency_key | organisation_id | uuid | not null | current_org()
 idempotency_key | id | uuid | not null | uuidv7()
 idempotency_key | client_id | text | not null | 
@@ -60,6 +66,24 @@ idempotency_key | response_status | smallint | null |
 idempotency_key | response_body | bytea | null | 
 idempotency_key | created_at | timestamp with time zone | not null | now()
 idempotency_key | expires_at | timestamp with time zone | not null | 
+job_slot | job | text | not null | 
+job_slot | slot | timestamp with time zone | not null | 
+job_slot | state | text | not null | 
+job_slot | holder | text | null | 
+job_slot | execution | text | null | 
+job_slot | lease_expires_at | timestamp with time zone | null | 
+job_slot | claimed_at | timestamp with time zone | not null | 
+job_slot | finished_at | timestamp with time zone | null | 
+job_slot | detail | text | null | 
+job_slots | job | text | null | 
+job_slots | slot | timestamp with time zone | null | 
+job_slots | state | text | null | 
+job_slots | holder | text | null | 
+job_slots | execution | text | null | 
+job_slots | lease_expires_at | timestamp with time zone | null | 
+job_slots | claimed_at | timestamp with time zone | null | 
+job_slots | finished_at | timestamp with time zone | null | 
+job_slots | detail | text | null | 
 journal_entry | organisation_id | uuid | not null | current_org()
 journal_entry | id | uuid | not null | uuidv7()
 journal_entry | ledger_revision | bigint | not null | 
@@ -224,6 +248,11 @@ document_version | document_version_pkey | PRIMARY KEY (organisation_id, id)
 document_version | document_version_positive | CHECK ((version > 0))
 document_version | document_version_version_not_null | NOT NULL version
 document_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+heartbeat | heartbeat_detail_length | CHECK ((length(detail) <= 2000))
+heartbeat | heartbeat_last_beat_not_null | NOT NULL last_beat
+heartbeat | heartbeat_name_format | CHECK (((name ~ '^[a-z][a-z0-9_.]*$'::text) AND (length(name) <= 100)))
+heartbeat | heartbeat_name_not_null | NOT NULL name
+heartbeat | heartbeat_pkey | PRIMARY KEY (name)
 idempotency_key | idempotency_key_client_id_not_null | NOT NULL client_id
 idempotency_key | idempotency_key_client_key | UNIQUE (organisation_id, client_id, key)
 idempotency_key | idempotency_key_client_length | CHECK (((length(client_id) >= 1) AND (length(client_id) <= 200)))
@@ -239,6 +268,15 @@ idempotency_key | idempotency_key_organisation_id_not_null | NOT NULL organisati
 idempotency_key | idempotency_key_pkey | PRIMARY KEY (organisation_id, id)
 idempotency_key | idempotency_key_request_hash_not_null | NOT NULL request_hash
 idempotency_key | idempotency_key_status_range | CHECK (((response_status >= 100) AND (response_status <= 599)))
+job_slot | job_slot_claimed_at_not_null | NOT NULL claimed_at
+job_slot | job_slot_detail_length | CHECK ((length(detail) <= 2000))
+job_slot | job_slot_job_format | CHECK (((job ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'::text) AND (length(job) <= 100)))
+job_slot | job_slot_job_not_null | NOT NULL job
+job_slot | job_slot_lease_whole | CHECK (((state = 'running'::text) = (lease_expires_at IS NOT NULL)))
+job_slot | job_slot_pkey | PRIMARY KEY (job, slot)
+job_slot | job_slot_slot_not_null | NOT NULL slot
+job_slot | job_slot_state_known | CHECK ((state = ANY (ARRAY['running'::text, 'done'::text, 'failed'::text, 'skipped'::text])))
+job_slot | job_slot_state_not_null | NOT NULL state
 journal_entry | journal_entry_balanced | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_entry | journal_entry_created_xact_not_null | NOT NULL created_xact
 journal_entry | journal_entry_id_not_null | NOT NULL id
@@ -382,8 +420,10 @@ CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
 CREATE UNIQUE INDEX document_pkey ON fyniq.document USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
 CREATE UNIQUE INDEX idempotency_key_pkey ON fyniq.idempotency_key USING btree (organisation_id, id)
+CREATE UNIQUE INDEX job_slot_pkey ON fyniq.job_slot USING btree (job, slot)
 CREATE UNIQUE INDEX journal_entry_pkey ON fyniq.journal_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX journal_entry_posting_identity_key ON fyniq.journal_entry USING btree (organisation_id, posting_identity)
 CREATE UNIQUE INDEX journal_entry_reverses_key ON fyniq.journal_entry USING btree (organisation_id, reverses_entry_id)
@@ -453,14 +493,18 @@ audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog,
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970
 balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
+beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
+claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae8d292019dce37ac1cadb594f5dbe0c
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
+finish_job_slot(p_job text, p_slot timestamp with time zone, p_ok boolean, p_detail text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ad4500fb0fd68beae2aba5eb5653db8b
 journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a08448dfac396ac97236dad4b8dbc36e
+latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
@@ -472,6 +516,8 @@ period_guard() → trigger | security definer | v | search_path=pg_catalog, fyni
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f50a71180c705d84f04bcfca78d59e44
 require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
+skip_job_slots(p_job text, p_slots timestamp with time zone[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8f2a4dc16b9baa48f2314e6e58698273
+started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7
 
 ## extensions
 btree_gist | fyniq_ext

@@ -133,3 +133,9 @@ func healthcheck(service string) int {
 	}
 	return 0
 }
+
+// Holder names this process on a lease (outbox rows, job slots): the service, host and process.
+func Holder(service string) string {
+	host, _ := os.Hostname()
+	return fmt.Sprintf("%s@%s:%d", service, host, os.Getpid())
+}

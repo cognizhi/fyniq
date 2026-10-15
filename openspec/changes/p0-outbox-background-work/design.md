@@ -67,3 +67,28 @@ unit of work (p0-database-tenancy-migrations) gives the transaction the outbox r
 - **Waits for p0-infra-opentofu:** the Cloud Tasks and Cloud Run jobs adapters run the same
   conformance suite in staging (1.2); queue IAM, meaning the executor's own service account and only
   the `api` account creating its tasks (3.2's cloud half); scale to zero (3.3).
+
+### Part 2 (15 Oct 2026)
+
+- **The tick** (`outbox.Ticker`, `POST /internal/tick` on the API, scheduler token): for each platform
+  schedule it runs the latest slot once, records the slots a gap made it miss as skipped, and leaves
+  a slot whose previous run still holds its lease (no overlap; an expired lease is failed by the
+  watchdog first). It then sweeps every organisation: rows never dispatched (after a one-minute grace
+  for the after-commit dispatch) and rows dispatched, running or failed past their deadline are sent
+  again under a new name, rows whose attempts ran out become dead with an audit event, and
+  unknown-outcome rows are never touched. It beats only when it finished cleanly.
+- **Platform jobs** are slots in the global `job_slot` table (claimed, skipped, started and finished
+  only through security-definer functions), not tenant outbox rows, because they run for every
+  organisation. Today: `audit.anchor` hourly and `audit.verify` at 02:00 Singapore time.
+- **Jobs.** The tick starts a slot through the `JobRunner` port; the job runs on its own and reports its
+  end to its slot and its heartbeat (`outbox.RunSlot`). Locally the runner posts to the worker's
+  `/jobs` (jobs-class token), which answers 202 and runs the job in the background; in production
+  `jobs run-slot <job> <slot>` runs as a Cloud Run job (adapter in p0-infra-opentofu).
+- **Heartbeats** are the global `heartbeat` table; `outbox.Absences` (and `jobs heartbeat-check`)
+  reports the tick after three intervals without a beat, and each job after its own limit. Cloud
+  Monitoring's absence alert is p0-infra-opentofu's.
+- **After a restore**, `jobs outbox-after-restore` sets every unfinished row to unknown_outcome, with an
+  audit event per organisation; the sweep never sends them again.
+- **Wiring.** `internal/wiring` builds each service's adapters; the local build defaults every URL to
+  `make dev`'s ports, and Compose points them at the containers. The release build serves without
+  background work until the GCP adapters exist.

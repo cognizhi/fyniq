@@ -24,6 +24,11 @@ x-fyniq-env: &fyniq-env
   FYNIQ_DATABASE_URL: ""
   FYNIQ_GCS_ENDPOINT: http://gcs:4443/storage/v1/
   FYNIQ_SMTP_ADDR: mailpit:1025
+  # Background work (ADR-T7, PRD rev 0.23): the push dispatcher's targets, and a writable place for
+  # the local bucket and signing key (the containers' root is read-only).
+  FYNIQ_WORKER_URL: http://worker:8080
+  FYNIQ_EXECUTOR_URL: http://executor:8080
+  FYNIQ_DATA_DIR: /tmp/fyniq
 
 x-health: &health
   test: ["CMD", "/app", "healthcheck"]   # no shell in distroless: the binary probes /readyz
@@ -104,6 +109,7 @@ services:
     <<: *hardened
     image: fyniq-worker:local
     profiles: [core]
+    depends_on: { migrate: { condition: service_completed_successfully } }
     environment:
       <<: *fyniq-env
       FYNIQ_DATABASE_URL: postgres://fyniq_worker:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
@@ -113,6 +119,7 @@ services:
     <<: *hardened
     image: fyniq-executor:local
     profiles: [core]
+    depends_on: { migrate: { condition: service_completed_successfully } }
     environment:
       <<: *fyniq-env
       FYNIQ_DATABASE_URL: postgres://fyniq_executor:fyniq-local-only@postgres:5432/fyniq?sslmode=disable

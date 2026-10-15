@@ -41,6 +41,7 @@ type UnitOfWork interface {
 	Balances() Balances
 	Audit() Audit
 	Outbox() Outbox
+	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))

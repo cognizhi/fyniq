@@ -64,6 +64,20 @@ func Open(ctx context.Context, url string, opts ...Option) (*Store, error) {
 	return New(pool, opts...), nil
 }
 
+// Connect is Open without the first round trip: the pool connects when first used, so a service
+// starts while the database is still coming up and reports it on /readyz.
+func Connect(url string, opts ...Option) (*Store, error) {
+	cfg, err := pgxpool.ParseConfig(url)
+	if err != nil {
+		return nil, fmt.Errorf("parse the database URL: %w", err)
+	}
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		return nil, fmt.Errorf("connect to the database: %w", err)
+	}
+	return New(pool, opts...), nil
+}
+
 // New wraps an existing pool.
 func New(pool *pgxpool.Pool, opts ...Option) *Store {
 	s := &Store{pool: pool, lockTimeout: DefaultLockTimeout, clock: clock.System{},
