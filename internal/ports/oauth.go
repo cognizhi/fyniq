@@ -89,5 +89,6 @@ type Introspection struct {
 	Audiences []string
 	Scopes    []string
 	ExpiresAt time.Time
+	IssuedAt  time.Time
 	Claims    map[string]any // the claims consent gave the access token
 }

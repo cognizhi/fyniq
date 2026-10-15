@@ -169,6 +169,7 @@ func (a *Admin) Introspect(ctx context.Context, token string) (ports.Introspecti
 		Aud      []string       `json:"aud"`
 		Scope    string         `json:"scope"`
 		Exp      int64          `json:"exp"`
+		Iat      int64          `json:"iat"`
 		TokenUse string         `json:"token_use"`
 		Ext      map[string]any `json:"ext"`
 	}
@@ -182,7 +183,7 @@ func (a *Admin) Introspect(ctx context.Context, token string) (ports.Introspecti
 		return ports.Introspection{}, nil
 	}
 	return ports.Introspection{Active: true, Subject: r.Sub, ClientID: r.ClientID, Audiences: r.Aud, Scopes: strings.Fields(r.Scope),
-		ExpiresAt: time.Unix(r.Exp, 0).UTC(), Claims: r.Ext}, nil
+		ExpiresAt: time.Unix(r.Exp, 0).UTC(), IssuedAt: time.Unix(r.Iat, 0).UTC(), Claims: r.Ext}, nil
 }
 
 // RevokeSubject implements ports.OAuthServer: deleting the subject's consent sessions revokes every
@@ -221,4 +222,54 @@ func (a *Admin) CreateClient(ctx context.Context, c NewClient) (ports.OAuthClien
 	var out client
 	err := a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
 	return out.port(), err
+}
+
+// TrustRelationship lets a JWT issuer's assertions obtain access tokens with the RFC 7523 JWT-bearer
+// grant: assertions signed by Key, for Subject or (AllowAnySubject) anyone, for at most Scopes, until
+// ExpiresAt. Open question 40's option (b): the MCP server's key (ADR-T3).
+type TrustRelationship struct {
+	Issuer          string
+	Subject         string
+	AllowAnySubject bool
+	Scopes          []string
+	Key             any // the public JWK (go-jose's JSONWebKey)
+	ExpiresAt       time.Time
+}
+
+// Trust registers a trust relationship and returns its ID.
+func (a *Admin) Trust(ctx context.Context, t TrustRelationship) (string, error) {
+	body := map[string]any{"issuer": t.Issuer, "allow_any_subject": t.AllowAnySubject, "scope": t.Scopes, "jwk": t.Key,
+		"expires_at": t.ExpiresAt.UTC().Format(time.RFC3339)}
+	if t.Subject != "" {
+		body["subject"] = t.Subject
+	}
+	var out struct {
+		ID string `json:"id"`
+	}
+	err := a.do(ctx, http.MethodPost, "/admin/trust/grants/jwt-bearer/issuers", nil, body, nil, &out)
+	return out.ID, err
+}
+
+// DelegationClient is the MCP server's confidential client for the JWT-bearer grant: it may ask only
+// for Audiences and Scopes, and its tokens live AccessTokenLifespan.
+type DelegationClient struct {
+	Name                string
+	Audiences, Scopes   []string
+	AccessTokenLifespan time.Duration
+}
+
+// CreateDelegationClient registers it and returns its ID and secret (client_secret_basic).
+func (a *Admin) CreateDelegationClient(ctx context.Context, c DelegationClient) (id, secret string, err error) {
+	body := map[string]any{"client_name": c.Name, "audience": c.Audiences, "scope": strings.Join(c.Scopes, " "),
+		"grant_types": []string{"urn:ietf:params:oauth:grant-type:jwt-bearer"}, "response_types": []string{},
+		"token_endpoint_auth_method": "client_secret_basic", "metadata": map[string]any{"class": "agent"}}
+	if c.AccessTokenLifespan > 0 {
+		body["jwt_bearer_grant_access_token_lifespan"] = c.AccessTokenLifespan.String()
+	}
+	var out struct {
+		ID     string `json:"client_id"`
+		Secret string `json:"client_secret"`
+	}
+	err = a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
+	return out.ID, out.Secret, err
 }

@@ -8,8 +8,8 @@
 
 ## 2. The open question 40 spike
 
-- [ ] 2.1 Have the MCP server obtain an API-audience token with the RFC 7523 JWT-bearer grant from its KMS key, only for the subject of a just-validated MCP token, at most 5 minutes, with scopes intersected by the API; test asserts no passthrough and the intersection (`// req: AI-36`)
-- [ ] 2.2 Write up the spike's limits and measurements for the security reviewer in `docs/adr/` beside the Enterprise Licence quote; verify it is linked from pull request #4
+- [x] 2.1 Have the MCP server obtain an API-audience token with the RFC 7523 JWT-bearer grant from its KMS key, only for the subject of a just-validated MCP token, at most 5 minutes, with scopes intersected by the API; test asserts no passthrough and the intersection (`// req: AI-36`) (as built: `internal/mcpdelegation`, used only by `cmd/mcp`; `authn.Delegation` at the API; measured in `internal/api/delegation_test.go` against the pinned Hydra. The key is a local ES256 key in the spike; Cloud KMS and `private_key_jwt` with p0-infra-opentofu and P1, and no MCP tool calls it until P1)
+- [ ] 2.2 Write up the spike's limits and measurements for the security reviewer in `docs/adr/` beside the Enterprise Licence quote; verify it is linked from pull request #4 (written: `docs/adr/ADR-T3-mcp-delegation-spike.md`; open until the founders' Enterprise Licence quote sits beside it and the record is linked from #4)
 
 ## 3. Sign-in
 

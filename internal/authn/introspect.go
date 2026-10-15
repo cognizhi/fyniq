@@ -43,6 +43,9 @@ type Introspector struct {
 	Audience string
 	Clock    ports.Clock
 	TTL      time.Duration
+	// Delegation, when set, also accepts the tokens the MCP server obtains for a person (open question
+	// 40, option (b)); nil accepts none.
+	Delegation *Delegation
 
 	mu    sync.Mutex
 	cache map[[32]byte]cached
@@ -74,7 +77,7 @@ func (i *Introspector) Authenticate(ctx context.Context, c Credentials) (Princip
 	if err != nil {
 		return Principal{}, fmt.Errorf("introspection: %w", err) // not cached: the server may be back
 	}
-	p, perr := i.principal(in, now)
+	p, perr := i.principal(ctx, in, now)
 	ttl := min(i.TTL, MaxCache)
 	until := now.Add(ttl)
 	if perr == nil && in.ExpiresAt.Before(until) {
@@ -94,12 +97,15 @@ func (i *Introspector) Authenticate(ctx context.Context, c Credentials) (Princip
 	return p, perr
 }
 
-func (i *Introspector) principal(in ports.Introspection, now time.Time) (Principal, error) {
+func (i *Introspector) principal(ctx context.Context, in ports.Introspection, now time.Time) (Principal, error) {
 	switch {
 	case !in.Active || !now.Before(in.ExpiresAt):
 		return Principal{}, ErrUnauthenticated
 	case !slices.Contains(in.Audiences, i.Audience):
 		return Principal{}, ErrWrongAudience
+	}
+	if i.Delegation != nil && in.ClientID == i.Delegation.Client {
+		return i.Delegation.principal(ctx, in)
 	}
 	granted, ok := in.Claims["granted_at"].(float64) // JSON numbers decode as float64; seconds since 1970
 	if !ok || now.Sub(time.Unix(int64(granted), 0)) > MaxGrantAge {
@@ -156,4 +162,33 @@ func (l Local) Authenticate(ctx context.Context, c Credentials) (Principal, erro
 		return l.Sessions.Authenticate(ctx, Credentials{Cookie: c.Cookie})
 	}
 	return Principal{}, ErrUnauthenticated
+}
+
+// MaxDelegated is the longest a delegated token may live (open question 40: at most 5 minutes).
+const MaxDelegated = 5 * time.Minute
+
+// Delegation accepts the tokens the MCP server's delegation client obtains with the JWT-bearer grant
+// (internal/mcpdelegation). No consent stamped them, so nothing in them is trusted but the subject: the
+// class is always agent (AI-34), whatever the token says, and the person's organisation and roles are
+// read now with Lookup, so the AI never gets more than the person may do at this moment (the API's
+// intersection). A token that lives longer than MaxDelegated is refused.
+type Delegation struct {
+	Client string
+	Lookup func(ctx context.Context, user uuid.UUID) (org uuid.UUID, roles []authz.Role, err error)
+}
+
+func (d *Delegation) principal(ctx context.Context, in ports.Introspection) (Principal, error) {
+	user, err := uuid.Parse(in.Subject)
+	switch {
+	case err != nil:
+		return Principal{}, errors.Join(ErrUnauthenticated, errors.New("a delegated token's subject is not a user"))
+	case in.IssuedAt.IsZero() || in.ExpiresAt.Sub(in.IssuedAt) > MaxDelegated+time.Second: // iat and exp are whole seconds
+		return Principal{}, errors.Join(ErrUnauthenticated, fmt.Errorf("a delegated token lives at most %s", MaxDelegated))
+	}
+	org, roles, err := d.Lookup(ctx, user)
+	if err != nil {
+		return Principal{}, errors.Join(ErrUnauthenticated, err)
+	}
+	return Principal{Via: ViaToken, Subject: in.Subject, UserID: user, Client: in.ClientID, Class: ClassAgent, Organisation: org,
+		Roles: roles, Scopes: in.Scopes}, nil
 }
