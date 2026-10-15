@@ -104,3 +104,25 @@ func (r *recorder) Authenticate(context.Context, authn.Credentials) (authn.Princ
 	r.seen++
 	return authn.Principal{}, authn.ErrUnauthenticated
 }
+
+// The release build never takes a local dev token, and sends a bearer token only to the OAuth server
+// and a cookie only to the sessions (DEV-07, AI-36).
+// req: AI-36
+// req: SEC-08
+// asvs: V10.3.1
+func TestTheReleaseChainTakesNoDevToken(t *testing.T) {
+	oauth, sessions := &recorder{}, &recorder{}
+	r := authn.Release{OAuth: oauth, Sessions: sessions}
+	ctx := context.Background()
+	if _, err := r.Authenticate(ctx, authn.Credentials{Authorization: "Bearer " + authn.DevPrefix + "x.y", Cookie: "__Host-fyniq_session=s"}); !errors.Is(err, authn.ErrUnauthenticated) {
+		t.Fatalf("a dev token: %v", err)
+	}
+	_, _ = r.Authenticate(ctx, authn.Credentials{Authorization: "Bearer ory_at_x", Cookie: "__Host-fyniq_session=s"})
+	_, _ = r.Authenticate(ctx, authn.Credentials{Cookie: "__Host-fyniq_session=s"})
+	if oauth.seen != 1 || sessions.seen != 1 {
+		t.Fatalf("oauth saw %d, sessions saw %d; want one each", oauth.seen, sessions.seen)
+	}
+	if _, err := (authn.Release{}).Authenticate(ctx, authn.Credentials{Authorization: "Bearer ory_at_x"}); !errors.Is(err, authn.ErrUnauthenticated) {
+		t.Fatalf("an unconfigured release build: %v", err)
+	}
+}

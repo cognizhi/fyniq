@@ -99,6 +99,27 @@ and no token exchange (checked 14 Oct 2026). §9.7 and open question 40 describe
   `local`, has the dev tokens' issuer (`urn:fyniq:local-dev`), so a page sign-in and a dev token with
   the same subject are the same identity. The release build has no SignIn adapter until Identity
   Platform (slice 4b), so it still accepts no credential.
+- **Identity Platform, as built (slice 4b; live run held until staging).** `internal/adapters/gcp`'s
+  `IdentityPlatform` is the release build's SignIn adapter, driven from the server with the REST API:
+  `accounts:createAuthUri` starts a sign-in (Google with `authFlowType: CODE_FLOW`, so the code comes back
+  in the query) and `accounts:signInWithIdp` completes it from the browser's return. The session ID sent
+  with both is derived from the browser's sign-in cookie and never appears in a URL, so Identity Platform
+  itself refuses a return to another browser's sign-in. Identity Platform's ID token is checked by
+  `signin.VerifyBound` (RS256 by the keys at Google's X.509 certificate map, cached for the response's
+  `max-age`; issuer `https://securetoken.google.com/<project>`, audience the project), and the provider's
+  ID token it passes on (`oauthIdToken`) must carry the provider's configured issuer exactly and Fyniq's
+  client as audience (FR-ADM-08); the identity is that token's (issuer, subject). A second factor pending
+  at Identity Platform or an account link it asks for refuses the sign-in (Fyniq's own second step and
+  linking after step-up are P1). The API key travels in a header. The release build reads
+  `FYNIQ_SIGNIN=identity-platform`, `FYNIQ_PUBLIC_ORIGIN` (https), `FYNIQ_IDP_PROJECT`,
+  `FYNIQ_IDP_API_KEY`, `FYNIQ_IDP_TENANT` (optional) and `FYNIQ_SIGNIN_PROVIDERS` (JSON: id, name,
+  Identity Platform provider ID, issuer, client ID, one Zoho provider per data centre); any gap keeps it
+  closed, and `authn.Release` never takes a local dev token. [verify in staging, task 3.2: that
+  createAuthUri sends an OIDC code-flow provider back to `continueUri`; that signInWithIdp returns
+  `oauthIdToken` for Zoho; the `iss` in Zoho's and Google's real tokens (Google documents both
+  `https://accounts.google.com` and `accounts.google.com`, and the check takes the configured string
+  exactly); that the project allows several accounts per email address, so Identity Platform never
+  links by email.]
 - **Sessions, as built (slice 4a).** `GET /auth/signin?provider=…&return_to=…` derives the state, nonce
   and PKCE verifier from 260 random bits it keeps in an HttpOnly, SameSite=Lax cookie for 10 minutes
   (nothing stored server-side); `GET /auth/callback` checks the return with `Finish`, starts a session

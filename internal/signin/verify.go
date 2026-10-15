@@ -38,11 +38,25 @@ const skew = time.Minute
 // authenticated in the future, and carry nonce. Every failure is ports.ErrSignInRefused with the reason;
 // the reason never quotes the token.
 func Verify(ctx context.Context, p Provider, keys oidc.KeySet, raw, nonce string, now time.Time) (ports.SignedIn, error) {
+	if nonce == "" {
+		return ports.SignedIn{}, errors.Join(ports.ErrSignInRefused, fmt.Errorf("%s: the sign-in has no nonce", p.ID))
+	}
+	return verify(ctx, p, keys, raw, &nonce, now)
+}
+
+// VerifyBound is Verify for an identity provider that binds the sign-in to the browser itself, so its
+// token carries no nonce of ours: Identity Platform checks the session ID the server sent with the
+// authorisation request (createAuthUri, signInWithIdp). Every other check is Verify's.
+func VerifyBound(ctx context.Context, p Provider, keys oidc.KeySet, raw string, now time.Time) (ports.SignedIn, error) {
+	return verify(ctx, p, keys, raw, nil, now)
+}
+
+func verify(ctx context.Context, p Provider, keys oidc.KeySet, raw string, nonce *string, now time.Time) (ports.SignedIn, error) {
 	refused := func(format string, a ...any) (ports.SignedIn, error) {
 		return ports.SignedIn{}, errors.Join(ports.ErrSignInRefused, fmt.Errorf("%s: "+format, append([]any{p.ID}, a...)...))
 	}
-	if p.Issuer == "" || p.ClientID == "" || nonce == "" {
-		return refused("the provider has no issuer or client ID configured, or the sign-in no nonce")
+	if p.Issuer == "" || p.ClientID == "" {
+		return refused("the provider has no issuer or client ID configured")
 	}
 	v := oidc.NewVerifier(p.Issuer, keys, &oidc.Config{ClientID: p.ClientID, SupportedSigningAlgs: algorithms,
 		Now: func() time.Time { return now }})
@@ -56,12 +70,15 @@ func Verify(ctx context.Context, p Provider, keys oidc.KeySet, raw, nonce string
 		return refused("the ID token was issued by %q, not the configured %q", t.Issuer, p.Issuer)
 	}
 	var c struct {
-		AZP           string   `json:"azp"`
-		AuthTime      float64  `json:"auth_time"`
-		AMR           []string `json:"amr"`
-		Name          string   `json:"name"`
-		Email         string   `json:"email"`
-		EmailVerified any      `json:"email_verified"` // a boolean; a string "true" from some providers
+		AZP      string   `json:"azp"`
+		AuthTime float64  `json:"auth_time"`
+		AMR      []string `json:"amr"`
+		Firebase struct {
+			SecondFactor string `json:"sign_in_second_factor"`
+		} `json:"firebase"`
+		Name          string `json:"name"`
+		Email         string `json:"email"`
+		EmailVerified any    `json:"email_verified"` // a boolean; a string "true" from some providers
 	}
 	if err := t.Claims(&c); err != nil {
 		return refused("the ID token's claims cannot be read: %v", err)
@@ -69,7 +86,7 @@ func Verify(ctx context.Context, p Provider, keys oidc.KeySet, raw, nonce string
 	switch {
 	case t.Subject == "":
 		return refused("the ID token has no subject")
-	case t.Nonce != nonce:
+	case nonce != nil && t.Nonce != *nonce:
 		return refused("the ID token belongs to another sign-in (nonce)")
 	case len(t.Audience) > 1 && c.AZP != p.ClientID:
 		return refused("the ID token has several audiences and another authorised party")
@@ -85,5 +102,5 @@ func Verify(ctx context.Context, p Provider, keys oidc.KeySet, raw, nonce string
 	}
 	verified := c.EmailVerified == true || c.EmailVerified == "true"
 	return ports.SignedIn{Provider: p.ID, Issuer: t.Issuer, Subject: t.Subject, Name: c.Name, Email: c.Email, EmailVerified: verified,
-		AuthTime: authTime, SecondFactor: slices.Contains(c.AMR, "mfa")}, nil
+		AuthTime: authTime, SecondFactor: slices.Contains(c.AMR, "mfa") || c.Firebase.SecondFactor != ""}, nil
 }
