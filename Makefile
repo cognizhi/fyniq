@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test mutation db-lint sqlc test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test mutation db-lint sqlc oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -57,13 +57,14 @@ reset: ## Stop everything and delete local data: the database volume and .data/
 	@rm -rf .data
 	@echo "✔ local data removed; run make dev to start again"
 
-test: ## Run every merge gate offline (Docker needed for the database suites): migrations, Go in both flavours, web, make check
+test: ## Run every merge gate offline (Docker needed for the database suites): migrations, Go in both flavours, web, the oracle, make check
 	@$(MAKE) --no-print-directory db-lint
 	@$(MISE) go vet ./...
 	@$(MISE) go vet -tags local ./...
 	@$(MISE) go test ./...
 	@$(MISE) go test -tags local ./...
 	@$(MISE) pnpm -r typecheck
+	@$(MAKE) --no-print-directory oracle-test
 	@$(MAKE) --no-print-directory check
 
 db-lint: ## Lint the migrations (squawk) and check the adapter's generated queries match them (sqlc)
@@ -74,6 +75,9 @@ db-lint: ## Lint the migrations (squawk) and check the adapter's generated queri
 mutation: ## Mutation tests on money, rounding and the engine (QA-ENG-04): efficacy of at least 90% per package; part of make ci
 	@for p in $(MUTATION_PKGS); do echo "== $$p"; \
 	  $(MISE) gremlins unleash ./$$p --workers 4 --timeout-coefficient 6 --threshold-efficacy 90 || exit 1; done
+
+oracle-test: ## Run the independent oracle's own tests: hand-worked journals, the scenario schemas, Hypothesis properties (QA-ENG-01)
+	@cd oracle && $(MISE) uv run --locked python -m pytest -q
 
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"

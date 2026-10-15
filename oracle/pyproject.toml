@@ -1,0 +1,33 @@
+# The independent reference ledger (QA-ENG-01). Python and uv are pinned in the repository's
+# mise.toml; every dependency is pinned to a release at least two weeks old, and exclude-newer keeps
+# the transitive ones to the same rule.
+[project]
+name = "fyniq-oracle"
+version = "0.1.0"
+description = "Fyniq's independent reference ledger: PRD-001 §10 and Appendix B in exact decimals (QA-ENG-01)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "hypothesis==6.168.3",  # the scenario generator (task 2.4) runs from the command line too
+  "jsonschema==4.26.0",   # test/differential/*.schema.json
+]
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/oracle"]
+
+[tool.uv]
+exclude-newer = "2026-10-01T00:00:00Z"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = "-ra --strict-markers"
+xfail_strict = true
