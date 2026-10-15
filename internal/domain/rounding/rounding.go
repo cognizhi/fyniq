@@ -27,7 +27,7 @@ var work = apd.BaseContext.WithPrecision(60)
 // magnitude, so it is half away from zero for negative values too.
 func halfAwayFromZero(d *apd.Decimal, places int) *apd.Decimal {
 	c := work.WithPrecision(60)
-	c.Rounding = apd.RoundHalfUp
+	c.Rounding = apd.RoundHalfEven
 	out := new(apd.Decimal)
 	if _, err := c.Quantize(out, d, -int32(places)); err != nil {
 		panic(fmt.Sprintf("rounding: quantize %s to %d places: %v", d, places, err))
