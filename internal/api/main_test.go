@@ -85,7 +85,7 @@ func newEnv(t *testing.T) *env {
 	e := &env{t: t, store: store, books: porttest.NewBooks(t, store, fmt.Sprintf("API %d Pte Ltd", orgs)),
 		clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)), tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}}
 	mux := http.NewServeMux()
-	e.api = New(mux, Deps{Store: store, Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test"})
+	e.api = New(mux, Deps{Store: store, Installation: store, Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test"})
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e
@@ -102,6 +102,9 @@ func (e *env) principal(p authn.Principal) string {
 	tok := uuid.NewString()
 	if p.Subject == "" {
 		p.Subject = "user-" + tok[:8]
+	}
+	if p.Via == "" {
+		p.Via, p.Issuer = authn.ViaSession, "urn:fyniq:test"
 	}
 	e.tokens.m[tok] = p
 	return tok

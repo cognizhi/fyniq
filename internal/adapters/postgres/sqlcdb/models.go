@@ -23,6 +23,13 @@ type FyniqAccount struct {
 	CreatedAt      time.Time
 }
 
+type FyniqAppUser struct {
+	UserID      uuid.UUID
+	DisplayName string
+	Status      string
+	CreatedAt   time.Time
+}
+
 type FyniqAuditChain struct {
 	OrganisationID uuid.UUID
 	Seq            int64
@@ -108,6 +115,13 @@ type FyniqIdempotencyKey struct {
 	ExpiresAt      time.Time
 }
 
+type FyniqInstallation struct {
+	Singleton        bool
+	SetupCodeHash    []byte
+	SetupCompletedAt *time.Time
+	InstallationOrg  *uuid.UUID
+}
+
 type FyniqJobSlot struct {
 	Job            string
 	Slot           time.Time
@@ -180,6 +194,7 @@ type FyniqOrganisation struct {
 	BaseMinorUnits int16
 	Version        int32
 	CreatedAt      time.Time
+	Kind           string
 }
 
 type FyniqOutbox struct {
@@ -214,6 +229,23 @@ type FyniqPeriod struct {
 	CreatedAt      time.Time
 }
 
+type FyniqRoleAssignment struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	MembershipID   uuid.UUID
+	Role           string
+	ExpiresAt      *time.Time
+	CreatedAt      time.Time
+	RevokedAt      *time.Time
+}
+
+type FyniqSuperAdmin struct {
+	UserID    uuid.UUID
+	AddedAt   time.Time
+	AddedBy   *uuid.UUID
+	RemovedAt *time.Time
+}
+
 type FyniqTenantDirectory struct {
 	OrganisationID uuid.UUID
 	CreatedAt      time.Time
@@ -222,4 +254,20 @@ type FyniqTenantDirectory struct {
 type FyniqTenants struct {
 	OrganisationID uuid.UUID
 	CreatedAt      time.Time
+}
+
+type FyniqUserIdentity struct {
+	Issuer    string
+	Subject   string
+	UserID    uuid.UUID
+	CreatedAt time.Time
+}
+
+type FyniqUserMembership struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Status         string
+	CreatedAt      time.Time
+	Version        int32
 }

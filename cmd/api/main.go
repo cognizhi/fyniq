@@ -50,7 +50,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		api.New(s, d) // without a store it accepts no credentials: the document only
 		return nil
 	}
-	d.Store = kit.Store
+	d.Store, d.Installation = kit.Store, kit.Store
 	api.New(s, d)
 	s.AddReadiness("database", kit.Store.Ping)
 	t := outbox.Ticker{Store: kit.Store, Platform: kit.Store, Jobs: kit.Jobs, Clock: deps.Clock, Holder: app.Holder("api"),

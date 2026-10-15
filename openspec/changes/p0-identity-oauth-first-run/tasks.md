@@ -18,5 +18,5 @@
 
 ## 4. First-run setup and Super admins
 
-- [ ] 4.1 Generate the one-time setup code at deployment and build the setup wizard so the first person to finish becomes Super admin and Owner; tests `// req: FR-ADM-06` and `// req: CTL-IAM-07` (no code, reused code, second run)
+- [x] 4.1 Generate the one-time setup code at deployment and build the setup wizard so the first person to finish becomes Super admin and Owner; tests `// req: FR-ADM-06` and `// req: CTL-IAM-07` (no code, reused code, second run) (the API: `GET`/`POST /v1/setup`; the `/install` screen follows once the SignIn port can sign a person in; locally `make setup-code`, in the cloud the deployment, p0-infra-opentofu)
 - [ ] 4.2 Add the second Super admin, offline recovery codes and the two-person recovery runbook (`docs/runbooks/super-admin-recovery.md`), with every change audited and step-up required; test the nightly count of Super admins ≥ 1 (`// req: CTL-IAM-07`), then `make check` and `make test`

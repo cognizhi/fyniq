@@ -104,7 +104,7 @@ func (i *Introspector) principal(in ports.Introspection, now time.Time) (Princip
 	if !ok || now.Sub(time.Unix(int64(granted), 0)) > MaxGrantAge {
 		return Principal{}, errors.Join(ErrUnauthenticated, fmt.Errorf("the grant is older than 90 days, or undated: authorise the client again (AI-38)"))
 	}
-	p := Principal{Subject: in.Subject, Client: in.ClientID, Scopes: in.Scopes}
+	p := Principal{Via: ViaToken, Subject: in.Subject, Client: in.ClientID, Scopes: in.Scopes}
 	switch class, _ := in.Claims["class"].(string); class {
 	case ClassUser, ClassIntegration, ClassAgent:
 		p.Class = class

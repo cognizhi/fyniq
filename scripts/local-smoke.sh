@@ -37,6 +37,29 @@ discovery=$(curl -fsS "$origin/oauth/.well-known/openid-configuration") || fail 
 python3 -c 'import json,sys; d=json.loads(sys.argv[1]); assert d["issuer"]==sys.argv[2]+"/oauth/", d["issuer"]; assert "S256" in d["code_challenge_methods_supported"], d' \
   "$discovery" "$origin" || fail "the OAuth server's discovery is wrong: $discovery"
 
+# First-run setup (FR-ADM-06) through the one origin: a setup code from the deployment step, then the
+# setup as a person signed in with the local issuer's dev token. A database kept from an earlier run is
+# set up already, and says so.
+if [ "$(curl -fsS "$origin/api/v1/setup")" = '{"done":false}' ]; then
+  code=$(make --no-print-directory setup-code 2>/dev/null | tail -1)
+  [ -n "$code" ] || fail "make setup-code printed no code"
+  python3 - "$origin" "$code" <<'PY' || fail "first-run setup did not complete"
+import base64, hashlib, hmac, json, sys, time, urllib.request
+origin, code = sys.argv[1], sys.argv[2]
+claims = {"sub": "smoke-founder", "client": "web", "class": "user", "org": "00000000-0000-0000-0000-000000000000", "roles": [], "exp": int(time.time()) + 600}
+msg = "fyniq-dev." + base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+token = msg + "." + base64.urlsafe_b64encode(hmac.new(b"fyniq-local-only-dev-token-key", msg.encode(), hashlib.sha256).digest()).rstrip(b"=").decode()
+body = json.dumps({"setup_code": code, "display_name": "Smoke Founder", "organisation": {"name": "Smoke Pte Ltd", "base_currency": "SGD"}}).encode()
+req = urllib.request.Request(origin + "/api/v1/setup", data=body, method="POST", headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"})
+with urllib.request.urlopen(req, timeout=10) as r:
+    assert r.status == 201, r.status
+    assert json.load(r)["organisation_id"]
+PY
+  [ "$(curl -fsS "$origin/api/v1/setup")" = '{"done":true}' ] || fail "setup completed but the installation does not say so"
+else
+  echo "  (the database was set up in an earlier run: setup not repeated)"
+fi
+
 headers=$(curl -sS -o /dev/null -D - "$origin/api/v1/organisation")
 grep -q "^HTTP/1.1 401" <<<"$headers" || fail "an unauthenticated call was not refused with 401: $headers"
 grep -qi "^content-type: application/problem+json" <<<"$headers" || fail "the refusal is not problem details: $headers"

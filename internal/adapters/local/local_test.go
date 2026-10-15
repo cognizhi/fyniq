@@ -4,6 +4,9 @@ package local
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"io"
 	"net/http"
@@ -204,5 +207,22 @@ func TestDevTokensCarryThePrincipalAndRefuseForgeries(t *testing.T) {
 	c.Advance(2 * time.Hour)
 	if _, err := issuer.Authenticate(ctx, "Bearer "+tok); !errors.Is(err, authn.ErrUnauthenticated) {
 		t.Errorf("an expired token was accepted: %v", err)
+	}
+}
+
+// The issuer and the kind of a dev identity are the authenticator's, never the token's (FR-ADM-08).
+// req: FR-ADM-08
+func TestDevTokensStampTheirIssuer(t *testing.T) {
+	c := clock.NewFrozen(time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC))
+	key := []byte("local-only-test-key")
+	claims := []byte(`{"sub":"u1","client":"web","class":"user","org":"` + uuid.New().String() +
+		`","roles":["owner"],"exp":9999999999,"iss":"https://accounts.google.com","Issuer":"https://evil","Via":"token"}`)
+	msg := "fyniq-dev." + base64.RawURLEncoding.EncodeToString(claims)
+	m := hmac.New(sha256.New, key)
+	m.Write([]byte(msg))
+	tok := msg + "." + base64.RawURLEncoding.EncodeToString(m.Sum(nil))
+	p, err := NewDevTokens(key, c).Authenticate(context.Background(), "Bearer "+tok)
+	if err != nil || p.Issuer != DevIssuer || p.Via != authn.ViaSession || p.Subject != "u1" {
+		t.Fatalf("a dev token claiming another issuer: %+v, %v", p, err)
 	}
 }

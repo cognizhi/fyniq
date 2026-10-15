@@ -42,6 +42,15 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/journals/"+id, e.as(authz.Accountant), nil).str("status") == "draft"
 		}
 	},
+	"getSetupStatus": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/setup", tok, nil), nil
+	},
+	// Setup runs once per installation, so the matrix sends a code that is never valid: allowed means
+	// the API looked at the code (409), refused means 401 or 403.
+	"completeSetup": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/setup", tok, map[string]any{"setup_code": "NEVER-A-VALID-SETUP-CODE-0",
+			"display_name": "Matrix", "organisation": map[string]any{"name": "Matrix Pte Ltd", "base_currency": "SGD"}}), nil
+	},
 	"reverseJournal": func(e *env, tok string) (response, func() bool) {
 		id, tag := e.postedJournal("10.00")
 		r := e.call(http.MethodPost, "/v1/journals/"+id+"/reverse", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
@@ -55,6 +64,12 @@ var matrixCalls = map[string]matrixCall{
 // decision code: the cell of the role's column, or membership for the organisation itself. The AI
 // acts for a user who holds every role, so only the AI column limits it.
 func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, p authz.Policy) (allowed, masked bool) {
+	switch {
+	case p.Public:
+		return true, false
+	case p.Capability == authz.Setup: // any person; never the AI
+		return role != authz.AI, false
+	}
 	col := authz.Column(role)
 	if col == "" {
 		return false, false // the HR officer (Nemura only) and the Super admin hold no organisation right
@@ -102,7 +117,9 @@ func TestAuthorisationMatrix(t *testing.T) {
 			want, _ := expected(t, rows, role, policies[op])
 			r, unchanged := matrixCalls[op](e, tok)
 			switch {
-			case want && (r.Status < 200 || r.Status > 299):
+			case want && policies[op].NoOrganisation && (r.Status == http.StatusUnauthorized || r.Status == http.StatusForbidden):
+				t.Errorf("%s × %s: allowed, the API answered %d %s", role, op, r.Status, r.problemCode())
+			case want && !policies[op].NoOrganisation && (r.Status < 200 || r.Status > 299):
 				t.Errorf("%s × %s: Appendix D allows it, the API answered %d %s", role, op, r.Status, r.problemCode())
 			case !want && r.Status != http.StatusForbidden:
 				t.Errorf("%s × %s: Appendix D refuses it, the API answered %d", role, op, r.Status)
