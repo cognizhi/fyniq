@@ -85,6 +85,9 @@ func (r auditTrail) Events(ctx context.Context, after int64, limit int) ([]stora
 	if err := r.u.check(); err != nil {
 		return nil, err
 	}
+	if limit < 1 || limit > 100000 {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d audit events", limit), Hint: "Ask for 1 to 100,000"}
+	}
 	rows, err := r.u.q.ListAuditEvents(ctx, sqlcdb.ListAuditEventsParams{After: after, Max: int32(limit)})
 	if err != nil {
 		return nil, mapError(err)

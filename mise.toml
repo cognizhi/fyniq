@@ -16,6 +16,15 @@ sqlc = "1.31.1"
 "npm:squawk-cli" = "2.66.0"
 "go:github.com/go-gremlins/gremlins/cmd/gremlins" = "0.6.0"   # mutation testing (QA-ENG-04)
 "go:github.com/oasdiff/oasdiff" = "1.33.0"                      # breaking changes to the API contract (QA-API-02)
+# The security scans of `make scan` (SEC-21, CTL-CHG-03, CTL-CHG-11; scripts/scan.py)
+"aqua:securego/gosec" = "2.29.0"                                # SAST for Go
+"pipx:semgrep" = "1.178.0"                                      # SAST for Go, TypeScript, React, Dockerfiles
+"aqua:gitleaks/gitleaks" = "8.30.1"                             # secrets in the history
+"aqua:anchore/grype" = "0.119.0"                                # vulnerable dependencies (and images, p0-ci-images-release)
+"pipx:checkov" = "3.3.20"                                       # Dockerfiles and workflows (OpenTofu with p0-infra-opentofu)
+"go:github.com/google/go-licenses/v2" = "2.0.1"                 # licences of the Go dependencies
+"aqua:rhysd/actionlint" = "1.7.12"                              # workflow syntax
+"pipx:zizmor" = "1.30.1"                                        # workflow security
 "npm:@fission-ai/openspec" = "1.14.1"
 
 [env]

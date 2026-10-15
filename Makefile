@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test mutation differential db-lint sqlc openapi api-check oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -81,6 +81,9 @@ differential: ## The full differential run (QA-ENG-02): Hypothesis looks for a s
 	@mkdir -p .data/bin && $(MISE) go build -tags local -o .data/bin/scenario-run ./cmd/scenario-run
 	@cd oracle && FYNIQ_SCENARIO_RUN=$(CURDIR)/.data/bin/scenario-run $(MISE) uv run --locked python -m pytest -q -p no:cacheprovider ../test/differential/test_engine_agrees.py
 
+scan: ## Security scans (SEC-21): gosec, Semgrep, gitleaks, grype, Checkov, licences, actionlint, zizmor; waivers in compliance/scan-waivers.toml; reports in .data/scan/
+	@$(MISE) python3 scripts/scan.py
+
 oracle-test: ## Run the independent oracle's own tests: hand-worked journals, the scenario schemas, Hypothesis properties (QA-ENG-01)
 	@cd oracle && $(MISE) uv run --locked python -m pytest -q
 
@@ -111,15 +114,19 @@ images: ## Build the Go and web images (FLAVOURS="release local" by default)
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
 	@docker build -q -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
 
-ci: ## Run what CI runs, in the same order: test, mutation, differential, images, test-e2e, evals
+ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, images, test-e2e, evals
 	@$(MAKE) --no-print-directory test
 	@$(MAKE) --no-print-directory mutation
 	@$(MAKE) --no-print-directory differential
+	@$(MAKE) --no-print-directory scan
 	@$(MAKE) --no-print-directory images
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals
 
-check: check-tokens check-config kb-lint spec-check design-check review-check ## Run every check available today (CI runs this)
+check: check-tokens check-config kb-lint spec-check design-check review-check scan-waivers ## Run every check available today (CI runs this)
+
+scan-waivers: ## The scan waivers are well formed and the waiver rules hold on planted findings (the scans themselves: make scan)
+	@python3 scripts/scan.py --self-test
 
 check-tokens: ## Design tokens (Fyniq and Nemura) meet WCAG contrast in all four themes (QA-UI-03)
 	@python3 $(DESIGN)/scripts/check_contrast.py

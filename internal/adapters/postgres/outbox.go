@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,8 +49,12 @@ func (r outbox) Enqueue(ctx context.Context, item storage.NewOutboxItem) (storag
 	if len(payload) == 0 {
 		payload = []byte("{}")
 	}
+	attempts := cmp.Or(item.MaxAttempts, 5)
+	if attempts < 1 || attempts > 100 {
+		return storage.OutboxRow{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("max attempts %d is outside 1 to 100", attempts)}
+	}
 	row, err := r.u.q.InsertOutbox(ctx, sqlcdb.InsertOutboxParams{WorkerClass: string(item.Class), Kind: item.Kind,
-		Payload: payload, BusinessKey: key, MaxAttempts: int32(cmp.Or(item.MaxAttempts, 5))})
+		Payload: payload, BusinessKey: key, MaxAttempts: int32(attempts)})
 	if err != nil {
 		return storage.OutboxRow{}, mapError(err)
 	}
