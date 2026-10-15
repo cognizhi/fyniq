@@ -117,11 +117,12 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 	if org == uuid.Nil {
 		return &storage.Error{Code: storage.CodeNoTenant, Message: "no organisation was given for the unit of work"}
 	}
-	return s.inTx(ctx, func(tx pgx.Tx, q *sqlcdb.Queries) error {
+	var u *unitOfWork
+	err := s.inTx(ctx, func(tx pgx.Tx, q *sqlcdb.Queries) error {
 		if err := s.setTenant(ctx, q, org); err != nil {
 			return err
 		}
-		u := &unitOfWork{q: q, store: s, org: org}
+		u = &unitOfWork{q: q, store: s, org: org}
 		defer func() { u.done = true }()
 		if err := fn(ctx, u); err != nil {
 			return err
@@ -129,6 +130,12 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 		// The audit events go last, just before commit: the chain head is the last lock (ENG-47).
 		return u.flush(ctx)
 	})
+	if err == nil && u != nil {
+		for _, f := range u.afterCommit {
+			f(ctx)
+		}
+	}
+	return err
 }
 
 func (s *Store) setTenant(ctx context.Context, q *sqlcdb.Queries, org uuid.UUID) error {

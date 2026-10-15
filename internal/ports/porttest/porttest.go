@@ -103,34 +103,58 @@ func Signer(t *testing.T, s ports.Signer) {
 	}
 }
 
-// Queue checks a Queue adapter.
-func Queue(t *testing.T, build func(t *testing.T) ports.Queue) {
+// Queue checks a Queue adapter (NFR-PORT-04, One outbox contract for every adapter). build returns
+// the queue and a function that waits until delivered has n tasks for class, returning them.
+func Queue(t *testing.T, build func(t *testing.T) (q ports.Queue, delivered func(class string, n int) []ports.Task)) {
 	t.Helper()
 	ctx := context.Background()
-	q := build(t)
+	q, delivered := build(t)
 	for _, task := range []ports.Task{
-		{Queue: "worker", Name: "a", Payload: []byte("1")},
-		{Queue: "worker", Name: "b", Payload: []byte("2")},
-		{Queue: "worker", Name: "a", Payload: []byte("duplicate")},
-		{Queue: "executor", Name: "c"},
+		{Queue: "worker", Name: "a", Payload: []byte(`{"n":1}`)},
+		{Queue: "worker", Name: "b", Payload: []byte(`{"n":2}`)},
+		{Queue: "worker", Name: "a", Payload: []byte(`{"n":"duplicate"}`)},
+		{Queue: "executor", Name: "c", Payload: []byte(`{}`)},
 	} {
 		if err := q.Enqueue(ctx, task); err != nil {
 			t.Fatalf("Enqueue(%s): %v", task.Name, err)
 		}
 	}
-	for _, want := range []string{"a", "b"} {
-		got, err := q.Next(ctx, "worker")
-		if err != nil || got.Name != want {
-			t.Fatalf("Next(worker) = %q, %v; want %q", got.Name, err, want)
-		}
-		if want == "a" && string(got.Payload) != "1" {
-			t.Fatalf("a duplicate name replaced the first task: %q", got.Payload)
-		}
+	got := delivered("worker", 2)
+	names := map[string]string{}
+	for _, task := range got {
+		names[task.Name] = string(task.Payload)
 	}
-	if _, err := q.Next(ctx, "worker"); !errors.Is(err, ports.ErrNotFound) {
-		t.Fatalf("empty queue: want ErrNotFound, got %v", err)
+	if len(got) != 2 || names["a"] != `{"n":1}` || names["b"] != `{"n":2}` {
+		t.Fatalf("worker received %v; want a and b once each, a with its first payload", names)
 	}
-	if got, err := q.Next(ctx, "executor"); err != nil || got.Name != "c" {
-		t.Fatalf("queues must be separate: %q, %v", got.Name, err)
+	if c := delivered("executor", 1); len(c) != 1 || c[0].Name != "c" {
+		t.Fatalf("each class has its own queue: executor received %v", c)
+	}
+	if err := q.Enqueue(ctx, ports.Task{Queue: "nowhere", Name: "d"}); err == nil {
+		t.Fatal("Enqueue to an unknown worker class succeeded")
+	}
+}
+
+// TaskTokens checks a TaskTokens adapter (Proposal executor queue isolation).
+func TaskTokens(t *testing.T, tokens ports.TaskTokens) {
+	t.Helper()
+	worker, err := tokens.Token("worker")
+	if err != nil {
+		t.Fatal(err)
+	}
+	executor, err := tokens.Token("executor")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tokens.Verify(worker, "worker"); err != nil {
+		t.Fatalf("a worker token for the worker: %v", err)
+	}
+	if err := tokens.Verify(executor, "executor"); err != nil {
+		t.Fatalf("an executor token for the executor: %v", err)
+	}
+	for name, tok := range map[string]string{"another class's token": worker, "no token": "", "a forged token": executor[:len(executor)-2] + "xx"} {
+		if err := tokens.Verify(tok, "executor"); !errors.Is(err, ports.ErrUnauthorised) {
+			t.Errorf("the executor accepted %s: %v", name, err)
+		}
 	}
 }

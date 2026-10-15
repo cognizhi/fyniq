@@ -146,6 +146,27 @@ type FyniqOrganisation struct {
 	CreatedAt      time.Time
 }
 
+type FyniqOutbox struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	WorkerClass    string
+	Kind           string
+	Payload        []byte
+	BusinessKey    *string
+	State          string
+	Attempts       int32
+	MaxAttempts    int32
+	Dispatches     int32
+	TaskName       *string
+	JobExecution   *string
+	LeaseHolder    *string
+	LeaseExpiresAt *time.Time
+	DeadlineAt     *time.Time
+	LastError      *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
 type FyniqPeriod struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -2,9 +2,9 @@
 
 ## 1. Outbox
 
-- [ ] 1.1 Create the outbox table (state, attempts, lease, business key, task name, job execution) with RLS, and write rows through the unit of work; test (req: Transactional outbox, Outbox row contract) rolls back a change and asserts no row and no task
+- [x] 1.1 Create the outbox table (state, attempts, lease, business key, task name, job execution) with RLS, and write rows through the unit of work; test (req: Transactional outbox, Outbox row contract) rolls back a change and asserts no row and no task
 - [ ] 1.2 Add the `TaskQueue` port with the River local adapter and the Cloud Tasks adapter, enqueuing after commit with the row ID as the task name; outbox conformance suite `// req: NFR-PORT-04` runs against both (Cloud Tasks in staging)
-- [ ] 1.3 Make handlers idempotent on the outbox ID with leases, and postings unique on the business key; test (req: Idempotent handlers and worker classes, Posting runs at most once) delivers a task twice and asserts one effect
+- [x] 1.3 Make handlers idempotent on the outbox ID with leases, and postings unique on the business key; test (req: Idempotent handlers and worker classes, Posting runs at most once) delivers a task twice and asserts one effect
 
 ## 2. Tick, jobs and heartbeat
 

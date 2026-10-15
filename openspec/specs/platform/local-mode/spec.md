@@ -94,14 +94,19 @@ Source: PRD-001 §12.8
 - **AND** real Model Armor is tested in staging
 
 ### Requirement: Local queue and event substitutes
-The local stack SHALL run background work with River as the local adapter of the queue port, and SHALL use the Google Pub/Sub emulator in place of Pub/Sub (P2).
+The local stack SHALL run background work with a push dispatcher that has Cloud Tasks' semantics as the local adapter of the queue port (rev 0.23, superseding River), and SHALL use the Google Pub/Sub emulator in place of Pub/Sub (P2).
 
 Source: PRD-001 §12.8
 
-#### Scenario: River in place of Cloud Tasks and Cloud Scheduler
+#### Scenario: A push dispatcher in place of Cloud Tasks and Cloud Scheduler
 - **WHEN** background work runs locally in place of Cloud Tasks and Cloud Scheduler → Cloud Run jobs
-- **THEN** River uses the same outbox, an in-process consumer and periodic jobs that call the same tick and handlers
-- **AND** one schedule definition and the same handlers serve both
+- **THEN** after commit the push dispatcher POSTs each outbox row's task to its worker class's HTTP handler with that class's token, honouring task names and deadlines, retrying, and re-dispatching under a new name
+- **AND** the local tick calls the same handlers, so one schedule definition, the same HTTP path, token check and leases serve both
+- **AND** only Cloud Tasks' own retry settings and quotas are left to staging
+
+#### Scenario: River for self-hosted installations
+- **WHEN** a self-hosted installation needs a queue without Cloud Tasks
+- **THEN** River remains the option, behind the same queue port (River as the local adapter is superseded, rev 0.23)
 
 #### Scenario: Pub/Sub emulator
 - **WHEN** Pub/Sub (P2) is used locally

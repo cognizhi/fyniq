@@ -221,17 +221,18 @@ Source: PRD-001 §12.11
 - **THEN** it never re-dispatches those rows automatically
 
 ### Requirement: One outbox contract for every adapter
-The local River adapter (§12.8) SHALL implement the same outbox contract, and the outbox conformance suite (NFR-PORT-04) SHALL test the contract, not River.
+The local adapter, a push dispatcher (§12.8, rev 0.23, superseding River), SHALL implement the same outbox contract, and the outbox conformance suite (NFR-PORT-04) SHALL test the contract, not an adapter.
 
 Source: PRD-001 §12.11
 
 #### Scenario: Conformance suite tests the contract
-- **WHEN** the outbox conformance suite runs against the River adapter and the Cloud Tasks adapter
+- **WHEN** the outbox conformance suite runs against the local push dispatcher, and against the Cloud Tasks adapter in staging
 - **THEN** both pass the same contract tests
 
-#### Scenario: River kept for local and self-hosted
-- **WHEN** Fyniq runs locally or self-hosted
-- **THEN** River is the queue adapter
+#### Scenario: River kept for self-hosted installations
+- **WHEN** Fyniq runs self-hosted without Cloud Tasks
+- **THEN** River is the queue adapter option
+- **AND** locally the push dispatcher is the adapter (rev 0.23)
 
 ### Requirement: Scale to zero except the database
 Everything except the database SHALL scale to zero when idle; the database, which Hydra shares, SHALL be the always-on cost floor.

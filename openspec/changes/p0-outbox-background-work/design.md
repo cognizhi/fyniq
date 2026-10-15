@@ -38,3 +38,32 @@ unit of work (p0-database-tenancy-migrations) gives the transaction the outbox r
   carry the guarantee; the task name only reduces duplicates.
 - [The tick is a single point of failure] → the absence alert pages when it stops, and missed slots are
   run once on recovery.
+
+## Implementation notes (15 Oct 2026)
+
+- **Local adapter: a push dispatcher, not River** (founder decision, PRD rev 0.23). It POSTs each task
+  to its worker class's `/tasks` endpoint with that class's token, Cloud Tasks' headers, a deadline
+  per attempt and retries with backoff, and accepts a task name once. Locally the handlers, the token
+  check, leases and retries therefore run exactly as in production. River stays the self-hosted
+  option. The in-memory queue remains the test double.
+- **Ports.** `ports.Queue` is now push-only (`Enqueue`); `ports.TaskTokens` issues and checks each
+  class's credential (local: HMAC tokens with an expiry; production: Cloud Tasks' OIDC tokens, checked
+  by audience in the GCP adapter). `storage.UnitOfWork` gained `Outbox()` and `AfterCommit`.
+- **Dispatch after commit.** `outbox.Dispatcher.Enqueue` writes the row in the command's unit of work
+  and registers an after-commit hook; the hook marks the row dispatched (task name = row ID + dispatch
+  number, deadline) and then enqueues it, so a delivery never finds its row still pending. A failed
+  enqueue leaves the row overdue for the sweep.
+- **Handlers.** `outbox.Handler` checks the class's credential (403 otherwise), takes the lease in its
+  own transaction, runs the work in the work's own unit of work, and finishes the row: done, failed
+  (500, so the queue retries), unknown_outcome (200; reconciliation first) or dead after the last
+  attempt (200, with an `outbox.row.dead` audit event for Checks). A row already done, dead or waiting
+  on reconciliation answers 200 without running; one leased by another delivery answers 409. A row
+  delivered to the wrong class is parked as dead, never run. `outbox.Once` turns a repeated posting
+  (its posting identity derived from the row) into success, so a posting runs at most once.
+- **Split into two pull requests.** This one: the outbox table and contract, dispatch, tokens, the
+  handler, and their conformance and integration tests (tasks 1.1 and 1.3; 1.2 and 3.2 locally).
+  Next: the tick, platform jobs, heartbeats, missed slots and overlaps, the restore command, and the
+  services' wiring (tasks 2.x, 3.1).
+- **Waits for p0-infra-opentofu:** the Cloud Tasks and Cloud Run jobs adapters run the same
+  conformance suite in staging (1.2); queue IAM, meaning the executor's own service account and only
+  the `api` account creating its tasks (3.2's cloud half); scale to zero (3.3).
