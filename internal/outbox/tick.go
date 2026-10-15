@@ -23,10 +23,12 @@ type Schedule struct {
 }
 
 // PlatformSchedules are the jobs the tick runs for the installation (§12.11): audit anchoring every
-// hour and the nightly verification at 02:00 Singapore time (18:00 UTC).
+// hour, the nightly verification at 02:00 Singapore time (18:00 UTC), and the hourly purge of
+// expired idempotency keys (FR-INT-08: kept 24 hours).
 var PlatformSchedules = []Schedule{
 	{Job: "audit.anchor", Every: time.Hour, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "audit.verify", Every: 24 * time.Hour, Offset: 18 * time.Hour, Lease: 6 * time.Hour, Stale: 26 * time.Hour},
+	{Job: "idempotency.purge", Every: time.Hour, Offset: 30 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 }
 
 // TickInterval is how often Cloud Scheduler (locally the API's own loop) calls the tick; a setting.

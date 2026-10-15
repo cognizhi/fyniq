@@ -131,6 +131,13 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 	if org == uuid.Nil {
 		return &storage.Error{Code: storage.CodeNoTenant, Message: "no organisation was given for the unit of work"}
 	}
+	if open, ok := ctx.Value(openUnit{}).(*unitOfWork); ok && open.store == s && !open.done {
+		if open.org != org {
+			return &storage.Error{Code: storage.CodeNoTenant, Message: "a unit of work for another organisation is already open",
+				Hint: "Run the work for each organisation in its own unit of work"}
+		}
+		return fn(ctx, open) // joins it: commits or rolls back with it
+	}
 	var u *unitOfWork
 	err := s.inTx(ctx, func(tx pgx.Tx, q *sqlcdb.Queries) error {
 		if err := s.setTenant(ctx, q, org); err != nil {
@@ -138,7 +145,7 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 		}
 		u = &unitOfWork{q: q, store: s, org: org}
 		defer func() { u.done = true }()
-		if err := fn(ctx, u); err != nil {
+		if err := fn(context.WithValue(ctx, openUnit{}, u), u); err != nil {
 			return err
 		}
 		// The audit events go last, just before commit: the chain head is the last lock (ENG-47).
@@ -151,6 +158,9 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 	}
 	return err
 }
+
+// openUnit marks the ctx a unit of work gives its fn, so a Do inside it joins it.
+type openUnit struct{}
 
 func (s *Store) setTenant(ctx context.Context, q *sqlcdb.Queries, org uuid.UUID) error {
 	return q.SetTenant(ctx, sqlcdb.SetTenantParams{OrgID: org.String(), LockTimeout: fmt.Sprintf("%dms", s.lockTimeout.Milliseconds())})

@@ -16,3 +16,7 @@ RETURNING id, code, name, type, parent_id, is_group, is_active, version;
 
 -- name: ListAccounts :many
 SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account ORDER BY code;
+
+-- name: PageAccounts :many
+SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account
+WHERE code > sqlc.arg(after)::text ORDER BY code LIMIT sqlc.arg(page_size);

@@ -23,7 +23,7 @@ func main() {
 			return nil
 		}
 		s.AddReadiness("database", kit.Store.Ping)
-		s.Mux.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassExecutor, Store: kit.Store, Tokens: kit.Tokens,
+		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassExecutor, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("executor"), Kinds: map[string]outbox.Work{}})
 		return nil
 	}))

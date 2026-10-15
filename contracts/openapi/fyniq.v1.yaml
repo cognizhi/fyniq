@@ -1,0 +1,1230 @@
+# The contract of Fyniq's public API (PRD-001 §8.18, ADR-T1): OpenAPI 3.1, as the code serves it at
+# /v1/openapi.json. Reviewed in every pull request that changes it: CI fails when the code and this file
+# differ. Regenerate it with `make openapi` and review the diff; never edit it by hand.
+# info.version follows the platform version (release-please updates it).
+components:
+  schemas:
+    Account:
+      additionalProperties: false
+      properties:
+        active:
+          description: An inactive account takes no new postings.
+          examples:
+            - true
+          type: boolean
+        code:
+          description: The account code.
+          examples:
+            - "6100"
+          type: string
+        group:
+          description: "A group account is a heading: postings go to the accounts under it."
+          examples:
+            - false
+          type: boolean
+        id:
+          description: The account's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        name:
+          description: The account name.
+          examples:
+            - Rent
+          type: string
+        parent_id:
+          description: The group account it sits under, or null.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+          format: uuid
+          type:
+            - string
+            - "null"
+        type:
+          description: The account type.
+          enum:
+            - asset
+            - liability
+            - equity
+            - revenue
+            - expense
+          examples:
+            - expense
+          type: string
+        version:
+          description: The record's version; it also makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - code
+        - name
+        - type
+        - parent_id
+        - group
+        - active
+        - version
+      type: object
+    AccountPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The accounts on this page, by code.
+          items:
+            $ref: "#/components/schemas/Account"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjYxMDAifQ
+          type: string
+      required:
+        - items
+      type: object
+    Entry:
+      additionalProperties: false
+      properties:
+        id:
+          description: The entry's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+          format: uuid
+          type: string
+        ledger_revision:
+          description: The organisation's ledger revision this entry made (ENG-46).
+          examples:
+            - 42
+          format: int64
+          type: integer
+        lines:
+          description: Its lines.
+          items:
+            $ref: "#/components/schemas/EntryLine"
+          type:
+            - array
+            - "null"
+        memo:
+          description: The entry's memo.
+          examples:
+            - October rent accrual
+          type: string
+        period_id:
+          description: The accounting period it falls in.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90
+          format: uuid
+          type: string
+        posting_date:
+          description: The date it posts on.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        posting_identity:
+          description: "What was posted, under which rule: the same thing never posts twice."
+          examples:
+            - manual_journal:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70:v1:journal@1
+          type: string
+        recorded_at:
+          description: When it was recorded.
+          examples:
+            - "2026-10-31T09:30:00Z"
+          format: date-time
+          type: string
+        reverses_entry_id:
+          description: For a reversal, the entry it reverses.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d81
+          format: uuid
+          type: string
+        rule_version:
+          description: The posting rule and its version (ENG-03).
+          examples:
+            - journal@1
+          type: string
+      required:
+        - id
+        - ledger_revision
+        - posting_date
+        - period_id
+        - posting_identity
+        - rule_version
+        - recorded_at
+        - lines
+      type: object
+    EntryLine:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The account posted to.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "In the line's currency: debit positive, credit negative."
+        base_amount:
+          $ref: "#/components/schemas/Money"
+          description: In the base currency, computed once at posting (RND-FX).
+        description:
+          description: What the line is for.
+          examples:
+            - October office rent
+          type: string
+        fx_rate:
+          description: Base currency per unit of the line's currency (1 for the base currency).
+          examples:
+            - "1"
+          type: string
+        fx_rate_source:
+          description: Where the rate came from.
+          examples:
+            - base
+          type: string
+        line_no:
+          description: The line's number in the entry.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - line_no
+        - account_id
+        - amount
+        - fx_rate
+        - fx_rate_source
+        - base_amount
+      type: object
+    FieldProblem:
+      additionalProperties: false
+      properties:
+        code:
+          description: The stable error code.
+          examples:
+            - LEDGER-04
+          type: string
+        field:
+          description: "The JSON path of the field: in the request body (body.…), the query (query.…), a header (header.…), or the saved record a command acts on."
+          examples:
+            - lines[0].account_id
+          type: string
+        fix:
+          description: How to fix it.
+          examples:
+            - Choose an account from the chart of accounts
+          type: string
+        message:
+          description: What is wrong with it.
+          examples:
+            - the account does not exist in this organisation
+          type: string
+      required:
+        - code
+        - field
+        - message
+        - fix
+      type: object
+    Journal:
+      additionalProperties: false
+      properties:
+        date:
+          description: The date it belongs to.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        id:
+          description: The journal's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          format: uuid
+          type: string
+        lines:
+          description: The lines as entered.
+          items:
+            $ref: "#/components/schemas/JournalLineDraft"
+          type:
+            - array
+            - "null"
+        memo:
+          description: What it is for.
+          examples:
+            - October rent accrual
+          type: string
+        status:
+          description: Draft (✎), posted, or reversed by a reversing entry.
+          enum:
+            - draft
+            - posted
+            - reversed
+          examples:
+            - draft
+          type: string
+        version:
+          description: The version of its content; with the status it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - status
+        - version
+        - lines
+      type: object
+    JournalDraft:
+      additionalProperties: false
+      properties:
+        date:
+          description: The date the journal belongs to.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        lines:
+          description: Debits positive, credits negative.
+          items:
+            $ref: "#/components/schemas/JournalLineDraft"
+          maxItems: 1000
+          type:
+            - array
+            - "null"
+        memo:
+          description: What the journal is for.
+          examples:
+            - October rent accrual
+          maxLength: 1000
+          type: string
+      required:
+        - lines
+      type: object
+    JournalLineDraft:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: "The account to post to: a leaf account, active."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: Debit positive, credit negative, in the line's currency.
+        description:
+          description: What the line is for.
+          examples:
+            - October office rent
+          maxLength: 500
+          type: string
+        fx_rate:
+          description: "For a line not in the base currency: base currency per unit of the line's currency."
+          examples:
+            - "1.3472"
+          pattern: ^(0|[1-9][0-9]{0,9})(\.[0-9]{1,10})?$
+          type: string
+        fx_rate_source:
+          description: Where the rate came from.
+          examples:
+            - document
+          maxLength: 100
+          type: string
+      required:
+        - account_id
+        - amount
+      type: object
+    JournalPosting:
+      additionalProperties: false
+      properties:
+        entry:
+          $ref: "#/components/schemas/Entry"
+          description: "The entry the command posted: the journal's entry, or its reversing entry."
+        journal:
+          $ref: "#/components/schemas/Journal"
+          description: The journal after the command.
+      required:
+        - journal
+        - entry
+      type: object
+    Money:
+      additionalProperties: false
+      properties:
+        amount:
+          description: "An exact decimal: debits positive, credits negative; at most the currency's decimals."
+          examples:
+            - "1250.00"
+          pattern: ^-?(0|[1-9][0-9]{0,15})(\.[0-9]{1,4})?$
+          type: string
+        currency:
+          description: The ISO 4217 currency code.
+          examples:
+            - SGD
+          pattern: ^[A-Z]{3}$
+          type: string
+      required:
+        - amount
+        - currency
+      type: object
+    Organisation:
+      additionalProperties: false
+      properties:
+        base_currency:
+          description: The currency the books are kept in.
+          examples:
+            - SGD
+          type: string
+        base_minor_units:
+          description: How many decimals the base currency has.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        id:
+          description: The organisation's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d5e
+          format: uuid
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Northwind Analytics Pte. Ltd.
+          type: string
+        version:
+          description: The record's version; it also makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - name
+        - base_currency
+        - base_minor_units
+        - version
+      type: object
+    Problem:
+      additionalProperties: false
+      properties:
+        code:
+          description: The stable error code (ENG-23).
+          examples:
+            - JOURNAL-02
+          type: string
+        detail:
+          description: What went wrong this time, in plain English.
+          examples:
+            - The journal is posted, not a draft.
+          type: string
+        errors:
+          description: Every invalid field, all at once.
+          items:
+            $ref: "#/components/schemas/FieldProblem"
+          type:
+            - array
+            - "null"
+        fix:
+          description: How to fix it.
+          examples:
+            - Only a draft can be posted; reverse a posted journal instead.
+          type: string
+        instance:
+          description: The request this occurrence belongs to; quote it to support.
+          examples:
+            - urn:fyniq:request:01JA2B3C4D5E6F7G8H9J0K1M2N
+          format: uri
+          type: string
+        status:
+          description: The HTTP status code.
+          examples:
+            - 409
+          format: int64
+          type: integer
+        title:
+          description: A short summary of the problem type; it never changes between occurrences.
+          examples:
+            - The journal is not a draft
+          type: string
+        type:
+          description: A URI naming the problem; one per code.
+          examples:
+            - urn:fyniq:problem:JOURNAL-02
+          format: uri
+          type: string
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - code
+      type: object
+    Reversal:
+      additionalProperties: false
+      properties:
+        date:
+          description: The date of the reversing entry; it must be in an open period.
+          examples:
+            - "2026-11-01"
+          format: date
+          type: string
+        reason:
+          description: Why it is reversed; the audit trail records it (FR-GL-12).
+          examples:
+            - Posted to the wrong account
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - date
+        - reason
+      type: object
+  securitySchemes:
+    bearer:
+      description: An access token from Fyniq's OAuth server (ADR-T3). Until it arrives, the local build accepts the local issuer's dev tokens and a release build accepts none.
+      scheme: bearer
+      type: http
+info:
+  description: |-
+    Fyniq's public API. The web app uses only this API (FR-INT-01).
+
+    Conventions (PRD-001 §8.18.1):
+    - Errors are RFC 9457 problem details (application/problem+json) with a stable code, the field path,
+      what is wrong and how to fix it; validation errors list every invalid field at once (FR-INT-07).
+    - Every POST that creates or changes state accepts an Idempotency-Key header, kept 24 hours per
+      client: a repeat returns the original response; the same key with a different request returns 422
+      (FR-INT-08).
+    - Versioned records return an ETag; commands that change one require If-Match and return 412 when
+      the record changed since, 428 without it (FR-INT-09).
+    - Lists are cursor-paginated (page_size up to 500, an opaque next_cursor). Money is a decimal string
+      with its currency, never a JSON number; dates are ISO 8601; IDs are UUIDv7 strings (FR-INT-10).
+    - Every operation states the right it needs (x-fyniq-permission, from PRD-001 Appendix D) and the
+      error codes it returns (x-fyniq-error-codes).
+  license:
+    identifier: MIT
+    name: MIT
+  title: Fyniq API
+  version: 0.0.0 # x-release-please-version
+openapi: 3.1.0
+paths:
+  /v1/accounts:
+    get:
+      description: Returns the organisation's accounts by code, a page at a time (cursor pagination). Read-only; no side effects.
+      operationId: listAccounts
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountPage"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the chart of accounts
+      tags:
+        - Chart of accounts
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+      x-fyniq-permission:
+        capability: Chart of accounts, dimensions
+        right: V
+  /v1/accounts/{account_id}:
+    get:
+      description: Returns one account with its ETag. Read-only; no side effects.
+      operationId: getAccount
+      parameters:
+        - description: The account's ID.
+          in: path
+          name: account_id
+          required: true
+          schema:
+            description: The account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The account's version, for If-Match.
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get an account
+      tags:
+        - Chart of accounts
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+      x-fyniq-permission:
+        capability: Chart of accounts, dimensions
+        right: V
+  /v1/journals:
+    post:
+      description: "Saves a manual journal as a draft (✎) at version 1. Side effects: a draft document and its audit event; nothing posts until postJournal. A draft is checked only for its amounts and currencies. Idempotent with Idempotency-Key."
+      operationId: createJournal
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalDraft"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Journal"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The journal's version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The journal's URL.
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid; `MONEY-05` An exchange rate is not valid."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Save a draft journal
+      tags:
+        - Journals
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - MONEY-01
+        - MONEY-02
+        - MONEY-03
+        - MONEY-04
+        - MONEY-05
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: C
+  /v1/journals/{journal_id}:
+    get:
+      description: Returns a manual journal's current version and status, with its ETag. Read-only; no side effects.
+      operationId: getJournal
+      parameters:
+        - description: The journal's ID.
+          in: path
+          name: journal_id
+          required: true
+          schema:
+            description: The journal's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Journal"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The journal's version and status, for If-Match.
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a journal
+      tags:
+        - Journals
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - JOURNAL-01
+        - JOURNAL-04
+      x-fyniq-permission:
+        capability: Journals
+        right: V
+  /v1/journals/{journal_id}/post:
+    post:
+      description: "Posts a draft: the posting engine turns its current version into a balanced entry, written with the journal's change to posted in one transaction (ENG-02). Side effects: a journal entry, a new ledger revision, balances, audit events. Needs If-Match with the draft's ETag. Approval policy: the Accountant's amount limit and SOD-3 apply from P1. Idempotent with Idempotency-Key; the same version never posts twice."
+      operationId: postJournal
+      parameters:
+        - description: The journal's ID.
+          in: path
+          name: journal_id
+          required: true
+          schema:
+            description: The journal's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalPosting"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The journal's new version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `JOURNAL-02` The journal is not a draft; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Post a draft journal
+      tags:
+        - Journals
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - JOURNAL-01
+        - JOURNAL-02
+        - JOURNAL-04
+        - LEDGER-01
+        - LEDGER-02
+        - LEDGER-03
+        - LEDGER-04
+        - LEDGER-05
+        - LEDGER-06
+        - LEDGER-07
+        - LEDGER-08
+        - LEDGER-09
+        - LEDGER-10
+        - LEDGER-11
+        - LEDGER-12
+        - STORAGE-DOC-02
+        - STORAGE-DUPLICATE-01
+        - STORAGE-INV-01
+        - STORAGE-INV-02
+        - STORAGE-INV-03
+        - STORAGE-INV-04
+        - STORAGE-INV-05
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        note: The Accountant's amount limit and SOD-3 arrive with the approval engine (P1).
+        right: P
+  /v1/journals/{journal_id}/reverse:
+    post:
+      description: "Voids a posted journal with a reversing entry on the date given (FR-GL-12); posted history never changes. Side effects: the reversing entry, a new ledger revision, balances, audit events with the reason. Needs If-Match with the journal's ETag. Approval policy: in Founder mode voiding needs a second person (FM-1) from P1. Idempotent with Idempotency-Key."
+      operationId: reverseJournal
+      parameters:
+        - description: The journal's ID.
+          in: path
+          name: journal_id
+          required: true
+          schema:
+            description: The journal's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Reversal"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalPosting"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The journal's new version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `JOURNAL-03` The journal is not posted; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Reverse a posted journal
+      tags:
+        - Journals
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - JOURNAL-01
+        - JOURNAL-03
+        - JOURNAL-04
+        - LEDGER-01
+        - LEDGER-02
+        - LEDGER-03
+        - LEDGER-04
+        - LEDGER-05
+        - LEDGER-06
+        - LEDGER-07
+        - LEDGER-08
+        - LEDGER-09
+        - LEDGER-10
+        - LEDGER-11
+        - LEDGER-12
+        - STORAGE-DOC-02
+        - STORAGE-DUPLICATE-01
+        - STORAGE-INV-01
+        - STORAGE-INV-02
+        - STORAGE-INV-03
+        - STORAGE-INV-04
+        - STORAGE-INV-05
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        note: A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1).
+        right: P
+  /v1/organisation:
+    get:
+      description: "Returns the organisation your session is in: its name and base currency, which every screen shows. Read-only; no side effects. Every member of the organisation may call it."
+      operationId: getOrganisation
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organisation"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The organisation's version, for If-Match.
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get your organisation
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-INPUT-02
+      x-fyniq-permission:
+        capability: (membership)
+        right: V
+security:
+  - bearer: []

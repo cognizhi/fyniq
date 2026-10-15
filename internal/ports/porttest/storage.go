@@ -359,4 +359,158 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 			t.Fatal(err)
 		}
 	})
+
+	t.Run("accounts come a page at a time, by code", func(t *testing.T) {
+		b := books(t)
+		_ = s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			all, err := u.Accounts().List(ctx)
+			if err != nil || len(all) < 4 {
+				t.Fatalf("List = %d accounts, %v", len(all), err)
+			}
+			var paged []storage.Account
+			after := ""
+			for {
+				page, err := u.Accounts().Page(ctx, after, 3)
+				if err != nil {
+					t.Fatalf("Page(%q, 3): %v", after, err)
+				}
+				paged = append(paged, page...)
+				if len(page) < 3 {
+					break
+				}
+				after = page[len(page)-1].Code
+			}
+			if len(paged) != len(all) {
+				t.Fatalf("the pages hold %d accounts, the list %d", len(paged), len(all))
+			}
+			for i := range all {
+				if paged[i].ID != all[i].ID {
+					t.Fatalf("page item %d is %s, the list's %s", i, paged[i].Code, all[i].Code)
+				}
+			}
+			if _, err := u.Accounts().Page(ctx, "", 0); storage.CodeOf(err) != storage.CodeInvalid {
+				t.Fatalf("a page of 0: want %s, got %v", storage.CodeInvalid, err)
+			}
+			return nil
+		})
+	})
+
+	t.Run("a unit of work opened inside another joins it", func(t *testing.T) {
+		b, other := books(t), books(t)
+		failed := errors.New("the outer work fails")
+		err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if _, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "7100", Name: "Outer", Type: storage.Expense}); err != nil {
+				return err
+			}
+			if err := s.Do(ctx, b.Org, func(ctx context.Context, inner storage.UnitOfWork) error {
+				_, err := inner.Accounts().Create(ctx, storage.NewAccount{Code: "7200", Name: "Inner", Type: storage.Expense})
+				return err
+			}); err != nil {
+				return err
+			}
+			if err := s.Do(ctx, other.Org, func(context.Context, storage.UnitOfWork) error { return nil }); storage.CodeOf(err) != storage.CodeNoTenant {
+				t.Errorf("joining for another organisation: want %s, got %v", storage.CodeNoTenant, err)
+			}
+			return failed
+		})
+		if !errors.Is(err, failed) {
+			t.Fatalf("Do = %v", err)
+		}
+		_ = s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			for _, code := range []string{"7100", "7200"} {
+				if _, err := u.Accounts().ByCode(ctx, code); !errors.Is(err, ports.ErrNotFound) {
+					t.Errorf("account %s outlived the rollback: %v", code, err)
+				}
+			}
+			return nil
+		})
+	})
+
+	t.Run("an idempotency key holds its response, per client, until purged", func(t *testing.T) {
+		b := books(t)
+		expires := time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)
+		claim := storage.IdempotencyClaim{Client: "web user-1", Key: "key-1", RequestHash: make([]byte, 32), ExpiresAt: expires}
+		claim.RequestHash[0] = 1
+		do := func(fn func(ctx context.Context, u storage.UnitOfWork) error) error { return s.Do(ctx, b.Org, fn) }
+		// A claim that rolls back leaves nothing behind.
+		_ = do(func(ctx context.Context, u storage.UnitOfWork) error {
+			if earlier, err := u.Idempotency().Claim(ctx, claim); err != nil || earlier != nil {
+				t.Fatalf("first Claim = %+v, %v", earlier, err)
+			}
+			return errors.New("the command failed")
+		})
+		err := do(func(ctx context.Context, u storage.UnitOfWork) error {
+			if earlier, err := u.Idempotency().Claim(ctx, claim); err != nil || earlier != nil {
+				t.Fatalf("Claim after a rollback = %+v, %v; want a fresh claim", earlier, err)
+			}
+			return u.Idempotency().Complete(ctx, claim.Client, claim.Key, 201, []byte(`{"id":"x"}`))
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = do(func(ctx context.Context, u storage.UnitOfWork) error {
+			earlier, err := u.Idempotency().Claim(ctx, claim)
+			if err != nil || earlier == nil || earlier.Status != 201 || string(earlier.Body) != `{"id":"x"}` || earlier.RequestHash[0] != 1 || !earlier.ExpiresAt.Equal(expires) {
+				t.Fatalf("Claim of a used key = %+v, %v; want the saved response", earlier, err)
+			}
+			other := claim
+			other.Client = "web user-2"
+			if earlier, err := u.Idempotency().Claim(ctx, other); err != nil || earlier != nil {
+				t.Fatalf("another client's Claim of the same key = %+v, %v; want a fresh claim", earlier, err)
+			}
+			if err := u.Idempotency().Complete(ctx, "web user-3", "never-claimed", 200, nil); storage.CodeOf(err) != storage.CodeInvalid {
+				t.Fatalf("Complete of an unclaimed key: want %s, got %v", storage.CodeInvalid, err)
+			}
+			return errors.New("roll back")
+		})
+		// A concurrent claim of the same key waits for the first unit of work, then reads its response.
+		second := claim
+		second.Key = "key-2"
+		claimed, done := make(chan struct{}), make(chan *storage.StoredResponse, 1)
+		go func() {
+			<-claimed
+			_ = do(func(ctx context.Context, u storage.UnitOfWork) error {
+				earlier, err := u.Idempotency().Claim(ctx, second)
+				if err != nil {
+					t.Errorf("the waiting Claim: %v", err)
+				}
+				done <- earlier
+				return nil
+			})
+		}()
+		err = do(func(ctx context.Context, u storage.UnitOfWork) error {
+			if _, err := u.Idempotency().Claim(ctx, second); err != nil {
+				return err
+			}
+			close(claimed)
+			time.Sleep(200 * time.Millisecond)
+			return u.Idempotency().Complete(ctx, second.Client, second.Key, 200, []byte(`{}`))
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if earlier := <-done; earlier == nil || earlier.Status != 200 {
+			t.Fatalf("the waiting Claim = %+v; want the first request's response", earlier)
+		}
+		// The worker purges expired keys; afterwards the key can be claimed again.
+		err = worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if n, err := u.Idempotency().Purge(ctx, expires.Add(-time.Hour)); err != nil || n != 0 {
+				t.Errorf("Purge before expiry = %d, %v; want 0", n, err)
+			}
+			n, err := u.Idempotency().Purge(ctx, expires)
+			if err == nil && n != 2 {
+				t.Errorf("Purge = %d; want both keys", n)
+			}
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = do(func(ctx context.Context, u storage.UnitOfWork) error {
+			if earlier, err := u.Idempotency().Claim(ctx, claim); err != nil || earlier != nil {
+				t.Fatalf("Claim after the purge = %+v, %v; want a fresh claim", earlier, err)
+			}
+			return errors.New("roll back")
+		})
+	})
 }

@@ -142,6 +142,24 @@ func (r accounts) List(ctx context.Context) ([]storage.Account, error) {
 	return out, nil
 }
 
+func (r accounts) Page(ctx context.Context, after string, limit int) ([]storage.Account, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	if limit < 1 || limit > 10000 {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d accounts", limit), Hint: "Ask for 1 to 10,000"}
+	}
+	rows, err := r.u.q.PageAccounts(ctx, sqlcdb.PageAccountsParams{After: after, PageSize: int32(limit)})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Account, 0, len(rows))
+	for _, a := range rows {
+		out = append(out, toAccount(a.ID, a.Code, a.Name, a.Type, a.ParentID, a.IsGroup, a.IsActive, a.Version))
+	}
+	return out, nil
+}
+
 // ------------------------------------------------------------------ documents
 
 type documents struct{ u *unitOfWork }
