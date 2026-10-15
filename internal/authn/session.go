@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/authz"
@@ -100,4 +101,28 @@ func SameOrigin(r http.Header) bool {
 // Safe reports whether an HTTP method only reads.
 func Safe(method string) bool {
 	return method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions
+}
+
+// Release is the release build's authenticator: a bearer token goes to OAuth (Hydra's tokens for the
+// API's audience), never a local dev token, and a request without one to Sessions (the session
+// cookie). Either may be nil, and then accepts no one.
+type Release struct {
+	OAuth    Authenticator
+	Sessions Authenticator
+}
+
+// Authenticate implements Authenticator.
+func (r Release) Authenticate(ctx context.Context, c Credentials) (Principal, error) {
+	switch {
+	case strings.HasPrefix(c.Authorization, "Bearer "+DevPrefix):
+		return Principal{}, ErrUnauthenticated // a local dev token means nothing here (DEV-07)
+	case c.Authorization != "":
+		if r.OAuth == nil {
+			return Principal{}, ErrUnauthenticated
+		}
+		return r.OAuth.Authenticate(ctx, Credentials{Authorization: c.Authorization})
+	case r.Sessions != nil:
+		return r.Sessions.Authenticate(ctx, Credentials{Cookie: c.Cookie})
+	}
+	return Principal{}, ErrUnauthenticated
 }
