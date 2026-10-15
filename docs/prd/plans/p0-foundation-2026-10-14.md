@@ -5,7 +5,8 @@ engine and its independent oracle, the audit chain, background work, the API's c
 images and releases, infrastructure and controls as code (PRD-001 §18, the P0 column). It is done when
 the seven exit criteria of §17.3 hold, with evidence in the release record.
 
-The plan is eleven OpenSpec changes in `openspec/changes/p0-*`. Each one builds requirements that are
+The plan is eleven OpenSpec changes in `openspec/changes/p0-*`, and a twelfth, added on 15 Oct 2026, for the
+rules a manual journal and its reversal post by, which PRD-001 rev 0.24 decided. Each one builds requirements that are
 already approved in the main specs, so each sets `skip_specs: true`. Each has a proposal, a design and
 tasks that name the requirement IDs and the test proving each one. Build them with `/opsx:apply <change>`,
 then `/opsx:verify` and `/opsx:archive --skip-specs`.
@@ -30,8 +31,9 @@ the "Needs additional verification" banner (FR-UX-41).
 | 9 | `p0-infra-opentofu` | GCP projects, Singapore-only policy, Cloud Run, Cloud SQL 18, secrets, KMS, WIF, the WORM bucket, budgets, drift checks | 1 | A Google Cloud organisation, billing account and projects | Recommended (IAM) |
 | 10 | `p0-identity-oauth-first-run` | Hydra pinned, audience-bound tokens, the open question 40 spike, Google and Zoho sign-in with issuer checks, first-run setup and two Super admins | 2, 7 | Staging part: 9; the Zoho developer app, the Google OAuth client, the Ory Enterprise Licence quote | Required (security reviewer) |
 | 11 | `p0-compliance-as-code` | The Appendix F registry, the runner, the P0 CI checks, SEC-15/16/20 | 8 | Branch protection on `main` for CTL-CHG-01 | — |
+| 12 | `p0-manual-journal-rules` | The rules a P0 manual journal and its reversal post by, decided in rev 0.24: ENG-24, the base-line rate (ENG-03), decimals as written and computed amounts out of range (ENG-44), reversals (ENG-14 and FR-GL-12's note), share capital (INV-13); the scenario format's account role and the oracle's half (engine first, then the oracle) | 3, 4 | — | Required (money, ledger) |
 
-Changes 1 to 7 need nothing from outside, so they can be built now. Changes 8 to 11 each have a founder
+Changes 1 to 7 and 12 need nothing from outside, so they can be built now. Changes 8 to 11 each have a founder
 step listed above. Starting those steps now keeps them off the critical path.
 
 Progress (15 Oct 2026): changes 1 to 4 and 7 are built and archived in `openspec/changes/archive/` (pull
