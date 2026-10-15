@@ -4,7 +4,7 @@
 #                  (`make images`), behind Caddy on http://localhost:8080
 #   make dev     → the dependencies here; the services run on the host with hot reload
 # Every port binds to 127.0.0.1. Credentials here are for local use only and never valid
-# anywhere else. Hydra and the sign-in emulator join in p0-identity-oauth-first-run.
+# anywhere else. The sign-in emulator joins with p0-identity-oauth-first-run's SignIn port.
 name: fyniq
 
 x-hardened: &hardened             # our images run as in production (NFR-IMG-02)
@@ -87,6 +87,9 @@ services:
     environment:
       <<: *fyniq-env
       FYNIQ_DATABASE_URL: postgres://fyniq_api:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
+      FYNIQ_OAUTH_ADMIN_URL: http://oauth:4445              # Hydra's admin API: never through Caddy
+      FYNIQ_API_AUDIENCE: http://localhost:8080/api
+      FYNIQ_MCP_AUDIENCE: http://localhost:8080/mcp
     ports: ["127.0.0.1:${FYNIQ_API_PORT:-8081}:8080"]
     depends_on: { migrate: { condition: service_completed_successfully } }
     healthcheck: *health
@@ -132,6 +135,33 @@ services:
     environment: { <<: *fyniq-env }
     healthcheck: *health
 
+  oauth-migrate:                              # Hydra's schema, in its own database (ADR-T3)
+    <<: *hardened
+    image: oryd/hydra:v26.2.0@sha256:ff67c7fb5f95074fa53374d41151713554960504b340cd3f95b09e65deaea2a9
+    profiles: [core]
+    restart: "no"
+    command: ["migrate", "sql", "up", "-e", "--yes"]
+    environment:
+      DSN: postgres://hydra:fyniq-local-only@postgres:5432/hydra?sslmode=disable
+    depends_on: { migrate: { condition: service_completed_successfully } }
+
+  oauth:                                      # Ory Hydra, Apache-2.0 v26.2.0: the OAuth 2.1 server (ADR-T3)
+    <<: *hardened
+    image: oryd/hydra:v26.2.0@sha256:ff67c7fb5f95074fa53374d41151713554960504b340cd3f95b09e65deaea2a9
+    profiles: [core]
+    # --dev allows the http issuer of the local stack; staging and production run without it.
+    command: ["serve", "all", "--dev", "--sqa-opt-out"]
+    environment:
+      DSN: postgres://hydra:fyniq-local-only@postgres:5432/hydra?sslmode=disable
+      URLS_SELF_ISSUER: http://localhost:8080/oauth/
+      URLS_LOGIN: http://localhost:8080/api/auth/login
+      URLS_CONSENT: http://localhost:8080/api/auth/consent
+      SECRETS_SYSTEM: fyniq-local-only-oauth-system-key   # local only; Secret Manager in the cloud
+      OAUTH2_PKCE_ENFORCED: "true"                         # the authorisation code with PKCE only (AI-36)
+      STRATEGIES_ACCESS_TOKEN: opaque                      # introspected, so revocation is seen (AI-38)
+      TTL_ACCESS_TOKEN: 1h                                 # at most 60 minutes (AI-38)
+    depends_on: { oauth-migrate: { condition: service_completed_successfully } }
+
   web:                                        # the built web app on nginx-unprivileged
     <<: *hardened
     image: fyniq-web:local
@@ -149,6 +179,7 @@ services:
       ai: { condition: service_healthy }
       mcp: { condition: service_healthy }
       web: { condition: service_started }
+      oauth: { condition: service_started }
 
 volumes:
   pgdata:

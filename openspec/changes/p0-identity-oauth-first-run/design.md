@@ -32,6 +32,21 @@ and no token exchange (checked 14 Oct 2026). §9.7 and open question 40 describe
   exactly.
 - **First-run setup.** The setup code is generated at deployment into Secret Manager and shown once; it
   is consumed atomically and cannot be reused.
+- **Roles stamped at consent (P0).** Until memberships exist, consent stamps the organisation, roles and
+  client class on the access token, and the API reads them back through introspection. It is a snapshot,
+  valid until the token expires or is revoked: the token lifecycle slice revokes a user's tokens on a role
+  change (AI-38), and the memberships slice replaces the snapshot with a lookup.
+- **The release build stays closed.** It accepts no credential, for the API or for sign-in, until
+  memberships and the SignIn port exist. Only the local build chains its dev tokens and Hydra's tokens,
+  and the two never reach each other's checker (a `fyniq-dev.` token is never sent to Hydra).
+- **Who signs in, before the SignIn port.** The login and consent pages read the local build's dev token
+  from the Authorization header. That is for tests and local tools only; in production they read the
+  first-party session, and POST /auth/consent gains a CSRF token with it.
+- **Consent rules.** Only known scopes (`openid`, `offline_access`, `fyniq.read.<area>`,
+  `fyniq.propose.<task>`); `fyniq.read.payroll` and `fyniq.read.equity` never in P0. Audiences: the
+  requested ones, each the API's or the MCP server's and on the client's record, or consent is refused.
+  Consent is never remembered. The pinned version and settings are recorded in
+  `docs/adr/ADR-T3-identity-and-oauth.md`.
 - **Audit events emitted.** `setup.completed`, `super_admin.added`, `super_admin.recovery_used`,
   `oauth.client.created`, `oauth.token.revoked_family` (AUD-01).
 - **Ports and adapters.** `SignIn` (Identity Platform, Firebase emulator), `Signer` (KMS, local key) and

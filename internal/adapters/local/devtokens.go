@@ -38,7 +38,7 @@ func NewDevTokens(key []byte, clock ports.Clock) *DevTokens {
 	return &DevTokens{key: key, clock: clock}
 }
 
-const devPrefix = "fyniq-dev."
+const devPrefix = authn.DevPrefix
 
 type devClaims struct {
 	Subject      string       `json:"sub"`

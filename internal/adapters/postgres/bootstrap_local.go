@@ -38,6 +38,28 @@ $$`)
 	if err != nil {
 		return fmt.Errorf("create fyniq_migrator: %w", err)
 	}
+	// The OAuth server's own database on the same server (ADR-T3), owned by its own role, which holds
+	// nothing in the fyniq database. In the cloud p0-infra-opentofu creates both.
+	_, err = conn.Exec(ctx, `
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'hydra') THEN
+    CREATE ROLE hydra LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '`+LocalPassword+`';
+  END IF;
+END
+$$`)
+	if err != nil {
+		return fmt.Errorf("create the hydra role: %w", err)
+	}
+	var exists bool
+	if err := conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'hydra')").Scan(&exists); err != nil {
+		return err
+	}
+	if !exists {
+		if _, err := conn.Exec(ctx, "CREATE DATABASE hydra OWNER hydra"); err != nil {
+			return fmt.Errorf("create the hydra database: %w", err)
+		}
+	}
 	return nil
 }
 

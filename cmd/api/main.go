@@ -22,10 +22,13 @@ import (
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
-// Set by the local build (local.go): the API's own tick, and the local issuer's dev tokens.
+// Set by the local build (local.go): the API's own tick, the local issuer's dev tokens and, when the
+// OAuth server is configured, its tokens and the login and consent flow. The release build accepts
+// no credential until memberships and the SignIn port arrive (p0-identity-oauth-first-run).
 var (
 	startLocalTick   func(t outbox.Ticker)
 	newAuthenticator func(clock ports.Clock) authn.Authenticator
+	registerOAuth    func(s *httpserver.Server, clock ports.Clock)
 )
 
 func main() {
@@ -37,6 +40,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	d := api.Deps{Clock: deps.Clock, Auth: authn.NotYet{}, Log: logging.New(os.Stderr, slog.LevelInfo), Version: version.Version}
 	if newAuthenticator != nil {
 		d.Auth = newAuthenticator(deps.Clock)
+	}
+	if registerOAuth != nil {
+		registerOAuth(s, deps.Clock)
 	}
 	kit, err := wiring.Build(context.Background(), "api", deps.Clock)
 	if err != nil {

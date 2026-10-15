@@ -2,8 +2,8 @@
 
 ## 1. OAuth server
 
-- [ ] 1.1 Pin Hydra (Apache-2.0) by version and digest as the `oauth` image, sharing the database, with opaque tokens; verify the pin in the image check and record version and edition in ADR-T3's file under `docs/adr/`
-- [ ] 1.2 Implement the login and consent endpoints in the API, granting the MCP audience only when the client is allowed it; test (exit item 6) issues a token to a test client, and the API rejects a wrong-audience token (`// req: AI-36`)
+- [x] 1.1 Pin Hydra (Apache-2.0) by version and digest as the `oauth` image, sharing the database, with opaque tokens; verify the pin in the image check and record version and edition in ADR-T3's file under `docs/adr/`
+- [x] 1.2 Implement the login and consent endpoints in the API, granting the MCP audience only when the client is allowed it; test (exit item 6) issues a token to a test client, and the API rejects a wrong-audience token (`// req: AI-36`) (local build; the release build waits for the SignIn port and memberships)
 - [ ] 1.3 Add refresh rotation with family revocation, revocation, and a role change denying the next call within 60 seconds; tests `// req: AI-38` cover reused refresh tokens, expired and revoked tokens, and the role change
 
 ## 2. The open question 40 spike

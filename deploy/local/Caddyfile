@@ -1,7 +1,7 @@
 # One origin for the web app and the services, as behind the production load balancer
 # (PRD-001 §12.2 "Edge for local and preview", §12.8). `make up` serves it on
-# http://localhost:8080 (FYNIQ_HTTP_PORT). /oauth2, /auth and the OIDC discovery routes join
-# with Hydra in p0-identity-oauth-first-run.
+# http://localhost:8080 (FYNIQ_HTTP_PORT). The OAuth server is under /oauth/ (its issuer is
+# http://localhost:8080/oauth/), and its login and consent pages are the API's /api/auth/….
 {
 	auto_https off
 	admin off
@@ -13,6 +13,10 @@
 	# The API's routes have no /api prefix; the web app calls /api/… on its own origin.
 	handle_path /api/* {
 		reverse_proxy api:8080
+	}
+	# The OAuth server's public endpoints (authorise, token, revoke, discovery); its admin port is internal.
+	handle_path /oauth/* {
+		reverse_proxy oauth:4444
 	}
 	handle_path /ai/* {
 		reverse_proxy ai:8080 {
