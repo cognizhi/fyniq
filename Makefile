@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup setup-code super-admin-recovery dev up down seed reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls image-scan oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup setup-code super-admin-recovery dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls image-scan oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -58,6 +58,10 @@ down: ## Stop the stack started by `make up` (keeps the database volume)
 
 seed: ## Write the sample company (DEV-04) to .data/seed/company.json
 	@$(MISE) go run -tags local ./cmd/seed --out .data/seed/company.json
+
+seed-load: ## Load the sample company (DEV-04) into an organisation of the local database: ORG=<organisation id>; checks its trial balance against the seed
+	@test -n "$(ORG)" || { echo 'usage: make seed-load ORG=<organisation id> (organisation_id in GET /api/v1/session)'; exit 2; }
+	@$(MISE) go run -tags local ./cmd/seed --load "$(ORG)"
 
 reset: ## Stop everything and delete local data: the database volume and .data/
 	@$(COMPOSE) --profile core down -v

@@ -2,10 +2,10 @@
 # QA-LOCAL-01: local mode from the built images, with no cloud credentials. `make up` starts the
 # stack from the local flavour of the images (same commit, same Dockerfile and hardening), then this
 # checks it through Caddy's one origin, as a browser would: the web app, the API's version, its
-# document, a sign-in through the local sign-in page, first-run setup with that session, a call refused
-# as problem details, and every service healthy. The sample company is written by `make seed`; loading
-# it into the database arrives later (p0-ci-images-release 2.4). The golden and parity suites run in
-# `make test` and in P1.
+# document, a sign-in through the local sign-in page, first-run setup with that session, the sample
+# company loaded through the engine (`make seed-load`, which checks its trial balance against the
+# seed's own totals), a call refused as problem details, and every service healthy. The parity suites
+# arrive in P1.
 #
 # Usage: scripts/local-smoke.sh            # make up, check, make down
 #        KEEP=1 scripts/local-smoke.sh     # leave the stack running
@@ -70,6 +70,13 @@ if [ "$(curl -fsS "$origin/api/v1/setup")" = '{"done":false}' ]; then
   whoami=$(curl -fsS -b "$jar" "$origin/api/v1/session")
   python3 -c 'import json,sys; d=json.loads(sys.argv[1]); assert d["super_admin"] and d["roles"]==["owner"], d' "$whoami" \
     || fail "after setup the session is not the Super admin and Owner: $whoami"
+  # The sample company (DEV-04) into the new organisation, through the engine; the loader checks the
+  # trial balance against the seed's own totals (the golden check), and the API serves its chart.
+  org=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["organisation_id"])' "$out")
+  make --no-print-directory seed-load ORG="$org" || fail "the sample company did not load, or its trial balance differs from the seed"
+  accounts=$(curl -fsS -b "$jar" "$origin/api/v1/accounts?page_size=500") || fail "the chart of accounts does not answer"
+  python3 -c 'import json,sys; a=json.loads(sys.argv[1])["items"]; c=json.load(open(".data/seed/company.json"))["accounts"]; assert len(a)==len(c), (len(a), len(c))' "$accounts" \
+    || fail "the API does not serve the sample company's chart"
 else
   echo "  (the database was set up in an earlier run: setup not repeated)"
 fi
@@ -113,4 +120,4 @@ unhealthy=$(docker compose -f deploy/local/compose.yaml --profile core ps --form
 migrated=$(docker compose -f deploy/local/compose.yaml --profile core ps -a --format '{{.Service}} {{.ExitCode}}' | awk '$1 == "migrate" {print $2}')
 [ "$migrated" = 0 ] || fail "the migrate job exited with ${migrated:-nothing}"
 
-echo "✔ QA-LOCAL-01: the stack runs from the local images with no cloud credentials; web, API, document, sign-in and refusals answer through $origin, and no log holds a secret, token, session, NRIC or bank number (SEC-15)"
+echo "✔ QA-LOCAL-01: the stack runs from the local images with no cloud credentials; web, API, document, sign-in, the sample company and refusals answer through $origin, and no log holds a secret, token, session, NRIC or bank number (SEC-15)"
