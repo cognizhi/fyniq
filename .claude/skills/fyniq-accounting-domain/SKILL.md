@@ -13,7 +13,9 @@ the equity register) are named measures that declare their source (FR-KPI-03, PR
 > **Status:** built in P0: the database backstop (`db/`, `internal/ports/storage`,
 > `internal/adapters/postgres`; roles and error codes in `db/README.md`) and the money, rounding,
 > engine, manual journal and balance service under `internal/domain/` (p0-money-posting-engine).
-> The oracle (`oracle/`) is next. P1 sources add rule sets beside the manual journal.
+> The independent oracle (`oracle/`, p0-python-oracle-differential) posts the same manual journals
+> and reversals from the PRD (`make oracle-test`; formats in `test/differential/`). P1 sources add
+> rule sets beside the manual journal, in the engine and the oracle.
 
 ## Mental model
 
