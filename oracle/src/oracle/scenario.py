@@ -34,8 +34,13 @@ def _schema_dir() -> Path:
     return Path(__file__).resolve().parents[3] / "test" / "differential"
 
 
+# The schema's patterns, checked again with fullmatch: Python's re.search lets "$" match before a
+# final newline, so "JNL-0001\n" passes the schema here but not in Go (RE2) or ECMA-262.
 _DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}")
+_CURRENCY = re.compile(r"[A-Z]{3}")
+_ACCOUNT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,31}")
+_DOCUMENT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 
 
 class ScenarioError(ValueError):
@@ -136,8 +141,7 @@ def parse_json(text: str) -> Any:
 
 
 def _date(text: str, where: str) -> date:
-    # The schema's pattern is checked by Python's re.search, where "$" also matches before a final
-    # newline, so the shape is checked again here; fromisoformat then refuses an impossible day.
+    # The shape again (see _DATE); fromisoformat then refuses an impossible day.
     if not _DATE.fullmatch(text):
         raise ScenarioError(f"{where}: {text!r} is not a YYYY-MM-DD date")
     try:
@@ -146,13 +150,20 @@ def _date(text: str, where: str) -> date:
         raise ScenarioError(f"{where}: {text!r} is not a calendar date") from exc
 
 
+def _shape(pattern: re.Pattern[str], text: str, where: str) -> None:
+    if not pattern.fullmatch(text):
+        raise ScenarioError(f"{where}: {text!r} does not match the schema's pattern")
+
+
 def scenario_from_json(data: Any) -> Scenario:
     """Check ``data`` against ``scenario.schema.json`` and the rules beside it; build a Scenario."""
     problem = _schema_error("scenario.schema.json", data)
     if problem is not None:
         raise ScenarioError(problem)
-    if not _NAME.fullmatch(data["name"]):
-        raise ScenarioError(f"name: {data['name']!r} is not a short file-safe name")
+    _shape(_NAME, data["name"], "name")
+    _shape(_CURRENCY, data["base_currency"], "base_currency")
+    for code in data["currencies"]:
+        _shape(_CURRENCY, code, "currencies")
     currencies = dict(data["currencies"])
     base = data["base_currency"]
     if base not in currencies:
@@ -160,6 +171,7 @@ def scenario_from_json(data: Any) -> Scenario:
 
     accounts: dict[str, Account] = {}
     for i, raw in enumerate(data["accounts"]):
+        _shape(_ACCOUNT, raw["code"], f"accounts/{i}/code")
         if raw["code"] in accounts:
             raise ScenarioError(f"accounts/{i}: the code {raw['code']!r} appears twice")
         accounts[raw["code"]] = Account(raw["code"], raw["type"], raw["group"], raw["active"])
@@ -167,6 +179,7 @@ def scenario_from_json(data: Any) -> Scenario:
     documents: list[Document] = []
     seen: set[str] = set()
     for i, raw in enumerate(data["documents"]):
+        _shape(_DOCUMENT_ID, raw["id"], f"documents/{i}/id")
         if raw["id"] in seen:
             raise ScenarioError(f"documents/{i}: the id {raw['id']!r} appears twice")
         seen.add(raw["id"])

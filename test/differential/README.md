@@ -52,6 +52,8 @@ runner should fail the same way). The input is not a `fyniq-scenario@1` document
 
 - it breaks `scenario.schema.json` (a missing or extra key, a wrong type, a JSON number where a string
   is required, a document type other than `manual_journal`, more than 4 minor units, an ID with `/`);
+- a name, ID, account code or currency code does not match its pattern as a whole string (Python's
+  `re` lets `$` match before a final newline, so the oracle checks `"JNL-0001\n"` again; RE2 refuses it);
 - a JSON object repeats a key, or the JSON holds `NaN` or `Infinity`;
 - `base_currency` is not a key of `currencies`;
 - two accounts share a code, or two documents share an ID;
