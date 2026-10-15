@@ -37,3 +37,18 @@ in a different language. Python is already the oracle's language (ADR-T1). The w
   hand-pinned statutory figures) and the accountant's review of the posting rules (Area 1 review).
 - [Slow CI from thousands of scenarios] → a fixed-seed sample in `make test` and the full count in
   `make ci`.
+
+## Implementation notes (15 Oct 2026)
+
+- **Who wrote what.** A separate Claude Code session wrote the oracle (#16) from §10, §11.3, Appendix B
+  and the workbook's `reference.py`, without reading the engine (its PR records this). The engine's
+  session wrote the engine side of the harness (#14, #18) and did not change the oracle.
+- **The gate** is `TestTheEngineAgreesWithTheOracle` in `make test` (the required check): every golden
+  scenario and 60 generated with a fixed seed. `make differential` (in `make ci` and its own CI job)
+  searches 1,000 more with Hypothesis and saves a shrunk disagreement as a golden case.
+- **Proved on 15 Oct 2026** by draft pull request #19, which planted half-even rounding in `RND-FX`: the
+  required `make test` check failed on the gate, the differential job shrank the case to one journal
+  (BHD 0.001 at 2025), and the merge was blocked. The pull request was closed unmerged.
+- **The oracle's open questions** (test/differential/README.md, "Choices where PRD-001 is silent") are
+  not generated, so the gate does not hinge on them; they need a PRD decision before P1.
+
