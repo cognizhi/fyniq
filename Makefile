@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup dev up down seed reset test mutation differential db-lint sqlc oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup dev up down seed reset test mutation differential db-lint sqlc openapi oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -85,6 +85,9 @@ oracle-test: ## Run the independent oracle's own tests: hand-worked journals, th
 
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
+
+openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml from the code; review the diff (make test fails while they differ)
+	@$(MISE) go test ./internal/api -run TestTheContractIsTheCode -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml regenerated"
 
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e

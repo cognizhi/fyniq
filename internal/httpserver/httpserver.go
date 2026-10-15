@@ -19,26 +19,51 @@ import (
 // Check reports whether one dependency is ready.
 type Check func(ctx context.Context) error
 
-// Server is a service's HTTP server.
+// Server is a service's HTTP server. Routes are added through Handle and HandleFunc, which remember
+// their patterns, so a test can check every route a service serves (QA-API-03).
 type Server struct {
 	Mux    *http.ServeMux
 	info   version.Info
 	mu     sync.Mutex
 	checks map[string]Check
+	routes []string
 }
 
 // New returns a server that already answers /healthz, /readyz and /version.
 func New(info version.Info) *Server {
 	s := &Server{Mux: http.NewServeMux(), info: info, checks: map[string]Check{}}
-	s.Mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+	s.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
-	s.Mux.HandleFunc("GET /readyz", s.readyz)
-	s.Mux.HandleFunc("GET /version", func(w http.ResponseWriter, _ *http.Request) {
+	s.HandleFunc("GET /readyz", s.readyz)
+	s.HandleFunc("GET /version", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, s.info)
 	})
 	return s
 }
+
+// Handle registers a route.
+func (s *Server) Handle(pattern string, h http.Handler) {
+	s.mu.Lock()
+	s.routes = append(s.routes, pattern)
+	s.mu.Unlock()
+	s.Mux.Handle(pattern, h)
+}
+
+// HandleFunc registers a route.
+func (s *Server) HandleFunc(pattern string, h func(http.ResponseWriter, *http.Request)) {
+	s.Handle(pattern, http.HandlerFunc(h))
+}
+
+// Routes returns the patterns of every route, in the order they were added.
+func (s *Server) Routes() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.routes...)
+}
+
+// ServeHTTP serves the routes.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) { s.Mux.ServeHTTP(w, r) }
 
 // AddReadiness registers a dependency that /readyz checks.
 func (s *Server) AddReadiness(name string, c Check) {

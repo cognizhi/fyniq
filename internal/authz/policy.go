@@ -1,0 +1,176 @@
+package authz
+
+import (
+	"fmt"
+	"slices"
+	"strings"
+)
+
+// Right is a letter of Appendix D's legend.
+type Right byte
+
+// The rights. View is satisfied by any right on the capability (one cannot prepare, approve, post
+// or release what one cannot see); Masked views with the policy's fields masked.
+const (
+	Create  Right = 'C' // create or prepare
+	Approve Right = 'A'
+	Post    Right = 'P' // post or execute
+	Release Right = 'R' // release money
+	View    Right = 'V'
+	Masked  Right = 'M' // view masked
+)
+
+// Capability is a row of Appendix D, named exactly as the PRD names it.
+type Capability string
+
+// The capabilities the P0 endpoints use.
+const (
+	ChartOfAccounts Capability = "Chart of accounts, dimensions"
+	Journals        Capability = "Journals"
+	// Membership is not an Appendix D row: the caller's organisation (its name and base currency),
+	// which every screen shows, is readable by every member of it. AI acts for a member; the Super
+	// admin and the HR officer (Nemura only) are not members through those roles.
+	Membership Capability = "(membership)"
+)
+
+// Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
+type Cell struct {
+	Rights    string // e.g. "CP" for "C/P (limit)"; "" for "—", "Proposal" and other words
+	Qualifier string // the words after the letters, e.g. "limit"; or the whole cell when it has no letters
+}
+
+// Grants are the Appendix D cells of the capabilities the API uses, by column, copied from the PRD.
+// The matrix test parses Appendix D and fails when a cell here differs from it.
+var Grants = map[Capability]map[string]Cell{
+	ChartOfAccounts: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"V", ""},
+		"AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""},
+		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
+	},
+	Journals: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", "limit"}, "Bookkeeper": {},
+		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
+		"Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal"},
+	},
+}
+
+// Policy is what one operation needs.
+type Policy struct {
+	Operation  string // the OpenAPI operationId
+	Capability Capability
+	Need       Right
+	// MaskedFields are the response's JSON fields masked for a caller who holds only M.
+	MaskedFields []string
+	// Note is what the policy does not enforce yet and where it will, stated in the contract.
+	Note string
+}
+
+// The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
+// of "C/P (limit)" and the segregation of duties and Founder-mode rules (SOD-3, FM-1) come from the
+// approval engine (FR-APR, P1). AI cells without letters ("Proposal") grant nothing through the API:
+// the AI's only write path is a proposal (golden rule 5), which arrives in P1.
+var (
+	GetOrganisation = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
+	ListAccounts    = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
+	GetAccount      = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
+	CreateJournal   = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
+	GetJournal      = Policy{Operation: "getJournal", Capability: Journals, Need: View}
+	PostJournal     = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
+		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
+	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
+		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
+)
+
+// Policies are every policy, by operation. An operation without one is refused.
+var Policies = index(GetOrganisation, ListAccounts, GetAccount, CreateJournal, GetJournal, PostJournal, ReverseJournal)
+
+func index(ps ...Policy) map[string]Policy {
+	out := make(map[string]Policy, len(ps))
+	for _, p := range ps {
+		if _, dup := out[p.Operation]; dup {
+			panic("authz: two policies for " + p.Operation)
+		}
+		out[p.Operation] = p
+	}
+	return out
+}
+
+// Decision is the outcome of an authorisation check.
+type Decision struct {
+	Allowed bool
+	Masked  []string // fields to mask in the response
+	Right   Right    // the right that allowed it
+	Reason  string   // why it was refused, for the security log
+}
+
+// Decide checks whether a caller holding roles may run the operation of p. When ai is true the
+// caller is the AI acting for a user holding roles: it gets the lesser of the user's right and the
+// AI column's.
+func Decide(p Policy, roles []Role, ai bool) Decision {
+	if p.Operation == "" {
+		return Decision{Reason: "the operation has no policy"}
+	}
+	best, ok := holds(p, roles)
+	if ok && ai {
+		var aiRight Right
+		if aiRight, ok = holds(p, []Role{AI}); ok && rank(aiRight) < rank(best) {
+			best = aiRight
+		}
+	}
+	if !ok {
+		who := "these roles"
+		if ai {
+			who = "the AI acting for these roles"
+		}
+		return Decision{Reason: fmt.Sprintf("%s hold no %q right on %q", who, string(p.Need), p.Capability)}
+	}
+	d := Decision{Allowed: true, Right: best}
+	if best == Masked {
+		d.Masked = slices.Clone(p.MaskedFields)
+	}
+	return d
+}
+
+// rank orders the ways of satisfying View: a full view is better than a masked one.
+func rank(r Right) int {
+	if r == Masked {
+		return 0
+	}
+	return 1
+}
+
+// holds returns the best right among roles that satisfies p.Need.
+func holds(p Policy, roles []Role) (Right, bool) {
+	var best Right
+	found := false
+	for _, r := range roles {
+		col := Column(r)
+		if col == "" {
+			continue
+		}
+		var rights string
+		if p.Capability == Membership {
+			rights = "V"
+		} else {
+			rights = Grants[p.Capability][col].Rights
+		}
+		for _, have := range rights {
+			got, ok := satisfies(Right(have), p.Need)
+			if ok && (!found || rank(got) > rank(best)) {
+				best, found = got, true
+			}
+		}
+	}
+	return best, found
+}
+
+// satisfies reports whether holding have meets need, and as which right.
+func satisfies(have, need Right) (Right, bool) {
+	if need == View {
+		if have == Masked {
+			return Masked, true
+		}
+		return View, strings.ContainsRune("CAPRV", rune(have))
+	}
+	return have, have == need
+}

@@ -1,0 +1,327 @@
+// Package api is Fyniq's public REST API under /v1 (PRD-001 §8.18, ADR-T1). huma serves it and
+// generates its OpenAPI 3.1 document, which must equal the reviewed contract in
+// contracts/openapi/fyniq.v1.yaml. Every operation is registered with its authorisation policy
+// (SEC-02) and follows the conventions of §8.18.1: problem details (FR-INT-07), Idempotency-Key
+// (FR-INT-08), ETag and If-Match (FR-INT-09), cursor lists and decimal strings for money (FR-INT-10).
+//
+// The handlers run the same domain commands as everything else, through the storage port; every
+// write is one unit of work, audited with the caller as the actor (AUD-01).
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net"
+	"net/http"
+	"slices"
+	"strconv"
+	"strings"
+
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
+)
+
+// Deps are what the API needs.
+type Deps struct {
+	Store   storage.Store
+	Clock   ports.Clock
+	Auth    authn.Authenticator
+	Log     *slog.Logger
+	Version string // the platform version: the document's info.version
+}
+
+// API is the registered API.
+type API struct {
+	huma.API
+	deps     Deps
+	policies map[string]authz.Policy
+	journals journal.Service
+}
+
+func init() {
+	huma.NewError = newError
+	huma.NewErrorWithContext = func(ctx huma.Context, status int, msg string, errs ...error) huma.StatusError {
+		p := newError(status, msg, errs...).(*Problem)
+		if p.Instance == "" && ctx != nil {
+			p.Instance = instance(ctx.Context())
+		}
+		return p
+	}
+}
+
+const description = `Fyniq's public API. The web app uses only this API (FR-INT-01).
+
+Conventions (PRD-001 §8.18.1):
+- Errors are RFC 9457 problem details (application/problem+json) with a stable code, the field path,
+  what is wrong and how to fix it; validation errors list every invalid field at once (FR-INT-07).
+- Every POST that creates or changes state accepts an Idempotency-Key header, kept 24 hours per
+  client: a repeat returns the original response; the same key with a different request returns 422
+  (FR-INT-08).
+- Versioned records return an ETag; commands that change one require If-Match and return 412 when
+  the record changed since, 428 without it (FR-INT-09).
+- Lists are cursor-paginated (page_size up to 500, an opaque next_cursor). Money is a decimal string
+  with its currency, never a JSON number; dates are ISO 8601; IDs are UUIDv7 strings (FR-INT-10).
+- Every operation states the right it needs (x-fyniq-permission, from PRD-001 Appendix D) and the
+  error codes it returns (x-fyniq-error-codes).`
+
+// Config is the API's huma configuration. It leaves out huma's $schema links, documentation page and
+// schema routes, so the document is the contract and the responses carry only their fields.
+func Config(version string) huma.Config {
+	cfg := huma.DefaultConfig("Fyniq API", version)
+	cfg.CreateHooks = nil
+	cfg.DocsPath = ""
+	cfg.SchemasPath = ""
+	cfg.OpenAPIPath = "/v1/openapi"
+	cfg.Info.Description = description
+	cfg.Info.License = &huma.License{Name: "MIT", Identifier: "MIT"}
+	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
+		"bearer": {Type: "http", Scheme: "bearer", Description: "An access token from Fyniq's OAuth server (ADR-T3). " +
+			"Until it arrives, the local build accepts the local issuer's dev tokens and a release build accepts none."},
+	}
+	cfg.Security = []map[string][]string{{"bearer": {}}}
+	cfg.OnAddOperation = append(cfg.OnAddOperation, describeErrors)
+	return cfg
+}
+
+// New registers the API on mux (an http.ServeMux, or the service's httpserver.Server).
+func New(mux humago.Mux, d Deps) *API {
+	if d.Log == nil {
+		d.Log = slog.New(slog.DiscardHandler)
+	}
+	if d.Store == nil {
+		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
+	}
+	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}}
+	cfg := Config(d.Version)
+	cfg.Transformers = append(cfg.Transformers, a.mask)
+	a.API = humago.New(mux, cfg)
+	a.UseMiddleware(a.requestContext, a.authenticate, a.authorise)
+	registerOrganisation(a)
+	registerAccounts(a)
+	registerJournals(a)
+	return a
+}
+
+// Policies returns the policy of every registered operation.
+func (a *API) Policies() map[string]authz.Policy { return a.policies }
+
+// The codes every operation can return.
+var commonCodes = []string{CodeUnauthenticated, CodeForbidden, CodeNoOrganisation, CodeNoPolicy, CodeInvalid, CodeFailure}
+
+// register adds an operation with its policy: there is no other way to add one, so no operation
+// exists without a policy (SEC-02), its permission and its error codes in the document
+// (NFR-API-01).
+func register[I, O any](a *API, p authz.Policy, op huma.Operation, codes []string, h func(ctx context.Context, in *I) (*O, error)) {
+	if op.OperationID == "" || op.OperationID != p.Operation {
+		panic(fmt.Sprintf("api: operation %q registered with the policy of %q", op.OperationID, p.Operation))
+	}
+	if _, dup := a.policies[p.Operation]; dup {
+		panic("api: operation registered twice: " + p.Operation)
+	}
+	a.policies[p.Operation] = p
+	codes = append(slices.Clone(codes), commonCodes...)
+	slices.Sort(codes)
+	codes = slices.Compact(codes)
+	statuses := map[int]bool{}
+	for _, c := range codes {
+		f, ok := codeFacts[c]
+		if !ok {
+			panic("api: " + op.OperationID + " lists the unknown code " + c)
+		}
+		statuses[f.Status] = true
+	}
+	op.Errors = nil
+	for s := range statuses {
+		op.Errors = append(op.Errors, s)
+	}
+	slices.Sort(op.Errors)
+	permission := map[string]any{"capability": string(p.Capability), "right": string(p.Need)}
+	if p.Note != "" {
+		permission["note"] = p.Note
+	}
+	if len(p.MaskedFields) > 0 {
+		permission["masked_fields"] = p.MaskedFields
+	}
+	if op.Extensions == nil {
+		op.Extensions = map[string]any{}
+	}
+	op.Extensions["x-fyniq-permission"] = permission
+	op.Extensions["x-fyniq-error-codes"] = codes
+	huma.Register(a.API, op, func(ctx context.Context, in *I) (*O, error) {
+		out, err := h(ctx, in)
+		if err != nil {
+			pr := problemFrom(ctx, err)
+			if pr.Instance == "" {
+				pr.Instance = instance(ctx)
+			}
+			return nil, pr
+		}
+		return out, nil
+	})
+}
+
+// describeErrors names, on each error response of the document, the codes it carries.
+func describeErrors(_ *huma.OpenAPI, op *huma.Operation) {
+	codes, _ := op.Extensions["x-fyniq-error-codes"].([]string)
+	for status, resp := range op.Responses {
+		n, err := strconv.Atoi(status)
+		if err != nil || n < 400 {
+			continue
+		}
+		var mine []string
+		for _, c := range codes {
+			if codeFacts[c].Status == n {
+				mine = append(mine, fmt.Sprintf("`%s` %s", c, codeFacts[c].Title))
+			}
+		}
+		if len(mine) > 0 {
+			resp.Description = http.StatusText(n) + ": " + strings.Join(mine, "; ") + "."
+		}
+	}
+}
+
+// ------------------------------------------------------------------ request context
+
+type requestIDKey struct{}
+type decisionKey struct{}
+
+func instance(ctx context.Context) string {
+	if id, _ := ctx.Value(requestIDKey{}).(string); id != "" {
+		return "urn:fyniq:request:" + id
+	}
+	return ""
+}
+
+// requestContext names the request with a new UUIDv7, returned in X-Request-Id, and records where it
+// came from for the audit trail. A caller's own X-Request-Id is never used: the audit trail must not
+// carry an ID someone else chose.
+func (a *API) requestContext(ctx huma.Context, next func(huma.Context)) {
+	id := uuid.Must(uuid.NewV7()).String()
+	ctx.SetHeader("X-Request-Id", id)
+	ctx.SetHeader("Cache-Control", "no-store")
+	host, _, err := net.SplitHostPort(ctx.RemoteAddr())
+	if err != nil {
+		host = ctx.RemoteAddr()
+	}
+	c := context.WithValue(ctx.Context(), requestIDKey{}, id)
+	c = context.WithValue(c, loggerKey{}, a.deps.Log)
+	c = storage.WithAudit(c, storage.AuditContext{Request: storage.Request{ID: id, IP: host, UserAgent: ctx.Header("User-Agent")}})
+	next(huma.WithContext(ctx, c))
+}
+
+// authenticate refuses a request without valid credentials (401).
+func (a *API) authenticate(ctx huma.Context, next func(huma.Context)) {
+	p, err := a.deps.Auth.Authenticate(ctx.Context(), ctx.Header("Authorization"))
+	if err != nil {
+		ctx.SetHeader("WWW-Authenticate", `Bearer realm="fyniq"`)
+		_ = huma.WriteErr(a.API, ctx, http.StatusUnauthorized, "", problem(CodeUnauthenticated,
+			"The request has no valid access token.", "Sign in again and send the request with a bearer token."))
+		return
+	}
+	c := authn.WithPrincipal(ctx.Context(), p)
+	audit := storage.AuditFrom(c)
+	actor := &storage.Actor{Type: "user", ID: p.Subject}
+	switch p.Class {
+	case authn.ClassIntegration:
+		actor.Type = "integration"
+	case authn.ClassAgent:
+		audit.OnBehalfOf = actor
+		actor = &storage.Actor{Type: "ai", ID: p.Client}
+	}
+	audit.Actor = actor
+	audit.Request.Session = p.Client
+	next(huma.WithContext(ctx, storage.WithAudit(c, audit)))
+}
+
+// authorise refuses an operation without a policy, a caller outside an organisation, and a caller
+// whose roles hold no right for it (403). A refusal goes to the security log, not the audit trail.
+func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
+	p, _ := authn.From(ctx.Context())
+	op := ctx.Operation()
+	policy, ok := a.policies[op.OperationID]
+	var refusal *Problem
+	switch {
+	case !ok:
+		refusal = problem(CodeNoPolicy, "This operation has no authorisation policy, so nobody may call it.",
+			"Report it: every operation needs a policy (SEC-02).")
+	case p.Organisation == uuid.Nil:
+		refusal = problem(CodeNoOrganisation, "Your session is not in an organisation.", "Choose an organisation and sign in to it.")
+	}
+	var d authz.Decision
+	if refusal == nil {
+		if d = authz.Decide(policy, p.Roles, p.AI()); !d.Allowed {
+			refusal = problem(CodeForbidden, fmt.Sprintf("Your roles hold no %q right on %q.", string(policy.Need), policy.Capability),
+				"Ask an Owner or Administrator for a role with that right (PRD-001 Appendix D).")
+		}
+	}
+	if refusal != nil {
+		a.deps.Log.Warn("api.refused", "operation", op.OperationID, "code", refusal.Code, "subject", p.Subject,
+			"client", p.Client, "organisation", p.Organisation.String(), "reason", d.Reason, "request_id", requestID(ctx.Context()))
+		_ = huma.WriteErr(a.API, ctx, refusal.Status, "", refusal)
+		return
+	}
+	c := context.WithValue(ctx.Context(), decisionKey{}, d)
+	next(huma.WithContext(ctx, context.WithValue(c, operationKey{}, op.OperationID)))
+}
+
+func requestID(ctx context.Context) string {
+	id, _ := ctx.Value(requestIDKey{}).(string)
+	return id
+}
+
+func logFailure(ctx context.Context, err error) {
+	if l, ok := ctx.Value(loggerKey{}).(*slog.Logger); ok {
+		l.Error("api.failure", "error", err.Error(), "request_id", requestID(ctx))
+	}
+}
+
+type loggerKey struct{}
+
+// mask replaces the fields a masked view hides (Appendix D's M) in a successful response.
+func (a *API) mask(ctx huma.Context, status string, v any) (any, error) {
+	d, _ := ctx.Context().Value(decisionKey{}).(authz.Decision)
+	if len(d.Masked) == 0 || !strings.HasPrefix(status, "2") || v == nil {
+		return v, nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var tree any
+	dec := json.NewDecoder(strings.NewReader(string(b)))
+	dec.UseNumber()
+	if err := dec.Decode(&tree); err != nil {
+		return nil, err
+	}
+	return maskTree(tree, d.Masked), nil
+}
+
+// MaskedValue is what a masked field shows.
+const MaskedValue = "••••"
+
+func maskTree(v any, fields []string) any {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, x := range t {
+			if slices.Contains(fields, k) && x != nil {
+				t[k] = MaskedValue
+			} else {
+				t[k] = maskTree(x, fields)
+			}
+		}
+	case []any:
+		for i := range t {
+			t[i] = maskTree(t[i], fields)
+		}
+	}
+	return v
+}

@@ -16,8 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/runtime"
@@ -168,5 +171,38 @@ func TestLocalAdaptersRegisterAsLocal(t *testing.T) {
 	}
 	if n < 3 {
 		t.Fatalf("want the three local adapters registered, got %d", n)
+	}
+}
+
+// req: DEV-07
+func TestDevTokensCarryThePrincipalAndRefuseForgeries(t *testing.T) {
+	c := clock.NewFrozen(time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC))
+	issuer := NewDevTokens([]byte("local-only-test-key"), c)
+	org := uuid.New()
+	tok, err := issuer.Issue(authn.Principal{Subject: "user-1", Client: "web", Organisation: org, Roles: []authz.Role{authz.Accountant}}, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	p, err := issuer.Authenticate(ctx, "Bearer "+tok)
+	if err != nil || p.Subject != "user-1" || p.Organisation != org || len(p.Roles) != 1 || p.Roles[0] != authz.Accountant || p.Class != authn.ClassUser {
+		t.Fatalf("Authenticate = %+v, %v", p, err)
+	}
+	other, _ := NewDevTokens([]byte("another-key"), c).Issue(authn.Principal{Subject: "user-1", Client: "web", Roles: []authz.Role{authz.Owner}}, time.Hour)
+	body, sig, _ := strings.Cut(strings.TrimPrefix(tok, "fyniq-dev."), ".")
+	for name, header := range map[string]string{
+		"no credentials":             "",
+		"another scheme":             "Basic " + tok,
+		"another key's token":        "Bearer " + other,
+		"roles changed in the token": "Bearer fyniq-dev." + body[:len(body)-2] + "xx." + sig,
+		"a task token instead":       "Bearer worker.9999999999.abc",
+	} {
+		if _, err := issuer.Authenticate(ctx, header); !errors.Is(err, authn.ErrUnauthenticated) {
+			t.Errorf("%s: accepted (%v)", name, err)
+		}
+	}
+	c.Advance(2 * time.Hour)
+	if _, err := issuer.Authenticate(ctx, "Bearer "+tok); !errors.Is(err, authn.ErrUnauthenticated) {
+		t.Errorf("an expired token was accepted: %v", err)
 	}
 }

@@ -214,6 +214,40 @@ func loadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, e
 	return s, nil
 }
 
+// Saved is a journal version as it was saved, for reading it back: the date (empty when none was
+// entered), the memo and the lines, with amounts and rates as entered.
+type Saved struct {
+	Date  string
+	Memo  string
+	Lines []SavedLine
+}
+
+// SavedLine is one line of a saved journal.
+type SavedLine struct {
+	AccountID    uuid.UUID
+	Amount       money.Money
+	FXRate       string
+	FXRateSource string
+	Description  string
+}
+
+// ReadSaved reads a journal version as it was saved.
+func ReadSaved(doc storage.Document) (Saved, error) {
+	if err := isJournal(doc); err != nil {
+		return Saved{}, err
+	}
+	var p payload
+	if err := json.Unmarshal(doc.Payload, &p); err != nil {
+		return Saved{}, &Error{CodeBadDraft, fmt.Sprintf("the saved journal cannot be read: %v", err), "Save the draft again"}
+	}
+	out := Saved{Date: p.Date, Memo: p.Memo, Lines: make([]SavedLine, 0, len(p.Lines))}
+	for _, l := range p.Lines {
+		out.Lines = append(out.Lines, SavedLine{AccountID: l.AccountID, Amount: l.Amount, FXRate: l.FXRate,
+			FXRateSource: l.FXRateSource, Description: l.Description})
+	}
+	return out, nil
+}
+
 // decode reads a stored journal version.
 func decode(doc storage.Document, base money.Currency) (ledger.Journal, error) {
 	var p payload

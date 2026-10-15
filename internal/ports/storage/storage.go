@@ -26,6 +26,11 @@ type Store interface {
 	// Do runs fn as one unit of work for organisation org: one READ COMMITTED transaction whose
 	// first statement sets the tenant (SEC-02). An error from fn, or a failure at commit, rolls
 	// everything back. The UnitOfWork must not be used after fn returns.
+	//
+	// Do called with the ctx that another Do gave its fn joins that unit of work: fn runs in the same
+	// transaction and commits with it. It is an error when the organisations differ. The API joins a
+	// domain command to the unit of work that claims the request's Idempotency-Key (FR-INT-08), so
+	// the key, the change and the saved response commit together or not at all.
 	Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Context, uow UnitOfWork) error) error
 	// Organisations lists every organisation, for jobs that run for each (the worker's role only).
 	Organisations(ctx context.Context) ([]uuid.UUID, error)
@@ -40,6 +45,7 @@ type UnitOfWork interface {
 	Ledger() Ledger
 	Balances() Balances
 	Audit() Audit
+	Idempotency() Idempotency
 	Outbox() Outbox
 	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
@@ -55,6 +61,9 @@ type Accounts interface {
 	SetActive(ctx context.Context, id uuid.UUID, active bool) (Account, error)
 	// List returns every account, by code.
 	List(ctx context.Context) ([]Account, error)
+	// Page returns at most limit accounts with a code after after (all when after is ""), by code:
+	// one page of a cursor list (FR-INT-10).
+	Page(ctx context.Context, after string, limit int) ([]Account, error)
 }
 
 // Documents are the source documents and their immutable versions (§11.4).

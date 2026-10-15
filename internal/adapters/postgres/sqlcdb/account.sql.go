@@ -164,6 +164,56 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 	return items, nil
 }
 
+const pageAccounts = `-- name: PageAccounts :many
+SELECT id, code, name, type, parent_id, is_group, is_active, version FROM fyniq.account
+WHERE code > $1::text ORDER BY code LIMIT $2
+`
+
+type PageAccountsParams struct {
+	After    string
+	PageSize int32
+}
+
+type PageAccountsRow struct {
+	ID       uuid.UUID
+	Code     string
+	Name     string
+	Type     string
+	ParentID *uuid.UUID
+	IsGroup  bool
+	IsActive bool
+	Version  int32
+}
+
+func (q *Queries) PageAccounts(ctx context.Context, arg PageAccountsParams) ([]PageAccountsRow, error) {
+	rows, err := q.db.Query(ctx, pageAccounts, arg.After, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PageAccountsRow
+	for rows.Next() {
+		var i PageAccountsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Type,
+			&i.ParentID,
+			&i.IsGroup,
+			&i.IsActive,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setAccountActive = `-- name: SetAccountActive :one
 UPDATE fyniq.account SET is_active = $1, version = version + 1
 WHERE id = $2
