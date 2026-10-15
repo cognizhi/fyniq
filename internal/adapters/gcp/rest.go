@@ -62,6 +62,9 @@ var errNotFound = errors.New("not found")
 // errPrecondition is a 412: a precondition such as ifGenerationMatch failed.
 var errPrecondition = errors.New("precondition failed")
 
+// errConflict is a 409: the resource exists already, such as a task with the same name.
+var errConflict = errors.New("already exists")
+
 // rest sends one request to a Google API, with the access token when there is a token source (the
 // local emulators need none), and decodes a JSON answer into out. Errors name the method and the
 // status, never a token or a body.
@@ -101,6 +104,8 @@ func (r *rest) do(ctx context.Context, method, url, contentType string, body io.
 		return errNotFound
 	case resp.StatusCode == http.StatusPreconditionFailed:
 		return errPrecondition
+	case resp.StatusCode == http.StatusConflict:
+		return errConflict
 	case resp.StatusCode < 200 || resp.StatusCode > 299:
 		return fmt.Errorf("%s: %s", method, resp.Status)
 	}
