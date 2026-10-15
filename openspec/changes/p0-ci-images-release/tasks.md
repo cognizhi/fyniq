@@ -3,7 +3,7 @@
 ## 1. CI and supply chain
 
 - [ ] 1.1 Extend `ci.yml` to run `make check` and `make test` on pull requests and `make ci` on `main`, with actions pinned by SHA and least-privilege tokens; test `// req: SEC-28` is a workflow lint that fails on an unpinned action or a write token
-- [ ] 1.2 Add SAST, dependency, container, secret, IaC and licence scanning with critical findings blocking the merge and waivers only in a reviewed file with an expiry; verify `// req: SEC-21` with a planted secret and a planted vulnerable dependency on a throwaway branch
+- [x] 1.2 Add SAST, dependency, container, secret, IaC and licence scanning with critical findings blocking the merge and waivers only in a reviewed file with an expiry; verify `// req: SEC-21` with a planted secret and a planted vulnerable dependency on a throwaway branch (draft #26, 15 Oct 2026: both failed the scan; container images are scanned with the image tasks)
 
 ## 2. Images
 

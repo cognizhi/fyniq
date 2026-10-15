@@ -155,7 +155,9 @@ def semgrep() -> list[Finding]:
 def gitleaks() -> list[Finding]:
     REPORTS.mkdir(parents=True, exist_ok=True)
     report = REPORTS / "gitleaks.json"
-    run(["gitleaks", "git", "--no-banner", "--redact", "--exit-code", "0", "--report-format", "json",
+    # The history of the commit under test only: CI fetches every branch, and other branches are
+    # scanned in their own pull requests.
+    run(["gitleaks", "git", "--no-banner", "--redact", "--exit-code", "0", "--log-opts=HEAD", "--report-format", "json",
          "--report-path", str(report), "."])
     return [Finding("gitleaks", x["RuleID"], x["File"], f"commit {x['Commit'][:12]} line {x['StartLine']}", True)
             for x in json.loads(report.read_text() or "[]")]
