@@ -1,7 +1,8 @@
 # Automated update pull requests for what is pinned by digest or SHA (NFR-IMG-03, SEC-28): the base
 # images of deploy/docker/, the images of the local stack and the GitHub Actions. A release must be
 # at least two weeks old before it is proposed. Go, npm and Python dependencies follow with SEC-26 (P1).
-# Dependabot's pull requests are not the owner's, so a person approves them.
+# Dependabot's pull requests are not the owner's, so a person approves them. Major versions of images
+# (a new Node or PostgreSQL major) are not proposed: they change with the toolchain in mise.toml, by hand.
 version: 2
 updates:
   - package-ecosystem: docker
@@ -9,6 +10,9 @@ updates:
     schedule: { interval: weekly }
     cooldown: { default-days: 14 }
     commit-message: { prefix: "deps(deploy)" }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       base-images: { patterns: ["*"] }
   - package-ecosystem: docker-compose
@@ -16,6 +20,9 @@ updates:
     schedule: { interval: weekly }
     cooldown: { default-days: 14 }
     commit-message: { prefix: "deps(deploy)" }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       local-stack: { patterns: ["*"] }
   - package-ecosystem: github-actions
