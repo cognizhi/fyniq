@@ -122,6 +122,21 @@ and no token exchange (checked 14 Oct 2026). §9.7 and open question 40 describe
   (provider, issuer, subject, second factor), never with a token, code or cookie. Not built: the
   sign-in page and `/install` designs (slice 4c), the Identity Platform adapter with Google and Zoho
   (slice 4b), a job that deletes ended and expired sessions, and choosing an organisation.
+- **Screens, as built (slice 4c).** The web app has `/sign-in` and `/install`, built from the access-ai
+  canvas's `SignIn` and `FirstRunSetup` designs; `/` stays the P0 shell and sends a new installation
+  to `/install`, a browser without a session to `/sign-in` (keeping `signin_error` and `return_to`),
+  and a session without an account to the sign-in page's invitation variant. Setup asks for the
+  sign-in first, then the code, so the code never survives a page load; the API's one `POST /v1/setup`
+  returns the ten recovery codes, which the wizard shows once and keeps in memory only, before the
+  optional second Super admin (a one-time invitation code given by a trusted channel, with step-up;
+  `?step=second-admin` brings a Super admin back after a step-up). The invitation variant of
+  `/sign-in` redeems that code. The fields the design shows for P1 (UEN, financial year, GST, the MFA
+  step, passkeys, a fixed email, lockouts) are left out rather than shown dead. **Interim styling:**
+  the two screens use the screen kit's component layer (`docs/design/screens/kit/ui.css`, with
+  `tokens.css` and Lucide icons through `lucide-react` 1.49.0), so they match the canvases until P1's
+  component system (shadcn/ui on Base UI, MASTER.md §7) replaces it. Not built: republishing the
+  access-ai canvas with the as-built states (the inventory rows are updated), the first-run tour step
+  (QA-UI-06) and the help registry the guide pages' keys belong to (FR-UX-31, P1).
 - **Audit events emitted.** `setup.completed`, `super_admin.added`, (as built, slice 3b) `super_admin.invitation_created`,
   `super_admin.recovery_codes_replaced`, `super_admin.recovery_confirmed`, `super_admin.deployment_recovery_issued` and
   `super_admin.recovered` (planned as `super_admin.recovery_used`),

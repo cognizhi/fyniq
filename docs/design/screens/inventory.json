@@ -4302,14 +4302,16 @@
     "MFA step: passkey (preferred) or TOTP code; no SMS; paste and password managers allowed",
     "Error summary that takes focus and links to fields; account linking only after step-up",
     "Invitation acceptance variant (join by invite; domain join off by default)",
-    "'Lost your authenticator?' link to account recovery"
+    "'Lost your authenticator?' link to account recovery",
+    "Super admin invitation (as built, P0): a person signed in without an account enters the invitation code and their name, then keeps ten recovery codes"
    ],
    "states": [
     "provider disabled",
     "wrong code",
     "account locked",
     "session expired (signed out)",
-    "invitation"
+    "invitation",
+    "no account yet (invitation)"
    ]
   },
   {
@@ -4423,15 +4425,18 @@
    ],
    "purpose": "Claim a new installation safely: the first person to finish becomes the Super admin and Owner of the first organisation.",
    "content": [
-    "One-time setup code (printed by make setup locally; Secret Manager in the cloud); optional fixed email",
-    "Create the Super admin account with MFA",
-    "Create the first organisation (Cognizhi Pte Ltd)",
-    "Recommend a second Super admin; explain break-glass",
+    "Sign in first: the sign-in used becomes the Super admin's (as built, P0: before the code, so the code never survives a page load)",
+    "One-time setup code (printed by make setup-code locally; Secret Manager in the cloud); optional fixed email (P1)",
+    "Create the Super admin account with MFA (MFA in P1)",
+    "Create the first organisation: name and base currency in P0; UEN, financial year and GST with the organisation settings (P1)",
+    "Ten recovery codes, shown once, kept offline before continuing (as built, P0)",
+    "Recommend a second Super admin: a one-time invitation code given by a trusted channel (no email in P0), with step-up; explain recovery",
     "Closes for good when done"
    ],
    "states": [
     "invalid setup code",
-    "complete (wizard closed)"
+    "complete (wizard closed)",
+    "step-up needed for the invitation"
    ]
   },
   {
