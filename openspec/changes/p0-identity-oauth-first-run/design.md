@@ -52,6 +52,16 @@ and no token exchange (checked 14 Oct 2026). §9.7 and open question 40 describe
   Apache-2.0 build has no absolute lifetime for a chain, so consent stamps `granted_at` and the API refuses
   a grant older than 90 days. A change to a user's grant revokes their tokens through the outbox
   (`oauth.subject.revoke`, run by the worker), never in the request.
+- **First-run setup, as built (slice 3a).** Users, sign-in identities ((issuer, subject) pairs), the
+  installation row and Super admins are global tables reached only through definer functions; memberships
+  and role assignments are tenant tables. `POST /v1/setup` is one transaction: it consumes the code
+  (`claim_setup`, row-locked, so of two concurrent setups one is refused), creates the Super admin and
+  their identity, the installation organisation (its own audit trail: setup and Super-admin events,
+  founder decision 15 Oct 2026) and the first organisation with the new user as Owner; the new user is
+  the actor of every event. It accepts only a person's first-party session (never an OAuth token or the
+  AI); the issuer comes from the authenticator, never the token. The code is 130 random bits, stored as
+  its SHA-256, created by `migrate setup-code` and refused after setup. A role change (`internal/members`)
+  revokes the member's tokens in the same unit of work. The `/install` screen follows the SignIn port.
 - **Audit events emitted.** `setup.completed`, `super_admin.added`, `super_admin.recovery_used`,
   `oauth.client.created`, `oauth.tokens.revoke_requested` (AUD-01). (As built: Hydra does not report the
   family revocations it makes on refresh reuse, so `oauth.token.revoked_family` cannot be emitted; the

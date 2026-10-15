@@ -51,11 +51,20 @@ uses the password `fyniq-local-only`, valid nowhere else (SEC-12).
   organisations the jobs run for; the API's tick reads it too), `job_slot` (view `job_slots`) and
 `heartbeat` (view `heartbeats`), which the tick and the jobs change only through the functions
 `claim_job_slot`, `skip_job_slots`, `started_job_slot`, `finish_job_slot`, `latest_job_slot` and
-`beat` (§12.11). Add one only with its access model here and in the test's list.
+`beat` (§12.11). The installation's people and first-run setup (000010): `app_user`,
+`user_identity` (sign-in identities as (issuer, subject) pairs, FR-ADM-08), `installation` (the
+setup code's SHA-256 until setup is done) and `super_admin`, reached only through `claim_setup`,
+`setup_done` and `user_for_identity` (the API) and `set_setup_code` (the migrator, at deployment).
+Add one only with its access model here and in the test's list.
+- **The installation organisation** (`organisation.kind = 'installation'`, one per installation,
+  created by first-run setup) holds only the installation's audit trail: setup and Super-admin events.
+  Nobody is a member of it; `require_installation_audit` checks that a Super-admin change has its
+  event there. Every unit of work may write to more than one organisation (setup does), so
+  `require_audit` looks for the event in the row's own organisation.
 - **Audit** (§11.5, AUD-01, AUD-08): a migration that adds a table holding business records adds a
   `require_audit` constraint trigger to it, and the adapter records an event for every write to it.
-  Audited today: organisations, accounts, periods, documents (with their versions) and journal
-  entries (with their lines). Not audited, as derived data or caches: balances, the ledger revision,
+  Audited today: organisations, accounts, periods, documents (with their versions), journal
+  entries (with their lines), memberships, role assignments and Super admins. Not audited, as derived data or caches: balances, the ledger revision,
   the audit chain head and idempotency keys.
 - **Money** (§11.3): amounts `NUMERIC(20,4)` with the currency's minor units on the row and
   `CHECK (amount <> 'NaN' AND amount = trunc(amount, minor_units))`; FX rates `NUMERIC(20,10)`,
@@ -113,5 +122,7 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |
 | FY071 | STORAGE-OUTBOX-01 | An outbox row cannot move to that state (§12.11's contract) |
+| FY080 | STORAGE-SETUP-01 | The setup code is not valid, or setup is done (no new code after it) |
+| FY081, FY082 | STORAGE-MEMBER-01 | An organisation's kind cannot change, the installation organisation exists already, nobody is a member of it, or a role assignment changes instead of being revoked |
 | 40001, 40P01 | STORAGE-RETRY-01 | Serialisation failure or deadlock: retry with the same Idempotency-Key (ENG-47) |
 | 55P03 | STORAGE-LOCK-01 | A lock wait exceeded the unit of work's lock timeout (5 s by default, ENG-47) |

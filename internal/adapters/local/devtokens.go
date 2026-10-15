@@ -22,6 +22,11 @@ import (
 // DevTokenKey signs the local issuer's dev tokens. Local only, valid nowhere else (SEC-12).
 const DevTokenKey = "fyniq-local-only-dev-token-key"
 
+// DevIssuer is the issuer of every dev identity. The authenticator stamps it; a token's claims cannot
+// name another (FR-ADM-08: identities are (issuer, subject) pairs). A release build accepts no dev
+// token, so no user with this issuer can exist in a release database.
+const DevIssuer = "urn:fyniq:local-dev"
+
 // DevTokens are the local issuer of API bearer tokens until the OAuth server arrives
 // (p0-identity-oauth-first-run): a principal, with its organisation and roles, and an expiry,
 // signed with HMAC-SHA-256 under a local key. They exist only in the local build (DEV-07), so a
@@ -91,5 +96,6 @@ func (d *DevTokens) Authenticate(_ context.Context, authorization string) (authn
 	if err := json.Unmarshal(b, &c); err != nil || d.clock.Now().Unix() > c.Expires {
 		return authn.Principal{}, authn.ErrUnauthenticated
 	}
-	return authn.Principal{Subject: c.Subject, Client: c.Client, Class: c.Class, Organisation: c.Organisation, Roles: c.Roles}, nil
+	return authn.Principal{Via: authn.ViaSession, Issuer: DevIssuer, Subject: c.Subject, Client: c.Client, Class: c.Class,
+		Organisation: c.Organisation, Roles: c.Roles}, nil
 }

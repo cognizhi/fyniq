@@ -31,6 +31,9 @@ const (
 	// which every screen shows, is readable by every member of it. AI acts for a member; the Super
 	// admin and the HR officer (Nemura only) are not members through those roles.
 	Membership Capability = "(membership)"
+	// Setup is first-run setup (FR-ADM-06): not an Appendix D row either. Its status is public; completing
+	// it needs the one-time setup code and a person signed in, never the AI.
+	Setup Capability = "(installation setup)"
 )
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
@@ -63,6 +66,9 @@ type Policy struct {
 	MaskedFields []string
 	// Note is what the policy does not enforce yet and where it will, stated in the contract.
 	Note string
+	// Public operations need no credential at all; NoOrganisation ones need a principal but no
+	// organisation. Only the setup operations are either (a test keeps it so).
+	Public, NoOrganisation bool
 }
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
@@ -81,8 +87,15 @@ var (
 		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
 )
 
+var (
+	GetSetupStatus = Policy{Operation: "getSetupStatus", Capability: Setup, Need: View, Public: true}
+	CompleteSetup  = Policy{Operation: "completeSetup", Capability: Setup, Need: Create, NoOrganisation: true,
+		Note: "Needs the one-time setup code and a first-party sign-in; an OAuth client or the AI is refused."}
+)
+
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(GetOrganisation, ListAccounts, GetAccount, CreateJournal, GetJournal, PostJournal, ReverseJournal)
+var Policies = index(GetOrganisation, ListAccounts, GetAccount, CreateJournal, GetJournal, PostJournal, ReverseJournal,
+	GetSetupStatus, CompleteSetup)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
@@ -109,6 +122,12 @@ type Decision struct {
 func Decide(p Policy, roles []Role, ai bool) Decision {
 	if p.Operation == "" {
 		return Decision{Reason: "the operation has no policy"}
+	}
+	if p.Capability == Setup { // the setup code and a person's sign-in decide; the AI never sets up
+		if ai {
+			return Decision{Reason: "the AI cannot set up the installation"}
+		}
+		return Decision{Allowed: true, Right: p.Need}
 	}
 	best, ok := holds(p, roles)
 	if ok && ai {

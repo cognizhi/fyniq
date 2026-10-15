@@ -10,8 +10,9 @@ evidence: "Test reports; audit events"
 owner: Administrator
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p0-identity-oauth-first-run"
+    status: running
+    how: "test TestFirstRunSetup"
+    evidence: "setup-wizard tests (no code, wrong code, two at once, reused code, a new code after setup, OAuth clients and the AI refused); CI artefact test-report (90 days)"
   - frequency: N
     status: planned
-    arrives: "p0-identity-oauth-first-run"
+    arrives: "p0-identity-oauth-first-run (the nightly count of Super admins, with the second Super admin)"

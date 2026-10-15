@@ -22,8 +22,18 @@ const (
 	ClassAgent       = "agent"
 )
 
+// How a principal was authenticated: a first-party session (the web app's sign-in; locally, dev
+// tokens) or an OAuth access token a client holds. Some operations, such as first-run setup, accept
+// only a session.
+const (
+	ViaSession = "session"
+	ViaToken   = "token"
+)
+
 // Principal is an authenticated caller.
 type Principal struct {
+	Via          string       // ViaSession or ViaToken, set by the authenticator
+	Issuer       string       // who vouched for Subject: set by the authenticator, never read from a token
 	Subject      string       // the user (or service account)
 	Client       string       // the OAuth client the call came through
 	Class        string       // user, integration or agent

@@ -11,6 +11,10 @@ account | is_group | boolean | not null | false
 account | is_active | boolean | not null | true
 account | version | integer | not null | 1
 account | created_at | timestamp with time zone | not null | now()
+app_user | user_id | uuid | not null | uuidv7()
+app_user | display_name | text | not null | 
+app_user | status | text | not null | 'active'::text
+app_user | created_at | timestamp with time zone | not null | now()
 audit_chain | organisation_id | uuid | not null | current_org()
 audit_chain | seq | bigint | not null | 0
 audit_chain | head_hash | bytea | not null | '\x0000000000000000000000000000000000000000000000000000000000000000'::bytea
@@ -66,6 +70,10 @@ idempotency_key | response_status | smallint | null |
 idempotency_key | response_body | bytea | null | 
 idempotency_key | created_at | timestamp with time zone | not null | now()
 idempotency_key | expires_at | timestamp with time zone | not null | 
+installation | singleton | boolean | not null | true
+installation | setup_code_hash | bytea | null | 
+installation | setup_completed_at | timestamp with time zone | null | 
+installation | installation_org | uuid | null | 
 job_slot | job | text | not null | 
 job_slot | slot | timestamp with time zone | not null | 
 job_slot | state | text | not null | 
@@ -122,6 +130,7 @@ organisation | base_currency | text | not null |
 organisation | base_minor_units | smallint | not null | 
 organisation | version | integer | not null | 1
 organisation | created_at | timestamp with time zone | not null | now()
+organisation | kind | text | not null | 'company'::text
 outbox | organisation_id | uuid | not null | current_org()
 outbox | id | uuid | not null | uuidv7()
 outbox | worker_class | text | not null | 
@@ -148,10 +157,31 @@ period | status | text | not null | 'open'::text
 period | closed_revision | bigint | null | 
 period | version | integer | not null | 1
 period | created_at | timestamp with time zone | not null | now()
+role_assignment | organisation_id | uuid | not null | current_org()
+role_assignment | id | uuid | not null | uuidv7()
+role_assignment | membership_id | uuid | not null | 
+role_assignment | role | text | not null | 
+role_assignment | expires_at | timestamp with time zone | null | 
+role_assignment | created_at | timestamp with time zone | not null | now()
+role_assignment | revoked_at | timestamp with time zone | null | 
+super_admin | user_id | uuid | not null | 
+super_admin | added_at | timestamp with time zone | not null | now()
+super_admin | added_by | uuid | null | 
+super_admin | removed_at | timestamp with time zone | null | 
 tenant_directory | organisation_id | uuid | not null | 
 tenant_directory | created_at | timestamp with time zone | not null | now()
 tenants | organisation_id | uuid | null | 
 tenants | created_at | timestamp with time zone | null | 
+user_identity | issuer | text | not null | 
+user_identity | subject | text | not null | 
+user_identity | user_id | uuid | not null | 
+user_identity | created_at | timestamp with time zone | not null | now()
+user_membership | organisation_id | uuid | not null | current_org()
+user_membership | id | uuid | not null | uuidv7()
+user_membership | user_id | uuid | not null | 
+user_membership | status | text | not null | 'active'::text
+user_membership | created_at | timestamp with time zone | not null | now()
+user_membership | version | integer | not null | 1
 
 ## constraints
 account | account_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$'::text))
@@ -173,6 +203,13 @@ account | account_type_not_null | NOT NULL type
 account | account_version_not_null | NOT NULL version
 account | account_version_positive | CHECK ((version > 0))
 account | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+app_user | app_user_created_at_not_null | NOT NULL created_at
+app_user | app_user_display_name_length | CHECK (((length(display_name) >= 1) AND (length(display_name) <= 200)))
+app_user | app_user_display_name_not_null | NOT NULL display_name
+app_user | app_user_pkey | PRIMARY KEY (user_id)
+app_user | app_user_status_known | CHECK ((status = ANY (ARRAY['active'::text, 'deactivated'::text])))
+app_user | app_user_status_not_null | NOT NULL status
+app_user | app_user_user_id_not_null | NOT NULL user_id
 audit_chain | audit_chain_hash_sha256 | CHECK ((length(head_hash) = 32))
 audit_chain | audit_chain_head_hash_not_null | NOT NULL head_hash
 audit_chain | audit_chain_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -268,6 +305,11 @@ idempotency_key | idempotency_key_organisation_id_not_null | NOT NULL organisati
 idempotency_key | idempotency_key_pkey | PRIMARY KEY (organisation_id, id)
 idempotency_key | idempotency_key_request_hash_not_null | NOT NULL request_hash
 idempotency_key | idempotency_key_status_range | CHECK (((response_status >= 100) AND (response_status <= 599)))
+installation | installation_code_or_done | CHECK (((setup_code_hash IS NULL) <> (setup_completed_at IS NULL)))
+installation | installation_code_sha256 | CHECK ((length(setup_code_hash) = 32))
+installation | installation_one_row | CHECK (singleton)
+installation | installation_pkey | PRIMARY KEY (singleton)
+installation | installation_singleton_not_null | NOT NULL singleton
 job_slot | job_slot_claimed_at_not_null | NOT NULL claimed_at
 job_slot | job_slot_detail_length | CHECK ((length(detail) <= 2000))
 job_slot | job_slot_job_format | CHECK (((job ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'::text) AND (length(job) <= 100)))
@@ -346,6 +388,8 @@ organisation | organisation_base_currency_fkey | FOREIGN KEY (base_currency, bas
 organisation | organisation_base_currency_not_null | NOT NULL base_currency
 organisation | organisation_base_minor_units_not_null | NOT NULL base_minor_units
 organisation | organisation_created_at_not_null | NOT NULL created_at
+organisation | organisation_kind_known | CHECK ((kind = ANY (ARRAY['company'::text, 'installation'::text])))
+organisation | organisation_kind_not_null | NOT NULL kind
 organisation | organisation_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
 organisation | organisation_name_not_null | NOT NULL name
 organisation | organisation_organisation_id_not_null | NOT NULL organisation_id
@@ -393,10 +437,48 @@ period | period_status_not_null | NOT NULL status
 period | period_version_not_null | NOT NULL version
 period | period_version_positive | CHECK ((version > 0))
 period | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+role_assignment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+role_assignment | role_assignment_created_at_not_null | NOT NULL created_at
+role_assignment | role_assignment_expiry_after_creation | CHECK ((expires_at > created_at))
+role_assignment | role_assignment_id_not_null | NOT NULL id
+role_assignment | role_assignment_membership_fkey | FOREIGN KEY (organisation_id, membership_id) REFERENCES user_membership(organisation_id, id)
+role_assignment | role_assignment_membership_id_not_null | NOT NULL membership_id
+role_assignment | role_assignment_organisation_id_not_null | NOT NULL organisation_id
+role_assignment | role_assignment_pkey | PRIMARY KEY (organisation_id, id)
+role_assignment | role_assignment_revoked_after_creation | CHECK ((revoked_at >= created_at))
+role_assignment | role_assignment_role_known | CHECK ((role = ANY (ARRAY['employee'::text, 'approver'::text, 'bookkeeper'::text, 'ar_specialist'::text, 'ap_specialist'::text, 'payment_releaser'::text, 'payroll_administrator'::text, 'accountant'::text, 'controller'::text, 'owner'::text, 'administrator'::text, 'auditor'::text, 'tax_agent'::text, 'board_viewer'::text, 'company_secretary'::text, 'dpo'::text])))
+role_assignment | role_assignment_role_not_null | NOT NULL role
+super_admin | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+super_admin | super_admin_added_at_not_null | NOT NULL added_at
+super_admin | super_admin_added_by_fkey | FOREIGN KEY (added_by) REFERENCES app_user(user_id)
+super_admin | super_admin_pkey | PRIMARY KEY (user_id)
+super_admin | super_admin_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+super_admin | super_admin_user_id_not_null | NOT NULL user_id
 tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
 tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
 tenant_directory | tenant_directory_pkey | PRIMARY KEY (organisation_id)
+user_identity | user_identity_created_at_not_null | NOT NULL created_at
+user_identity | user_identity_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
+user_identity | user_identity_issuer_not_null | NOT NULL issuer
+user_identity | user_identity_pkey | PRIMARY KEY (issuer, subject)
+user_identity | user_identity_subject_length | CHECK (((length(subject) >= 1) AND (length(subject) <= 500)))
+user_identity | user_identity_subject_not_null | NOT NULL subject
+user_identity | user_identity_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+user_identity | user_identity_user_id_not_null | NOT NULL user_id
+user_membership | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+user_membership | user_membership_created_at_not_null | NOT NULL created_at
+user_membership | user_membership_id_not_null | NOT NULL id
+user_membership | user_membership_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+user_membership | user_membership_organisation_id_not_null | NOT NULL organisation_id
+user_membership | user_membership_pkey | PRIMARY KEY (organisation_id, id)
+user_membership | user_membership_status_known | CHECK ((status = ANY (ARRAY['active'::text, 'removed'::text])))
+user_membership | user_membership_status_not_null | NOT NULL status
+user_membership | user_membership_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+user_membership | user_membership_user_id_not_null | NOT NULL user_id
+user_membership | user_membership_user_key | UNIQUE (organisation_id, user_id)
+user_membership | user_membership_version_not_null | NOT NULL version
+user_membership | user_membership_version_positive | CHECK ((version > 0))
 
 ## indexes
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
@@ -408,8 +490,11 @@ CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
+CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
+CREATE INDEX user_identity_user_idx ON fyniq.user_identity USING btree (user_id)
 CREATE UNIQUE INDEX account_code_key ON fyniq.account USING btree (organisation_id, code)
 CREATE UNIQUE INDEX account_pkey ON fyniq.account USING btree (organisation_id, id)
+CREATE UNIQUE INDEX app_user_pkey ON fyniq.app_user USING btree (user_id)
 CREATE UNIQUE INDEX audit_chain_pkey ON fyniq.audit_chain USING btree (organisation_id)
 CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
@@ -423,6 +508,7 @@ CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree 
 CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
 CREATE UNIQUE INDEX idempotency_key_pkey ON fyniq.idempotency_key USING btree (organisation_id, id)
+CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
 CREATE UNIQUE INDEX job_slot_pkey ON fyniq.job_slot USING btree (job, slot)
 CREATE UNIQUE INDEX journal_entry_pkey ON fyniq.journal_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX journal_entry_posting_identity_key ON fyniq.journal_entry USING btree (organisation_id, posting_identity)
@@ -435,7 +521,13 @@ CREATE UNIQUE INDEX organisation_pkey ON fyniq.organisation USING btree (organis
 CREATE UNIQUE INDEX outbox_business_key ON fyniq.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON fyniq.outbox USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
+CREATE UNIQUE INDEX role_assignment_one_live ON fyniq.role_assignment USING btree (organisation_id, membership_id, role) WHERE (revoked_at IS NULL)
+CREATE UNIQUE INDEX role_assignment_pkey ON fyniq.role_assignment USING btree (organisation_id, id)
+CREATE UNIQUE INDEX super_admin_pkey ON fyniq.super_admin USING btree (user_id)
 CREATE UNIQUE INDEX tenant_directory_pkey ON fyniq.tenant_directory USING btree (organisation_id)
+CREATE UNIQUE INDEX user_identity_pkey ON fyniq.user_identity USING btree (issuer, subject)
+CREATE UNIQUE INDEX user_membership_pkey ON fyniq.user_membership USING btree (organisation_id, id)
+CREATE UNIQUE INDEX user_membership_user_key ON fyniq.user_membership USING btree (organisation_id, user_id)
 
 ## triggers
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
@@ -446,6 +538,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_installation_audit()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
 CREATE TRIGGER audit_chain_guard BEFORE DELETE OR UPDATE ON fyniq.audit_chain FOR EACH ROW EXECUTE FUNCTION audit_chain_guard()
 CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
@@ -464,13 +559,16 @@ CREATE TRIGGER journal_line_check BEFORE INSERT ON fyniq.journal_line FOR EACH R
 CREATE TRIGGER journal_line_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_line FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_line_no_truncate BEFORE TRUNCATE ON fyniq.journal_line FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_revision FOR EACH ROW EXECUTE FUNCTION ledger_revision_guard()
+CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER organisation_created AFTER INSERT ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_created()
 CREATE TRIGGER organisation_guard BEFORE UPDATE ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_guard()
+CREATE TRIGGER organisation_kind_guard BEFORE INSERT OR UPDATE ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_kind_guard()
 CREATE TRIGGER organisation_registered AFTER INSERT ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_registered()
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_guard()
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON fyniq.outbox FOR EACH STATEMENT EXECUTE FUNCTION outbox_no_delete()
 CREATE TRIGGER period_guard BEFORE UPDATE ON fyniq.period FOR EACH ROW EXECUTE FUNCTION period_guard()
+CREATE TRIGGER role_assignment_guard BEFORE UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION membership_guard()
 
 ## policies
 account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -486,6 +584,8 @@ ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (or
 organisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
 ## functions
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 85b01568dbabe687758f205a5d1d738b
@@ -496,6 +596,7 @@ balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, 
 beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
 claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
+claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae8d292019dce37ac1cadb594f5dbe0c
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
@@ -507,17 +608,23 @@ journal_line_check() → trigger | security definer | v | search_path=pg_catalog
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
+membership_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 128d9c99c0ed6f6f65e25de8d48962e4
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
+organisation_kind_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca73dacb480df743be50b20da1632d78
 organisation_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d82a943b556593182602dbe5a532147
 outbox_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 58b04bc5d8e9853cd11acce22f3b6723
 outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1366cfa8290e64e2804d4cb992c01d1f
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
-require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f50a71180c705d84f04bcfca78d59e44
+require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d
+require_installation_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f9c3cec49b84db3497dc1be8e78f5180
 require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
+set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1401833c664206cef80dad827e0bd549
+setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c
 skip_job_slots(p_job text, p_slots timestamp with time zone[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8f2a4dc16b9baa48f2314e6e58698273
 started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7
+user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb
 
 ## extensions
 btree_gist | fyniq_ext

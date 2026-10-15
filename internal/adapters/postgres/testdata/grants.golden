@@ -8,6 +8,7 @@ fyniq_api       INSERT    audit_event (body, id)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   beat()
 fyniq_api       EXECUTE   claim_job_slot()
+fyniq_api       EXECUTE   claim_setup()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
 fyniq_api       INSERT    document (type)
@@ -28,7 +29,7 @@ fyniq_api       SELECT    journal_line
 fyniq_api       EXECUTE   latest_job_slot()
 fyniq_api       SELECT    ledger_revision
 fyniq_api       EXECUTE   lock_ledger()
-fyniq_api       INSERT    organisation (base_currency, base_minor_units, name)
+fyniq_api       INSERT    organisation (base_currency, base_minor_units, kind, name)
 fyniq_api       SELECT    organisation
 fyniq_api       UPDATE    organisation (name, version)
 fyniq_api       INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
@@ -37,10 +38,18 @@ fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_executi
 fyniq_api       INSERT    period (ends_on, starts_on)
 fyniq_api       SELECT    period
 fyniq_api       UPDATE    period (status, version)
+fyniq_api       INSERT    role_assignment (expires_at, membership_id, role)
+fyniq_api       SELECT    role_assignment
+fyniq_api       UPDATE    role_assignment (revoked_at)
 fyniq_api       USAGE     schema fyniq
+fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()
 fyniq_api       EXECUTE   started_job_slot()
 fyniq_api       SELECT    tenants
+fyniq_api       EXECUTE   user_for_identity()
+fyniq_api       INSERT    user_membership (user_id)
+fyniq_api       SELECT    user_membership
+fyniq_api       UPDATE    user_membership (status, version)
 fyniq_executor  SELECT    account
 fyniq_executor  INSERT    audit_event (body, id)
 fyniq_executor  SELECT    balance
@@ -80,7 +89,9 @@ fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    organisation
 fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    period
+fyniq_readonly  SELECT    role_assignment
 fyniq_readonly  USAGE     schema fyniq
+fyniq_readonly  SELECT    user_membership
 fyniq_worker    SELECT    account
 fyniq_worker    SELECT    audit_chain
 fyniq_worker    INSERT    audit_event (body, id)
@@ -109,5 +120,7 @@ fyniq_worker    SELECT    outbox
 fyniq_worker    UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_worker    SELECT    period
 fyniq_worker    EXECUTE   rebuild_balances()
+fyniq_worker    SELECT    role_assignment
 fyniq_worker    USAGE     schema fyniq
 fyniq_worker    SELECT    tenants
+fyniq_worker    SELECT    user_membership

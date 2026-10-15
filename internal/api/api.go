@@ -32,11 +32,12 @@ import (
 
 // Deps are what the API needs.
 type Deps struct {
-	Store   storage.Store
-	Clock   ports.Clock
-	Auth    authn.Authenticator
-	Log     *slog.Logger
-	Version string // the platform version: the document's info.version
+	Store        storage.Store
+	Installation storage.Installation // first-run setup; nil when there is no database
+	Clock        ports.Clock
+	Auth         authn.Authenticator
+	Log          *slog.Logger
+	Version      string // the platform version: the document's info.version
 }
 
 // API is the registered API.
@@ -89,6 +90,7 @@ func Config(version string) huma.Config {
 		Variables: map[string]*huma.ServerVariable{"origin": {Default: "http://localhost:8080/api",
 			Description: "http://localhost:8080/api behind Caddy (make up); http://localhost:8081 for the api service (make dev)"}}}}
 	cfg.Tags = []*huma.Tag{
+		{Name: "Installation", Description: "First-run setup of a new installation (FR-ADM-06)."},
 		{Name: "Organisation", Description: "The organisation your session is in."},
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
 		{Name: "Journals", Description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."},
@@ -118,6 +120,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerOrganisation(a)
 	registerAccounts(a)
 	registerJournals(a)
+	registerSetup(a)
 	return a
 }
 
@@ -228,8 +231,12 @@ func (a *API) requestContext(ctx huma.Context, next func(huma.Context)) {
 	next(huma.WithContext(ctx, c))
 }
 
-// authenticate refuses a request without valid credentials (401).
+// authenticate refuses a request without valid credentials (401), except for a public operation.
 func (a *API) authenticate(ctx huma.Context, next func(huma.Context)) {
+	if a.policies[ctx.Operation().OperationID].Public {
+		next(ctx)
+		return
+	}
 	p, err := a.deps.Auth.Authenticate(ctx.Context(), ctx.Header("Authorization"))
 	if err != nil {
 		ctx.SetHeader("WWW-Authenticate", `Bearer realm="fyniq"`)
@@ -263,7 +270,10 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 	case !ok:
 		refusal = problem(CodeNoPolicy, "This operation has no authorisation policy, so nobody may call it.",
 			"Report it: every operation needs a policy (SEC-02).")
-	case p.Organisation == uuid.Nil:
+	case policy.Public:
+		next(huma.WithContext(ctx, context.WithValue(ctx.Context(), operationKey{}, op.OperationID)))
+		return
+	case p.Organisation == uuid.Nil && !policy.NoOrganisation:
 		refusal = problem(CodeNoOrganisation, "Your session is not in an organisation.", "Choose an organisation and sign in to it.")
 	}
 	var d authz.Decision

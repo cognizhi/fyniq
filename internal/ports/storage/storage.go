@@ -45,6 +45,7 @@ type UnitOfWork interface {
 	Ledger() Ledger
 	Balances() Balances
 	Audit() Audit
+	Members() Members
 	Idempotency() Idempotency
 	Outbox() Outbox
 	Sweeping() Sweeping
@@ -327,6 +328,8 @@ const (
 	CodeDocumentStatus = "STORAGE-DOC-02"       // a document cannot move to that status
 	CodeAudit          = "STORAGE-AUDIT-01"     // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"    // an outbox row cannot change what it is, or move to that state
+	CodeSetup          = "STORAGE-SETUP-01"     // the setup code is not valid, or setup is done
+	CodeMembership     = "STORAGE-MEMBER-01"    // a membership or role assignment cannot be made or changed that way
 	CodeDuplicate      = "STORAGE-DUPLICATE-01" // posting identity, account code or reversal already used
 	CodeRetry          = "STORAGE-RETRY-01"     // deadlock or serialisation failure: retry with the same key
 	CodeLockTimeout    = "STORAGE-LOCK-01"      // waited longer than the lock timeout (ENG-47)

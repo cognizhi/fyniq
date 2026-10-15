@@ -142,3 +142,21 @@ func TestParseCell(t *testing.T) {
 		}
 	}
 }
+
+// Only first-run setup bypasses the organisation, and only its status needs no credential.
+// req: SEC-02
+// asvs: V8.2.1
+func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
+	for op, p := range authz.Policies {
+		public, noOrg := op == "getSetupStatus", op == "completeSetup"
+		if p.Public != public || p.NoOrganisation != noOrg {
+			t.Errorf("%s: Public %v, NoOrganisation %v; want %v, %v", op, p.Public, p.NoOrganisation, public, noOrg)
+		}
+	}
+	if d := authz.Decide(authz.CompleteSetup, nil, true); d.Allowed {
+		t.Error("the AI may not set up the installation")
+	}
+	if d := authz.Decide(authz.CompleteSetup, []authz.Role{authz.SuperAdmin}, false); !d.Allowed {
+		t.Error("a person outside every organisation may complete setup (the code decides)")
+	}
+}
