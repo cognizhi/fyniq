@@ -128,6 +128,18 @@ jobs:
           path: .data/scan/
           retention-days: 90
 
+  infra:
+    name: Infrastructure (make infra-check)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: make infra-check   # OpenTofu: fmt, validate, tests on mock providers, the rules; no cloud credentials (NFR-PORT-05)
+
   images:
     name: Images and local mode (make images, QA-LOCAL-01)
     runs-on: ubuntu-latest

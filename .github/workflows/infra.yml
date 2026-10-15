@@ -1,0 +1,98 @@
+# OpenTofu against Google Cloud (p0-infra-opentofu): a plan of every environment after each change on
+# main, the nightly drift check (CTL-CHG-02), and a manual plan or apply of one environment. Credentials
+# come from Workload Identity Federation, which trusts only this repository's main branch and tags
+# (SEC-04, CTL-IAM-04): nothing here runs for a pull request, where `make infra-check` needs no cloud.
+# Inert until the founder's organisation exists: every job waits for the repository variable
+# GCP_WORKLOAD_IDENTITY_PROVIDER (the shared root's output; infra/README.md lists the others).
+name: Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths: ["infra/**", "scripts/infra.py", ".github/workflows/infra.yml"]
+  schedule:
+    - cron: "17 19 * * *" # 03:17 in Singapore
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: The environment
+        type: choice
+        options: [dev, staging, production]
+        required: true
+      apply:
+        description: Apply the plan (production waits for the environment's approval, §12.4)
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: infrastructure
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan ${{ matrix.environment }}
+    if: vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation (SEC-04)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { environment: dev, account: GCP_TOFU_SA_DEV, values: TOFU_TFVARS_DEV }
+          - { environment: staging, account: GCP_TOFU_SA_STAGING, values: TOFU_TFVARS_STAGING }
+          - { environment: production, account: GCP_TOFU_SA_PRODUCTION, values: TOFU_TFVARS_PRODUCTION }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars[matrix.account] }}
+      - name: Plan (the nightly run fails on any drift, CTL-CHG-02)
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+          EVENT: ${{ github.event_name }}
+          TOFU_STATE_BUCKET: ${{ vars.TOFU_STATE_BUCKET }}
+          TOFU_TFVARS: ${{ vars[matrix.values] }}
+        run: |
+          if [ "$EVENT" = schedule ]; then
+            python3 scripts/infra.py plan "$ENVIRONMENT" --drift
+          else
+            python3 scripts/infra.py plan "$ENVIRONMENT"
+          fi
+
+  apply:
+    name: Plan or apply ${{ inputs.environment }}
+    if: vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }} # production requires a person's approval (GitHub environment protection)
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation (SEC-04)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_TOFU_SA }}
+      - name: Plan, and apply if asked
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          APPLY: ${{ inputs.apply }}
+          TOFU_STATE_BUCKET: ${{ vars.TOFU_STATE_BUCKET }}
+          TOFU_TFVARS: ${{ vars.TOFU_TFVARS }}
+        run: |
+          if [ "$APPLY" = true ]; then
+            python3 scripts/infra.py plan "$ENVIRONMENT" --apply
+          else
+            python3 scripts/infra.py plan "$ENVIRONMENT"
+          fi
