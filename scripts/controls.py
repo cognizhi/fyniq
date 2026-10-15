@@ -43,6 +43,7 @@ RUNNING = {
     ("CTL-IAM-05", "CI"): ("make test", "cross-tenant attack tests and the API's cross-tenant test; CI artefact test-report (90 days)"),
     ("CTL-IAM-06", "CI"): ("test TestAuthorisationMatrix", "authorisation matrix; CI artefact test-report (90 days)"),
     ("CTL-CHG-01", "CI"): ("ci Auto-approve development changes", "pull request reviews; the approval rule of .github/workflows/auto-approve.yml"),
+    ("CTL-CHG-02", "CI"): ("make infra-check", "the Infrastructure CI job's log: tofu fmt, validate and each module's tests on mock providers, and the rules (no keys, no authoritative IAM, no human grants, Singapore only); Checkov on infra/ in make scan (CI artefact security-scan-reports). Policy checks on plans follow once plans run against the cloud"),
     ("CTL-CHG-03", "CI"): ("make scan", "CI artefact security-scan-reports (90 days)"),
     ("CTL-CHG-08", "CI"): ("make images", "image sizes and hardening in the CI log; CI artefact image-reports"),
     ("CTL-CHG-09", "CI"): ("make images", "release images without local adapters (CI log); start-up refusal test in make test"),
@@ -56,6 +57,7 @@ RUNNING = {
 # When the checks that do not run yet arrive.
 INFRA = {"CTL-AUD-03", "CTL-AUD-04", "CTL-IAM-03", "CTL-IAM-04", "CTL-CHG-02", "CTL-CHG-05", "CTL-DP-01", "CTL-DP-07",
          "CTL-RES-01", "CTL-RES-03", "CTL-RES-05"}
+BUILT = {"CTL-CHG-05", "CTL-DP-01", "CTL-DP-07", "CTL-IAM-03", "CTL-IAM-04"}  # built by p0-infra-opentofu, waiting for the cloud
 IDENTITY = {"CTL-IAM-01", "CTL-IAM-02", "CTL-IAM-07", "CTL-API-02", "CTL-MCP-04"}
 RUNNER = {("CTL-FIN-02", "N")}
 
@@ -63,6 +65,12 @@ RUNNER = {("CTL-FIN-02", "N")}
 def arrives(cid: str, freq: str) -> str:
     if (cid, freq) in RUNNER:
         return "P1 (the nightly grant snapshot and immutability verification, §10.7)"
+    if cid == "CTL-CHG-02":
+        return ("p0-infra-opentofu: the nightly drift check is built (.github/workflows/infra.yml, scripts/infra.py plan --drift);"
+                " it runs once the founder's organisation and projects exist")
+    if cid in BUILT:
+        return ("p0-infra-opentofu: built in infra/ and tested without a cloud account (make infra-check); the check runs once"
+                " the founder's organisation and projects exist")
     if cid in INFRA:
         return "p0-infra-opentofu"
     if cid in IDENTITY:

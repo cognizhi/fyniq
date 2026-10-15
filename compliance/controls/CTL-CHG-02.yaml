@@ -10,8 +10,9 @@ evidence: "Plan output"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p0-infra-opentofu"
+    status: running
+    how: "make infra-check"
+    evidence: "the Infrastructure CI job's log: tofu fmt, validate and each module's tests on mock providers, and the rules (no keys, no authoritative IAM, no human grants, Singapore only); Checkov on infra/ in make scan (CI artefact security-scan-reports). Policy checks on plans follow once plans run against the cloud"
   - frequency: D
     status: planned
-    arrives: "p0-infra-opentofu"
+    arrives: "p0-infra-opentofu: the nightly drift check is built (.github/workflows/infra.yml, scripts/infra.py plan --drift); it runs once the founder's organisation and projects exist"

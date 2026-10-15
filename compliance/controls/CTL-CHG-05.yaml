@@ -11,7 +11,7 @@ owner: Owner
 checks:
   - frequency: D
     status: planned
-    arrives: "p0-infra-opentofu"
+    arrives: "p0-infra-opentofu: built in infra/ and tested without a cloud account (make infra-check); the check runs once the founder's organisation and projects exist"
   - frequency: W
     status: planned
-    arrives: "p0-infra-opentofu"
+    arrives: "p0-infra-opentofu: built in infra/ and tested without a cloud account (make infra-check); the check runs once the founder's organisation and projects exist"

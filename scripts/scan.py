@@ -33,7 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WAIVERS = ROOT / "compliance" / "scan-waivers.toml"
 REPORTS = ROOT / ".data" / "scan"
-EXCLUDE = ["node_modules", ".data", "dist", "test-results", ".git"]
+EXCLUDE = ["node_modules", ".data", "dist", "test-results", ".git", ".terraform"]
 
 # Licences a distributed dependency may have (the Go binaries and the web app's production bundle).
 ALLOWED = {"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "0BSD", "MPL-2.0", "Unlicense", "CC0-1.0"}
@@ -178,7 +178,7 @@ def grype() -> list[Finding]:
 
 
 def checkov() -> list[Finding]:
-    cmd = ["checkov", "-d", ".", "--framework", "dockerfile", "github_actions", "-o", "json", "--quiet", "--compact"]
+    cmd = ["checkov", "-d", ".", "--framework", "dockerfile", "github_actions", "terraform", "-o", "json", "--quiet", "--compact"]
     for e in EXCLUDE:
         cmd += ["--skip-path", e]
     raw = run(cmd, "checkov.json", ok_codes=(0, 1))

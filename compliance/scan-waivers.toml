@@ -65,6 +65,57 @@ path = "deploy/docker/Dockerfile.*"
 reason = "No HEALTHCHECK in the images: the probes are set where the images run (Compose healthchecks, Cloud Run startup and liveness probes on /healthz and /readyz, NFR-IMG-06), and the same Dockerfile builds run-to-completion jobs, which have no endpoint to probe."
 expires = 2027-04-15
 
+# ---------------------------------------------------------------- checkov (OpenTofu, infra/)
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_62"
+path = "infra/gcp/bootstrap/main.tf"
+reason = "No usage-log bucket for the state bucket: data-access audit logs (DATA_READ, DATA_WRITE) are on for Cloud Storage in the CI project (google_project_iam_audit_config beside the bucket), which records every read and write with the caller."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_62"
+path = "infra/gcp/modules/anchors/main.tf"
+reason = "No usage-log bucket for the audit anchors: data-access audit logs are on for Cloud Storage in the anchors' project (google_project_iam_audit_config in the module), recording every read and write with the caller; a usage-log bucket would duplicate them."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_125"
+path = "infra/gcp/modules/ci-identity/main.tf"
+reason = "The rule wants an exact `assertion.sub` match. The condition checks the repository by name and by ID, its owner by ID, and the ref (main or a tag), which is stricter; an exact sub would refuse jobs that run in a GitHub environment (their sub names the environment), which the production apply needs for its manual approval. The module's tofu test pins the condition."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_84"
+path = "infra/gcp/modules/ci-identity/main.tf"
+reason = "Artifact Registry with Google-managed encryption: the images are built from this public repository and hold no data or secret (SEC-12, the image checks), so a customer-managed key adds a key to run for no confidentiality. CMEK is required where data lives: the database, its backups, storage and secrets (CTL-DP-01)."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_117"
+path = "infra/gcp/modules/ci-identity/main.tf"
+reason = "Each environment's OpenTofu identity is Owner of that one project. It manages IAM there, so any narrower set of roles could grant itself more; it is reached only through Workload Identity Federation from main and tags of this repository (no key, no person), and every change it applies is reviewed code. No human holds Owner or Editor (CTL-IAM-03)."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_49"
+path = "infra/gcp/modules/ci-identity/main.tf"
+reason = "The same OpenTofu identity: it creates the environment's service accounts and grants them their roles, which is what manages service accounts means here. Reached only from main and tags through Workload Identity Federation."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_6"
+path = "infra/gcp/modules/environment/database.tf"
+reason = "The rule wants client certificates (TRUSTED_CLIENT_CERTIFICATE_REQUIRED). The instance has a private IP only and ssl_mode ENCRYPTED_ONLY, which refuses every unencrypted connection; client certificates would need one per service to issue and rotate. Revisit with IAM database authentication in staging."
+expires = 2027-04-15
+
 # ---------------------------------------------------------------- zizmor (workflows)
 
 [[waiver]]

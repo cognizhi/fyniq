@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup setup-code super-admin-recovery dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls image-scan image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup setup-code super-admin-recovery dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check image-scan image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -126,17 +126,21 @@ images: ## Build the Go and web images (FLAVOURS="release local" by default) and
 	@docker build -q -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
 	@python3 scripts/images.py check --version $(VERSION) --flavours "$(FLAVOURS)"
 
+infra-check: ## OpenTofu in infra/: fmt, init from the lock files, validate, the module tests on mock providers, and no keys, authoritative IAM, human grants or regions outside Singapore (NFR-PORT-05); downloads the providers
+	@$(MISE) python3 scripts/infra.py check
+
 image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical finding fails unless waived (SEC-21)
 	@$(MISE) python3 scripts/images.py scan --version $(VERSION)
 
 image-sign: ## Push the release images by digest to a throwaway registry, sign them and attest their SBOMs (cosign), verify; a wrong key and an unsigned image must fail (NFR-IMG-05, SEC-22)
 	@$(MISE) python3 scripts/images.py sign --version $(VERSION)
 
-ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, images, image-scan, image-sign, test-e2e, evals
+ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, infra-check, images, image-scan, image-sign, test-e2e, evals
 	@$(MAKE) --no-print-directory test
 	@$(MAKE) --no-print-directory mutation
 	@$(MAKE) --no-print-directory differential
 	@$(MAKE) --no-print-directory scan
+	@$(MAKE) --no-print-directory infra-check
 	@$(MAKE) --no-print-directory images
 	@$(MAKE) --no-print-directory image-scan
 	@$(MAKE) --no-print-directory image-sign
@@ -148,9 +152,10 @@ check: check-tokens check-config kb-lint spec-check design-check review-check sc
 controls: ## The control registry (compliance/controls/) has a file for every Appendix F control, with the PRD's text
 	@python3 scripts/controls.py check
 
-scan-waivers: ## The scan waivers are well formed, and the scan and image rules hold on planted findings (the scans themselves: make scan, make images)
+scan-waivers: ## The scan waivers are well formed, and the scan, image and infra rules hold on planted findings (the scans themselves: make scan, make images, make infra-check)
 	@python3 scripts/scan.py --self-test
 	@python3 scripts/images.py self-test
+	@python3 scripts/infra.py self-test
 
 check-tokens: ## Design tokens (Fyniq and Nemura) meet WCAG contrast in all four themes (QA-UI-03)
 	@python3 $(DESIGN)/scripts/check_contrast.py
