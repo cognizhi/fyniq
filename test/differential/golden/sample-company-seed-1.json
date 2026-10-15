@@ -1,0 +1,900 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "sample-company-seed-1",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2
+ },
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1020",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1030",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1040",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1100",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1210",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1250",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1350",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1510",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1590",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2010",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2050",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2100",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2110",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2115",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2116",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2120",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2150",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2200",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2300",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2350",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2400",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2500",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2700",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2999",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "3010",
+   "type": "equity",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "3020",
+   "type": "equity",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "3100",
+   "type": "equity",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "3300",
+   "type": "equity",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4010",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4020",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "4090",
+   "type": "revenue",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5010",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5020",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "5040",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6010",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6020",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6050",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6060",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6110",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6120",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6135",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6140",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6150",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6210",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6310",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6320",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6350",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6410",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6420",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6430",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6510",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6520",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6530",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6610",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7010",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "7040",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "8010",
+   "type": "expense",
+   "group": false,
+   "active": true
+  }
+ ],
+ "documents": [
+  {
+   "type": "manual_journal",
+   "id": "JNL-0001",
+   "version": 1,
+   "date": "2026-01-15",
+   "memo": "",
+   "lines": [
+    {
+     "account": "2115",
+     "currency": "SGD",
+     "amount": "136165.52"
+    },
+    {
+     "account": "6140",
+     "currency": "SGD",
+     "amount": "-136165.52"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0002",
+   "version": 1,
+   "date": "2026-02-12",
+   "memo": "",
+   "lines": [
+    {
+     "account": "5020",
+     "currency": "SGD",
+     "amount": "418418.59"
+    },
+    {
+     "account": "6060",
+     "currency": "SGD",
+     "amount": "-418418.59"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0003",
+   "version": 1,
+   "date": "2026-02-14",
+   "memo": "",
+   "lines": [
+    {
+     "account": "6060",
+     "currency": "SGD",
+     "amount": "290428.06"
+    },
+    {
+     "account": "6030",
+     "currency": "SGD",
+     "amount": "374178.39"
+    },
+    {
+     "account": "2150",
+     "currency": "SGD",
+     "amount": "-664606.45"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0004",
+   "version": 1,
+   "date": "2026-02-15",
+   "memo": "",
+   "lines": [
+    {
+     "account": "6530",
+     "currency": "SGD",
+     "amount": "328260.71"
+    },
+    {
+     "account": "4090",
+     "currency": "SGD",
+     "amount": "-328260.71"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0005",
+   "version": 1,
+   "date": "2026-02-17",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1030",
+     "currency": "SGD",
+     "amount": "204903.49"
+    },
+    {
+     "account": "2110",
+     "currency": "SGD",
+     "amount": "135433.15"
+    },
+    {
+     "account": "5040",
+     "currency": "SGD",
+     "amount": "-340336.64"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0006",
+   "version": 1,
+   "date": "2026-03-05",
+   "memo": "",
+   "lines": [
+    {
+     "account": "2350",
+     "currency": "SGD",
+     "amount": "142380.30"
+    },
+    {
+     "account": "1020",
+     "currency": "SGD",
+     "amount": "-142380.30"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0007",
+   "version": 1,
+   "date": "2026-03-18",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1250",
+     "currency": "SGD",
+     "amount": "225979.35"
+    },
+    {
+     "account": "6010",
+     "currency": "SGD",
+     "amount": "449811.92"
+    },
+    {
+     "account": "5010",
+     "currency": "SGD",
+     "amount": "-675791.27"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0008",
+   "version": 1,
+   "date": "2026-03-21",
+   "memo": "",
+   "lines": [
+    {
+     "account": "6020",
+     "currency": "SGD",
+     "amount": "109214.57"
+    },
+    {
+     "account": "6135",
+     "currency": "SGD",
+     "amount": "-109214.57"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0009",
+   "version": 1,
+   "date": "2026-04-01",
+   "memo": "",
+   "lines": [
+    {
+     "account": "7010",
+     "currency": "SGD",
+     "amount": "424746.28"
+    },
+    {
+     "account": "5010",
+     "currency": "SGD",
+     "amount": "-424746.28"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0010",
+   "version": 1,
+   "date": "2026-04-24",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1250",
+     "currency": "SGD",
+     "amount": "10950.95"
+    },
+    {
+     "account": "2116",
+     "currency": "SGD",
+     "amount": "204416.14"
+    },
+    {
+     "account": "2116",
+     "currency": "SGD",
+     "amount": "-215367.09"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0011",
+   "version": 1,
+   "date": "2026-05-05",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1250",
+     "currency": "SGD",
+     "amount": "311390.84"
+    },
+    {
+     "account": "2300",
+     "currency": "SGD",
+     "amount": "67077.20"
+    },
+    {
+     "account": "6140",
+     "currency": "SGD",
+     "amount": "-378468.04"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0012",
+   "version": 1,
+   "date": "2026-05-14",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1020",
+     "currency": "SGD",
+     "amount": "330382.63"
+    },
+    {
+     "account": "2110",
+     "currency": "SGD",
+     "amount": "-330382.63"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0013",
+   "version": 1,
+   "date": "2026-05-17",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1100",
+     "currency": "SGD",
+     "amount": "87656.76"
+    },
+    {
+     "account": "1250",
+     "currency": "SGD",
+     "amount": "8350.32"
+    },
+    {
+     "account": "2110",
+     "currency": "SGD",
+     "amount": "-96007.08"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0014",
+   "version": 1,
+   "date": "2026-05-23",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1590",
+     "currency": "SGD",
+     "amount": "341744.35"
+    },
+    {
+     "account": "6530",
+     "currency": "SGD",
+     "amount": "-341744.35"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0015",
+   "version": 1,
+   "date": "2026-05-29",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1590",
+     "currency": "SGD",
+     "amount": "345477.96"
+    },
+    {
+     "account": "6110",
+     "currency": "SGD",
+     "amount": "-345477.96"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0016",
+   "version": 1,
+   "date": "2026-06-08",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1210",
+     "currency": "SGD",
+     "amount": "227272.71"
+    },
+    {
+     "account": "2700",
+     "currency": "SGD",
+     "amount": "-227272.71"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0017",
+   "version": 1,
+   "date": "2026-06-15",
+   "memo": "",
+   "lines": [
+    {
+     "account": "1210",
+     "currency": "SGD",
+     "amount": "490247.71"
+    },
+    {
+     "account": "4090",
+     "currency": "SGD",
+     "amount": "64143.74"
+    },
+    {
+     "account": "2120",
+     "currency": "SGD",
+     "amount": "-554391.45"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0018",
+   "version": 1,
+   "date": "2026-06-29",
+   "memo": "",
+   "lines": [
+    {
+     "account": "2115",
+     "currency": "SGD",
+     "amount": "26143.49"
+    },
+    {
+     "account": "1350",
+     "currency": "SGD",
+     "amount": "205919.44"
+    },
+    {
+     "account": "2200",
+     "currency": "SGD",
+     "amount": "-232062.93"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0019",
+   "version": 1,
+   "date": "2026-07-06",
+   "memo": "",
+   "lines": [
+    {
+     "account": "2300",
+     "currency": "SGD",
+     "amount": "287226.07"
+    },
+    {
+     "account": "2400",
+     "currency": "SGD",
+     "amount": "189748.39"
+    },
+    {
+     "account": "6060",
+     "currency": "SGD",
+     "amount": "-476974.46"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0020",
+   "version": 1,
+   "date": "2026-07-18",
+   "memo": "",
+   "lines": [
+    {
+     "account": "2050",
+     "currency": "SGD",
+     "amount": "317320.51"
+    },
+    {
+     "account": "5020",
+     "currency": "SGD",
+     "amount": "452109.03"
+    },
+    {
+     "account": "2050",
+     "currency": "SGD",
+     "amount": "-769429.54"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0021",
+   "version": 1,
+   "date": "2026-08-26",
+   "memo": "",
+   "lines": [
+    {
+     "account": "4090",
+     "currency": "SGD",
+     "amount": "284272.45"
+    },
+    {
+     "account": "7040",
+     "currency": "SGD",
+     "amount": "378674.97"
+    },
+    {
+     "account": "6410",
+     "currency": "SGD",
+     "amount": "-662947.42"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0022",
+   "version": 1,
+   "date": "2026-08-26",
+   "memo": "",
+   "lines": [
+    {
+     "account": "2400",
+     "currency": "SGD",
+     "amount": "243513.67"
+    },
+    {
+     "account": "2700",
+     "currency": "SGD",
+     "amount": "495928.83"
+    },
+    {
+     "account": "6430",
+     "currency": "SGD",
+     "amount": "-739442.50"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0023",
+   "version": 1,
+   "date": "2026-09-05",
+   "memo": "",
+   "lines": [
+    {
+     "account": "2300",
+     "currency": "SGD",
+     "amount": "135521.41"
+    },
+    {
+     "account": "2999",
+     "currency": "SGD",
+     "amount": "-135521.41"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0024",
+   "version": 1,
+   "date": "2026-09-25",
+   "memo": "",
+   "lines": [
+    {
+     "account": "2100",
+     "currency": "SGD",
+     "amount": "192805.76"
+    },
+    {
+     "account": "1020",
+     "currency": "SGD",
+     "amount": "-192805.76"
+    }
+   ]
+  }
+ ],
+ "reversals": [
+  {
+   "document": "JNL-0001",
+   "date": "2026-01-16"
+  }
+ ]
+}
