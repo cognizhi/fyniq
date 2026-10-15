@@ -56,3 +56,23 @@ body {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+
+/* The ten recovery codes, printed or written down once (RecoveryCodes.tsx). */
+.recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+  padding-left: 1.75rem;
+  font-size: var(--fs-base);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A provider's button: its name may be long, so it wraps instead of running out of the card. */
+.fy-btn.provider {
+  height: auto;
+  min-height: 44px;
+  justify-content: flex-start;
+  white-space: normal;
+  text-align: start;
+}

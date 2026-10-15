@@ -11,6 +11,7 @@ COPY apps/web/package.json apps/web/
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --filter @fyniq/web
 COPY apps/web apps/web
 COPY docs/design-system/fyniq/tokens.css docs/design-system/fyniq/tokens.css
+COPY docs/design/screens/kit/ui.css docs/design/screens/kit/ui.css
 RUN pnpm --filter @fyniq/web build
 
 # Runs as UID 101 on port 8080, with a read-only root filesystem in Compose.

@@ -46,7 +46,7 @@ books** (Expert only) · **Common problems** (each ✖ or ⚠ message and its fi
 
 | Section | Pages |
 |---|---|
-| Getting started | Your first sign-in and the tour · Basic and Expert modes · ✔ [Why some pages say "Needs additional verification"](needs-verification.md) · The Home page · Set up the company (FR-UX-10) · Invite your accountant · Practise in the sample company |
+| Getting started | ✔ [Set up a new installation](setup-first-run.md) · ✔ [Sign in to Fyniq](sign-in.md) · Your first sign-in and the tour · Basic and Expert modes · ✔ [Why some pages say "Needs additional verification"](needs-verification.md) · The Home page · Set up the company (FR-UX-10) · Invite your accountant · Practise in the sample company |
 | Everyday work | Record money in and out · Categorise and match bank lines · Create and send an invoice · Record a bill · ✔ [Claim back money you spent for the company](claims-my-claims.md) · ✔ [Approve your team's claims](claims-approve-team.md) · Approve or reject · The Inbox |
 | Your workspace | What you see and why (each role's workspace, §7.1) · My department for budget holders · My time · My shares and options |
 | Founders and equity | ✔ [Founders' money: what the company owes you, and the options](founders-money.md) · Who owns the company (cap table) · Record a share issue · SAFEs and notes · Model a funding round · Investor records and updates |

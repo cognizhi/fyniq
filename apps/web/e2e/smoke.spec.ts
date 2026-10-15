@@ -8,6 +8,8 @@ test("the web shell loads with the design tokens and no console errors", async (
     if (m.type() === "error" && !m.location().url.includes("/api/")) errors.push(`${m.text()} (${m.location().url})`);
   });
   page.on("pageerror", (e) => errors.push(e.message));
+  // The API is down here whatever runs on the machine: the shell must still load and say so.
+  await page.route("**/api/**", (route) => route.fulfill({ status: 503, body: "" }));
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Fyniq" })).toBeVisible();
   await expect(page.getByRole("status")).not.toHaveText("Checking the API…");
