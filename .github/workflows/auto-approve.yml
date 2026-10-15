@@ -1,0 +1,68 @@
+# Auto-approval of development pull requests (founder decision, 14 Oct 2026). Before the first
+# production deploy this workflow is removed and a human approval is required again (CTL-CHG-01).
+#
+# It approves a pull request only when all of these hold:
+#   - the owner's account opened it, from a branch of this repository (never a fork);
+#   - the event came from that account (a push by anyone else is not approved);
+#   - it is not a draft, changes nothing under docs/prd/reviews/ (the specialist second reviews)
+#     and has no `needs-human-review` label. release-please's pull requests are not the owner's.
+# pull_request_target runs this file as it is on main, so a pull request cannot change the rule
+# that approves it. The job never checks out or runs the pull request's code.
+name: auto-approve
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+
+permissions: {}
+
+concurrency:
+  group: auto-approve-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  approve:
+    name: Auto-approve development changes
+    if: >-
+      github.event.pull_request.user.login == 'cyyeong' &&
+      github.event.sender.login == 'cyyeong' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Approve unless the pull request needs a human
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          bot_approvals() {
+            gh api --paginate "repos/$REPO/pulls/$PR/reviews" \
+              --jq '.[] | select(.user.login == "github-actions[bot]" and .state == "APPROVED") | "\(.id) \(.commit_id)"'
+          }
+          reason=""
+          labels=$(gh pr view "$PR" -R "$REPO" --json labels --jq '[.labels[].name] | join(",")')
+          if [[ ",$labels," == *",needs-human-review,"* ]]; then
+            reason="it is labelled needs-human-review"
+          elif gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename' | grep -q '^docs/prd/reviews/'; then
+            reason="it changes docs/prd/reviews/ (a specialist second review)"
+          fi
+          if [ -n "$reason" ]; then
+            echo "Left for a human: $reason."
+            # Withdraw an earlier automatic approval, so only a person can approve it now.
+            bot_approvals | while read -r id _; do
+              gh api -X PUT "repos/$REPO/pulls/$PR/reviews/$id/dismissals" \
+                -f message="Withdrawn: $reason." -f event=DISMISS >/dev/null || echo "::warning::could not dismiss review $id"
+            done
+            exit 0
+          fi
+          if bot_approvals | grep -q " $HEAD_SHA\$"; then
+            echo "Already approved at $HEAD_SHA."
+            exit 0
+          fi
+          gh pr review "$PR" -R "$REPO" --approve --body \
+            "Auto-approved: a development change by the owner (founder decision, 14 Oct 2026). A human approval returns before the first production deploy (CTL-CHG-01)."

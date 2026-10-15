@@ -81,7 +81,9 @@ the parallel-run sign-off (M5).
 
 ## The release flow
 
-1. Commits land on `main` (via reviewed, squash-merged PRs: CTL-CHG-01).
+1. Commits land on `main` (via reviewed, squash-merged PRs: CTL-CHG-01). Before production, the
+   owner's development PRs are approved by `.github/workflows/auto-approve.yml` and auto-merged when
+   green (AGENTS.md); the release PR is never auto-approved.
 2. release-please opens or updates **one release PR** titled `chore(release): release X.Y.Z`,
    with the bumped `VERSION`, manifest and the new `CHANGELOG.md` section.
 3. Review the release PR like any other change (REL-04): read the changelog as a user would;

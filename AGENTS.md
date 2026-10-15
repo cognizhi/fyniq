@@ -138,6 +138,11 @@ connectors/          connector manifests and code (FR-INT-25)  internal/adapters
     integrators must do goes in an `Upgrade notes:` paragraph in the body (REL-03).
 - Work on a branch and open a pull request. The **pull request title** must be a Conventional
   Commit, because squash merges use it. CI checks titles and commits.
+- **Before production** (founder decision, 14 Oct 2026): the owner's development pull requests are
+  approved by `.github/workflows/auto-approve.yml` and merge by themselves (auto-merge, squash) once
+  the required checks pass. Release pull requests, the specialist reviews in `docs/prd/reviews/` and
+  anything labelled `needs-human-review` still wait for a person. Before the first production deploy,
+  remove the workflow, require a human approval and enforce it for admins (CTL-CHG-01).
 - **release-please** owns `VERSION`, `.release-please-manifest.json`, `CHANGELOG.md`, the tags
   and the GitHub releases. **Never edit them by hand** (REL-02). While the version is `0.x`, a
   `feat` bumps the minor version.
@@ -203,4 +208,7 @@ and after five minutes its prompt cache expires, so the next turn pays to re-rea
 - Do not push to `main` directly once branch protection is on (CTL-CHG-01); until then, keep
   direct pushes to repository bootstrap work.
 - Tasks that touch money movement, payee bank details, approvals, the audit trail, tenancy or
-  the AI/MCP write path need a second human reviewer, whoever wrote the code.
+  the AI/MCP write path need a second human reviewer, whoever wrote the code. (Waived before
+  production by the founders on 14 Oct 2026: such pull requests are auto-approved like any other
+  development change; label one `needs-human-review` to hold it for a person. The rule returns
+  before the first production deploy.)
