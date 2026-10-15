@@ -11,4 +11,4 @@ owner: Owner
 checks:
   - frequency: D
     status: planned
-    arrives: "p0-infra-opentofu (signing) and P1 (Binary Authorization, SEC-22)"
+    arrives: "P1 (Binary Authorization enforces it at deploy, SEC-22; keyless signing into Artifact Registry in the release workflow with p0-infra-opentofu). Until then `make image-sign` signs every release image by digest, attests its SBOM and verifies both on each pull request (signatures.json in the CI artefact image-reports)"

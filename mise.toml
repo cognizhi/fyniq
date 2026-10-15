@@ -22,6 +22,7 @@ sqlc = "1.31.1"
 "aqua:gitleaks/gitleaks" = "8.30.1"                             # secrets in the history
 "aqua:anchore/grype" = "0.119.0"                                # vulnerable dependencies and images
 "aqua:anchore/syft" = "1.52.0"                                  # an SBOM per release image (make image-scan)
+"aqua:sigstore/cosign" = "2.6.5"                                # signs the release images and attests their SBOMs (make image-sign)
 "pipx:checkov" = "3.3.20"                                       # Dockerfiles and workflows (OpenTofu with p0-infra-opentofu)
 "go:github.com/google/go-licenses/v2" = "2.0.1"                 # licences of the Go dependencies
 "aqua:rhysd/actionlint" = "1.7.12"                              # workflow syntax

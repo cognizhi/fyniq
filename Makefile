@@ -22,7 +22,7 @@ FLAVOURS ?= release local
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
-.PHONY: help setup setup-code super-admin-recovery dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls image-scan oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: help setup setup-code super-admin-recovery dev up down seed seed-load reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls image-scan image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -129,13 +129,17 @@ images: ## Build the Go and web images (FLAVOURS="release local" by default) and
 image-scan: ## SBOM (syft) and vulnerability scan (grype) of the release images; a critical finding fails unless waived (SEC-21)
 	@$(MISE) python3 scripts/images.py scan --version $(VERSION)
 
-ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, images, image-scan, test-e2e, evals
+image-sign: ## Push the release images by digest to a throwaway registry, sign them and attest their SBOMs (cosign), verify; a wrong key and an unsigned image must fail (NFR-IMG-05, SEC-22)
+	@$(MISE) python3 scripts/images.py sign --version $(VERSION)
+
+ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, images, image-scan, image-sign, test-e2e, evals
 	@$(MAKE) --no-print-directory test
 	@$(MAKE) --no-print-directory mutation
 	@$(MAKE) --no-print-directory differential
 	@$(MAKE) --no-print-directory scan
 	@$(MAKE) --no-print-directory images
 	@$(MAKE) --no-print-directory image-scan
+	@$(MAKE) --no-print-directory image-sign
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals
 

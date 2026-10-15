@@ -3,6 +3,7 @@
 
     python3 scripts/images.py check --version 0.1.0 --flavours "release local"
     python3 scripts/images.py scan --version 0.1.0     # SBOM and vulnerability scan (make image-scan)
+    python3 scripts/images.py sign --version 0.1.0     # push by digest, sign, attest the SBOM, verify (make image-sign)
     python3 scripts/images.py self-test                # the checks on planted images (part of make check)
 
 check (part of `make images`; Docker only):
@@ -14,18 +15,30 @@ check (part of `make images`; Docker only):
     (DEV-07, CTL-CHG-09, QA-IMG-01).
 scan (CI): an SPDX SBOM per release image (syft) and a grype scan; a Critical finding fails unless
 compliance/scan-waivers.toml waives it (tool "grype-image"; SEC-21). Reports go to .data/images/.
+sign (CI, after scan): pushes each release image to a registry, signs it by digest with cosign, attaches
+its SBOM as an SPDX attestation and verifies both, then shows that verification refuses a wrong key and an
+unsigned image (NFR-IMG-05, SEC-22, CTL-CHG-04). Without --registry and --key it starts a throwaway
+registry and makes a key pair for the run, so a pull request proves the mechanism with no cloud account,
+no OIDC token and nothing published. The release workflow signs keyless with GitHub OIDC and pushes to
+Artifact Registry (p0-ci-images-release design; with p0-infra-opentofu). The private key stays in a
+temporary directory; the evidence (signatures.json, cosign.pub) goes to .data/images/.
 """
 
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
+import time
+import urllib.request
 import zlib
 from pathlib import Path
 
@@ -39,6 +52,10 @@ GO_IMAGES = [i for i in BUDGETS if i != "web"]
 FORBIDDEN = ("bin/sh", "bin/bash", "bin/ash", "bin/busybox", "sbin/apk", "usr/bin/apt", "usr/bin/apt-get", "usr/bin/dpkg",
              "usr/local/go/bin/go", "usr/bin/gcc")
 LOCAL_MARK = b"github.com/cognizhi/fyniq/internal/adapters/local"
+# The throwaway registry `sign` pushes to without --registry: a stand-in for Artifact Registry, never a
+# registry of record. Dependabot does not read a pin in a script, so update this one by hand.
+REGISTRY_IMAGE = "registry:3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e"
+SPDX = "https://spdx.dev/Document"   # the predicate type of `cosign attest --type spdxjson`
 
 
 def sh(*cmd: str, capture: bool = True) -> str:
@@ -48,6 +65,13 @@ def sh(*cmd: str, capture: bool = True) -> str:
     if p.returncode != 0:
         raise SystemExit(f"✖ {' '.join(cmd[:4])}: {p.stderr.strip()[-2000:]}")
     return p.stdout
+
+
+def run(*cmd: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    """A command whose failure the caller judges (sh stops at the first failure)."""
+    if shutil.which(cmd[0]) is None:
+        raise SystemExit(f"✖ {cmd[0]} is not installed: install the toolchain with `make setup` (mise.toml pins it)")
+    return subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, env=env)
 
 
 def compressed_size(image: str) -> int:
@@ -139,7 +163,15 @@ def self_test() -> None:
         raise SystemExit(f"✖ images self-test: want 4 problems (budget, user, shell, local adapter), got {planted}")
     if not judge("web", "local", "fyniq-web:local", 26_000_000, {"User": "root"}, [], b""):
         raise SystemExit("✖ images self-test: an over-budget web image running as root was accepted")
-    print("✔ image checks: an over-budget image, a root user, a shell and a local adapter in release are each refused")
+    # Signing: a verified answer counts only for the digest it names, an attestation only with the SPDX type.
+    answer = json.dumps([{"critical": {"image": {"docker-manifest-digest": "sha256:aa"}}}])
+    statement = {"predicateType": SPDX, "subject": [{"digest": {"sha256": "bb"}}]}
+    line = lambda st: json.dumps({"payload": base64.b64encode(json.dumps(st).encode()).decode()})  # noqa: E731
+    if signed_digests(answer) != {"sha256:aa"} or attested(line(statement), SPDX) != {"sha256:bb"} \
+            or attested(line({**statement, "predicateType": "https://slsa.dev/provenance/v1"}), SPDX):
+        raise SystemExit("✖ images self-test: a signature or an attestation counted for the wrong digest or type")
+    print("✔ image checks: an over-budget image, a root user, a shell and a local adapter in release are each refused;"
+          " a signature counts only for its digest")
 
 
 def scan_images(version: str) -> int:
@@ -163,17 +195,146 @@ def scan_images(version: str) -> int:
     return 0
 
 
+def signed_digests(answer: str) -> set[str]:
+    """The manifest digests a `cosign verify` answer vouches for."""
+    return {sig["critical"]["image"]["docker-manifest-digest"] for sig in json.loads(answer)}
+
+
+def attested(answer: str, predicate: str) -> set[str]:
+    """The digests a `cosign verify-attestation` answer attests with the predicate type."""
+    out = set()
+    for line in answer.splitlines():
+        if line.strip():
+            statement = json.loads(base64.b64decode(json.loads(line)["payload"]))
+            if statement.get("predicateType") == predicate:
+                out |= {"sha256:" + s["digest"]["sha256"] for s in statement.get("subject", [])}
+    return out
+
+
+def push(image: str, target: str, tagged: list[str]) -> str:
+    """Pushes the image to target and returns it by digest (registry/name@sha256:…)."""
+    sh("docker", "tag", image, target)
+    tagged.append(target)
+    sh("docker", "push", "-q", target)
+    name = target.rsplit(":", 1)[0] + "@"
+    found = [d for d in json.loads(sh("docker", "image", "inspect", target))[0].get("RepoDigests", []) if d.startswith(name)]
+    if not found:
+        raise SystemExit(f"✖ {target}: pushed, but Docker reports no digest for it")
+    return found[0]
+
+
+def start_registry() -> tuple[str, str]:
+    """A throwaway registry on a free loopback port: (container, host:port)."""
+    container = sh("docker", "run", "-d", "--rm", "-p", "127.0.0.1:0:5000", REGISTRY_IMAGE).strip()
+    registry = "localhost:" + sh("docker", "port", container, "5000/tcp").splitlines()[0].rsplit(":", 1)[1]
+    for _ in range(100):
+        try:
+            with urllib.request.urlopen(f"http://{registry}/v2/", timeout=1):  # noqa: S310  (a loopback URL we built)
+                return container, registry
+        except OSError:
+            time.sleep(0.1)
+    raise SystemExit(f"✖ the throwaway registry on {registry} did not start")
+
+
+# The CI proof that every release image is signed by digest and carries its SBOM, and that verification
+# refuses a wrong key and an unsigned image.
+# req: NFR-IMG-05
+# req: SEC-22
+# req: CTL-CHG-04
+def sign_images(version: str, registry: str, key: str) -> int:
+    for svc in GO_IMAGES:
+        if not (REPORTS / f"{svc}.spdx.json").is_file():
+            raise SystemExit(f"✖ fyniq-{svc}: no SBOM in .data/images/: run `make image-scan` first, which writes them")
+    tmp = Path(tempfile.mkdtemp(prefix="fyniq-sign-"))
+    env = {**os.environ, "COSIGN_PASSWORD": os.environ.get("COSIGN_PASSWORD", "")}   # the run's own key pair has none
+    container, throwaway, tagged = "", not registry, []
+    try:
+        if throwaway:
+            container, registry = start_registry()
+        ephemeral = not key
+        # The private key stays in tmp: .data/images/ is uploaded as evidence. "other" never signs anything.
+        for name in (["cosign", "other"] if ephemeral else ["other"]):
+            if (p := run("cosign", "generate-key-pair", "--output-key-prefix", str(tmp / name), env=env)).returncode:
+                raise SystemExit(f"✖ cosign generate-key-pair: {p.stderr.strip()[-500:]}")
+        key = key or str(tmp / "cosign.key")
+        public = str(tmp / "signer.pub")   # from a key file or a KMS URI alike
+        if (p := run("cosign", "public-key", "--key", key, "--outfile", public, env=env)).returncode:
+            raise SystemExit(f"✖ cosign public-key --key {key}: {p.stderr.strip()[-500:]}")
+        shutil.copy(public, REPORTS / "cosign.pub")
+        rows, problems = [], []
+        for svc in GO_IMAGES:
+            ref = push(f"fyniq-{svc}:{version}", f"{registry}/fyniq-{svc}:{version}", tagged)
+            digest = ref.split("@", 1)[1]
+            for step in (["sign"], ["attest", "--type", "spdxjson", "--predicate", str(REPORTS / f"{svc}.spdx.json")]):
+                if (p := run("cosign", step[0], "--yes", "--key", key, "--tlog-upload=false", *step[1:], ref, env=env)).returncode:
+                    raise SystemExit(f"✖ cosign {step[0]} {ref}: {p.stderr.strip()[-1000:]}")
+            v = run("cosign", "verify", "--key", public, "--insecure-ignore-tlog=true", ref, env=env)
+            a = run("cosign", "verify-attestation", "--key", public, "--insecure-ignore-tlog=true", "--type", "spdxjson", ref, env=env)
+            signed = v.returncode == 0 and digest in signed_digests(v.stdout)
+            sbom = a.returncode == 0 and digest in attested(a.stdout, SPDX)
+            if not signed:
+                problems.append(f"{ref}: the signature does not verify for this digest: {v.stderr.strip()[-300:]}")
+            if not sbom:
+                problems.append(f"{ref}: the SBOM attestation does not verify for this digest: {a.stderr.strip()[-300:]}")
+            rows.append({"image": f"fyniq-{svc}:{version}", "reference": ref, "digest": digest, "signature_verified": signed,
+                         "sbom_attestation_verified": sbom})
+
+        # The planted failures: verification must refuse a key that did not sign, and an image nobody signed.
+        refused = {}
+        w = run("cosign", "verify", "--key", str(tmp / "other.pub"), "--insecure-ignore-tlog=true", rows[0]["reference"], env=env)
+        refused["wrong_key"] = w.returncode != 0
+        if w.returncode == 0:
+            problems.append(f"{rows[0]['reference']} verified with a key that never signed it")
+        if throwaway:   # the local flavour goes only to the throwaway registry, never to a real one (DEV-07)
+            unsigned = push("fyniq-api:local", f"{registry}/fyniq-api:local", tagged)
+            u = run("cosign", "verify", "--key", public, "--insecure-ignore-tlog=true", unsigned, env=env)
+            refused["unsigned_image"] = u.returncode != 0
+            if u.returncode == 0:
+                problems.append(f"{unsigned}: an image nobody signed verified")
+
+        cosign_version = json.loads(run("cosign", "version", "--json").stdout or "{}").get("gitVersion", "unknown")
+        (REPORTS / "signatures.json").write_text(json.dumps({
+            "version": version,
+            "git_sha": run("git", "rev-parse", "HEAD").stdout.strip(),
+            "signed_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+            "cosign": cosign_version,
+            "registry": f"throwaway {REGISTRY_IMAGE.split('@')[0]} on {registry}" if throwaway else registry,
+            "key": "a key pair made for this run; its public half is cosign.pub" if ephemeral else key,
+            "key_custody": "made for this run and deleted after it; the release workflow signs keyless with GitHub OIDC" if ephemeral else "as named",
+            "transparency_log": "not used: nothing from a pull request is published; verified against the key",
+            "images": rows,
+            "refused": refused,
+            "problems": problems,
+        }, indent=1))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+        if tagged:      # the registry's tags only; the images keep their own
+            subprocess.run(["docker", "rmi", *tagged], capture_output=True)
+        if container:
+            subprocess.run(["docker", "rm", "-f", container], capture_output=True)
+    if problems:
+        print("✖ image signing (NFR-IMG-05, SEC-22):\n  " + "\n  ".join(problems))
+        return 1
+    print(f"✔ {len(rows)} release images pushed by digest, signed and their SBOMs attested; both verify, and a wrong key"
+          f"{' and an unsigned image are' if throwaway else ' is'} refused; evidence in .data/images/signatures.json")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "scan", "self-test"])
+    ap.add_argument("command", choices=["check", "scan", "sign", "self-test"])
     ap.add_argument("--version", default="0.0.0")
     ap.add_argument("--flavours", default="release local")
+    ap.add_argument("--registry", default="", help="sign: push here (host[:port][/path]); default a throwaway local registry")
+    ap.add_argument("--key", default="", help="sign: a cosign key reference (a key file or a KMS URI); default a key pair made for the run")
     a = ap.parse_args()
     if a.command == "self-test":
         self_test()
         return 0
     if a.command == "check":
         return check(a.version, a.flavours.split())
+    if a.command == "sign":
+        return sign_images(a.version, a.registry, a.key)
     return scan_images(a.version)
 
 
