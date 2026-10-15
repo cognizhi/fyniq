@@ -38,7 +38,7 @@ cause; do not skip or weaken the gate.
 | `make check` (**exists today**) | Token contrast validator, release config validation | Python 3 |
 
 Narrow loops while you work (once the code exists): `go test ./internal/engine/...`,
-`pytest oracle -k <name>`, `pnpm --filter web test <file>`. Always finish with `make test`.
+`cd oracle && uv run python -m pytest -k <name>` (or `make oracle-test`), `pnpm --filter web test <file>`. Always finish with `make test`.
 
 ## Every gate (PRD §16.2, rev 0.2)
 

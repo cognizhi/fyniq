@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fyniq-scenario-result@1",
+  "description": "What the Go engine and the Python oracle each write for a fyniq-scenario@1 scenario; the comparator diffs two of them to the cent (QA-ENG-02). README.md beside this file states how to compare them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "name", "entries", "rejected", "trial_balance"],
+  "properties": {
+    "schema": {"const": "fyniq-scenario-result@1"},
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"},
+    "entries": {
+      "description": "Every posted entry: the documents in scenario order, then the reversals in scenario order.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["document", "kind", "posting_date", "lines"],
+        "properties": {
+          "document": {"type": "string"},
+          "kind": {"enum": ["post", "reversal"]},
+          "posting_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+          "lines": {
+            "description": "In the document's line order.",
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["account", "currency", "amount", "base_amount"],
+              "properties": {
+                "account": {"type": "string"},
+                "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+                "amount": {"description": "At the line currency's minor units.", "$ref": "#/$defs/decimal"},
+                "base_amount": {"description": "At the base currency's minor units.", "$ref": "#/$defs/decimal"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "rejected": {
+      "description": "The refused documents ('<id>') and reversals ('<id>/reversal'), in the order they were refused. No reason codes.",
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "trial_balance": {
+      "description": "Posting month -> account -> base-currency total of the month's lines. An account whose total is zero may be left out; a comparator reads a missing account or month as zero.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[0-9]{4}-(0[1-9]|1[0-2])$": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/decimal"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "decimal": {
+      "description": "A plain decimal string: no exponent, no '+', no grouping.",
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    }
+  }
+}

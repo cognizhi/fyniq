@@ -38,6 +38,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+.hypothesis/
 
 # Local data
 .data/

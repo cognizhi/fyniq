@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fyniq-scenario@1",
+  "description": "A differential-test scenario that the Go engine (cmd/scenario-run) and the Python oracle (oracle/) both read (QA-ENG-02, task 2.1). The schema fixes the structure; the content of journal lines (amounts, rates, currency codes, accounts, balance) is checked by the posting rules, which reject the document rather than the scenario. README.md beside this file states the rules a schema cannot express. Patterns are RE2- and ECMA-262-compatible so validators in both languages agree.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "name", "base_currency", "currencies", "accounts", "documents", "reversals"],
+  "properties": {
+    "schema": {"const": "fyniq-scenario@1"},
+    "name": {
+      "description": "A short, file-safe name: the generator writes the scenario to <name>.json.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"
+    },
+    "base_currency": {
+      "description": "The organisation's base currency; must be a key of currencies.",
+      "$ref": "#/$defs/currencyCode"
+    },
+    "currencies": {
+      "description": "ISO 4217 code -> minor units (SGD 2, JPY 0, KWD 3). Amounts are NUMERIC(20,4), so at most 4.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"$ref": "#/$defs/currencyCode"},
+      "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 4}
+    },
+    "accounts": {
+      "description": "The chart of accounts. Codes are unique.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "type", "group", "active"],
+        "properties": {
+          "code": {"$ref": "#/$defs/accountCode"},
+          "type": {"enum": ["asset", "liability", "equity", "revenue", "expense"]},
+          "group": {"description": "A group (parent) account cannot be posted to (INV-04).", "type": "boolean"},
+          "active": {"type": "boolean"}
+        }
+      }
+    },
+    "documents": {
+      "description": "Posted in array order. IDs are unique.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/manualJournal"}
+    },
+    "reversals": {
+      "description": "Applied in array order, after every document.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["document", "date"],
+        "properties": {
+          "document": {"description": "The ID of the document whose posted entry is reversed.", "type": "string"},
+          "date": {"$ref": "#/$defs/date"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "currencyCode": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "accountCode": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$"},
+    "date": {
+      "description": "A calendar date, YYYY-MM-DD; an impossible day (2026-02-30) makes the scenario invalid.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "manualJournal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "memo", "lines"],
+      "properties": {
+        "type": {"const": "manual_journal"},
+        "id": {
+          "description": "Unique in the scenario. No '/', which the result uses for '<id>/reversal'.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+        },
+        "version": {"type": "integer", "minimum": 1},
+        "date": {"$ref": "#/$defs/date"},
+        "memo": {"type": "string"},
+        "lines": {
+          "description": "Any number of lines: fewer than two is a rejection, not a scenario error.",
+          "type": "array",
+          "items": {"$ref": "#/$defs/journalLine"}
+        }
+      }
+    },
+    "journalLine": {
+      "description": "Every value is a string, so no parser reads it as a binary float. Whether the account exists, the currency is known, the amount is a plain decimal at most at the currency's minor units and within 16 integer digits, and the rate is a plain positive decimal with at most 10 decimals, is a posting rule: a line that breaks one is rejected with its document.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account", "currency", "amount"],
+      "properties": {
+        "account": {"type": "string"},
+        "currency": {"type": "string"},
+        "amount": {"description": "Signed: debit positive, credit negative.", "type": "string"},
+        "fx_rate": {"description": "Base per unit of the line's currency. Only on lines not in the base currency.", "type": "string"},
+        "fx_rate_source": {"description": "Where the rate came from (ENG-40), e.g. \"document\". Only with fx_rate.", "type": "string", "minLength": 1}
+      }
+    }
+  }
+}
