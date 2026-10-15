@@ -2,10 +2,10 @@
 
 ## 1. Schema and writing
 
-- [ ] 1.1 Define the AUD-01 event schema (versioned, documented in `contracts/`) and the audit table with RLS; test `// req: AUD-01` validates every emitted event against the schema
-- [ ] 1.2 Make the unit of work append the audit event in the same transaction, and add the deferred trigger that rejects audited changes without one; attack test `// req: AUD-08` writes through raw SQL without an event and expects the commit to fail
-- [ ] 1.3 Compute the per-organisation hash chain under the fixed lock order; test `// req: INV-12` tampers with one stored event and expects verification to fail
-- [ ] 1.4 Mask sensitive fields in `changes` and in logs; test `// req: SEC-15` asserts no bank number, NRIC or token appears in events or log output
+- [x] 1.1 Define the AUD-01 event schema (versioned, documented in `contracts/`) and the audit table with RLS; test `// req: AUD-01` validates every emitted event against the schema
+- [x] 1.2 Make the unit of work append the audit event in the same transaction, and add the deferred trigger that rejects audited changes without one; attack test `// req: AUD-08` writes through raw SQL without an event and expects the commit to fail
+- [x] 1.3 Compute the per-organisation hash chain under the fixed lock order; test `// req: INV-12` tampers with one stored event and expects verification to fail
+- [x] 1.4 Mask sensitive fields in `changes` and in logs; test `// req: SEC-15` asserts no bank number, NRIC or token appears in events or log output
 
 ## 2. Anchors and verification
 

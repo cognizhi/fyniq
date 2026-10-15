@@ -60,7 +60,8 @@ type payloadLine struct {
 type Service struct {
 	Store storage.Store
 	// AfterPosting runs inside the unit of work after an entry (or its reversal) is written and the
-	// document updated; p0-audit-chain writes its audit event here. An error rolls everything back.
+	// document updated, for work that must commit with the posting. An error rolls everything back.
+	// (The audit events need no hook: the unit of work records every change it makes.)
 	AfterPosting func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document, entry storage.Entry) error
 }
 
@@ -131,6 +132,9 @@ func (s Service) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, er
 // Reverse undoes a posted journal with a reversing entry dated date (FR-GL-12); posted history is
 // never changed.
 func (s Service) Reverse(ctx context.Context, org, id uuid.UUID, date time.Time, reason string) (storage.Entry, error) {
+	if reason != "" {
+		ctx = storage.WithReason(ctx, reason) // the audit events record why (FR-GL-12: void = reversal with reason)
+	}
 	var out storage.Entry
 	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		doc, err := u.Documents().Lock(ctx, id)

@@ -27,6 +27,8 @@ type Store interface {
 	// first statement sets the tenant (SEC-02). An error from fn, or a failure at commit, rolls
 	// everything back. The UnitOfWork must not be used after fn returns.
 	Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Context, uow UnitOfWork) error) error
+	// Organisations lists every organisation, for jobs that run for each (the worker's role only).
+	Organisations(ctx context.Context) ([]uuid.UUID, error)
 }
 
 // UnitOfWork gives the repositories of one transaction, all bound to its organisation.
@@ -37,6 +39,7 @@ type UnitOfWork interface {
 	Documents() Documents
 	Ledger() Ledger
 	Balances() Balances
+	Audit() Audit
 }
 
 // Accounts is the chart of accounts (minimal in P0; FR-COA-02 adds the attributes in P1).
@@ -308,6 +311,7 @@ const (
 	CodeOrganisation   = "STORAGE-ORG-01"
 	CodeDocument       = "STORAGE-DOC-01"       // a document's type cannot change, or its version go back
 	CodeDocumentStatus = "STORAGE-DOC-02"       // a document cannot move to that status
+	CodeAudit          = "STORAGE-AUDIT-01"     // the audit trail cannot change, or a change has no audit event
 	CodeDuplicate      = "STORAGE-DUPLICATE-01" // posting identity, account code or reversal already used
 	CodeRetry          = "STORAGE-RETRY-01"     // deadlock or serialisation failure: retry with the same key
 	CodeLockTimeout    = "STORAGE-LOCK-01"      // waited longer than the lock timeout (ENG-47)

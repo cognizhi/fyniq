@@ -12,6 +12,7 @@ func init() {
 		{Port: "secrets", Name: "env", Local: true},
 		{Port: "blobstore", Name: "dir", Local: true},
 		{Port: "queue", Name: "memory", Local: true},
+		{Port: "signer", Name: "ed25519", Local: true},
 	} {
 		runtime.RegisterAdapter(a)
 	}

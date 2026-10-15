@@ -15,6 +15,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
+	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -26,6 +28,8 @@ const DefaultLockTimeout = 5 * time.Second
 type Store struct {
 	pool        *pgxpool.Pool
 	lockTimeout time.Duration
+	clock       ports.Clock   // stamps audit events
+	actor       storage.Actor // the service identity, when a request names no actor
 }
 
 var _ storage.Store = (*Store)(nil)
@@ -35,6 +39,13 @@ type Option func(*Store)
 
 // WithLockTimeout sets how long a unit of work waits for a row lock.
 func WithLockTimeout(d time.Duration) Option { return func(s *Store) { s.lockTimeout = d } }
+
+// WithClock sets the clock that stamps audit events (DEV-05; tests freeze it).
+func WithClock(c ports.Clock) Option { return func(s *Store) { s.clock = c } }
+
+// WithActor sets the service identity recorded when a request names no actor. The default is the
+// database role the store connects as.
+func WithActor(a storage.Actor) Option { return func(s *Store) { s.actor = a } }
 
 // Open connects to url, for example FYNIQ_DATABASE_URL, and checks the connection.
 func Open(ctx context.Context, url string, opts ...Option) (*Store, error) {
@@ -55,7 +66,8 @@ func Open(ctx context.Context, url string, opts ...Option) (*Store, error) {
 
 // New wraps an existing pool.
 func New(pool *pgxpool.Pool, opts ...Option) *Store {
-	s := &Store{pool: pool, lockTimeout: DefaultLockTimeout}
+	s := &Store{pool: pool, lockTimeout: DefaultLockTimeout, clock: clock.System{},
+		actor: storage.Actor{Type: "service", ID: pool.Config().ConnConfig.User}}
 	for _, o := range opts {
 		o(s)
 	}
@@ -89,7 +101,13 @@ func (s *Store) CreateOrganisation(ctx context.Context, o storage.NewOrganisatio
 		}
 		out = storage.Organisation{ID: row.OrganisationID, Name: row.Name, BaseCurrency: row.BaseCurrency,
 			BaseMinorUnits: int(row.BaseMinorUnits), Version: int(row.Version)}
-		return nil
+		u := &unitOfWork{q: q, store: s, org: id}
+		version := 1
+		if err := u.event(ctx, "organisation.created", "organisation", id, &version, map[string][2]any{
+			"name": {nil, row.Name}, "base_currency": {nil, row.BaseCurrency}}); err != nil {
+			return err
+		}
+		return u.flush(ctx)
 	})
 	return out, err
 }
@@ -103,14 +121,24 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 		if err := s.setTenant(ctx, q, org); err != nil {
 			return err
 		}
-		u := &unitOfWork{q: q}
+		u := &unitOfWork{q: q, store: s, org: org}
 		defer func() { u.done = true }()
-		return fn(ctx, u)
+		if err := fn(ctx, u); err != nil {
+			return err
+		}
+		// The audit events go last, just before commit: the chain head is the last lock (ENG-47).
+		return u.flush(ctx)
 	})
 }
 
 func (s *Store) setTenant(ctx context.Context, q *sqlcdb.Queries, org uuid.UUID) error {
 	return q.SetTenant(ctx, sqlcdb.SetTenantParams{OrgID: org.String(), LockTimeout: fmt.Sprintf("%dms", s.lockTimeout.Milliseconds())})
+}
+
+// Organisations implements storage.Store: every organisation in the tenant directory.
+func (s *Store) Organisations(ctx context.Context) ([]uuid.UUID, error) {
+	ids, err := sqlcdb.New(s.pool).ListTenants(ctx)
+	return ids, mapError(err)
 }
 
 // inTx is the one place a transaction begins and ends (NFR-PORT-07).

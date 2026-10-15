@@ -282,6 +282,43 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		wantCode(t, s.Do(ctx, uuid.Nil, func(context.Context, storage.UnitOfWork) error { return nil }), storage.CodeNoTenant)
 	})
 
+	t.Run("every change is in the organisation's audit trail", func(t *testing.T) {
+		b := books(t)
+		if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Ledger().Append(ctx, Sale("audited", Day(10, 14), b, "12.00"))
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		err := worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			head, err := u.Audit().Head(ctx)
+			if err != nil {
+				return err
+			}
+			// organisation, 4 accounts, 2 periods, the entry
+			if head.Seq != 8 || len(head.Hash) != 32 || head.Action != "journal_entry.posted" {
+				t.Errorf("Head = %d %x %q; want 8 events ending with journal_entry.posted", head.Seq, head.Hash, head.Action)
+			}
+			if err := u.Audit().Record(ctx, storage.AuditRecord{Action: "test.recorded", ObjectType: "organisation", ObjectID: b.Org}); err != nil {
+				return err
+			}
+			evs, err := u.Audit().Events(ctx, 6, 10)
+			if err == nil && (len(evs) != 2 || evs[0].Seq != 7 || evs[1].Seq != 8) {
+				t.Errorf("Events(after 6) = %d events; want 7 and 8 (the recorded one is written at commit)", len(evs))
+			}
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if head, _ := u.Audit().Head(ctx); head.Seq != 9 || head.Action != "test.recorded" {
+				t.Errorf("after commit, Head = %d %q; want the recorded event at 9", head.Seq, head.Action)
+			}
+			return nil
+		})
+	})
+
 	t.Run("balances follow the lines and rebuild to the same figures", func(t *testing.T) {
 		b := books(t)
 		err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
