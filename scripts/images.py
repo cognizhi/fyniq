@@ -22,6 +22,7 @@ import argparse
 import datetime as dt
 import io
 import json
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -41,6 +42,8 @@ LOCAL_MARK = b"github.com/cognizhi/fyniq/internal/adapters/local"
 
 
 def sh(*cmd: str, capture: bool = True) -> str:
+    if shutil.which(cmd[0]) is None:
+        raise SystemExit(f"✖ {cmd[0]} is not installed: install the toolchain with `make setup` (mise.toml pins it)")
     p = subprocess.run(cmd, cwd=ROOT, capture_output=capture, text=True)
     if p.returncode != 0:
         raise SystemExit(f"✖ {' '.join(cmd[:4])}: {p.stderr.strip()[-2000:]}")
