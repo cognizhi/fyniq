@@ -77,3 +77,57 @@ Source: PRD-001 §10.5 · Priority M · Phase P1
 #### Scenario: Error code
 - **WHEN** a validation message is shown or returned
 - **THEN** it carries an error code that tests and support can use
+
+### Requirement: ENG-24 Manual journal validity
+A manual journal SHALL post only when every validity rule holds; otherwise it SHALL be rejected whole, post no line and report every failure at once with its field and code. The engine SHALL never add, drop or change a line to make a journal post (PRD-001 §10.2: as entered).
+
+Source: PRD-001 §10.5 · Priority M · Phase P0
+
+#### Scenario: Rejected whole, every failure at once
+- **WHEN** a manual journal breaks one or more rules
+- **THEN** it is rejected whole (✖, ENG-21) and posts no line
+- **AND** every failure is reported at once with its field and code (ENG-23, FR-INT-07)
+
+#### Scenario: Rule 1, currencies and the input boundary
+- **WHEN** a line's currency is not one the organisation uses, or an amount or rate fails the input boundary (ENG-44)
+- **THEN** the journal is rejected
+
+#### Scenario: Rule 2, at least two lines
+- **WHEN** a manual journal has fewer than two lines
+- **THEN** it is rejected
+
+#### Scenario: Rule 3, no zero line
+- **WHEN** a line's amount is zero
+- **THEN** the journal is rejected
+- **AND** a non-zero line whose base amount rounds to zero still posts, with base amount 0.00 (IDR 50 at SGD 0.000085 per IDR; INV-05)
+
+#### Scenario: Rule 4, postable accounts
+- **WHEN** a line's account does not exist, is inactive or is a group account
+- **THEN** the journal is rejected (INV-04)
+
+#### Scenario: Rule 5, rates and their sources
+- **WHEN** a line not in the base currency has no rate or no source, or a rate is entered on a base-currency line
+- **THEN** the journal is rejected (ENG-03)
+
+#### Scenario: Rule 6, base amounts fit their column
+- **WHEN** a line's computed base amount does not fit its column
+- **THEN** the journal is rejected (ENG-44)
+
+#### Scenario: Rule 7, balanced in base
+- **WHEN** the base amounts, each `RND-FX` of its line, do not sum to zero
+- **THEN** the journal is rejected (INV-01)
+
+#### Scenario: Rule 8, a one-currency journal balances in its currency
+- **GIVEN** every line of a journal is in one currency
+- **WHEN** the amounts do not sum to zero in that currency
+- **THEN** the journal is rejected (INV-01, FR-GL-01)
+
+#### Scenario: The engine never repairs a journal
+- **GIVEN** a journal in USD, 0.01 + 0.01 − 0.02 at 1.5, whose base amounts are SGD 0.02 + 0.02 − 0.03
+- **WHEN** it is posted
+- **THEN** it is rejected as unbalanced in base, naming the difference
+- **AND** the engine neither adds a 7030 line nor changes a base amount; the preparer adds a base-currency line to 7030 FX and rounding (FR-GL-01)
+
+#### Scenario: The invariants apply as well
+- **WHEN** a manual journal line posts to a share-capital account
+- **THEN** it is refused (INV-13)

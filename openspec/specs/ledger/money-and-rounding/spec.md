@@ -60,6 +60,11 @@ Source: PRD-001 §10.3 · Priority M · Phase P0
 - **THEN** it keeps at least 10 decimal places
 - **AND** a rate below 0.001 therefore keeps fewer than 10 significant digits (open question 30)
 
+#### Scenario: FX rates are base per one unit
+- **WHEN** an FX rate is stored
+- **THEN** it is base-currency units per one unit of the line's currency, and a manual journal's rate is entered that way
+- **AND** a rate quoted the other way or per 100 units is converted when it is stored (`RND-RATE`), and the original quote is kept beside it
+
 #### Scenario: Quantities and unit prices
 - **WHEN** a quantity or unit price is stored
 - **THEN** it keeps up to 6 decimal places
@@ -92,6 +97,16 @@ Source: PRD-001 §10.3 · Priority M · Phase P0
 #### Scenario: Out of range or not a plain decimal
 - **WHEN** a value is outside its column's range, or is `NaN`, `Infinity` or in exponent notation
 - **THEN** it is rejected with a field error (FR-INT-07, ENG-23)
+
+#### Scenario: Decimal places counted as written
+- **WHEN** an amount is written with more decimal places than its currency's minor units, even zeros (`"12345.0"` for JPY)
+- **THEN** it is rejected with a field error
+- **AND** `"100"` for USD is accepted, and the money-string pattern for each currency states its limit (FR-INT-13)
+
+#### Scenario: Computed base amount out of range
+- **WHEN** a computed base amount falls outside its column's range, although the amount and the rate each fit
+- **THEN** the document is rejected with a field error on the line (ENG-23)
+- **AND** the base amount is never truncated
 
 #### Scenario: Rounding only inside a named policy
 - **WHEN** a value is rounded
@@ -138,6 +153,11 @@ Source: PRD-001 §10.3 · Priority M · Phase P0
 - **THEN** it uses the stored base amounts
 - **AND** it does not re-convert the entries
 
+#### Scenario: A reversal negates the stored base amounts
+- **WHEN** an entry is reversed
+- **THEN** the reversal's base amounts are the entry's stored base amounts, negated (FR-GL-12)
+- **AND** they are not re-converted
+
 ### Requirement: RND-FX Foreign amount to base currency
 A base amount converted from a foreign amount SHALL be rounded to the base currency's minor units, half-up (rule from the workbook, `ROUND(amt×fx,2)`).
 
@@ -146,6 +166,28 @@ Source: PRD-001 §10.4
 #### Scenario: Conversion formula
 - **WHEN** a foreign amount is converted at a rate
 - **THEN** base amount = round(foreign amount × rate, base minor units), half-up
+
+### Requirement: RND-RATE Rate quotes stored as base per one unit
+A rate quoted per 100 units, or as foreign currency per unit of the base currency, SHALL be converted when it is stored to base currency per one unit of the foreign currency, rounded to 10 decimal places half-up, with the original quote kept beside it. It applies from P1, when rates come from the rate feed (ENG-40, FR-GL-05).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Quote per n units of the foreign currency
+- **WHEN** a rate is quoted as base currency per n units of the foreign currency (n = 1 or 100)
+- **THEN** it is stored as round(quote ÷ n, 10), half-up
+
+#### Scenario: Quote the other way
+- **WHEN** a rate is quoted as foreign currency per one unit of the base currency
+- **THEN** it is stored as round(1 ÷ quote, 10), half-up
+
+#### Scenario: The original quote is kept
+- **WHEN** a converted rate is stored
+- **THEN** the original quote and its form are kept beside it
+- **AND** the stored rate is within the error bound of open question 30
+
+#### Scenario: A manual journal's rate is entered base per unit
+- **WHEN** a manual journal's rate is entered
+- **THEN** it is entered as base currency per one unit of the line's currency (ENG-11), so no conversion applies
 
 ### Requirement: RND-GST-EXCL GST on a document
 GST on a document SHALL be rounded to the cent, half-up, computed per subtotal by default or per line as an organisation setting, applied consistently (rules from the workbook and IRAS: per line or per subtotal if done consistently, the total rounded to the nearest cent).
