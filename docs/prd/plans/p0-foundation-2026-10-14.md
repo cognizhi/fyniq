@@ -75,7 +75,7 @@ What the local evidence shows, item by item:
 |---|---|---|
 | 1 | `make test` offline, and CI with no cloud credentials (QA-LOCAL-01 runs `make up` from the local images) | — |
 | 2 | The attack suites (QA-ENG-05) and the authorisation matrix (QA-SEC-03) in `make test` | — |
-| 3 | The chain is written in the same transaction and checked by the nightly `audit.VerifyAll`. Anchors are signed (local Ed25519, and the Cloud KMS adapter against a fake) and written once (the local store, and the Cloud Storage adapter against fake-gcs-server) | The retention-locked bucket in staging, and an attempted delete |
+| 3 | The chain is written in the same transaction and checked by the nightly `audit.VerifyAll`. Anchors are signed (local Ed25519, and the Cloud KMS adapter against a fake). The Cloud Storage adapter writes each anchor once, tested against fake-gcs-server; the local store is a plain directory, which can overwrite | The retention-locked bucket in staging, and an attempted delete |
 | 4 | Every image within its budget and hardened (`make images`). Each release image is signed, its SBOM attested and both verified by digest (`make image-sign`) | Keyless signing into Artifact Registry, and the deployment to staging by digest |
 | 5 | — | Not the cloud: release pull request #3 (0.1.0) waits for the GitHub App (REL-06) |
 | 6 | `TestOAuthTokensAreAudienceBound`, `TestMCPDelegationOptionB` and `TestTokenLifecycle` against the pinned Hydra | — |
@@ -110,8 +110,8 @@ Then they move into one change for the first cloud deployment, and the P0 change
   requirements. P0 builds and tests their middleware (change 7) without claiming the requirements.
 - FR-UX-41's banner is P1, built with the web app's screens. The review register and its check
   (`make review-check`) already exist (rev 0.22).
-- Two release pull requests are open (#1 and #3, both "release 0.1.0"). release-please should own one;
-  close the stale one before change 8 switches its token.
+- Two release pull requests were open (#1 and #3, both "release 0.1.0"). (16 Oct 2026: only #3 is open, and
+  release-please keeps it current.)
 - `openspec/config.yaml` had an unquoted `: ` in a tasks rule, so the CLI ignored the tasks rules; this
   plan's pull request quotes it.
 
