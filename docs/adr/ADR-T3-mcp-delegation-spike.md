@@ -4,8 +4,10 @@
 options (a), (b) and (c) before P1's MCP work (PRD-001 open question 40, decided rev 0.20: "the P0
 identity spike proves option (b); an Enterprise Licence quote is requested at the same time").
 **Status:** spike built and measured on 15 Oct 2026 against the pinned Ory Hydra Apache-2.0 v26.2.0
-(`docs/adr/ADR-T3-identity-and-oauth.md`). **The Enterprise Licence quote:** requested by the founders,
-not received yet; it belongs beside this record when it arrives.
+(`docs/adr/ADR-T3-identity-and-oauth.md`). **Founder decision (16 Oct 2026): no Enterprise Licence.** Fyniq
+stays on the Apache-2.0 build, the quote is no longer sought, and option (b) is the path for P1's MCP work.
+It still has to pass the MCP red-team suite (QA-MCP-01) and the security review (#4) before any MCP client
+is enabled; open question 40 in PRD-001 records the decision in its next revision.
 
 ## The problem
 
@@ -15,7 +17,7 @@ The clean way is RFC 8693 token exchange, which Hydra's Apache-2.0 build does no
 
 | Option | What | Cost and risk |
 |---|---|---|
-| (a) | Ory Enterprise Licence: token exchange (RFC 8693) | A licence fee (quote pending) |
+| (a) | Ory Enterprise Licence: token exchange (RFC 8693) | A licence fee (not sought: founder decision, 16 Oct 2026) |
 | **(b)** | **RFC 7523 JWT-bearer grant** in the Apache-2.0 build, from the MCP server's own key, only for the subject of an MCP token it has just validated, at most 5 minutes, scopes intersected by the API | **This spike** |
 | (c) | Another Apache-2.0 server with token exchange, e.g. Keycloak 26.2+ (internal-to-internal only, no `resource`) | A second OAuth server to run and secure |
 
@@ -82,6 +84,12 @@ The clean way is RFC 8693 token exchange, which Hydra's Apache-2.0 build does no
 - **Prefer option (a) if the Enterprise Licence quote is affordable.** It removes the any-subject
   weakness without running a second OAuth server.
 - **Option (c)** only if (a) is too expensive and (b) is rejected.
+
+**Decided (founders, 16 Oct 2026): option (b), on the free build.** The founders chose not to buy the
+Enterprise Licence, so option (a) is out. Limits 1 and 2 stand as the accepted cost, with the mitigations
+above as conditions: the key in Cloud KMS, `private_key_jwt` for the delegation client, and an alert on
+every delegated token. QA-MCP-01 and the security review (#4) can still reject option (b); option (c)
+is then the fallback, and choosing it changes only `internal/mcpdelegation`.
 
 ## Not done in the spike
 

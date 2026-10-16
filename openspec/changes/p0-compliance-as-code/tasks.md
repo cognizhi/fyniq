@@ -7,7 +7,7 @@
 
 ## 2. P0 checks
 
-- [ ] 2.1 Wire the CI checks: `// req: CTL-CHG-03`, `// req: CTL-CHG-04`, `// req: CTL-CHG-08`, `// req: CTL-CHG-10`, `// req: CTL-CHG-11` and `// req: CTL-IAM-05`, each leaving its report as evidence (15 Oct 2026: all but CTL-CHG-04 run with their artefacts; CTL-CHG-04 waits for image signing, p0-infra-opentofu)
+- [ ] 2.1 Wire the CI checks: `// req: CTL-CHG-03`, `// req: CTL-CHG-04`, `// req: CTL-CHG-08`, `// req: CTL-CHG-10`, `// req: CTL-CHG-11` and `// req: CTL-IAM-05`, each leaving its report as evidence (15 Oct 2026: all but CTL-CHG-04 run with their artefacts; CTL-CHG-04 waits for image signing, p0-infra-opentofu) (16 Oct 2026: images are signed and verified on every pull request with `make image-sign`, so what CTL-CHG-04 still lacks is its own check, Binary Authorization's daily enforcement check, which needs the cloud; it moves to the gate before the first cloud deployment with the other staging tasks)
 - [x] 2.2 Add the check that release images contain no local adapter and that staging and production run with `FYNIQ_ENV` set correctly; tests `// req: CTL-CHG-09` and `// req: SEC-16`
 - [x] 2.3 Add the log-scrubbing test across services; test `// req: SEC-15` (in the QA-LOCAL-01 smoke: synthetic NRIC, FIN, bank number and tokens sent to the stack, then every service's log is searched)
 - [x] 2.4 Add the branch-protection check (author is not the approver, reviews required); `// req: CTL-CHG-01` reports "not enabled" until the founder switches protection on
