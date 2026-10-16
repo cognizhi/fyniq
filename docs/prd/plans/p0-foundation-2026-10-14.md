@@ -83,6 +83,7 @@ What the local evidence shows, item by item:
 
 The tasks that wait for the cloud stay open in their changes until the PRD revision names the new gate.
 Then they move into one change for the first cloud deployment, and the P0 changes are archived.
+What follows P0, that change included, is planned in `p1-p3-build-plan-2026-10-16.md`.
 
 ## Rules for building P0
 
