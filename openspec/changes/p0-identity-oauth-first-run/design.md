@@ -25,7 +25,8 @@ and no token exchange (checked 14 Oct 2026). §9.7 and open question 40 describe
   the MCP token it just introspected; Hydra issues a token with at most 5 minutes' lifetime; the API
   intersects its scopes with the user's current rights. The weakness, that a stolen MCP key could mint
   tokens for any user within the agent class, is written up for the security reviewer with the
-  Enterprise Licence quote beside it.
+  Enterprise Licence quote beside it. (16 Oct 2026: the founders decided against the Enterprise Licence;
+  option (b) is the path for P1, subject to QA-MCP-01 and the security review.)
 - **Revocation within 60 seconds.** Opaque tokens with introspection, cached for at most 30 seconds; a
   role change revokes the user's tokens.
 - **Issuer check.** The configured issuer per provider is stored, and the ID token's `iss` must equal it
@@ -172,6 +173,7 @@ and no token exchange (checked 14 Oct 2026). §9.7 and open question 40 describe
 ## Risks / Trade-offs
 
 - [The security review rejects option (b)] → the spike's code is isolated in `cmd/mcp`, and switching to
-  the Enterprise Licence (option a) or another server (option c) changes only that path.
+  the Enterprise Licence (option a) or another server (option c) changes only that path. (16 Oct 2026:
+  with the Enterprise Licence ruled out by the founders, option (c) is the fallback.)
 - [Zoho's token `iss` differs from the discovery document] → exit item 7 tests the live token in staging,
   not only discovery.

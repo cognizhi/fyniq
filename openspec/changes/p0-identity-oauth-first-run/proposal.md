@@ -45,7 +45,8 @@ exit items 6 and 7.
 - `cmd/api` (login, consent, setup wizard), `cmd/mcp` (token exchange spike only), the `oauth` image,
   `internal/ports/signin`, `internal/adapters/{gcp,local}/signin`, `docs/runbooks/super-admin-recovery.md`.
 - **Needs the founder first:** a Zoho developer app in the US data centre, the Google OAuth client, and
-  the Ory Enterprise Licence quote (open question 40).
+  the Ory Enterprise Licence quote (open question 40). (16 Oct 2026: the founders decided not to buy the
+  licence, so the quote is no longer needed.)
 - **Second human reviewer required:** the security reviewer (AGENTS.md: the AI/MCP path and identity).
 - Screens: the first-run setup and sign-in screens are already designed (`first-run-setup`, `sign-in` in
   `docs/design/screens/inventory.json`); the first-run setup carries the security banner (FR-UX-41).

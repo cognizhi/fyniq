@@ -10,7 +10,7 @@ asks ("the Hydra version and edition are pinned").
 |---|---|
 | Server | Ory Hydra, **Apache-2.0 build v26.2.0** (git `0b84568f`, built 20 Mar 2026) |
 | Image | `oryd/hydra:v26.2.0@sha256:ff67c7fb5f95074fa53374d41151713554960504b340cd3f95b09e65deaea2a9` (`internal/adapters/hydra.Image`; the local stack uses the same, a test keeps them equal) |
-| Edition | Apache-2.0: no RFC 8693 token exchange, no RFC 8707 resource indicators, no Client ID Metadata Documents (open question 40). The Enterprise Licence quote is the founders' to obtain. Option (b), the JWT-bearer grant from the MCP server's key, is built and measured: `ADR-T3-mcp-delegation-spike.md` |
+| Edition | Apache-2.0: no RFC 8693 token exchange, no RFC 8707 resource indicators, no Client ID Metadata Documents (open question 40). The founders decided on 16 Oct 2026 not to buy the Enterprise Licence. Option (b), the JWT-bearer grant from the MCP server's key, is built and measured, and is the path for P1's MCP work: `ADR-T3-mcp-delegation-spike.md` |
 | Storage | Its own database, `hydra`, on the same PostgreSQL server, owned by its own role (Cloud SQL in the cloud, p0-infra-opentofu) |
 | Settings | `OAUTH2_PKCE_ENFORCED=true`; opaque access tokens (`STRATEGIES_ACCESS_TOKEN=opaque`) with introspection; access tokens 1 hour; `--sqa-opt-out` (no telemetry); `--dev` only in the local stack and the tests (it allows an `http` issuer) |
 | Endpoints | Public under `/oauth/` (issuer `http://localhost:8080/oauth/` locally); admin API internal only. Login and consent are the API's `/auth/login` and `/auth/consent` |
