@@ -24,11 +24,13 @@ The coverage table at the end lists each change's requirements and screens.
   follow the P1 build. P2 and P3 come after go-live.
 - **Sizes, not durations.** "Reqs" and "Screens" count what each change builds. §17.2 says P1 is
   re-estimated from the team's capacity once the launch subset is frozen, so this plan gives no weeks.
-- **Home changes.** Four tables cut across every module:
+- **Home changes.** Five tables cut across every module:
   - the permission matrix (Appendix D, in `p1-users-roles`);
   - the checks catalogue (Appendix C, in `p1-checks`);
   - the control registry rows (Appendix F, in `p1-compliance-center`);
-  - the quality gates (§16.2, in `p1-launch-readiness`).
+  - the quality gates (§16.2, in `p1-launch-readiness`);
+  - the Singapore statutory obligations (§14.2, in `p1-statutory-packs`). Some of them, such as
+    InvoiceNow, corporate tax, IR8A and ACRA filings, close only in P2.
 
   Each row is built with the module it guards, and the home change closes the rows that are left.
 - **Mixed phases.** A row such as "P1 (import) / P2 (feed)" sits with its P1 change. The P2 change that
@@ -76,9 +78,10 @@ Everything in the P0 plan's "Rules for building P0" still holds. In addition:
 | 2 · The launch subset is frozen (open question 25) | Proposed below, not frozen | The founders freeze it. The first task of `p1-launch-readiness`, done early in wave 1 ahead of the rest of that change, records the subset in the repository and makes the trace gate (QA-TRACE-01) check it. Progress is then measured against the subset from the start |
 | 3 · Accountant and tax agent reviews | No longer a gate (rev 0.22): pages under review show the FR-UX-41 banner | — |
 
-By the PRD, P1 build starts once criteria 1 and 2 hold. The first wave needs only a few of the
-decisions (questions 5, 20, 35, 44 and 45, and Nemura's 2, 10 and 11), so answering those first lets
-wave 1 start while the rest are settled.
+By the PRD, P1 build starts once criteria 1 and 2 hold. Wave 1 itself depends on only a few of the
+decisions: questions 5, 20, 35, 44 and 45, and Nemura's 2, 10 and 11. Starting wave 1 before the rest
+are answered would depart from §17.4 item 1. The founders would have to record that departure, and the
+PRD session would make it a PRD change.
 
 ## The launch subset (proposed)
 
@@ -90,8 +93,8 @@ Open question 25's default puts these in the launch subset:
 Every other P1 row is "P1 after go-live". Applied change by change, the "Launch (proposed)" column reads:
 
 - **Launch:**
-  - 29 changes: the foundations, the ledger and its documents, banking, founders' money and the
-    equity register, reports, KPIs and planning;
+  - the foundations, the ledger and its documents, banking, founders' money and the equity register,
+    reports, KPIs and planning;
   - checks, the audit explorer, compliance and PDPA;
   - hardening, operations, the migration and readiness.
 - **Decide:**
@@ -291,7 +294,8 @@ providers.
 Nemura is optional and has its own image, database, web app and sign-in (ADR-N1). Its track can start
 after Fyniq's wave 1, because it reuses the users and roles, the statutory pack mechanism and the shell
 patterns. Whether it goes live with Fyniq is Nemura's question 12. With no founder salary and no
-employees, Nemura can follow Fyniq's launch.
+employees, Nemura can follow Fyniq's launch. In this table, the "#" column is the order within the Nemura track,
+not a Fyniq wave.
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch (proposed) |
 |---|---|---|---|---|---|---|---|---|---|
