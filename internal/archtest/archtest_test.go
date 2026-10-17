@@ -376,6 +376,38 @@ jobs:
 	}
 }
 
+// req: REL-06
+func TestReleasePleaseRunsWithTheAppToken(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "workflows", "release-please.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := ReleaseAppTokenViolations(src); len(got) > 0 {
+		t.Fatalf("release-please.yml:\n%s", strings.Join(got, "\n"))
+	}
+	planted := []byte(`
+jobs:
+  release-please:
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/create-github-app-token@0000000000000000000000000000000000000000
+        id: app-token
+        with:
+          owner: cognizhi
+          permission-contents: write
+          permission-administration: write
+      - uses: googleapis/release-please-action@0000000000000000000000000000000000000000
+        with:
+          config-file: release-please-config.json
+`)
+	// a GITHUB_TOKEN with write, scopes beyond the three, a token for more than this repository,
+	// release-please on the default token
+	if got := ReleaseAppTokenViolations(planted); len(got) != 4 {
+		t.Fatalf("want 4 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	}
+}
+
 // Every step of `make ci` runs in a CI job, so CI is exactly what `make ci` runs (p0-ci-images-release 1.1).
 // req: SEC-21
 // asvs: V15.2.1

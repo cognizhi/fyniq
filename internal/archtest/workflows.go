@@ -21,10 +21,9 @@ var WriteJobs = map[string]struct {
 	Scopes []string
 	Why    string
 }{
-	"release-please.yml/release-please": {[]string{"contents", "issues", "pull-requests"}, "release-please opens the release pull request and tags releases (REL-02)"},
-	"auto-approve.yml/approve":          {[]string{"pull-requests"}, "approves the owner's development pull requests before production (founder decision, 14 Oct 2026)"},
-	"infra.yml/plan":                    {[]string{"id-token"}, "plans each environment through Workload Identity Federation, which trusts main and tags only (SEC-04, CTL-CHG-02)"},
-	"infra.yml/apply":                   {[]string{"id-token"}, "applies one environment through Workload Identity Federation, in a GitHub environment that holds production for approval (§12.4)"},
+	"auto-approve.yml/approve": {[]string{"pull-requests"}, "approves the owner's development pull requests before production (founder decision, 14 Oct 2026)"},
+	"infra.yml/plan":           {[]string{"id-token"}, "plans each environment through Workload Identity Federation, which trusts main and tags only (SEC-04, CTL-CHG-02)"},
+	"infra.yml/apply":          {[]string{"id-token"}, "applies one environment through Workload Identity Federation, in a GitHub environment that holds production for approval (§12.4)"},
 }
 
 var (
@@ -159,6 +158,78 @@ func WorkflowViolations(name string, src []byte) []string {
 				bad("reads secrets.%s in a pull_request_target workflow", m[1])
 			}
 		}
+	}
+	return out
+}
+
+// ReleaseAppTokenViolations checks release-please.yml against REL-06: release-please writes with an
+// installation token of the organisation's GitHub App, narrowed to the scopes it needs, and its job's
+// GITHUB_TOKEN gets nothing. GitHub starts no workflow for a push made with GITHUB_TOKEN, so without
+// the App token CI never runs on the release pull request.
+func ReleaseAppTokenViolations(src []byte) []string {
+	type step struct {
+		ID   string            `yaml:"id"`
+		Uses string            `yaml:"uses"`
+		With map[string]string `yaml:"with"`
+	}
+	var w struct {
+		Jobs map[string]struct {
+			Permissions yaml.Node `yaml:"permissions"`
+			Steps       []step    `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	if err := yaml.Unmarshal(src, &w); err != nil {
+		return []string{fmt.Sprintf("not YAML: %v", err)}
+	}
+	j, ok := w.Jobs["release-please"]
+	if !ok {
+		return []string{"no release-please job"}
+	}
+	var out []string
+	if !(j.Permissions.Kind == yaml.MappingNode && len(j.Permissions.Content) == 0) {
+		out = append(out, "the release-please job's GITHUB_TOKEN must be `permissions: {}`: it writes with the App token")
+	}
+	wantScopes := []string{"permission-contents", "permission-issues", "permission-pull-requests"}
+	tokenOf := map[string]bool{}
+	for _, s := range j.Steps {
+		if !strings.HasPrefix(s.Uses, "actions/create-github-app-token@") {
+			continue
+		}
+		var scopes []string
+		for k, v := range s.With {
+			if strings.HasPrefix(k, "permission-") {
+				scopes = append(scopes, k+"="+v)
+			}
+		}
+		sort.Strings(scopes)
+		want := make([]string, len(wantScopes))
+		for i, k := range wantScopes {
+			want[i] = k + "=write"
+		}
+		if !slices.Equal(scopes, want) {
+			out = append(out, fmt.Sprintf("the App token step %q grants %v; it must grant exactly %v", s.ID, scopes, want))
+		}
+		if s.With["owner"] != "" || s.With["repositories"] != "" {
+			out = append(out, fmt.Sprintf("the App token step %q must cover this repository only (no owner or repositories)", s.ID))
+		}
+		if s.ID != "" {
+			tokenOf["${{ steps."+s.ID+".outputs.token }}"] = true
+		}
+	}
+	if len(tokenOf) == 0 {
+		out = append(out, "no actions/create-github-app-token step with an id: release-please needs the App's token (REL-06)")
+	}
+	used := false
+	for _, s := range j.Steps {
+		if strings.HasPrefix(s.Uses, "googleapis/release-please-action@") {
+			used = true
+			if !tokenOf[s.With["token"]] {
+				out = append(out, fmt.Sprintf("release-please runs with token %q, not the App token step's output (REL-06)", s.With["token"]))
+			}
+		}
+	}
+	if !used {
+		out = append(out, "the release-please job does not run googleapis/release-please-action")
 	}
 	return out
 }

@@ -77,7 +77,7 @@ What the local evidence shows, item by item:
 | 2 | The attack suites (QA-ENG-05) and the authorisation matrix (QA-SEC-03) in `make test` | — |
 | 3 | The chain is written in the same transaction and checked by the nightly `audit.VerifyAll`. Anchors are signed (local Ed25519, and the Cloud KMS adapter against a fake). The Cloud Storage adapter writes each anchor once, tested against fake-gcs-server; the local store is a plain directory, which can overwrite | The retention-locked bucket in staging, and an attempted delete |
 | 4 | Every image within its budget and hardened (`make images`). Each release image is signed, its SBOM attested and both verified by digest (`make image-sign`) | Keyless signing into Artifact Registry, and the deployment to staging by digest |
-| 5 | — | Not the cloud: release pull request #3 (0.1.0) waits for the GitHub App (REL-06) |
+| 5 | — | Not the cloud: release pull request #3 (0.1.0) waits for the GitHub App (REL-06). (17 Oct 2026: the founder created the App, `cognizhi-release-bot`, and release-please now runs with its token, so CI runs on #3) |
 | 6 | `TestOAuthTokensAreAudienceBound`, `TestMCPDelegationOptionB` and `TestTokenLifecycle` against the pinned Hydra | — |
 | 7 | The exact `iss` check (FR-ADM-08) against the local issuer and a fake of Identity Platform | The live Zoho sign-in |
 
