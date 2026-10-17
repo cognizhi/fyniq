@@ -84,6 +84,10 @@ Source: PRD-001 §12.8
 - **THEN** it calls the Claude API with a developer key, or a developer's own Google Cloud project
 - **AND** it uses synthetic sample data only, never real organisation data
 
+#### Scenario: Live mode on a developer's own plan
+- **WHEN** live mode runs on a developer's own Claude or ChatGPT plan
+- **THEN** it goes through the local-only adapters of DEV-09 (rev 0.25)
+
 #### Scenario: Eval gates run live in CI
 - **WHEN** a model or prompt change is proposed
 - **THEN** the eval gates (QA-AI-01…03) run in live mode in CI on the sample company before the change
@@ -302,6 +306,35 @@ Source: PRD-001 §12.8 · Priority M · Phase P0
 #### Scenario: Production data stays in production
 - **WHEN** data is copied to a developer machine or a non-production project
 - **THEN** it is never production data (CTL-CHG-05)
+
+### Requirement: DEV-09 Local AI through a developer's own plan
+Builds tagged `local` MAY run local-mode AI on the developer's own Claude plan (Claude Code's command-line agent or the Claude Agent SDK) or ChatGPT plan (the Codex command-line agent); such adapters SHALL exist only in local builds, on synthetic data, and SHALL never be a product connection.
+
+Source: PRD-001 §12.8 · Priority S · Phase P1
+
+#### Scenario: Local builds only
+- **WHEN** a release image is built, or the service starts with `FYNIQ_ENV` other than `local`
+- **THEN** no such adapter is present or starts (DEV-07, SEC-16)
+
+#### Scenario: The developer's sign-in stays with the agent
+- **WHEN** an adapter calls the developer's command-line agent or SDK
+- **THEN** the sign-in comes from the agent's own store
+- **AND** Fyniq never reads, copies or logs it, and nothing of it reaches the repository or CI
+
+#### Scenario: Synthetic data and replay in CI
+- **WHEN** an adapter serves a request
+- **THEN** the data is the synthetic sample company only (DEV-08)
+- **AND** its responses are recorded as replay cassettes, so CI never calls it
+
+#### Scenario: Model and capabilities declared
+- **WHEN** an adapter is configured
+- **THEN** it names its model from the agent's own configuration, not a list endpoint (AI-80 covers product connections)
+- **AND** it declares what it lacks, such as custom tool definitions, strict schemas or cache control, so an eval that needs one runs on replay or an API key (AI-71)
+
+#### Scenario: Not a product connection
+- **WHEN** anyone tries to connect such a plan in staging or production
+- **THEN** AI-73 refuses it as before
+- **AND** each local use follows the provider's terms at the time [verify: whether the Agent SDK accepts a developer's own subscription sign-in for local work; Anthropic tells SDK developers to use API keys]
 
 ### Requirement: NFR-MAINT-01 Everything as code, one command each
 Everything SHALL be as code, with one command to run the full stack locally and one command to run all tests.

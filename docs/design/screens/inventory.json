@@ -4000,12 +4000,12 @@
    ],
    "purpose": "Design a document template visually, with the IRAS particulars locked, and publish it as a version.",
    "content": [
-    "Block list (drag or keyboard to reorder): header and logo, our and customer details, document details, line table, totals and GST summary, payment details (bank, PayNow QR, link), notes, signature, footer, free text and image",
-    "Per-block settings; field catalogue (customer name, due date, amount due, SGD equivalents) and conditions (GST-registered, foreign currency, overdue, PayNow available)",
+    "Block list, each shown or hidden (P2: drag or keyboard to reorder): header and logo, our and customer details, document details, line table, totals and GST summary, payment details (bank, PayNow QR, link), notes, signature, footer, free text and image",
+    "Per-block texts; field catalogue (customer name, due date, amount due, SGD equivalents); P2: per-block layout settings, conditions (GST-registered, foreign currency, overdue, PayNow available) and the column chooser",
     "Locked IRAS particulars blocks for tax invoices and credit notes",
     "Live preview with sample or real document; A4 / Letter; theme",
-    "Versions: compare any two side by side, rollback, publish (approval object)",
-    "Basic: theme, logo, colours, texts; Expert: layout, columns, conditions; P2 Typst code mode; P3 languages"
+    "Versions: rollback, publish (approval object); P2: compare any two side by side",
+    "Basic: theme, logo, colours, texts; Expert (P2): layout, columns, conditions; P2 Typst code mode; P3 languages"
    ],
    "states": [
     "draft",

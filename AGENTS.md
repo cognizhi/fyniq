@@ -19,7 +19,7 @@ skills and the release tooling, the repository has the Go service skeleton, loca
 shell (p0-repo-skeleton-local-mode), and the database backstop with the storage port
 (p0-database-tenancy-migrations: `db/`, `internal/ports/storage`, `internal/adapters/postgres`). The rest of P0 is planned in `openspec/changes/p0-*` and
 `docs/prd/plans/p0-foundation-2026-10-14.md`; P1, P2 and P3 in
-`docs/prd/plans/p1-p3-build-plan-2026-10-16.md` (a draft for the founders).
+`docs/prd/plans/p1-p3-build-plan-2026-10-16.md` (accepted by the founders on 16 Oct 2026; PRD-001 rev 0.25).
 
 | Read first | Why |
 |---|---|

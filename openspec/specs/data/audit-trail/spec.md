@@ -32,9 +32,15 @@ Source: PRD-001 §11.5
 - **WHEN** a posting must be corrected
 - **THEN** it is corrected by a reversal
 
-#### Scenario: Purging postings is an open question
+#### Scenario: Postings are kept for the life of the company by default
 - **WHEN** postings pass their retention period
-- **THEN** whether they are ever purged is decided under open question 38
+- **THEN** they are kept for the life of the company (open question 38, decided 16 Oct 2026)
+
+#### Scenario: Purging postings is an option, off by default
+- **GIVEN** an organisation that has not switched the purge of postings on
+- **WHEN** anyone tries to purge postings or their audit events after retention
+- **THEN** nothing is purged
+- **AND** the purge can be switched on only under dual control (FM-1), and then runs as AUD-09 describes
 
 ### Requirement: Business audit events layer
 The system SHALL record a business audit event in the same transaction as every create, update, void, approval, rejection, login, permission change, export, AI proposal and execution.

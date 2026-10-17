@@ -118,6 +118,9 @@ What follows P0, that change included, is planned in `p1-p3-build-plan-2026-10-1
 
 ### For the next PRD revision (16 Oct 2026)
 
+(17 Oct 2026: done in PRD-001 rev 0.25, which closes P0 on local evidence in §17.3, adds the cloud gate
+as §17.5 and records open question 40.)
+
 The founder decisions above change PRD-001, which another session edits. The revision should:
 
 - **§17.3:** close P0 on local evidence, and move the staging clauses of items 3, 4 and 7 to a new gate

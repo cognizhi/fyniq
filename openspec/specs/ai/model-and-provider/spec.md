@@ -69,6 +69,12 @@ Source: PRD-001 §9.9 · Priority M · Phase P1
 - **WHEN** an agent that needs that capability is routed
 - **THEN** the route cannot use that connection (AI-71, AI-74)
 
+#### Scenario: Caching on in staging and production
+- **GIVEN** staging or production
+- **WHEN** a route's model supports prompt caching
+- **THEN** caching is on for that route, checked per model at the cloud gate (PRD-001 §17.5) from the provider's cached-token usage fields
+- **AND** a route that cannot cache says so in its connection's capabilities (rev 0.25, founder decision 16 Oct 2026)
+
 ### Requirement: AI-28 Google Cloud constraints designed in
 The design SHALL work within Google Cloud's constraints for Claude: the tool loop SHALL run in our orchestrator, and document reading SHALL use PDF and image input in the request.
 

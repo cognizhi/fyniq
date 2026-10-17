@@ -14,5 +14,5 @@
 
 ## 3. Release and staging
 
-- [ ] 3.1 After the founder creates the GitHub App, switch release-please to its token so release pull requests run CI; verify `// req: REL-06` on the next release PR (17 Oct 2026: the founder created `cognizhi-release-bot`; release-please now takes an installation token for this repository only, with contents, issues and pull-requests write, and its job's `GITHUB_TOKEN` gets nothing; `TestReleasePleaseRunsWithTheAppToken` checks the workflow. Ticked once CI runs on release pull request #3)
+- [x] 3.1 After the founder creates the GitHub App, switch release-please to its token so release pull requests run CI; verify `// req: REL-06` on the next release PR (17 Oct 2026: the founder created `cognizhi-release-bot`; release-please now takes an installation token for this repository only, with contents, issues and pull-requests write, and its job's `GITHUB_TOKEN` gets nothing; `TestReleasePleaseRunsWithTheAppToken` checks the workflow. After #53 merged, release-please pushed #3's branch as `cognizhi-release-bot[bot]`, and every required check ran and passed on it)
 - [ ] 3.2 Deploy each release to staging by digest (needs p0-infra-opentofu) and record the digests in the release record (§17.3 items 4 and 5); then `make check` and `make test`
