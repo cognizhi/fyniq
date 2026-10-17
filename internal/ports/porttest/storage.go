@@ -429,7 +429,8 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 	t.Run("an idempotency key holds its response, per client, until purged", func(t *testing.T) {
 		b := books(t)
 		expires := time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)
-		claim := storage.IdempotencyClaim{Client: "web user-1", Key: "key-1", RequestHash: make([]byte, 32), ExpiresAt: expires}
+		claim := storage.IdempotencyClaim{Client: "web user-1", Key: "key-1", RequestHash: make([]byte, 32),
+			CreatedAt: expires.Add(-24 * time.Hour), ExpiresAt: expires}
 		claim.RequestHash[0] = 1
 		do := func(fn func(ctx context.Context, u storage.UnitOfWork) error) error { return s.Do(ctx, b.Org, fn) }
 		// A claim that rolls back leaves nothing behind.
@@ -512,5 +513,35 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 			}
 			return errors.New("roll back")
 		})
+	})
+
+	// A key's times come from the caller's clock, which in local mode can be a business date far from
+	// the database's (DEV-05): a claim made and expired in 2020 is still a valid claim.
+	t.Run("an idempotency key takes both its times from the caller's clock", func(t *testing.T) {
+		b := books(t)
+		made := time.Date(2020, 1, 1, 9, 0, 0, 0, time.UTC)
+		claim := storage.IdempotencyClaim{Client: "web user-1", Key: "past-1", RequestHash: make([]byte, 32),
+			CreatedAt: made, ExpiresAt: made.Add(24 * time.Hour)}
+		var problems []string
+		_ = s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			// Errors, not Fatal: the unit of work must end, or the suite's clean-up waits for it.
+			if earlier, err := u.Idempotency().Claim(ctx, claim); err != nil || earlier != nil {
+				problems = append(problems, fmt.Sprintf("Claim on a 2020 clock = %+v, %v; want a fresh claim", earlier, err))
+				return err
+			}
+			if earlier, err := u.Idempotency().Claim(ctx, claim); err != nil || earlier == nil || !earlier.ExpiresAt.Equal(claim.ExpiresAt) {
+				problems = append(problems, fmt.Sprintf("second Claim = %+v, %v; want the first claim, expiring %s", earlier, err, claim.ExpiresAt))
+				return err
+			}
+			backwards := claim
+			backwards.Key, backwards.ExpiresAt = "past-2", made
+			if _, err := u.Idempotency().Claim(ctx, backwards); storage.CodeOf(err) != storage.CodeInvalid {
+				problems = append(problems, fmt.Sprintf("a claim that expires when it is made: want %s, got %v", storage.CodeInvalid, err))
+			}
+			return errors.New("roll back")
+		})
+		for _, p := range problems {
+			t.Error(p)
+		}
 	})
 }
