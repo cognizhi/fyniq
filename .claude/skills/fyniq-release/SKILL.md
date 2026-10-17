@@ -96,7 +96,12 @@ the parallel-run sign-off (M5).
    burn.
 
 Note: PRs that release-please opens with the default `GITHUB_TOKEN` do not trigger other
-workflows. REL-06 switches it to a GitHub App token once CI exists (open question 13).
+workflows, so release-please runs with an installation token of the organisation's GitHub App
+`cognizhi-release-bot` (REL-06, open question 13; 17 Oct 2026). The App ID is the organisation
+variable `RELEASE_APP_ID` and its private key the organisation secret `RELEASE_APP_PRIVATE_KEY`.
+The token covers this repository only, with contents, issues and pull-requests write, and the
+job's own `GITHUB_TOKEN` gets nothing; `TestReleasePleaseRunsWithTheAppToken` (archtest) keeps it
+that way.
 
 ## Versioning matrix (§12.10)
 
