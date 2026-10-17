@@ -126,7 +126,7 @@ Source: PRD-001 §11.8 · Priority M · Phase P1
 - **THEN** it goes to a separate, unlocked staging bucket (FR-DOC-13)
 
 ### Requirement: Retention of the ledger, documents, attachments and audit trail
-The ledger, documents, attachments and audit trail SHALL be retained for the statutory minimum (§14) after the end of the financial year they relate to, 7 years by default, and SHALL then be removed by an automatic, audited purge job.
+The ledger, documents, attachments and audit trail SHALL be retained for the statutory minimum (§14) after the end of the financial year they relate to, 7 years by default; documents and attachments SHALL then be removed by an automatic, audited purge job, while ledger entries and their audit events are kept for life unless their purge is switched on.
 
 Source: PRD-001 §11.9
 
@@ -148,6 +148,10 @@ Source: PRD-001 §11.9
 - **THEN** an automatic purge job removes the data
 - **AND** the purge is itself audited
 - **AND** anchors are kept until their own retention ends
+
+#### Scenario: The ledger and its audit events are kept for life by default
+- **WHEN** the retention of ledger entries and their audit events expires
+- **THEN** they are kept, unless the organisation has switched their purge on (§11.5 L1; open question 38, decided 16 Oct 2026)
 
 ### Requirement: Retention of personal data not needed for records
 Personal data of employees and contacts that is not needed for the records SHALL be kept only as long as needed for its purpose.

@@ -106,6 +106,12 @@ Source: PRD-001 §9.9.1 · Priority M · Phase P1 (a, b); P2 (c)
 - **WHEN** someone tries to connect a seat used through a provider's own command-line agent (Claude Code, Codex, Copilot CLI)
 - **THEN** the connection is refused, because it has no list endpoint and is reserved for that agent
 
+#### Scenario: Local builds only may use a developer's own plan
+- **GIVEN** a build tagged `local`
+- **WHEN** local-mode AI runs on a developer's own Claude or ChatGPT plan through a command-line agent or the Claude Agent SDK
+- **THEN** it does so only through DEV-09's local-only adapters
+- **AND** nothing in this requirement changes for the product (rev 0.25)
+
 #### Scenario: Consumer-app tokens refused
 - **WHEN** someone tries to connect consumer-plan credentials whose terms reserve them for the provider's own apps, or a chat session or cookie
 - **THEN** the connection is refused

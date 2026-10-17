@@ -6,9 +6,9 @@ How the invoices, quotes and other documents customers see are rendered from tem
 ## Requirements
 
 ### Requirement: FR-TPL-01 Visual, block-based editor
-The system SHALL provide a visual, block-based template editor with a theme and a live preview.
+The system SHALL provide a visual, block-based template editor with a theme and a live preview: in P1 the theme, texts and optional blocks, and in P2 drag-and-drop layout.
 
-Source: PRD-001 §8.25 · Priority M · Phase P1
+Source: PRD-001 §8.25 · Priority M · Phase P1 (theme, texts, optional blocks); P2 (layout)
 
 #### Scenario: Blocks available
 - **WHEN** a user edits a template
@@ -32,14 +32,15 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **THEN** it offers a theme, logo, colours and texts
 - **AND** Expert mode adds layout, columns and conditions
 
-#### Scenario: Parts shipped in P1
+#### Scenario: What ships in P1 and what in P2
 - **WHEN** the editor ships in P1
-- **THEN** the parts it includes are those decided under open question 44
+- **THEN** it offers the theme, logo, colours, font and texts, showing or hiding optional blocks, page settings and the live preview
+- **AND** drag-and-drop layout and per-block layout settings, the Expert part, follow in P2 (open question 44, decided 16 Oct 2026)
 
 ### Requirement: FR-TPL-02 Fields and conditions
-Templates SHALL use fields from a typed catalogue with formats for dates and money, and conditional blocks from a fixed list; the visual editor SHALL allow no free code.
+Templates SHALL use fields from a typed catalogue with formats for dates and money and, from P2, conditional blocks from a fixed list and a column chooser; the visual editor SHALL allow no free code.
 
-Source: PRD-001 §8.25 · Priority M · Phase P1
+Source: PRD-001 §8.25 · Priority M · Phase P1 (fields); P2 (conditions, columns)
 
 #### Scenario: Typed field catalogue
 - **WHEN** a user inserts a field
@@ -62,6 +63,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **WHEN** any template, visual or code, is rendered
 - **THEN** it renders in the `render` job's sandbox (FR-TPL-06), with no network, no secrets, and only the template's own assets and a JSON data file
 
+#### Scenario: Fields in P1, conditions and columns in P2
+- **WHEN** the template editor ships in P1
+- **THEN** it offers the typed field catalogue and its formats
+- **AND** conditional blocks and the column chooser follow in P2 (open question 44, decided 16 Oct 2026)
+
 ### Requirement: FR-TPL-03 Compliance guard
 For tax invoices, simplified tax invoices and credit notes, the IRAS particulars (FR-AR-05) SHALL be locked blocks that cannot be removed or hidden.
 
@@ -81,9 +87,9 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **THEN** it is structured data and the PDF template does not affect it
 
 ### Requirement: FR-TPL-04 Template versioning
-Saving a template SHALL make a draft, and publishing SHALL make an immutable numbered version recording who, when and a note.
+Saving a template SHALL make a draft, and publishing SHALL make an immutable numbered version recording who, when and a note; the side-by-side visual diff follows in P2.
 
-Source: PRD-001 §8.25 · Priority M · Phase P1
+Source: PRD-001 §8.25 · Priority M · Phase P1 (versions); P2 (visual diff)
 
 #### Scenario: Compare versions
 - **WHEN** a user compares any two versions of a template
@@ -102,6 +108,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **WHEN** a template version is published
 - **THEN** publishing is an approval object (FR-APR-01)
 - **AND** in Founder mode it is self-approved with the weekly review
+
+#### Scenario: Versions in P1, the visual diff in P2
+- **WHEN** template versioning ships in P1
+- **THEN** it offers drafts, immutable published versions, rollback, and the version and hash on every issued document
+- **AND** the side-by-side visual diff follows in P2 (open question 44, decided 16 Oct 2026)
 
 ### Requirement: FR-TPL-05 Document types
 The system SHALL provide templates for invoices, quotes, credit notes, receipts, customer statements, reminder letters, remittance advice, purchase orders and, in P2, payslips (used by Nemura through the shared engine; Fyniq issues none), plus email templates.

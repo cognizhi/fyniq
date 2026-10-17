@@ -126,7 +126,7 @@ Source: PRD-002 §8 · Priority M · Phase P1
 ### Requirement: NM-LV-09 Leave into the books
 Leave taken SHALL update available hours in Fyniq, and a month-end leave liability accrual for carried-forward leave, on by default, SHALL go to Fyniq as a journal for approval.
 
-Source: PRD-002 §8 · Priority S · Phase P1 / P2 (accrual)
+Source: PRD-002 §8 · Priority S · Phase P1
 
 #### Scenario: Available hours
 - **WHEN** leave is approved and taken
@@ -139,6 +139,10 @@ Source: PRD-002 §8 · Priority S · Phase P1 / P2 (accrual)
 #### Scenario: The policy decides recognition
 - **WHEN** the automatic accrual is off
 - **THEN** whether untaken leave is recognised still follows the accounting policy (PRD-001 FR-ORG-10, FR-PPL-07)
+
+#### Scenario: The accrual ships in P1
+- **WHEN** Nemura's leave ships in P1
+- **THEN** the automatic month-end accrual ships with it, on by default (PRD-002 question 4, decided 16 Oct 2026)
 
 ### Requirement: NM-LV-10 Flexible work requests
 Formal flexible-work requests (Tripartite Guidelines, from 1 Dec 2024) SHALL be tracked with the written reply due within 2 months of receipt, a reason for any refusal, and the reply kept.
