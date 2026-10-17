@@ -86,7 +86,8 @@ Everything in the P0 plan's "Rules for building P0" still holds. In addition:
 | 3 · Accountant and tax agent reviews | No longer a gate (rev 0.22): pages under review show the FR-UX-41 banner |
 
 Question 26 adds one condition: the P1 build starts once the one-page comparison of build, hybrid and
-buy, at the day's list prices, is recorded and signed.
+buy, at the day's list prices, is recorded and signed. The comparison is recorded for the founders to sign in
+`docs/prd/research/build-hybrid-buy-2026-10-17.md` (PRD-001 rev 0.26).
 
 ## The launch subset (accepted 16 Oct 2026)
 
