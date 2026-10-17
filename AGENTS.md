@@ -39,12 +39,13 @@ shell (p0-repo-skeleton-local-mode), and the database backstop with the storage 
 | Command | Does | Status |
 |---|---|---|
 | `make help` | Lists the targets | Today |
-| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the screen inventory and fragments, the review register, the scan waivers and the scan, image and infra rules on planted findings | Today (CI runs it) |
+| `make check` | Every check available today: design-token contrast in four themes, release configuration, the knowledge-base lint, the OpenSpec specs against the PRD, the P1–P3 plan against the specs, the screen inventory and fragments, the review register, the scan waivers and the scan, image and infra rules on planted findings | Today (CI runs it) |
 | `make hooks` | Installs the Conventional Commit check as a git `commit-msg` hook | Today: run once per clone |
 | `make lint-commits` | Checks the commit messages in `RANGE` (default `origin/main..HEAD`) | Today |
 | `make deps-up` / `deps-down` / `deps-logs` | PostgreSQL 18 (port 55432), Mailpit (8025) and fake GCS (4443) in Docker | Today |
 | `make prototype` | Prints the path of the static UI prototype | Today |
 | `make kb-index` / `kb-lint` / `kb-stale` | Regenerate the knowledge-base index; lint the compiled pages (part of `make check`); list stale pages and uncovered sources (§9.11) | Today |
+| `make roadmap` / `roadmap-check` | Regenerate the change tables, coverage and counts of the P1–P3 plan (`docs/prd/plans/p1-p3-build-plan-2026-10-16.md`) from the specs and the screen inventory / check that every requirement and screen after P0 sits in exactly one planned change and the tables are current (part of `make check`); a new P2 or P3 requirement needs its ID in `scripts/roadmap.py` | Today |
 | `make spec-check` / `spec-map` / `spec-stale` | OpenSpec specs valid (strict), covering every PRD anchor once and matching the PRD rows (part of `make check`); the PRD → capability map; PRD rows changed since conversion | Today |
 | `make openapi` | Regenerate the API contract `contracts/openapi/fyniq.v1.yaml` from the code (huma) and the web app's typed client from it; `make test` fails while the code, the contract and the client differ, so the contract is reviewed in every pull request that changes it | Today |
 | `make setup-code` | Create the one-time first-run setup code for the local database and print it once (FR-ADM-06); `POST /v1/setup` with it makes the caller the Super admin and Owner. Refused once setup is done | Today |
