@@ -39,8 +39,8 @@ almost as much cash as build and most of its hours, and it gives up both reasons
      isolation (INV-01…13).
    - Two independent implementations agree to the cent (QA-ENG-02).
    - Every important activity carries evidence (§8.16).
-   - Xero's official MCP server has write tools on by default (§5.3), and its lock dates are settings
-     that an adviser can move.
+   - Xero's official MCP server has write tools on by default (§5.3), and Xero's softer lock level
+     still lets advisers post into a locked period (§5.2).
 3. **What one product carries:** the workbook's statuses and checks, founders' money and the equity
    register, and Nemura behind the same sign-in.
 
@@ -91,6 +91,10 @@ plus whichever of evidence, planning and proposals is still worth building on to
 **Assumptions.**
 - The launch subset is built locally in months 1–6 and goes to the cloud in month 7. Each month earlier
   adds US$265–425.
+- There is no Google Cloud for some time (founders, 16 Oct 2026). Until the cloud exists, Fyniq cannot
+  hold Cognizhi's real books (DEV-08), and the workbook carries on. With no cloud in the 24 months,
+  build's cash falls to about S$4,700–8,100 (Claude Max and AG Grid). Buy's advantage is then the date
+  the books are ready rather than money. Buy still costs less under either reading.
 - Nobody is paid before month 13 (questions 4 and 16).
 - Premium is priced because the launch subset includes foreign currency (`p1-multi-currency-fx`).
   Standard would save S$528 if Cognizhi has no foreign-currency transactions.
