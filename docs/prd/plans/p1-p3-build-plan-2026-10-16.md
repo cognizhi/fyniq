@@ -150,6 +150,9 @@ accountant's (Q15, Q27, Q31, Q32), the lawyer's on the SAFE (Q33), counsel's bef
 - the app shell;
 - documents and evidence, templates and email.
 
+Wave 1's eight changes are proposed in `openspec/changes/p1-*` (17 Oct 2026), each with its proposal,
+design and tasks. None is started: the build begins once question 26's comparison is signed.
+
 **Wave 2 · The ledger and its documents.** The general ledger and close, then FX, sales, purchases,
 claims, fixed assets and projects.
 
