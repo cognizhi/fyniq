@@ -86,7 +86,8 @@ never edit them by hand. After upgrading the CLI run `openspec update` and check
 3. A revision that changes many requirements at once may go through a change
    (`/opsx:new` → deltas → `/opsx:sync` or archive) so the review sees one diff.
 4. Re-check the screens that show the changed requirements (`inventory.json` lists requirement IDs).
-5. `prdspec.py stamp <anchors>`; `make check`; commit with the PRD edit.
+5. `prdspec.py stamp <anchors>`; `make roadmap` when the P1–P3 plan's tables moved (a new or re-phased
+   requirement; a new P2 or P3 ID goes into `scripts/roadmap.py` first); `make check`; commit with the PRD edit.
 
 ## Recipe C: design the screens
 

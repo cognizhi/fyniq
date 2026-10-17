@@ -147,7 +147,7 @@ ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, 
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals
 
-check: check-tokens check-config kb-lint spec-check design-check review-check scan-waivers controls ## Run every check available today (CI runs this)
+check: check-tokens check-config kb-lint spec-check roadmap-check design-check review-check scan-waivers controls ## Run every check available today (CI runs this)
 
 controls: ## The control registry (compliance/controls/) has a file for every Appendix F control, with the PRD's text
 	@python3 scripts/controls.py check
@@ -190,6 +190,12 @@ review-check: ## The review register names real requirements and screens, and no
 
 review-status: ## Areas awaiting second review and the pages that show the "Needs additional verification" banner
 	@python3 scripts/review_status.py list
+
+roadmap: ## Regenerate the P1–P3 plan's change tables, coverage and counts from the specs and the screen inventory
+	@python3 scripts/roadmap.py write
+
+roadmap-check: ## Every requirement and screen after P0 is placed in exactly one planned change, and the plan's tables are current
+	@python3 scripts/roadmap.py check
 
 spec-map: ## Show how each PRD's anchors map to OpenSpec capabilities
 	@python3 scripts/prdspec.py map
