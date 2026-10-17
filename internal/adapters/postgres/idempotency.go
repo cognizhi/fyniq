@@ -22,9 +22,12 @@ func (r idempotency) Claim(ctx context.Context, c storage.IdempotencyClaim) (*st
 	if err := r.u.check(); err != nil {
 		return nil, err
 	}
+	if c.CreatedAt.IsZero() || c.ExpiresAt.IsZero() {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: "an idempotency claim needs the time it was made and its expiry"}
+	}
 	// A concurrent claim of the same key waits here until the other unit of work ends.
 	_, err := r.u.q.ClaimIdempotencyKey(ctx, sqlcdb.ClaimIdempotencyKeyParams{ClientID: c.Client, Key: c.Key,
-		RequestHash: c.RequestHash, ExpiresAt: c.ExpiresAt})
+		RequestHash: c.RequestHash, CreatedAt: c.CreatedAt, ExpiresAt: c.ExpiresAt})
 	if err == nil {
 		return nil, nil
 	}

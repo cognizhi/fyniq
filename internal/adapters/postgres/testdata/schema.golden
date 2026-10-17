@@ -69,7 +69,7 @@ idempotency_key | key | text | not null |
 idempotency_key | request_hash | bytea | not null | 
 idempotency_key | response_status | smallint | null | 
 idempotency_key | response_body | bytea | null | 
-idempotency_key | created_at | timestamp with time zone | not null | now()
+idempotency_key | created_at | timestamp with time zone | not null | 
 idempotency_key | expires_at | timestamp with time zone | not null | 
 installation | singleton | boolean | not null | true
 installation | setup_code_hash | bytea | null | 

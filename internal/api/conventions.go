@@ -53,8 +53,9 @@ func write[B any](ctx context.Context, a *API, key string, request any, status i
 		out = written[B]{Status: status}
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			if key != "" {
+				now := a.deps.Clock.Now()
 				earlier, err := u.Idempotency().Claim(ctx, storage.IdempotencyClaim{Client: p.Client + " " + p.Subject, Key: key,
-					RequestHash: hash, ExpiresAt: a.deps.Clock.Now().Add(IdempotencyTTL)})
+					RequestHash: hash, CreatedAt: now, ExpiresAt: now.Add(IdempotencyTTL)})
 				if err != nil {
 					return err
 				}

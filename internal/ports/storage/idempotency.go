@@ -16,7 +16,10 @@ type IdempotencyClaim struct {
 	Client      string // who sent it: the OAuth client and the subject, so keys never collide across callers
 	Key         string
 	RequestHash []byte // SHA-256 of the request
-	ExpiresAt   time.Time
+	// CreatedAt and ExpiresAt come from the same clock, the API's (a business date in local mode,
+	// DEV-05), never one from the API and one from the database.
+	CreatedAt time.Time
+	ExpiresAt time.Time
 }
 
 // StoredResponse is the result saved with a key. Status is 0 when the key was claimed but no

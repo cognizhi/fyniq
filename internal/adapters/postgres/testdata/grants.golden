@@ -23,7 +23,7 @@ fyniq_api       EXECUTE   end_session()
 fyniq_api       EXECUTE   end_user_sessions()
 fyniq_api       EXECUTE   finish_job_slot()
 fyniq_api       SELECT    heartbeats
-fyniq_api       INSERT    idempotency_key (client_id, expires_at, key, request_hash)
+fyniq_api       INSERT    idempotency_key (client_id, created_at, expires_at, key, request_hash)
 fyniq_api       SELECT    idempotency_key
 fyniq_api       UPDATE    idempotency_key (response_body, response_status)
 fyniq_api       EXECUTE   installation_org()

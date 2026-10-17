@@ -13,8 +13,8 @@ import (
 )
 
 const claimIdempotencyKey = `-- name: ClaimIdempotencyKey :one
-INSERT INTO fyniq.idempotency_key (client_id, key, request_hash, expires_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO fyniq.idempotency_key (client_id, key, request_hash, created_at, expires_at)
+VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (organisation_id, client_id, key) DO NOTHING
 RETURNING id
 `
@@ -23,6 +23,7 @@ type ClaimIdempotencyKeyParams struct {
 	ClientID    string
 	Key         string
 	RequestHash []byte
+	CreatedAt   time.Time
 	ExpiresAt   time.Time
 }
 
@@ -31,6 +32,7 @@ func (q *Queries) ClaimIdempotencyKey(ctx context.Context, arg ClaimIdempotencyK
 		arg.ClientID,
 		arg.Key,
 		arg.RequestHash,
+		arg.CreatedAt,
 		arg.ExpiresAt,
 	)
 	var id uuid.UUID
