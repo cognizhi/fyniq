@@ -154,6 +154,10 @@ jobs:
       - run: make image-scan    # SBOM and grype per release image (SEC-21)
       - run: make image-sign    # push by digest to a throwaway registry, sign, attest the SBOM, verify (NFR-IMG-05, SEC-22)
       - run: scripts/local-smoke.sh   # QA-LOCAL-01: make up from the local images, no cloud credentials
+        env:
+          # Below the kernel's ephemeral range (32768-60999): image-sign's many loopback connections can hold
+          # 55432 briefly, and PostgreSQL then cannot bind it (two of three runs of #71 failed that way).
+          FYNIQ_PG_PORT: "25432"
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
