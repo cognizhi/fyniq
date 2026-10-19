@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"net/http"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/member"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -20,7 +23,7 @@ import (
 	revoke "github.com/cognizhi/fyniq/internal/tokens"
 )
 
-// ------------------------------------------------------------------ members and roles (FR-ADM-01, FM-1, rev 0.35)
+// ------------------------------------------------------------------ members and roles (FR-ADM-01, FM-1, rev 0.35, rev 0.36)
 
 // MemberRole is a role a member holds.
 type MemberRole struct {
@@ -132,7 +135,10 @@ type memberListOutput struct{ Body MemberPage }
 
 type invitationListOutput struct{ Body MemberInvitationPage }
 
-type invitationCodeOutput struct{ Body MemberInvitationCode }
+type invitationCodeOutput struct {
+	Status int
+	Body   any // a MemberInvitationCode, or the Approval it waits for (202)
+}
 
 type invitationWriteOutput struct {
 	Applied string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
@@ -143,14 +149,16 @@ type memberWriteOutput struct {
 	Status   int
 	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
 	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
-	Body     Member
+	Body     any    // a Member, or the Approval it waits for (202)
 }
 
 type joinOutput struct{ Body Joined }
 
 // MemberCodes are the members' rules (internal/domain/member).
-var MemberCodes = []string{member.CodeRole, member.CodeName, member.CodeRoles, member.CodeExpiry, member.CodeSecondApprover,
-	member.CodeLastOwner, member.CodeHeld}
+var MemberCodes = []string{member.CodeRole, member.CodeName, member.CodeRoles, member.CodeExpiry, member.CodeLastOwner, member.CodeHeld}
+
+// approvalCodes are what asking for a change that waits for approval can return (FM-1, rev 0.36).
+var approvalCodes = []string{CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval}
 
 func memberOf(m storage.Member) Member {
 	out := Member{ID: m.ID.String(), UserID: m.UserID.String(), DisplayName: m.DisplayName, Roles: []MemberRole{}}
@@ -186,17 +194,64 @@ func memberProblems(ps []member.Problem) []FieldProblem {
 	return out
 }
 
-// bootstrap refuses a role change once the organisation has a second active member (FM-1): it waits for the
-// approval engine. It takes the members' lock, so nobody joins until the change is saved.
-func bootstrap(ctx context.Context, u storage.UnitOfWork) error {
+// needsApproval reports whether a role change needs a second approver: once the organisation has a second active
+// member, it waits for approval (FM-1, rev 0.36). It takes the members' lock, so nobody joins until the change or
+// the request is saved.
+func needsApproval(ctx context.Context, u storage.UnitOfWork) (bool, error) {
 	n, err := u.Members().Count(ctx)
+	return member.NeedsApproval(n), err
+}
+
+func liveRoles(m storage.Member) string {
+	var out []string
+	for _, r := range m.Roles {
+		out = append(out, r.Role)
+	}
+	return strings.Join(out, ", ")
+}
+
+// assignRoleNow gives member id role until expires (nil: no expiry), and revokes their OAuth tokens.
+func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, role string, expires *time.Time) (Member, error) {
+	now := a.deps.Clock.Now()
+	m, err := findMember(ctx, u, id, now)
 	if err != nil {
-		return err
+		return Member{}, err
 	}
-	if x := member.Bootstrap(n); x != nil {
-		return problem(x.Code, strings.ToUpper(x.Message[:1])+x.Message[1:]+".", x.Fix)
+	if slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == role }) {
+		return Member{}, problem(member.CodeHeld, m.DisplayName+" holds the role "+role+" already.", "Nothing to do; revoke it first to change its expiry")
 	}
-	return nil
+	if _, err := u.Members().Assign(ctx, id, role, expires); err != nil {
+		return Member{}, err
+	}
+	if err := a.endTokens(ctx, u, m, "role "+role+" assigned"); err != nil {
+		return Member{}, err
+	}
+	m, err = findMember(ctx, u, id, now)
+	return memberOf(m), err
+}
+
+// revokeRoleNow ends member id's role, and revokes their OAuth tokens; the last Owner keeps the role.
+func (a *API) revokeRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, role string) (Member, error) {
+	now := a.deps.Clock.Now()
+	m, err := findMember(ctx, u, id, now)
+	if err != nil {
+		return Member{}, err
+	}
+	i := slices.IndexFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == role })
+	if i < 0 {
+		return Member{}, problem(member.CodeHeld, m.DisplayName+" does not hold the role "+role+".", "List the members to see their roles")
+	}
+	if err := u.Members().Revoke(ctx, m.Roles[i].ID); err != nil {
+		if storage.CodeOf(err) == storage.CodeMembership && role == "owner" {
+			return Member{}, problem(member.CodeLastOwner, "The organisation's last Owner keeps the role.", "Make someone else Owner first")
+		}
+		return Member{}, err
+	}
+	if err := a.endTokens(ctx, u, m, "role "+role+" revoked"); err != nil {
+		return Member{}, err
+	}
+	m, err = findMember(ctx, u, id, now)
+	return memberOf(m), err
 }
 
 // endTokens asks for the member's OAuth tokens to be revoked in the same unit of work: their claims are a
@@ -274,14 +329,17 @@ func registerMembers(a *API) {
 		return &invitationListOutput{Body: MemberInvitationPage{Items: items, NextCursor: next}}, nil
 	})
 
-	register(a, authz.CreateMemberInvitation, oneTimeSecret(huma.Operation{
+	register(a, authz.CreateMemberInvitation, oneTimeSecret(pendsApproval(a, huma.Operation{
 		OperationID: "createMemberInvitation", Method: http.MethodPost, Path: "/v1/members/invitations", Tags: []string{"Members"},
 		DefaultStatus: http.StatusCreated, Summary: "Invite someone to the organisation",
 		Description: "Makes a one-time invitation that gives its redeemer the roles named, valid 7 days (FR-ADM-01). Give the code in " +
 			"person or on a call; invitation emails arrive later. A role change falls under FM-1: until the organisation has a second " +
-			"member its Owner acts alone (the founder bootstrap, rev 0.35), and after that it is refused until the approval engine; an " +
-			"invitation made before keeps its roles. Side effects: the invitation and its audit event." + noKey,
-	}), append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeMembership}, append(locks, MemberCodes...)...),
+			"member its Owner acts alone (the founder bootstrap, rev 0.35); after that the answer is 202 with an approval request and the " +
+			"code, which works once another Owner approves the invitation (rev 0.36); asking needs a person signed in who passed step-up " +
+			"in the last 5 minutes. An invitation made before keeps its roles. Side effects: the invitation, or the approval request, and " +
+			"its audit event." + noKey,
+	}, reflect.TypeFor[MemberInvitationCode]())), append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeMembership},
+		append(append(locks, approvalCodes...), MemberCodes...)...),
 		func(ctx context.Context, in *invitationCreateInput) (*invitationCodeOutput, error) {
 			p, _ := authn.From(ctx)
 			now := a.deps.Clock.Now()
@@ -292,20 +350,38 @@ func registerMembers(a *API) {
 				return nil, invalid(bad)
 			}
 			code, hash := setupcode.New()
-			var out MemberInvitationCode
+			out := &invitationCodeOutput{Status: http.StatusCreated}
 			err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-				if err := bootstrap(ctx, u); err != nil {
+				wait, err := needsApproval(ctx, u)
+				if err != nil {
+					return err
+				}
+				if wait {
+					expires := ""
+					if b.RolesExpireAt != nil {
+						expires = b.RolesExpireAt.UTC().Format(time.RFC3339)
+					}
+					rs := make([]any, len(roles))
+					for i, r := range roles {
+						rs[i] = r
+					}
+					v, err := a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectInvitation, ObjectKey: hex.EncodeToString(hash),
+						Operation: approval.OpInvite, Summary: "Invite " + name + " as " + strings.Join(roles, ", "),
+						Execute: map[string]any{"display_name": name, "roles": rs, "roles_expire_at": expires, "code_hash": hex.EncodeToString(hash)},
+						Diff:    []ApprovalDiff{{Field: "display_name", After: name}, {Field: "roles", After: strings.Join(roles, ", ")}}})
+					v.InvitationCode = code
+					out.Status, out.Body = http.StatusAccepted, v
 					return err
 				}
 				inv, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: name, Roles: roles,
 					RolesExpireAt: b.RolesExpireAt, ExpiresAt: now.Add(InvitationTTL)})
-				out = MemberInvitationCode{MemberInvitation: invitationOf(inv), Code: code}
+				out.Body = MemberInvitationCode{MemberInvitation: invitationOf(inv), Code: code}
 				return err
 			})
 			if err != nil {
 				return nil, err
 			}
-			return &invitationCodeOutput{Body: out}, nil
+			return out, nil
 		})
 
 	register(a, authz.WithdrawMemberInvitation, huma.Operation{
@@ -332,21 +408,23 @@ func registerMembers(a *API) {
 		return &invitationWriteOutput{Applied: applied(w), Body: w.Body}, nil
 	})
 
-	register(a, authz.AssignRole, huma.Operation{
+	register(a, authz.AssignRole, pendsApproval(a, huma.Operation{
 		OperationID: "assignRole", Method: http.MethodPost, Path: "/v1/members/{member_id}/roles", Tags: []string{"Members"},
 		DefaultStatus: http.StatusCreated, Summary: "Give a member a role",
 		Description: "Gives a member a role, theirs until it is revoked or, for an external user, until it expires (FR-ADM-01). A role " +
 			"change falls under FM-1: until the organisation has a second member its Owner acts alone, their own roles included (the " +
-			"founder bootstrap, rev 0.35), and after that it is refused until the approval engine. Side effects: the role and its audit " +
-			"event; the member's next request holds it, and their OAuth tokens are revoked (AI-38). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
-	}, append([]string{CodeNotFound, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
-		storage.CodeMembership}, append(locks, MemberCodes...)...),
+			"founder bootstrap, rev 0.35); after that the answer is 202 with an approval request, and another Owner's approval makes the " +
+			"change, if the member's roles did not change meanwhile (rev 0.36); asking needs a person signed in who passed step-up in the " +
+			"last 5 minutes. Side effects: the role and its audit event, or the approval request and its audit event; the member's next " +
+			"request holds the role, and their OAuth tokens are revoked (AI-38). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+	}, reflect.TypeFor[Member]()), append([]string{CodeNotFound, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy,
+		CodeIdempotencyOld, storage.CodeMembership}, append(append(locks, approvalCodes...), MemberCodes...)...),
 		func(ctx context.Context, in *roleAssignInput) (*memberWriteOutput, error) {
 			id, err := parseID("member_id", in.MemberID)
 			if err != nil {
 				return nil, err
 			}
-			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (Member, error) {
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
 				now := a.deps.Clock.Now()
 				role := string(in.Body.Role)
 				if bad := memberProblems(member.CheckRoles([]string{role}, in.Body.ExpiresAt, now)); len(bad) > 0 {
@@ -354,26 +432,31 @@ func registerMembers(a *API) {
 						bad[i].Field = strings.Replace(bad[i].Field, "body.roles[0]", "body.role", 1)
 						bad[i].Field = strings.Replace(bad[i].Field, "body.roles_expire_at", "body.expires_at", 1)
 					}
-					return Member{}, invalid(bad)
+					return nil, invalid(bad)
 				}
-				if err := bootstrap(ctx, u); err != nil {
-					return Member{}, err
+				wait, err := needsApproval(ctx, u)
+				if err != nil {
+					return nil, err
+				}
+				if !wait {
+					return a.assignRoleNow(ctx, u, id, role, in.Body.ExpiresAt)
 				}
 				m, err := findMember(ctx, u, id, now)
 				if err != nil {
-					return Member{}, err
+					return nil, err
 				}
 				if slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == role }) {
-					return Member{}, problem(member.CodeHeld, m.DisplayName+" holds the role "+role+" already.", "Nothing to do; revoke it first to change its expiry")
+					return nil, problem(member.CodeHeld, m.DisplayName+" holds the role "+role+" already.", "Nothing to do; revoke it first to change its expiry")
 				}
-				if _, err := u.Members().Assign(ctx, id, role, in.Body.ExpiresAt); err != nil {
-					return Member{}, err
+				expires := ""
+				if in.Body.ExpiresAt != nil {
+					expires = in.Body.ExpiresAt.UTC().Format(time.RFC3339)
 				}
-				if err := a.endTokens(ctx, u, m, "role "+role+" assigned"); err != nil {
-					return Member{}, err
-				}
-				m, err = findMember(ctx, u, id, now)
-				return memberOf(m), err
+				after := strings.Trim(liveRoles(m)+", "+role, ", ")
+				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectMembership, ObjectKey: id.String(), Operation: approval.OpRoleAssign,
+					Summary: "Give " + m.DisplayName + " the role " + role,
+					Execute: map[string]any{"member_id": id.String(), "role": role, "expires_at": expires},
+					Diff:    []ApprovalDiff{{Field: "roles", Before: liveRoles(m), After: after}}})
 			})
 			if err != nil {
 				return nil, err
@@ -381,44 +464,46 @@ func registerMembers(a *API) {
 			return &memberWriteOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 		})
 
-	register(a, authz.RevokeRole, huma.Operation{
+	register(a, authz.RevokeRole, pendsApproval(a, huma.Operation{
 		OperationID: "revokeRole", Method: http.MethodDelete, Path: "/v1/members/{member_id}/roles/{role}", Tags: []string{"Members"},
 		Summary: "End a member's role",
 		Description: "Ends a member's role; their next request no longer holds it (FR-ADM-01). The organisation always keeps an Owner. A " +
 			"role change falls under FM-1: until the organisation has a second member its Owner acts alone (the founder bootstrap, rev " +
-			"0.35), and after that it is refused until the approval engine. Side effects: the revocation and its audit event, and " +
-			"the member's OAuth tokens are revoked (AI-38). Prefer: " +
-			"return=preview checks it and saves nothing.",
-	}, append([]string{CodeNotFound, storage.CodeMembership}, append(locks, MemberCodes...)...),
+			"0.35); after that the answer is 202 with an approval request, and another Owner's approval makes the change, if the member's " +
+			"roles did not change meanwhile (rev 0.36); asking needs a person signed in who passed step-up in the last 5 minutes. Side " +
+			"effects: the revocation and its audit event, or the approval request and its audit event, and the member's OAuth tokens are " +
+			"revoked (AI-38). Prefer: return=preview checks it and saves nothing.",
+	}, reflect.TypeFor[Member]()), append([]string{CodeNotFound, storage.CodeMembership}, append(append(locks, approvalCodes...), MemberCodes...)...),
 		func(ctx context.Context, in *roleRevokeInput) (*memberWriteOutput, error) {
 			id, err := parseID("member_id", in.MemberID)
 			if err != nil {
 				return nil, err
 			}
-			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (Member, error) {
-				now := a.deps.Clock.Now()
-				if err := bootstrap(ctx, u); err != nil {
-					return Member{}, err
-				}
-				m, err := findMember(ctx, u, id, now)
+			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
+				wait, err := needsApproval(ctx, u)
 				if err != nil {
-					return Member{}, err
+					return nil, err
 				}
-				i := slices.IndexFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == in.Role })
-				if i < 0 {
-					return Member{}, problem(member.CodeHeld, m.DisplayName+" does not hold the role "+in.Role+".", "List the members to see their roles")
+				if !wait {
+					return a.revokeRoleNow(ctx, u, id, in.Role)
 				}
-				if err := u.Members().Revoke(ctx, m.Roles[i].ID); err != nil {
-					if storage.CodeOf(err) == storage.CodeMembership && in.Role == "owner" {
-						return Member{}, problem(member.CodeLastOwner, "The organisation's last Owner keeps the role.", "Make someone else Owner first")
+				m, err := findMember(ctx, u, id, a.deps.Clock.Now())
+				if err != nil {
+					return nil, err
+				}
+				if !slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == in.Role }) {
+					return nil, problem(member.CodeHeld, m.DisplayName+" does not hold the role "+in.Role+".", "List the members to see their roles")
+				}
+				var after []string
+				for _, r := range m.Roles {
+					if r.Role != in.Role {
+						after = append(after, r.Role)
 					}
-					return Member{}, err
 				}
-				if err := a.endTokens(ctx, u, m, "role "+in.Role+" revoked"); err != nil {
-					return Member{}, err
-				}
-				m, err = findMember(ctx, u, id, now)
-				return memberOf(m), err
+				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectMembership, ObjectKey: id.String(), Operation: approval.OpRoleRevoke,
+					Summary: "End " + m.DisplayName + "'s role " + in.Role,
+					Execute: map[string]any{"member_id": id.String(), "role": in.Role},
+					Diff:    []ApprovalDiff{{Field: "roles", Before: liveRoles(m), After: strings.Join(after, ", ")}}})
 			})
 			if err != nil {
 				return nil, err

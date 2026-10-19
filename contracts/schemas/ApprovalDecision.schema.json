@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "envelope_hash": {
+      "description": "The envelope_hash of the request you were shown: a request whose envelope differs is not signed (FR-APR-03).",
+      "examples": [
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      ],
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why you reject it: needed to reject.",
+      "examples": [
+        "Not this month"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    }
+  },
+  "required": [
+    "envelope_hash"
+  ],
+  "title": "ApprovalDecision",
+  "type": "object"
+}

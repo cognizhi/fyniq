@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "description": "What they decided.",
+      "enum": [
+        "approve",
+        "reject"
+      ],
+      "examples": [
+        "approve"
+      ],
+      "type": "string"
+    },
+    "method": {
+      "description": "The second factor that proved it was them: session_step_up is the step-up of their session; passkey and TOTP approvals arrive with p1-users-roles.",
+      "enum": [
+        "session_step_up",
+        "passkey",
+        "totp"
+      ],
+      "examples": [
+        "session_step_up"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "A rejection's reason.",
+      "examples": [
+        "Not this month"
+      ],
+      "type": "string"
+    },
+    "signed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "signer": {
+      "description": "The user who signed.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "signer_name": {
+      "description": "Their name.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "voided": {
+      "description": "true once the request was voided because its record changed.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "signer",
+    "signer_name",
+    "decision",
+    "method",
+    "signed_at",
+    "voided"
+  ],
+  "title": "ApprovalSignature",
+  "type": "object"
+}

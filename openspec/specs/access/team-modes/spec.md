@@ -96,6 +96,12 @@ Source: PRD-001 §6.4
 - **THEN** no second founder is needed, because there is none yet (FR-ADM-01, rev 0.35)
 - **AND** the change is audited and listed for the weekly review once another founder joins
 
+#### Scenario: Settings and role changes wait for a second founder
+- **GIVEN** the organisation has two or more active members
+- **WHEN** a founder changes a setting under FM-1, changes a role or invites someone with roles
+- **THEN** the answer is an approval request that another member holding A on the object's Appendix D row approves, and the change is made then
+- **AND** the requester never approves their own, which the database refuses too (rev 0.36)
+
 ### Requirement: FM-2 Self-approval below a threshold
 In Founder mode, a founder SHALL be allowed to self-approve routine items at or below a threshold (default S$2,000 per document; configurable), and each self-approval SHALL be flagged "self-approved" and queued for review.
 

@@ -6,6 +6,12 @@ fyniq_api       EXECUTE   accept_super_admin_invitation()
 fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, role, type)
 fyniq_api       SELECT    account
 fyniq_api       UPDATE    account (cash_flow_line, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, version)
+fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
+fyniq_api       SELECT    approval_request
+fyniq_api       UPDATE    approval_request (decided_at, status, status_reason, version)
+fyniq_api       INSERT    approval_signature (decision, envelope_hash, mfa_at, mfa_method, reason, request_id, signed_at, signer, step)
+fyniq_api       SELECT    approval_signature
+fyniq_api       EXECUTE   approval_void_pending()
 fyniq_api       INSERT    audit_event (body, id)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   beat()
@@ -30,6 +36,9 @@ fyniq_api       INSERT    document_version (document_id, payload, version)
 fyniq_api       SELECT    document_version
 fyniq_api       EXECUTE   end_session()
 fyniq_api       EXECUTE   end_user_sessions()
+fyniq_api       INSERT    evidence (data_class, document_id, evidence_type, file_name, media_type, note, original_sha256, relates_on, sha256, size_bytes, source, staging_key, uploaded_by)
+fyniq_api       SELECT    evidence
+fyniq_api       UPDATE    evidence (removed_at, state, version)
 fyniq_api       EXECUTE   finish_job_slot()
 fyniq_api       INSERT    gst_registration (accounting_basis, deregistered_from, gst_number, quarter_start_month, recorded_at, registered_from, return_frequency)
 fyniq_api       SELECT    gst_registration
@@ -83,6 +92,9 @@ fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()
 fyniq_api       EXECUTE   start_session()
 fyniq_api       EXECUTE   started_job_slot()
+fyniq_api       SELECT    statutory_pack_activation
+fyniq_api       SELECT    statutory_pack_rows
+fyniq_api       SELECT    statutory_pack_versions
 fyniq_api       EXECUTE   super_admin_for_identity()
 fyniq_api       SELECT    tenants
 fyniq_api       EXECUTE   user_for_identity()
@@ -90,6 +102,8 @@ fyniq_api       INSERT    user_membership (user_id)
 fyniq_api       SELECT    user_membership
 fyniq_api       UPDATE    user_membership (status, version)
 fyniq_executor  SELECT    account
+fyniq_executor  SELECT    approval_request
+fyniq_executor  SELECT    approval_signature
 fyniq_executor  INSERT    audit_event (body, id)
 fyniq_executor  SELECT    balance
 fyniq_executor  SELECT    contact
@@ -105,6 +119,7 @@ fyniq_executor  SELECT    document_sequence
 fyniq_executor  UPDATE    document_sequence (next_number)
 fyniq_executor  INSERT    document_version (document_id, payload, version)
 fyniq_executor  SELECT    document_version
+fyniq_executor  SELECT    evidence
 fyniq_executor  SELECT    gst_registration
 fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
@@ -120,7 +135,12 @@ fyniq_executor  SELECT    outbox
 fyniq_executor  UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_executor  SELECT    period
 fyniq_executor  USAGE     schema fyniq
+fyniq_executor  SELECT    statutory_pack_activation
+fyniq_executor  SELECT    statutory_pack_rows
+fyniq_executor  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    account
+fyniq_readonly  SELECT    approval_request
+fyniq_readonly  SELECT    approval_signature
 fyniq_readonly  SELECT    audit_chain
 fyniq_readonly  SELECT    audit_event
 fyniq_readonly  SELECT    balance
@@ -132,6 +152,7 @@ fyniq_readonly  SELECT    document
 fyniq_readonly  SELECT    document_number
 fyniq_readonly  SELECT    document_sequence
 fyniq_readonly  SELECT    document_version
+fyniq_readonly  SELECT    evidence
 fyniq_readonly  SELECT    gst_registration
 fyniq_readonly  SELECT    heartbeats
 fyniq_readonly  SELECT    idempotency_key
@@ -149,8 +170,13 @@ fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    role_assignment
 fyniq_readonly  USAGE     schema fyniq
+fyniq_readonly  SELECT    statutory_pack_activation
+fyniq_readonly  SELECT    statutory_pack_rows
+fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    user_membership
 fyniq_worker    SELECT    account
+fyniq_worker    SELECT    approval_request
+fyniq_worker    SELECT    approval_signature
 fyniq_worker    SELECT    audit_chain
 fyniq_worker    INSERT    audit_event (body, id)
 fyniq_worker    SELECT    audit_event
@@ -165,6 +191,8 @@ fyniq_worker    SELECT    document
 fyniq_worker    SELECT    document_number
 fyniq_worker    SELECT    document_sequence
 fyniq_worker    SELECT    document_version
+fyniq_worker    SELECT    evidence
+fyniq_worker    UPDATE    evidence (finalised_at, locked_key, retain_until, state, version)
 fyniq_worker    EXECUTE   finish_job_slot()
 fyniq_worker    SELECT    gst_registration
 fyniq_worker    SELECT    heartbeats
@@ -192,5 +220,8 @@ fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()
 fyniq_worker    SELECT    role_assignment
 fyniq_worker    USAGE     schema fyniq
+fyniq_worker    SELECT    statutory_pack_activation
+fyniq_worker    SELECT    statutory_pack_rows
+fyniq_worker    SELECT    statutory_pack_versions
 fyniq_worker    SELECT    tenants
 fyniq_worker    SELECT    user_membership

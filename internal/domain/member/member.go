@@ -2,7 +2,7 @@
 // that fails is reported at once, with its field, a stable code and how to fix it (ENG-23). Until the
 // organisation has a second active member its Owner administers members and roles alone (the founder
 // bootstrap, PRD-001 rev 0.35); from then on a role change needs a second approver and waits for the approval
-// engine. The database (migrations 000010 and 000029) keeps roles known and the last Owner in place.
+// engine (rev 0.36). The database (migrations 000010 and 000029) keeps roles known and the last Owner in place.
 package member
 
 import (
@@ -14,13 +14,12 @@ import (
 
 // The codes of the members' rules.
 const (
-	CodeRole           = "MEM-01" // not a role a member can hold
-	CodeName           = "MEM-02" // the name is blank or too long
-	CodeRoles          = "MEM-03" // no roles, or one named twice
-	CodeExpiry         = "MEM-04" // the roles' expiry is not in the future, or is set on the Owner role
-	CodeSecondApprover = "MEM-05" // a role change needs a second approver, and the approval engine does not exist yet
-	CodeLastOwner      = "MEM-06" // the organisation's last Owner keeps the role
-	CodeHeld           = "MEM-07" // the member holds that role already, or does not hold it
+	CodeRole      = "MEM-01" // not a role a member can hold
+	CodeName      = "MEM-02" // the name is blank or too long
+	CodeRoles     = "MEM-03" // no roles, or one named twice
+	CodeExpiry    = "MEM-04" // the roles' expiry is not in the future, or is set on the Owner role
+	CodeLastOwner = "MEM-06" // the organisation's last Owner keeps the role
+	CodeHeld      = "MEM-07" // the member holds that role already, or does not hold it
 )
 
 // Problem is one rule that failed.
@@ -72,13 +71,7 @@ func CheckName(name string) []Problem {
 	return nil
 }
 
-// Bootstrap returns the problem with changing roles in an organisation of members active members, or nil:
-// until a second member joins, its Owner acts alone; after that the change needs a second approver (FM-1),
-// which arrives with the approval engine.
-func Bootstrap(members int) *Problem {
-	if members > 1 {
-		return &Problem{CodeSecondApprover, "roles", fmt.Sprintf("the organisation has %d members, so a role change needs a second approver (FM-1)", members),
-			"Role changes wait for the approval engine, which brings the second approver; until then nothing is changed"}
-	}
-	return nil
-}
+// NeedsApproval reports whether a role change in an organisation of members active members needs a second
+// approver: until a second member joins, its Owner acts alone (the founder bootstrap); after that the change
+// waits for another Owner's approval (FM-1, rev 0.36).
+func NeedsApproval(members int) bool { return members > 1 }

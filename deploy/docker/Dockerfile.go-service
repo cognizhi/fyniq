@@ -18,6 +18,7 @@ COPY cmd ./cmd
 COPY internal ./internal
 COPY db ./db
 COPY compliance ./compliance
+COPY packs ./packs
 
 ARG SERVICE
 ARG FLAVOUR=release

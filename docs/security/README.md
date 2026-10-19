@@ -26,7 +26,11 @@ most specific requirement the test proves. The ones in use so far:
 |---|---|---|
 | V2.2.1, V2.2.3 | Input validation | amounts off scale or NaN; accounts that cannot take postings |
 | V2.3.1–V2.3.3 | Business logic security | document statuses that cannot rewind; closed periods; entries that commit whole or not at all |
+| V5.2.1–V5.2.3, V5.3.2, V5.4.3 | File handling | evidence uploads: size, type from content, archive limits and macros, file names as data, the malware scan |
 | V8.1.1 | Authorisation documentation | the policy table equals Appendix D |
+| V8.2.2 | Object-level authorisation | a record's evidence needs the right to view the record too |
+| V14.2.7 | Data retention | retained evidence cannot be deleted or replaced before its retain-until |
+| V16.2.1 | Logging content | evidence events carry the hashes, uploader, source and parent |
 | V8.2.1, V8.2.3, V8.3.1 | Authorisation design and operation level | the policy and the matrix; masked fields |
 | V8.4.1 | Multi-tenant | every cross-tenant attack, RLS on every table |
 | V13.2.2, V13.3.2 | Least privilege for backend accounts and secrets | the database roles' grants; workflow tokens |

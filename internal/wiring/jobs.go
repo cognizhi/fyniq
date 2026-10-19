@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/cognizhi/fyniq/compliance"
+	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -45,7 +47,38 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := compliance.RecordEvidence(ctx, k.Store, k.Blobs, clock.Now())
 			return err
 		},
+		"evidence.commit": func(ctx context.Context) error {
+			c, ok := k.Committer(clock)
+			if !ok {
+				return nil // no evidence stores: nothing can have been attached
+			}
+			_, err := c.CommitAll(ctx)
+			return err
+		},
+		"evidence.verify": func(ctx context.Context) error {
+			if k.Evidence == nil {
+				return nil
+			}
+			_, err := evidence.Verify(ctx, k.Store, k.Evidence)
+			return err
+		},
+		"evidence.sweep": func(ctx context.Context) error {
+			if k.Staging == nil || k.Evidence == nil {
+				return nil
+			}
+			_, err := evidence.Sweep(ctx, k.Store, k.Staging, k.Evidence, clock.Now())
+			return err
+		},
 	}
+}
+
+// Committer commits attached files of records that are no longer drafts to the locked store (FR-DOC-13);
+// ok is false when the kit has no evidence stores.
+func (k *Kit) Committer(clock ports.Clock) (evidence.Committer, bool) {
+	if k.Staging == nil || k.Evidence == nil {
+		return evidence.Committer{}, false
+	}
+	return evidence.Committer{Store: k.Store, Staging: k.Staging, Locked: k.Evidence, Clock: clock, Zone: appclock.Singapore}, true
 }
 
 // PurgeIdempotencyKeys deletes every organisation's idempotency keys that expired at or before now

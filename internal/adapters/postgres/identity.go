@@ -340,6 +340,9 @@ func (r members) Assign(ctx context.Context, membershipID uuid.UUID, role string
 	if err != nil {
 		return storage.RoleAssignment{}, mapError(err)
 	}
+	if err := r.u.auditVoids(ctx); err != nil {
+		return storage.RoleAssignment{}, err
+	}
 	if err := r.u.event(ctx, "role_assignment.created", "role_assignment", row.ID, nil, map[string][2]any{
 		"membership_id": {nil, row.MembershipID}, "role": {nil, row.Role}, "expires_at": {nil, row.ExpiresAt}}); err != nil {
 		return storage.RoleAssignment{}, err
@@ -357,6 +360,9 @@ func (r members) Revoke(ctx context.Context, assignmentID uuid.UUID) error {
 	}
 	if err != nil {
 		return mapError(err)
+	}
+	if err := r.u.auditVoids(ctx); err != nil {
+		return err
 	}
 	return r.u.event(ctx, "role_assignment.revoked", "role_assignment", row.ID, nil, map[string][2]any{
 		"membership_id": {row.MembershipID, row.MembershipID}, "role": {row.Role, nil}})

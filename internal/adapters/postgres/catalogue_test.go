@@ -27,8 +27,10 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // app_user, user_identity, installation and super_admin are the installation's people and first-run
 // setup (migration 000010), super_admin_grant the Super admins' one-time codes (000012), user_session the
 // web app's first-party sessions (000013): reached only through SECURITY DEFINER functions.
+// statutory_pack_version and statutory_pack_row are the published statutory packs (000033): written only by
+// the migrator at a release, read through views (§11.4, ENG-30).
 var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
-	"super_admin_grant", "user_session"}
+	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain"}

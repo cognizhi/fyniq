@@ -4,7 +4,7 @@ type: concept
 title: Members, roles and the first founder's setup
 summary: What roles do, why the Owner sets up members alone until a second person joins, and why role changes then need a second approver
 sources:
-  - docs/user-guide/members-and-roles.md sha256:773c5f94cb067f223beb3fbb314efde75e5678125b3108b6c4b92b8cd2b8def9
+  - docs/user-guide/members-and-roles.md sha256:8cb6790e7da388ded2d653e12232bbc36332c73ed25f845a8cb4a396279cca5b
 data_class: general
 taint: trusted
 status: published
@@ -34,7 +34,7 @@ aliases:
 - The first founder is the Owner, and sets up members and roles alone until a second person joins: there is nobody yet to approve with.
 - Give yourself the roles you work in, such as **Controller** and **Accountant**, and invite the other founders with theirs ([[members.invite]]).
 - An invitation made then keeps its roles, however late it is accepted; everything is recorded in the audit trail.
-- Once a second person joins, every role change needs a second approver; until approvals arrive in Fyniq, role changes are refused and nothing changes. So invite every founder before the first one joins.
+- Once a second person joins, every role change needs a second approver: it waits until another Owner approves it ([[approvals.decide]]). Inviting every founder before the first one joins saves those approvals.
 
 (src: docs/user-guide/members-and-roles.md#before-the-second-founder-joins)
 
@@ -42,5 +42,6 @@ aliases:
 
 - Choose the person, then **Add role** or **End role**; it takes effect on their next page.
 - The company always keeps an Owner: make someone else Owner before ending the last Owner's role.
+- Once the company has a second member, adding or ending a role, or inviting someone, waits for another Owner's approval.
 
 (src: docs/user-guide/members-and-roles.md#change-someones-roles)

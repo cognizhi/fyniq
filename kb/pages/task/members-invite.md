@@ -4,7 +4,7 @@ type: task
 title: Invite someone, or join with an invitation
 summary: Create a one-time invitation with roles, give the code in person, withdraw it if unused, and join a company with a code
 sources:
-  - docs/user-guide/members-and-roles.md sha256:773c5f94cb067f223beb3fbb314efde75e5678125b3108b6c4b92b8cd2b8def9
+  - docs/user-guide/members-and-roles.md sha256:8cb6790e7da388ded2d653e12232bbc36332c73ed25f845a8cb4a396279cca5b
 data_class: general
 taint: trusted
 status: published
@@ -29,6 +29,13 @@ aliases:
 - **Withdraw** an unused invitation and its code stops working at once.
 
 (src: docs/user-guide/members-and-roles.md#invite-someone)
+
+## After the second member joins
+
+- An invitation, like adding or ending a role, waits for another Owner's approval ([[approvals.decide]]).
+- Its code is shown to you at once, and works once the invitation is approved.
+
+(src: docs/user-guide/members-and-roles.md#change-someones-roles)
 
 ## Join
 

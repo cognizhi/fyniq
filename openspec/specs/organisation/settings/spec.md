@@ -174,7 +174,7 @@ Source: PRD-001 §8.1 · Priority S · Phase P1
 
 #### Scenario: The AI assistant switches on only under dual control
 - **WHEN** someone switches the AI assistant on
-- **THEN** the change needs FM-1's dual approval, and until the approval engine exists it is refused
+- **THEN** the change needs FM-1's dual approval: it waits as an approval request until another member holding A approves it (rev 0.36)
 
 ### Requirement: FR-ORG-07 Data region and retention visible to the Owner
 The system SHALL show the data region and retention settings to the Owner.
@@ -230,10 +230,9 @@ Source: PRD-001 §8.1 · Priority M · Phase P1
 - **WHEN** the user chooses "Reset to recommended"
 - **THEN** the recommended value is recorded as a new change, and nothing is deleted (rev 0.34)
 
-#### Scenario: FM-1 settings wait for the approval engine
-- **GIVEN** the approval engine does not exist yet
+#### Scenario: FM-1 settings wait for a second approver
 - **WHEN** a setting under FM-1 is changed
-- **THEN** the change is refused, never applied, and the setting keeps its recommended value (rev 0.34, provisional until sign-off)
+- **THEN** the change waits as an approval request, and the setting keeps its value until another member holding A approves it (rev 0.36, superseding rev 0.34's refusal; provisional until sign-off)
 
 ### Requirement: FR-ORG-09 Company logo and brand, applied everywhere at once
 The Owner or Administrator SHALL be able to upload the company logo (SVG or PNG; light and dark variants; a square icon for the browser tab and app icon) and, optionally, an accent colour, and the change SHALL apply everywhere at once.

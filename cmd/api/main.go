@@ -61,6 +61,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		return nil
 	}
 	d.Store, d.Installation = kit.Store, kit.Store
+	d.Staging, d.Scanner = kit.Staging, kit.Scanner // nil until configured: then no file can be attached
 	d.Outbox = &outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
 	api.New(s, d)
 	s.AddReadiness("database", kit.Store.Ping)

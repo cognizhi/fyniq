@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ContentType": {
+      "type": "string"
+    },
+    "Filename": {
+      "type": "string"
+    },
+    "IsSet": {
+      "type": "boolean"
+    },
+    "Size": {
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "ContentType",
+    "IsSet",
+    "Size",
+    "Filename"
+  ],
+  "title": "FormFile",
+  "type": "object"
+}

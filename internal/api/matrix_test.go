@@ -74,8 +74,44 @@ func matrixInvitation(e *env) string {
 		"roles": []string{"bookkeeper"}}).str("id")
 }
 
+// matrixEvidence attaches a receipt to a new draft journal as an Accountant and returns both IDs.
+func matrixEvidence(e *env) (journalID, evidenceID string) {
+	journalID, _ = e.createDraft("10.00")
+	r := e.upload("/v1/journals/"+journalID+"/evidence", e.as(authz.Accountant), map[string]string{"evidence_type": "receipt"},
+		"receipt.pdf", []byte("%PDF-1.7 matrix receipt"), "If-Match", "*")
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("addJournalEvidence = %d: %s", r.Status, r.Raw)
+	}
+	return journalID, r.str("id")
+}
+
 // matrixCalls has one request per operation; an operation without one fails the test.
 var matrixCalls = map[string]matrixCall{
+	"addJournalEvidence": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createDraft("10.00")
+		r := e.upload("/v1/journals/"+id+"/evidence", tok, map[string]string{"evidence_type": "receipt"}, "receipt.pdf",
+			[]byte("%PDF-1.7 matrix receipt"), "If-Match", "*")
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/journals/"+id+"/evidence", e.as(authz.Accountant), nil)
+			items, _ := l.Body["items"].([]any)
+			return l.Status == http.StatusOK && len(items) == 0
+		}
+	},
+	"listJournalEvidence": func(e *env, tok string) (response, func() bool) {
+		id, _ := matrixEvidence(e)
+		return e.call(http.MethodGet, "/v1/journals/"+id+"/evidence", tok, nil), nil
+	},
+	"getJournalEvidence": func(e *env, tok string) (response, func() bool) {
+		id, ev := matrixEvidence(e)
+		return e.call(http.MethodGet, "/v1/journals/"+id+"/evidence/"+ev, tok, nil), nil
+	},
+	"removeJournalEvidence": func(e *env, tok string) (response, func() bool) {
+		id, ev := matrixEvidence(e)
+		r := e.call(http.MethodDelete, "/v1/journals/"+id+"/evidence/"+ev, tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/journals/"+id+"/evidence/"+ev, e.as(authz.Accountant), nil).str("state") == "attached"
+		}
+	},
 	"getOrganisation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation", tok, nil), nil
 	},
@@ -255,6 +291,23 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return held }
 	},
+	// Each approval's own policy decides what a person sees and signs (rev 0.36), so the matrix asks for a request
+	// that does not exist: allowed means the API looked past the operation's policy (404, or step-up for a signature);
+	// approvals_test.go signs real ones.
+	"listApprovals": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/approvals", tok, nil), nil
+	},
+	"getApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/approvals/"+uuid.NewString(), tok, nil), nil
+	},
+	"approveApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/approvals/"+uuid.NewString()+"/approve", tok, map[string]any{"envelope_hash": strings.Repeat("0", 64)},
+			"If-Match", "*"), nil
+	},
+	"rejectApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/approvals/"+uuid.NewString()+"/reject", tok, map[string]any{"envelope_hash": strings.Repeat("0", 64),
+			"reason": "Matrix"}, "If-Match", "*"), nil
+	},
 	"listItems": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/items", tok, nil), nil
 	},
@@ -350,6 +403,16 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		return role != authz.AI, false
 	case p.OwnerMay && role == authz.Owner: // FR-ADM-01's founder bootstrap (rev 0.35): the matrix's organisation has no second member
 		return true, false
+	case p.Capability == authz.Approvals: // a person with the right on a row approvals cover (rev 0.36); never the AI
+		if role == authz.AI || authz.Column(role) == "" {
+			return false, false
+		}
+		for _, c := range authz.ApprovalRows {
+			if ok, _ := authztest.Allows(authztest.ParseCell(rows[string(c)][authz.Column(role)]), p.Need); ok {
+				return true, false
+			}
+		}
+		return false, false
 	}
 	col := authz.Column(role)
 	if col == "" {
@@ -362,7 +425,17 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 	if !ok {
 		t.Fatalf("Appendix D has no row %q", p.Capability)
 	}
-	return authztest.Allows(authztest.ParseCell(row[col]), p.Need)
+	allowed, masked = authztest.Allows(authztest.ParseCell(row[col]), p.Need)
+	if allowed && p.Parent != "" { // and the record it is under must be visible, unmasked
+		parent, ok := rows[string(p.Parent)]
+		if !ok {
+			t.Fatalf("Appendix D has no row %q", p.Parent)
+		}
+		if sees, partly := authztest.Allows(authztest.ParseCell(parent[col]), authz.View); !sees || partly {
+			return false, false
+		}
+	}
+	return allowed, masked
 }
 
 // The authorisation matrix: every role of §7.1, the AI and the Super admin × every operation,
@@ -398,10 +471,12 @@ func TestAuthorisationMatrix(t *testing.T) {
 			want, _ := expected(t, rows, role, policies[op])
 			r, unchanged := matrixCalls[op](e, tok)
 			beyondPolicy := r.Status == http.StatusForbidden && (r.problemCode() == CodeNotSuperAdmin || r.problemCode() == CodeStepUpRequired)
+			// The installation's operations and the approvals decide past their policy: by a code, or by the request's own policy.
+			lenient := policies[op].NoOrganisation || policies[op].Capability == authz.Approvals
 			switch {
-			case want && policies[op].NoOrganisation && (r.Status == http.StatusUnauthorized || (r.Status == http.StatusForbidden && !beyondPolicy)):
+			case want && lenient && (r.Status == http.StatusUnauthorized || (r.Status == http.StatusForbidden && !beyondPolicy)):
 				t.Errorf("%s × %s: allowed, the API answered %d %s", role, op, r.Status, r.problemCode())
-			case want && !policies[op].NoOrganisation && (r.Status < 200 || r.Status > 299):
+			case want && !lenient && (r.Status < 200 || r.Status > 299):
 				t.Errorf("%s × %s: Appendix D allows it, the API answered %d %s", role, op, r.Status, r.problemCode())
 			case !want && (r.Status != http.StatusForbidden || beyondPolicy):
 				t.Errorf("%s × %s: Appendix D refuses it, the API answered %d %s", role, op, r.Status, r.problemCode())

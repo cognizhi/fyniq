@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -73,6 +74,8 @@ type env struct {
 	clock  *clock.Frozen
 	tokens *tokens
 	log    *bytes.Buffer
+	blobs  *local.Dir    // the evidence staging store
+	queue  *local.Memory // the outbox's tasks
 }
 
 var orgs int
@@ -87,9 +90,14 @@ func newEnv(t *testing.T) *env {
 	orgs++
 	e := &env{t: t, store: store, books: porttest.NewBooks(t, store, fmt.Sprintf("API %d Pte Ltd", orgs)),
 		clock: clock.NewFrozen(time.Date(2026, 10, 15, 9, 0, 0, 0, time.UTC)), tokens: &tokens{m: map[string]authn.Principal{}}, log: &bytes.Buffer{}}
+	if e.blobs, err = local.NewDir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	e.queue = local.NewMemory()
 	mux := http.NewServeMux()
-	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: local.NewMemory(), Clock: e.clock},
-		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test"})
+	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
+		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
+		Staging: e.blobs, Scanner: local.EICARScanner{}})
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e
@@ -139,7 +147,10 @@ func (r response) str(path ...string) string {
 func (e *env) call(method, path, token string, body any, headers ...string) response {
 	e.t.Helper()
 	var rd io.Reader
-	if body != nil {
+	contentType := "application/json"
+	if raw, ok := body.(rawBody); ok {
+		rd, contentType = bytes.NewReader(raw.data), raw.contentType
+	} else if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
 			e.t.Fatal(err)
@@ -151,7 +162,7 @@ func (e *env) call(method, path, token string, body any, headers ...string) resp
 		e.t.Fatal(err)
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", contentType)
 	}
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -172,6 +183,31 @@ func (e *env) call(method, path, token string, body any, headers ...string) resp
 		}
 	}
 	return out
+}
+
+// upload sends a multipart form: fields, and file as the form field file named name; headers are name, value pairs.
+func (e *env) upload(path, token string, fields map[string]string, name string, file []byte, headers ...string) response {
+	e.t.Helper()
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	for k, v := range fields {
+		_ = w.WriteField(k, v)
+	}
+	if file != nil {
+		part, err := w.CreateFormFile("file", name)
+		if err != nil {
+			e.t.Fatal(err)
+		}
+		_, _ = part.Write(file)
+	}
+	_ = w.Close()
+	return e.call(http.MethodPost, path, token, rawBody{w.FormDataContentType(), body.Bytes()}, headers...)
+}
+
+// rawBody is a request body call sends as it is, with its own Content-Type.
+type rawBody struct {
+	contentType string
+	data        []byte
 }
 
 // draft is a balanced journal in SGD: rent paid from the bank.
