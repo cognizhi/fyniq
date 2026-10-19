@@ -86,7 +86,9 @@ Everything in the P0 plan's "Rules for building P0" still holds. In addition:
 | 3 · Accountant and tax agent reviews | No longer a gate (rev 0.22): pages under review show the FR-UX-41 banner |
 
 Question 26 adds one condition: the P1 build starts once the one-page comparison of build, hybrid and
-buy, at the day's list prices, is recorded and signed.
+buy, at the day's list prices, is recorded and signed. The comparison is recorded in
+`docs/prd/research/build-hybrid-buy-2026-10-17.md` and was signed for build on 19 Oct 2026 (PRD-001 rev 0.26),
+so the P1 build starts.
 
 ## The launch subset (accepted 16 Oct 2026)
 
@@ -132,7 +134,7 @@ follow the recommended default. These depart from it or change what the plan bui
 | Q4, Q16, Nemura Q1, Q12 | No founder salary; payroll in Nemura, built after Fyniq's go-live and before the first paid person | `p1-payroll-link` and the Nemura track, after go-live |
 | Nemura Q4 | The automatic month-end leave liability accrual is on and built in P1 | `p1-nemura-leave-time` |
 | Q40 | No Ory Enterprise Licence: option (b) on the Apache-2.0 build | `p1-mcp-first-party` |
-| Q26 | Build, once the one-page comparison is signed | Before the P1 build |
+| Q26 | Build, once the one-page comparison is signed (signed 19 Oct 2026) | Before the P1 build |
 
 The outside dependencies left in the tables are the confirmations the decisions ask for: the
 accountant's (Q15, Q27, Q31, Q32), the lawyer's on the SAFE (Q33), counsel's before payroll data
