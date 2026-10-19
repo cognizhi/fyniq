@@ -84,12 +84,13 @@ type Policy struct {
 // approval engine (FR-APR, P1). AI cells without letters ("Proposal") grant nothing through the API:
 // the AI's only write path is a proposal (golden rule 5), which arrives in P1.
 var (
-	GetOrganisation = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
-	ListAccounts    = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
-	GetAccount      = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
-	CreateJournal   = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
-	GetJournal      = Policy{Operation: "getJournal", Capability: Journals, Need: View}
-	PostJournal     = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
+	GetOrganisation    = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
+	ListAccounts       = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
+	GetAccount         = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
+	CreateJournal      = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
+	BulkCreateJournals = Policy{Operation: "bulkCreateJournals", Capability: Journals, Need: Create}
+	GetJournal         = Policy{Operation: "getJournal", Capability: Journals, Need: View}
+	PostJournal        = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
 	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
 		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
@@ -125,7 +126,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(GetOrganisation, ListAccounts, GetAccount, CreateJournal, GetJournal, PostJournal, ReverseJournal,
+var Policies = index(GetOrganisation, ListAccounts, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 

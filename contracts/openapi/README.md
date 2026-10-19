@@ -32,6 +32,10 @@ header (`functions/apiConventions.js`, rule `fyniq-api-conventions`):
 | Lists (FR-INT-10) | A list (named `list…`, or a page of `items`) lacks `cursor`, `page_size` and `next_cursor` |
 | Preview (FR-INT-14) | A write takes no `Prefer` header, or has no 200 response with `Preference-Applied`. Embed `PreferHeader` and pass it to `write()`: the command then runs in a preview, which checks everything the commit would, including the database's deferred checks, and rolls back |
 
+Bulk operations (FR-INT-11) take up to 250 items and answer with one result per item, in order: use
+`bulk()` in `internal/api`, which runs each item in a unit of work of its own and points a refused
+item's field paths into the request (`body.items[3]…`).
+
 An operation opts out of one only with `x-fyniq-exempt` naming the convention and the reason (rule
 `fyniq-exemption-reasons`); `TestConventionExemptions` lists every exemption, so a new one is reviewed.
 Today the six commands whose response carries a one-time secret take no `Idempotency-Key` (FR-INT-08,

@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
@@ -374,6 +375,82 @@ func TestRateLimits(t *testing.T) {
 	defer worker.Close()
 	if n, err := wiring.PurgeRateLimitWindows(context.Background(), worker, e.clock.Now().Add(10*time.Minute)); err != nil || n < 4 {
 		t.Errorf("PurgeRateLimitWindows = %d, %v; want this test's 4 windows at least", n, err)
+	}
+}
+
+// A bulk request saves each item on its own and answers with a result per item, in order: an item the
+// ledger refuses is reported with its problem and takes no other item with it. MaxBulkItems items answer
+// well within FR-INT-11's 10 seconds, so the request stays synchronous.
+// req: FR-INT-11
+func TestBulkCreateJournals(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	bad := e.draft("10.00")
+	bad["lines"].([]map[string]any)[0]["amount"] = map[string]any{"amount": "10.005", "currency": "SGD"}
+	body := map[string]any{"items": []any{e.draft("10.00"), bad, e.draft("20.00")}}
+	results := func(r response) []map[string]any {
+		var out []map[string]any
+		for _, x := range r.Body["results"].([]any) {
+			out = append(out, x.(map[string]any))
+		}
+		return out
+	}
+
+	r := e.call(http.MethodPost, "/v1/journals:bulk", accountant, body, "Idempotency-Key", "bulk-1")
+	if r.Status != http.StatusOK || r.Body["saved"] != float64(2) || r.Body["refused"] != float64(1) {
+		t.Fatalf("a bulk with one bad item: %d %s", r.Status, r.Raw)
+	}
+	got := results(r)
+	for i, want := range []float64{201, 422, 201} {
+		if got[i]["index"] != float64(i) || got[i]["status"] != want {
+			t.Errorf("result %d: %v; want status %v", i, got[i], want)
+		}
+	}
+	if p, _ := got[1]["problem"].(map[string]any); p["code"] != CodeInvalid || got[1]["id"] != nil ||
+		p["errors"].([]any)[0].(map[string]any)["field"] != "body.items[1].lines[0].amount.amount" ||
+		p["errors"].([]any)[0].(map[string]any)["code"] != "MONEY-02" {
+		t.Errorf("the refused item: %v", got[1])
+	}
+	saved := e.call(http.MethodGet, "/v1/journals/"+got[0]["id"].(string), accountant, nil)
+	if saved.str("status") != "draft" || saved.Header.Get("ETag") != got[0]["etag"] {
+		t.Errorf("the saved item reads as %s at %s; the result said %v", saved.str("status"), saved.Header.Get("ETag"), got[0]["etag"])
+	}
+
+	// The key covers the whole request: a repeat runs nothing and answers the same.
+	again := e.call(http.MethodPost, "/v1/journals:bulk", accountant, body, "Idempotency-Key", "bulk-1")
+	if again.Header.Get("Idempotent-Replayed") != "true" || results(again)[2]["id"] != got[2]["id"] {
+		t.Errorf("the repeat: %v %s", again.Header, again.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/journals:bulk", accountant, map[string]any{"items": []any{e.draft("1.00")}},
+		"Idempotency-Key", "bulk-1"), "bulkCreateJournals", 422, CodeIdempotencyReused)
+
+	// A preview checks every item and saves none.
+	pv := e.call(http.MethodPost, "/v1/journals:bulk", accountant, body, "Prefer", "return=preview")
+	if pv.Status != http.StatusOK || pv.Header.Get("Preference-Applied") != "return=preview" || pv.Body["saved"] != float64(2) {
+		t.Fatalf("a bulk preview: %d %v %s", pv.Status, pv.Header, pv.Raw)
+	}
+	if p := results(pv); p[0]["status"] != float64(200) || p[0]["id"] != nil || p[1]["status"] != float64(422) {
+		t.Errorf("the previewed results: %v", p)
+	}
+
+	// No items, or more than MaxBulkItems, are refused whole.
+	e.problemIs(e.call(http.MethodPost, "/v1/journals:bulk", accountant, map[string]any{"items": []any{}}), "bulkCreateJournals", 422, CodeInvalid)
+	many := make([]any, MaxBulkItems+1)
+	for i := range many {
+		many[i] = e.draft("1.00")
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/journals:bulk", accountant, map[string]any{"items": many}), "bulkCreateJournals", 422, CodeInvalid)
+
+	// The most items within 10 seconds (FR-INT-11).
+	start := clock.System{}.Now()
+	r = e.call(http.MethodPost, "/v1/journals:bulk", accountant, map[string]any{"items": many[:MaxBulkItems]})
+	took := clock.System{}.Now().Sub(start)
+	t.Logf("%d drafts in %v", MaxBulkItems, took)
+	if r.Status != http.StatusOK || r.Body["saved"] != float64(MaxBulkItems) {
+		t.Fatalf("%d items: %d saved %v", MaxBulkItems, r.Status, r.Body["saved"])
+	}
+	if took > 10*time.Second {
+		t.Errorf("%d items took %v: past FR-INT-11's 10 seconds, so the request must answer 202 with an operation", MaxBulkItems, took)
 	}
 }
 
