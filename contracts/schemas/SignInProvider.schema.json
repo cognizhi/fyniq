@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The provider's ID: the web app sends the browser to /api/auth/signin?provider=\u003cid\u003e to sign in with it.",
+      "examples": [
+        "google"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The provider's name, as the sign-in page shows it.",
+      "examples": [
+        "Google"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "title": "SignInProvider",
+  "type": "object"
+}

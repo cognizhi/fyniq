@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The date of the reversing entry; it must be in an open period.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is reversed; the audit trail records it (FR-GL-12).",
+      "examples": [
+        "Posted to the wrong account"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "reason"
+  ],
+  "title": "Reversal",
+  "type": "object"
+}

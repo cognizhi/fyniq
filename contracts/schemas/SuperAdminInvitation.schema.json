@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "display_name": {
+      "description": "Your name, as other users will see it; ignored when you are a user already.",
+      "examples": [
+        "Wei Jie Lim"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "invitation_code": {
+      "description": "The invitation a Super admin created for you. Case, spaces and dashes do not matter.",
+      "examples": [
+        "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+      ],
+      "maxLength": 100,
+      "minLength": 20,
+      "type": "string"
+    }
+  },
+  "required": [
+    "invitation_code",
+    "display_name"
+  ],
+  "title": "SuperAdminInvitation",
+  "type": "object"
+}

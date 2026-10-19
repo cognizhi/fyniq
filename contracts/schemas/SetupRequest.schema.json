@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "display_name": {
+      "description": "Your name, as other users will see it.",
+      "examples": [
+        "Mei Ling Tan"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "organisation": {
+      "$ref": "NewOrganisation.schema.json",
+      "description": "The first organisation; you become its Owner."
+    },
+    "setup_code": {
+      "description": "The one-time code created at deployment (printed by migrate setup-code; Secret Manager in the cloud). Case, spaces and dashes do not matter.",
+      "examples": [
+        "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+      ],
+      "maxLength": 100,
+      "minLength": 20,
+      "type": "string"
+    }
+  },
+  "required": [
+    "setup_code",
+    "display_name",
+    "organisation"
+  ],
+  "title": "SetupRequest",
+  "type": "object"
+}

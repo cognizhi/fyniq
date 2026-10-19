@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account posted to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "In the line's currency: debit positive, credit negative."
+    },
+    "base_amount": {
+      "$ref": "Money.schema.json",
+      "description": "In the base currency, computed once at posting (RND-FX)."
+    },
+    "description": {
+      "description": "What the line is for.",
+      "examples": [
+        "October office rent"
+      ],
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "Base currency per unit of the line's currency (1 for the base currency).",
+      "examples": [
+        "1"
+      ],
+      "type": "string"
+    },
+    "fx_rate_source": {
+      "description": "Where the rate came from.",
+      "examples": [
+        "base"
+      ],
+      "type": "string"
+    },
+    "line_no": {
+      "description": "The line's number in the entry.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "line_no",
+    "account_id",
+    "amount",
+    "fx_rate",
+    "fx_rate_source",
+    "base_amount"
+  ],
+  "title": "EntryLine",
+  "type": "object"
+}

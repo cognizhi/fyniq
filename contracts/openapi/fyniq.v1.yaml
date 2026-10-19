@@ -953,6 +953,14 @@ info:
       the record changed since, 428 without it (FR-INT-09).
     - Lists are cursor-paginated (page_size up to 500, an opaque next_cursor). Money is a decimal string
       with its currency, never a JSON number; dates are ISO 8601; IDs are UUIDv7 strings (FR-INT-10).
+    - Writes accept Prefer: return=preview: the command runs with every check its commit would, and nothing
+      is saved; the answer carries Preference-Applied: return=preview (FR-INT-14). The one-time-code
+      operations take no preview.
+    - Bulk operations take up to 250 items and answer with one result per item, in order (FR-INT-11).
+    - Each client may make 600 reads and 120 writes a minute in an organisation; RateLimit and
+      RateLimit-Policy say what is left, and 429 comes with Retry-After (FR-INT-16).
+    - A deprecated operation carries Deprecation, Sunset and a Link to its migration note, at least six
+      months before its sunset (FR-INT-06).
     - Every operation states the right it needs (x-fyniq-permission, from PRD-001 Appendix D) and the
       error codes it returns (x-fyniq-error-codes).
   license:

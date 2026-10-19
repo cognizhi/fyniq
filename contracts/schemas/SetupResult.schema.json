@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "installation_organisation_id": {
+      "description": "The installation's own audit trail.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d03"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "organisation_id": {
+      "description": "The first organisation, of which you are the Owner.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "recovery_codes": {
+      "description": "Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work.",
+      "items": {
+        "description": "A recovery code, usable once.",
+        "examples": [
+          "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+        ],
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "user_id": {
+      "description": "Your user: the Super admin.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "organisation_id",
+    "installation_organisation_id",
+    "recovery_codes"
+  ],
+  "title": "SetupResult",
+  "type": "object"
+}

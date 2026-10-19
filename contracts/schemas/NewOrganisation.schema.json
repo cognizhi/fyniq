@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_currency": {
+      "description": "The ISO 4217 currency its books are kept in.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "name": {
+      "description": "The organisation's name.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "base_currency"
+  ],
+  "title": "NewOrganisation",
+  "type": "object"
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "organisation_id": {
+      "description": "The organisation your session is in; absent when you are a member of none.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "provider": {
+      "description": "The sign-in provider of a browser session (FR-ADM-08); absent for a local dev token.",
+      "examples": [
+        "google"
+      ],
+      "type": "string"
+    },
+    "roles": {
+      "description": "Your roles in that organisation (PRD-001 §7.1); they are read on every request, so a change applies at once.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "stepped_up_until": {
+      "description": "Until when your last step-up (a second factor at sign-in) counts for the actions that need one; absent when it does not.",
+      "examples": [
+        "2026-10-15T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "super_admin": {
+      "description": "Whether you are a Super admin of this installation (FR-ADM-07).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "user_id": {
+      "description": "Your Fyniq user; absent until you have one (a new installation before setup, or before you accept an invitation).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "roles",
+    "super_admin"
+  ],
+  "title": "SessionInfo",
+  "type": "object"
+}

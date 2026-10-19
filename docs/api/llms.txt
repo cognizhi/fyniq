@@ -1,0 +1,32 @@
+# Fyniq API
+
+> Fyniq's public REST API (/v1) for the accounting, compliance and reporting of a Singapore company. The web app uses only this API. AI agents and MCP clients read through it and may only propose changes, which a named person approves in the web app; they never approve, pay, file or administer anything.
+
+Errors are RFC 9457 problem details with a stable code and a fix. Writes take an Idempotency-Key and Prefer: return=preview; versioned records need If-Match; lists are cursor-paginated; money is a decimal string with its currency, never a JSON number.
+
+## Docs
+
+- [Agent guide](https://github.com/cognizhi/fyniq/blob/main/docs/api/agent-guide.md): how to read, how to propose, and what is never allowed
+- [API reference](https://github.com/cognizhi/fyniq/blob/main/docs/api/reference.md): every operation with its permission, parameters, bodies and error codes
+- [OpenAPI contract](https://github.com/cognizhi/fyniq/blob/main/contracts/openapi/fyniq.v1.yaml): OpenAPI 3.1, exactly as the API serves it at /v1/openapi.json
+- [JSON Schemas](https://github.com/cognizhi/fyniq/blob/main/contracts/schemas/): one per resource (JSON Schema 2020-12)
+
+## Operations
+
+- `GET /v1/accounts` (listAccounts): List the chart of accounts
+- `GET /v1/accounts/{account_id}` (getAccount): Get an account
+- `POST /v1/journals` (createJournal): Save a draft journal
+- `GET /v1/journals/{journal_id}` (getJournal): Get a journal
+- `POST /v1/journals/{journal_id}/post` (postJournal): Post a draft journal
+- `POST /v1/journals/{journal_id}/reverse` (reverseJournal): Reverse a posted journal
+- `POST /v1/journals:bulk` (bulkCreateJournals): Save up to 250 draft journals
+- `GET /v1/organisation` (getOrganisation): Get your organisation
+- `GET /v1/session` (getSession): Get your session
+- `GET /v1/setup` (getSetupStatus): Get the setup status
+- `POST /v1/setup` (completeSetup): Complete first-run setup
+- `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers
+- `POST /v1/super-admins` (acceptSuperAdminInvitation): Become a Super admin with an invitation
+- `POST /v1/super-admins/invitations` (createSuperAdminInvitation): Invite the second Super admin
+- `POST /v1/super-admins/recovery` (recoverSuperAdmin): Recover your Super admin access
+- `POST /v1/super-admins/recovery-codes` (replaceSuperAdminRecoveryCodes): Replace your recovery codes
+- `POST /v1/super-admins/{user_id}/recovery-confirmations` (confirmSuperAdminRecovery): Confirm the other Super admin's recovery

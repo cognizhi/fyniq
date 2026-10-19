@@ -101,8 +101,8 @@ oracle-test: ## Run the independent oracle's own tests: hand-worked journals, th
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
 
-openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml from the code, and the web app's client from it; review the diff
-	@$(MISE) go test ./internal/api -run TestTheContractIsTheCode -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml regenerated"
+openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml, its JSON Schemas, the API reference and llms.txt from the code, and the web app's client; review the diff
+	@$(MISE) go test ./internal/api -run 'TestTheContractIsTheCode|TestTheReferenceIsTheContract' -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml, contracts/schemas/ and docs/api/ regenerated"
 	@$(MISE) pnpm --filter @fyniq/web -s gen:api >/dev/null && echo "✔ apps/web/src/api/schema.d.ts regenerated"
 
 api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's generated client is current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)

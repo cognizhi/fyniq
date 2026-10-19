@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "confirmation_code": {
+      "description": "The other Super admin's confirmation of your recovery, or the deployment recovery code (docs/runbooks/super-admin-recovery.md).",
+      "examples": [
+        "FGHIJ-KLMNO-PQRST-UVWXY-ZABCD-E"
+      ],
+      "maxLength": 100,
+      "minLength": 20,
+      "type": "string"
+    },
+    "recovery_code": {
+      "description": "One of your printed recovery codes. Required with the other Super admin's confirmation; optional with a deployment recovery.",
+      "examples": [
+        "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+      ],
+      "maxLength": 100,
+      "minLength": 20,
+      "type": "string"
+    }
+  },
+  "required": [
+    "confirmation_code"
+  ],
+  "title": "SuperAdminRecovery",
+  "type": "object"
+}

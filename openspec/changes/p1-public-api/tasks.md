@@ -47,7 +47,12 @@
 ## 3. Clients and contracts
 
 - [ ] 3.1 Client classes for integration clients and personal access tokens, issued by Hydra, with per-client limits and audit; personal access tokens are agent-class by default. Test `// req: FR-INT-02` (P1 part)
-- [ ] 3.2 JSON Schema for every resource, the published API reference, `llms.txt` and the agent guide, all generated from the contract. Test `// req: FR-INT-13`
+- [x] 3.2 JSON Schema for every resource, the published API reference, `llms.txt` and the agent guide, all generated from the contract. Test `// req: FR-INT-13`
+  (19 Oct 2026: `make openapi` also writes a JSON Schema 2020-12 per resource to `contracts/schemas/`, and
+  `docs/api/reference.md` and `docs/api/llms.txt`, from the same document as the contract;
+  `TestTheReferenceIsTheContract` fails while any is stale and checks the hand-written `docs/api/agent-guide.md` has
+  its three parts. They are published in the public repository; serving them from an installation comes with
+  third-party access in P2)
 - [ ] 3.3 Package the TypeScript client as the SDK. Test `// req: FR-INT-17` (P1 part)
 - [ ] 3.4 Create `contracts/events/` with a schema per event version. A test fails on an emitted event type without a schema or a version (`// req: platform/release-and-versioning Event schema versions`)
 - [ ] 3.5 Finish with `make check` and `make test`

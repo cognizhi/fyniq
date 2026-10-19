@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account to post to: a leaf account, active.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Debit positive, credit negative, in the line's currency."
+    },
+    "description": {
+      "description": "What the line is for.",
+      "examples": [
+        "October office rent"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "Only for a line not in the base currency: base currency per unit of the line's currency. A base-currency line takes none; posting refuses one (ENG-03).",
+      "examples": [
+        "1.3472"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?$",
+      "type": "string"
+    },
+    "fx_rate_source": {
+      "description": "Where the rate came from. A rate you send is the document's, so its source is document, set for you when you leave it out; any other source is refused (ENG-03, ENG-40).",
+      "examples": [
+        "document"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "amount"
+  ],
+  "title": "JournalLineDraft",
+  "type": "object"
+}

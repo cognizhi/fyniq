@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The stable error code (ENG-23).",
+      "examples": [
+        "JOURNAL-02"
+      ],
+      "type": "string"
+    },
+    "detail": {
+      "description": "What went wrong this time, in plain English.",
+      "examples": [
+        "The journal is posted, not a draft."
+      ],
+      "type": "string"
+    },
+    "errors": {
+      "description": "Every invalid field, all at once.",
+      "items": {
+        "$ref": "FieldProblem.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "fix": {
+      "description": "How to fix it.",
+      "examples": [
+        "Only a draft can be posted; reverse a posted journal instead."
+      ],
+      "type": "string"
+    },
+    "instance": {
+      "description": "The request this occurrence belongs to; quote it to support.",
+      "examples": [
+        "urn:fyniq:request:01JA2B3C4D5E6F7G8H9J0K1M2N"
+      ],
+      "format": "uri",
+      "type": "string"
+    },
+    "status": {
+      "description": "The HTTP status code.",
+      "examples": [
+        409
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "title": {
+      "description": "A short summary of the problem type; it never changes between occurrences.",
+      "examples": [
+        "The journal is not a draft"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "A URI naming the problem; one per code.",
+      "examples": [
+        "urn:fyniq:problem:JOURNAL-02"
+      ],
+      "format": "uri",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "title",
+    "status",
+    "detail",
+    "code"
+  ],
+  "title": "Problem",
+  "type": "object"
+}

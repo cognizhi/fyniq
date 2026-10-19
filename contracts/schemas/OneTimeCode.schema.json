@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The one-time code. It is shown once and cannot be shown again; give it to the person it is for by a channel you trust. Case, spaces and dashes do not matter.",
+      "examples": [
+        "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+      ],
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When the code stops working, if unused.",
+      "examples": [
+        "2026-10-22T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "expires_at"
+  ],
+  "title": "OneTimeCode",
+  "type": "object"
+}

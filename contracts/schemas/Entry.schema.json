@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The entry's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The organisation's ledger revision this entry made (ENG-46).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "lines": {
+      "description": "Its lines.",
+      "items": {
+        "$ref": "EntryLine.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "memo": {
+      "description": "The entry's memo.",
+      "examples": [
+        "October rent accrual"
+      ],
+      "type": "string"
+    },
+    "period_id": {
+      "description": "The accounting period it falls in.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "posting_date": {
+      "description": "The date it posts on.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "posting_identity": {
+      "description": "What was posted, under which rule: the same thing never posts twice.",
+      "examples": [
+        "manual_journal:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70:v1:journal@1"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-10-31T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reverses_entry_id": {
+      "description": "For a reversal, the entry it reverses.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d81"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "rule_version": {
+      "description": "The posting rule and its version (ENG-03).",
+      "examples": [
+        "journal@1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "ledger_revision",
+    "posting_date",
+    "period_id",
+    "posting_identity",
+    "rule_version",
+    "recorded_at",
+    "lines"
+  ],
+  "title": "Entry",
+  "type": "object"
+}

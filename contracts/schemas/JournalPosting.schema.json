@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry the command posted: the journal's entry, or its reversing entry."
+    },
+    "journal": {
+      "$ref": "Journal.schema.json",
+      "description": "The journal after the command."
+    }
+  },
+  "required": [
+    "journal",
+    "entry"
+  ],
+  "title": "JournalPosting",
+  "type": "object"
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "recovery_codes": {
+      "description": "Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work.",
+      "items": {
+        "description": "A recovery code, usable once.",
+        "examples": [
+          "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+        ],
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "recovery_codes"
+  ],
+  "title": "RecoveryCodes",
+  "type": "object"
+}
