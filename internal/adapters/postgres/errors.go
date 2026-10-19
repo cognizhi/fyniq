@@ -60,6 +60,10 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"journal_line_base_amount_rnd_fx":    {storage.CodeAmount, "a base amount is not the amount times the rate, rounded half away from zero (RND-FX)"},
 	"journal_line_currency_fkey":         {storage.CodeAmount, "a currency is not one Fyniq knows"},
 	"journal_line_account_fkey":          {storage.CodeAccountNotPost, "an account does not exist in this organisation"},
+	"organisation_profile_lengths":       {storage.CodeOrganisation, "a text of the organisation's profile is empty or too long"},
+	"organisation_uen_format":            {storage.CodeOrganisation, "a UEN is not 9 or 10 capital letters and digits"},
+	"organisation_fy_start_month_range":  {storage.CodeOrganisation, "the financial year's start month is not 1 to 12"},
+	"organisation_first_year":            {storage.CodeOrganisation, "the first financial year does not end after the books start, on the day before a year starts"},
 }
 
 // mapError turns database errors into storage errors with stable codes (ENG-23) and "no rows" into

@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const checkDeferred = `-- name: CheckDeferred :exec
@@ -23,15 +24,31 @@ func (q *Queries) CheckDeferred(ctx context.Context) error {
 }
 
 const getOrganisation = `-- name: GetOrganisation :one
-SELECT organisation_id, name, base_currency, base_minor_units, version FROM fyniq.organisation
+SELECT organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone FROM fyniq.organisation
 `
 
 type GetOrganisationRow struct {
-	OrganisationID uuid.UUID
-	Name           string
-	BaseCurrency   string
-	BaseMinorUnits int16
-	Version        int32
+	OrganisationID    uuid.UUID
+	Name              string
+	BaseCurrency      string
+	BaseMinorUnits    int16
+	Version           int32
+	LegalName         *string
+	Uen               *string
+	RegisteredAddress *string
+	MailingAddress    *string
+	Email             *string
+	Phone             *string
+	Website           *string
+	BankName          *string
+	BankAccountName   *string
+	BankAccountNumber *string
+	PaynowUen         *string
+	DocumentFooter    *string
+	FyStartMonth      int16
+	BooksStart        pgtype.Date
+	FirstYearEnd      pgtype.Date
+	TimeZone          string
 }
 
 func (q *Queries) GetOrganisation(ctx context.Context) (GetOrganisationRow, error) {
@@ -43,6 +60,22 @@ func (q *Queries) GetOrganisation(ctx context.Context) (GetOrganisationRow, erro
 		&i.BaseCurrency,
 		&i.BaseMinorUnits,
 		&i.Version,
+		&i.LegalName,
+		&i.Uen,
+		&i.RegisteredAddress,
+		&i.MailingAddress,
+		&i.Email,
+		&i.Phone,
+		&i.Website,
+		&i.BankName,
+		&i.BankAccountName,
+		&i.BankAccountNumber,
+		&i.PaynowUen,
+		&i.DocumentFooter,
+		&i.FyStartMonth,
+		&i.BooksStart,
+		&i.FirstYearEnd,
+		&i.TimeZone,
 	)
 	return i, err
 }
@@ -79,6 +112,64 @@ func (q *Queries) InsertOrganisation(ctx context.Context, arg InsertOrganisation
 	return i, err
 }
 
+const lockOrganisation = `-- name: LockOrganisation :one
+SELECT organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone FROM fyniq.organisation FOR UPDATE
+`
+
+type LockOrganisationRow struct {
+	OrganisationID    uuid.UUID
+	Name              string
+	BaseCurrency      string
+	BaseMinorUnits    int16
+	Version           int32
+	LegalName         *string
+	Uen               *string
+	RegisteredAddress *string
+	MailingAddress    *string
+	Email             *string
+	Phone             *string
+	Website           *string
+	BankName          *string
+	BankAccountName   *string
+	BankAccountNumber *string
+	PaynowUen         *string
+	DocumentFooter    *string
+	FyStartMonth      int16
+	BooksStart        pgtype.Date
+	FirstYearEnd      pgtype.Date
+	TimeZone          string
+}
+
+// The organisation's row, locked for a change of its profile (FR-INT-09: the version is compared under the lock).
+func (q *Queries) LockOrganisation(ctx context.Context) (LockOrganisationRow, error) {
+	row := q.db.QueryRow(ctx, lockOrganisation)
+	var i LockOrganisationRow
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.Name,
+		&i.BaseCurrency,
+		&i.BaseMinorUnits,
+		&i.Version,
+		&i.LegalName,
+		&i.Uen,
+		&i.RegisteredAddress,
+		&i.MailingAddress,
+		&i.Email,
+		&i.Phone,
+		&i.Website,
+		&i.BankName,
+		&i.BankAccountName,
+		&i.BankAccountNumber,
+		&i.PaynowUen,
+		&i.DocumentFooter,
+		&i.FyStartMonth,
+		&i.BooksStart,
+		&i.FirstYearEnd,
+		&i.TimeZone,
+	)
+	return i, err
+}
+
 const newOrganisationID = `-- name: NewOrganisationID :one
 SELECT uuidv7()::uuid AS id
 `
@@ -104,4 +195,104 @@ type SetTenantParams struct {
 func (q *Queries) SetTenant(ctx context.Context, arg SetTenantParams) error {
 	_, err := q.db.Exec(ctx, setTenant, arg.OrgID, arg.LockTimeout)
 	return err
+}
+
+const updateOrganisationProfile = `-- name: UpdateOrganisationProfile :one
+UPDATE fyniq.organisation SET legal_name = $1, uen = $2,
+  registered_address = $3, mailing_address = $4, email = $5,
+  phone = $6, website = $7, bank_name = $8,
+  bank_account_name = $9, bank_account_number = $10,
+  paynow_uen = $11, document_footer = $12, fy_start_month = $13,
+  books_start = $14, first_year_end = $15, time_zone = $16,
+  version = version + 1
+RETURNING organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone
+`
+
+type UpdateOrganisationProfileParams struct {
+	LegalName         *string
+	Uen               *string
+	RegisteredAddress *string
+	MailingAddress    *string
+	Email             *string
+	Phone             *string
+	Website           *string
+	BankName          *string
+	BankAccountName   *string
+	BankAccountNumber *string
+	PaynowUen         *string
+	DocumentFooter    *string
+	FyStartMonth      int16
+	BooksStart        pgtype.Date
+	FirstYearEnd      pgtype.Date
+	TimeZone          string
+}
+
+type UpdateOrganisationProfileRow struct {
+	OrganisationID    uuid.UUID
+	Name              string
+	BaseCurrency      string
+	BaseMinorUnits    int16
+	Version           int32
+	LegalName         *string
+	Uen               *string
+	RegisteredAddress *string
+	MailingAddress    *string
+	Email             *string
+	Phone             *string
+	Website           *string
+	BankName          *string
+	BankAccountName   *string
+	BankAccountNumber *string
+	PaynowUen         *string
+	DocumentFooter    *string
+	FyStartMonth      int16
+	BooksStart        pgtype.Date
+	FirstYearEnd      pgtype.Date
+	TimeZone          string
+}
+
+func (q *Queries) UpdateOrganisationProfile(ctx context.Context, arg UpdateOrganisationProfileParams) (UpdateOrganisationProfileRow, error) {
+	row := q.db.QueryRow(ctx, updateOrganisationProfile,
+		arg.LegalName,
+		arg.Uen,
+		arg.RegisteredAddress,
+		arg.MailingAddress,
+		arg.Email,
+		arg.Phone,
+		arg.Website,
+		arg.BankName,
+		arg.BankAccountName,
+		arg.BankAccountNumber,
+		arg.PaynowUen,
+		arg.DocumentFooter,
+		arg.FyStartMonth,
+		arg.BooksStart,
+		arg.FirstYearEnd,
+		arg.TimeZone,
+	)
+	var i UpdateOrganisationProfileRow
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.Name,
+		&i.BaseCurrency,
+		&i.BaseMinorUnits,
+		&i.Version,
+		&i.LegalName,
+		&i.Uen,
+		&i.RegisteredAddress,
+		&i.MailingAddress,
+		&i.Email,
+		&i.Phone,
+		&i.Website,
+		&i.BankName,
+		&i.BankAccountName,
+		&i.BankAccountNumber,
+		&i.PaynowUen,
+		&i.DocumentFooter,
+		&i.FyStartMonth,
+		&i.BooksStart,
+		&i.FirstYearEnd,
+		&i.TimeZone,
+	)
+	return i, err
 }

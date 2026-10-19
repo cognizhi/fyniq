@@ -3,7 +3,8 @@
   "additionalProperties": false,
   "properties": {
     "base_currency": {
-      "description": "The ISO 4217 currency its books are kept in.",
+      "default": "SGD",
+      "description": "The ISO 4217 currency its books are kept in; SGD when left out (FR-ORG-02).",
       "examples": [
         "SGD"
       ],
@@ -21,8 +22,7 @@
     }
   },
   "required": [
-    "name",
-    "base_currency"
+    "name"
   ],
   "title": "NewOrganisation",
   "type": "object"

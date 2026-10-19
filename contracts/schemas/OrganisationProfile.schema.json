@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bank_account_name": {
+      "description": "The account's name.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "bank_account_number": {
+      "description": "The account's number, as the bank prints it. Masked in logs and the audit trail (SEC-15).",
+      "examples": [
+        "012-345678-9"
+      ],
+      "type": "string"
+    },
+    "bank_name": {
+      "description": "The bank customers pay into, as documents print it.",
+      "examples": [
+        "DBS Bank"
+      ],
+      "type": "string"
+    },
+    "books_start": {
+      "description": "The date the books start: the first financial year begins on it.",
+      "examples": [
+        "2026-03-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "document_footer": {
+      "description": "The text at the foot of every document.",
+      "examples": [
+        "Thank you for your business."
+      ],
+      "type": "string"
+    },
+    "email": {
+      "description": "The address documents give for questions.",
+      "examples": [
+        "accounts@northwind.example"
+      ],
+      "type": "string"
+    },
+    "first_year_end": {
+      "description": "The last day of the first financial year: the day before a year starts, after the books start, so the first year may be shorter or longer than twelve months.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fy_start_month": {
+      "description": "The month each financial year starts in, 1 (January) to 12.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "maximum": 12,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "legal_name": {
+      "description": "The legal name, as registered with ACRA.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "mailing_address": {
+      "description": "Where post goes, when not to the registered address.",
+      "examples": [
+        "PO Box 1234, Singapore 912345"
+      ],
+      "type": "string"
+    },
+    "paynow_uen": {
+      "description": "The UEN customers pay to by PayNow.",
+      "examples": [
+        "202312345K"
+      ],
+      "type": "string"
+    },
+    "phone": {
+      "description": "The telephone number documents give.",
+      "examples": [
+        "+65 6123 4567"
+      ],
+      "type": "string"
+    },
+    "registered_address": {
+      "description": "The registered office address.",
+      "examples": [
+        "1 Raffles Place, #20-01, Singapore 048616"
+      ],
+      "type": "string"
+    },
+    "time_zone": {
+      "description": "The IANA time zone the organisation's days are counted in.",
+      "examples": [
+        "Asia/Singapore"
+      ],
+      "type": "string"
+    },
+    "uen": {
+      "description": "The Unique Entity Number: 9 or 10 capital letters and digits.",
+      "examples": [
+        "202312345K"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The organisation's version; it also makes the ETag.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "website": {
+      "description": "The website documents give.",
+      "examples": [
+        "https://northwind.example"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "fy_start_month",
+    "time_zone",
+    "version"
+  ],
+  "title": "OrganisationProfile",
+  "type": "object"
+}

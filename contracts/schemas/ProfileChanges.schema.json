@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bank_account_name": {
+      "description": "The account's name; \"\" clears it.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "maxLength": 140,
+      "type": "string"
+    },
+    "bank_account_number": {
+      "description": "The account's number; \"\" clears it.",
+      "examples": [
+        "012-345678-9"
+      ],
+      "maxLength": 34,
+      "type": "string"
+    },
+    "bank_name": {
+      "description": "The bank's name; \"\" clears it.",
+      "examples": [
+        "DBS Bank"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "books_start": {
+      "description": "The date the books start, YYYY-MM-DD; \"\" clears it.",
+      "examples": [
+        "2026-03-15"
+      ],
+      "type": "string"
+    },
+    "document_footer": {
+      "description": "The document footer; \"\" clears it.",
+      "examples": [
+        "Thank you for your business."
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "email": {
+      "description": "The address documents give; \"\" clears it.",
+      "examples": [
+        "accounts@northwind.example"
+      ],
+      "maxLength": 254,
+      "type": "string"
+    },
+    "first_year_end": {
+      "description": "The last day of the first financial year, YYYY-MM-DD; \"\" clears it.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "type": "string"
+    },
+    "fy_start_month": {
+      "description": "The month each financial year starts in, 1 to 12.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "legal_name": {
+      "description": "The legal name; \"\" clears it.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "mailing_address": {
+      "description": "The mailing address; \"\" clears it.",
+      "examples": [
+        "PO Box 1234, Singapore 912345"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "paynow_uen": {
+      "description": "The PayNow UEN; \"\" clears it.",
+      "examples": [
+        "202312345K"
+      ],
+      "maxLength": 10,
+      "type": "string"
+    },
+    "phone": {
+      "description": "The telephone number; \"\" clears it.",
+      "examples": [
+        "+65 6123 4567"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    },
+    "registered_address": {
+      "description": "The registered office address; \"\" clears it.",
+      "examples": [
+        "1 Raffles Place, #20-01, Singapore 048616"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "time_zone": {
+      "description": "The IANA time zone.",
+      "examples": [
+        "Asia/Singapore"
+      ],
+      "maxLength": 64,
+      "type": "string"
+    },
+    "uen": {
+      "description": "The UEN; \"\" clears it.",
+      "examples": [
+        "202312345K"
+      ],
+      "maxLength": 10,
+      "type": "string"
+    },
+    "website": {
+      "description": "The website; \"\" clears it.",
+      "examples": [
+        "https://northwind.example"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "title": "ProfileChanges",
+  "type": "object"
+}

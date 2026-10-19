@@ -20,7 +20,7 @@ type SetupStatus struct {
 // NewOrganisation is the first organisation of an installation.
 type NewOrganisation struct {
 	Name         string `json:"name" minLength:"1" maxLength:"200" doc:"The organisation's name." example:"Northwind Analytics Pte. Ltd."`
-	BaseCurrency string `json:"base_currency" pattern:"^[A-Z]{3}$" doc:"The ISO 4217 currency its books are kept in." example:"SGD"`
+	BaseCurrency string `json:"base_currency,omitempty" pattern:"^[A-Z]{3}$" default:"SGD" doc:"The ISO 4217 currency its books are kept in; SGD when left out (FR-ORG-02)." example:"SGD"`
 }
 
 // SetupRequest completes first-run setup.
@@ -77,9 +77,13 @@ func registerSetup(a *API) {
 					"Sign in to Fyniq in the browser and complete the setup there.")
 			}
 			codes, hashes := setupcode.NewSet(setupcode.RecoveryCodes)
+			base := in.Body.Organisation.BaseCurrency
+			if base == "" {
+				base = "SGD" // FR-ORG-02: the base currency defaults to SGD
+			}
 			res, err := a.deps.Installation.CompleteSetup(ctx, storage.NewSetup{CodeHash: setupcode.Hash(in.Body.SetupCode),
 				DisplayName: in.Body.DisplayName, Issuer: p.Issuer, Subject: p.Subject,
-				OrganisationName: in.Body.Organisation.Name, BaseCurrency: in.Body.Organisation.BaseCurrency,
+				OrganisationName: in.Body.Organisation.Name, BaseCurrency: base,
 				RecoveryCodeHashes: hashes, Now: a.deps.Clock.Now()})
 			if storage.CodeOf(err) == storage.CodeSetup {
 				a.deps.Log.Warn("api.setup.refused", "request_id", requestID(ctx)) // never the code

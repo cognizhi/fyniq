@@ -31,6 +31,14 @@
 ## 2. Organisation settings
 
 - [ ] 2.1 Profile, financial year, base currency, time zone and GST status with effective dates and the accounting basis. Tests `// req: FR-ORG-01`, `// req: FR-ORG-02` and `// req: FR-ORG-03`, including a short or long first year, and refusing cash basis until its rules are pinned
+  (19 Oct 2026, the profile, financial year and time zone: migrations 000018 and 000019 add them to `fyniq.organisation`,
+  checked by the database (UEN, lengths, a first year that ends after the books start, on the day before a year starts);
+  `GET` and `PATCH /v1/organisation/profile` under the new Appendix D row (PRD-001 rev 0.29: the Owner approves, the Admin
+  and the Controller change, the Employee has none); every change at the version read, audited with bank and PayNow
+  numbers masked; first-run setup defaults the base currency to SGD. No PRD rule bounds the first year's length, so none
+  is imposed. **Left:** the GST status with its effective dates, the return frequency and the accounting basis (FR-ORG-03),
+  as the first effective-dated family with `WITHOUT OVERLAPS` keys; documents taking their payment details and footer from
+  the profile arrive with the templates (`p1-templates-email`))
 - [ ] 2.2 Defaults and gap-free number sequences per document type, locked in the posting transaction. Test `// req: FR-ORG-04` races two postings on independent connections and finds no gap and no repeat
 - [ ] 2.3 Feature switches, region and retention, and the recommended defaults with reset and effective dates. Tests `// req: FR-ORG-06`, `// req: FR-ORG-07` and `// req: FR-ORG-08`; changes under FM-1 wait for `p1-approval-engine`
 - [ ] 2.4 Logo and brand: SVG and PNG, light and dark, the icon and the accent colour, through the blob-store port with SVG sanitising. Test `// req: FR-ORG-09` covers G4-099's hostile files, and an issued document keeps its logo version

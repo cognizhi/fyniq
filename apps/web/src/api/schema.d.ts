@@ -164,6 +164,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organisation/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the organisation's profile
+         * @description What the organisation's documents print about it (legal name, UEN, addresses, contact details, the bank and PayNow details customers pay to, the footer) and how its financial years run (the start month, the books' start, the first year's end) and its time zone (FR-ORG-01, FR-ORG-02), with the organisation's ETag. Read-only; no side effects.
+         */
+        get: operations["getOrganisationProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the organisation's profile
+         * @description Changes the fields sent and keeps the rest: a field left out keeps its value, and "" clears it. Every rule that fails is reported at once (UEN, email, time zone, a first financial year that ends after the books start, on the day before a year starts). Side effects: the organisation's next version and an audit event with the changes, bank and PayNow numbers masked. Needs If-Match with the organisation's ETag. Approval policy: the Owner approves profile changes once the approval engine arrives (P1). Prefer: return=preview checks the change and saves nothing.
+         */
+        patch: operations["updateOrganisationProfile"];
+        trace?: never;
+    };
     "/v1/session": {
         parameters: {
             query?: never;
@@ -637,7 +661,8 @@ export interface components {
         } & (unknown & unknown & unknown & unknown);
         NewOrganisation: {
             /**
-             * @description The ISO 4217 currency its books are kept in.
+             * @description The ISO 4217 currency its books are kept in; SGD when left out (FR-ORG-02).
+             * @default SGD
              * @example SGD
              */
             base_currency: string;
@@ -700,6 +725,97 @@ export interface components {
              */
             version: number;
         };
+        OrganisationProfile: {
+            /**
+             * @description The account's name.
+             * @example Northwind Analytics Pte. Ltd.
+             */
+            bank_account_name?: string;
+            /**
+             * @description The account's number, as the bank prints it. Masked in logs and the audit trail (SEC-15).
+             * @example 012-345678-9
+             */
+            bank_account_number?: string;
+            /**
+             * @description The bank customers pay into, as documents print it.
+             * @example DBS Bank
+             */
+            bank_name?: string;
+            /**
+             * Format: date
+             * @description The date the books start: the first financial year begins on it.
+             * @example 2026-03-15
+             */
+            books_start?: string;
+            /**
+             * @description The text at the foot of every document.
+             * @example Thank you for your business.
+             */
+            document_footer?: string;
+            /**
+             * @description The address documents give for questions.
+             * @example accounts@northwind.example
+             */
+            email?: string;
+            /**
+             * Format: date
+             * @description The last day of the first financial year: the day before a year starts, after the books start, so the first year may be shorter or longer than twelve months.
+             * @example 2027-03-31
+             */
+            first_year_end?: string;
+            /**
+             * Format: int64
+             * @description The month each financial year starts in, 1 (January) to 12.
+             * @example 4
+             */
+            fy_start_month: number;
+            /**
+             * @description The legal name, as registered with ACRA.
+             * @example Northwind Analytics Pte. Ltd.
+             */
+            legal_name?: string;
+            /**
+             * @description Where post goes, when not to the registered address.
+             * @example PO Box 1234, Singapore 912345
+             */
+            mailing_address?: string;
+            /**
+             * @description The UEN customers pay to by PayNow.
+             * @example 202312345K
+             */
+            paynow_uen?: string;
+            /**
+             * @description The telephone number documents give.
+             * @example +65 6123 4567
+             */
+            phone?: string;
+            /**
+             * @description The registered office address.
+             * @example 1 Raffles Place, #20-01, Singapore 048616
+             */
+            registered_address?: string;
+            /**
+             * @description The IANA time zone the organisation's days are counted in.
+             * @example Asia/Singapore
+             */
+            time_zone: string;
+            /**
+             * @description The Unique Entity Number: 9 or 10 capital letters and digits.
+             * @example 202312345K
+             */
+            uen?: string;
+            /**
+             * Format: int64
+             * @description The organisation's version; it also makes the ETag.
+             * @example 3
+             */
+            version: number;
+            /**
+             * @description The website documents give.
+             * @example https://northwind.example
+             */
+            website?: string;
+        };
         Problem: {
             /**
              * @description The stable error code (ENG-23).
@@ -741,6 +857,89 @@ export interface components {
              * @example urn:fyniq:problem:JOURNAL-02
              */
             type: string;
+        };
+        ProfileChanges: {
+            /**
+             * @description The account's name; "" clears it.
+             * @example Northwind Analytics Pte. Ltd.
+             */
+            bank_account_name?: string;
+            /**
+             * @description The account's number; "" clears it.
+             * @example 012-345678-9
+             */
+            bank_account_number?: string;
+            /**
+             * @description The bank's name; "" clears it.
+             * @example DBS Bank
+             */
+            bank_name?: string;
+            /**
+             * @description The date the books start, YYYY-MM-DD; "" clears it.
+             * @example 2026-03-15
+             */
+            books_start?: string;
+            /**
+             * @description The document footer; "" clears it.
+             * @example Thank you for your business.
+             */
+            document_footer?: string;
+            /**
+             * @description The address documents give; "" clears it.
+             * @example accounts@northwind.example
+             */
+            email?: string;
+            /**
+             * @description The last day of the first financial year, YYYY-MM-DD; "" clears it.
+             * @example 2027-03-31
+             */
+            first_year_end?: string;
+            /**
+             * Format: int64
+             * @description The month each financial year starts in, 1 to 12.
+             * @example 4
+             */
+            fy_start_month?: number;
+            /**
+             * @description The legal name; "" clears it.
+             * @example Northwind Analytics Pte. Ltd.
+             */
+            legal_name?: string;
+            /**
+             * @description The mailing address; "" clears it.
+             * @example PO Box 1234, Singapore 912345
+             */
+            mailing_address?: string;
+            /**
+             * @description The PayNow UEN; "" clears it.
+             * @example 202312345K
+             */
+            paynow_uen?: string;
+            /**
+             * @description The telephone number; "" clears it.
+             * @example +65 6123 4567
+             */
+            phone?: string;
+            /**
+             * @description The registered office address; "" clears it.
+             * @example 1 Raffles Place, #20-01, Singapore 048616
+             */
+            registered_address?: string;
+            /**
+             * @description The IANA time zone.
+             * @example Asia/Singapore
+             */
+            time_zone?: string;
+            /**
+             * @description The UEN; "" clears it.
+             * @example 202312345K
+             */
+            uen?: string;
+            /**
+             * @description The website; "" clears it.
+             * @example https://northwind.example
+             */
+            website?: string;
         };
         RecoveredSuperAdmin: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work. */
@@ -1799,6 +1998,232 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getOrganisationProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganisationProfile"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateOrganisationProfile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileChanges"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganisationProfile"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `ORG-01` A text is blank or too long; `ORG-02` Not a UEN; `ORG-03` Not an email address; `ORG-04` Not a time zone; `ORG-05` Not a month; `ORG-06` The first financial year does not fit; `ORG-07` Not a bank account number; `STORAGE-ORG-01` The organisation's details are not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
