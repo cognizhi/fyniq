@@ -46,6 +46,9 @@ func (r settings) Record(ctx context.Context, key, was, value string, from time.
 		return storage.SettingChange{}, mapError(err)
 	}
 	c := toSettingChange(sqlcdb.OrganisationSettingsRow(row))
+	if err := r.u.auditVoids(ctx); err != nil {
+		return storage.SettingChange{}, err
+	}
 	if err := r.u.event(ctx, "organisation_setting.changed", "organisation_setting", c.ID, &c.Version, map[string][2]any{
 		"key": {nil, c.Key}, "value": {nilIfEmpty(was), c.Value}, "effective_from": {nil, c.EffectiveFrom.Format(time.DateOnly)}}); err != nil {
 		return storage.SettingChange{}, err

@@ -64,6 +64,8 @@ type UnitOfWork interface {
 	Items() Items
 	Evidence() EvidenceFiles
 	Settings() Settings
+	Approvals() Approvals
+	Packs() Packs
 	Outbox() Outbox
 	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
@@ -420,6 +422,8 @@ const (
 	CodeVersion        = "STORAGE-VERSION-01"  // the record changed since it was read (FR-INT-09)
 	CodeOverlap        = "STORAGE-DATES-01"    // a version's validity overlaps another's, or ends before it starts
 	CodeSequence       = "STORAGE-SEQUENCE-01" // a number sequence cannot be set that way, or a number is used already
+	CodeApproval       = "STORAGE-APPROVAL-01" // an approval or its request cannot be made or changed that way (FR-APR-03, FM-1)
+	CodePack           = "STORAGE-PACK-01"     // a loaded statutory pack version cannot change; an activation needs a second person
 	// CodeEvidence: evidence keeps what it is, is removed only from a draft, is append-only once its record is
 	// not a draft, keeps a retain-until that only moves later, and is never deleted (FR-DOC-02, FR-DOC-07).
 	CodeEvidence = "STORAGE-EVIDENCE-01"

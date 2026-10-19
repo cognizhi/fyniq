@@ -27,6 +27,7 @@ type unitOfWork struct {
 	org         uuid.UUID
 	pending     []audit.Event // written just before commit (flush)
 	afterCommit []func(ctx context.Context)
+	voided      map[uuid.UUID]bool // approval requests whose voiding is audited already
 	done        bool
 }
 

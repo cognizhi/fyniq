@@ -291,6 +291,23 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return held }
 	},
+	// Each approval's own policy decides what a person sees and signs (rev 0.36), so the matrix asks for a request
+	// that does not exist: allowed means the API looked past the operation's policy (404, or step-up for a signature);
+	// approvals_test.go signs real ones.
+	"listApprovals": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/approvals", tok, nil), nil
+	},
+	"getApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/approvals/"+uuid.NewString(), tok, nil), nil
+	},
+	"approveApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/approvals/"+uuid.NewString()+"/approve", tok, map[string]any{"envelope_hash": strings.Repeat("0", 64)},
+			"If-Match", "*"), nil
+	},
+	"rejectApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/approvals/"+uuid.NewString()+"/reject", tok, map[string]any{"envelope_hash": strings.Repeat("0", 64),
+			"reason": "Matrix"}, "If-Match", "*"), nil
+	},
 	"listItems": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/items", tok, nil), nil
 	},
@@ -386,6 +403,16 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		return role != authz.AI, false
 	case p.OwnerMay && role == authz.Owner: // FR-ADM-01's founder bootstrap (rev 0.35): the matrix's organisation has no second member
 		return true, false
+	case p.Capability == authz.Approvals: // a person with the right on a row approvals cover (rev 0.36); never the AI
+		if role == authz.AI || authz.Column(role) == "" {
+			return false, false
+		}
+		for _, c := range authz.ApprovalRows {
+			if ok, _ := authztest.Allows(authztest.ParseCell(rows[string(c)][authz.Column(role)]), p.Need); ok {
+				return true, false
+			}
+		}
+		return false, false
 	}
 	col := authz.Column(role)
 	if col == "" {
@@ -444,10 +471,12 @@ func TestAuthorisationMatrix(t *testing.T) {
 			want, _ := expected(t, rows, role, policies[op])
 			r, unchanged := matrixCalls[op](e, tok)
 			beyondPolicy := r.Status == http.StatusForbidden && (r.problemCode() == CodeNotSuperAdmin || r.problemCode() == CodeStepUpRequired)
+			// The installation's operations and the approvals decide past their policy: by a code, or by the request's own policy.
+			lenient := policies[op].NoOrganisation || policies[op].Capability == authz.Approvals
 			switch {
-			case want && policies[op].NoOrganisation && (r.Status == http.StatusUnauthorized || (r.Status == http.StatusForbidden && !beyondPolicy)):
+			case want && lenient && (r.Status == http.StatusUnauthorized || (r.Status == http.StatusForbidden && !beyondPolicy)):
 				t.Errorf("%s × %s: allowed, the API answered %d %s", role, op, r.Status, r.problemCode())
-			case want && !policies[op].NoOrganisation && (r.Status < 200 || r.Status > 299):
+			case want && !lenient && (r.Status < 200 || r.Status > 299):
 				t.Errorf("%s × %s: Appendix D allows it, the API answered %d %s", role, op, r.Status, r.problemCode())
 			case !want && (r.Status != http.StatusForbidden || beyondPolicy):
 				t.Errorf("%s × %s: Appendix D refuses it, the API answered %d %s", role, op, r.Status, r.problemCode())

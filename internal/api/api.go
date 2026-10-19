@@ -116,6 +116,7 @@ func Config(version string) huma.Config {
 		{Name: "Contacts", Description: "Customers and vendors (FR-CT-01)."},
 		{Name: "Members", Description: "Members of the organisation, their roles, and invitations to join it (FR-ADM-01)."},
 		{Name: "Items", Description: "Products and services the organisation sells, with a price per currency (FR-ITM-01)."},
+		{Name: "Approvals", Description: "Changes that wait for a second approver (FM-1): the envelope each approver signs, and their decisions (FR-APR-01…05, FR-APR-10)."},
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 	}
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
@@ -155,6 +156,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerItems(a)
 	registerSettings(a)
 	registerMembers(a)
+	registerApprovals(a)
 	registerJournals(a)
 	registerEvidence(a)
 	registerSetup(a)

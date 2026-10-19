@@ -24,9 +24,9 @@ and roles alone, because there is nobody yet to approve with:
   it is accepted.
 - Everything you do here is recorded in the audit trail.
 
-Once a second person joins, every role change needs a second approver. Until approvals arrive in
-Fyniq, role changes are refused and nothing changes, so invite every founder before the first one
-joins.
+Once a second person joins, every role change needs a second approver: it waits until another
+Owner approves it (see [Approve a change](approvals.md)). Inviting every founder before the first one
+joins saves those approvals.
 
 ## Invite someone
 
@@ -51,3 +51,6 @@ A wrong, used, withdrawn or expired code is refused, and nothing changes. Ask fo
 - In **Settings → Members**, choose the person, then **Add role** or **End role**.
 - The company always keeps an Owner: make someone else Owner before ending the last Owner's role.
 - A change takes effect on the person's next page.
+- Once the company has a second member, adding or ending a role, or inviting someone, waits for
+  another Owner's approval. An invitation's code is shown to you at once, and works once the
+  invitation is approved.

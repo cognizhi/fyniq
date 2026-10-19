@@ -11,8 +11,10 @@ Fyniq stores every statutory value as **data in an effective-dated, versioned pa
 engine picks the version in force at each document's tax point or pay month (ENG-30/31).
 Changing a future rate never changes the past.
 
-> **Status:** no code exists yet; P0/P1 build it. The paths and commands below are the contract
-> (PRD §10.6, §12.4, §12.10). Keep this skill in step when the code lands.
+> **Status (20 Oct 2026):** the pack format, its loader and validator (`internal/domain/pack`), the
+> global pack tables (migrations 000033–000034, loaded by `migrate up`) and `sg-gst@2026.1` exist
+> (`p1-statutory-packs`). Activation waits for the approval engine; `sg-deadlines`, `sg-cpf`,
+> `sg-sdl` and `sg-shg` are still to write. Keep this skill in step as they land.
 
 ## Principle: official sources only
 
@@ -46,15 +48,28 @@ payslip.
 | `sg-cit` | Rate, SUTE/PTE tiers and conditions, rebate and cap per YA, Form C-S / C-S Lite thresholds | Year of Assessment |
 | `sg-calendar` | Rules that generate deadlines from the FY, GST periods and payroll (CMP-02) | Organisation settings |
 
-**Layout** (planned): `packs/<pack>/<year>.<n>/`:
+**Layout** (PRD-001 ENG-30, rev 0.37): `packs/<pack>/<year>.<n>/`, as `packs/sg-gst/2026.1/` shows:
 
 ```
-packs/sg-cpf/2027.1/
-  pack.yaml        # id: sg-cpf@2027.1, effective_from, effective_to, supersedes, verifier, approver
-  rates.csv        # data tables (decimals as strings, NUMERIC(9,6) on load)
-  SOURCES.md       # every value → official URL, page date, retrieval date, quoted line
-  pinned_test.yaml # hand-calculated cases for this version (QA-ENG-08)
+packs/sg-gst/2026.1/
+  pack.toml        # id = "sg-gst@2026.1", title, effective_from, effective_to (optional), supersedes,
+                   # review_date, verifier, conditions, tax_point_rule (sg-gst), and [[sources]] (id, url,
+                   # section, kind, retrieved, quote), [[tables]] and [[pinned]] (name, file, description)
+  rates.csv        # data tables: decimals as exact strings ("0.09"); every row's `source` names source ids
+  codes.csv
+  pinned/rates.csv # hand-pinned cases (QA-ENG-08), worked from the official page, not from the table
 ```
+
+- `pack.Schemas` (internal/domain/pack) lists each pack's tables and columns; a table or pack it does
+  not list is refused, as no code could read it. A new pack adds its schema, its checks and its
+  pinned-case runner (`RunPinned`).
+- The loader refuses the whole version, with every problem (`PACK-01…12`), when a source URL, verifier
+  or review date is missing, a row cites an undeclared source, or **any file contains `[verify]`**.
+- `go test ./internal/domain/pack` loads every shipped version and runs its pinned cases; `migrate up`
+  loads them into `fyniq.statutory_pack_version` / `statutory_pack_row` (the migrator only; a loaded
+  version never changes, FY110). Never edit a loaded version: publish `<year>.<n+1>`.
+- The verifier is whoever checked each value against its official page; the approver is recorded when an
+  organisation activates the version (two people, SOD-10), not in the file.
 
 - **Name:** `<pack>@<year>.<n>`: `sg-cpf@2027.1` is the first 2027 version; a Budget-day
   correction becomes `sg-cpf@2027.2`.

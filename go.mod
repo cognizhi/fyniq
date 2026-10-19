@@ -3,6 +3,7 @@ module github.com/cognizhi/fyniq
 go 1.27
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/cockroachdb/apd/v3 v3.2.3
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/danielgtaylor/huma/v2 v2.39.1

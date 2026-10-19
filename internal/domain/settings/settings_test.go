@@ -155,20 +155,21 @@ func TestTheValueOnADayIsTheLatestChangeInEffect(t *testing.T) {
 	}
 }
 
-// The platform's settings never change; those under dual control (FM-1) wait for the approval engine; a
-// change never takes effect in the past; and the records' retention only lengthens, now or later.
+// The platform's settings never change; those under dual control (FM-1) are not refused here: their change
+// waits for a second approver in the approval engine (rev 0.36); a change never takes effect in the past; and
+// the records' retention only lengthens, now or later.
 // req: FR-ORG-07
 // req: FR-ORG-08
 func TestChangesAreGatedNeverBackdatedAndRetentionOnlyLengthens(t *testing.T) {
 	region, _ := Lookup("data.region")
 	tolerance, _ := Lookup("bank.tolerance_base")
 	terms, _ := Lookup("sales.payment_terms_days")
-	if code(Gate(region)) != CodeFixed || code(Gate(tolerance)) != CodeDualControl || Gate(terms) != nil {
+	if code(Gate(region)) != CodeFixed || Gate(tolerance) != nil || Gate(terms) != nil {
 		t.Errorf("gates: region %v, tolerance %v, terms %v", Gate(region), Gate(tolerance), Gate(terms))
 	}
 	for _, d := range Catalogue {
-		if d.DualControl && Gate(d) == nil {
-			t.Errorf("%s is under dual control but can change", d.Key)
+		if (Gate(d) != nil) != d.Fixed {
+			t.Errorf("%s: only a setting the platform sets is refused outright, got %v", d.Key, Gate(d))
 		}
 	}
 	today := day("2026-10-20")

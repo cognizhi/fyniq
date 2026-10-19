@@ -11,6 +11,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
@@ -153,14 +154,20 @@ var codeFacts = map[string]struct {
 	member.CodeName:            {422, "The name is not valid"},
 	member.CodeRoles:           {422, "No role, or a role named twice"},
 	member.CodeExpiry:          {422, "Not an expiry for these roles"},
-	member.CodeSecondApprover:  {409, "Needs a second approver"},
 	member.CodeLastOwner:       {409, "The last Owner keeps the role"},
 	member.CodeHeld:            {409, "The member holds that role already, or does not hold it"},
 	settings.CodeValue:         {422, "Not a value for this setting"},
 	settings.CodeBackdated:     {422, "A setting never changes in the past"},
 	settings.CodeShortened:     {422, "The setting can only lengthen"},
 	settings.CodeFixed:         {409, "Set by the platform"},
-	settings.CodeDualControl:   {409, "Needs a second approver"},
+	approval.CodeOwnRequest:    {403, "You asked for it, so another person approves it"},
+	approval.CodeNotPending:    {409, "The request was decided already"},
+	approval.CodeExpired:       {409, "The request expired"},
+	approval.CodeChanged:       {409, "The envelope differs: nothing was changed"},
+	approval.CodeNotApprover:   {403, "You hold no approval right on it"},
+	approval.CodePending:       {409, "A change to it is waiting for approval already"},
+	approval.CodeReason:        {422, "A rejection needs its reason"},
+	storage.CodeApproval:       {409, "The approval cannot be made that way"},
 	settings.CodeValueOrReset:  {422, "Send a value or a reset"},
 	item.CodeCode:              {422, "Not an item code"},
 	item.CodeName:              {422, "The item's name is not valid"},
@@ -249,6 +256,7 @@ var storageFixes = map[string]string{
 	storage.CodeSequence:     "Move the next number forward, or use another prefix; a number is never issued twice",
 	storage.CodeDuplicate:    "Check whether it was done already; for a new record, use a code or key not in use",
 	storage.CodeInvalid:      "Correct the value the message names and send it again",
+	storage.CodeApproval:     "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
 	storage.CodeEvidence:     "Files can be removed only while the record is a draft; add a newer file instead",
 }
 
