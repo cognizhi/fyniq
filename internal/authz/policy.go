@@ -119,9 +119,13 @@ var (
 	UpdateOrganisationProfile = Policy{Operation: "updateOrganisationProfile", Capability: OrganisationProfile, Need: Create,
 		Note: "The Owner approves changes to the profile; the approval itself arrives with the approval engine (P1)."}
 	ListGSTRegistrations = Policy{Operation: "listGSTRegistrations", Capability: OrganisationProfile, Need: View}
-	ListSequences        = Policy{Operation: "listSequences", Capability: OrganisationProfile, Need: View}
-	GetSequence          = Policy{Operation: "getSequence", Capability: OrganisationProfile, Need: View}
-	UpdateSequence       = Policy{Operation: "updateSequence", Capability: OrganisationProfile, Need: Create,
+	ListSettings         = Policy{Operation: "listSettings", Capability: OrganisationProfile, Need: View}
+	GetSetting           = Policy{Operation: "getSetting", Capability: OrganisationProfile, Need: View}
+	UpdateSetting        = Policy{Operation: "updateSetting", Capability: OrganisationProfile, Need: Create,
+		Note: "The Owner approves once the approval engine arrives (P1); a setting under dual control (FM-1) is refused until then."}
+	ListSequences  = Policy{Operation: "listSequences", Capability: OrganisationProfile, Need: View}
+	GetSequence    = Policy{Operation: "getSequence", Capability: OrganisationProfile, Need: View}
+	UpdateSequence = Policy{Operation: "updateSequence", Capability: OrganisationProfile, Need: Create,
 		Note: "The Owner approves changes to the defaults; the approval itself arrives with the approval engine (P1)."}
 	GetGSTRegistration    = Policy{Operation: "getGSTRegistration", Capability: OrganisationProfile, Need: View}
 	GetGSTStatus          = Policy{Operation: "getGSTStatus", Capability: OrganisationProfile, Need: View}
@@ -167,7 +171,7 @@ var (
 
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
-	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
+	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)

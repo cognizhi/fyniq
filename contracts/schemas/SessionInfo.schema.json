@@ -2,6 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "features": {
+      "$ref": "Features.schema.json",
+      "description": "The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."
+    },
     "organisation_id": {
       "description": "The organisation your session is in; absent when you are a member of none.",
       "examples": [

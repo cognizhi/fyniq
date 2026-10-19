@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_from": {
+      "description": "The day it takes effect: today, in the organisation's time zone, or later; today when left out.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reset": {
+      "description": "true records the recommended value as a new change, instead of a value.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "value": {
+      "description": "The new value, as its kind writes it; or send reset.",
+      "examples": [
+        "45"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "title": "SettingUpdate",
+  "type": "object"
+}

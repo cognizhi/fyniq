@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_from": {
+      "description": "The day it takes effect.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "value": {
+      "description": "The value from its date.",
+      "examples": [
+        "45"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The setting's version this change made.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "value",
+    "effective_from",
+    "version",
+    "recorded_at"
+  ],
+  "title": "SettingChange",
+  "type": "object"
+}

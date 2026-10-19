@@ -301,6 +301,16 @@ type FyniqOrganisation struct {
 	TimeZone          string
 }
 
+type FyniqOrganisationSetting struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Value          string
+	EffectiveFrom  time.Time
+	Version        int32
+	RecordedAt     time.Time
+}
+
 type FyniqOutbox struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

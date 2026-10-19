@@ -216,6 +216,13 @@ organisation | fy_start_month | smallint | not null | 1
 organisation | books_start | date | null | 
 organisation | first_year_end | date | null | 
 organisation | time_zone | text | not null | 'Asia/Singapore'::text
+organisation_setting | organisation_id | uuid | not null | current_org()
+organisation_setting | id | uuid | not null | uuidv7()
+organisation_setting | key | text | not null | 
+organisation_setting | value | text | not null | 
+organisation_setting | effective_from | date | not null | 
+organisation_setting | version | integer | not null | 
+organisation_setting | recorded_at | timestamp with time zone | not null | now()
 outbox | organisation_id | uuid | not null | current_org()
 outbox | id | uuid | not null | uuidv7()
 outbox | worker_class | text | not null | 
@@ -615,6 +622,21 @@ organisation | organisation_uen_format | CHECK (((uen ~ '^[0-9A-Z]{9,10}$'::text
 organisation | organisation_version_not_null | NOT NULL version
 organisation | organisation_version_positive | CHECK ((version > 0))
 organisation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+organisation_setting | organisation_setting_effective_from_not_null | NOT NULL effective_from
+organisation_setting | organisation_setting_id_not_null | NOT NULL id
+organisation_setting | organisation_setting_key_format | CHECK (((key ~ '^[a-z]+(\.[a-z_]+)+$'::text) AND (length(key) <= 60)))
+organisation_setting | organisation_setting_key_not_null | NOT NULL key
+organisation_setting | organisation_setting_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+organisation_setting | organisation_setting_organisation_id_not_null | NOT NULL organisation_id
+organisation_setting | organisation_setting_pkey | PRIMARY KEY (organisation_id, id)
+organisation_setting | organisation_setting_recorded_at_not_null | NOT NULL recorded_at
+organisation_setting | organisation_setting_region_fixed | CHECK ((key <> 'data.region'::text))
+organisation_setting | organisation_setting_value_length | CHECK (((length(value) >= 1) AND (length(value) <= 200)))
+organisation_setting | organisation_setting_value_not_null | NOT NULL value
+organisation_setting | organisation_setting_version_key | UNIQUE (organisation_id, key, version)
+organisation_setting | organisation_setting_version_not_null | NOT NULL version
+organisation_setting | organisation_setting_version_positive | CHECK ((version > 0))
+organisation_setting | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 outbox | outbox_attempts_not_null | NOT NULL attempts
 outbox | outbox_attempts_range | CHECK (((attempts >= 0) AND ((max_attempts >= 1) AND (max_attempts <= 100))))
 outbox | outbox_business_key | UNIQUE (organisation_id, kind, business_key)
@@ -794,6 +816,8 @@ CREATE UNIQUE INDEX journal_line_entry_line_key ON fyniq.journal_line USING btre
 CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
 CREATE UNIQUE INDEX organisation_pkey ON fyniq.organisation USING btree (organisation_id)
+CREATE UNIQUE INDEX organisation_setting_pkey ON fyniq.organisation_setting USING btree (organisation_id, id)
+CREATE UNIQUE INDEX organisation_setting_version_key ON fyniq.organisation_setting USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX outbox_business_key ON fyniq.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON fyniq.outbox USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
@@ -815,6 +839,7 @@ CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_li
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
@@ -852,6 +877,7 @@ CREATE TRIGGER organisation_created AFTER INSERT ON fyniq.organisation FOR EACH 
 CREATE TRIGGER organisation_guard BEFORE UPDATE ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_guard()
 CREATE TRIGGER organisation_kind_guard BEFORE INSERT OR UPDATE ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_kind_guard()
 CREATE TRIGGER organisation_registered AFTER INSERT ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_registered()
+CREATE TRIGGER organisation_setting_guard BEFORE INSERT ON fyniq.organisation_setting FOR EACH ROW EXECUTE FUNCTION organisation_setting_guard()
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_guard()
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON fyniq.outbox FOR EACH STATEMENT EXECUTE FUNCTION outbox_no_delete()
@@ -878,6 +904,7 @@ journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (orga
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+organisation_setting | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -919,6 +946,7 @@ organisation_created() → trigger | security definer | v | search_path=pg_catal
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
 organisation_kind_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca73dacb480df743be50b20da1632d78
 organisation_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d82a943b556593182602dbe5a532147
+organisation_setting_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d07be7995f65387c9c970d632b1bcb8
 outbox_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 58b04bc5d8e9853cd11acce22f3b6723
 outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1366cfa8290e64e2804d4cb992c01d1f
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6

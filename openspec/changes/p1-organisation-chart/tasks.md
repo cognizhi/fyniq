@@ -55,6 +55,21 @@
   capitalisation threshold, as recommended, effective-dated settings (FR-ORG-08); the PRD sets no default for the payment
   terms or the threshold)
 - [ ] 2.3 Feature switches, region and retention, and the recommended defaults with reset and effective dates. Tests `// req: FR-ORG-06`, `// req: FR-ORG-07` and `// req: FR-ORG-08`; changes under FM-1 wait for `p1-approval-engine`
+  (20 Oct 2026: migration 000028 adds `fyniq.organisation_setting`, insert-only: a setting's value from a date at the
+  key's next version, audited with the value before and after; the value on a day is the latest change in effect then.
+  The catalogue (`internal/domain/settings`) holds 16 settings with their recommended values, reasons and guide
+  sections: the five feature switches, payment terms for invoices and bills, the capitalisation threshold, the five
+  settlement tolerances, the data region (fixed by the platform; the database refuses a row) and the retention of
+  records (7 years, lengthen-only, a database trigger too, FY091) and of AI conversations (365 days). `GET`, `GET` and
+  `PATCH /v1/organisation/settings`, read as of a day; changes from today or later in the organisation's time zone;
+  reset records the recommended value. FM-1 settings (the tolerances, the threshold, retention, the AI assistant) are
+  refused, never applied, until `p1-approval-engine`: the database does not backstop that yet, and the engine's
+  migration brings the executor's grant and the rule. The feature switches reach `GET /v1/session`. Guide page
+  `docs/user-guide/organisation-settings.md` (draft until the accountant reviews it), compiled to `settings.organisation`
+  and `settings.change`. PRD-001 rev 0.34 records the defaults, provisional until sign-off. **Left:** the self-approval
+  limit (recommended default 5) and the approval policies, with `p1-approval-engine`; the evidence rules (FR-DOC-06),
+  with the evidence work; the capitalisation threshold is read by nothing until the fixed assets (FR-FA-01); the
+  screens, with 5.x.)
 - [ ] 2.4 Logo and brand: SVG and PNG, light and dark, the icon and the accent colour, through the blob-store port with SVG sanitising. Test `// req: FR-ORG-09` covers G4-099's hostile files, and an issued document keeps its logo version
 
 ## 3. Chart of accounts and dimensions

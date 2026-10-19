@@ -953,6 +953,75 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		}
 	})
 
+	// req: FR-ORG-07
+	// req: FR-ORG-08
+	t.Run("setting changes are recorded at the key's next version, the region never, and the records' retention only lengthens", func(t *testing.T) {
+		b := books(t)
+		var recordWas func(key, was, value string, from time.Time, version int) (storage.SettingChange, error)
+		record := func(key, value string, from time.Time, version int) (storage.SettingChange, error) {
+			return recordWas(key, "", value, from, version)
+		}
+		recordWas = func(key, was, value string, from time.Time, version int) (storage.SettingChange, error) {
+			var c storage.SettingChange
+			err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				c, err = u.Settings().Record(ctx, key, was, value, from, version)
+				return err
+			})
+			return c, err
+		}
+		if c, err := record("sales.payment_terms_days", "45", Day(time.November, 1), 1); err != nil || c.Version != 1 || c.Value != "45" ||
+			!c.EffectiveFrom.Equal(Day(time.November, 1)) {
+			t.Fatalf("a change: %v, %+v", err, c)
+		}
+		_, err := record("sales.payment_terms_days", "60", Day(time.November, 1), 1)
+		wantCode(t, err, storage.CodeVersion) // another change took version 1 first
+		if _, err := recordWas("sales.payment_terms_days", "45", "60", Day(time.November, 1), 2); err != nil {
+			t.Fatal(err)
+		}
+		// Its audit event (read as the worker) has the value before and after.
+		if err := worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			head, err := u.Audit().Head(ctx)
+			if err != nil {
+				return err
+			}
+			evs, err := u.Audit().Events(ctx, head.Seq-1, 1)
+			if err == nil && (head.Action != "organisation_setting.changed" || len(evs) != 1 ||
+				!strings.Contains(evs[0].Body, `"value":["45","60"]`)) {
+				t.Errorf("the change's audit event: %q %+v", head.Action, evs)
+			}
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		_, err = record("data.region", "europe-west1", Day(time.November, 1), 1)
+		wantCode(t, err, storage.CodeInvalid)
+		var changes []storage.SettingChange
+		if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			changes, err = u.Settings().Changes(ctx, "sales.payment_terms_days")
+			return err
+		}); err != nil || len(changes) != 2 || changes[0].Version != 1 || changes[1].Value != "60" {
+			t.Fatalf("Changes: %v, %+v", err, changes)
+		}
+
+		// The records' retention: never below 7 years, never below the value in effect, and never so that a
+		// change already recorded for later would shorten it.
+		key := "retention.records_years"
+		_, err = record(key, "6", Day(time.November, 1), 1)
+		wantCode(t, err, storage.CodeInvalid)
+		if _, err := record(key, "10", Day(time.December, 1), 1); err != nil {
+			t.Fatalf("lengthening: %v", err)
+		}
+		_, err = record(key, "9", Day(time.December, 15), 2)
+		wantCode(t, err, storage.CodeInvalid)
+		_, err = record(key, "12", Day(time.November, 1), 2)
+		wantCode(t, err, storage.CodeInvalid)
+		if _, err := record(key, "8", Day(time.November, 1), 2); err != nil {
+			t.Errorf("lengthening before a longer change: %v", err)
+		}
+	})
+
 	// req: FR-INT-16
 	t.Run("a rate-limit window counts a client's requests by kind until the worker purges it", func(t *testing.T) {
 		b, other := books(t), books(t)

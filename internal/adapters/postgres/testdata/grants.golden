@@ -56,6 +56,8 @@ fyniq_api       EXECUTE   lock_ledger()
 fyniq_api       INSERT    organisation (base_currency, base_minor_units, kind, name)
 fyniq_api       SELECT    organisation
 fyniq_api       UPDATE    organisation (bank_account_name, bank_account_number, bank_name, books_start, document_footer, email, first_year_end, fy_start_month, legal_name, mailing_address, name, paynow_uen, phone, registered_address, time_zone, uen, version, website)
+fyniq_api       INSERT    organisation_setting (effective_from, key, value, version)
+fyniq_api       SELECT    organisation_setting
 fyniq_api       INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_api       SELECT    outbox
 fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
@@ -107,6 +109,7 @@ fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currenc
 fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_revision
 fyniq_executor  SELECT    organisation
+fyniq_executor  SELECT    organisation_setting
 fyniq_executor  INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_executor  SELECT    outbox
 fyniq_executor  UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
@@ -134,6 +137,7 @@ fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    organisation
+fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    rate_limit_window
@@ -171,6 +175,7 @@ fyniq_worker    SELECT    journal_line
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    SELECT    organisation
+fyniq_worker    SELECT    organisation_setting
 fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_worker    SELECT    outbox
 fyniq_worker    UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)

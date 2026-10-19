@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
@@ -947,6 +948,105 @@ func TestItems(t *testing.T) {
 		t.Errorf("the auditor reading an item: %d %s", g.Status, g.Raw)
 	}
 	e.problemIs(e.call(http.MethodGet, "/v1/items/"+id, e.as(authz.Employee), nil), "getItem", 403, CodeForbidden)
+}
+
+// Organisation settings: every one listed at its recommended value; a change recorded from today or later,
+// at the setting's version, with earlier values kept; a reset records the recommended value; the platform's
+// settings and those under dual control (FM-1) are refused and nothing changes; the feature switches reach
+// the session.
+// req: FR-ORG-04
+// req: FR-ORG-06
+// req: FR-ORG-07
+// req: FR-ORG-08
+func TestOrganisationSettings(t *testing.T) {
+	e := newEnv(t)
+	ctl := e.as(authz.Controller)
+	path := "/v1/organisation/settings/sales.payment_terms_days"
+	setting := func(r response) map[string]any { return r.Body }
+
+	l := e.call(http.MethodGet, "/v1/organisation/settings?page_size=500", e.as(authz.Auditor), nil)
+	items, _ := l.Body["items"].([]any)
+	if l.Status != 200 || l.str("on") != "2026-10-15" || len(items) != len(settings.Catalogue) {
+		t.Fatalf("the list: %d %s", l.Status, l.Raw)
+	}
+	for _, it := range items {
+		s := it.(map[string]any)
+		if s["status"] != "recommended" || s["value"] != s["recommended_value"] || s["version"] != float64(0) || s["guide"] == "" {
+			t.Errorf("%s does not ship at its recommended value: %v", s["key"], s)
+		}
+		if s["key"] == "data.region" && (s["set_by_platform"] != true || s["value"] != "asia-southeast1") {
+			t.Errorf("the data region: %v", s)
+		}
+		if s["key"] == "retention.records_years" && (s["needs_second_approver"] != true || s["lengthen_only"] != true || s["value"] != "7") {
+			t.Errorf("the records' retention: %v", s)
+		}
+	}
+
+	// A change from today at version 0; the stale ETag refused; a preview saves nothing.
+	r := e.call(http.MethodPatch, path, ctl, map[string]any{"value": "45"}, "If-Match", `"0"`)
+	if r.Status != 200 || r.str("value") != "45" || r.str("status") != "changed" || r.str("effective_from") != "2026-10-15" ||
+		r.Header.Get("ETag") != `"1"` || len(setting(r)["changes"].([]any)) != 1 {
+		t.Fatalf("changing the payment terms: %d %v %s", r.Status, r.Header, r.Raw)
+	}
+	e.problemIs(e.call(http.MethodPatch, path, ctl, map[string]any{"value": "14"}, "If-Match", `"0"`), "updateSetting", 412, CodeStale)
+	pv := e.call(http.MethodPatch, path, ctl, map[string]any{"value": "14"}, "If-Match", `"1"`, "Prefer", "return=preview")
+	if pv.Status != 200 || pv.str("value") != "14" || pv.Header.Get("Preference-Applied") != "return=preview" {
+		t.Fatalf("a preview: %d %s", pv.Status, pv.Raw)
+	}
+
+	// A change scheduled for later shows as scheduled, and takes effect on its day; the earlier value is kept.
+	r = e.call(http.MethodPatch, path, ctl, map[string]any{"value": "60", "effective_from": "2026-11-01"}, "If-Match", `"1"`)
+	if r.Status != 200 || r.str("value") != "45" || len(setting(r)["scheduled"].([]any)) != 1 {
+		t.Fatalf("a scheduled change: %d %s", r.Status, r.Raw)
+	}
+	for on, want := range map[string]string{"2026-10-14": "30", "2026-10-31": "45", "2026-11-01": "60"} {
+		if g := e.call(http.MethodGet, path+"?on="+on, ctl, nil); g.Status != 200 || g.str("value") != want || g.Header.Get("ETag") != `"2"` {
+			t.Errorf("the value on %s: %d %s; want %s", on, g.Status, g.Raw, want)
+		}
+	}
+
+	// Back-dated, not a value, both a value and a reset: every rule at once where it can be.
+	r = e.call(http.MethodPatch, path, ctl, map[string]any{"value": "400", "effective_from": "2026-10-14"}, "If-Match", `"2"`)
+	e.problemIs(r, "updateSetting", 422, CodeInvalid)
+	if f := fields(r); f["body.value"] != settings.CodeValue {
+		t.Errorf("a value out of range: %v", f)
+	}
+	r = e.call(http.MethodPatch, path, ctl, map[string]any{"value": "14", "effective_from": "2026-10-14"}, "If-Match", `"2"`)
+	if f := fields(r); r.Status != 422 || f["body.effective_from"] != settings.CodeBackdated {
+		t.Errorf("a back-dated change: %d %v", r.Status, f)
+	}
+	r = e.call(http.MethodPatch, path, ctl, map[string]any{"value": "14", "reset": true}, "If-Match", `"2"`)
+	if f := fields(r); r.Status != 422 || f["body.value"] != settings.CodeValueOrReset {
+		t.Errorf("a value and a reset: %d %v", r.Status, f)
+	}
+
+	// Reset to recommended: a new change holding the recommended value.
+	r = e.call(http.MethodPatch, path, ctl, map[string]any{"reset": true}, "If-Match", `"2"`)
+	if r.Status != 200 || r.str("value") != "30" || r.str("status") != "recommended" || r.Body["version"] != float64(3) {
+		t.Fatalf("a reset: %d %s", r.Status, r.Raw)
+	}
+
+	// The platform's settings and those under dual control are refused, and nothing changes.
+	e.problemIs(e.call(http.MethodPatch, "/v1/organisation/settings/data.region", ctl, map[string]any{"value": "europe-west1"}, "If-Match", `"0"`),
+		"updateSetting", 409, settings.CodeFixed)
+	for _, key := range []string{"bank.tolerance_base", "retention.records_years", "features.ai_assistant", "assets.capitalisation_threshold"} {
+		e.problemIs(e.call(http.MethodPatch, "/v1/organisation/settings/"+key, ctl, map[string]any{"value": "true"}, "If-Match", `"0"`),
+			"updateSetting", 409, settings.CodeDualControl)
+		if g := e.call(http.MethodGet, "/v1/organisation/settings/"+key, ctl, nil); g.Body["version"] != float64(0) || g.str("status") != "recommended" {
+			t.Errorf("%s changed: %s", key, g.Raw)
+		}
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/organisation/settings/features.nothing", ctl, nil), "getSetting", 404, CodeNotFound)
+	e.problemIs(e.call(http.MethodGet, "/v1/organisation/settings", e.as(authz.Employee), nil), "listSettings", 403, CodeForbidden)
+
+	// A feature switched on reaches the session.
+	if s := e.call(http.MethodGet, "/v1/session", ctl, nil); s.Status != 200 || !strings.Contains(s.Raw, `"features":{"multi_currency":true,"payroll":false,"projects":false`) {
+		t.Fatalf("the session's features: %d %s", s.Status, s.Raw)
+	}
+	e.call(http.MethodPatch, "/v1/organisation/settings/features.projects", ctl, map[string]any{"value": "true"}, "If-Match", `"0"`)
+	if s := e.call(http.MethodGet, "/v1/session", ctl, nil); !strings.Contains(s.Raw, `"projects":true`) {
+		t.Errorf("projects switched on, the session: %s", s.Raw)
+	}
 }
 
 // req: FR-INT-10

@@ -179,6 +179,19 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/contacts/"+id, e.as(authz.Accountant), nil).str("phone") != phone
 		}
 	},
+	"listSettings": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/settings", tok, nil), nil
+	},
+	"getSetting": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/settings/features.payroll", tok, nil), nil
+	},
+	"updateSetting": func(e *env, tok string) (response, func() bool) {
+		path := "/v1/organisation/settings/sales.payment_terms_days"
+		version := func() any { return e.call(http.MethodGet, path, e.as(authz.Controller), nil).Body["version"] }
+		was := version()
+		r := e.call(http.MethodPatch, path, tok, map[string]any{"value": "31"}, "If-Match", "*")
+		return r, func() bool { return version() == was }
+	},
 	"listItems": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/items", tok, nil), nil
 	},
