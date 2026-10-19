@@ -456,6 +456,66 @@ func TestBulkCreateJournals(t *testing.T) {
 	}
 }
 
+// The organisation's profile and financial year: read by those the matrix lets view them, changed by
+// the Admin or the Controller at the version they read, every broken rule reported at once.
+// req: FR-ORG-01
+// req: FR-ORG-02
+func TestOrganisationProfile(t *testing.T) {
+	e := newEnv(t)
+	controller := e.as(authz.Controller)
+	r := e.call(http.MethodGet, "/v1/organisation/profile", controller, nil)
+	if r.Status != 200 || r.Body["time_zone"] != "Asia/Singapore" || r.Body["fy_start_month"] != float64(1) || r.Body["legal_name"] != nil {
+		t.Fatalf("a new organisation's profile: %d %s", r.Status, r.Raw)
+	}
+	tag := r.Header.Get("ETag")
+	e.problemIs(e.call(http.MethodPatch, "/v1/organisation/profile", controller, map[string]any{"legal_name": "X"}), "updateOrganisationProfile", 428, CodeIfMatchRequired)
+
+	change := map[string]any{"legal_name": "Northwind Analytics Pte. Ltd.", "uen": "202312345K", "registered_address": "1 Raffles Place, #20-01, Singapore 048616",
+		"email": "accounts@northwind.example", "bank_name": "DBS Bank", "bank_account_number": "012-345678-9", "paynow_uen": "202312345K",
+		"document_footer": "Thank you for your business.", "fy_start_month": 4, "books_start": "2026-03-15", "first_year_end": "2027-03-31"}
+
+	// A preview saves nothing.
+	pv := e.call(http.MethodPatch, "/v1/organisation/profile", controller, change, "If-Match", tag, "Prefer", "return=preview")
+	if pv.Status != 200 || pv.Header.Get("Preference-Applied") != "return=preview" || pv.Body["uen"] != "202312345K" {
+		t.Fatalf("the preview: %d %v %s", pv.Status, pv.Header, pv.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/organisation/profile", controller, nil); g.Header.Get("ETag") != tag || g.Body["uen"] != nil {
+		t.Fatalf("after the preview: %s", g.Raw)
+	}
+
+	r = e.call(http.MethodPatch, "/v1/organisation/profile", controller, change, "If-Match", tag)
+	if r.Status != 200 || r.Header.Get("ETag") == tag || r.Body["first_year_end"] != "2027-03-31" || r.Body["bank_account_number"] != "012-345678-9" {
+		t.Fatalf("the change: %d %s", r.Status, r.Raw)
+	}
+	next := r.Header.Get("ETag")
+	e.problemIs(e.call(http.MethodPatch, "/v1/organisation/profile", controller, map[string]any{"phone": "+65 6000 0000"}, "If-Match", tag),
+		"updateOrganisationProfile", 412, CodeStale)
+
+	// A field left out keeps its value; "" clears it.
+	r = e.call(http.MethodPatch, "/v1/organisation/profile", controller, map[string]any{"document_footer": ""}, "If-Match", next)
+	if r.Status != 200 || r.Body["document_footer"] != nil || r.Body["uen"] != "202312345K" {
+		t.Fatalf("clearing the footer: %d %s", r.Status, r.Raw)
+	}
+
+	// Every broken rule at once.
+	bad := map[string]any{"uen": "abc", "email": "not an address", "time_zone": "Mars/Olympus", "first_year_end": "31/03/2027"}
+	r = e.call(http.MethodPatch, "/v1/organisation/profile", controller, bad, "If-Match", r.Header.Get("ETag"))
+	e.problemIs(r, "updateOrganisationProfile", 422, CodeInvalid)
+	if f := fields(r); f["body.uen"] != "ORG-02" || f["body.email"] != "ORG-03" || f["body.time_zone"] != "ORG-04" || f["body.first_year_end"] != CodeInvalid {
+		t.Errorf("want each field with its code, got %v", f)
+	}
+
+	// The matrix: the Admin changes it too; the Owner approves (in Founder mode a founder also holds the
+	// Controller's role); the Employee sees nothing of it.
+	e.problemIs(e.call(http.MethodGet, "/v1/organisation/profile", e.as(authz.Employee), nil), "getOrganisationProfile", 403, CodeForbidden)
+	e.problemIs(e.call(http.MethodPatch, "/v1/organisation/profile", e.as(authz.Owner), map[string]any{"phone": "+65 6000 0000"}, "If-Match", "*"),
+		"updateOrganisationProfile", 403, CodeForbidden)
+	if r := e.call(http.MethodPatch, "/v1/organisation/profile", e.as(authz.Owner, authz.Controller), map[string]any{"phone": "+65 6000 0000"},
+		"If-Match", "*"); r.Status != 200 || r.Body["phone"] != "+65 6000 0000" {
+		t.Errorf("a founder who is Owner and Controller: %d %s", r.Status, r.Raw)
+	}
+}
+
 // req: FR-INT-10
 func TestCursorListsAndValueFormats(t *testing.T) {
 	e := newEnv(t)

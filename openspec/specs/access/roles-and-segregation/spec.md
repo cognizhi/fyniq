@@ -521,6 +521,27 @@ Source: PRD-001 §D
 - **WHEN** a role acts on approval policies and the AI task catalogue
 - **THEN** the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: Organisation profile, financial year, defaults
+In Standard mode, each role SHALL hold only the rights over the organisation's profile, financial year and defaults that the permission matrix gives it (rev 0.29).
+
+Source: PRD-001 §D
+
+#### Scenario: Approve
+- **WHEN** a role acts on the organisation's profile, financial year and defaults
+- **THEN** the Owner can approve (A)
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on the organisation's profile, financial year and defaults
+- **THEN** the Administrator and the Finance controller can create or prepare (C)
+
+#### Scenario: View
+- **WHEN** a role acts on the organisation's profile, financial year and defaults
+- **THEN** the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Auditor, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the organisation's profile, financial year and defaults
+- **THEN** the Employee has no right over it (—)
+
 ### Requirement: Permission matrix: Statutory parameters
 In Standard mode, each role SHALL hold only the rights over statutory parameters that the permission matrix gives it.
 

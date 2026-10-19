@@ -490,6 +490,67 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		})
 	})
 
+	// req: FR-ORG-01
+	// req: FR-ORG-02
+	// req: data/data-model Versioning of records
+	t.Run("an organisation's profile changes only at the version it was read, audited, within the database's checks", func(t *testing.T) {
+		b := books(t)
+		read := func() storage.Organisation {
+			var o storage.Organisation
+			if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				o, err = u.Organisation(ctx)
+				return err
+			}); err != nil {
+				t.Fatal(err)
+			}
+			return o
+		}
+		update := func(version int, p storage.OrganisationProfile) (storage.Organisation, error) {
+			var o storage.Organisation
+			err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				o, err = u.UpdateOrganisation(ctx, version, p)
+				return err
+			})
+			return o, err
+		}
+		org := read()
+		if org.Profile.TimeZone != "Asia/Singapore" || org.Profile.FYStartMonth != 1 || org.Profile.LegalName != "" {
+			t.Fatalf("a new organisation's profile: %+v", org.Profile)
+		}
+		start, end := Day(3, 15), time.Date(2027, 3, 31, 0, 0, 0, 0, time.UTC)
+		p := org.Profile
+		p.LegalName, p.UEN, p.BankAccountNumber, p.PayNowUEN = "Conformance Pte. Ltd.", "202312345K", "012-345678-9", "202312345K"
+		p.FYStartMonth, p.BooksStart, p.FirstYearEnd = 4, &start, &end
+		updated, err := update(org.Version, p)
+		if err != nil || updated.Version != org.Version+1 || updated.Profile.UEN != "202312345K" || updated.Profile.FYStartMonth != 4 ||
+			!updated.Profile.FirstYearEnd.Equal(end) || !read().Profile.BooksStart.Equal(start) {
+			t.Fatalf("the update: %v, %+v", err, updated)
+		}
+		_ = worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if h, _ := u.Audit().Head(ctx); h.Action != "organisation.updated" {
+				t.Errorf("the last audit event is %q; want organisation.updated", h.Action)
+			}
+			return nil
+		})
+
+		// A change based on the version before is refused (FR-INT-09).
+		_, err = update(org.Version, p)
+		wantCode(t, err, storage.CodeVersion)
+
+		// The database refuses what no profile may hold, whatever the domain checked.
+		bad := p
+		bad.UEN = "abc"
+		_, err = update(updated.Version, bad)
+		wantCode(t, err, storage.CodeOrganisation)
+		bad = p
+		notTheDayBefore := time.Date(2027, 3, 30, 0, 0, 0, 0, time.UTC)
+		bad.FirstYearEnd = &notTheDayBefore
+		_, err = update(updated.Version, bad)
+		wantCode(t, err, storage.CodeOrganisation)
+	})
+
 	// req: FR-INT-16
 	t.Run("a rate-limit window counts a client's requests by kind until the worker purges it", func(t *testing.T) {
 		b, other := books(t), books(t)

@@ -21,6 +21,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/journals/{journal_id}/reverse` (reverseJournal): Reverse a posted journal
 - `POST /v1/journals:bulk` (bulkCreateJournals): Save up to 250 draft journals
 - `GET /v1/organisation` (getOrganisation): Get your organisation
+- `GET /v1/organisation/profile` (getOrganisationProfile): Get the organisation's profile
+- `PATCH /v1/organisation/profile` (updateOrganisationProfile): Change the organisation's profile
 - `GET /v1/session` (getSession): Get your session
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup

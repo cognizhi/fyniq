@@ -151,6 +151,7 @@ func roles(r response) string {
 // req: SEC-08
 // req: FR-ADM-06
 // req: FR-ADM-08
+// req: FR-ORG-02
 // asvs: V7.2.1, V7.3.1, V7.3.2, V7.4.1, V7.4.2, V3.5.3, V8.3.1
 func TestBrowserSessions(t *testing.T) {
 	ctx := context.Background()
@@ -175,7 +176,8 @@ func TestBrowserSessions(t *testing.T) {
 	if err := postgres.SetSetupCode(ctx, s.migrator, hash); err != nil {
 		t.Fatal(err)
 	}
-	setup := map[string]any{"setup_code": code, "display_name": "Mei Ling Tan", "organisation": map[string]any{"name": "Cognizhi Pte. Ltd.", "base_currency": "SGD"}}
+	// No base currency: it defaults to SGD (FR-ORG-02).
+	setup := map[string]any{"setup_code": code, "display_name": "Mei Ling Tan", "organisation": map[string]any{"name": "Cognizhi Pte. Ltd."}}
 	for _, site := range []string{"", "cross-site", "same-site"} {
 		s.problemIs(a.call(http.MethodPost, "/v1/setup", site, setup), "completeSetup", 403, CodeCrossSite)
 	}
@@ -188,7 +190,8 @@ func TestBrowserSessions(t *testing.T) {
 	if r.Body["user_id"] != user || r.Body["organisation_id"] != org || roles(r) != "owner" || r.Body["super_admin"] != true {
 		t.Fatalf("the session after setup: %s", r.Raw)
 	}
-	if r := a.call(http.MethodGet, "/v1/organisation", "same-origin", nil); r.Status != 200 || r.Body["name"] != "Cognizhi Pte. Ltd." {
+	if r := a.call(http.MethodGet, "/v1/organisation", "same-origin", nil); r.Status != 200 || r.Body["name"] != "Cognizhi Pte. Ltd." ||
+		r.Body["base_currency"] != "SGD" {
 		t.Fatalf("the organisation, by the session's membership: %d %s", r.Status, r.Raw)
 	}
 	if r := a.call(http.MethodGet, "/v1/organisation", "cross-site", nil); r.Status != 200 {

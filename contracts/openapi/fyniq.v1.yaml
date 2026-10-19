@@ -514,7 +514,8 @@ components:
       additionalProperties: false
       properties:
         base_currency:
-          description: The ISO 4217 currency its books are kept in.
+          default: SGD
+          description: The ISO 4217 currency its books are kept in; SGD when left out (FR-ORG-02).
           examples:
             - SGD
           pattern: ^[A-Z]{3}$
@@ -528,7 +529,6 @@ components:
           type: string
       required:
         - name
-        - base_currency
       type: object
     NewSuperAdmin:
       additionalProperties: false
@@ -611,6 +611,105 @@ components:
         - base_minor_units
         - version
       type: object
+    OrganisationProfile:
+      additionalProperties: false
+      properties:
+        bank_account_name:
+          description: The account's name.
+          examples:
+            - Northwind Analytics Pte. Ltd.
+          type: string
+        bank_account_number:
+          description: The account's number, as the bank prints it. Masked in logs and the audit trail (SEC-15).
+          examples:
+            - 012-345678-9
+          type: string
+        bank_name:
+          description: The bank customers pay into, as documents print it.
+          examples:
+            - DBS Bank
+          type: string
+        books_start:
+          description: "The date the books start: the first financial year begins on it."
+          examples:
+            - "2026-03-15"
+          format: date
+          type: string
+        document_footer:
+          description: The text at the foot of every document.
+          examples:
+            - Thank you for your business.
+          type: string
+        email:
+          description: The address documents give for questions.
+          examples:
+            - accounts@northwind.example
+          type: string
+        first_year_end:
+          description: "The last day of the first financial year: the day before a year starts, after the books start, so the first year may be shorter or longer than twelve months."
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
+        fy_start_month:
+          description: The month each financial year starts in, 1 (January) to 12.
+          examples:
+            - 4
+          format: int64
+          maximum: 12
+          minimum: 1
+          type: integer
+        legal_name:
+          description: The legal name, as registered with ACRA.
+          examples:
+            - Northwind Analytics Pte. Ltd.
+          type: string
+        mailing_address:
+          description: Where post goes, when not to the registered address.
+          examples:
+            - PO Box 1234, Singapore 912345
+          type: string
+        paynow_uen:
+          description: The UEN customers pay to by PayNow.
+          examples:
+            - 202312345K
+          type: string
+        phone:
+          description: The telephone number documents give.
+          examples:
+            - +65 6123 4567
+          type: string
+        registered_address:
+          description: The registered office address.
+          examples:
+            - "1 Raffles Place, #20-01, Singapore 048616"
+          type: string
+        time_zone:
+          description: The IANA time zone the organisation's days are counted in.
+          examples:
+            - Asia/Singapore
+          type: string
+        uen:
+          description: "The Unique Entity Number: 9 or 10 capital letters and digits."
+          examples:
+            - 202312345K
+          type: string
+        version:
+          description: The organisation's version; it also makes the ETag.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        website:
+          description: The website documents give.
+          examples:
+            - https://northwind.example
+          type: string
+      required:
+        - fy_start_month
+        - time_zone
+        - version
+      type: object
     Problem:
       additionalProperties: false
       properties:
@@ -665,6 +764,104 @@ components:
         - status
         - detail
         - code
+      type: object
+    ProfileChanges:
+      additionalProperties: false
+      properties:
+        bank_account_name:
+          description: The account's name; "" clears it.
+          examples:
+            - Northwind Analytics Pte. Ltd.
+          maxLength: 140
+          type: string
+        bank_account_number:
+          description: The account's number; "" clears it.
+          examples:
+            - 012-345678-9
+          maxLength: 34
+          type: string
+        bank_name:
+          description: The bank's name; "" clears it.
+          examples:
+            - DBS Bank
+          maxLength: 100
+          type: string
+        books_start:
+          description: The date the books start, YYYY-MM-DD; "" clears it.
+          examples:
+            - "2026-03-15"
+          type: string
+        document_footer:
+          description: The document footer; "" clears it.
+          examples:
+            - Thank you for your business.
+          maxLength: 1000
+          type: string
+        email:
+          description: The address documents give; "" clears it.
+          examples:
+            - accounts@northwind.example
+          maxLength: 254
+          type: string
+        first_year_end:
+          description: The last day of the first financial year, YYYY-MM-DD; "" clears it.
+          examples:
+            - "2027-03-31"
+          type: string
+        fy_start_month:
+          description: The month each financial year starts in, 1 to 12.
+          examples:
+            - 4
+          format: int64
+          type: integer
+        legal_name:
+          description: The legal name; "" clears it.
+          examples:
+            - Northwind Analytics Pte. Ltd.
+          maxLength: 200
+          type: string
+        mailing_address:
+          description: The mailing address; "" clears it.
+          examples:
+            - PO Box 1234, Singapore 912345
+          maxLength: 500
+          type: string
+        paynow_uen:
+          description: The PayNow UEN; "" clears it.
+          examples:
+            - 202312345K
+          maxLength: 10
+          type: string
+        phone:
+          description: The telephone number; "" clears it.
+          examples:
+            - +65 6123 4567
+          maxLength: 40
+          type: string
+        registered_address:
+          description: The registered office address; "" clears it.
+          examples:
+            - "1 Raffles Place, #20-01, Singapore 048616"
+          maxLength: 500
+          type: string
+        time_zone:
+          description: The IANA time zone.
+          examples:
+            - Asia/Singapore
+          maxLength: 64
+          type: string
+        uen:
+          description: The UEN; "" clears it.
+          examples:
+            - 202312345K
+          maxLength: 10
+          type: string
+        website:
+          description: The website; "" clears it.
+          examples:
+            - https://northwind.example
+          maxLength: 200
+          type: string
       type: object
     RecoveredSuperAdmin:
       additionalProperties: false
@@ -2193,6 +2390,276 @@ paths:
       x-fyniq-permission:
         capability: (membership)
         right: V
+  /v1/organisation/profile:
+    get:
+      description: What the organisation's documents print about it (legal name, UEN, addresses, contact details, the bank and PayNow details customers pay to, the footer) and how its financial years run (the start month, the books' start, the first year's end) and its time zone (FR-ORG-01, FR-ORG-02), with the organisation's ETag. Read-only; no side effects.
+      operationId: getOrganisationProfile
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganisationProfile"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The organisation's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get the organisation's profile
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Organisation profile, financial year, defaults (rev 0.29)
+        right: V
+    patch:
+      description: "Changes the fields sent and keeps the rest: a field left out keeps its value, and \"\" clears it. Every rule that fails is reported at once (UEN, email, time zone, a first financial year that ends after the books start, on the day before a year starts). Side effects: the organisation's next version and an audit event with the changes, bank and PayNow numbers masked. Needs If-Match with the organisation's ETag. Approval policy: the Owner approves profile changes once the approval engine arrives (P1). Prefer: return=preview checks the change and saves nothing."
+      operationId: updateOrganisationProfile
+      parameters:
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileChanges"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganisationProfile"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The organisation's version, for If-Match.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `ORG-01` A text is blank or too long; `ORG-02` Not a UEN; `ORG-03` Not an email address; `ORG-04` Not a time zone; `ORG-05` Not a month; `ORG-06` The first financial year does not fit; `ORG-07` Not a bank account number; `STORAGE-ORG-01` The organisation's details are not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change the organisation's profile
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - ORG-01
+        - ORG-02
+        - ORG-03
+        - ORG-04
+        - ORG-05
+        - ORG-06
+        - ORG-07
+        - STORAGE-LOCK-01
+        - STORAGE-ORG-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Organisation profile, financial year, defaults (rev 0.29)
+        note: The Owner approves changes to the profile; the approval itself arrives with the approval engine (P1).
+        right: C
   /v1/session:
     get:
       description: "Who you are signed in as: the provider, your user, the organisation your session is in, your roles there, whether you are a Super admin and until when your step-up counts (SEC-05, FR-ADM-07). The web app reads it after signing in; a 401 means it should show the sign-in page. Needs a person signed in; an OAuth client or the AI is refused. Read-only; no side effects."

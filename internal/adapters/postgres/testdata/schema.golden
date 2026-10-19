@@ -132,6 +132,22 @@ organisation | base_minor_units | smallint | not null |
 organisation | version | integer | not null | 1
 organisation | created_at | timestamp with time zone | not null | now()
 organisation | kind | text | not null | 'company'::text
+organisation | legal_name | text | null | 
+organisation | uen | text | null | 
+organisation | registered_address | text | null | 
+organisation | mailing_address | text | null | 
+organisation | email | text | null | 
+organisation | phone | text | null | 
+organisation | website | text | null | 
+organisation | bank_name | text | null | 
+organisation | bank_account_name | text | null | 
+organisation | bank_account_number | text | null | 
+organisation | paynow_uen | text | null | 
+organisation | document_footer | text | null | 
+organisation | fy_start_month | smallint | not null | 1
+organisation | books_start | date | null | 
+organisation | first_year_end | date | null | 
+organisation | time_zone | text | not null | 'Asia/Singapore'::text
 outbox | organisation_id | uuid | not null | current_org()
 outbox | id | uuid | not null | uuidv7()
 outbox | worker_class | text | not null | 
@@ -415,12 +431,18 @@ organisation | organisation_base_currency_fkey | FOREIGN KEY (base_currency, bas
 organisation | organisation_base_currency_not_null | NOT NULL base_currency
 organisation | organisation_base_minor_units_not_null | NOT NULL base_minor_units
 organisation | organisation_created_at_not_null | NOT NULL created_at
+organisation | organisation_first_year | CHECK (((first_year_end > books_start) AND (EXTRACT(day FROM (first_year_end + 1)) = (1)::numeric) AND (EXTRACT(month FROM (first_year_end + 1)) = (fy_start_month)::numeric)))
+organisation | organisation_fy_start_month_not_null | NOT NULL fy_start_month
+organisation | organisation_fy_start_month_range | CHECK (((fy_start_month >= 1) AND (fy_start_month <= 12)))
 organisation | organisation_kind_known | CHECK ((kind = ANY (ARRAY['company'::text, 'installation'::text])))
 organisation | organisation_kind_not_null | NOT NULL kind
 organisation | organisation_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
 organisation | organisation_name_not_null | NOT NULL name
 organisation | organisation_organisation_id_not_null | NOT NULL organisation_id
 organisation | organisation_pkey | PRIMARY KEY (organisation_id)
+organisation | organisation_profile_lengths | CHECK ((((length(legal_name) >= 1) AND (length(legal_name) <= 200)) AND ((length(registered_address) >= 1) AND (length(registered_address) <= 500)) AND ((length(mailing_address) >= 1) AND (length(mailing_address) <= 500)) AND ((length(email) >= 3) AND (length(email) <= 254)) AND ((length(phone) >= 1) AND (length(phone) <= 40)) AND ((length(website) >= 1) AND (length(website) <= 200)) AND ((length(bank_name) >= 1) AND (length(bank_name) <= 100)) AND ((length(bank_account_name) >= 1) AND (length(bank_account_name) <= 140)) AND ((length(bank_account_number) >= 1) AND (length(bank_account_number) <= 34)) AND ((length(document_footer) >= 1) AND (length(document_footer) <= 1000)) AND ((length(time_zone) >= 1) AND (length(time_zone) <= 64))))
+organisation | organisation_time_zone_not_null | NOT NULL time_zone
+organisation | organisation_uen_format | CHECK (((uen ~ '^[0-9A-Z]{9,10}$'::text) AND (paynow_uen ~ '^[0-9A-Z]{9,10}$'::text)))
 organisation | organisation_version_not_null | NOT NULL version
 organisation | organisation_version_positive | CHECK ((version > 0))
 organisation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED

@@ -44,6 +44,9 @@ type Store interface {
 // UnitOfWork gives the repositories of one transaction, all bound to its organisation.
 type UnitOfWork interface {
 	Organisation(ctx context.Context) (Organisation, error)
+	// UpdateOrganisation replaces the organisation's profile when its version is still version, and
+	// returns it at its next version; CodeVersion when it changed since (FR-INT-09). It is audited.
+	UpdateOrganisation(ctx context.Context, version int, p OrganisationProfile) (Organisation, error)
 	Accounts() Accounts
 	Periods() Periods
 	Documents() Documents
@@ -141,6 +144,19 @@ type Organisation struct {
 	BaseCurrency   string
 	BaseMinorUnits int
 	Version        int
+	Profile        OrganisationProfile
+}
+
+// OrganisationProfile is what the organisation's documents print about it, and how its financial years
+// run (FR-ORG-01, FR-ORG-02). Empty text and nil dates are not set.
+type OrganisationProfile struct {
+	LegalName, UEN, RegisteredAddress, MailingAddress, Email, Phone, Website string
+	// The bank and PayNow details customers pay to: masked in logs and audit events (SEC-15).
+	BankName, BankAccountName, BankAccountNumber, PayNowUEN string
+	DocumentFooter                                          string
+	FYStartMonth                                            int        // the month a financial year starts in, 1 to 12
+	BooksStart, FirstYearEnd                                *time.Time // dates: the first financial year runs from one to the other
+	TimeZone                                                string     // an IANA time zone, such as Asia/Singapore
 }
 
 // AccountType is one of the five account types (FR-COA-02).
@@ -356,6 +372,7 @@ const (
 	CodeInvalid        = "STORAGE-INPUT-01" // the request itself is malformed
 	CodeStorageFailure = "STORAGE-FAILURE-01"
 	CodePreviewed      = "STORAGE-PREVIEW-01" // not a failure: a preview passed every check and was rolled back
+	CodeVersion        = "STORAGE-VERSION-01" // the record changed since it was read (FR-INT-09)
 )
 
 // ErrPreviewed is what Do returns for a preview that passed every check the commit would run: nothing

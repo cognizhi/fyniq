@@ -8,6 +8,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/authz/authztest"
@@ -24,6 +26,16 @@ var matrixCalls = map[string]matrixCall{
 	},
 	"listAccounts": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/accounts", tok, nil), nil
+	},
+	"getOrganisationProfile": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/profile", tok, nil), nil
+	},
+	"updateOrganisationProfile": func(e *env, tok string) (response, func() bool) {
+		footer := "Matrix " + uuid.NewString()
+		r := e.call(http.MethodPatch, "/v1/organisation/profile", tok, map[string]any{"document_footer": footer}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/organisation/profile", e.as(authz.Controller), nil).Body["document_footer"] != footer
+		}
 	},
 	"getAccount": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/accounts/"+e.books.Bank.ID.String(), tok, nil), nil

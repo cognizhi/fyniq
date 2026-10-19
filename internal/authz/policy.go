@@ -25,8 +25,9 @@ type Capability string
 
 // The capabilities the P0 endpoints use.
 const (
-	ChartOfAccounts Capability = "Chart of accounts, dimensions"
-	Journals        Capability = "Journals"
+	ChartOfAccounts     Capability = "Chart of accounts, dimensions"
+	Journals            Capability = "Journals"
+	OrganisationProfile Capability = "Organisation profile, financial year, defaults (rev 0.29)"
 	// Membership is not an Appendix D row: the caller's organisation (its name and base currency),
 	// which every screen shows, is readable by every member of it. AI acts for a member; the Super
 	// admin and the HR officer (Nemura only) are not members through those roles.
@@ -57,6 +58,11 @@ var Grants = map[Capability]map[string]Cell{
 		"AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""},
 		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
 	},
+	OrganisationProfile: {
+		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""},
+		"AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""},
+		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"V", ""}, "AI": {"V", ""},
+	},
 	Journals: {
 		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", "limit"}, "Bookkeeper": {},
 		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
@@ -84,13 +90,16 @@ type Policy struct {
 // approval engine (FR-APR, P1). AI cells without letters ("Proposal") grant nothing through the API:
 // the AI's only write path is a proposal (golden rule 5), which arrives in P1.
 var (
-	GetOrganisation    = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
-	ListAccounts       = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
-	GetAccount         = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
-	CreateJournal      = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
-	BulkCreateJournals = Policy{Operation: "bulkCreateJournals", Capability: Journals, Need: Create}
-	GetJournal         = Policy{Operation: "getJournal", Capability: Journals, Need: View}
-	PostJournal        = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
+	GetOrganisation           = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
+	ListAccounts              = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
+	GetAccount                = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
+	CreateJournal             = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
+	BulkCreateJournals        = Policy{Operation: "bulkCreateJournals", Capability: Journals, Need: Create}
+	GetOrganisationProfile    = Policy{Operation: "getOrganisationProfile", Capability: OrganisationProfile, Need: View}
+	UpdateOrganisationProfile = Policy{Operation: "updateOrganisationProfile", Capability: OrganisationProfile, Need: Create,
+		Note: "The Owner approves changes to the profile; the approval itself arrives with the approval engine (P1)."}
+	GetJournal  = Policy{Operation: "getJournal", Capability: Journals, Need: View}
+	PostJournal = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
 	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
 		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
@@ -126,7 +135,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(GetOrganisation, ListAccounts, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListAccounts, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 

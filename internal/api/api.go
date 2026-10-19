@@ -136,6 +136,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.API = humago.New(mux, cfg)
 	a.UseMiddleware(a.requestContext, a.authenticate, a.limit, a.authorise)
 	registerOrganisation(a)
+	registerProfile(a)
 	registerAccounts(a)
 	registerJournals(a)
 	registerSetup(a)

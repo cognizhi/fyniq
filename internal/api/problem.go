@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -119,6 +120,15 @@ var codeFacts = map[string]struct {
 	CodeCodeRefused:            {409, "Code refused"},
 	CodeSuperAdminRefused:      {409, "Super admin change refused"},
 	CodeRateLimited:            {429, "Too many requests"},
+	organisation.CodeText:      {422, "A text is blank or too long"},
+	organisation.CodeUEN:       {422, "Not a UEN"},
+	organisation.CodeEmail:     {422, "Not an email address"},
+	organisation.CodeTimeZone:  {422, "Not a time zone"},
+	organisation.CodeYearStart: {422, "Not a month"},
+	organisation.CodeFirstYear: {422, "The first financial year does not fit"},
+	organisation.CodeBank:      {422, "Not a bank account number"},
+	storage.CodeVersion:        {412, "The record changed since you read it"},
+	storage.CodeOrganisation:   {422, "The organisation's details are not valid"},
 	journal.CodeNotJournal:     {404, "Not a manual journal"},
 	journal.CodeNotDraft:       {409, "The journal is not a draft"},
 	journal.CodeNotPosted:      {409, "The journal is not posted"},

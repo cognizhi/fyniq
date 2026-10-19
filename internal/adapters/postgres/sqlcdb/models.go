@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type FyniqAccount struct {
@@ -189,13 +190,29 @@ type FyniqLedgerRevision struct {
 }
 
 type FyniqOrganisation struct {
-	OrganisationID uuid.UUID
-	Name           string
-	BaseCurrency   string
-	BaseMinorUnits int16
-	Version        int32
-	CreatedAt      time.Time
-	Kind           string
+	OrganisationID    uuid.UUID
+	Name              string
+	BaseCurrency      string
+	BaseMinorUnits    int16
+	Version           int32
+	CreatedAt         time.Time
+	Kind              string
+	LegalName         *string
+	Uen               *string
+	RegisteredAddress *string
+	MailingAddress    *string
+	Email             *string
+	Phone             *string
+	Website           *string
+	BankName          *string
+	BankAccountName   *string
+	BankAccountNumber *string
+	PaynowUen         *string
+	DocumentFooter    *string
+	FyStartMonth      int16
+	BooksStart        pgtype.Date
+	FirstYearEnd      pgtype.Date
+	TimeZone          string
 }
 
 type FyniqOutbox struct {

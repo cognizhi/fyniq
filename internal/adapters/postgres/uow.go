@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -46,8 +47,122 @@ func (u *unitOfWork) Organisation(ctx context.Context) (storage.Organisation, er
 	if err != nil {
 		return storage.Organisation{}, mapError(err)
 	}
-	return storage.Organisation{ID: row.OrganisationID, Name: row.Name, BaseCurrency: row.BaseCurrency,
-		BaseMinorUnits: int(row.BaseMinorUnits), Version: int(row.Version)}, nil
+	return organisationOf(sqlcdb.LockOrganisationRow(row)), nil
+}
+
+func organisationOf(r sqlcdb.LockOrganisationRow) storage.Organisation {
+	return storage.Organisation{ID: r.OrganisationID, Name: r.Name, BaseCurrency: r.BaseCurrency,
+		BaseMinorUnits: int(r.BaseMinorUnits), Version: int(r.Version), Profile: storage.OrganisationProfile{
+			LegalName: str(r.LegalName), UEN: str(r.Uen), RegisteredAddress: str(r.RegisteredAddress),
+			MailingAddress: str(r.MailingAddress), Email: str(r.Email), Phone: str(r.Phone), Website: str(r.Website),
+			BankName: str(r.BankName), BankAccountName: str(r.BankAccountName), BankAccountNumber: str(r.BankAccountNumber),
+			PayNowUEN: str(r.PaynowUen), DocumentFooter: str(r.DocumentFooter), FYStartMonth: int(r.FyStartMonth),
+			BooksStart: nullDate(r.BooksStart), FirstYearEnd: nullDate(r.FirstYearEnd), TimeZone: r.TimeZone}}
+}
+
+// UpdateOrganisation implements storage.UnitOfWork: under the row's lock, the version must still be the
+// one the caller read.
+func (u *unitOfWork) UpdateOrganisation(ctx context.Context, version int, p storage.OrganisationProfile) (storage.Organisation, error) {
+	if err := u.check(); err != nil {
+		return storage.Organisation{}, err
+	}
+	cur, err := u.q.LockOrganisation(ctx)
+	if err != nil {
+		return storage.Organisation{}, mapError(err)
+	}
+	before := organisationOf(cur)
+	if p.FYStartMonth < 1 || p.FYStartMonth > 12 {
+		return storage.Organisation{}, &storage.Error{Code: storage.CodeOrganisation,
+			Message: fmt.Sprintf("%d is not a month a financial year can start in", p.FYStartMonth)}
+	}
+	month := int16(p.FYStartMonth) // 1 to 12, checked above
+	if before.Version != version {
+		return storage.Organisation{}, &storage.Error{Code: storage.CodeVersion,
+			Message: fmt.Sprintf("the organisation changed since it was read: it is at version %d, not %d", before.Version, version)}
+	}
+	row, err := u.q.UpdateOrganisationProfile(ctx, sqlcdb.UpdateOrganisationProfileParams{LegalName: opt(p.LegalName), Uen: opt(p.UEN),
+		RegisteredAddress: opt(p.RegisteredAddress), MailingAddress: opt(p.MailingAddress), Email: opt(p.Email), Phone: opt(p.Phone),
+		Website: opt(p.Website), BankName: opt(p.BankName), BankAccountName: opt(p.BankAccountName),
+		BankAccountNumber: opt(p.BankAccountNumber), PaynowUen: opt(p.PayNowUEN), DocumentFooter: opt(p.DocumentFooter),
+		FyStartMonth: month, BooksStart: pgDate(p.BooksStart), FirstYearEnd: pgDate(p.FirstYearEnd), TimeZone: p.TimeZone})
+	if err != nil {
+		return storage.Organisation{}, mapError(err)
+	}
+	after := organisationOf(sqlcdb.LockOrganisationRow(row))
+	changes := map[string][2]any{"version": {before.Version, after.Version}}
+	for k, v := range profileChanges(before.Profile, after.Profile) {
+		changes[k] = v
+	}
+	if err := u.event(ctx, "organisation.updated", "organisation", after.ID, &after.Version, changes); err != nil {
+		return storage.Organisation{}, err
+	}
+	return after, nil
+}
+
+// profileChanges are the fields that differ, by column name; the audit trail masks the bank and PayNow
+// numbers by their names (SEC-15).
+func profileChanges(a, b storage.OrganisationProfile) map[string][2]any {
+	out := map[string][2]any{}
+	text := func(k, x, y string) {
+		if x != y {
+			out[k] = [2]any{nilIfEmpty(x), nilIfEmpty(y)}
+		}
+	}
+	text("legal_name", a.LegalName, b.LegalName)
+	text("uen", a.UEN, b.UEN)
+	text("registered_address", a.RegisteredAddress, b.RegisteredAddress)
+	text("mailing_address", a.MailingAddress, b.MailingAddress)
+	text("email", a.Email, b.Email)
+	text("phone", a.Phone, b.Phone)
+	text("website", a.Website, b.Website)
+	text("bank_name", a.BankName, b.BankName)
+	text("bank_account_name", a.BankAccountName, b.BankAccountName)
+	text("bank_account_number", a.BankAccountNumber, b.BankAccountNumber)
+	text("paynow_uen", a.PayNowUEN, b.PayNowUEN)
+	text("document_footer", a.DocumentFooter, b.DocumentFooter)
+	text("time_zone", a.TimeZone, b.TimeZone)
+	text("books_start", dayOf(a.BooksStart), dayOf(b.BooksStart))
+	text("first_year_end", dayOf(a.FirstYearEnd), dayOf(b.FirstYearEnd))
+	if a.FYStartMonth != b.FYStartMonth {
+		out["fy_start_month"] = [2]any{a.FYStartMonth, b.FYStartMonth}
+	}
+	return out
+}
+
+func opt(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func nilIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+func nullDate(d pgtype.Date) *time.Time {
+	if !d.Valid {
+		return nil
+	}
+	t := d.Time
+	return &t
+}
+
+func pgDate(t *time.Time) pgtype.Date {
+	if t == nil {
+		return pgtype.Date{}
+	}
+	return pgtype.Date{Time: *t, Valid: true}
+}
+
+func dayOf(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return day(*t)
 }
 
 func (u *unitOfWork) Accounts() storage.Accounts   { return accounts{u} }
