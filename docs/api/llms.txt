@@ -28,6 +28,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/organisation/gst-status` (getGSTStatus): Get the GST status on a date
 - `GET /v1/organisation/profile` (getOrganisationProfile): Get the organisation's profile
 - `PATCH /v1/organisation/profile` (updateOrganisationProfile): Change the organisation's profile
+- `GET /v1/organisation/sequences` (listSequences): List the document number sequences
+- `GET /v1/organisation/sequences/{document_type}` (getSequence): Get a document number sequence
+- `PATCH /v1/organisation/sequences/{document_type}` (updateSequence): Change a document number sequence
 - `GET /v1/session` (getSession): Get your session
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup

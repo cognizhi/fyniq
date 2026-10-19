@@ -84,7 +84,15 @@ func (s Service) Create(ctx context.Context, org uuid.UUID, d Draft) (storage.Do
 	}
 	var doc storage.Document
 	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		doc, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: b})
+		if doc, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: b}); err != nil {
+			return err
+		}
+		// A sequence that is not gap-free numbers a journal when it is saved (FR-ORG-04).
+		seq, err := u.Sequences().Get(ctx, storage.DocumentJournal)
+		if err != nil || seq.GapFree {
+			return err
+		}
+		doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentJournal)
 		return err
 	})
 	return doc, err
@@ -104,6 +112,11 @@ func (s Service) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, er
 		}
 		if doc.Status != storage.DocumentDraft {
 			return &Error{CodeNotDraft, fmt.Sprintf("the journal is %s, not a draft", doc.Status), "Only a draft can be posted; reverse a posted journal instead"}
+		}
+		// ENG-47 step 1a: the journal's number, in this transaction under the sequence's lock, so a posting
+		// that fails takes no number (FR-ORG-04); a journal numbered when it was saved keeps its number.
+		if doc.Number, err = u.Sequences().Number(ctx, id, storage.DocumentJournal); err != nil {
+			return err
 		}
 		settings, err := loadSettings(ctx, u)
 		if err != nil {

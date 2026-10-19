@@ -321,7 +321,7 @@ func (r documents) Get(ctx context.Context, id uuid.UUID) (storage.Document, err
 		return storage.Document{}, mapError(err)
 	}
 	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
-		Version: int(row.CurrentVersion), Payload: row.Payload}, nil
+		Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number)}, nil
 }
 
 func (r documents) Lock(ctx context.Context, id uuid.UUID) (storage.Document, error) {
@@ -333,7 +333,7 @@ func (r documents) Lock(ctx context.Context, id uuid.UUID) (storage.Document, er
 		return storage.Document{}, mapError(err)
 	}
 	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
-		Version: int(row.CurrentVersion), Payload: row.Payload}, nil
+		Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number)}, nil
 }
 
 func (r documents) SetStatus(ctx context.Context, id uuid.UUID, to storage.DocumentStatus) error {

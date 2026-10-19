@@ -50,6 +50,19 @@ document | type | text | not null |
 document | status | text | not null | 'draft'::text
 document | current_version | integer | not null | 1
 document | created_at | timestamp with time zone | not null | now()
+document_number | organisation_id | uuid | not null | current_org()
+document_number | id | uuid | not null | 
+document_number | document_type | text | not null | 
+document_number | number | text | not null | 
+document_number | created_at | timestamp with time zone | not null | now()
+document_sequence | organisation_id | uuid | not null | current_org()
+document_sequence | id | uuid | not null | uuidv7()
+document_sequence | document_type | text | not null | 
+document_sequence | prefix | text | not null | 
+document_sequence | next_number | bigint | not null | 1
+document_sequence | digits | smallint | not null | 4
+document_sequence | gap_free | boolean | not null | true
+document_sequence | version | integer | not null | 1
 document_version | organisation_id | uuid | not null | current_org()
 document_version | id | uuid | not null | uuidv7()
 document_version | document_id | uuid | not null | 
@@ -325,6 +338,33 @@ document | document_status_not_null | NOT NULL status
 document | document_type_known | CHECK ((type = 'journal'::text))
 document | document_type_not_null | NOT NULL type
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document_number | document_number_created_at_not_null | NOT NULL created_at
+document_number | document_number_document_fkey | FOREIGN KEY (organisation_id, id) REFERENCES document(organisation_id, id)
+document_number | document_number_document_type_not_null | NOT NULL document_type
+document_number | document_number_id_not_null | NOT NULL id
+document_number | document_number_length | CHECK (((length(number) >= 1) AND (length(number) <= 30)))
+document_number | document_number_number_not_null | NOT NULL number
+document_number | document_number_organisation_id_not_null | NOT NULL organisation_id
+document_number | document_number_pkey | PRIMARY KEY (organisation_id, id)
+document_number | document_number_unique | UNIQUE (organisation_id, document_type, number)
+document_number | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document_sequence | document_sequence_digits_not_null | NOT NULL digits
+document_sequence | document_sequence_digits_range | CHECK (((digits >= 1) AND (digits <= 12)))
+document_sequence | document_sequence_document_type_not_null | NOT NULL document_type
+document_sequence | document_sequence_gap_free_not_null | NOT NULL gap_free
+document_sequence | document_sequence_id_not_null | NOT NULL id
+document_sequence | document_sequence_next_number_not_null | NOT NULL next_number
+document_sequence | document_sequence_next_positive | CHECK (((next_number >= 1) AND (next_number <= '999999999999'::bigint)))
+document_sequence | document_sequence_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+document_sequence | document_sequence_organisation_id_not_null | NOT NULL organisation_id
+document_sequence | document_sequence_pkey | PRIMARY KEY (organisation_id, id)
+document_sequence | document_sequence_prefix_format | CHECK ((prefix ~ '^[A-Z0-9][A-Z0-9/-]{0,11}$'::text))
+document_sequence | document_sequence_prefix_not_null | NOT NULL prefix
+document_sequence | document_sequence_type_key | UNIQUE (organisation_id, document_type)
+document_sequence | document_sequence_type_known | CHECK ((document_type = 'journal'::text))
+document_sequence | document_sequence_version_not_null | NOT NULL version
+document_sequence | document_sequence_version_positive | CHECK ((version > 0))
+document_sequence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_version | document_version_created_at_not_null | NOT NULL created_at
 document_version | document_version_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
 document_version | document_version_document_id_not_null | NOT NULL document_id
@@ -627,7 +667,11 @@ CREATE UNIQUE INDEX balance_key ON fyniq.balance USING btree (organisation_id, a
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
+CREATE UNIQUE INDEX document_number_pkey ON fyniq.document_number USING btree (organisation_id, id)
+CREATE UNIQUE INDEX document_number_unique ON fyniq.document_number USING btree (organisation_id, document_type, number)
 CREATE UNIQUE INDEX document_pkey ON fyniq.document USING btree (organisation_id, id)
+CREATE UNIQUE INDEX document_sequence_pkey ON fyniq.document_sequence USING btree (organisation_id, id)
+CREATE UNIQUE INDEX document_sequence_type_key ON fyniq.document_sequence USING btree (organisation_id, document_type)
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree (organisation_id, id)
@@ -662,8 +706,10 @@ CREATE UNIQUE INDEX user_session_pkey ON fyniq.user_session USING btree (token_h
 ## triggers
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
@@ -681,6 +727,7 @@ CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_even
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER document_sequence_guard BEFORE UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION document_sequence_guard()
 CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
@@ -710,6 +757,8 @@ audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organi
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -738,6 +787,7 @@ confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestam
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae8d292019dce37ac1cadb594f5dbe0c
+document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083

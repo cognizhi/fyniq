@@ -232,6 +232,7 @@ type JournalDraft struct {
 // Journal is a manual journal: its current version and status.
 type Journal struct {
 	ID      string             `json:"id" format:"uuid" doc:"The journal's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"`
+	Number  string             `json:"number,omitempty" doc:"Its number from the journal sequence: given when it posts, or when it is saved if the sequence is not gap-free; absent before (FR-ORG-04)." example:"JNL-0042"`
 	Status  string             `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed by a reversing entry." example:"draft"`
 	Version int                `json:"version" doc:"The version of its content; with the status it makes the ETag." example:"1"`
 	Date    string             `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
@@ -275,7 +276,7 @@ func journalOf(doc storage.Document) (Journal, error) {
 	if err != nil {
 		return Journal{}, err
 	}
-	out := Journal{ID: doc.ID.String(), Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo,
+	out := Journal{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo,
 		Lines: make([]JournalLineDraft, 0, len(saved.Lines))}
 	for _, l := range saved.Lines {
 		out.Lines = append(out.Lines, JournalLineDraft{AccountID: l.AccountID.String(),

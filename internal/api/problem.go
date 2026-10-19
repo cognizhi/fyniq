@@ -128,6 +128,10 @@ var codeFacts = map[string]struct {
 	organisation.CodeYearStart: {422, "Not a month"},
 	organisation.CodeFirstYear: {422, "The first financial year does not fit"},
 	organisation.CodeBank:      {422, "Not a bank account number"},
+	organisation.CodePrefix:    {422, "Not a prefix"},
+	organisation.CodeNext:      {422, "The next number does not fit"},
+	organisation.CodeDigits:    {422, "Not a number of digits"},
+	storage.CodeSequence:       {409, "The number sequence cannot be set that way"},
 	storage.CodeVersion:        {412, "The record changed since you read it"},
 	storage.CodeOrganisation:   {422, "The organisation's details are not valid"},
 	storage.CodeOverlap:        {409, "The dates overlap another version"},
@@ -181,6 +185,7 @@ var storageFixes = map[string]string{
 	storage.CodeOverlap:      "Change the dates so they neither overlap another version nor end before they start",
 	storage.CodeOrganisation: "Correct the value the message names and send the change again",
 	storage.CodeVersion:      "Read the record again, check what changed, and send your change with its new ETag",
+	storage.CodeSequence:     "Move the next number forward, or use another prefix; a number is never issued twice",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

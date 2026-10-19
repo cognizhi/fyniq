@@ -58,6 +58,7 @@ type UnitOfWork interface {
 	Idempotency() Idempotency
 	RateLimits() RateLimits
 	GSTRegistrations() GSTRegistrations
+	Sequences() Sequences
 	Outbox() Outbox
 	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
@@ -259,6 +260,7 @@ type Document struct {
 	Status  DocumentStatus
 	Version int
 	Payload []byte
+	Number  string // its document number, once it has one (FR-ORG-04); empty before
 }
 
 // Source is where an entry comes from (ENG-03).
@@ -372,9 +374,10 @@ const (
 	CodeRevision       = "STORAGE-REV-01"
 	CodeInvalid        = "STORAGE-INPUT-01" // the request itself is malformed
 	CodeStorageFailure = "STORAGE-FAILURE-01"
-	CodePreviewed      = "STORAGE-PREVIEW-01" // not a failure: a preview passed every check and was rolled back
-	CodeVersion        = "STORAGE-VERSION-01" // the record changed since it was read (FR-INT-09)
-	CodeOverlap        = "STORAGE-DATES-01"   // a version's validity overlaps another's, or ends before it starts
+	CodePreviewed      = "STORAGE-PREVIEW-01"  // not a failure: a preview passed every check and was rolled back
+	CodeVersion        = "STORAGE-VERSION-01"  // the record changed since it was read (FR-INT-09)
+	CodeOverlap        = "STORAGE-DATES-01"    // a version's validity overlaps another's, or ends before it starts
+	CodeSequence       = "STORAGE-SEQUENCE-01" // a number sequence cannot be set that way, or a number is used already
 )
 
 // ErrPreviewed is what Do returns for a preview that passed every check the commit would run: nothing

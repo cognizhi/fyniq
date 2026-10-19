@@ -145,7 +145,7 @@ Source: PRD-001 §10.1 · Priority M · Phase P0
 
 #### Scenario: Lock order
 - **WHEN** a command takes row locks
-- **THEN** it locks (1) the source documents it changes, by ID; (2) the organisation's ledger-revision row (ENG-46), when the first entry is inserted, as the last step of the command; (3) period rows, by date
+- **THEN** it locks (1) the source documents it changes, by ID; (1a) the number sequence of a document type, when it numbers a document; (2) the organisation's ledger-revision row (ENG-46), when the first entry is inserted, as the last step of the command; (3) period rows, by date
 
 #### Scenario: Posting checks the period after the revision lock
 - **WHEN** a posting checks the period status

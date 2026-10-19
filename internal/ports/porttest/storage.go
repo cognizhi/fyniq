@@ -630,6 +630,87 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		}), storage.CodeOrganisation)
 	})
 
+	// req: FR-ORG-04
+	t.Run("a sequence numbers each document once, in order, never backwards; a rollback takes no number", func(t *testing.T) {
+		b := books(t)
+		draft := func(ctx context.Context, u storage.UnitOfWork) (storage.Document, error) {
+			return u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"memo":"numbered"}`)})
+		}
+		number := func(fail bool) (string, error) {
+			var n string
+			failed := errors.New("the posting fails after it is numbered")
+			err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				doc, err := draft(ctx, u)
+				if err != nil {
+					return err
+				}
+				if n, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentJournal); err != nil {
+					return err
+				}
+				if again, err := u.Sequences().Number(ctx, doc.ID, storage.DocumentJournal); err != nil || again != n {
+					t.Errorf("numbering the same document again: %q, %v; want %q", again, err, n)
+				}
+				if fail {
+					return failed
+				}
+				return nil
+			})
+			if fail && errors.Is(err, failed) {
+				err = nil
+			}
+			return n, err
+		}
+		var seq storage.Sequence
+		_ = s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			seq, _ = u.Sequences().Get(ctx, storage.DocumentJournal)
+			return nil
+		})
+		if seq.Version != 0 || seq.Prefix != "JNL-" || seq.NextNumber != 1 || !seq.GapFree {
+			t.Fatalf("a sequence not set up yet: %+v", seq)
+		}
+		for i, want := range []string{"JNL-0001", "JNL-0002"} {
+			if n, err := number(false); err != nil || n != want {
+				t.Fatalf("number %d: %q, %v; want %s", i+1, n, err, want)
+			}
+		}
+		if _, err := number(true); err != nil {
+			t.Fatal(err)
+		}
+		if n, err := number(false); err != nil || n != "JNL-0003" {
+			t.Fatalf("after a rolled-back numbering: %q, %v; want JNL-0003", n, err)
+		}
+
+		update := func(version int, set storage.SequenceSettings) (storage.Sequence, error) {
+			var out storage.Sequence
+			err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				out, err = u.Sequences().Update(ctx, storage.DocumentJournal, version, set)
+				return err
+			})
+			return out, err
+		}
+		set := storage.SequenceSettings{Prefix: "JV/", NextNumber: 100, Digits: 5, GapFree: true}
+		changed, err := update(1, set)
+		if err != nil || changed.Version != 2 || changed.NextNumber != 100 {
+			t.Fatalf("Update: %v, %+v", err, changed)
+		}
+		if n, err := number(false); err != nil || n != "JV/00100" {
+			t.Fatalf("after the change: %q, %v; want JV/00100", n, err)
+		}
+		_, err = update(1, set)
+		wantCode(t, err, storage.CodeVersion)
+		back := set
+		back.NextNumber = 5
+		_, err = update(2, back)
+		wantCode(t, err, storage.CodeSequence)
+		_ = worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if h, _ := u.Audit().Head(ctx); h.Action != "document.numbered" {
+				t.Errorf("the last audit event is %q; want document.numbered", h.Action)
+			}
+			return nil
+		})
+	})
+
 	// req: FR-INT-16
 	t.Run("a rate-limit window counts a client's requests by kind until the worker purges it", func(t *testing.T) {
 		b, other := books(t), books(t)

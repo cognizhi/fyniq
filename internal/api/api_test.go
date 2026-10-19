@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -587,6 +588,94 @@ func TestGSTRegistrationAndStatus(t *testing.T) {
 		map[string]any{"registered_from": "2027-01-01", "gst_number": "202312345K"}), "createGSTRegistration", 409, storage.CodeOverlap)
 	if l := e.call(http.MethodGet, "/v1/organisation/gst-registrations", controller, nil); l.Status != 200 || len(l.Body["items"].([]any)) != 1 {
 		t.Errorf("the list: %d %s", l.Status, l.Raw)
+	}
+}
+
+// Journals are numbered from their sequence when they post: concurrent postings on independent
+// connections take every number once, a posting that fails takes none, a preview takes none, and the
+// sequence can move forward but never back.
+// req: FR-ORG-04
+func TestDocumentNumbers(t *testing.T) {
+	e := newEnv(t)
+	accountant, controller := e.as(authz.Accountant), e.as(authz.Controller)
+
+	// A preview shows the number the posting would take, and takes none.
+	id, tag := e.createDraft("10.00")
+	pv := e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", tag, "Prefer", "return=preview")
+	if pv.Status != 200 || pv.Body["journal"].(map[string]any)["number"] != "JNL-0001" {
+		t.Fatalf("the preview: %d %s", pv.Status, pv.Raw)
+	}
+
+	// Twenty postings at once, a third of them into a closed period: the ones that post take
+	// JNL-0001 onwards with no gap and no repeat; the ones that fail take nothing.
+	november := e.books.Nov.ID
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Periods().Close(ctx, november)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	type draft struct{ id, tag string }
+	drafts := []draft{{id, tag}}
+	for i := range 19 {
+		d := e.draft("1.00")
+		if i%3 == 0 {
+			d["date"] = "2026-11-05"
+		}
+		r := e.call(http.MethodPost, "/v1/journals", accountant, d)
+		if r.Status != 201 || r.str("number") != "" {
+			t.Fatalf("a gap-free sequence numbered a draft: %d %s", r.Status, r.Raw)
+		}
+		drafts = append(drafts, draft{r.str("id"), r.Header.Get("ETag")})
+	}
+	var wg sync.WaitGroup
+	numbers := make([]string, len(drafts))
+	for i, d := range drafts {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r := e.call(http.MethodPost, "/v1/journals/"+d.id+"/post", accountant, nil, "If-Match", d.tag)
+			if r.Status == 200 {
+				numbers[i] = r.Body["journal"].(map[string]any)["number"].(string)
+			}
+		}()
+	}
+	wg.Wait()
+	var posted []string
+	for i, n := range numbers {
+		if n != "" {
+			posted = append(posted, n)
+		} else if g := e.call(http.MethodGet, "/v1/journals/"+drafts[i].id, accountant, nil); g.str("number") != "" {
+			t.Errorf("a journal whose posting failed has the number %s", g.str("number"))
+		}
+	}
+	slices.Sort(posted)
+	if len(posted) != 13 {
+		t.Fatalf("%d postings committed; want the 13 outside November: %v", len(posted), posted)
+	}
+	for i, n := range posted {
+		if want := fmt.Sprintf("JNL-%04d", i+1); n != want {
+			t.Fatalf("the numbers are %v; want JNL-0001 to JNL-0013 with no gap or repeat", posted)
+		}
+	}
+
+	// The sequence: forward only; a new prefix and padding; not gap-free numbers a journal when saved.
+	s := e.call(http.MethodGet, "/v1/organisation/sequences/journal", controller, nil)
+	if s.Status != 200 || s.Body["next_number"] != float64(14) || s.Body["example"] != "JNL-0014" {
+		t.Fatalf("the sequence after 13 postings: %d %s", s.Status, s.Raw)
+	}
+	r := e.call(http.MethodPatch, "/v1/organisation/sequences/journal", controller, map[string]any{"next_number": 5}, "If-Match", s.Header.Get("ETag"))
+	e.problemIs(r, "updateSequence", 422, CodeInvalid)
+	if f := fields(r); f["body.next_number"] != "ORG-09" {
+		t.Errorf("moving the next number back: %v", f)
+	}
+	r = e.call(http.MethodPatch, "/v1/organisation/sequences/journal", controller,
+		map[string]any{"prefix": "JV/", "next_number": 100, "digits": 5, "gap_free": false}, "If-Match", s.Header.Get("ETag"))
+	if r.Status != 200 || r.Body["example"] != "JV/00100" || r.Body["gap_free"] != false {
+		t.Fatalf("changing the sequence: %d %s", r.Status, r.Raw)
+	}
+	if d := e.call(http.MethodPost, "/v1/journals", accountant, e.draft("2.00")); d.Status != 201 || d.str("number") != "JV/00100" {
+		t.Errorf("a draft saved under a sequence that is not gap-free: %d %s", d.Status, d.Raw)
 	}
 }
 

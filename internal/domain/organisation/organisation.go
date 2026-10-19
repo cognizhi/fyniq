@@ -23,6 +23,9 @@ const (
 	CodeYearStart = "ORG-05" // the financial year's start month is not 1 to 12
 	CodeFirstYear = "ORG-06" // the first financial year does not fit the books' start or the start month
 	CodeBank      = "ORG-07" // not a bank account number
+	CodePrefix    = "ORG-08" // a number sequence's prefix is not allowed
+	CodeNext      = "ORG-09" // a sequence's next number goes back, or is out of range
+	CodeDigits    = "ORG-10" // a sequence pads to too few or too many digits
 )
 
 // Problem is one rule that failed.
@@ -111,6 +114,30 @@ func Check(p storage.OrganisationProfile) Problems {
 			add(CodeFirstYear, "first_year_end", fmt.Sprintf("%s is not the day before a financial year starts in %s", end.Format(time.DateOnly), time.Month(p.FYStartMonth)),
 				fmt.Sprintf("Enter the last day of %s, the month before the financial year starts", time.Month((p.FYStartMonth+10)%12+1)))
 		}
+	}
+	return out
+}
+
+// sequencePrefix is what a document number may start with: capital letters, digits, slashes and hyphens.
+var sequencePrefix = regexp.MustCompile(`^[A-Z0-9][A-Z0-9/-]{0,11}$`)
+
+// CheckSequence returns every rule the change from cur to next breaks, or nil (FR-ORG-04). The next
+// number never goes back, so a number is never issued twice.
+func CheckSequence(cur, next storage.SequenceSettings) Problems {
+	var out Problems
+	add := func(code, field, message, fix string) { out = append(out, Problem{code, field, message, fix}) }
+	if !sequencePrefix.MatchString(next.Prefix) {
+		add(CodePrefix, "prefix", fmt.Sprintf("%q is not a prefix", next.Prefix), "Use 1 to 12 capital letters, digits, slashes or hyphens, starting with a letter or digit, such as JNL-")
+	}
+	switch {
+	case next.NextNumber < 1 || next.NextNumber > 999999999999:
+		add(CodeNext, "next_number", fmt.Sprintf("%d is out of range", next.NextNumber), "Enter a number from 1 to 999,999,999,999")
+	case next.NextNumber < cur.NextNumber:
+		add(CodeNext, "next_number", fmt.Sprintf("%d is before the next number, %d", next.NextNumber, cur.NextNumber),
+			"Move the next number forward, or leave it: a number is never issued twice")
+	}
+	if next.Digits < 1 || next.Digits > 12 {
+		add(CodeDigits, "digits", fmt.Sprintf("%d is not 1 to 12", next.Digits), "Enter how many digits to pad the number to, 1 to 12")
 	}
 	return out
 }

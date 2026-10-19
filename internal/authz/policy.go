@@ -98,7 +98,11 @@ var (
 	GetOrganisationProfile    = Policy{Operation: "getOrganisationProfile", Capability: OrganisationProfile, Need: View}
 	UpdateOrganisationProfile = Policy{Operation: "updateOrganisationProfile", Capability: OrganisationProfile, Need: Create,
 		Note: "The Owner approves changes to the profile; the approval itself arrives with the approval engine (P1)."}
-	ListGSTRegistrations  = Policy{Operation: "listGSTRegistrations", Capability: OrganisationProfile, Need: View}
+	ListGSTRegistrations = Policy{Operation: "listGSTRegistrations", Capability: OrganisationProfile, Need: View}
+	ListSequences        = Policy{Operation: "listSequences", Capability: OrganisationProfile, Need: View}
+	GetSequence          = Policy{Operation: "getSequence", Capability: OrganisationProfile, Need: View}
+	UpdateSequence       = Policy{Operation: "updateSequence", Capability: OrganisationProfile, Need: Create,
+		Note: "The Owner approves changes to the defaults; the approval itself arrives with the approval engine (P1)."}
 	GetGSTRegistration    = Policy{Operation: "getGSTRegistration", Capability: OrganisationProfile, Need: View}
 	GetGSTStatus          = Policy{Operation: "getGSTStatus", Capability: OrganisationProfile, Need: View}
 	CreateGSTRegistration = Policy{Operation: "createGSTRegistration", Capability: OrganisationProfile, Need: Create,
@@ -143,7 +147,7 @@ var (
 
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
-	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListAccounts, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListAccounts, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 

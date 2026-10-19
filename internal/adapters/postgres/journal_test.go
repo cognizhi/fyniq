@@ -350,3 +350,32 @@ func TestSampleCompanyGoldenTrialBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// The executor numbers the documents of approved proposals with its own grants: it may set a sequence up
+// with its defaults and take numbers, but not change a sequence's settings.
+// req: FR-ORG-04
+// req: SEC-03
+// asvs: V13.2.2
+func TestTheExecutorNumbersDocuments(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Executor numbers Pte Ltd")
+	executor := store(t, "fyniq_executor")
+	var number string
+	if err := executor.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"memo":"proposal"}`)})
+		if err != nil {
+			return err
+		}
+		number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentJournal)
+		return err
+	}); err != nil || number != "JNL-0001" {
+		t.Fatalf("the executor numbering a document: %q, %v", number, err)
+	}
+	err := executor.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Sequences().Update(ctx, storage.DocumentJournal, 1, storage.SequenceSettings{Prefix: "X-", NextNumber: 9, Digits: 4, GapFree: true})
+		return err
+	})
+	if err == nil {
+		t.Error("the executor changed a sequence's settings")
+	}
+}

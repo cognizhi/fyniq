@@ -35,6 +35,13 @@
       ],
       "type": "string"
     },
+    "number": {
+      "description": "Its number from the journal sequence: given when it posts, or when it is saved if the sequence is not gap-free; absent before (FR-ORG-04).",
+      "examples": [
+        "JNL-0042"
+      ],
+      "type": "string"
+    },
     "status": {
       "description": "Draft (✎), posted, or reversed by a reversing entry.",
       "enum": [

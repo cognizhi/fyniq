@@ -12,9 +12,10 @@ import (
 )
 
 const getDocument = `-- name: GetDocument :one
-SELECT d.id, d.type, d.status, d.current_version, v.payload
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number
 FROM fyniq.document d
 JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
 WHERE d.id = $1
 `
 
@@ -24,6 +25,7 @@ type GetDocumentRow struct {
 	Status         string
 	CurrentVersion int32
 	Payload        []byte
+	Number         *string
 }
 
 func (q *Queries) GetDocument(ctx context.Context, id uuid.UUID) (GetDocumentRow, error) {
@@ -35,6 +37,7 @@ func (q *Queries) GetDocument(ctx context.Context, id uuid.UUID) (GetDocumentRow
 		&i.Status,
 		&i.CurrentVersion,
 		&i.Payload,
+		&i.Number,
 	)
 	return i, err
 }
@@ -89,9 +92,10 @@ func (q *Queries) InsertDocumentVersion(ctx context.Context, arg InsertDocumentV
 }
 
 const lockDocument = `-- name: LockDocument :one
-SELECT d.id, d.type, d.status, d.current_version, v.payload
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number
 FROM fyniq.document d
 JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
 WHERE d.id = $1
 FOR UPDATE OF d
 `
@@ -102,6 +106,7 @@ type LockDocumentRow struct {
 	Status         string
 	CurrentVersion int32
 	Payload        []byte
+	Number         *string
 }
 
 // ENG-47 step 1: the source document a command changes, before the ledger lock.
@@ -114,6 +119,7 @@ func (q *Queries) LockDocument(ctx context.Context, id uuid.UUID) (LockDocumentR
 		&i.Status,
 		&i.CurrentVersion,
 		&i.Payload,
+		&i.Number,
 	)
 	return i, err
 }
