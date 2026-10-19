@@ -28,10 +28,11 @@ Source: PRD-001 §8.21 · Priority M · Phase P1
 - **WHEN** the Owner invites someone with roles, or assigns or revokes a role, their own included
 - **THEN** the change is applied and audited, and listed for the weekly review once another founder joins (rev 0.35)
 
-#### Scenario: Role changes then wait for the approval engine
+#### Scenario: Role changes then wait for another Owner's approval
 - **GIVEN** the organisation has two or more active members
 - **WHEN** anyone invites someone with roles, or assigns or revokes a role
-- **THEN** the change falls under FM-1 and is refused, never applied, until the approval engine exists
+- **THEN** the change falls under FM-1 and waits as an approval request that another Owner approves; it is made only then (rev 0.36, superseding "refused until the approval engine")
+- **AND** an invitation asked for then shows its code once to the requester, and the code works once the invitation is approved
 - **AND** an invitation made during the bootstrap keeps its roles when it is accepted
 
 #### Scenario: An invitation is a one-time code

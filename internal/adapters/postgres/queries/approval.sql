@@ -1,0 +1,48 @@
+-- name: InsertApprovalRequest :one
+INSERT INTO fyniq.approval_request (object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version,
+  requested_by, requested_at, requester_mfa_method, requester_mfa_at, expires_at)
+VALUES (sqlc.arg(object_type), sqlc.arg(object_key), sqlc.arg(operation), sqlc.arg(summary), sqlc.arg(change)::jsonb, sqlc.arg(envelope),
+  sqlc.arg(envelope_hash), sqlc.arg(policy_version), sqlc.arg(requested_by), sqlc.arg(requested_at), sqlc.arg(requester_mfa_method),
+  sqlc.arg(requester_mfa_at), sqlc.arg(expires_at))
+RETURNING id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
+  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version;
+
+-- name: GetApprovalRequest :one
+SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
+  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
+  FROM fyniq.approval_request WHERE id = sqlc.arg(id);
+
+-- name: LockApprovalRequest :one
+SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
+  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
+  FROM fyniq.approval_request WHERE id = sqlc.arg(id) FOR UPDATE;
+
+-- name: ListApprovalRequests :many
+SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
+  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
+  FROM fyniq.approval_request
+ WHERE sqlc.arg(status)::text = '' OR status = sqlc.arg(status)::text
+ ORDER BY requested_at, id;
+
+-- name: DecideApprovalRequest :one
+UPDATE fyniq.approval_request SET status = sqlc.arg(status), decided_at = sqlc.arg(decided_at), status_reason = sqlc.narg(reason),
+  version = version + 1
+ WHERE id = sqlc.arg(id) AND version = sqlc.arg(version) AND status = 'pending'
+RETURNING id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
+  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version;
+
+-- name: VoidedApprovalRequests :many
+SELECT id, version, status_reason FROM fyniq.approval_request
+ WHERE voided_xact = pg_current_xact_id()::text::bigint
+ ORDER BY id;
+
+-- name: InsertApprovalSignature :one
+INSERT INTO fyniq.approval_signature (request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason)
+VALUES (sqlc.arg(request_id), sqlc.arg(step), sqlc.arg(signer), sqlc.arg(decision), sqlc.arg(envelope_hash), sqlc.arg(mfa_method),
+  sqlc.arg(mfa_at), sqlc.arg(signed_at), sqlc.narg(reason))
+RETURNING id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at;
+
+-- name: ApprovalSignatures :many
+SELECT id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at
+  FROM fyniq.approval_signature WHERE request_id = sqlc.arg(request_id)
+ ORDER BY signed_at, id;

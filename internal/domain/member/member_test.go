@@ -63,12 +63,12 @@ func TestRolesAreKnownOnceAndExpireOnlyInTheFuture(t *testing.T) {
 // req: FR-ADM-01
 // req: FM-1
 func TestTheFounderBootstrapEndsWithTheSecondMember(t *testing.T) {
-	if p := Bootstrap(1); p != nil {
-		t.Errorf("one member: %v", p)
+	if NeedsApproval(0) || NeedsApproval(1) {
+		t.Error("one member or none: the Owner acts alone")
 	}
 	for _, n := range []int{2, 3} {
-		if p := Bootstrap(n); p == nil || p.Code != CodeSecondApprover {
-			t.Errorf("%d members: %v", n, p)
+		if !NeedsApproval(n) {
+			t.Errorf("%d members: a role change goes without a second approver", n)
 		}
 	}
 }
