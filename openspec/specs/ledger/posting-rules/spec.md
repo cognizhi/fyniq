@@ -193,7 +193,7 @@ Source: PRD-001 §10.2
 - **THEN** it is paid through a payment batch
 
 ### Requirement: FX revaluation at month end
-At month end the system SHALL revalue open foreign-currency items and foreign-currency bank balances against unrealised FX gain or loss (7040 [account code to confirm]) and reverse the revaluation automatically on the first day of the next period.
+At month end the system SHALL revalue open foreign-currency items and foreign-currency bank balances against unrealised FX gain or loss (7040, in the standard chart) and reverse the revaluation automatically on the first day of the next period.
 
 Source: PRD-001 §10.2
 
@@ -606,8 +606,8 @@ Source: PRD-001 §B.5
 
 #### Scenario: New accounts still to be assigned
 - **WHEN** the unrealised FX, payment-provider clearing, gain or loss on disposal and bad debts accounts are needed
-- **THEN** their codes are to be assigned in the CoA review
-- **AND** the review confirms 7040 for unrealised FX (proposed in §10.2) and 5040 for payment fees (used by the superseded payout row)
+- **THEN** the standard chart assigns them provisionally until the CoA review: 7040 unrealised FX gain or loss, 7050 gain or loss on disposal (the workbook's 7040, moved), 1050 payment gateway as the payment-provider clearing account, and the workbook's 5040 for payment fees (rev 0.31)
+- **AND** bad debts stay to be assigned
 - **AND** share application monies pending allotment, a liability per subscriber (B.7), get a code in the review [accountant to confirm]
 
 #### Scenario: Bank accounts and accrued expenses

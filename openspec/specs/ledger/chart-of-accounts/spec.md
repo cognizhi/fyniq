@@ -10,9 +10,14 @@ The system SHALL pre-load a Singapore start-up chart of accounts (the workbook's
 
 Source: PRD-001 §8.2 · Priority M · Phase P1
 
-#### Scenario: New organisation gets the start-up chart
-- **WHEN** a new organisation is created
-- **THEN** its chart of accounts holds the workbook's 83 accounts and ranges
+#### Scenario: An organisation loads the standard chart
+- **WHEN** an organisation that has no account yet loads the standard chart
+- **THEN** its chart of accounts holds the standard chart's 86 accounts: the workbook's 83 with every attribute, its disposal account moved to 7050, and 2120, 3300 and 7040 (rev 0.31, provisional until the CoA review)
+
+#### Scenario: The standard chart loads once
+- **GIVEN** an organisation that has any account
+- **WHEN** the standard chart is loaded
+- **THEN** it is refused, and the chart is unchanged
 
 #### Scenario: The chart is editable
 - **WHEN** a user adds, renames or changes an account in the pre-loaded chart
@@ -35,6 +40,7 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 - **WHEN** the chart is set up
 - **THEN** the payroll-cost flag is set on the department salary accounts, 6020, 6030 and 6050
 - **AND** it is used by FR-PRJ-12 and FR-PAY-13
+- **AND** in the standard chart those are 5050, 6011, 6012, 6013, 6050, 6020 and 6030 (rev 0.31) [verify]
 
 #### Scenario: Payroll-cost flag is protected
 - **WHEN** a user changes an account's payroll-cost flag
