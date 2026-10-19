@@ -4,7 +4,9 @@ package api
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"slices"
 	"strings"
@@ -316,6 +318,63 @@ func TestPreviewBeforeCommit(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+r.str("id")+"/post", accountant, nil, "If-Match", r.Header.Get("ETag"),
 		"Prefer", "respond-async, return=preview"), "postJournal", 422, "LEDGER-09")
+}
+
+// Each client's requests in an organisation are counted a minute at a time, reads and writes apart;
+// the headers say what is left, and a full window is refused with 429 and Retry-After until it ends.
+// req: FR-INT-16
+func TestRateLimits(t *testing.T) {
+	e := newEnv(t)
+	mux := http.NewServeMux()
+	New(mux, Deps{Store: e.store, Installation: e.store, Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.DiscardHandler),
+		Version: "0.0.0-test", Limits: Limits{Reads: 2, Writes: 1}})
+	e.srv = httptest.NewServer(mux)
+	t.Cleanup(e.srv.Close)
+	e.clock.Set(time.Date(2026, 10, 15, 9, 0, 20, 0, time.UTC)) // 40 seconds before the minute ends
+	alice, bob := e.as(authz.Accountant), e.as(authz.Accountant)
+
+	for i, want := range []string{`"reads";r=1;t=40`, `"reads";r=0;t=40`} {
+		r := e.call(http.MethodGet, "/v1/organisation", alice, nil)
+		if r.Status != 200 || r.Header.Get("RateLimit-Policy") != `"reads";q=2;w=60` || r.Header.Get("RateLimit") != want {
+			t.Fatalf("read %d: %d, RateLimit-Policy %q, RateLimit %q; want %s", i+1, r.Status, r.Header.Get("RateLimit-Policy"), r.Header.Get("RateLimit"), want)
+		}
+	}
+	r := e.call(http.MethodGet, "/v1/organisation", alice, nil)
+	e.problemIs(r, "getOrganisation", 429, CodeRateLimited)
+	if r.Header.Get("Retry-After") != "40" || r.Header.Get("RateLimit") != `"reads";r=0;t=40` {
+		t.Errorf("the refusal's headers: %v", r.Header)
+	}
+
+	// Another client has its own window; writes are counted apart from reads; previews are writes.
+	if r := e.call(http.MethodGet, "/v1/organisation", bob, nil); r.Status != 200 {
+		t.Errorf("another client was refused: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/journals", alice, e.draft("10.00"), "Prefer", "return=preview"); r.Status != 200 ||
+		r.Header.Get("RateLimit") != `"writes";r=0;t=40` {
+		t.Fatalf("a write after the reads ran out: %d %q %s", r.Status, r.Header.Get("RateLimit"), r.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/journals", alice, e.draft("10.00")), "createJournal", 429, CodeRateLimited)
+
+	// A public operation is not counted here (the load balancer limits by IP, SEC-23).
+	if r := e.call(http.MethodGet, "/v1/sign-in-providers", "", nil); r.Status != 200 || r.Header.Get("RateLimit") != "" {
+		t.Errorf("a public operation: %d %v", r.Status, r.Header)
+	}
+
+	// The next minute is a new window.
+	e.clock.Advance(40 * time.Second)
+	if r := e.call(http.MethodGet, "/v1/organisation", alice, nil); r.Status != 200 || r.Header.Get("RateLimit") != `"reads";r=1;t=60` {
+		t.Errorf("in the next minute: %d %q", r.Status, r.Header.Get("RateLimit"))
+	}
+
+	// The worker's hourly job deletes the windows that ended, with a few minutes' margin.
+	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer worker.Close()
+	if n, err := wiring.PurgeRateLimitWindows(context.Background(), worker, e.clock.Now().Add(10*time.Minute)); err != nil || n < 4 {
+		t.Errorf("PurgeRateLimitWindows = %d, %v; want this test's 4 windows at least", n, err)
+	}
 }
 
 // req: FR-INT-10

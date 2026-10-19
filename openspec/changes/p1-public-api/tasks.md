@@ -28,7 +28,13 @@
   `Preference-Applied`, no `ETag`, `Location` or claimed key. The contract lint refuses a write without `Prefer`.
   `TestPreviewBeforeCommit` posts after a preview and finds the same lines. FR-INT-14 now says what a preview answers and
   exempts the one-time-secret commands (rev 0.28))
-- [ ] 2.3 Rate limits per client and per organisation, with `RateLimit` / `RateLimit-Policy` and `Retry-After` on 429. Test `// req: FR-INT-16`
+- [x] 2.3 Rate limits per client and per organisation, with `RateLimit` / `RateLimit-Policy` and `Retry-After` on 429. Test `// req: FR-INT-16`
+  (19 Oct 2026: migration 000017 adds `rate_limit_window`, a per-minute counter per organisation, client and kind, with no
+  audit event; the API's `limit` middleware counts every authenticated request in an organisation, sends `RateLimit` and
+  `RateLimit-Policy` (draft-ietf-httpapi-ratelimit-headers-11, still a draft on 19 Oct 2026) and refuses with 429
+  `API-RATE-01` and `Retry-After` once the window is full; the hourly `ratelimit.purge` job deletes ended windows.
+  Defaults are 600 reads and 120 writes a minute (`api.Deps.Limits`). **Left:** adjusting them per organisation waits for
+  the organisation's settings (`p1-organisation-chart`); public operations are limited by IP at the load balancer (SEC-23))
 
 ## 3. Clients and contracts
 

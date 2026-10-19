@@ -487,6 +487,67 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		})
 	})
 
+	// req: FR-INT-16
+	t.Run("a rate-limit window counts a client's requests by kind until the worker purges it", func(t *testing.T) {
+		b, other := books(t), books(t)
+		minute := Day(10, 15).Add(9 * time.Hour)
+		count := func(org uuid.UUID, client, kind string, start time.Time) int {
+			t.Helper()
+			var n int
+			if err := s.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				n, err = u.RateLimits().Count(ctx, client, kind, start)
+				return err
+			}); err != nil {
+				t.Fatalf("Count(%s, %s, %s): %v", client, kind, start, err)
+			}
+			return n
+		}
+		for want := 1; want <= 3; want++ {
+			if got := count(b.Org, "web user-a", storage.RateRead, minute); got != want {
+				t.Fatalf("read %d in the window counted %d", want, got)
+			}
+		}
+		for _, c := range []struct {
+			org          uuid.UUID
+			client, kind string
+			start        time.Time
+		}{
+			{b.Org, "web user-a", storage.RateWrite, minute},                 // another kind
+			{b.Org, "web user-b", storage.RateRead, minute},                  // another client
+			{b.Org, "web user-a", storage.RateRead, minute.Add(time.Minute)}, // the next window
+			{other.Org, "web user-a", storage.RateRead, minute},              // another organisation
+		} {
+			if got := count(c.org, c.client, c.kind, c.start); got != 1 {
+				t.Errorf("%s %s at %s counted %d; want a window of its own", c.client, c.kind, c.start, got)
+			}
+		}
+		if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.RateLimits().Count(ctx, "web user-a", "delete", minute)
+			return err
+		}); err == nil {
+			t.Error("a kind other than read or write was counted")
+		}
+		purge := func(store storage.Store) (int64, error) {
+			var n int64
+			err := store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				n, err = u.RateLimits().Purge(ctx, minute.Add(time.Minute))
+				return err
+			})
+			return n, err
+		}
+		if _, err := purge(s); err == nil {
+			t.Error("the API's role purged rate-limit windows; only the worker may")
+		}
+		if n, err := purge(worker); err != nil || n != 3 {
+			t.Fatalf("the worker's purge: %d, %v; want the 3 windows of that minute", n, err)
+		}
+		if got := count(b.Org, "web user-a", storage.RateRead, minute); got != 1 {
+			t.Errorf("after the purge the window counted %d; want a new window", got)
+		}
+	})
+
 	t.Run("an idempotency key holds its response, per client, until purged", func(t *testing.T) {
 		b := books(t)
 		expires := time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)

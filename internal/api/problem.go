@@ -85,6 +85,7 @@ const (
 	CodeNotSuperAdmin     = "API-AUTHZ-06"       // the operation is for a Super admin
 	CodeCodeRefused       = "API-SUPERADMIN-01"  // an invitation, recovery or confirmation code is not valid, used or expired
 	CodeSuperAdminRefused = "API-SUPERADMIN-02"  // at most two Super admins, never none; nobody confirms their own recovery
+	CodeRateLimited       = "API-RATE-01"        // the client's requests this minute reached its limit (429)
 )
 
 // codeFacts are the status and title of every code the API returns, the catalogue the OpenAPI
@@ -117,6 +118,7 @@ var codeFacts = map[string]struct {
 	CodeNotSuperAdmin:          {403, "Not a Super admin"},
 	CodeCodeRefused:            {409, "Code refused"},
 	CodeSuperAdminRefused:      {409, "Super admin change refused"},
+	CodeRateLimited:            {429, "Too many requests"},
 	journal.CodeNotJournal:     {404, "Not a manual journal"},
 	journal.CodeNotDraft:       {409, "The journal is not a draft"},
 	journal.CodeNotPosted:      {409, "The journal is not posted"},

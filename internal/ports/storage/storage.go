@@ -53,6 +53,7 @@ type UnitOfWork interface {
 	Members() Members
 	SuperAdmins() SuperAdmins
 	Idempotency() Idempotency
+	RateLimits() RateLimits
 	Outbox() Outbox
 	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a

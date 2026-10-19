@@ -41,3 +41,19 @@ type Idempotency interface {
 	// Purge deletes the keys that expired at or before now and returns how many (the worker's job).
 	Purge(ctx context.Context, now time.Time) (int64, error)
 }
+
+// The kinds of request a rate limit counts (FR-INT-16).
+const (
+	RateRead  = "read"  // a safe method: GET or HEAD
+	RateWrite = "write" // anything else
+)
+
+// RateLimits counts an organisation's requests per client in one-minute windows (FR-INT-16). The
+// windows are a counter, not a change of record: they carry no audit event (AUD-08).
+type RateLimits interface {
+	// Count adds one request of kind (RateRead or RateWrite) by client to the window that starts at
+	// start, and returns how many requests the window now holds.
+	Count(ctx context.Context, client, kind string, start time.Time) (int, error)
+	// Purge deletes the windows that started before before and returns how many (the worker's job).
+	Purge(ctx context.Context, before time.Time) (int64, error)
+}
