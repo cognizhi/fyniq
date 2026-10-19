@@ -85,7 +85,7 @@
       "type": "string"
     },
     "needs_second_approver": {
-      "description": "Under dual control (FM-1): it keeps its recommended value until the approval engine arrives.",
+      "description": "Under dual control (FM-1): a change waits for another member who holds the approval right to approve it (rev 0.36).",
       "examples": [
         false
       ],

@@ -41,6 +41,44 @@ type FyniqAppUser struct {
 	CreatedAt   time.Time
 }
 
+type FyniqApprovalRequest struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	ObjectType         string
+	ObjectKey          string
+	Operation          string
+	Summary            string
+	Change             []byte
+	Envelope           string
+	EnvelopeHash       []byte
+	PolicyVersion      string
+	RequestedBy        uuid.UUID
+	RequestedAt        time.Time
+	RequesterMfaMethod string
+	RequesterMfaAt     time.Time
+	ExpiresAt          time.Time
+	Status             string
+	DecidedAt          *time.Time
+	StatusReason       *string
+	VoidedXact         *int64
+	Version            int32
+}
+
+type FyniqApprovalSignature struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RequestID      uuid.UUID
+	Step           int32
+	Signer         uuid.UUID
+	Decision       string
+	EnvelopeHash   []byte
+	MfaMethod      string
+	MfaAt          time.Time
+	SignedAt       time.Time
+	Reason         *string
+	VoidedAt       *time.Time
+}
+
 type FyniqAuditChain struct {
 	OrganisationID uuid.UUID
 	Seq            int64

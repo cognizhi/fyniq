@@ -31,7 +31,8 @@
 - [ ] 3.2 Authorisation on every derived output and channel: exports, events, cached reports and notifications. The role change takes effect within 60 seconds. Test `// req: SEC-34` with G4-064
 - [ ] 3.3 Administrative changes go through the approval policy once `p1-approval-engine` lands, and are refused until then. Test `// req: FR-ADM-04`
   (20 Oct 2026: role changes are refused once a second member exists (MEM-05), as FM-1 needs; the other
-  administrative changes of FR-ADM-04 arrive with their features.)
+  administrative changes of FR-ADM-04 arrive with their features. Later on 20 Oct 2026, `p1-approval-engine`
+  (rev 0.36): those role changes and invitations now wait for another Owner's approval instead; MEM-05 is retired.)
 
 ## 4. Screens
 

@@ -18,6 +18,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/accounts/{account_id}` (getAccount): Get an account
 - `PATCH /v1/accounts/{account_id}` (updateAccount): Change an account
 - `POST /v1/accounts:load-standard-chart` (loadStandardChart): Load the standard chart of accounts
+- `GET /v1/approvals` (listApprovals): List the approval requests
+- `GET /v1/approvals/{approval_id}` (getApproval): Get an approval request
+- `POST /v1/approvals/{approval_id}/approve` (approveApproval): Approve a request
+- `POST /v1/approvals/{approval_id}/reject` (rejectApproval): Reject a request
 - `GET /v1/contacts` (listContacts): List the contacts
 - `POST /v1/contacts` (createContact): Add a contact
 - `GET /v1/contacts/{contact_id}` (getContact): Get a contact

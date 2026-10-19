@@ -63,6 +63,7 @@ type UnitOfWork interface {
 	Contacts() Contacts
 	Items() Items
 	Settings() Settings
+	Approvals() Approvals
 	Outbox() Outbox
 	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
@@ -419,6 +420,7 @@ const (
 	CodeVersion        = "STORAGE-VERSION-01"  // the record changed since it was read (FR-INT-09)
 	CodeOverlap        = "STORAGE-DATES-01"    // a version's validity overlaps another's, or ends before it starts
 	CodeSequence       = "STORAGE-SEQUENCE-01" // a number sequence cannot be set that way, or a number is used already
+	CodeApproval       = "STORAGE-APPROVAL-01" // an approval or its request cannot be made or changed that way (FR-APR-03, FM-1)
 )
 
 // ErrPreviewed is what Do returns for a preview that passed every check the commit would run: nothing

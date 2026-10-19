@@ -24,6 +24,11 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **THEN** each step names a role or a named user and a quorum
 - **AND** the steps are taken in their order
 
+#### Scenario: Policies as code until they are data
+- **GIVEN** FR-APR-09's versioned policy data does not exist yet
+- **WHEN** a setting under FM-1, a role change or an invitation after the founder bootstrap waits for approval
+- **THEN** its policy is code with a version string the envelope records: one step, a quorum of one, signed by a member holding A on the object's Appendix D row (rev 0.36, provisional until sign-off)
+
 ### Requirement: FR-APR-02 The approver sees exactly what is approved
 The system SHALL show the approver exactly what is approved: the document, the ledger impact (debits and credits), the affected balances and checks, and a diff against the previous version.
 
@@ -46,6 +51,15 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 #### Scenario: Approval record
 - **WHEN** an approval is given
 - **THEN** the approval record holds the approver, the time, the method of authentication and the SHA-256 hash of the approval envelope (FR-APR-10)
+
+#### Scenario: The database refuses an unsigned approval
+- **WHEN** a signed approval lacks the envelope's SHA-256 or a second factor at most 5 minutes old, carries another hash, is made by the requester, or is made on a request that is not pending or has expired
+- **THEN** the database refuses it, and a request is approved only with such a signature (rev 0.36)
+
+#### Scenario: The session's step-up until passkeys and TOTP
+- **GIVEN** passkeys and TOTP do not exist yet (FR-ADM-02)
+- **WHEN** an approval is signed
+- **THEN** its method is the session's step-up within 5 minutes, recorded as session_step_up (rev 0.36, provisional until sign-off)
 
 #### Scenario: A payload that differs from the approved hash never executes
 - **GIVEN** an approved payload
@@ -104,6 +118,15 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 #### Scenario: Record changes after approval
 - **WHEN** the underlying record changes after it was approved
 - **THEN** the approval becomes invalid
+
+#### Scenario: The database voids a request when its record changes
+- **GIVEN** a pending request to change a setting or a member's roles
+- **WHEN** the setting gets its next change, or the member's roles change, by any path
+- **THEN** the database voids the request and its signatures, audited in the same transaction (rev 0.36)
+
+#### Scenario: Expiry from the app's clock
+- **WHEN** a request is made
+- **THEN** it expires 7 days later by the app's clock (DEV-05), and one request waits per record at a time (rev 0.36)
 
 #### Scenario: A dependency version changes
 - **WHEN** a dependency version in the approval envelope changes: the payee's bank details, a parameter pack, the approval policy or an account mapping
@@ -218,6 +241,11 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 #### Scenario: Any difference blocks execution
 - **WHEN** the rebuilt envelope's hash differs, or an approver no longer holds the authority
 - **THEN** execution is blocked with a stable error code
+
+#### Scenario: Each object type declares its dependencies
+- **WHEN** the envelope of a setting change or a role change is built
+- **THEN** it holds the dependencies its object type declares: a setting's version, the value in effect on the change's date and the changes scheduled after it; a member's status, version and live roles
+- **AND** a dependency that changes without a new version, such as a role that expires, blocks execution with APR-04 and voids the request (rev 0.36)
 
 #### Scenario: AI proposals use the same envelope
 - **WHEN** an AI proposal is approved

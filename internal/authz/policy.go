@@ -47,7 +47,16 @@ const (
 	// Joining is redeeming an invitation to an organisation (FR-ADM-01): not an Appendix D row either. The
 	// person has no organisation yet; the invitation's code decides, and the AI never joins.
 	Joining Capability = "(joining by invitation)"
+	// Approvals are the approval engine's requests (FR-APR-01…05, FM-1): not an Appendix D row either. Each
+	// request's own policy decides who sees and signs it, by the Appendix D row of the object it changes
+	// (ApprovalRows): viewing needs a right on that row, signing its A. The operations let in a person who holds
+	// the right needed on one of those rows, and never the AI, which never approves or rejects (§9.6).
+	Approvals Capability = "(approvals)"
 )
+
+// ApprovalRows are the Appendix D rows of the objects the approval engine covers (rev 0.36): organisation
+// settings under dual control, and members' roles and invitations after the founder bootstrap.
+var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -118,12 +127,12 @@ var (
 	ListMembers            = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
 	ListMemberInvitations  = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
 	CreateMemberInvitation = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
-		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine."}
+		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they wait for another Owner to approve them, and the request needs step-up (rev 0.36)."}
 	WithdrawMemberInvitation = Policy{Operation: "withdrawMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true}
 	AssignRole               = Policy{Operation: "assignRole", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
-		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine."}
+		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they wait for another Owner to approve them, and the request needs step-up (rev 0.36)."}
 	RevokeRole = Policy{Operation: "revokeRole", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
-		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine."}
+		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they wait for another Owner to approve them, and the request needs step-up (rev 0.36)."}
 	AcceptMemberInvitation = Policy{Operation: "acceptMemberInvitation", Capability: Joining, Need: Create, NoOrganisation: true,
 		Note: "The invitation's code decides; a person signed in, never the AI or an OAuth client."}
 	ListContacts      = Policy{Operation: "listContacts", Capability: ContactsAndItems, Need: View}
@@ -145,7 +154,7 @@ var (
 	ListSettings         = Policy{Operation: "listSettings", Capability: OrganisationProfile, Need: View}
 	GetSetting           = Policy{Operation: "getSetting", Capability: OrganisationProfile, Need: View}
 	UpdateSetting        = Policy{Operation: "updateSetting", Capability: OrganisationProfile, Need: Create,
-		Note: "The Owner approves once the approval engine arrives (P1); a setting under dual control (FM-1) is refused until then."}
+		Note: "A setting under dual control (FM-1) waits for another member who holds A to approve it: the request needs step-up (rev 0.36)."}
 	ListSequences  = Policy{Operation: "listSequences", Capability: OrganisationProfile, Need: View}
 	GetSequence    = Policy{Operation: "getSequence", Capability: OrganisationProfile, Need: View}
 	UpdateSequence = Policy{Operation: "updateSequence", Capability: OrganisationProfile, Need: Create,
@@ -161,6 +170,19 @@ var (
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
 	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
 		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
+)
+
+const approvalNote = "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6)."
+
+var (
+	ListApprovals = Policy{Operation: "listApprovals", Capability: Approvals, Need: View,
+		Note: approvalNote + " Lists the requests the caller made or holds a right on the object of."}
+	GetApproval = Policy{Operation: "getApproval", Capability: Approvals, Need: View,
+		Note: approvalNote + " Shows a request to its requester and to whoever holds a right on its object."}
+	ApproveApproval = Policy{Operation: "approveApproval", Capability: Approvals, Need: Approve,
+		Note: approvalNote + " Needs A on the object's row, a person signed in who passed step-up in the last 5 minutes, and someone other than the requester (FM-1)."}
+	RejectApproval = Policy{Operation: "rejectApproval", Capability: Approvals, Need: Approve,
+		Note: approvalNote + " Needs A on the object's row, a person signed in who passed step-up in the last 5 minutes, and someone other than the requester."}
 )
 
 var (
@@ -198,7 +220,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
-	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
+	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
@@ -233,6 +255,19 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 			return Decision{Reason: "the AI cannot set up the installation, change its Super admins or hold a session"}
 		}
 		return Decision{Allowed: true, Right: p.Need}
+	}
+	if p.Capability == Approvals {
+		if ai {
+			return Decision{Reason: "the AI never sees, approves or rejects an approval (§9.6)"}
+		}
+		for _, row := range ApprovalRows {
+			q := p
+			q.Capability = row
+			if r, ok := holds(q, roles); ok {
+				return Decision{Allowed: true, Right: r}
+			}
+		}
+		return Decision{Reason: fmt.Sprintf("these roles hold no %q right on the rows approvals cover", string(p.Need))}
 	}
 	best, ok := holds(p, roles)
 	if ok && ai {

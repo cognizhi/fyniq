@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -37,7 +40,7 @@ type Setting struct {
 	Reason              string          `json:"reason" doc:"Why the recommended value." example:"An invoice to a customer with no terms of its own falls due 30 days after its date"`
 	Guide               string          `json:"guide" doc:"The guide section that explains it." example:"/help/organisation-settings#payment-terms"`
 	Requirement         string          `json:"requirement" doc:"The PRD requirement it implements." example:"FR-ORG-04"`
-	NeedsSecondApprover bool            `json:"needs_second_approver" doc:"Under dual control (FM-1): it keeps its recommended value until the approval engine arrives." example:"false"`
+	NeedsSecondApprover bool            `json:"needs_second_approver" doc:"Under dual control (FM-1): a change waits for another member who holds the approval right to approve it (rev 0.36)." example:"false"`
 	SetByPlatform       bool            `json:"set_by_platform" doc:"Set by the platform: shown, never changed (FR-ORG-07)." example:"false"`
 	LengthenOnly        bool            `json:"lengthen_only" doc:"A change may only lengthen it." example:"false"`
 	Min                 string          `json:"min,omitempty" doc:"The smallest value a number may take." example:"0"`
@@ -96,14 +99,48 @@ type settingReadOutput struct {
 }
 
 type settingWriteOutput struct {
-	ETag    string `header:"ETag" doc:"The setting's version, for If-Match."`
+	Status  int
+	ETag    string `header:"ETag" doc:"The setting's version, for If-Match; absent when the change waits for approval."`
 	Applied string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
-	Body    Setting
+	Body    any    // a Setting, or the Approval it waits for (202)
 }
 
 // SettingCodes are a setting's rules (internal/domain/settings).
-var SettingCodes = []string{settings.CodeValue, settings.CodeBackdated, settings.CodeShortened, settings.CodeFixed, settings.CodeDualControl,
+var SettingCodes = []string{settings.CodeValue, settings.CodeBackdated, settings.CodeShortened, settings.CodeFixed,
 	settings.CodeValueOrReset}
+
+// recordSetting records value as key's next change from effectiveFrom (a date), after checking the setting's
+// rules against today; the approval engine runs it when it executes an approved change (rev 0.36).
+func (a *API) recordSetting(ctx context.Context, u storage.UnitOfWork, key, value, effectiveFrom string) (Setting, error) {
+	d, err := lookupSetting(key)
+	if err != nil {
+		return Setting{}, err
+	}
+	from, err := time.Parse(time.DateOnly, effectiveFrom)
+	if err != nil {
+		return Setting{}, err
+	}
+	changes, err := u.Settings().Changes(ctx, d.Key)
+	if err != nil {
+		return Setting{}, err
+	}
+	today, err := orgToday(ctx, a, u)
+	if err != nil {
+		return Setting{}, err
+	}
+	var bad []FieldProblem
+	for _, x := range settings.Check(d, value, from, today, changes) {
+		bad = append(bad, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})
+	}
+	if len(bad) > 0 {
+		return Setting{}, invalid(bad)
+	}
+	c, err := u.Settings().Record(ctx, d.Key, settings.On(d, changes, from).Value, value, from, latest(d, changes)+1)
+	if err != nil {
+		return Setting{}, err
+	}
+	return settingOf(d, append(changes, c), today, true), nil
+}
 
 // orgToday is the organisation's date now, in its time zone, as a date.
 func orgToday(ctx context.Context, a *API, u storage.UnitOfWork) (time.Time, error) {
@@ -240,17 +277,19 @@ func registerSettings(a *API) {
 		return &out, err
 	})
 
-	register(a, authz.UpdateSetting, huma.Operation{
+	register(a, authz.UpdateSetting, pendsApproval(a, huma.Operation{
 		OperationID: "updateSetting", Method: http.MethodPatch, Path: "/v1/organisation/settings/{key}", Tags: []string{"Organisation"},
 		Summary: "Change an organisation setting",
 		Description: "Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time " +
 			"zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never " +
-			"changes, and one under dual control (FM-1: thresholds, retention, AI) is refused until the approval engine arrives: nothing " +
-			"is applied. Side effects: the setting's next version and its audit event, with the value before and after. Needs If-Match " +
-			"with its ETag (\"0\" before any change). Approval policy: the Owner approves once the approval engine arrives (P1). Prefer: " +
-			"return=preview checks it and saves nothing.",
-	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeVersion,
-		storage.CodeRetry, storage.CodeLockTimeout}, SettingCodes...),
+			"changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once: the answer is 202 with an " +
+			"approval request, which another member who holds the approval right (an Owner) approves; the change is made then, if " +
+			"nothing it depends on changed (rev 0.36). Asking needs a person signed in who passed step-up in the last 5 minutes. Side " +
+			"effects: the setting's next version and its audit event, with the value before and after; or the approval request and its " +
+			"audit event. Needs If-Match with its ETag (\"0\" before any change). Prefer: return=preview checks it and saves nothing.",
+	}, reflect.TypeFor[Setting]()), append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeVersion,
+		storage.CodeRetry, storage.CodeLockTimeout, storage.CodeApproval, CodeSessionRequired, CodeStepUpRequired, approval.CodePending},
+		SettingCodes...),
 		func(ctx context.Context, in *settingUpdateInput) (*settingWriteOutput, error) {
 			d, err := lookupSetting(in.Key)
 			if err != nil {
@@ -259,18 +298,18 @@ func registerSettings(a *API) {
 			if x := settings.Gate(d); x != nil {
 				return nil, problem(x.Code, x.Message+".", x.Fix, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})
 			}
-			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (Setting, error) {
+			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
 				changes, err := u.Settings().Changes(ctx, d.Key)
 				if err != nil {
-					return Setting{}, err
+					return nil, err
 				}
 				version := latest(d, changes)
 				if err := checkIfMatch(in.IfMatch, etag(version)); err != nil {
-					return Setting{}, err
+					return nil, err
 				}
 				today, err := orgToday(ctx, a, u)
 				if err != nil {
-					return Setting{}, err
+					return nil, err
 				}
 				b := in.Body
 				var bad []FieldProblem
@@ -298,20 +337,28 @@ func registerSettings(a *API) {
 					}
 				}
 				if len(bad) > 0 {
-					return Setting{}, invalid(bad)
+					return nil, invalid(bad)
 				}
-				c, err := u.Settings().Record(ctx, d.Key, settings.On(d, changes, from).Value, value, from, version+1)
-				if err != nil {
-					return Setting{}, err
+				if !d.DualControl {
+					return a.recordSetting(ctx, u, d.Key, value, dateOf(from))
 				}
-				return settingOf(d, append(changes, c), today, true), nil
+				was := settings.On(d, changes, from).Value
+				c := pendingChange{ObjectType: approval.ObjectSetting, ObjectKey: d.Key, Operation: approval.OpSettingChange,
+					Summary: fmt.Sprintf("Change %s from %s to %s from %s", d.Label, was, value, dateOf(from)),
+					Execute: map[string]any{"value": value, "effective_from": dateOf(from)},
+					Diff:    []ApprovalDiff{{Field: d.Key, Before: was, After: value}, {Field: "effective_from", After: dateOf(from)}}}
+				if d.Kind == settings.AmountSGD {
+					c.Amounts = []approval.Amount{{Amount: value, Currency: "SGD"}}
+				}
+				return a.requestApproval(ctx, u, c)
 			})
 			if err != nil {
 				return nil, err
 			}
-			if w.Previewed {
-				return &settingWriteOutput{Applied: applied(w), Body: w.Body}, nil
+			out := &settingWriteOutput{Status: w.Status, Applied: applied(w), Body: w.Body}
+			if s, ok := w.Body.(Setting); ok && !w.Previewed {
+				out.ETag = etag(s.Version)
 			}
-			return &settingWriteOutput{ETag: etag(w.Body.Version), Body: w.Body}, nil
+			return out, nil
 		})
 }

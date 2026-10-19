@@ -36,9 +36,10 @@ where its data is kept and for how long.
 
 ## Settings that need a second approver
 
-- Thresholds, retention and the AI assistant need a second approver before they change.
-- Until approvals arrive in Fyniq, these settings keep their recommended values and show
-  **Needs a second approver**. Saving a change to one is refused, and nothing changes.
+- Thresholds, retention and the AI assistant need a second approver before they change: they show
+  **Needs a second approver**.
+- Saving a change to one asks for approval. The setting keeps its value until another member who
+  approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
 
 ## Features
 
