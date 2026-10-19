@@ -82,6 +82,21 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/organisation/gst-registrations/"+id, e.as(authz.Controller), nil).str("gst_number") != number
 		}
 	},
+	"listSequences": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/sequences", tok, nil), nil
+	},
+	"getSequence": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/sequences/journal", tok, nil), nil
+	},
+	// Each allowed call moves the next number forward by one.
+	"updateSequence": func(e *env, tok string) (response, func() bool) {
+		cur := e.call(http.MethodGet, "/v1/organisation/sequences/journal", e.as(authz.Controller), nil)
+		next := cur.Body["next_number"].(float64) + 1
+		r := e.call(http.MethodPatch, "/v1/organisation/sequences/journal", tok, map[string]any{"next_number": next}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/organisation/sequences/journal", e.as(authz.Controller), nil).Body["next_number"] != next
+		}
+	},
 	"getAccount": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/accounts/"+e.books.Bank.ID.String(), tok, nil), nil
 	},

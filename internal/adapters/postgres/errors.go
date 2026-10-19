@@ -39,6 +39,7 @@ var fyCodes = map[string]string{
 	"FY083": storage.CodeSuperAdmin,
 	"FY084": storage.CodeSuperAdmin,
 	"FY085": storage.CodeGrant,
+	"FY090": storage.CodeSequence,
 }
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
@@ -64,6 +65,10 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"organisation_uen_format":            {storage.CodeOrganisation, "a UEN is not 9 or 10 capital letters and digits"},
 	"organisation_fy_start_month_range":  {storage.CodeOrganisation, "the financial year's start month is not 1 to 12"},
 	"organisation_first_year":            {storage.CodeOrganisation, "the first financial year does not end after the books start, on the day before a year starts"},
+	"document_number_unique":             {storage.CodeSequence, "that number is already used for this document type"},
+	"document_sequence_prefix_format":    {storage.CodeSequence, "the prefix is not 1 to 12 capital letters, digits, slashes or hyphens, starting with a letter or digit"},
+	"document_sequence_next_positive":    {storage.CodeSequence, "the next number is not between 1 and 999,999,999,999"},
+	"document_sequence_digits_range":     {storage.CodeSequence, "the number of digits is not 1 to 12"},
 	"gst_registration_no_overlap":        {storage.CodeOverlap, "the GST registration overlaps another registration's dates"},
 	"gst_registration_dates":             {storage.CodeOverlap, "the GST registration is deregistered on or before the date it starts"},
 	"gst_registration_basis_known":       {storage.CodeOrganisation, "the GST accounting basis is not one Fyniq offers: invoice basis only (ENG-45)"},

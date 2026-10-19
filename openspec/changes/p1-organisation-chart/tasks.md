@@ -44,7 +44,16 @@
   `internal/domain/gst` gives the status on a date and the return period that contains it, by frequency and the quarters'
   start month; the API lists, records, reads and changes registrations and answers `GET /v1/organisation/gst-status`. IRAS
   may set a different first return period on its notice of registration: marked `[verify]` in `gst.ReturnPeriod`)
-- [ ] 2.2 Defaults and gap-free number sequences per document type, locked in the posting transaction. Test `// req: FR-ORG-04` races two postings on independent connections and finds no gap and no repeat
+- [x] 2.2 Defaults and gap-free number sequences per document type, locked in the posting transaction. Test `// req: FR-ORG-04` races two postings on independent connections and finds no gap and no repeat
+  (19 Oct 2026, the number sequences: migration 000021 adds `document_sequence` (per document type: prefix, next number,
+  digits, gap-free; its next number never goes back) and the insert-only `document_number`. A gap-free sequence numbers a
+  journal in the posting's transaction under the sequence's lock, ENG-47 step 1a (PRD-001 rev 0.30); another numbers it
+  when it is saved. `TestDocumentNumbers` posts twenty journals at once, a third into a closed period, and finds JNL-0001
+  to JNL-0013 with no gap or repeat; a preview takes no number. `GET`, `GET` and `PATCH /v1/organisation/sequences`.
+  **Left, with task 2.3:** the payment terms, the settlement tolerances (FR-BNK-08, open question 32: S$1.00, or the greater
+  of S$1.00 and 3% in foreign currency, capped at S$50 a document and S$200 a month, accountant to confirm) and the
+  capitalisation threshold, as recommended, effective-dated settings (FR-ORG-08); the PRD sets no default for the payment
+  terms or the threshold)
 - [ ] 2.3 Feature switches, region and retention, and the recommended defaults with reset and effective dates. Tests `// req: FR-ORG-06`, `// req: FR-ORG-07` and `// req: FR-ORG-08`; changes under FM-1 wait for `p1-approval-engine`
 - [ ] 2.4 Logo and brand: SVG and PNG, light and dark, the icon and the accent colour, through the blob-store port with SVG sanitising. Test `// req: FR-ORG-09` covers G4-099's hostile files, and an issued document keeps its logo version
 

@@ -524,6 +524,11 @@ components:
           examples:
             - October rent accrual
           type: string
+        number:
+          description: "Its number from the journal sequence: given when it posts, or when it is saved if the sequence is not gap-free; absent before (FR-ORG-04)."
+          examples:
+            - JNL-0042
+          type: string
         status:
           description: Draft (✎), posted, or reversed by a reversing entry.
           enum:
@@ -1132,6 +1137,103 @@ components:
       required:
         - date
         - reason
+      type: object
+    Sequence:
+      additionalProperties: false
+      properties:
+        digits:
+          description: The number is padded with zeros to this many digits.
+          examples:
+            - 4
+          format: int64
+          type: integer
+        document_type:
+          description: The documents it numbers.
+          enum:
+            - journal
+          examples:
+            - journal
+          type: string
+        example:
+          description: The number the next document takes, as printed.
+          examples:
+            - JNL-0042
+          type: string
+        gap_free:
+          description: "true: a document is numbered when it posts, in the same transaction, so a failed posting takes no number. false: it is numbered when it is saved, so an abandoned draft leaves a gap."
+          examples:
+            - true
+          type: boolean
+        next_number:
+          description: The number the next document takes.
+          examples:
+            - 42
+          format: int64
+          type: integer
+        prefix:
+          description: What every number starts with.
+          examples:
+            - JNL-
+          type: string
+        version:
+          description: The sequence's version (0 until it is set up); it also makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - document_type
+        - prefix
+        - next_number
+        - digits
+        - gap_free
+        - example
+        - version
+      type: object
+    SequenceChanges:
+      additionalProperties: false
+      properties:
+        digits:
+          description: 1 to 12.
+          examples:
+            - 5
+          format: int64
+          type: integer
+        gap_free:
+          description: Whether documents are numbered when they post (true) or when they are saved.
+          examples:
+            - true
+          type: boolean
+        next_number:
+          description: The next number; it may move forward, never back.
+          examples:
+            - 100
+          format: int64
+          type: integer
+        prefix:
+          description: 1 to 12 capital letters, digits, slashes or hyphens.
+          examples:
+            - JV/
+          maxLength: 12
+          type: string
+      type: object
+    SequencePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: One sequence per document type that is numbered, set up or with its defaults.
+          items:
+            $ref: "#/components/schemas/Sequence"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6ImpvdXJuYWwifQ
+          type: string
+      required:
+        - items
       type: object
     SessionInfo:
       additionalProperties: false
@@ -3585,6 +3687,407 @@ paths:
       x-fyniq-permission:
         capability: Organisation profile, financial year, defaults (rev 0.29)
         note: The Owner approves changes to the profile; the approval itself arrives with the approval engine (P1).
+        right: C
+  /v1/organisation/sequences:
+    get:
+      description: One number sequence per document type that is numbered, as set up or with its defaults (FR-ORG-04). Read-only; no side effects.
+      operationId: listSequences
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SequencePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the document number sequences
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Organisation profile, financial year, defaults (rev 0.29)
+        right: V
+  /v1/organisation/sequences/{document_type}:
+    get:
+      description: A document type's number sequence with its ETag; "0" while it still has its defaults (FR-ORG-04). Read-only; no side effects.
+      operationId: getSequence
+      parameters:
+        - description: The document type.
+          in: path
+          name: document_type
+          required: true
+          schema:
+            description: The document type.
+            enum:
+              - journal
+            examples:
+              - journal
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sequence"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The sequence's version, for If-Match; "0" until it is set up.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a document number sequence
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Organisation profile, financial year, defaults (rev 0.29)
+        right: V
+    patch:
+      description: "Sets up or changes a document type's number sequence: its prefix, next number (forward only, so a number is never issued twice), padding and whether it is gap-free (FR-ORG-04). Numbers already given never change. Side effects: the sequence's next version and its audit event. Needs If-Match with its ETag (\"0\" while it has its defaults). Approval policy: the Owner approves once the approval engine arrives (P1). Prefer: return=preview checks it and saves nothing."
+      operationId: updateSequence
+      parameters:
+        - description: The document type.
+          in: path
+          name: document_type
+          required: true
+          schema:
+            description: The document type.
+            enum:
+              - journal
+            examples:
+              - journal
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SequenceChanges"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sequence"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The sequence's version, for If-Match.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SEQUENCE-01` The number sequence cannot be set that way."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `ORG-08` Not a prefix; `ORG-09` The next number does not fit; `ORG-10` Not a number of digits."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change a document number sequence
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - ORG-08
+        - ORG-09
+        - ORG-10
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-SEQUENCE-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Organisation profile, financial year, defaults (rev 0.29)
+        note: The Owner approves changes to the defaults; the approval itself arrives with the approval engine (P1).
         right: C
   /v1/session:
     get:

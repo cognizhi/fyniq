@@ -84,6 +84,25 @@ type FyniqDocument struct {
 	CreatedAt      time.Time
 }
 
+type FyniqDocumentNumber struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentType   string
+	Number         string
+	CreatedAt      time.Time
+}
+
+type FyniqDocumentSequence struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentType   string
+	Prefix         string
+	NextNumber     int64
+	Digits         int16
+	GapFree        bool
+	Version        int32
+}
+
 type FyniqDocumentVersion struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "digits": {
+      "description": "1 to 12.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "gap_free": {
+      "description": "Whether documents are numbered when they post (true) or when they are saved.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "next_number": {
+      "description": "The next number; it may move forward, never back.",
+      "examples": [
+        100
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "prefix": {
+      "description": "1 to 12 capital letters, digits, slashes or hyphens.",
+      "examples": [
+        "JV/"
+      ],
+      "maxLength": 12,
+      "type": "string"
+    }
+  },
+  "title": "SequenceChanges",
+  "type": "object"
+}

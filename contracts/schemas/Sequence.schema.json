@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "digits": {
+      "description": "The number is padded with zeros to this many digits.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "document_type": {
+      "description": "The documents it numbers.",
+      "enum": [
+        "journal"
+      ],
+      "examples": [
+        "journal"
+      ],
+      "type": "string"
+    },
+    "example": {
+      "description": "The number the next document takes, as printed.",
+      "examples": [
+        "JNL-0042"
+      ],
+      "type": "string"
+    },
+    "gap_free": {
+      "description": "true: a document is numbered when it posts, in the same transaction, so a failed posting takes no number. false: it is numbered when it is saved, so an abandoned draft leaves a gap.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "next_number": {
+      "description": "The number the next document takes.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "prefix": {
+      "description": "What every number starts with.",
+      "examples": [
+        "JNL-"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The sequence's version (0 until it is set up); it also makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "document_type",
+    "prefix",
+    "next_number",
+    "digits",
+    "gap_free",
+    "example",
+    "version"
+  ],
+  "title": "Sequence",
+  "type": "object"
+}
