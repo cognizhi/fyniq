@@ -3,7 +3,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--text-primary);
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-ui);
 }
 
 .shell {

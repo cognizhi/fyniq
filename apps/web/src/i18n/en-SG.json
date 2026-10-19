@@ -1,0 +1,40 @@
+{
+  "help": {
+    "home.overview": {
+      "label": "Home",
+      "tooltip": "Where you start: who is signed in, and the way to every page you can use."
+    },
+    "auth.sign-in": {
+      "label": "Sign in",
+      "tooltip": "Sign in with the provider your organisation uses."
+    },
+    "installation.setup": {
+      "label": "Set up Fyniq",
+      "tooltip": "The one-time setup of a new installation: the setup code, the first company and the recovery codes."
+    },
+    "shell.command-palette": {
+      "label": "Search and commands",
+      "tooltip": "Go to a page or run a command by typing its name. Shortcut: Ctrl+K, or ⌘K on a Mac."
+    },
+    "appearance.theme": {
+      "label": "Theme",
+      "tooltip": "Light, Dark, or System to follow your device."
+    },
+    "appearance.contrast": {
+      "label": "High contrast",
+      "tooltip": "Stronger text and borders. System follows your device's contrast setting."
+    },
+    "appearance.density": {
+      "label": "Density",
+      "tooltip": "Comfortable rows are 40 px high; Compact rows are 32 px, to see more at once."
+    },
+    "appearance.motion": {
+      "label": "Motion",
+      "tooltip": "Reduce motion shows every change at once, without animation."
+    },
+    "auth.sign-out": {
+      "label": "Sign out",
+      "tooltip": "Ends your session in this browser."
+    }
+  }
+}

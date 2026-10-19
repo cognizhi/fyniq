@@ -1,0 +1,127 @@
+/*
+ * The web app's stylesheet (ADR-T1, MASTER.md): Tailwind CSS 4 driven by the design tokens.
+ *
+ * - tokens.css defines every colour, size, space, radius, shadow and duration, for light, dark,
+ *   high contrast and forced colours, and maps them onto Tailwind with `@theme inline`.
+ * - Tailwind's own colour palette is switched off (no-palette.css), so its palette classes do not exist: a
+ *   component can only use a semantic token (golden rule 11; the token test checks the sources).
+ * - No preflight: the screen kit's zero-specificity resets (kit/ui.css) are the base, so the
+ *   P0 screens look as designed. The kit sits in the components layer, so utilities win over it.
+ * - Inter and JetBrains Mono are self-hosted from the npm packages (SIL OFL), Latin and Latin
+ *   Extended only, with font-display: swap: no third-party font request (PRD-001 §7.4, REV-37).
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "./no-palette.css";
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "../../../../docs/design-system/fyniq/tokens.css";
+@import "../../../../docs/design/screens/kit/ui.css" layer(components);
+
+/* Only the app's own sources make utilities; never the docs the stylesheet imports. */
+@source not "../../../../docs";
+
+/* Breakpoints are the device classes (MASTER.md §5.1, FR-UX-37), mobile first: compact is the base,
+   medium from 600 px, expanded from 1024 px, and the full sidebar from 1280 px. */
+@theme {
+  --breakpoint-*: initial;
+  --breakpoint-medium: 37.5rem;
+  --breakpoint-expanded: 64rem;
+  --breakpoint-wide: 80rem;
+}
+
+/* The semantic tokens tokens.css does not map yet (surfaces, text, status, links, amounts). */
+@theme inline {
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-scrim: var(--overlay-scrim);
+  --color-foreground-secondary: var(--text-secondary);
+  --color-on-accent: var(--text-on-accent);
+  --color-border-strong: var(--border-strong);
+  --color-link: var(--link);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-subtle-foreground: var(--primary-subtle-foreground);
+  --color-ai-border: var(--ai-border);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-status-good: var(--status-good);
+  --color-status-good-subtle: var(--status-good-subtle);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-subtle: var(--status-warning-subtle);
+  --color-status-serious: var(--status-serious);
+  --color-status-serious-subtle: var(--status-serious-subtle);
+  --color-status-critical: var(--status-critical);
+  --color-status-critical-subtle: var(--status-critical-subtle);
+  --color-status-neutral: var(--status-neutral);
+  --color-status-neutral-subtle: var(--status-neutral-subtle);
+  --color-amount-positive: var(--amount-positive);
+  --color-amount-negative: var(--amount-negative);
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --ease-out: var(--ease-out);
+  --ease-in: var(--ease-in);
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../../node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("../../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("../../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@layer base {
+  /* Popovers, menus and dialogs render in a portal outside .fy-device, so the box model and the
+     focus ring are set for the whole page here. */
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Forced colours (Windows): the system palette wins; focus and boundaries stay visible
+   (experience/visual-design Themes). */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
+  }
+  [data-slot="button"],
+  [data-slot="menu-popup"],
+  [data-slot="dialog-popup"] {
+    border: 1px solid CanvasText;
+  }
+}

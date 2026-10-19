@@ -1,19 +1,19 @@
+import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "../../../docs/design-system/fyniq/tokens.css";
-// The screen kit's component layer (fy-* classes), the same the designs use: P0's screens follow the
-// canvases with it until P1's component system (MASTER.md §7).
-import "../../../docs/design/screens/kit/ui.css";
+// Tailwind CSS 4 from the design tokens, the self-hosted fonts and the screen kit's component layer
+// (fy-* classes, the same the designs use): src/styles/globals.css.
+import "./styles/globals.css";
 import "./app.css";
-import { App } from "./App";
-import { followSystemTheme } from "./theme";
+import { startAppearance } from "./appearance";
+import { router } from "./router";
 
-followSystemTheme();
+startAppearance();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("index.html has no #root element");
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </StrictMode>,
 );

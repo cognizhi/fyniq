@@ -142,7 +142,7 @@ Set by the header theme menu and the command palette; "System" follows `prefers-
 - Expert features stay findable: ⌘K results in Basic mode show them with an "Expert" tag, and
   choosing one offers to switch.
 - Every route, nav item, field group and action is tagged `basic` or `expert` in one registry
-  (`apps/web/src/ui/modes.ts`); see FR-UX-29 and QA-UI-04.
+  (`apps/web/src/registry.ts`, with the help text in `src/i18n/`); see FR-UX-29 and QA-UI-04.
 
 ## 7. Components (shadcn/ui on Base UI)
 

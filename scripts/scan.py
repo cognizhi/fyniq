@@ -37,6 +37,10 @@ EXCLUDE = ["node_modules", ".data", "dist", "test-results", ".git", ".terraform"
 
 # Licences a distributed dependency may have (the Go binaries and the web app's production bundle).
 ALLOWED = {"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "0BSD", "MPL-2.0", "Unlicense", "CC0-1.0"}
+# Fonts the web app self-hosts may be SIL OFL 1.1: PRD-001 §7.4 names Inter and JetBrains Mono, both
+# SIL OFL, self-hosted (REV-37). Only font packages get this licence, never code.
+FONT_LICENCES = {"OFL-1.1"}
+FONT_PACKAGES = re.compile(r"^@fontsource(-variable)?/")
 # Licences no dependency may have, development tools included: strong copyleft and source-available.
 DENIED = re.compile(r"\b(A?GPL|LGPL|SSPL|EUPL|OSL|CPAL|BUSL|Commons-Clause|CC-BY-NC)", re.I)
 
@@ -217,7 +221,8 @@ def licences() -> list[Finding]:
         cmd = ["pnpm", "licenses", "list", "--json"] + (["--prod"] if prod else [])
         for lic, pkgs in json.loads(run(cmd, f"licences-npm-{'prod' if prod else 'all'}.json")).items():
             for p in pkgs:
-                blocking = DENIED.search(lic) is not None or (prod and lic not in ALLOWED)
+                font = lic in FONT_LICENCES and FONT_PACKAGES.match(p["name"]) is not None
+                blocking = DENIED.search(lic) is not None or (prod and lic not in ALLOWED and not font)
                 out.append(Finding("licences", lic, p["name"], f"npm package licensed {lic}{'' if prod else ' (development only)'}", blocking))
     return out
 

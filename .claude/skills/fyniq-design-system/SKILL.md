@@ -71,7 +71,7 @@ The symbols themselves appear only in exports, CSV and plain-text email (FR-UX-0
 - **Never hidden in Basic:** ✖/⚠ statuses, approvals waiting, locked periods, compliance
   deadlines, AI labels and books health.
 - **Feature registry:** every route, nav item, field group, column set and action is tagged
-  `basic` or `expert` in `apps/web/src/ui/modes.ts` (P1). Untagged items fail a test
+  `basic` or `expert` in `apps/web/src/registry.ts` (P1). Untagged items fail a test
   (FR-UX-29). Use the registry, never `if (mode === …)` scattered in components.
 - **Advanced-details disclosure:** if a record has values in fields Basic hides, show "Has
   advanced details (N) ▸", which reveals them read-only, with "Open in Expert mode" (FR-UX-25).
@@ -90,7 +90,7 @@ The symbols themselves appear only in exports, CSV and plain-text email (FR-UX-0
   an example or a link is an ⓘ info popover (≥ 24 × 24 px target, `aria-expanded`, opens on
   click/Enter, hover and focus; Esc closes; hoverable; persistent: WCAG 1.4.13).
 - **One registry:** each field, column, chip, tile and route has a help key next to its
-  `basic`/`expert` tag in `src/ui/modes.ts`; the key names the tooltip text, the guide page in
+  `basic`/`expert` tag in `src/registry.ts`; the key names the tooltip text, the guide page in
   `docs/user-guide/` (front-matter `key`) and the tour step. QA-UI-05 fails on a missing key.
 - **Words:** Basic text is plain; Expert text adds the account, posting or rule ID. Use the UI's
   own names; one idea per tooltip.
