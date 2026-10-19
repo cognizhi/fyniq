@@ -187,6 +187,29 @@ type FyniqInstallation struct {
 	InstallationOrg  *uuid.UUID
 }
 
+type FyniqItem struct {
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	Code             string
+	Name             string
+	Description      *string
+	Type             string
+	Unit             *string
+	RevenueAccountID *uuid.UUID
+	GstCode          *string
+	IsActive         bool
+	Version          int32
+	CreatedAt        time.Time
+}
+
+type FyniqItemPrice struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ItemID         uuid.UUID
+	Currency       string
+	UnitPrice      string
+}
+
 type FyniqJobSlot struct {
 	Job            string
 	Slot           time.Time

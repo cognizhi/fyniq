@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -855,6 +857,100 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 			return err
 		}),
 			storage.CodeInvalid)
+	})
+
+	// req: FR-ITM-01
+	t.Run("items keep a price per currency, change at their version with their prices audited, and page by code", func(t *testing.T) {
+		b := books(t)
+		do := func(fn func(ctx context.Context, it storage.Items) error) error {
+			return s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error { return fn(ctx, u.Items()) })
+		}
+		create := func(code string, d storage.ItemDetails) (storage.Item, error) {
+			var out storage.Item
+			err := do(func(ctx context.Context, it storage.Items) error {
+				var err error
+				out, err = it.Create(ctx, code, d)
+				return err
+			})
+			return out, err
+		}
+		consult := storage.ItemDetails{Name: "HR consulting", Description: "HR consulting, by the hour", Type: storage.ItemService, Unit: "hour",
+			RevenueAccountID: &b.Sales.ID, GSTCode: "SR", Prices: []storage.ItemPrice{{Currency: "USD", UnitPrice: "135.5"}, {Currency: "SGD", UnitPrice: "180.123456"}}}
+		created, err := create("CONSULT-HR", consult)
+		wantPrices := []storage.ItemPrice{{Currency: "SGD", UnitPrice: "180.123456"}, {Currency: "USD", UnitPrice: "135.500000"}}
+		if err != nil || created.Version != 1 || !created.Active || created.Code != "CONSULT-HR" || *created.RevenueAccountID != b.Sales.ID ||
+			!slices.Equal(created.Prices, wantPrices) {
+			t.Fatalf("Create: %v, %+v", err, created)
+		}
+		_, err = create("CONSULT-HR", storage.ItemDetails{Name: "Again", Type: storage.ItemService})
+		wantCode(t, err, storage.CodeDuplicate)
+		if _, err := create("BOOK-01", storage.ItemDetails{Name: "The handbook", Type: storage.ItemProduct}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Pages by code.
+		var page []storage.Item
+		if err := do(func(ctx context.Context, it storage.Items) error {
+			var err error
+			page, err = it.Page(ctx, "", 1)
+			return err
+		}); err != nil || len(page) != 1 || page[0].Code != "BOOK-01" || len(page[0].Prices) != 0 {
+			t.Fatalf("the first page: %v, %+v", err, page)
+		}
+		if err := do(func(ctx context.Context, it storage.Items) error {
+			var err error
+			page, err = it.Page(ctx, "BOOK-01", 10)
+			return err
+		}); err != nil || len(page) != 1 || page[0].ID != created.ID || !slices.Equal(page[0].Prices, wantPrices) {
+			t.Fatalf("the next page: %v, %+v", err, page)
+		}
+
+		// A change at its version replaces the prices, and the audit event (read as the worker) has them before and after.
+		changed := consult
+		changed.Prices = []storage.ItemPrice{{Currency: "SGD", UnitPrice: "200"}}
+		var updated storage.Item
+		if err := do(func(ctx context.Context, it storage.Items) error {
+			var err error
+			updated, err = it.Update(ctx, created.ID, 1, changed, false)
+			return err
+		}); err != nil || updated.Version != 2 || updated.Active || !slices.Equal(updated.Prices, []storage.ItemPrice{{Currency: "SGD", UnitPrice: "200.000000"}}) {
+			t.Fatalf("Update: %v, %+v", err, updated)
+		}
+		if err := worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			head, err := u.Audit().Head(ctx)
+			if err != nil {
+				return err
+			}
+			evs, err := u.Audit().Events(ctx, head.Seq-1, 1)
+			if err == nil && (head.Action != "item.updated" || len(evs) != 1 ||
+				!strings.Contains(evs[0].Body, "SGD 180.123456, USD 135.500000") || !strings.Contains(evs[0].Body, "SGD 200.000000")) {
+				t.Errorf("the change's audit event: %q %+v", head.Action, evs)
+			}
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		// A stale version, a price that is not a number, one below zero and two in one currency are refused.
+		update := func(version int, d storage.ItemDetails) error {
+			return do(func(ctx context.Context, it storage.Items) error {
+				_, err := it.Update(ctx, created.ID, version, d, true)
+				return err
+			})
+		}
+		wantCode(t, update(1, changed), storage.CodeVersion)
+		for name, ps := range map[string][]storage.ItemPrice{
+			"not a number":        {{Currency: "SGD", UnitPrice: "NaN"}},
+			"below zero":          {{Currency: "SGD", UnitPrice: "-1"}},
+			"two in one currency": {{Currency: "SGD", UnitPrice: "1"}, {Currency: "SGD", UnitPrice: "2"}},
+			"not a currency code": {{Currency: "sgd", UnitPrice: "1"}},
+		} {
+			bad := changed
+			bad.Prices = ps
+			if err := update(2, bad); storage.CodeOf(err) != storage.CodeInvalid {
+				t.Errorf("a price %s: %v", name, err)
+			}
+		}
 	})
 
 	// req: FR-INT-16

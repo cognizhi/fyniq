@@ -107,6 +107,10 @@ var (
 	GetContact        = Policy{Operation: "getContact", Capability: ContactsAndItems, Need: View}
 	CreateContact     = Policy{Operation: "createContact", Capability: ContactsAndItems, Need: Create}
 	UpdateContact     = Policy{Operation: "updateContact", Capability: ContactsAndItems, Need: Create}
+	ListItems         = Policy{Operation: "listItems", Capability: ContactsAndItems, Need: View}
+	GetItem           = Policy{Operation: "getItem", Capability: ContactsAndItems, Need: View}
+	CreateItem        = Policy{Operation: "createItem", Capability: ContactsAndItems, Need: Create}
+	UpdateItem        = Policy{Operation: "updateItem", Capability: ContactsAndItems, Need: Create}
 	LoadStandardChart = Policy{Operation: "loadStandardChart", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	CreateJournal             = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
@@ -164,7 +168,7 @@ var (
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
-	CreateContact, UpdateContact, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+	CreateContact, UpdateContact, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 

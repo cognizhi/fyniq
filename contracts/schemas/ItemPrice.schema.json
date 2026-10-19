@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The ISO 4217 currency code.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "unit_price": {
+      "description": "The price per unit, an exact decimal with up to 6 decimals (NUMERIC(20,6)); shown with at least the currency's decimals. A document's line amount is rounded from it by a named policy.",
+      "examples": [
+        "180.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "unit_price"
+  ],
+  "title": "ItemPrice",
+  "type": "object"
+}

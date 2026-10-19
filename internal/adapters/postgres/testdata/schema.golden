@@ -126,6 +126,23 @@ installation | singleton | boolean | not null | true
 installation | setup_code_hash | bytea | null | 
 installation | setup_completed_at | timestamp with time zone | null | 
 installation | installation_org | uuid | null | 
+item | organisation_id | uuid | not null | current_org()
+item | id | uuid | not null | uuidv7()
+item | code | text | not null | 
+item | name | text | not null | 
+item | description | text | null | 
+item | type | text | not null | 
+item | unit | text | null | 
+item | revenue_account_id | uuid | null | 
+item | gst_code | text | null | 
+item | is_active | boolean | not null | true
+item | version | integer | not null | 1
+item | created_at | timestamp with time zone | not null | now()
+item_price | organisation_id | uuid | not null | current_org()
+item_price | id | uuid | not null | uuidv7()
+item_price | item_id | uuid | not null | 
+item_price | currency | text | not null | 
+item_price | unit_price | numeric(20,6) | not null | 
 job_slot | job | text | not null | 
 job_slot | slot | timestamp with time zone | not null | 
 job_slot | state | text | not null | 
@@ -476,6 +493,35 @@ installation | installation_code_sha256 | CHECK ((length(setup_code_hash) = 32))
 installation | installation_one_row | CHECK (singleton)
 installation | installation_pkey | PRIMARY KEY (singleton)
 installation | installation_singleton_not_null | NOT NULL singleton
+item | item_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z._/-]{0,29}$'::text))
+item | item_code_key | UNIQUE (organisation_id, code)
+item | item_code_not_null | NOT NULL code
+item | item_created_at_not_null | NOT NULL created_at
+item | item_gst_code_format | CHECK ((gst_code ~ '^[A-Z]{2,4}$'::text))
+item | item_id_not_null | NOT NULL id
+item | item_is_active_not_null | NOT NULL is_active
+item | item_lengths | CHECK ((((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)) AND ((length(description) >= 1) AND (length(description) <= 2000)) AND ((length(unit) >= 1) AND (length(unit) <= 20))))
+item | item_name_not_null | NOT NULL name
+item | item_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+item | item_organisation_id_not_null | NOT NULL organisation_id
+item | item_pkey | PRIMARY KEY (organisation_id, id)
+item | item_revenue_account_fkey | FOREIGN KEY (organisation_id, revenue_account_id) REFERENCES account(organisation_id, id)
+item | item_type_known | CHECK ((type = ANY (ARRAY['product'::text, 'service'::text])))
+item | item_type_not_null | NOT NULL type
+item | item_version_not_null | NOT NULL version
+item | item_version_positive | CHECK ((version > 0))
+item | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+item_price | item_price_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+item_price | item_price_currency_key | UNIQUE (organisation_id, item_id, currency)
+item_price | item_price_currency_not_null | NOT NULL currency
+item_price | item_price_id_not_null | NOT NULL id
+item_price | item_price_item_fkey | FOREIGN KEY (organisation_id, item_id) REFERENCES item(organisation_id, id)
+item_price | item_price_item_id_not_null | NOT NULL item_id
+item_price | item_price_organisation_id_not_null | NOT NULL organisation_id
+item_price | item_price_pkey | PRIMARY KEY (organisation_id, id)
+item_price | item_price_unit_price_not_null | NOT NULL unit_price
+item_price | item_price_unit_price_valid | CHECK (((unit_price <> 'NaN'::numeric) AND (unit_price >= (0)::numeric)))
+item_price | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 job_slot | job_slot_claimed_at_not_null | NOT NULL claimed_at
 job_slot | job_slot_detail_length | CHECK ((length(detail) <= 2000))
 job_slot | job_slot_job_format | CHECK (((job ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'::text) AND (length(job) <= 100)))
@@ -735,6 +781,10 @@ CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
 CREATE UNIQUE INDEX idempotency_key_pkey ON fyniq.idempotency_key USING btree (organisation_id, id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
+CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
+CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
+CREATE UNIQUE INDEX item_price_currency_key ON fyniq.item_price USING btree (organisation_id, item_id, currency)
+CREATE UNIQUE INDEX item_price_pkey ON fyniq.item_price USING btree (organisation_id, id)
 CREATE UNIQUE INDEX job_slot_pkey ON fyniq.job_slot USING btree (job, slot)
 CREATE UNIQUE INDEX journal_entry_pkey ON fyniq.journal_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX journal_entry_posting_identity_key ON fyniq.journal_entry USING btree (organisation_id, posting_identity)
@@ -770,6 +820,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
@@ -820,6 +872,8 @@ document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())

@@ -330,6 +330,27 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"balance.base_amount": func(t *testing.T, b porttest.Books, v string) error {
 		return rawBalance(t, b, b.Bank.ID, "0", v)
 	},
+	"item_price.unit_price": func(t *testing.T, b porttest.Books, v string) error {
+		return rawItemPrice(t, b, v)
+	},
+}
+
+// rawItemPrice adds an item with one SGD price as the API role, audited, so only the price's own checks can fail.
+func rawItemPrice(t *testing.T, b porttest.Books, price string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		var id uuid.UUID
+		if err := tx.QueryRow(ctx, "INSERT INTO fyniq.item (code, name, type) VALUES ($1, 'Attack', 'service') RETURNING id",
+			"ATK-"+uuid.NewString()[:8]).Scan(&id); err != nil {
+			return err
+		}
+		if err := auditRaw(ctx, tx, "item.created", "item", id); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, "INSERT INTO fyniq.item_price (item_id, currency, unit_price) VALUES ($1, 'SGD', $2::numeric)", id, price)
+		return err
+	})
 }
 
 // rawLine posts one attacking line with a balancing partner as the API role.

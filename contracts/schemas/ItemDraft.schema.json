@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "1 to 30 letters, digits, dots, underscores, slashes or hyphens, starting with a letter or digit; it never changes.",
+      "examples": [
+        "CONSULT-HR"
+      ],
+      "maxLength": 30,
+      "type": "string"
+    },
+    "description": {
+      "description": "What documents print on its lines.",
+      "examples": [
+        "HR consulting, by the hour"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "gst_code": {
+      "description": "The GST code its lines start with.",
+      "examples": [
+        "SR"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "HR consulting"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "prices": {
+      "description": "Its unit price in each currency, one per currency; zero or more.",
+      "items": {
+        "$ref": "ItemPrice.schema.json"
+      },
+      "maxItems": 50,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "revenue_account_id": {
+      "description": "An active revenue account that takes postings.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "A product or a service.",
+      "enum": [
+        "product",
+        "service"
+      ],
+      "examples": [
+        "service"
+      ],
+      "type": "string"
+    },
+    "unit": {
+      "description": "What a quantity of one is.",
+      "examples": [
+        "hour"
+      ],
+      "maxLength": 20,
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "type"
+  ],
+  "title": "ItemDraft",
+  "type": "object"
+}

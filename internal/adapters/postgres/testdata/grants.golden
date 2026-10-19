@@ -39,6 +39,12 @@ fyniq_api       SELECT    idempotency_key
 fyniq_api       UPDATE    idempotency_key (response_body, response_status)
 fyniq_api       EXECUTE   installation_org()
 fyniq_api       EXECUTE   invite_super_admin()
+fyniq_api       INSERT    item (code, description, gst_code, name, revenue_account_id, type, unit)
+fyniq_api       SELECT    item
+fyniq_api       UPDATE    item (description, gst_code, is_active, name, revenue_account_id, type, unit, version)
+fyniq_api       DELETE    item_price
+fyniq_api       INSERT    item_price (currency, item_id, unit_price)
+fyniq_api       SELECT    item_price
 fyniq_api       SELECT    job_slots
 fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_api       SELECT    journal_entry
@@ -93,6 +99,8 @@ fyniq_executor  UPDATE    document_sequence (next_number)
 fyniq_executor  INSERT    document_version (document_id, payload, version)
 fyniq_executor  SELECT    document_version
 fyniq_executor  SELECT    gst_registration
+fyniq_executor  SELECT    item
+fyniq_executor  SELECT    item_price
 fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_executor  SELECT    journal_entry
 fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
@@ -119,6 +127,8 @@ fyniq_readonly  SELECT    document_version
 fyniq_readonly  SELECT    gst_registration
 fyniq_readonly  SELECT    heartbeats
 fyniq_readonly  SELECT    idempotency_key
+fyniq_readonly  SELECT    item
+fyniq_readonly  SELECT    item_price
 fyniq_readonly  SELECT    job_slots
 fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
@@ -151,6 +161,8 @@ fyniq_worker    SELECT    heartbeats
 fyniq_worker    DELETE    idempotency_key
 fyniq_worker    SELECT    idempotency_key (expires_at, id, organisation_id)
 fyniq_worker    EXECUTE   installation_org()
+fyniq_worker    SELECT    item
+fyniq_worker    SELECT    item_price
 fyniq_worker    SELECT    job_slots
 fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
 fyniq_worker    SELECT    journal_entry
