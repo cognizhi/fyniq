@@ -173,13 +173,13 @@ func registerSuperAdmins(a *API) {
 	}
 	noKey := " It takes no Idempotency-Key: a response with a code is never stored, and sending it again makes a new code that replaces the first."
 
-	register(a, authz.CreateSuperAdminInvitation, huma.Operation{
+	register(a, authz.CreateSuperAdminInvitation, oneTimeSecret(huma.Operation{
 		OperationID: "createSuperAdminInvitation", Method: http.MethodPost, Path: "/v1/super-admins/invitations", Tags: []string{"Installation"},
 		DefaultStatus: http.StatusCreated, Summary: "Invite the second Super admin",
 		Description: "Creates the one-time invitation that makes its redeemer the installation's second Super admin (FR-ADM-06/07; one per " +
 			"founder, open question 36). Side effects: the invitation (it lasts 7 days and replaces an unused one) and its event in the " +
 			"installation's trail. Refused when the installation has two Super admins already." + noKey,
-	}, append([]string{CodeSuperAdminRefused}, admin...), func(ctx context.Context, _ *struct{}) (*oneTimeCodeOutput, error) {
+	}), append([]string{CodeSuperAdminRefused}, admin...), func(ctx context.Context, _ *struct{}) (*oneTimeCodeOutput, error) {
 		if a.deps.Installation == nil {
 			return nil, unavailable()
 		}
@@ -199,13 +199,13 @@ func registerSuperAdmins(a *API) {
 		return &oneTimeCodeOutput{Body: out}, nil
 	})
 
-	register(a, authz.AcceptSuperAdminInvitation, huma.Operation{
+	register(a, authz.AcceptSuperAdminInvitation, oneTimeSecret(huma.Operation{
 		OperationID: "acceptSuperAdminInvitation", Method: http.MethodPost, Path: "/v1/super-admins", Tags: []string{"Installation"},
 		DefaultStatus: http.StatusCreated, Summary: "Become a Super admin with an invitation",
 		Description: "Redeems a Super admin's invitation: you (a new user, or the one your sign-in belongs to) become a Super admin and " +
 			"receive your ten recovery codes, shown once (FR-ADM-06/09). Side effects: your user and sign-in identity when new, the Super " +
 			"admin, the recovery codes, events in the installation's trail. A wrong, used or expired invitation changes nothing." + noKey,
-	}, append([]string{CodeCodeRefused, CodeSuperAdminRefused, CodeMalformed, CodeTooLarge, CodeMediaType}, common...),
+	}), append([]string{CodeCodeRefused, CodeSuperAdminRefused, CodeMalformed, CodeTooLarge, CodeMediaType}, common...),
 		func(ctx context.Context, in *acceptInvitationInput) (*newSuperAdminOutput, error) {
 			if a.deps.Installation == nil {
 				return nil, unavailable()
@@ -227,12 +227,12 @@ func registerSuperAdmins(a *API) {
 			return &newSuperAdminOutput{Body: NewSuperAdmin{UserID: user.String(), RecoveryCodes: recoveryCodes(codes)}}, nil
 		})
 
-	register(a, authz.ReplaceRecoveryCodes, huma.Operation{
+	register(a, authz.ReplaceRecoveryCodes, oneTimeSecret(huma.Operation{
 		OperationID: "replaceSuperAdminRecoveryCodes", Method: http.MethodPost, Path: "/v1/super-admins/recovery-codes", Tags: []string{"Installation"},
 		Summary: "Replace your recovery codes",
 		Description: "Gives you ten new recovery codes, shown once; your unused codes stop working (FR-ADM-09). Side effects: the codes and " +
 			"their event in the installation's trail." + noKey,
-	}, admin, func(ctx context.Context, _ *struct{}) (*recoveryCodesOutput, error) {
+	}), admin, func(ctx context.Context, _ *struct{}) (*recoveryCodesOutput, error) {
 		if a.deps.Installation == nil {
 			return nil, unavailable()
 		}
@@ -250,14 +250,14 @@ func registerSuperAdmins(a *API) {
 		return &recoveryCodesOutput{Body: recoveryCodes(codes)}, nil
 	})
 
-	register(a, authz.ConfirmSuperAdminRecovery, huma.Operation{
+	register(a, authz.ConfirmSuperAdminRecovery, oneTimeSecret(huma.Operation{
 		OperationID: "confirmSuperAdminRecovery", Method: http.MethodPost, Path: "/v1/super-admins/{user_id}/recovery-confirmations",
 		Tags: []string{"Installation"}, DefaultStatus: http.StatusCreated, Summary: "Confirm the other Super admin's recovery",
 		Description: "Creates the one-time confirmation that, with one of their printed recovery codes, gives the other Super admin their " +
 			"access back: the second proof a recovery needs (SEC-35, FR-ADM-09). Confirm only after you have spoken to them. Side effects: " +
 			"the confirmation (it lasts 24 hours and replaces an unused one) and its event in the installation's trail. Nobody confirms " +
 			"their own recovery." + noKey,
-	}, append([]string{CodeSuperAdminRefused, CodeInvalid}, admin...), func(ctx context.Context, in *confirmRecoveryInput) (*oneTimeCodeOutput, error) {
+	}), append([]string{CodeSuperAdminRefused, CodeInvalid}, admin...), func(ctx context.Context, in *confirmRecoveryInput) (*oneTimeCodeOutput, error) {
 		if a.deps.Installation == nil {
 			return nil, unavailable()
 		}
@@ -288,7 +288,7 @@ func registerSuperAdmins(a *API) {
 		return &oneTimeCodeOutput{Body: out}, nil
 	})
 
-	register(a, authz.RecoverSuperAdmin, huma.Operation{
+	register(a, authz.RecoverSuperAdmin, oneTimeSecret(huma.Operation{
 		OperationID: "recoverSuperAdmin", Method: http.MethodPost, Path: "/v1/super-admins/recovery", Tags: []string{"Installation"},
 		Summary: "Recover your Super admin access",
 		Description: "Gives a Super admin who lost their sign-in their access back, with two proofs (SEC-35, FR-ADM-09): one of their " +
@@ -296,7 +296,7 @@ func registerSuperAdmins(a *API) {
 			"(docs/runbooks/super-admin-recovery.md). The sign-in you use now replaces your others. Side effects: your sign-in " +
 			"identities, ten new recovery codes (shown once; the old ones stop working), the revocation of the tokens of the replaced " +
 			"sign-ins (AI-38) and events in the installation's trail. Wrong, used or expired codes change nothing." + noKey,
-	}, append([]string{CodeCodeRefused, CodeMalformed, CodeTooLarge, CodeMediaType}, common...),
+	}), append([]string{CodeCodeRefused, CodeMalformed, CodeTooLarge, CodeMediaType}, common...),
 		func(ctx context.Context, in *recoverInput) (*recoveredOutput, error) {
 			if a.deps.Installation == nil || a.deps.Outbox == nil {
 				return nil, unavailable()

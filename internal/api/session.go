@@ -22,7 +22,12 @@ type SignInProvider struct {
 
 // SignInProviders are the providers people may sign in with.
 type SignInProviders struct {
-	Items []SignInProvider `json:"items" doc:"The providers, in the order to offer them; empty when sign-in is not configured."`
+	Items      []SignInProvider `json:"items" doc:"The providers, in the order to offer them; empty when sign-in is not configured."`
+	NextCursor string           `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6Imdvb2dsZSJ9"`
+}
+
+type signInProvidersInput struct {
+	PageQuery
 }
 
 // SessionInfo is the caller's own session.
@@ -52,16 +57,21 @@ func registerSession(a *API) {
 		OperationID: "listSignInProviders", Method: http.MethodGet, Path: "/v1/sign-in-providers", Tags: []string{"Session"},
 		Summary: "List the sign-in providers",
 		Description: "The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the " +
-			"local sign-in page in local mode. Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects.",
+			"local sign-in page in local mode, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed " +
+			"in. Read-only; no side effects.",
 		Security: []map[string][]string{{}}, // no credential: an empty requirement
-	}, nil, func(_ context.Context, _ *struct{}) (*signInProvidersOutput, error) {
-		out := SignInProviders{Items: []SignInProvider{}}
+	}, []string{CodeCursor}, func(_ context.Context, in *signInProvidersInput) (*signInProvidersOutput, error) {
+		all := []SignInProvider{}
 		if a.deps.SignIn != nil {
 			for _, p := range a.deps.SignIn.Providers() {
-				out.Items = append(out.Items, SignInProvider{ID: p.ID, Name: p.Name})
+				all = append(all, SignInProvider{ID: p.ID, Name: p.Name})
 			}
 		}
-		return &signInProvidersOutput{Body: out}, nil
+		items, next, err := pageOf(all, func(p SignInProvider) string { return p.ID }, in.PageQuery)
+		if err != nil {
+			return nil, err
+		}
+		return &signInProvidersOutput{Body: SignInProviders{Items: items, NextCursor: next}}, nil
 	})
 	register(a, authz.GetSession, huma.Operation{
 		OperationID: "getSession", Method: http.MethodGet, Path: "/v1/session", Tags: []string{"Session"},

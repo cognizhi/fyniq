@@ -109,7 +109,7 @@ func Config(version string) huma.Config {
 			"authenticates may change state only from the web app's own origin (Sec-Fetch-Site: same-origin)."},
 	}
 	cfg.Security = []map[string][]string{{"bearer": {}}, {"session": {}}}
-	cfg.OnAddOperation = append(cfg.OnAddOperation, describeErrors)
+	cfg.OnAddOperation = append(cfg.OnAddOperation, describeErrors, describeDeprecation)
 	return cfg
 }
 
@@ -235,6 +235,9 @@ func (a *API) requestContext(ctx huma.Context, next func(huma.Context)) {
 	id := uuid.Must(uuid.NewV7()).String()
 	ctx.SetHeader("X-Request-Id", id)
 	ctx.SetHeader("Cache-Control", "no-store")
+	for name, value := range deprecationHeaders(ctx.Operation()) {
+		ctx.SetHeader(name, value)
+	}
 	host, _, err := net.SplitHostPort(ctx.RemoteAddr())
 	if err != nil {
 		host = ctx.RemoteAddr()

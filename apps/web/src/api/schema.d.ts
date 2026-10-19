@@ -197,7 +197,7 @@ export interface paths {
         };
         /**
          * List the sign-in providers
-         * @description The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the local sign-in page in local mode. Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects.
+         * @description The providers people may sign in to the web app with (FR-ADM-08): Google and Zoho through Identity Platform, or the local sign-in page in local mode, a page at a time (cursor pagination). Public: the sign-in page needs it before anyone is signed in. Read-only; no side effects.
          */
         get: operations["listSignInProviders"];
         put?: never;
@@ -792,6 +792,11 @@ export interface components {
         SignInProviders: {
             /** @description The providers, in the order to offer them; empty when sign-in is not configured. */
             items: components["schemas"]["SignInProvider"][] | null;
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6Imdvb2dsZSJ9
+             */
+            next_cursor?: string;
         };
         SuperAdminInvitation: {
             /**
@@ -1683,7 +1688,12 @@ export interface operations {
     };
     listSignInProviders: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1717,7 +1727,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

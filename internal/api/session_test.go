@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/members"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -287,5 +288,55 @@ func TestARecoveryEndsTheSessionsItReplaces(t *testing.T) {
 	}
 	if strings.Contains(s.log.String(), confirmation) {
 		t.Error("the recovery code reached the log (SEC-15)")
+	}
+}
+
+// The web app and a direct caller of the API reach the same command: the web app has no private path
+// (QA-API-03), so the same input is refused the same way through the session and through a token,
+// with the same status, code and invalid fields.
+// req: FR-INT-01
+func TestTheWebAppAndTheAPIRefuseTheSameInput(t *testing.T) {
+	ctx := context.Background()
+	s := startSessions(t)
+	a := s.browser()
+	a.signIn("founder-a", true)
+	code, hash := setupcode.New()
+	if err := postgres.SetSetupCode(ctx, s.migrator, hash); err != nil {
+		t.Fatal(err)
+	}
+	r := a.call(http.MethodPost, "/v1/setup", "same-origin", map[string]any{"setup_code": code, "display_name": "Mei Ling Tan",
+		"organisation": map[string]any{"name": "Cognizhi Pte. Ltd.", "base_currency": "SGD"}})
+	if r.Status != http.StatusCreated {
+		t.Fatalf("setup: %d %s", r.Status, r.Raw)
+	}
+	user, org := uuid.MustParse(r.str("user_id")), uuid.MustParse(r.str("organisation_id"))
+	if _, err := members.Assign(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: user.String()}}),
+		s.store, s.out, org, user, string(authz.Accountant), nil, "test: the founder keeps the books"); err != nil {
+		t.Fatal(err)
+	}
+	a.signIn("founder-a", true)                 // a role change ends the member's sessions and tokens
+	token := authn.DevPrefix + uuid.NewString() // the same person, calling the API with a token
+	s.tokens.mu.Lock()
+	s.tokens.m[token] = authn.Principal{Subject: "founder-a", UserID: user, Client: "script", Class: authn.ClassUser, Organisation: org,
+		Roles: []authz.Role{authz.Accountant}}
+	s.tokens.mu.Unlock()
+
+	// Two lines wrong in two ways: too many decimals, and a currency that does not exist.
+	bad := map[string]any{"date": "2026-10-20", "memo": "October rent", "lines": []map[string]any{
+		{"account_id": uuid.NewString(), "amount": map[string]any{"amount": "100.005", "currency": "SGD"}},
+		{"account_id": uuid.NewString(), "amount": map[string]any{"amount": "-100.00", "currency": "XYZ"}},
+	}}
+	web := a.call(http.MethodPost, "/v1/journals", "same-origin", bad, "Idempotency-Key", uuid.NewString())
+	api := s.call(http.MethodPost, "/v1/journals", token, bad, "Idempotency-Key", uuid.NewString())
+	s.problemIs(web, "createJournal", 422, CodeInvalid)
+	s.problemIs(api, "createJournal", 422, CodeInvalid)
+	wf, af := fields(web), fields(api)
+	if len(wf) < 2 || len(wf) != len(af) {
+		t.Fatalf("the web app's refusal lists %v, the API's %v", wf, af)
+	}
+	for field, code := range wf {
+		if af[field] != code {
+			t.Errorf("%s: %s through the web app, %q through the API", field, code, af[field])
+		}
 	}
 }

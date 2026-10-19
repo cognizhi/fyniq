@@ -124,7 +124,7 @@ Source: PRD-001 §8.18.1 · Priority M · Phase P1
 - **THEN** the error lists every invalid field at once
 
 ### Requirement: FR-INT-08 Idempotency
-Every `POST` that creates or changes state SHALL accept an `Idempotency-Key` header, stored 24 hours per client (the IETF draft expired without an RFC; Fyniq's contract defines the header).
+Every `POST` that creates or changes state SHALL accept an `Idempotency-Key` header, stored 24 hours per client (the IETF draft expired without an RFC; Fyniq's contract defines the header), except a command whose response carries a one-time secret, which takes none.
 
 Source: PRD-001 §8.18.1 · Priority M · Phase P1
 
@@ -141,6 +141,12 @@ Source: PRD-001 §8.18.1 · Priority M · Phase P1
 - **GIVEN** an `Idempotency-Key` already used by the client
 - **WHEN** the key is reused with a different body
 - **THEN** the API returns 422
+
+#### Scenario: A command that returns a one-time secret takes no key
+- **GIVEN** first-run setup, a Super admin's invitation or its redemption, new recovery codes, or a recovery or its confirmation
+- **WHEN** its contract is read
+- **THEN** it takes no `Idempotency-Key` and is named with `x-fyniq-exempt`, so its response with the secret is never stored
+- **AND** the contract lint refuses any other state-changing `POST` without the header
 
 ### Requirement: FR-INT-09 Optimistic concurrency
 Versioned resources SHALL return an `ETag`, and updates to them SHALL require `If-Match`, using the same row versions as `base_versions` in §9.5.
