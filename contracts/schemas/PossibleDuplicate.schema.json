@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The other contact's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "legal_name": {
+      "description": "Its legal name.",
+      "examples": [
+        "Northwind Analytics Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "same_email": {
+      "description": "A billing or remittance email in common.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "same_name": {
+      "description": "The same name, case and spacing aside.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "same_uen": {
+      "description": "The same UEN or tax ID.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "legal_name",
+    "same_name",
+    "same_uen",
+    "same_email"
+  ],
+  "title": "PossibleDuplicate",
+  "type": "object"
+}

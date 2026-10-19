@@ -821,6 +821,67 @@ func TestEditingTheChart(t *testing.T) {
 	}
 }
 
+// Contacts: added with their details, flagged when they may duplicate another, changed at their version,
+// listed by role.
+// req: FR-CT-01
+// req: FR-CT-04
+func TestContacts(t *testing.T) {
+	e := newEnv(t)
+	ar := e.as(authz.ARSpecialist)
+	customer := map[string]any{"legal_name": "Northwind Analytics Pte. Ltd.", "customer": true, "uen_or_tax_id": "202312345K",
+		"peppol_id": "0195:SGUEN202312345K", "billing_email": "accounts@northwind.example", "country": "SG", "currency": "SGD",
+		"payment_terms_days": 30, "default_account_id": e.books.Sales.ID.String(), "default_gst_code": "SR"}
+	r := e.call(http.MethodPost, "/v1/contacts", ar, customer, "Idempotency-Key", uuid.NewString())
+	if r.Status != 201 || r.Body["payment_terms_days"] != float64(30) || len(r.Body["possible_duplicates"].([]any)) != 0 ||
+		r.Header.Get("Location") != "/v1/contacts/"+r.str("id") {
+		t.Fatalf("adding a customer: %d %v %s", r.Status, r.Header, r.Raw)
+	}
+	id, tag := r.str("id"), r.Header.Get("ETag")
+
+	// The same name with other spacing and case, previewed: flagged, not refused, and not saved.
+	twin := map[string]any{"legal_name": "NORTHWIND  Analytics Pte. Ltd.", "vendor": true}
+	pv := e.call(http.MethodPost, "/v1/contacts", ar, twin, "Prefer", "return=preview")
+	dups, _ := pv.Body["possible_duplicates"].([]any)
+	if pv.Status != 200 || len(dups) != 1 || dups[0].(map[string]any)["id"] != id || dups[0].(map[string]any)["same_name"] != true {
+		t.Fatalf("a possible duplicate, previewed: %d %s", pv.Status, pv.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/contacts", ar, nil); len(l.Body["items"].([]any)) != 1 {
+		t.Errorf("the preview saved a contact: %s", l.Raw)
+	}
+
+	// Every broken rule at once; a group account is no default category.
+	r = e.call(http.MethodPost, "/v1/contacts", ar, map[string]any{"legal_name": "X", "billing_email": "nope", "country": "Singapore",
+		"default_account_id": e.books.Expenses.ID.String()})
+	e.problemIs(r, "createContact", 422, CodeInvalid)
+	if f := fields(r); f["body.customer"] != "CT-02" || f["body.billing_email"] != "CT-03" || f["body.country"] != "CT-04" ||
+		f["body.default_account_id"] != "CT-10" {
+		t.Errorf("every rule at once: %v", f)
+	}
+
+	// A change at its version: now a vendor too, terms cleared.
+	r = e.call(http.MethodPatch, "/v1/contacts/"+id, ar, map[string]any{"vendor": true, "payment_terms_days": -1, "phone": "+65 6123 4567"}, "If-Match", tag)
+	if r.Status != 200 || r.Body["vendor"] != true || r.Body["payment_terms_days"] != nil || r.Body["phone"] != "+65 6123 4567" {
+		t.Fatalf("changing the contact: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(e.call(http.MethodPatch, "/v1/contacts/"+id, ar, map[string]any{"phone": "1"}, "If-Match", tag), "updateContact", 412, CodeStale)
+
+	// Listed by role.
+	e.call(http.MethodPost, "/v1/contacts", ar, map[string]any{"legal_name": "Acme Cloud Pte Ltd", "vendor": true})
+	for role, want := range map[string]int{"": 2, "customer": 1, "vendor": 2} {
+		path := "/v1/contacts"
+		if role != "" {
+			path += "?role=" + role
+		}
+		if l := e.call(http.MethodGet, path, ar, nil); l.Status != 200 || len(l.Body["items"].([]any)) != want {
+			t.Errorf("the list for %q: %d %s", role, l.Status, l.Raw)
+		}
+	}
+	if g := e.call(http.MethodGet, "/v1/contacts/"+id, e.as(authz.Auditor), nil); g.Status != 200 || g.Header.Get("ETag") == "" {
+		t.Errorf("the auditor reading a contact: %d %s", g.Status, g.Raw)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/contacts/"+id, e.as(authz.Employee), nil), "getContact", 403, CodeForbidden)
+}
+
 // req: FR-INT-10
 func TestCursorListsAndValueFormats(t *testing.T) {
 	e := newEnv(t)

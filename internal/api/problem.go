@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/cognizhi/fyniq/internal/domain/chart"
+	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -134,6 +135,16 @@ var codeFacts = map[string]struct {
 	organisation.CodeDigits:    {422, "Not a number of digits"},
 	storage.CodeSequence:       {409, "The number sequence cannot be set that way"},
 	CodeChartLoaded:            {409, "The organisation has accounts already"},
+	contact.CodeName:           {422, "The legal name is not valid"},
+	contact.CodeRole:           {422, "Neither a customer nor a vendor"},
+	contact.CodeEmail:          {422, "Not an email address"},
+	contact.CodeCountry:        {422, "Not a country code"},
+	contact.CodeCurrency:       {422, "Not a currency"},
+	contact.CodeTerms:          {422, "Payment terms out of range"},
+	contact.CodeGSTCode:        {422, "Not a GST code"},
+	contact.CodePeppol:         {422, "Not a Peppol participant ID"},
+	contact.CodeText:           {422, "A text is too long"},
+	contact.CodeCategory:       {422, "Not an account that takes postings"},
 	chart.CodeAccountCode:      {422, "Not an account code"},
 	chart.CodeText:             {422, "A text is blank or too long"},
 	chart.CodeType:             {422, "Not an account type"},
@@ -200,6 +211,7 @@ var storageFixes = map[string]string{
 	storage.CodeVersion:      "Read the record again, check what changed, and send your change with its new ETag",
 	storage.CodeSequence:     "Move the next number forward, or use another prefix; a number is never issued twice",
 	storage.CodeDuplicate:    "Check whether it was done already; for a new record, use a code or key not in use",
+	storage.CodeInvalid:      "Correct the value the message names and send it again",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

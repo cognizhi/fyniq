@@ -11,6 +11,9 @@ fyniq_api       EXECUTE   beat()
 fyniq_api       EXECUTE   claim_job_slot()
 fyniq_api       EXECUTE   claim_setup()
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
+fyniq_api       INSERT    contact (address, billing_email, country, currency, default_account_id, default_gst_code, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, uen_or_tax_id)
+fyniq_api       SELECT    contact
+fyniq_api       UPDATE    contact (address, billing_email, country, currency, default_account_id, default_gst_code, is_active, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, uen_or_tax_id, version)
 fyniq_api       EXECUTE   count_super_admins()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
@@ -76,6 +79,7 @@ fyniq_api       UPDATE    user_membership (status, version)
 fyniq_executor  SELECT    account
 fyniq_executor  INSERT    audit_event (body, id)
 fyniq_executor  SELECT    balance
+fyniq_executor  SELECT    contact
 fyniq_executor  SELECT    currencies
 fyniq_executor  EXECUTE   current_org()
 fyniq_executor  INSERT    document (type)
@@ -105,6 +109,7 @@ fyniq_readonly  SELECT    audit_chain
 fyniq_readonly  SELECT    audit_event
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
+fyniq_readonly  SELECT    contact
 fyniq_readonly  SELECT    currencies
 fyniq_readonly  EXECUTE   current_org()
 fyniq_readonly  SELECT    document
@@ -132,6 +137,7 @@ fyniq_worker    SELECT    audit_event
 fyniq_worker    SELECT    balance
 fyniq_worker    EXECUTE   balance_differences()
 fyniq_worker    EXECUTE   beat()
+fyniq_worker    SELECT    contact
 fyniq_worker    EXECUTE   count_super_admins()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()

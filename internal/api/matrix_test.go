@@ -37,6 +37,15 @@ func matrixGST(e *env) string {
 	return r.str("id")
 }
 
+// matrixContact returns the ID of a contact of e's organisation, adding one first if needed.
+func matrixContact(e *env) string {
+	l := e.call(http.MethodGet, "/v1/contacts", e.as(authz.Accountant), nil)
+	if items, _ := l.Body["items"].([]any); len(items) > 0 {
+		return items[0].(map[string]any)["id"].(string)
+	}
+	return e.call(http.MethodPost, "/v1/contacts", e.as(authz.Accountant), map[string]any{"legal_name": "Matrix contact", "customer": true}).str("id")
+}
+
 // matrixCalls has one request per operation; an operation without one fails the test.
 var matrixCalls = map[string]matrixCall{
 	"getOrganisation": func(e *env, tok string) (response, func() bool) {
@@ -138,6 +147,27 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPatch, "/v1/accounts/"+e.books.Rent.ID.String(), tok, map[string]any{"name": name}, "If-Match", "*")
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/accounts/"+e.books.Rent.ID.String(), e.as(authz.Accountant), nil).str("name") != name
+		}
+	},
+	"listContacts": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/contacts", tok, nil), nil
+	},
+	"getContact": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/contacts/"+matrixContact(e), tok, nil), nil
+	},
+	"createContact": func(e *env, tok string) (response, func() bool) {
+		name := "Matrix " + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/contacts", tok, map[string]any{"legal_name": name, "customer": true})
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/contacts?page_size=500", e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"legal_name":"`+name+`"`)
+		}
+	},
+	"updateContact": func(e *env, tok string) (response, func() bool) {
+		id, phone := matrixContact(e), "+65 "+uuid.NewString()[:8]
+		r := e.call(http.MethodPatch, "/v1/contacts/"+id, tok, map[string]any{"phone": phone}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/contacts/"+id, e.as(authz.Accountant), nil).str("phone") != phone
 		}
 	},
 	"getAccount": func(e *env, tok string) (response, func() bool) {

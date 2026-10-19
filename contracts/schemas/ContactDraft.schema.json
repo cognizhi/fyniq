@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "Its address.",
+      "examples": [
+        "1 Raffles Place, #20-01, Singapore 048616"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "billing_email": {
+      "description": "Where invoices go.",
+      "examples": [
+        "accounts@northwind.example"
+      ],
+      "maxLength": 254,
+      "type": "string"
+    },
+    "country": {
+      "description": "ISO 3166 two-letter code.",
+      "examples": [
+        "SG"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "ISO 4217 code.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "customer": {
+      "description": "A customer.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "default_account_id": {
+      "description": "The default category: an active account that takes postings.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "type": "string"
+    },
+    "default_gst_code": {
+      "description": "The default GST code.",
+      "examples": [
+        "SR"
+      ],
+      "type": "string"
+    },
+    "legal_name": {
+      "description": "Its legal name.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "payment_terms_days": {
+      "description": "0 to 365 days.",
+      "examples": [
+        30
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "peppol_id": {
+      "description": "Its Peppol participant ID.",
+      "examples": [
+        "0195:SGUEN202312345K"
+      ],
+      "maxLength": 70,
+      "type": "string"
+    },
+    "phone": {
+      "description": "Its phone number.",
+      "examples": [
+        "+65 6123 4567"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    },
+    "remittance_email": {
+      "description": "Where remittance advice goes.",
+      "examples": [
+        "payments@northwind.example"
+      ],
+      "maxLength": 254,
+      "type": "string"
+    },
+    "uen_or_tax_id": {
+      "description": "Its UEN or tax ID.",
+      "examples": [
+        "202312345K"
+      ],
+      "maxLength": 30,
+      "type": "string"
+    },
+    "vendor": {
+      "description": "A vendor; at least one of customer and vendor.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "legal_name"
+  ],
+  "title": "ContactDraft",
+  "type": "object"
+}

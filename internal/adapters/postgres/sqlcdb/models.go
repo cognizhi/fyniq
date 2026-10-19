@@ -72,6 +72,28 @@ type FyniqBalance struct {
 	LineCount      int64
 }
 
+type FyniqContact struct {
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	LegalName        string
+	IsCustomer       bool
+	IsVendor         bool
+	UenOrTaxID       *string
+	PeppolID         *string
+	BillingEmail     *string
+	RemittanceEmail  *string
+	Phone            *string
+	Address          *string
+	Country          *string
+	Currency         *string
+	PaymentTermsDays *int16
+	DefaultAccountID *uuid.UUID
+	DefaultGstCode   *string
+	IsActive         bool
+	Version          int32
+	CreatedAt        time.Time
+}
+
 type FyniqCurrencies struct {
 	Code       string
 	MinorUnits int16

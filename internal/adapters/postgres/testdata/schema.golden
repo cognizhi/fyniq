@@ -47,6 +47,25 @@ balance | minor_units | smallint | not null |
 balance | amount | numeric(20,4) | not null | 
 balance | base_amount | numeric(20,4) | not null | 
 balance | line_count | bigint | not null | 
+contact | organisation_id | uuid | not null | current_org()
+contact | id | uuid | not null | uuidv7()
+contact | legal_name | text | not null | 
+contact | is_customer | boolean | not null | false
+contact | is_vendor | boolean | not null | false
+contact | uen_or_tax_id | text | null | 
+contact | peppol_id | text | null | 
+contact | billing_email | text | null | 
+contact | remittance_email | text | null | 
+contact | phone | text | null | 
+contact | address | text | null | 
+contact | country | text | null | 
+contact | currency | text | null | 
+contact | payment_terms_days | smallint | null | 
+contact | default_account_id | uuid | null | 
+contact | default_gst_code | text | null | 
+contact | is_active | boolean | not null | true
+contact | version | integer | not null | 1
+contact | created_at | timestamp with time zone | not null | now()
 currencies | code | text | null | 
 currencies | minor_units | smallint | null | 
 currencies | name | text | null | 
@@ -333,6 +352,25 @@ balance | balance_organisation_id_not_null | NOT NULL organisation_id
 balance | balance_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
 balance | balance_period_id_not_null | NOT NULL period_id
 balance | balance_pkey | PRIMARY KEY (organisation_id, id)
+contact | contact_country_format | CHECK ((country ~ '^[A-Z]{2}$'::text))
+contact | contact_created_at_not_null | NOT NULL created_at
+contact | contact_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+contact | contact_default_account_fkey | FOREIGN KEY (organisation_id, default_account_id) REFERENCES account(organisation_id, id)
+contact | contact_gst_code_format | CHECK ((default_gst_code ~ '^[A-Z]{2,4}$'::text))
+contact | contact_id_not_null | NOT NULL id
+contact | contact_is_active_not_null | NOT NULL is_active
+contact | contact_is_customer_not_null | NOT NULL is_customer
+contact | contact_is_vendor_not_null | NOT NULL is_vendor
+contact | contact_legal_name_not_null | NOT NULL legal_name
+contact | contact_lengths | CHECK ((((length(btrim(legal_name)) >= 1) AND (length(btrim(legal_name)) <= 200)) AND ((length(uen_or_tax_id) >= 1) AND (length(uen_or_tax_id) <= 30)) AND ((length(peppol_id) >= 1) AND (length(peppol_id) <= 70)) AND ((length(billing_email) >= 3) AND (length(billing_email) <= 254)) AND ((length(remittance_email) >= 3) AND (length(remittance_email) <= 254)) AND ((length(phone) >= 1) AND (length(phone) <= 40)) AND ((length(address) >= 1) AND (length(address) <= 500))))
+contact | contact_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+contact | contact_organisation_id_not_null | NOT NULL organisation_id
+contact | contact_pkey | PRIMARY KEY (organisation_id, id)
+contact | contact_role_known | CHECK ((is_customer OR is_vendor))
+contact | contact_terms_range | CHECK (((payment_terms_days >= 0) AND (payment_terms_days <= 365)))
+contact | contact_version_not_null | NOT NULL version
+contact | contact_version_positive | CHECK ((version > 0))
+contact | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 currency | currency_code_format | CHECK ((code ~ '^[A-Z]{3}$'::text))
 currency | currency_code_minor_units_key | UNIQUE (code, minor_units)
 currency | currency_code_not_null | NOT NULL code
@@ -659,6 +697,7 @@ user_session | user_session_user_fkey | FOREIGN KEY (user_id) REFERENCES app_use
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
+CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
 CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (organisation_id, expires_at)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
@@ -681,6 +720,7 @@ CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisat
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX balance_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, currency)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
 CREATE UNIQUE INDEX document_number_pkey ON fyniq.document_number USING btree (organisation_id, id)
@@ -727,6 +767,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
@@ -772,6 +813,7 @@ account | tenant_isolation | * | (organisation_id = current_org()) | (organisati
 audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())

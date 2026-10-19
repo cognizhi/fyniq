@@ -80,8 +80,15 @@
 ## 4. Contacts and items
 
 - [ ] 4.1 Contacts with roles and details, live balances, financial-year totals, ageing and a timeline. Tests `// req: FR-CT-01` and `// req: FR-CT-02` cover the balances P0's ledger holds
+  (20 Oct 2026, the records: migration 000026 adds `fyniq.contact` (customer, vendor or both, with every FR-CT-01
+  detail, mutable at its version, audited, never deleted) under the new Appendix D row "Contacts and items" (PRD-001
+  rev 0.33). `GET`/`POST /v1/contacts`, `GET`/`PATCH /v1/contacts/{contact_id}`. **Left:** the live balances, the
+  financial-year totals, the ageing and the timeline (FR-CT-02): P0's ledger lines carry no contact, so they come with
+  the sales and purchase documents that post to one.)
 - [ ] 4.2 Vendor bank details as versioned high-risk data. A pending version freezes payments and notifies every founder through the outbox; values are masked in logs. Test `// req: FR-CT-03`; approval waits for `p1-approval-engine`, and until then the change is refused, never applied
 - [ ] 4.3 Duplicate detection on name, UEN, email and bank account (`// req: FR-CT-04`), and items with prices per currency (`// req: FR-ITM-01`)
+  (20 Oct 2026: duplicates on the name (case and spacing aside), the UEN or tax ID and the emails are flagged on every
+  contact read and write, never refused; the bank account joins them with task 4.2. Items are still to do.)
 
 ## 5. API and screens
 

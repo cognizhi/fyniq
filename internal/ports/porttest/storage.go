@@ -775,6 +775,88 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		})
 	})
 
+	// req: FR-CT-01
+	// req: FR-CT-04
+	t.Run("contacts change at their version, page by role and find their possible duplicates", func(t *testing.T) {
+		b := books(t)
+		do := func(fn func(ctx context.Context, c storage.Contacts) error) error {
+			return s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error { return fn(ctx, u.Contacts()) })
+		}
+		thirty := 30
+		northwind := storage.ContactDetails{LegalName: "Northwind Analytics Pte. Ltd.", Customer: true, UENOrTaxID: "202312345K",
+			BillingEmail: "accounts@northwind.example", Country: "SG", Currency: "SGD", PaymentTermsDays: &thirty, DefaultAccountID: &b.Sales.ID}
+		var created storage.Contact
+		if err := do(func(ctx context.Context, c storage.Contacts) error {
+			var err error
+			created, err = c.Create(ctx, northwind)
+			return err
+		}); err != nil || created.Version != 1 || !created.Active || *created.PaymentTermsDays != 30 || *created.DefaultAccountID != b.Sales.ID {
+			t.Fatalf("Create: %v, %+v", err, created)
+		}
+		vendor := storage.ContactDetails{LegalName: "Acme Cloud Pte Ltd", Vendor: true, RemittanceEmail: "ACCOUNTS@northwind.example"}
+		var acme storage.Contact
+		if err := do(func(ctx context.Context, c storage.Contacts) error {
+			var err error
+			acme, err = c.Create(ctx, vendor)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Possible duplicates: the name with other case and spacing, the UEN, an email in common.
+		var dups []storage.ContactDuplicate
+		if err := do(func(ctx context.Context, c storage.Contacts) error {
+			var err error
+			dups, err = c.Duplicates(ctx, uuid.Nil, storage.ContactDetails{LegalName: "northwind  analytics pte. ltd.", UENOrTaxID: "202312345k"})
+			return err
+		}); err != nil || len(dups) != 1 || dups[0].ID != created.ID || !dups[0].SameName || !dups[0].SameUEN || dups[0].SameEmail {
+			t.Fatalf("duplicates of the name and UEN: %v, %+v", err, dups)
+		}
+		if err := do(func(ctx context.Context, c storage.Contacts) error {
+			var err error
+			dups, err = c.Duplicates(ctx, acme.ID, vendor)
+			return err
+		}); err != nil || len(dups) != 1 || dups[0].ID != created.ID || !dups[0].SameEmail {
+			t.Fatalf("duplicates by email, leaving itself out: %v, %+v", err, dups)
+		}
+
+		// Pages, by role.
+		for role, want := range map[string]int{"": 2, "customer": 1, "vendor": 1} {
+			var page []storage.Contact
+			if err := do(func(ctx context.Context, c storage.Contacts) error {
+				var err error
+				page, err = c.Page(ctx, uuid.Nil, role, 10)
+				return err
+			}); err != nil || len(page) != want {
+				t.Errorf("Page(%q): %d, %v; want %d", role, len(page), err, want)
+			}
+		}
+
+		// A change at its version; a stale version, and a contact that is neither, refused.
+		changed := northwind
+		changed.Vendor = true
+		var updated storage.Contact
+		if err := do(func(ctx context.Context, c storage.Contacts) error {
+			var err error
+			updated, err = c.Update(ctx, created.ID, 1, changed, false)
+			return err
+		}); err != nil || updated.Version != 2 || !updated.Vendor || updated.Active {
+			t.Fatalf("Update: %v, %+v", err, updated)
+		}
+		wantCode(t, do(func(ctx context.Context, c storage.Contacts) error {
+			_, err := c.Update(ctx, created.ID, 1, changed, true)
+			return err
+		}),
+			storage.CodeVersion)
+		neither := changed
+		neither.Customer, neither.Vendor = false, false
+		wantCode(t, do(func(ctx context.Context, c storage.Contacts) error {
+			_, err := c.Update(ctx, created.ID, 2, neither, true)
+			return err
+		}),
+			storage.CodeInvalid)
+	})
+
 	// req: FR-INT-16
 	t.Run("a rate-limit window counts a client's requests by kind until the worker purges it", func(t *testing.T) {
 		b, other := books(t), books(t)
