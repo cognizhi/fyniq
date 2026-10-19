@@ -21,6 +21,22 @@ The conventions (§8.18.1): problem details with stable codes (FR-INT-07), `Idem
 as decimal strings with a currency (FR-INT-10). The `info.description` of the document states them for
 integrators.
 
+The contract lint enforces them, so a new operation gets them without a reviewer spotting a missing
+header (`functions/apiConventions.js`, rule `fyniq-api-conventions`):
+
+| Convention | Refused when |
+|---|---|
+| Deprecation (FR-INT-06) | A deprecated operation lacks `x-fyniq-deprecated-on`, `x-sunset` at least six months later, `x-fyniq-deprecation-note`, or the `Deprecation` and `Sunset` headers on its responses. Use `deprecate()` in `internal/api`; `oasdiff` also refuses a sunset less than 181 days away and a removal before the sunset |
+| Idempotency (FR-INT-08) | A `POST` takes no `Idempotency-Key` header |
+| Concurrency (FR-INT-09) | A command changes a record you can read (the record's own path, or an action under it) without `If-Match`, 412 and 428, or the record's read returns no `ETag` |
+| Lists (FR-INT-10) | A list (named `list…`, or a page of `items`) lacks `cursor`, `page_size` and `next_cursor` |
+
+An operation opts out of one only with `x-fyniq-exempt` naming the convention and the reason (rule
+`fyniq-exemption-reasons`); `TestConventionExemptions` lists every exemption, so a new one is reviewed.
+Today the six commands whose response carries a one-time secret take no `Idempotency-Key` (FR-INT-08,
+rev 0.27). `testdata/planted.yaml` holds an operation that breaks each rule;
+`TestTheContractLintRefusesPlantedOperations` checks that Spectral refuses every one.
+
 Who uses it, and what guards it:
 
 | | |

@@ -1,0 +1,110 @@
+# Planted operations for the contract lint (contracts/openapi/spectral.yaml): each `bad` operation
+# breaks one convention of PRD-001 §8.18.1 and must be refused; every `good` one must pass.
+# internal/api TestTheContractLintRefusesPlantedOperations runs Spectral on this file.
+openapi: 3.1.0
+info: { title: Planted, version: 0.0.0 }
+components:
+  parameters:
+    IdempotencyKey: { name: Idempotency-Key, in: header, schema: { type: string } }
+    IfMatch: { name: If-Match, in: header, schema: { type: string } }
+    Cursor: { name: cursor, in: query, schema: { type: string } }
+    PageSize: { name: page_size, in: query, schema: { type: integer } }
+  headers:
+    ETag: { schema: { type: string } }
+    Deprecation: { schema: { type: string } }
+    Sunset: { schema: { type: string } }
+  responses:
+    Ok: { description: OK }
+    Record: { description: OK, headers: { ETag: { $ref: "#/components/headers/ETag" } } }
+    Page:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items: { type: [array, "null"], items: { type: string } }
+              next_cursor: { type: string }
+    Bare:
+      description: OK
+      content:
+        application/json:
+          schema: { type: object, properties: { items: { type: array, items: { type: string } } } }
+    Deprecated: { description: OK, headers: { Deprecation: { $ref: "#/components/headers/Deprecation" }, Sunset: { $ref: "#/components/headers/Sunset" } } }
+paths:
+  # bad: FR-INT-08, a POST without Idempotency-Key
+  /v1/widgets:
+    post: { operationId: createWidget, responses: { "201": { $ref: "#/components/responses/Ok" } } }
+  # bad: FR-INT-09, a record whose read has no ETag, changed without If-Match, or without 412 and 428
+  /v1/widgets/{widget_id}:
+    get: { operationId: getWidget, responses: { "200": { $ref: "#/components/responses/Ok" } } }
+    patch:
+      operationId: renameWidget
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses: { "200": { $ref: "#/components/responses/Ok" } }
+  /v1/widgets/{widget_id}/archive:
+    post:
+      operationId: archiveWidget
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      responses: { "200": { $ref: "#/components/responses/Ok" } }
+  # bad: FR-INT-10, a list without a cursor
+  /v1/gadgets:
+    get: { operationId: listGadgets, responses: { "200": { $ref: "#/components/responses/Bare" } } }
+  # bad: an exemption without a reason, and one naming no convention
+  /v1/gizmos:
+    post:
+      operationId: createGizmo
+      x-fyniq-exempt: { Idempotency-Key: "short" }
+      responses: { "201": { $ref: "#/components/responses/Ok" } }
+  /v1/gizmos/{gizmo_id}/codes:
+    post:
+      operationId: createGizmoCode
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      x-fyniq-exempt: { Retry-After: "A convention of §8.18.1 that this operation does not follow, for a reason" }
+      responses: { "201": { $ref: "#/components/responses/Ok" } }
+  # bad: FR-INT-06, a sunset less than six months away, and a deprecation with no dates, note or headers
+  /v1/old:
+    get:
+      operationId: getOld
+      deprecated: true
+      x-fyniq-deprecated-on: "2027-01-31"
+      x-sunset: "2027-07-30"
+      x-fyniq-deprecation-note: https://docs.fyniq.example/migrations/old
+      responses: { "200": { $ref: "#/components/responses/Deprecated" } }
+  /v1/older:
+    get: { operationId: getOlder, deprecated: true, responses: { "200": { $ref: "#/components/responses/Ok" } } }
+  /v1/sunset-only:
+    get: { operationId: getSunsetOnly, x-sunset: "2028-01-01", responses: { "200": { $ref: "#/components/responses/Ok" } } }
+  # good: every convention kept
+  /v1/things:
+    get:
+      operationId: listThings
+      parameters: [{ $ref: "#/components/parameters/Cursor" }, { $ref: "#/components/parameters/PageSize" }]
+      responses: { "200": { $ref: "#/components/responses/Page" } }
+    post:
+      operationId: createThing
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      responses: { "201": { $ref: "#/components/responses/Record" } }
+  /v1/things/{thing_id}:
+    get: { operationId: getThing, responses: { "200": { $ref: "#/components/responses/Record" } } }
+  /v1/things/{thing_id}/close:
+    post:
+      operationId: closeThing
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }, { $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Record" }
+        "412": { description: Stale }
+        "428": { description: No If-Match }
+  /v1/codes:
+    post:
+      operationId: createCode
+      x-fyniq-exempt: { Idempotency-Key: "Its response carries a one-time secret, which a stored response would keep at rest." }
+      responses: { "201": { $ref: "#/components/responses/Ok" } }
+  /v1/legacy:
+    get:
+      operationId: getLegacy
+      deprecated: true
+      x-fyniq-deprecated-on: "2027-01-31"
+      x-sunset: "2027-07-31"
+      x-fyniq-deprecation-note: https://docs.fyniq.example/migrations/legacy
+      responses: { "200": { $ref: "#/components/responses/Deprecated" } }

@@ -57,7 +57,7 @@ func registerSetup(a *API) {
 		done, err := a.deps.Installation.SetupDone(ctx)
 		return &setupStatusOutput{Body: SetupStatus{Done: done}}, err
 	})
-	register(a, authz.CompleteSetup, huma.Operation{
+	register(a, authz.CompleteSetup, oneTimeSecret(huma.Operation{
 		OperationID: "completeSetup", Method: http.MethodPost, Path: "/v1/setup", Tags: []string{"Installation"}, DefaultStatus: http.StatusCreated,
 		Summary: "Complete first-run setup",
 		Description: "Claims a new installation with the one-time setup code created at deployment (FR-ADM-06). You become the Super admin " +
@@ -66,7 +66,7 @@ func registerSetup(a *API) {
 			"organisations, your membership and role, audit events. Works once: a wrong or used " +
 			"code changes nothing. Needs a person signed in to Fyniq; an OAuth client or the AI is refused. It takes no Idempotency-Key: " +
 			"the code itself makes it one-time.",
-	}, []string{CodeSetupRefused, CodeSessionRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeUnavailable, storage.CodeAmount},
+	}), []string{CodeSetupRefused, CodeSessionRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeUnavailable, storage.CodeAmount},
 		func(ctx context.Context, in *completeSetupInput) (*completeSetupOutput, error) {
 			if a.deps.Installation == nil {
 				return nil, problem(CodeUnavailable, "The installation's database is not configured.", "Configure the database, then try again.")

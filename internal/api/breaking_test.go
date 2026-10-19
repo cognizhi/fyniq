@@ -8,10 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+
+	"github.com/cognizhi/fyniq/internal/clock"
 )
 
 // The breaking-change gate (QA-API-02, FR-INT-06): oasdiff compares the contract with the last
@@ -23,7 +27,8 @@ import (
 // breaking runs `oasdiff breaking` and returns its report and whether it found an error-level change.
 func breaking(t *testing.T, base, revision string) (string, bool) {
 	t.Helper()
-	cmd := exec.Command("oasdiff", "breaking", base, revision, "--fail-on", "ERR")
+	cmd := exec.Command("oasdiff", "breaking", base, revision, "--fail-on", "ERR",
+		"--deprecation-days-stable", strconv.Itoa(sunsetNoticeDays))
 	var out bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &out
 	err := cmd.Run()
@@ -120,5 +125,27 @@ func TestNoBreakingChangeSinceTheLastRelease(t *testing.T) {
 	})
 	if report, broke := breaking(t, current, added); broke {
 		t.Errorf("adding an operation was reported as breaking:\n%s", report)
+	}
+
+	// Deprecation (FR-INT-06): a sunset less than six months away breaks /v1, as does removing a
+	// deprecated operation before its sunset; deprecating with six months' notice does not.
+	sunsetIn := func(days int) func(o *huma.OpenAPI) {
+		return func(o *huma.OpenAPI) {
+			op := o.Paths["/v1/journals/{journal_id}"].Get
+			op.Deprecated = true
+			// oasdiff counts from today's date, so the sunset does too.
+			op.Extensions["x-sunset"] = clock.System{}.Now().AddDate(0, 0, days).Format(time.DateOnly)
+		}
+	}
+	if report, broke := breaking(t, current, plant("soon", sunsetIn(30))); !broke || !strings.Contains(report, "sunset") {
+		t.Errorf("a sunset 30 days away was not reported as breaking:\n%s", report)
+	}
+	later := plant("later", sunsetIn(sunsetNoticeDays+14))
+	if report, broke := breaking(t, current, later); broke {
+		t.Errorf("deprecating with six months' notice was reported as breaking:\n%s", report)
+	}
+	early := plant("early", func(o *huma.OpenAPI) { delete(o.Paths, "/v1/journals/{journal_id}") })
+	if report, broke := breaking(t, later, early); !broke || !strings.Contains(report, "sunset") {
+		t.Errorf("removing a deprecated operation before its sunset was not reported as breaking:\n%s", report)
 	}
 }

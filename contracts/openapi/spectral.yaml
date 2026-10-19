@@ -2,6 +2,7 @@
 # internal/api TestEveryOperationIsDocumented checks the same fields on the code's document, plus an
 # example on every field of every body.
 extends: [["spectral:oas", "recommended"]]
+functions: [apiConventions]
 rules:
   fyniq-operation-described:
     description: Every operation states its purpose, side effects and the approval policy that may apply.
@@ -51,3 +52,23 @@ rules:
         function: truthy
       - field: schema.examples
         function: truthy
+  fyniq-api-conventions:
+    description: Idempotency-Key on writes, ETag and If-Match on versioned records, cursor lists (FR-INT-08, FR-INT-09, FR-INT-10).
+    severity: error
+    given: "$.paths"
+    then:
+      function: apiConventions
+    message: "{{error}}"
+  fyniq-exemption-reasons:
+    description: An operation opts out of a convention only by naming it with a reason (x-fyniq-exempt).
+    severity: error
+    given: "$.paths[*][get,put,post,patch,delete].x-fyniq-exempt"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          minProperties: 1
+          additionalProperties: false
+          patternProperties:
+            "^(Idempotency-Key|If-Match|cursor)$": { type: string, minLength: 40 }
