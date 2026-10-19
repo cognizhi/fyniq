@@ -151,7 +151,8 @@ accountant's (Q15, Q27, Q31, Q32), the lawyer's on the SAFE (Q33), counsel's bef
 - documents and evidence, templates and email.
 
 Wave 1's eight changes are proposed in `openspec/changes/p1-*` (17 Oct 2026), each with its proposal,
-design and tasks. None is started: the build begins once question 26's comparison is signed.
+design and tasks. Question 26's comparison was signed on 19 Oct 2026, so the build starts with
+`p1-public-api`, then `p1-organisation-chart` and `p1-users-roles`: the three that need only P0.
 
 **Wave 2 · The ledger and its documents.** The general ledger and close, then FX, sales, purchases,
 claims, fixed assets and projects.
