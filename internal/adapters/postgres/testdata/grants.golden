@@ -83,6 +83,9 @@ fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()
 fyniq_api       EXECUTE   start_session()
 fyniq_api       EXECUTE   started_job_slot()
+fyniq_api       SELECT    statutory_pack_activation
+fyniq_api       SELECT    statutory_pack_rows
+fyniq_api       SELECT    statutory_pack_versions
 fyniq_api       EXECUTE   super_admin_for_identity()
 fyniq_api       SELECT    tenants
 fyniq_api       EXECUTE   user_for_identity()
@@ -120,6 +123,9 @@ fyniq_executor  SELECT    outbox
 fyniq_executor  UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_executor  SELECT    period
 fyniq_executor  USAGE     schema fyniq
+fyniq_executor  SELECT    statutory_pack_activation
+fyniq_executor  SELECT    statutory_pack_rows
+fyniq_executor  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    account
 fyniq_readonly  SELECT    audit_chain
 fyniq_readonly  SELECT    audit_event
@@ -149,6 +155,9 @@ fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    role_assignment
 fyniq_readonly  USAGE     schema fyniq
+fyniq_readonly  SELECT    statutory_pack_activation
+fyniq_readonly  SELECT    statutory_pack_rows
+fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    user_membership
 fyniq_worker    SELECT    account
 fyniq_worker    SELECT    audit_chain
@@ -192,5 +201,8 @@ fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()
 fyniq_worker    SELECT    role_assignment
 fyniq_worker    USAGE     schema fyniq
+fyniq_worker    SELECT    statutory_pack_activation
+fyniq_worker    SELECT    statutory_pack_rows
+fyniq_worker    SELECT    statutory_pack_versions
 fyniq_worker    SELECT    tenants
 fyniq_worker    SELECT    user_membership

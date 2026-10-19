@@ -1,0 +1,74 @@
+# sg-gst@2026.1: Singapore GST rates, codes and the tax-point rule (PRD-001 §10.6, ENG-30, FR-TAX-01).
+# Never edit this version once it is active anywhere: a correction is sg-gst@2026.2 (fyniq-sg-statutory).
+id = "sg-gst@2026.1"
+title = "Singapore GST: the standard rate, the GST codes and the time of supply"
+effective_from = "1994-04-01"
+review_date = "2027-01-31"
+verifier = "Claude Code (track B, p1-statutory-packs) against IRAS's pages on 20 Oct 2026; the tax agent's review is pending (FR-UX-41)"
+conditions = "Supplies of goods and services made in Singapore, and purchases, by an organisation while it is registered for GST; the rate is the one in force at the time of supply (ENG-45)"
+tax_point_rule = "sg-gst/earlier-of@1"
+
+[[sources]]
+id = "iras-current-rates"
+title = "IRAS: Current GST rates (the current rate and the table of historical rates)"
+url = "https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/basics-of-gst/current-gst-rates"
+section = "Current GST rate; Historical GST rates"
+kind = "official guidance"
+retrieved = "2026-10-20"
+quote = "The current GST rate in Singapore is 9%. 1 Apr 1994 to 31 Dec 2002: 3%; 1 Jan 2003 to 31 Dec 2003: 4%; 1 Jan 2004 to 30 Jun 2007: 5%; 1 Jul 2007 to 31 Dec 2022: 7%; 1 Jan 2023 to 31 Dec 2023: 8%"
+
+[[sources]]
+id = "iras-rate-change"
+title = "IRAS: Preparing for GST rate change"
+url = "https://www.iras.gov.sg/taxes/goods-services-tax-%28gst%29/gst-rate-change/gst-rate-change-for-business/preparing-for-gst-rate-change"
+section = "Budget 2022 announcement"
+kind = "official guidance"
+retrieved = "2026-10-20"
+quote = "(i) 7% to 8% with effect from 1 Jan 2023; and (ii) 8% to 9% with effect from 1 Jan 2024"
+
+[[sources]]
+id = "iras-f5-boxes"
+title = "IRAS: Before filing your GST F5 return (what goes in each box)"
+url = "https://www.iras.gov.sg/taxes/goods-services-tax-%28gst%29/filing-gst/completing-gst-returns"
+section = "Box 1, Box 2, Box 3, Box 5, Box 6 and Box 7"
+kind = "official guidance"
+retrieved = "2026-10-20"
+quote = "Box 5 refers to the value of your standard-rated purchases (including imports) for which the GST incurred can be claimed, and zero-rated purchases. Not included: expenses where input tax is disallowed; purchases from non GST-registered businesses; purchases which are exempted from GST"
+
+[[sources]]
+id = "iras-time-of-supply"
+title = "IRAS: Time of supply rules (when to report supplies in GST returns)"
+url = "https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/charging-gst-(output-tax)/when-to-report-supplies-in-gst-returns"
+section = "General time of supply rule; deposits"
+kind = "official guidance"
+retrieved = "2026-10-20"
+quote = "The time of supply will be the earlier of when an invoice is issued or when a payment is received. If such security deposit is collected upfront, payment is regarded as received only when the deposit is applied as all or part of the consideration for the supply"
+
+[[sources]]
+id = "workbook-codes"
+title = "The zh-sheet-accounting workbook's GST codes (PRD-001 Appendix B.6)"
+url = "https://github.com/cognizhi/fyniq/blob/main/docs/prd/prd-001-fyniq-platform.md"
+section = "B.6 GST codes"
+kind = "product policy"
+retrieved = "2026-10-20"
+quote = "The code names are Fyniq's (the workbook's); IRAS prescribes the return boxes, not the codes"
+
+[[tables]]
+name = "rates"
+file = "rates.csv"
+description = "The standard rate of GST, as a fraction, by the date of the time of supply"
+
+[[tables]]
+name = "codes"
+file = "codes.csv"
+description = "The GST codes: direction, whether GST is charged at the standard rate, and the F5 boxes of the value and of the GST"
+
+[[pinned]]
+name = "rates"
+file = "pinned/rates.csv"
+description = "Hand-pinned rates at the edges of every rate period (QA-ENG-08), worked from iras-current-rates and iras-rate-change, not from rates.csv"
+
+[[pinned]]
+name = "codes"
+file = "pinned/codes.csv"
+description = "Hand-pinned F5 boxes for each code, worked from iras-f5-boxes, not from codes.csv"

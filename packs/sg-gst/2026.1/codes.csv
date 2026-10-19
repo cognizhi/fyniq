@@ -1,0 +1,13 @@
+code,direction,standard_rated,value_box,gst_box,description,source
+SR,supply,true,1,6,Standard-rated supply,iras-f5-boxes workbook-codes
+ZR,supply,false,2,,Zero-rated supply,iras-f5-boxes workbook-codes
+ES,supply,false,3,,Exempt supply,iras-f5-boxes workbook-codes
+OS,supply,false,,,Out-of-scope supply: not reported in the return,iras-f5-boxes workbook-codes
+TX,purchase,true,5,7,Standard-rated purchase whose GST can be claimed,iras-f5-boxes workbook-codes
+IM,purchase,true,5,7,Import of goods for business purposes whose GST can be claimed,iras-f5-boxes workbook-codes
+ZP,purchase,false,5,,Zero-rated purchase from a GST-registered supplier,iras-f5-boxes workbook-codes
+BL,purchase,false,,,Purchase whose input tax is disallowed: the GST stays in the cost and is not reported,iras-f5-boxes workbook-codes
+NR,purchase,false,,,Purchase from a supplier not registered for GST: not reported,iras-f5-boxes workbook-codes
+EP,purchase,false,,,Exempt purchase: not reported,iras-f5-boxes workbook-codes
+OP,purchase,false,,,Out-of-scope purchase: not reported,iras-f5-boxes workbook-codes
+NA,none,false,,,Not a supply or a purchase for GST (for example wages or a transfer),iras-f5-boxes workbook-codes

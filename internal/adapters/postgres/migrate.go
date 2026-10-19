@@ -49,7 +49,8 @@ func provider(ctx context.Context, url string) (*goose.Provider, func() error, e
 }
 
 // Migrate applies every pending migration as the role in url, which must be fyniq_migrator
-// (SEC-03), and writes one line per migration to log.
+// (SEC-03), then loads the statutory pack versions the release ships, and writes one line per
+// migration and per newly loaded pack version to log.
 func Migrate(ctx context.Context, url string, log io.Writer) error {
 	p, closeDB, err := provider(ctx, url)
 	if err != nil {
@@ -66,7 +67,8 @@ func Migrate(ctx context.Context, url string, log io.Writer) error {
 	if len(results) == 0 {
 		fmt.Fprintln(log, "the database is up to date")
 	}
-	return nil
+	// The statutory packs this release ships (ENG-30): written only here, by the migrator (§11.4).
+	return LoadShippedPacks(ctx, url, log)
 }
 
 // MigrationStatus writes each migration and whether it is applied.

@@ -645,7 +645,7 @@ Source: PRD-001 §B.6
 #### Scenario: Other purchase codes
 - **WHEN** a purchase is coded ZP, BL, NR, EP or OP
 - **THEN** ZP is reported in Box 5
-- **AND** BL is reported in Box 5, with the GST not claimable and included in the cost
+- **AND** BL is not reported, with the GST not claimable and included in the cost (rev 0.37; IRAS leaves expenses whose input tax is disallowed out of Box 5)
 - **AND** NR, EP and OP are not reported
 
 #### Scenario: No GST direction
