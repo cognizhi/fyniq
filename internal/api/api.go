@@ -42,6 +42,7 @@ type Deps struct {
 	SignIn       ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
 	Log          *slog.Logger
 	Version      string // the platform version: the document's info.version
+	Limits       Limits // the requests a client may make a minute in an organisation (FR-INT-16); zero: DefaultLimits
 }
 
 // API is the registered API.
@@ -109,7 +110,7 @@ func Config(version string) huma.Config {
 			"authenticates may change state only from the web app's own origin (Sec-Fetch-Site: same-origin)."},
 	}
 	cfg.Security = []map[string][]string{{"bearer": {}}, {"session": {}}}
-	cfg.OnAddOperation = append(cfg.OnAddOperation, describeErrors, describeDeprecation, describePreview)
+	cfg.OnAddOperation = append(cfg.OnAddOperation, describeErrors, describeDeprecation, describePreview, describeRateLimits)
 	return cfg
 }
 
@@ -125,7 +126,7 @@ func New(mux humago.Mux, d Deps) *API {
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(mux, cfg)
-	a.UseMiddleware(a.requestContext, a.authenticate, a.authorise)
+	a.UseMiddleware(a.requestContext, a.authenticate, a.limit, a.authorise)
 	registerOrganisation(a)
 	registerAccounts(a)
 	registerJournals(a)
@@ -155,6 +156,9 @@ func register[I, O any](a *API, p authz.Policy, op huma.Operation, codes []strin
 	codes = append(slices.Clone(codes), commonCodes...)
 	if !p.Public && !authn.Safe(op.Method) {
 		codes = append(codes, CodeCrossSite) // a write the session cookie authenticates must come from the web app
+	}
+	if !p.Public {
+		codes = append(codes, CodeRateLimited) // FR-INT-16
 	}
 	slices.Sort(codes)
 	codes = slices.Compact(codes)

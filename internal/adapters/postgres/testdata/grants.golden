@@ -45,6 +45,9 @@ fyniq_api       UPDATE    outbox (attempts, deadline_at, dispatches, job_executi
 fyniq_api       INSERT    period (ends_on, starts_on)
 fyniq_api       SELECT    period
 fyniq_api       UPDATE    period (status, version)
+fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
+fyniq_api       SELECT    rate_limit_window
+fyniq_api       UPDATE    rate_limit_window (used)
 fyniq_api       EXECUTE   recover_super_admin()
 fyniq_api       INSERT    role_assignment (expires_at, membership_id, role)
 fyniq_api       SELECT    role_assignment
@@ -101,6 +104,7 @@ fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    organisation
 fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    period
+fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    role_assignment
 fyniq_readonly  USAGE     schema fyniq
 fyniq_readonly  SELECT    user_membership
@@ -133,6 +137,8 @@ fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, wor
 fyniq_worker    SELECT    outbox
 fyniq_worker    UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_worker    SELECT    period
+fyniq_worker    DELETE    rate_limit_window
+fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()
 fyniq_worker    SELECT    role_assignment
 fyniq_worker    USAGE     schema fyniq

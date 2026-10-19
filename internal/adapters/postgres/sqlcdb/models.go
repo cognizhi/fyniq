@@ -230,6 +230,15 @@ type FyniqPeriod struct {
 	CreatedAt      time.Time
 }
 
+type FyniqRateLimitWindow struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ClientID       string
+	Kind           string
+	WindowStart    time.Time
+	Used           int32
+}
+
 type FyniqRoleAssignment struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

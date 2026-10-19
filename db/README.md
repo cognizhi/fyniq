@@ -27,8 +27,8 @@ PostgreSQL 17+ that passes the conformance and attack suites (NFR-PORT-02).
 | Role | Logs in as | May |
 |---|---|---|
 | `fyniq_migrator` | the `migrate` job only | Own every object, create the roles below. Created by the environment before the first run: locally by `migrate up` in the local build, in the cloud by p0-infra-opentofu |
-| `fyniq_api` | the `api` service | Read the tenant tables; create organisations, accounts, periods, documents and journal entries; close and reopen periods; post and reverse documents |
-| `fyniq_worker` | `worker` and the jobs | Read; post scheduled entries; verify and rebuild the balances cache; delete expired idempotency keys; list the organisations (`tenants`) and read the audit trail to anchor and verify it |
+| `fyniq_api` | the `api` service | Read the tenant tables; create organisations, accounts, periods, documents and journal entries; close and reopen periods; post and reverse documents; count requests in rate-limit windows (FR-INT-16) |
+| `fyniq_worker` | `worker` and the jobs | Read; post scheduled entries; verify and rebuild the balances cache; delete expired idempotency keys and ended rate-limit windows; list the organisations (`tenants`) and read the audit trail to anchor and verify it |
 | `fyniq_executor` | the proposal executor | Read; create and post the documents and entries of approved proposals |
 | `fyniq_ai` | the AI orchestrator | Nothing: no table grant, no write, ever (AI-P2, CMP-AI-01). Inserting proposals arrives with the proposal tables in P1 |
 | `fyniq_readonly` | investigations and reports | Read |
@@ -77,7 +77,7 @@ Add one only with its access model here and in the test's list.
   `require_audit` constraint trigger to it, and the adapter records an event for every write to it.
   Audited today: organisations, accounts, periods, documents (with their versions), journal
   entries (with their lines), memberships, role assignments, Super admins and their one-time codes. Not audited, as derived data or caches: balances, the ledger revision,
-  the audit chain head and idempotency keys.
+  the audit chain head, idempotency keys and rate-limit windows.
 - **Money** (§11.3): amounts `NUMERIC(20,4)` with the currency's minor units on the row and
   `CHECK (amount <> 'NaN' AND amount = trunc(amount, minor_units))`; FX rates `NUMERIC(20,10)`,
   positive and not NaN. Unconstrained `NUMERIC` fails the catalogue test.

@@ -8,12 +8,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -394,6 +397,95 @@ func describeDeprecation(_ *huma.OpenAPI, op *huma.Operation) {
 		}
 		for _, name := range []string{"Deprecation", "Sunset", "Link"} {
 			r.Headers[name] = &huma.Param{Description: docs[name], Schema: &huma.Schema{Type: "string", Examples: []any{h[name]}}}
+		}
+	}
+}
+
+// ------------------------------------------------------------------ rate limits (FR-INT-16)
+
+// Limits are how many requests a client may make in a minute in one organisation (FR-INT-16).
+type Limits struct {
+	Reads, Writes int
+}
+
+// DefaultLimits are FR-INT-16's defaults per client: 600 reads and 120 writes a minute.
+var DefaultLimits = Limits{Reads: 600, Writes: 120}
+
+// rateWindow is how long a rate-limit window lasts.
+const rateWindow = time.Minute
+
+// The policies' names in RateLimit-Policy and RateLimit.
+const (
+	readsPolicy  = "reads"
+	writesPolicy = "writes"
+)
+
+// limit counts an authenticated request in its client's window for the organisation (the client and
+// subject, as the idempotency keys name them), says what is left in RateLimit and RateLimit-Policy
+// (draft-ietf-httpapi-ratelimit-headers-11, still a draft when checked on 19 Oct 2026), and refuses
+// with 429 and Retry-After once the window is full. Public operations, and requests outside any
+// organisation, are not counted here: the load balancer limits them by IP (SEC-23). When the count
+// cannot be made, the request goes on: it needs the same database, and fails there if it is down.
+func (a *API) limit(ctx huma.Context, next func(huma.Context)) {
+	p, ok := authn.From(ctx.Context())
+	if !ok || p.Organisation == uuid.Nil || a.deps.Store == nil {
+		next(ctx)
+		return
+	}
+	limits := a.deps.Limits
+	if limits == (Limits{}) {
+		limits = DefaultLimits
+	}
+	kind, quota, name := storage.RateWrite, limits.Writes, writesPolicy
+	if authn.Safe(ctx.Method()) {
+		kind, quota, name = storage.RateRead, limits.Reads, readsPolicy
+	}
+	now := a.deps.Clock.Now()
+	start := now.UTC().Truncate(rateWindow)
+	var used int
+	err := a.deps.Store.Do(ctx.Context(), p.Organisation, func(c context.Context, u storage.UnitOfWork) error {
+		var err error
+		used, err = u.RateLimits().Count(c, p.Client+" "+p.Subject, kind, start)
+		return err
+	})
+	if err != nil {
+		logFailure(ctx.Context(), err)
+		next(ctx)
+		return
+	}
+	reset := int(math.Ceil(start.Add(rateWindow).Sub(now).Seconds()))
+	ctx.SetHeader("RateLimit-Policy", fmt.Sprintf("%q;q=%d;w=%d", name, quota, int(rateWindow.Seconds())))
+	ctx.SetHeader("RateLimit", fmt.Sprintf("%q;r=%d;t=%d", name, max(quota-used, 0), reset))
+	if used > quota {
+		ctx.SetHeader("Retry-After", strconv.Itoa(reset)) // huma.WriteErr writes no header of the problem's own
+		_ = huma.WriteErr(a.API, ctx, http.StatusTooManyRequests, "", problem(CodeRateLimited,
+			fmt.Sprintf("This client made more than %d %s in this minute in this organisation.", quota, name),
+			fmt.Sprintf("Wait %d seconds, then send the request again.", reset)))
+		return
+	}
+	next(ctx)
+}
+
+// describeRateLimits documents the rate-limit headers on the responses of every operation that is
+// counted, and Retry-After on its 429.
+func describeRateLimits(_ *huma.OpenAPI, op *huma.Operation) {
+	if op.Responses["429"] == nil {
+		return
+	}
+	for status, r := range op.Responses {
+		if !strings.HasPrefix(status, "2") && status != "429" {
+			continue
+		}
+		if r.Headers == nil {
+			r.Headers = map[string]*huma.Param{}
+		}
+		r.Headers["RateLimit-Policy"] = &huma.Param{Description: "The client's limits a minute in this organisation: reads (GET) or writes " +
+			"(FR-INT-16; draft-ietf-httpapi-ratelimit-headers).", Schema: &huma.Schema{Type: "string", Examples: []any{`"reads";q=600;w=60`}}}
+		r.Headers["RateLimit"] = &huma.Param{Description: "What is left of the limit (r) and the seconds until the window ends (t).",
+			Schema: &huma.Schema{Type: "string", Examples: []any{`"reads";r=599;t=42`}}}
+		if status == "429" {
+			r.Headers["Retry-After"] = &huma.Param{Description: "Seconds to wait before sending the request again.",
+				Schema: &huma.Schema{Type: "string", Examples: []any{"42"}}}
 		}
 	}
 }
