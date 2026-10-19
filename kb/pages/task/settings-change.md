@@ -4,7 +4,7 @@ type: task
 title: Change or reset an organisation setting
 summary: Change a company-wide setting from today or a later date, reset it to its recommended value, and why some settings need a second approver
 sources:
-  - docs/user-guide/organisation-settings.md sha256:e344f9716616e43b153e4b29e5a6a1c9f89119211bd0a5799b5c0f7ceb488d53
+  - docs/user-guide/organisation-settings.md sha256:0463646dacc3573b726c20843b25f57e723488d635fbba060d35e2ed12cbc70b
 data_class: general
 taint: trusted
 status: draft
@@ -34,6 +34,6 @@ aliases:
 ## Settings that need a second approver
 
 - Thresholds, retention and the AI assistant need a second approver.
-- Until approvals arrive in Fyniq they keep their recommended values and show **Needs a second approver**; a change to one is refused and nothing changes.
+- They show **Needs a second approver**. Saving a change to one asks for approval: the setting keeps its value until another member who approves settings, such as an Owner, approves it ([[approvals.decide]]).
 
 (src: docs/user-guide/organisation-settings.md#settings-that-need-a-second-approver)

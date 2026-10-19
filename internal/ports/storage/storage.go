@@ -63,6 +63,7 @@ type UnitOfWork interface {
 	Contacts() Contacts
 	Items() Items
 	Settings() Settings
+	Approvals() Approvals
 	Packs() Packs
 	Outbox() Outbox
 	Sweeping() Sweeping
@@ -420,6 +421,7 @@ const (
 	CodeVersion        = "STORAGE-VERSION-01"  // the record changed since it was read (FR-INT-09)
 	CodeOverlap        = "STORAGE-DATES-01"    // a version's validity overlaps another's, or ends before it starts
 	CodeSequence       = "STORAGE-SEQUENCE-01" // a number sequence cannot be set that way, or a number is used already
+	CodeApproval       = "STORAGE-APPROVAL-01" // an approval or its request cannot be made or changed that way (FR-APR-03, FM-1)
 	CodePack           = "STORAGE-PACK-01"     // a loaded statutory pack version cannot change; an activation needs a second person
 )
 

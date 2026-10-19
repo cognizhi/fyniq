@@ -10,6 +10,7 @@
 !compliance/evidence.go
 !compliance/control.schema.json
 !compliance/controls/
+!packs/
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml

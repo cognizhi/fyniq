@@ -1027,12 +1027,14 @@ func TestOrganisationSettings(t *testing.T) {
 		t.Fatalf("a reset: %d %s", r.Status, r.Raw)
 	}
 
-	// The platform's settings and those under dual control are refused, and nothing changes.
+	// The platform's settings are refused; those under dual control wait for a second approver, which asking needs a
+	// person who passed step-up for (FM-1, rev 0.36): without one, nothing changes.
 	e.problemIs(e.call(http.MethodPatch, "/v1/organisation/settings/data.region", ctl, map[string]any{"value": "europe-west1"}, "If-Match", `"0"`),
 		"updateSetting", 409, settings.CodeFixed)
-	for _, key := range []string{"bank.tolerance_base", "retention.records_years", "features.ai_assistant", "assets.capitalisation_threshold"} {
-		e.problemIs(e.call(http.MethodPatch, "/v1/organisation/settings/"+key, ctl, map[string]any{"value": "true"}, "If-Match", `"0"`),
-			"updateSetting", 409, settings.CodeDualControl)
+	for key, value := range map[string]string{"bank.tolerance_base": "2.00", "retention.records_years": "8", "features.ai_assistant": "true",
+		"assets.capitalisation_threshold": "2000.00"} {
+		e.problemIs(e.call(http.MethodPatch, "/v1/organisation/settings/"+key, ctl, map[string]any{"value": value}, "If-Match", `"0"`),
+			"updateSetting", 403, CodeStepUpRequired)
 		if g := e.call(http.MethodGet, "/v1/organisation/settings/"+key, ctl, nil); g.Body["version"] != float64(0) || g.str("status") != "recommended" {
 			t.Errorf("%s changed: %s", key, g.Raw)
 		}
@@ -1052,8 +1054,8 @@ func TestOrganisationSettings(t *testing.T) {
 
 // Members: until a second member joins, the Owner invites people with roles and changes roles alone (the
 // founder bootstrap); an invitation is a one-time code, kept without it, withdrawable; one made before keeps its
-// roles when accepted after; the last Owner keeps the role; from the second member on, role changes are
-// refused until the approval engine, and nothing changes.
+// roles when accepted after; the last Owner keeps the role; from the second member on, role changes wait for a
+// second approver (approvals_test.go), and nothing changes without one.
 // req: FR-ADM-01
 // req: FM-1
 func TestMembersAndTheFounderBootstrap(t *testing.T) {
@@ -1123,14 +1125,15 @@ func TestMembersAndTheFounderBootstrap(t *testing.T) {
 		t.Fatalf("ending a role: %d %s", d.Status, d.Raw)
 	}
 
-	// The third founder's invitation, made before, keeps its roles; now role changes wait for the approval engine.
+	// The third founder's invitation, made before, keeps its roles; now role changes wait for a second approver, which
+	// asking needs a person who passed step-up for (rev 0.36): without one, nothing changes.
 	if j := join("ahkow", third.str("code")); j.Status != 201 || !strings.Contains(j.Raw, `"roles":["bookkeeper"]`) {
 		t.Fatalf("joining as the second member: %d %s", j.Status, j.Raw)
 	}
 	before := roles()
-	e.problemIs(e.call(http.MethodPost, "/v1/members/"+mid+"/roles", owner, map[string]any{"role": "accountant"}), "assignRole", 409, member.CodeSecondApprover)
-	e.problemIs(e.call(http.MethodDelete, "/v1/members/"+mid+"/roles/controller", e.as(authz.Administrator), nil), "revokeRole", 409, member.CodeSecondApprover)
-	e.problemIs(invite("late", []string{"employee"}), "createMemberInvitation", 409, member.CodeSecondApprover)
+	e.problemIs(e.call(http.MethodPost, "/v1/members/"+mid+"/roles", owner, map[string]any{"role": "accountant"}), "assignRole", 403, CodeStepUpRequired)
+	e.problemIs(e.call(http.MethodDelete, "/v1/members/"+mid+"/roles/controller", e.as(authz.Administrator), nil), "revokeRole", 403, CodeStepUpRequired)
+	e.problemIs(invite("late", []string{"employee"}), "createMemberInvitation", 403, CodeStepUpRequired)
 	if after := roles(); fmt.Sprint(after) != fmt.Sprint(before) || fmt.Sprint(after["weiling"]) != "[controller owner]" {
 		t.Errorf("roles changed after the bootstrap: %v, then %v", before, after)
 	}

@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: The company-wide settings (features, payment terms, settlement tolerances, capitalisation threshold, data region, retention) and the value each ships with
 sources:
-  - docs/user-guide/organisation-settings.md sha256:e344f9716616e43b153e4b29e5a6a1c9f89119211bd0a5799b5c0f7ceb488d53
+  - docs/user-guide/organisation-settings.md sha256:0463646dacc3573b726c20843b25f57e723488d635fbba060d35e2ed12cbc70b
 data_class: general
 taint: trusted
 status: draft

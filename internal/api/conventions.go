@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"net/http"
 	"slices"
@@ -84,6 +85,9 @@ func write[B any](ctx context.Context, a *API, key, prefer string, request any, 
 				return err
 			}
 			out.Body = body
+			if w, ok := any(body).(interface{ waitsForApproval() bool }); ok && w.waitsForApproval() {
+				out.Status = http.StatusAccepted // the change waits for approval (FM-1): the body is the request; a preview's too
+			}
 			if key == "" {
 				return nil
 			}
@@ -91,7 +95,7 @@ func write[B any](ctx context.Context, a *API, key, prefer string, request any, 
 			if err != nil {
 				return err
 			}
-			return u.Idempotency().Complete(ctx, p.Client+" "+p.Subject, key, status, saved)
+			return u.Idempotency().Complete(ctx, p.Client+" "+p.Subject, key, out.Status, saved)
 		})
 		var se *storage.Error
 		if err != nil && errors.As(err, &se) && se.Retryable() && attempt < retries {
@@ -173,14 +177,24 @@ func describePreview(_ *huma.OpenAPI, op *huma.Operation) {
 	if !slices.ContainsFunc(op.Parameters, func(p *huma.Param) bool { return p.In == "header" && p.Name == "Prefer" }) {
 		return
 	}
+	// The command's own success is its lowest 2xx: 202 is a change that waits for approval (rev 0.36), whose
+	// preview answers 202 with its approval request.
 	var success *huma.Response
-	for status, r := range op.Responses {
-		if strings.HasPrefix(status, "2") {
+	for _, status := range slices.Sorted(maps.Keys(op.Responses)) {
+		r := op.Responses[status]
+		if strings.HasPrefix(status, "2") && success == nil {
 			success = r
 		}
 		if status != "200" {
 			delete(r.Headers, "Preference-Applied")
 		}
+	}
+	if pending := op.Responses["202"]; pending != nil && pending.Content != nil {
+		if pending.Headers == nil {
+			pending.Headers = map[string]*huma.Param{}
+		}
+		pending.Headers["Preference-Applied"] = &huma.Param{Description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14).",
+			Schema: &huma.Schema{Type: "string", Examples: []any{previewApplied}}}
 	}
 	ok := op.Responses["200"]
 	if ok == nil && success != nil {

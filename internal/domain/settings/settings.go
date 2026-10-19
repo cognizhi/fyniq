@@ -118,7 +118,6 @@ const (
 	CodeBackdated    = "SET-02" // the change would take effect before today
 	CodeShortened    = "SET-03" // the change would shorten a lengthen-only setting
 	CodeFixed        = "SET-04" // the platform sets it
-	CodeDualControl  = "SET-05" // it needs a second approver, and the approval engine does not exist yet
 	CodeValueOrReset = "SET-06" // a change sends a value or asks for a reset, not both or neither
 )
 
@@ -215,16 +214,12 @@ func On(d Definition, changes []storage.SettingChange, day time.Time) Value {
 	return out
 }
 
-// Gate returns the problem with changing d at all, or nil: the platform sets it, or it needs a second approver
-// (FM-1) and the approval engine does not exist yet. Run it before reading the value, so the refusal names the
-// rule that refused it.
+// Gate returns the problem with changing d at all, or nil: the platform sets it. Run it before reading the value,
+// so the refusal names the rule that refused it. A setting under dual control (FM-1) is not refused: its change
+// waits for a second approver in the approval engine (rev 0.36).
 func Gate(d Definition) *Problem {
-	switch {
-	case d.Fixed:
+	if d.Fixed {
 		return &Problem{CodeFixed, "value", fmt.Sprintf("%s is set by the platform", d.Label), "Nothing to change: it is shown so you know where your data is kept"}
-	case d.DualControl:
-		return &Problem{CodeDualControl, "value", fmt.Sprintf("%s needs a second approver (FM-1), and approvals are not built yet", d.Label),
-			"It keeps its recommended value until the approval engine arrives; then an Owner changes it with a second approver"}
 	}
 	return nil
 }
