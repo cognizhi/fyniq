@@ -57,6 +57,12 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **WHEN** a file's classification, financial year or parent is needed
 - **THEN** it is read from the audited database row (FR-DOC-07, FR-DOC-09), never from the object metadata
 
+#### Scenario: Retain-until before completion dates are tracked (rev 0.38, provisional)
+- **GIVEN** records do not yet track the date their transactions are completed
+- **WHEN** a file is committed
+- **THEN** its retain-until counts from the financial year of the day it is committed, never earlier than its record's
+- **AND** the database refuses to move it earlier
+
 #### Scenario: G4-068 Retain-until for a bill and a multi-year contract
 - **WHEN** a bill for a December financial year is uploaded on 4 January, and a 2027–2029 contract is uploaded in 2027
 - **THEN** the bill's retain-until is at least 31 December of its financial year plus the retention setting
@@ -295,6 +301,16 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **WHEN** the AI reads an uploaded file
 - **THEN** the file is treated as untrusted data (AI-18)
 
+#### Scenario: Types refused until their handling exists (rev 0.38, provisional)
+- **WHEN** a HEIC file, or a legacy OLE document (.doc, .xls), is uploaded
+- **THEN** it is refused with a plain message: HEIC until its conversion to JPEG is built, OLE documents because they may carry macros
+- **AND** an Outlook .msg is accepted, and ActiveX controls are refused with macros
+
+#### Scenario: Archive limits and a scanner that cannot decide (rev 0.38, provisional)
+- **WHEN** an XLSX or DOCX is checked, or the malware scanner fails or is missing
+- **THEN** an archive over 10,000 parts, 200 MB uncompressed or a compression ratio of 100 per part is refused, read from its directory without extracting it
+- **AND** a file the scanner could not decide on is refused, never attached
+
 ### Requirement: FR-DOC-13 Two-phase upload
 Every upload SHALL land first in a staging bucket with no retention lock and be attached only when clean, and a file SHALL be copied into the locked bucket only when its parent is approved, posted or completed.
 
@@ -328,6 +344,11 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **THEN** an alert is raised
 - **AND** the object is listed for review
 
+#### Scenario: Commit queued with the posting (rev 0.38, provisional)
+- **WHEN** a record with attached files is posted
+- **THEN** the copy to the locked bucket is queued in the posting's own transaction, and an hourly job commits anything the queue missed
+- **AND** the copy is verified by its SHA-256 before its row turns final, and a copy left by a failed attempt is reused when its hash matches
+
 #### Scenario: G4-069 Failed scan, removed file and rolled-back posting
 - **WHEN** one upload fails the malware scan; a clean file is attached to a draft bill and then removed; a third file is copied into the locked bucket at posting but the posting transaction rolls back
 - **THEN** none is readable through the app or API
@@ -343,6 +364,11 @@ Source: PRD-001 §8.16 · Priority M · Phase P1 (class) / P2 (redaction)
 #### Scenario: Payroll and identity evidence
 - **WHEN** a user opens evidence classed as payroll or identity document
 - **THEN** access follows the payroll permissions (FR-PAY-13)
+
+#### Scenario: Payroll and identity files wait for payroll permissions (rev 0.38, provisional)
+- **GIVEN** the payroll permissions (FR-PAY-13) do not exist yet
+- **WHEN** a file of the payroll or identity class is uploaded
+- **THEN** it is refused
 
 #### Scenario: Unmasked NRIC is flagged
 - **WHEN** an evidence file is scanned for the NRIC pattern
@@ -384,6 +410,11 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **WHEN** an AI or MCP client wants evidence attached
 - **THEN** it cannot upload directly
 - **AND** it can only propose attaching an existing document (`doc.attach`, tier 1), which a human approves
+
+#### Scenario: Journals first, on the record as read (rev 0.38, provisional)
+- **WHEN** a file is added through `POST /v1/journals/{journal_id}/evidence`
+- **THEN** it needs If-Match with the journal's ETag, the evidence right and the right to view the journal
+- **AND** an integration's file is recorded with the source API; a journal's files can be listed, read, and removed while it is a draft
 
 ### Requirement: FR-DOC-12 Smart document capture
 The system SHALL capture receipts, bills, sales invoices, statements and contracts through one pipeline that classifies each document, extracts its fields and creates drafts only (`ap.draft_bill`, `exp.draft_claim`, tier 1).

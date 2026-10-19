@@ -10,8 +10,10 @@ evidence: "Verification log"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "test TestEvidenceIsAppendOnlyOnceItsRecordIsFinal"
+    evidence: "The database refuses removing, changing or deleting evidence once its journal is posted (FY120-FY124); CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "P1"
+    status: running
+    how: "job evidence.verify"
+    evidence: "the job's run in the platform's job slots; a missing or changed locked file fails the run and raises the absence alert (C.2 #31)"

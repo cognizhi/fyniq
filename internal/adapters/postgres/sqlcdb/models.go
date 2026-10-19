@@ -181,6 +181,31 @@ type FyniqDocumentVersion struct {
 	CreatedAt      time.Time
 }
 
+type FyniqEvidence struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	EvidenceType   string
+	Note           *string
+	RelatesOn      pgtype.Date
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	OriginalSha256 string
+	Source         string
+	DataClass      string
+	StagingKey     string
+	UploadedBy     string
+	UploadedAt     time.Time
+	State          string
+	RemovedAt      *time.Time
+	LockedKey      *string
+	RetainUntil    *time.Time
+	FinalisedAt    *time.Time
+	Version        int32
+}
+
 type FyniqGstRegistration struct {
 	OrganisationID    uuid.UUID
 	ID                uuid.UUID

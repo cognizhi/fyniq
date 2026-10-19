@@ -27,7 +27,8 @@ type Schedule struct {
 // idempotency keys (FR-INT-08: kept 24 hours) and of ended rate-limit windows (FR-INT-16), the nightly
 // comparison of every organisation's balances
 // with its journal lines at 02:30 (CTL-FIN-01), the nightly count of Super admins at 03:00 (CTL-IAM-07),
-// and the night's control evidence at 04:00, after them (compliance/, PRD-001 §14.1).
+// and the night's control evidence at 04:00, after them (compliance/, PRD-001 §14.1); every hour, the
+// commit and the sweep of evidence files (FR-DOC-13), and at 03:30 the re-verification of their hashes.
 var PlatformSchedules = []Schedule{
 	{Job: "audit.anchor", Every: time.Hour, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "audit.verify", Every: 24 * time.Hour, Offset: 18 * time.Hour, Lease: 6 * time.Hour, Stale: 26 * time.Hour},
@@ -36,6 +37,12 @@ var PlatformSchedules = []Schedule{
 	{Job: "ledger.verify", Every: 24 * time.Hour, Offset: 18*time.Hour + 30*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 	{Job: "superadmins.verify", Every: 24 * time.Hour, Offset: 19 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	{Job: "compliance.evidence", Every: 24 * time.Hour, Offset: 20 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},
+	// Evidence (FR-DOC-13): hourly, commit the files of records no longer drafts that the outbox missed, and
+	// sweep staging files no row uses after a day, reporting locked files no row knows.
+	{Job: "evidence.commit", Every: time.Hour, Offset: 10 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	{Job: "evidence.sweep", Every: time.Hour, Offset: 50 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// …and nightly at 03:30, re-hash every committed file (FR-DOC-07, CTL-AUD-06).
+	{Job: "evidence.verify", Every: 24 * time.Hour, Offset: 19*time.Hour + 30*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 }
 
 // TickInterval is how often Cloud Scheduler (locally the API's own loop) calls the tick; a setting.

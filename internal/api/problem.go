@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/item"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -234,6 +235,16 @@ var codeFacts = map[string]struct {
 	storage.CodeLockTimeout:    {409, "Another change is in progress"},
 	storage.CodeInvalid:        {422, "The request is not valid"},
 	storage.CodeStorageFailure: {500, "Something went wrong"},
+	storage.CodeEvidence:       {409, "Evidence is append-only once its record is final"},
+	evidence.CodeType:          {422, "Not a file type Fyniq accepts"},
+	evidence.CodeSize:          {422, "The file is empty or larger than 25 MB"},
+	evidence.CodeMalware:       {422, "The malware scan flagged the file"},
+	evidence.CodeText:          {422, "The evidence type is blank, or a text is too long"},
+	evidence.CodeClass:         {422, "Not a data class this record can hold"},
+	evidence.CodeSource:        {422, "Not how a file arrives here"},
+	evidence.CodeImage:         {422, "The picture cannot be read"},
+	evidence.CodeMacro:         {422, "Office files with macros are refused"},
+	evidence.CodeArchive:       {422, "The office file's archive is not safe to open"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -246,6 +257,7 @@ var storageFixes = map[string]string{
 	storage.CodeDuplicate:    "Check whether it was done already; for a new record, use a code or key not in use",
 	storage.CodeInvalid:      "Correct the value the message names and send it again",
 	storage.CodeApproval:     "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
+	storage.CodeEvidence:     "Files can be removed only while the record is a draft; add a newer file instead",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

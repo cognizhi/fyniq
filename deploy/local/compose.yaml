@@ -66,6 +66,15 @@ services:
     ports:
       - "127.0.0.1:${FYNIQ_GCS_PORT:-4443}:4443"
 
+  clamav:                                     # optional malware scanner for evidence uploads (FR-DOC-01, SEC-24)
+    # Off by default: tests and local mode use the EICAR fake. To scan with ClamAV, start this profile and set
+    # FYNIQ_CLAMD_ADDR (localhost:3310 for make dev; clamav:3310 for the api container). It downloads its
+    # signatures when it starts, and is ready when clamd listens.
+    image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
+    profiles: [scanner]
+    ports:
+      - "127.0.0.1:${FYNIQ_CLAMD_PORT:-3310}:3310"
+
   # ------------------------------------------------------------ our services (profile core)
   migrate:
     <<: *hardened
@@ -91,6 +100,7 @@ services:
       FYNIQ_API_AUDIENCE: http://localhost:8080/api
       FYNIQ_MCP_AUDIENCE: http://localhost:8080/mcp
       FYNIQ_PUBLIC_ORIGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}   # where the browser is: sign-in sends it back here
+      FYNIQ_CLAMD_ADDR: ${FYNIQ_CLAMD_ADDR:-}                # clamav:3310 with the scanner profile; else the EICAR fake
     ports: ["127.0.0.1:${FYNIQ_API_PORT:-8081}:8080"]
     depends_on: { migrate: { condition: service_completed_successfully } }
     healthcheck: *health

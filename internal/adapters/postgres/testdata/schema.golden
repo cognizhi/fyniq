@@ -129,6 +129,28 @@ document_version | document_id | uuid | not null |
 document_version | version | integer | not null | 
 document_version | payload | jsonb | not null | 
 document_version | created_at | timestamp with time zone | not null | now()
+evidence | organisation_id | uuid | not null | current_org()
+evidence | id | uuid | not null | uuidv7()
+evidence | document_id | uuid | not null | 
+evidence | evidence_type | text | not null | 
+evidence | note | text | null | 
+evidence | relates_on | date | null | 
+evidence | file_name | text | not null | 
+evidence | media_type | text | not null | 
+evidence | size_bytes | bigint | not null | 
+evidence | sha256 | text | not null | 
+evidence | original_sha256 | text | not null | 
+evidence | source | text | not null | 
+evidence | data_class | text | not null | 'general'::text
+evidence | staging_key | text | not null | 
+evidence | uploaded_by | text | not null | 
+evidence | uploaded_at | timestamp with time zone | not null | now()
+evidence | state | text | not null | 'attached'::text
+evidence | removed_at | timestamp with time zone | null | 
+evidence | locked_key | text | null | 
+evidence | retain_until | timestamp with time zone | null | 
+evidence | finalised_at | timestamp with time zone | null | 
+evidence | version | integer | not null | 1
 gst_registration | organisation_id | uuid | not null | current_org()
 gst_registration | id | uuid | not null | uuidv7()
 gst_registration | registered_from | date | not null | 
@@ -598,6 +620,37 @@ document_version | document_version_pkey | PRIMARY KEY (organisation_id, id)
 document_version | document_version_positive | CHECK ((version > 0))
 document_version | document_version_version_not_null | NOT NULL version
 document_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+evidence | evidence_data_class_known | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'bank'::text, 'payroll'::text, 'identity'::text])))
+evidence | evidence_data_class_not_null | NOT NULL data_class
+evidence | evidence_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+evidence | evidence_document_id_not_null | NOT NULL document_id
+evidence | evidence_evidence_type_not_null | NOT NULL evidence_type
+evidence | evidence_file_name_not_null | NOT NULL file_name
+evidence | evidence_hash_format | CHECK (((sha256 ~ '^[0-9a-f]{64}$'::text) AND (original_sha256 ~ '^[0-9a-f]{64}$'::text)))
+evidence | evidence_id_not_null | NOT NULL id
+evidence | evidence_key_format | CHECK (((staging_key ~ '^staging/[0-9a-f-]{36}/[0-9a-f-]{36}$'::text) AND (locked_key ~ '^evidence/[0-9a-f-]{36}/[0-9a-f-]{36}$'::text)))
+evidence | evidence_lengths | CHECK ((((length(btrim(evidence_type)) >= 1) AND (length(btrim(evidence_type)) <= 100)) AND ((length(note) >= 1) AND (length(note) <= 1000)) AND ((length(file_name) >= 1) AND (length(file_name) <= 255)) AND ((length(uploaded_by) >= 1) AND (length(uploaded_by) <= 200))))
+evidence | evidence_media_type_known | CHECK ((media_type = ANY (ARRAY['application/pdf'::text, 'image/png'::text, 'image/jpeg'::text, 'image/webp'::text, 'text/plain'::text, 'text/csv'::text, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'::text, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'::text, 'message/rfc822'::text, 'application/vnd.ms-outlook'::text])))
+evidence | evidence_media_type_not_null | NOT NULL media_type
+evidence | evidence_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+evidence | evidence_organisation_id_not_null | NOT NULL organisation_id
+evidence | evidence_original_sha256_not_null | NOT NULL original_sha256
+evidence | evidence_pkey | PRIMARY KEY (organisation_id, id)
+evidence | evidence_sha256_not_null | NOT NULL sha256
+evidence | evidence_size_bytes_not_null | NOT NULL size_bytes
+evidence | evidence_size_range | CHECK (((size_bytes >= 1) AND (size_bytes <= 26214400)))
+evidence | evidence_source_known | CHECK ((source = ANY (ARRAY['upload'::text, 'paste'::text, 'email'::text, 'api'::text])))
+evidence | evidence_source_not_null | NOT NULL source
+evidence | evidence_staging_key | UNIQUE (organisation_id, staging_key)
+evidence | evidence_staging_key_not_null | NOT NULL staging_key
+evidence | evidence_state_fields | CHECK ((((state = 'attached'::text) AND (removed_at IS NULL) AND (locked_key IS NULL) AND (retain_until IS NULL) AND (finalised_at IS NULL)) OR ((state = 'removed'::text) AND (removed_at IS NOT NULL) AND (locked_key IS NULL) AND (retain_until IS NULL) AND (finalised_at IS NULL)) OR ((state = 'final'::text) AND (removed_at IS NULL) AND (locked_key IS NOT NULL) AND (retain_until IS NOT NULL) AND (finalised_at IS NOT NULL))))
+evidence | evidence_state_known | CHECK ((state = ANY (ARRAY['attached'::text, 'removed'::text, 'final'::text])))
+evidence | evidence_state_not_null | NOT NULL state
+evidence | evidence_uploaded_at_not_null | NOT NULL uploaded_at
+evidence | evidence_uploaded_by_not_null | NOT NULL uploaded_by
+evidence | evidence_version_not_null | NOT NULL version
+evidence | evidence_version_positive | CHECK ((version > 0))
+evidence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 gst_registration | gst_registration_accounting_basis_not_null | NOT NULL accounting_basis
 gst_registration | gst_registration_basis_known | CHECK ((accounting_basis = 'invoice'::text))
 gst_registration | gst_registration_dates | CHECK ((deregistered_from > registered_from))
@@ -971,6 +1024,7 @@ CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (o
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
+CREATE INDEX evidence_document ON fyniq.evidence USING btree (organisation_id, document_id, id)
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
 CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (organisation_id, expires_at)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
@@ -1007,6 +1061,8 @@ CREATE UNIQUE INDEX document_sequence_pkey ON fyniq.document_sequence USING btre
 CREATE UNIQUE INDEX document_sequence_type_key ON fyniq.document_sequence USING btree (organisation_id, document_type)
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX evidence_pkey ON fyniq.evidence USING btree (organisation_id, id)
+CREATE UNIQUE INDEX evidence_staging_key ON fyniq.evidence USING btree (organisation_id, staging_key)
 CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree (organisation_id, id)
 CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
@@ -1062,6 +1118,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
@@ -1086,6 +1143,9 @@ CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH S
 CREATE TRIGGER document_sequence_guard BEFORE UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION document_sequence_guard()
 CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER evidence_guard BEFORE UPDATE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_guard()
+CREATE TRIGGER evidence_never_deleted BEFORE DELETE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_never_deleted()
+CREATE TRIGGER evidence_no_truncate BEFORE TRUNCATE ON fyniq.evidence FOR EACH STATEMENT EXECUTE FUNCTION evidence_never_deleted()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_entry_no_truncate BEFORE TRUNCATE ON fyniq.journal_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
@@ -1126,6 +1186,7 @@ document | tenant_isolation | * | (organisation_id = current_org()) | (organisat
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1167,6 +1228,8 @@ document_sequence_guard() → trigger | security invoker | v | search_path=pg_ca
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
+evidence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e9a4de22d514e03c7917f207a26849f9
+evidence_never_deleted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c4003638e114bc7cbc14e63a1e638b1e
 finish_job_slot(p_job text, p_slot timestamp with time zone, p_ok boolean, p_detail text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ad4500fb0fd68beae2aba5eb5653db8b
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001

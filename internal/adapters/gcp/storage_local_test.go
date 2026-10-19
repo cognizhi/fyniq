@@ -16,6 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -87,5 +88,57 @@ func TestStorageAgainstTheEmulator(t *testing.T) {
 	}
 	if err := s.Put(ctx, "../escape", strings.NewReader("x")); err == nil {
 		t.Error("a key outside the store was accepted")
+	}
+}
+
+// The production adapter keeps a retained object as the port says, against the emulator. The emulator
+// records an object's retention and the hold's metadata but enforces neither, so this proves the adapter's
+// own check. It also refuses every change to a locked retention, where Cloud Storage lets one move later, so
+// the extension half of porttest.BlobRetention, and the bucket's Object Retention Lock itself, are proved
+// at the cloud gate (§17.5 item 1); the request Cloud Storage receives is TestStorageSendsLockedRetention….
+// req: FR-DOC-02
+// req: NFR-PORT-04
+// asvs: V14.2.7
+func TestStorageRetentionAgainstTheEmulator(t *testing.T) {
+	ctx := context.Background()
+	s := NewStorage(startFakeGCS(t), "anchors", nil, nil)
+	now := time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC)
+	c := clock.NewFrozen(now)
+	s.Clock = c
+	key := "evidence/org/1/receipt.pdf"
+	if err := s.SetRetainUntil(ctx, key, now.Add(time.Hour)); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("SetRetainUntil of a missing object: %v", err)
+	}
+	if err := s.Create(ctx, key, strings.NewReader("%PDF-1.7 receipt")); err != nil {
+		t.Fatal(err)
+	}
+	until := now.AddDate(7, 0, 0)
+	if err := s.SetRetainUntil(ctx, key, until); err != nil {
+		t.Fatalf("SetRetainUntil: %v", err)
+	}
+	if err := s.Delete(ctx, key); !errors.Is(err, ports.ErrRetained) {
+		t.Fatalf("Delete of a retained object: %v", err)
+	}
+	if err := s.Put(ctx, key, strings.NewReader("forged")); !errors.Is(err, ports.ErrRetained) {
+		t.Fatalf("Put over a retained object: %v", err)
+	}
+	if err := s.SetRetainUntil(ctx, key, until.AddDate(-1, 0, 0)); !errors.Is(err, ports.ErrRetentionShortened) {
+		t.Fatalf("SetRetainUntil earlier: %v", err)
+	}
+	if err := s.SetRetainUntil(ctx, key, until); err != nil {
+		t.Fatalf("SetRetainUntil to the same time: %v", err)
+	}
+	if err := s.SetLegalHold(ctx, key, true); err != nil {
+		t.Fatal(err)
+	}
+	c.Set(until.Add(time.Hour))
+	if err := s.Delete(ctx, key); !errors.Is(err, ports.ErrRetained) {
+		t.Fatalf("Delete of an object on hold: %v", err)
+	}
+	if err := s.SetLegalHold(ctx, key, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Delete(ctx, key); err != nil {
+		t.Fatalf("Delete after the retain-until with no hold: %v", err)
 	}
 }
