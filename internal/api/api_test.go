@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -248,6 +249,73 @@ func TestETagAndIfMatch(t *testing.T) {
 	if r := e.call(http.MethodGet, "/v1/organisation", accountant, nil); r.Header.Get("ETag") == "" || r.str("base_currency") != "SGD" {
 		t.Errorf("getOrganisation: %v %s", r.Header, r.Raw)
 	}
+}
+
+// A preview runs the command and every check its commit would, and saves nothing: the answer is the
+// command's own body, marked with Preference-Applied, or the refusal the commit would give.
+// req: FR-INT-14
+func TestPreviewBeforeCommit(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	preview := []string{"Prefer", "return=preview", "Idempotency-Key", uuid.NewString()}
+	unchanged := func(r response) {
+		t.Helper()
+		if r.Header.Get("Preference-Applied") != "return=preview" || r.Header.Get("ETag") != "" || r.Header.Get("Location") != "" ||
+			r.Header.Get("Idempotent-Replayed") != "" {
+			t.Errorf("a preview's headers: %v", r.Header)
+		}
+	}
+
+	// A draft previewed is not saved: its ID leads nowhere.
+	r := e.call(http.MethodPost, "/v1/journals", accountant, e.draft("100.00"), preview...)
+	if r.Status != http.StatusOK || r.str("status") != "draft" {
+		t.Fatalf("preview a draft: %d %s", r.Status, r.Raw)
+	}
+	unchanged(r)
+	e.problemIs(e.call(http.MethodGet, "/v1/journals/"+r.str("id"), accountant, nil), "getJournal", 404, CodeNotFound)
+
+	// Posting previewed shows the entry it would write; the journal stays a draft, at the same ETag, and
+	// the real posting writes the same lines.
+	id, tag := e.createDraft("100.00")
+	r = e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, append([]string{"If-Match", tag}, preview...)...)
+	if r.Status != http.StatusOK {
+		t.Fatalf("preview the posting: %d %s", r.Status, r.Raw)
+	}
+	unchanged(r)
+	previewed := r.Body["entry"].(map[string]any)["lines"]
+	if g := e.call(http.MethodGet, "/v1/journals/"+id, accountant, nil); g.str("status") != "draft" || g.Header.Get("ETag") != tag {
+		t.Fatalf("after the preview the journal is %s at %s; want a draft at %s", g.str("status"), g.Header.Get("ETag"), tag)
+	}
+	// The same Idempotency-Key, after a preview, still runs the command: a preview claims no key.
+	posted := e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", tag, "Idempotency-Key", preview[3])
+	if posted.Status != http.StatusOK || posted.Header.Get("Idempotent-Replayed") != "" || posted.Header.Get("Preference-Applied") != "" {
+		t.Fatalf("post after the preview: %d %v %s", posted.Status, posted.Header, posted.Raw)
+	}
+	if got := posted.Body["entry"].(map[string]any)["lines"]; !reflect.DeepEqual(got, previewed) {
+		t.Errorf("the posting wrote %v; the preview showed %v", got, previewed)
+	}
+
+	// A reversal previewed leaves the journal posted.
+	reversed := e.call(http.MethodPost, "/v1/journals/"+id+"/reverse", accountant, map[string]any{"date": "2026-10-21", "reason": "wrong month"},
+		append([]string{"If-Match", posted.Header.Get("ETag")}, preview[:2]...)...)
+	if reversed.Status != http.StatusOK || reversed.Body["entry"].(map[string]any)["reverses_entry_id"] == nil {
+		t.Fatalf("preview the reversal: %d %s", reversed.Status, reversed.Raw)
+	}
+	unchanged(reversed)
+	if g := e.call(http.MethodGet, "/v1/journals/"+id, accountant, nil); g.str("status") != "posted" {
+		t.Errorf("after previewing the reversal the journal is %s", g.str("status"))
+	}
+
+	// The refusal is the commit's: an unbalanced draft cannot post, previewed or not; another preference
+	// alone commits as usual.
+	unbalanced := e.draft("100.00")
+	unbalanced["lines"].([]map[string]any)[1]["amount"] = map[string]any{"amount": "-99.99", "currency": "SGD"}
+	r = e.call(http.MethodPost, "/v1/journals", accountant, unbalanced, "Prefer", "return=minimal")
+	if r.Status != http.StatusCreated || r.Header.Get("Preference-Applied") != "" {
+		t.Fatalf("a draft with return=minimal: %d %v", r.Status, r.Header)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+r.str("id")+"/post", accountant, nil, "If-Match", r.Header.Get("ETag"),
+		"Prefer", "respond-async, return=preview"), "postJournal", 422, "LEDGER-09")
 }
 
 // req: FR-INT-10

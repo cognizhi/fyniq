@@ -6,16 +6,19 @@ info: { title: Planted, version: 0.0.0 }
 components:
   parameters:
     IdempotencyKey: { name: Idempotency-Key, in: header, schema: { type: string } }
+    Prefer: { name: Prefer, in: header, schema: { type: string } }
     IfMatch: { name: If-Match, in: header, schema: { type: string } }
     Cursor: { name: cursor, in: query, schema: { type: string } }
     PageSize: { name: page_size, in: query, schema: { type: integer } }
   headers:
     ETag: { schema: { type: string } }
     Deprecation: { schema: { type: string } }
+    PreferenceApplied: { schema: { type: string } }
     Sunset: { schema: { type: string } }
   responses:
     Ok: { description: OK }
     Record: { description: OK, headers: { ETag: { $ref: "#/components/headers/ETag" } } }
+    Previewed: { description: OK, headers: { ETag: { $ref: "#/components/headers/ETag" }, Preference-Applied: { $ref: "#/components/headers/PreferenceApplied" } } }
     Page:
       description: OK
       content:
@@ -59,9 +62,15 @@ paths:
   /v1/gizmos/{gizmo_id}/codes:
     post:
       operationId: createGizmoCode
-      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }, { $ref: "#/components/parameters/Prefer" }]
       x-fyniq-exempt: { Retry-After: "A convention of §8.18.1 that this operation does not follow, for a reason" }
-      responses: { "201": { $ref: "#/components/responses/Ok" } }
+      responses: { "200": { $ref: "#/components/responses/Previewed" }, "201": { $ref: "#/components/responses/Ok" } }
+  # bad: FR-INT-14, a write that cannot be previewed
+  /v1/gadgets/{gadget_id}/refresh:
+    post:
+      operationId: refreshGadget
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      responses: { "200": { $ref: "#/components/responses/Ok" } }
   # bad: FR-INT-06, a sunset less than six months away, and a deprecation with no dates, note or headers
   /v1/old:
     get:
@@ -83,22 +92,24 @@ paths:
       responses: { "200": { $ref: "#/components/responses/Page" } }
     post:
       operationId: createThing
-      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
-      responses: { "201": { $ref: "#/components/responses/Record" } }
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }, { $ref: "#/components/parameters/Prefer" }]
+      responses: { "200": { $ref: "#/components/responses/Previewed" }, "201": { $ref: "#/components/responses/Record" } }
   /v1/things/{thing_id}:
     get: { operationId: getThing, responses: { "200": { $ref: "#/components/responses/Record" } } }
   /v1/things/{thing_id}/close:
     post:
       operationId: closeThing
-      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }, { $ref: "#/components/parameters/IfMatch" }]
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }, { $ref: "#/components/parameters/IfMatch" }, { $ref: "#/components/parameters/Prefer" }]
       responses:
-        "200": { $ref: "#/components/responses/Record" }
+        "200": { $ref: "#/components/responses/Previewed" }
         "412": { description: Stale }
         "428": { description: No If-Match }
   /v1/codes:
     post:
       operationId: createCode
-      x-fyniq-exempt: { Idempotency-Key: "Its response carries a one-time secret, which a stored response would keep at rest." }
+      x-fyniq-exempt:
+        Idempotency-Key: "Its response carries a one-time secret, which a stored response would keep at rest."
+        Prefer: "A preview would confirm a one-time code without spending it, so it takes none."
       responses: { "201": { $ref: "#/components/responses/Ok" } }
   /v1/legacy:
     get:

@@ -53,7 +53,7 @@ rules:
       - field: schema.examples
         function: truthy
   fyniq-api-conventions:
-    description: Idempotency-Key on writes, ETag and If-Match on versioned records, cursor lists (FR-INT-08, FR-INT-09, FR-INT-10).
+    description: Deprecation, Idempotency-Key, ETag and If-Match, cursor lists and preview (FR-INT-06, FR-INT-08, FR-INT-09, FR-INT-10, FR-INT-14).
     severity: error
     given: "$.paths"
     then:
@@ -71,4 +71,4 @@ rules:
           minProperties: 1
           additionalProperties: false
           patternProperties:
-            "^(Idempotency-Key|If-Match|cursor)$": { type: string, minLength: 40 }
+            "^(Idempotency-Key|If-Match|Prefer|cursor)$": { type: string, minLength: 40 }

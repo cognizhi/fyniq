@@ -30,11 +30,12 @@ header (`functions/apiConventions.js`, rule `fyniq-api-conventions`):
 | Idempotency (FR-INT-08) | A `POST` takes no `Idempotency-Key` header |
 | Concurrency (FR-INT-09) | A command changes a record you can read (the record's own path, or an action under it) without `If-Match`, 412 and 428, or the record's read returns no `ETag` |
 | Lists (FR-INT-10) | A list (named `list…`, or a page of `items`) lacks `cursor`, `page_size` and `next_cursor` |
+| Preview (FR-INT-14) | A write takes no `Prefer` header, or has no 200 response with `Preference-Applied`. Embed `PreferHeader` and pass it to `write()`: the command then runs in a preview, which checks everything the commit would, including the database's deferred checks, and rolls back |
 
 An operation opts out of one only with `x-fyniq-exempt` naming the convention and the reason (rule
 `fyniq-exemption-reasons`); `TestConventionExemptions` lists every exemption, so a new one is reviewed.
 Today the six commands whose response carries a one-time secret take no `Idempotency-Key` (FR-INT-08,
-rev 0.27). `testdata/planted.yaml` holds an operation that breaks each rule;
+rev 0.27) and no preview, which would confirm a one-time code without spending it (FR-INT-14, rev 0.28). `testdata/planted.yaml` holds an operation that breaks each rule;
 `TestTheContractLintRefusesPlantedOperations` checks that Spectral refuses every one.
 
 Who uses it, and what guards it:

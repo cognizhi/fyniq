@@ -21,7 +21,13 @@
 ## 2. New conventions
 
 - [ ] 2.1 Long and bulk operations: an operation resource through the queue port, and per-item results. Test `// req: FR-INT-11`
-- [ ] 2.2 Preview before commit with `Prefer: return=preview`, run in a rolled-back transaction. Test `// req: FR-INT-14`: the database is unchanged and the impact equals that of the committed command
+- [x] 2.2 Preview before commit with `Prefer: return=preview`, run in a rolled-back transaction. Test `// req: FR-INT-14`: the database is unchanged and the impact equals that of the committed command
+  (19 Oct 2026: `storage.WithPreview` makes the outermost unit of work run the command, flush its audit events and
+  `SET CONSTRAINTS ALL IMMEDIATE`, then roll back with `storage.ErrPreviewed`, so the deferred balance check runs; a
+  conformance case in `internal/ports/porttest`. `write()` previews when `Prefer` asks for `return=preview`: status 200,
+  `Preference-Applied`, no `ETag`, `Location` or claimed key. The contract lint refuses a write without `Prefer`.
+  `TestPreviewBeforeCommit` posts after a preview and finds the same lines. FR-INT-14 now says what a preview answers and
+  exempts the one-time-secret commands (rev 0.28))
 - [ ] 2.3 Rate limits per client and per organisation, with `RateLimit` / `RateLimit-Policy` and `Retry-After` on 429. Test `// req: FR-INT-16`
 
 ## 3. Clients and contracts

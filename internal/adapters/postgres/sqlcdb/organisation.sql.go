@@ -11,6 +11,17 @@ import (
 	"github.com/google/uuid"
 )
 
+const checkDeferred = `-- name: CheckDeferred :exec
+SET CONSTRAINTS ALL IMMEDIATE
+`
+
+// A preview's last statement before it rolls back (FR-INT-14): the deferred checks (INV-01's balance,
+// the audit requirements) run now, as they would at commit.
+func (q *Queries) CheckDeferred(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, checkDeferred)
+	return err
+}
+
 const getOrganisation = `-- name: GetOrganisation :one
 SELECT organisation_id, name, base_currency, base_minor_units, version FROM fyniq.organisation
 `

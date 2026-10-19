@@ -14,17 +14,16 @@ import (
 )
 
 // An operation opts out of a convention of §8.18.1 only with x-fyniq-exempt, and only these do: the
-// commands whose response carries a one-time secret take no Idempotency-Key (FR-INT-08, rev 0.27). A
-// new exemption fails this test until it is added here, in a reviewed change.
+// commands whose response carries a one-time secret take no Idempotency-Key (FR-INT-08, rev 0.27) and
+// no preview (FR-INT-14, rev 0.28). A new exemption fails this test until it is added here, in a
+// reviewed change.
 // req: FR-INT-08
+// req: FR-INT-14
 func TestConventionExemptions(t *testing.T) {
-	want := []string{
-		"acceptSuperAdminInvitation Idempotency-Key",
-		"completeSetup Idempotency-Key",
-		"confirmSuperAdminRecovery Idempotency-Key",
-		"createSuperAdminInvitation Idempotency-Key",
-		"recoverSuperAdmin Idempotency-Key",
-		"replaceSuperAdminRecoveryCodes Idempotency-Key",
+	var want []string
+	for _, op := range []string{"acceptSuperAdminInvitation", "completeSetup", "confirmSuperAdminRecovery", "createSuperAdminInvitation",
+		"recoverSuperAdmin", "replaceSuperAdminRecoveryCodes"} {
+		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}
 	var got []string
 	for _, op := range operations(testAPI(t)) {
@@ -120,6 +119,26 @@ func TestInMemoryListsPage(t *testing.T) {
 			t.Errorf("the cursor %q was accepted", bad)
 		} else if p, ok := err.(*Problem); !ok || p.Code != CodeCursor {
 			t.Errorf("the cursor %q: %v", bad, err)
+		}
+	}
+}
+
+// Prefer is read as RFC 7240 says: preferences separated by commas, each with optional parameters, the
+// name without case; only return=preview asks for a preview.
+// req: FR-INT-14
+func TestPreferReturnPreview(t *testing.T) {
+	for prefer, want := range map[string]bool{
+		"return=preview":                         true,
+		`RETURN = "preview"`:                     true,
+		"respond-async, return=preview; foo=bar": true,
+		"":                                       false,
+		"return=minimal":                         false,
+		"return=representation, handling=lenient": false,
+		"preview":         false,
+		"return=previews": false,
+	} {
+		if got := wantsPreview(prefer); got != want {
+			t.Errorf("wantsPreview(%q) = %v", prefer, got)
 		}
 	}
 }

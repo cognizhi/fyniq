@@ -967,6 +967,8 @@ export interface operations {
             header?: {
                 /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
                 "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
             };
             path?: never;
             cookie?: never;
@@ -977,6 +979,17 @@ export interface operations {
             };
         };
         responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Journal"];
+                };
+            };
             /** @description Created */
             201: {
                 headers: {
@@ -1149,6 +1162,8 @@ export interface operations {
                 "Idempotency-Key"?: string;
                 /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
                 "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
             };
             path: {
                 /** @description The journal's ID. */
@@ -1158,11 +1173,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
             200: {
                 headers: {
                     ETag?: string;
                     "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1260,6 +1277,8 @@ export interface operations {
                 "Idempotency-Key"?: string;
                 /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
                 "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
             };
             path: {
                 /** @description The journal's ID. */
@@ -1273,11 +1292,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
             200: {
                 headers: {
                     ETag?: string;
                     "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
                     [name: string]: unknown;
                 };
                 content: {
