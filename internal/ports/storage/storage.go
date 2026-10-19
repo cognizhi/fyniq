@@ -77,6 +77,8 @@ type Accounts interface {
 	// Page returns at most limit accounts with a code after after (all when after is ""), by code:
 	// one page of a cursor list (FR-INT-10).
 	Page(ctx context.Context, after string, limit int) ([]Account, error)
+	// Count returns how many accounts the organisation has.
+	Count(ctx context.Context) (int64, error)
 }
 
 // Documents are the source documents and their immutable versions (§11.4).
@@ -182,6 +184,21 @@ type NewAccount struct {
 	ParentID *uuid.UUID
 	Group    bool
 	Role     AccountRole // fixed once the account exists
+	AccountAttributes
+}
+
+// AccountAttributes are an account's attributes beyond its code, name and type (FR-COA-02). Empty text is
+// not set.
+type AccountAttributes struct {
+	ReportGroup    string
+	CashFlowLine   string
+	Function       string // COGS, R&D, S&M, G&A or Other
+	MoneyAccount   bool   // a bank, cash, card or wallet account money moves through
+	DefaultGSTCode string
+	Currency       string // a bank account's currency
+	Control        bool   // has a sub-ledger (AR, AP, a director's account)
+	PayrollCost    bool
+	Guidance       string // shown when someone picks the account
 }
 
 // AccountRole marks an account the rules treat specially; empty for most accounts.
@@ -202,6 +219,7 @@ type Account struct {
 	Active   bool
 	Version  int
 	Role     AccountRole
+	AccountAttributes
 }
 
 // PeriodStatus is open, soft-locked or closed (INV-03; soft locks in FR-GL-09).

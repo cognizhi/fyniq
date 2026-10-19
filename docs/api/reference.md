@@ -491,6 +491,28 @@ Returns one account with its ETag. Read-only; no side effects.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
 
+### `POST /v1/accounts:load-standard-chart`
+
+**Load the standard chart of accounts** (`loadStandardChart`)
+
+Loads the standard Singapore start-up chart into an organisation that has no account yet: 86 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Chart of accounts, dimensions. The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1).
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ChartLoaded`](../../contracts/schemas/ChartLoaded.schema.json)
+  - `201` Created [`ChartLoaded`](../../contracts/schemas/ChartLoaded.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `409` Conflict: `API-CHART-01` The organisation has accounts already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-CHART-01`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Journals
 
 Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12).

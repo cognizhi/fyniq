@@ -59,7 +59,14 @@
 
 ## 3. Chart of accounts and dimensions
 
-- [ ] 3.1 Pre-load the workbook's 83-account chart from data, with every attribute. Tests `// req: FR-COA-01` and `// req: FR-COA-02`; the accountant reviews the data file
+- [x] 3.1 Pre-load the workbook's 83-account chart from data, with every attribute. Tests `// req: FR-COA-01` and `// req: FR-COA-02`; the accountant reviews the data file
+  (19 Oct 2026: `internal/domain/chart/standard-chart.csv`, 86 accounts from the workbook's `src/cfh/coa.py` at
+  a705fd1 with every attribute, plus B.5's 2120, 3300 and 7040, the workbook's 7040 moved to 7050 (PRD-001 rev 0.31,
+  provisional until the CoA review; the file's header says what changed from the workbook). Migrations 000022 and
+  000023 add FR-COA-02's attributes to `fyniq.account`. `POST /v1/accounts:load-standard-chart` loads it once, into an
+  organisation with no account; it is not a side effect of setup, because `make seed-load` and the smoke test load the
+  sample company's own chart into a new organisation. The first-run wizard calls it when the screens arrive. **For the
+  accountant:** the data file, the payroll-cost set (rev 0.31 [verify]) and the control accounts.)
 - [ ] 3.2 System accounts by role, deactivation, the approved journal-preserving merge, and the hierarchy with posting only to leaves. Tests `// req: FR-COA-03`, `// req: FR-COA-04` and `// req: FR-COA-05`, each attacked as the application role
 - [ ] 3.3 Dimensions and dimension sets on journal lines. The balances cache is keyed by dimension set, and the INV-08 rebuild and the oracle's half are extended. Tests `// req: FR-DIM-01` and `// req: FR-DIM-02`; the differential gate is green
 

@@ -175,11 +175,17 @@ func (u *unitOfWork) Balances() storage.Balances   { return balances{u} }
 
 type accounts struct{ u *unitOfWork }
 
-func toAccount(id uuid.UUID, code, name, typ string, parent *uuid.UUID, group, active bool, version int32, role *string) storage.Account {
-	a := storage.Account{ID: id, Code: code, Name: name, Type: storage.AccountType(typ), ParentID: parent,
-		Group: group, Active: active, Version: int(version)}
-	if role != nil {
-		a.Role = storage.AccountRole(*role)
+// accountRow is every query's account row: they all select the same columns.
+type accountRow = sqlcdb.GetAccountRow
+
+func toAccount(r accountRow) storage.Account {
+	a := storage.Account{ID: r.ID, Code: r.Code, Name: r.Name, Type: storage.AccountType(r.Type), ParentID: r.ParentID,
+		Group: r.IsGroup, Active: r.IsActive, Version: int(r.Version), AccountAttributes: storage.AccountAttributes{
+			ReportGroup: str(r.ReportGroup), CashFlowLine: str(r.CashFlowLine), Function: str(r.Function), MoneyAccount: r.IsMoneyAccount,
+			DefaultGSTCode: str(r.DefaultGstCode), Currency: str(r.Currency), Control: r.IsControl, PayrollCost: r.IsPayrollCost,
+			Guidance: str(r.Guidance)}}
+	if r.Role != nil {
+		a.Role = storage.AccountRole(*r.Role)
 	}
 	return a
 }
@@ -193,17 +199,22 @@ func (r accounts) Create(ctx context.Context, a storage.NewAccount) (storage.Acc
 		role = (*string)(&a.Role)
 	}
 	row, err := r.u.q.InsertAccount(ctx, sqlcdb.InsertAccountParams{Code: a.Code, Name: a.Name, Type: string(a.Type),
-		ParentID: a.ParentID, IsGroup: a.Group, Role: role})
+		ParentID: a.ParentID, IsGroup: a.Group, Role: role, ReportGroup: opt(a.ReportGroup), CashFlowLine: opt(a.CashFlowLine),
+		Function: opt(a.Function), IsMoneyAccount: a.MoneyAccount, DefaultGstCode: opt(a.DefaultGSTCode), Currency: opt(a.Currency),
+		IsControl: a.Control, IsPayrollCost: a.PayrollCost, Guidance: opt(a.Guidance)})
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
 	v := int(row.Version)
 	if err := r.u.event(ctx, "account.created", "account", row.ID, &v, map[string][2]any{
 		"code": {nil, row.Code}, "name": {nil, row.Name}, "type": {nil, row.Type},
-		"parent_id": {nil, row.ParentID}, "is_group": {nil, row.IsGroup}, "is_active": {nil, row.IsActive}, "role": {nil, row.Role}}); err != nil {
+		"parent_id": {nil, row.ParentID}, "is_group": {nil, row.IsGroup}, "is_active": {nil, row.IsActive}, "role": {nil, row.Role},
+		"report_group": {nil, row.ReportGroup}, "cash_flow_line": {nil, row.CashFlowLine}, "function": {nil, row.Function},
+		"is_money_account": {nil, row.IsMoneyAccount}, "default_gst_code": {nil, row.DefaultGstCode}, "currency": {nil, row.Currency},
+		"is_control": {nil, row.IsControl}, "is_payroll_cost": {nil, row.IsPayrollCost}, "guidance": {nil, row.Guidance}}); err != nil {
 		return storage.Account{}, err
 	}
-	return toAccount(row.ID, row.Code, row.Name, row.Type, row.ParentID, row.IsGroup, row.IsActive, row.Version, row.Role), nil
+	return toAccount(accountRow(row)), nil
 }
 
 func (r accounts) Get(ctx context.Context, id uuid.UUID) (storage.Account, error) {
@@ -214,7 +225,7 @@ func (r accounts) Get(ctx context.Context, id uuid.UUID) (storage.Account, error
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
-	return toAccount(row.ID, row.Code, row.Name, row.Type, row.ParentID, row.IsGroup, row.IsActive, row.Version, row.Role), nil
+	return toAccount(accountRow(row)), nil
 }
 
 func (r accounts) ByCode(ctx context.Context, code string) (storage.Account, error) {
@@ -225,7 +236,7 @@ func (r accounts) ByCode(ctx context.Context, code string) (storage.Account, err
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
-	return toAccount(row.ID, row.Code, row.Name, row.Type, row.ParentID, row.IsGroup, row.IsActive, row.Version, row.Role), nil
+	return toAccount(accountRow(row)), nil
 }
 
 func (r accounts) SetActive(ctx context.Context, id uuid.UUID, active bool) (storage.Account, error) {
@@ -248,7 +259,7 @@ func (r accounts) SetActive(ctx context.Context, id uuid.UUID, active bool) (sto
 		"is_active": {before.IsActive, row.IsActive}, "version": {before.Version, row.Version}}); err != nil {
 		return storage.Account{}, err
 	}
-	return toAccount(row.ID, row.Code, row.Name, row.Type, row.ParentID, row.IsGroup, row.IsActive, row.Version, row.Role), nil
+	return toAccount(accountRow(row)), nil
 }
 
 func (r accounts) List(ctx context.Context) ([]storage.Account, error) {
@@ -261,7 +272,7 @@ func (r accounts) List(ctx context.Context) ([]storage.Account, error) {
 	}
 	out := make([]storage.Account, 0, len(rows))
 	for _, a := range rows {
-		out = append(out, toAccount(a.ID, a.Code, a.Name, a.Type, a.ParentID, a.IsGroup, a.IsActive, a.Version, a.Role))
+		out = append(out, toAccount(accountRow(a)))
 	}
 	return out, nil
 }
@@ -279,9 +290,17 @@ func (r accounts) Page(ctx context.Context, after string, limit int) ([]storage.
 	}
 	out := make([]storage.Account, 0, len(rows))
 	for _, a := range rows {
-		out = append(out, toAccount(a.ID, a.Code, a.Name, a.Type, a.ParentID, a.IsGroup, a.IsActive, a.Version, a.Role))
+		out = append(out, toAccount(accountRow(a)))
 	}
 	return out, nil
+}
+
+func (r accounts) Count(ctx context.Context) (int64, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	n, err := r.u.q.CountAccounts(ctx)
+	return n, mapError(err)
 }
 
 // ------------------------------------------------------------------ documents

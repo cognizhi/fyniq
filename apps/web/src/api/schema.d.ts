@@ -44,6 +44,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/accounts:load-standard-chart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Load the standard chart of accounts
+         * @description Loads the standard Singapore start-up chart into an organisation that has no account yet: 86 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["loadStandardChart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/journals": {
         parameters: {
             query?: never;
@@ -475,21 +495,57 @@ export interface components {
              */
             active: boolean;
             /**
+             * @description Its line in the cash-flow statement, for balance-sheet accounts.
+             * @example Payables & accruals
+             */
+            cash_flow_line?: string;
+            /**
              * @description The account code.
              * @example 6100
              */
             code: string;
+            /**
+             * @description Has a sub-ledger (AR, AP, a director's account).
+             * @example false
+             */
+            control: boolean;
+            /**
+             * @description A bank account's currency.
+             * @example SGD
+             */
+            currency?: string;
+            /**
+             * @description The GST code a line on it starts with.
+             * @example TX
+             */
+            default_gst_code?: string;
+            /**
+             * @description The function its costs belong to.
+             * @example G&A
+             * @enum {string}
+             */
+            function?: "COGS" | "R&D" | "S&M" | "G&A" | "Other";
             /**
              * @description A group account is a heading: postings go to the accounts under it.
              * @example false
              */
             group: boolean;
             /**
+             * @description Shown when someone picks the account.
+             * @example Office rent, co-working memberships and short-term space.
+             */
+            guidance?: string;
+            /**
              * Format: uuid
              * @description The account's ID.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
              */
             id: string;
+            /**
+             * @description A bank, cash, card or wallet account money moves through.
+             * @example false
+             */
+            money_account: boolean;
             /**
              * @description The account name.
              * @example Rent
@@ -501,6 +557,21 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
              */
             parent_id: string | null;
+            /**
+             * @description Carries payroll cost (FR-PRJ-12, FR-PAY-13).
+             * @example false
+             */
+            payroll_cost: boolean;
+            /**
+             * @description Where the statements show it.
+             * @example Premises & office
+             */
+            report_group?: string;
+            /**
+             * @description A role the rules treat specially, such as share-capital.
+             * @example share-capital
+             */
+            role?: string;
             /**
              * @description The account type.
              * @example expense
@@ -565,6 +636,14 @@ export interface components {
              * @example 998
              */
             saved: number;
+        };
+        ChartLoaded: {
+            /**
+             * Format: int64
+             * @description How many accounts the chart now holds.
+             * @example 86
+             */
+            accounts: number;
         };
         Entry: {
             /**
@@ -1609,6 +1688,121 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    loadStandardChart: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChartLoaded"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChartLoaded"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-CHART-01` The organisation has accounts already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

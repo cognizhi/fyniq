@@ -12,6 +12,15 @@ account | is_active | boolean | not null | true
 account | version | integer | not null | 1
 account | created_at | timestamp with time zone | not null | now()
 account | role | text | null | 
+account | report_group | text | null | 
+account | cash_flow_line | text | null | 
+account | function | text | null | 
+account | is_money_account | boolean | not null | false
+account | default_gst_code | text | null | 
+account | currency | text | null | 
+account | is_control | boolean | not null | false
+account | is_payroll_cost | boolean | not null | false
+account | guidance | text | null | 
 app_user | user_id | uuid | not null | uuidv7()
 app_user | display_name | text | not null | 
 app_user | status | text | not null | 'active'::text
@@ -249,13 +258,20 @@ user_session | step_up_at | timestamp with time zone | null |
 user_session | ended_at | timestamp with time zone | null | 
 
 ## constraints
+account | account_attribute_lengths | CHECK ((((length(report_group) >= 1) AND (length(report_group) <= 60)) AND ((length(cash_flow_line) >= 1) AND (length(cash_flow_line) <= 60)) AND ((length(guidance) >= 1) AND (length(guidance) <= 500))))
 account | account_code_format | CHECK ((code ~ '^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$'::text))
 account | account_code_key | UNIQUE (organisation_id, code)
 account | account_code_not_null | NOT NULL code
 account | account_created_at_not_null | NOT NULL created_at
+account | account_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+account | account_function_known | CHECK ((function = ANY (ARRAY['COGS'::text, 'R&D'::text, 'S&M'::text, 'G&A'::text, 'Other'::text])))
+account | account_gst_code_format | CHECK ((default_gst_code ~ '^[A-Z]{2,4}$'::text))
 account | account_id_not_null | NOT NULL id
 account | account_is_active_not_null | NOT NULL is_active
+account | account_is_control_not_null | NOT NULL is_control
 account | account_is_group_not_null | NOT NULL is_group
+account | account_is_money_account_not_null | NOT NULL is_money_account
+account | account_is_payroll_cost_not_null | NOT NULL is_payroll_cost
 account | account_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
 account | account_name_not_null | NOT NULL name
 account | account_not_own_parent | CHECK ((parent_id <> id))

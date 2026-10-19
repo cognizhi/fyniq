@@ -3,6 +3,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/authz/authztest"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // matrixCall makes one operation's request for a caller, with fresh records where it changes one, and
@@ -95,6 +97,30 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPatch, "/v1/organisation/sequences/journal", tok, map[string]any{"next_number": next}, "If-Match", "*")
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/organisation/sequences/journal", e.as(authz.Controller), nil).Body["next_number"] != next
+		}
+	},
+	// The chart loads only into an organisation with no account, so each call is made, with the same
+	// principal, in an organisation of its own.
+	"loadStandardChart": func(e *env, tok string) (response, func() bool) {
+		ctx := context.Background()
+		org, err := e.store.CreateOrganisation(ctx, storage.NewOrganisation{Name: "Matrix chart " + uuid.NewString()[:8], BaseCurrency: "SGD"})
+		if err != nil {
+			panic(err)
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation != uuid.Nil { // the Super admin stays outside every organisation
+			p.Organisation = org.ID
+		}
+		r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.principal(p), nil)
+		return r, func() bool {
+			var n int64
+			_ = e.store.Do(ctx, org.ID, func(ctx context.Context, u storage.UnitOfWork) error {
+				n, err = u.Accounts().Count(ctx)
+				return err
+			})
+			return n == 0
 		}
 	},
 	"getAccount": func(e *env, tok string) (response, func() bool) {

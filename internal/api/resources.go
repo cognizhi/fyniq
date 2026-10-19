@@ -124,10 +124,24 @@ type Account struct {
 	Group    bool    `json:"group" doc:"A group account is a heading: postings go to the accounts under it." example:"false"`
 	Active   bool    `json:"active" doc:"An inactive account takes no new postings." example:"true"`
 	Version  int     `json:"version" doc:"The record's version; it also makes the ETag." example:"1"`
+	// The attributes of FR-COA-02.
+	ReportGroup    string `json:"report_group,omitempty" doc:"Where the statements show it." example:"Premises & office"`
+	CashFlowLine   string `json:"cash_flow_line,omitempty" doc:"Its line in the cash-flow statement, for balance-sheet accounts." example:"Payables & accruals"`
+	Function       string `json:"function,omitempty" enum:"COGS,R&D,S&M,G&A,Other" doc:"The function its costs belong to." example:"G&A"`
+	MoneyAccount   bool   `json:"money_account" doc:"A bank, cash, card or wallet account money moves through." example:"false"`
+	DefaultGSTCode string `json:"default_gst_code,omitempty" doc:"The GST code a line on it starts with." example:"TX"`
+	Currency       string `json:"currency,omitempty" doc:"A bank account's currency." example:"SGD"`
+	Control        bool   `json:"control" doc:"Has a sub-ledger (AR, AP, a director's account)." example:"false"`
+	PayrollCost    bool   `json:"payroll_cost" doc:"Carries payroll cost (FR-PRJ-12, FR-PAY-13)." example:"false"`
+	Guidance       string `json:"guidance,omitempty" doc:"Shown when someone picks the account." example:"Office rent, co-working memberships and short-term space."`
+	Role           string `json:"role,omitempty" doc:"A role the rules treat specially, such as share-capital." example:"share-capital"`
 }
 
 func accountOf(a storage.Account) Account {
-	out := Account{ID: a.ID.String(), Code: a.Code, Name: a.Name, Type: string(a.Type), Group: a.Group, Active: a.Active, Version: a.Version}
+	out := Account{ID: a.ID.String(), Code: a.Code, Name: a.Name, Type: string(a.Type), Group: a.Group, Active: a.Active, Version: a.Version,
+		ReportGroup: a.ReportGroup, CashFlowLine: a.CashFlowLine, Function: a.Function, MoneyAccount: a.MoneyAccount,
+		DefaultGSTCode: a.DefaultGSTCode, Currency: a.Currency, Control: a.Control, PayrollCost: a.PayrollCost, Guidance: a.Guidance,
+		Role: string(a.Role)}
 	if a.ParentID != nil {
 		s := a.ParentID.String()
 		out.ParentID = &s
