@@ -109,7 +109,7 @@ func Config(version string) huma.Config {
 			"authenticates may change state only from the web app's own origin (Sec-Fetch-Site: same-origin)."},
 	}
 	cfg.Security = []map[string][]string{{"bearer": {}}, {"session": {}}}
-	cfg.OnAddOperation = append(cfg.OnAddOperation, describeErrors, describeDeprecation)
+	cfg.OnAddOperation = append(cfg.OnAddOperation, describeErrors, describeDeprecation, describePreview)
 	return cfg
 }
 

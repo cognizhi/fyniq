@@ -31,6 +31,11 @@ type Store interface {
 	// transaction and commits with it. It is an error when the organisations differ. The API joins a
 	// domain command to the unit of work that claims the request's Idempotency-Key (FR-INT-08), so
 	// the key, the change and the saved response commit together or not at all.
+	//
+	// Under WithPreview the unit of work is a preview (FR-INT-14): fn runs, then every check the commit
+	// would run (the audit events, and the deferred checks such as INV-01's balance), and then
+	// everything rolls back. Do then returns ErrPreviewed, or the error a commit would have returned.
+	// AfterCommit functions never run for a preview.
 	Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Context, uow UnitOfWork) error) error
 	// Organisations lists every organisation, for jobs that run for each (the worker's role only).
 	Organisations(ctx context.Context) ([]uuid.UUID, error)
@@ -349,7 +354,23 @@ const (
 	CodeRevision       = "STORAGE-REV-01"
 	CodeInvalid        = "STORAGE-INPUT-01" // the request itself is malformed
 	CodeStorageFailure = "STORAGE-FAILURE-01"
+	CodePreviewed      = "STORAGE-PREVIEW-01" // not a failure: a preview passed every check and was rolled back
 )
+
+// ErrPreviewed is what Do returns for a preview that passed every check the commit would run: nothing
+// was saved (FR-INT-14).
+var ErrPreviewed = &Error{Code: CodePreviewed, Message: "a preview: every check passed, and nothing was saved"}
+
+type previewKey struct{}
+
+// WithPreview makes the unit of work that Do opens with ctx a preview: it runs everything the commit
+// would and then rolls back (FR-INT-14). It has no effect on a Do that joins a unit of work already open.
+func WithPreview(ctx context.Context) context.Context {
+	return context.WithValue(ctx, previewKey{}, true)
+}
+
+// IsPreview reports whether ctx asks for a preview.
+func IsPreview(ctx context.Context) bool { b, _ := ctx.Value(previewKey{}).(bool); return b }
 
 // Error is a storage failure with a stable code, a plain message and, where there is one, a fix.
 type Error struct {

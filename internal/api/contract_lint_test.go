@@ -22,6 +22,7 @@ import (
 // req: FR-INT-08
 // req: FR-INT-09
 // req: FR-INT-10
+// req: FR-INT-14
 func TestTheContractLintRefusesPlantedOperations(t *testing.T) {
 	cmd := exec.Command("pnpm", "exec", "spectral", "lint", "contracts/openapi/testdata/planted.yaml",
 		"--ruleset", "contracts/openapi/spectral.yaml", "--format", "json", "--quiet")
@@ -62,6 +63,7 @@ func TestTheContractLintRefusesPlantedOperations(t *testing.T) {
 		"fyniq-api-conventions get /v1/old":                          "less than six months",
 		"fyniq-api-conventions get /v1/older":                        "without x-fyniq-deprecated-on and x-sunset",
 		"fyniq-api-conventions get /v1/sunset-only":                  "is not deprecated",
+		"fyniq-api-conventions post /v1/gadgets/{gadget_id}/refresh": "cannot be previewed",
 	}
 	for key, says := range want {
 		if !slices.ContainsFunc(got, func(g string) bool { return strings.HasPrefix(g, key+": ") && strings.Contains(g, says) }) {

@@ -1047,6 +1047,14 @@ paths:
             minLength: 1
             pattern: ^[\x21-\x7E]+$
             type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
       requestBody:
         content:
           application/json:
@@ -1054,6 +1062,19 @@ paths:
               $ref: "#/components/schemas/JournalDraft"
         required: true
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Journal"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
         "201":
           content:
             application/json:
@@ -1261,13 +1282,21 @@ paths:
             examples:
               - "\"1-draft\""
             type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
       responses:
         "200":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/JournalPosting"
-          description: OK
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
           headers:
             ETag:
               schema:
@@ -1276,6 +1305,12 @@ paths:
             Idempotent-Replayed:
               schema:
                 description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
                 type: string
         "401":
           content:
@@ -1415,6 +1450,14 @@ paths:
             examples:
               - "\"1-draft\""
             type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
       requestBody:
         content:
           application/json:
@@ -1427,7 +1470,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/JournalPosting"
-          description: OK
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
           headers:
             ETag:
               schema:
@@ -1436,6 +1479,12 @@ paths:
             Idempotent-Replayed:
               schema:
                 description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
                 type: string
         "400":
           content:
@@ -1819,6 +1868,7 @@ paths:
         - STORAGE-INV-05
       x-fyniq-exempt:
         Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
       x-fyniq-permission:
         capability: (installation setup)
         note: Needs the one-time setup code and a first-party sign-in; an OAuth client or the AI is refused.
@@ -1989,6 +2039,7 @@ paths:
         - API-UNAVAILABLE-01
       x-fyniq-exempt:
         Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
       x-fyniq-permission:
         capability: (Super admins)
         note: Needs a valid invitation and a person signed in to Fyniq; an OAuth client or the AI is refused.
@@ -2058,6 +2109,7 @@ paths:
         - API-UNAVAILABLE-01
       x-fyniq-exempt:
         Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
       x-fyniq-permission:
         capability: (Super admins)
         note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).
@@ -2152,6 +2204,7 @@ paths:
         - API-UNAVAILABLE-01
       x-fyniq-exempt:
         Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
       x-fyniq-permission:
         capability: (Super admins)
         note: "Needs two proofs (SEC-35): a recovery code with the other Super admin's confirmation, or the deployment's two-person recovery; and a person signed in to Fyniq. An OAuth client or the AI is refused."
@@ -2214,6 +2267,7 @@ paths:
         - API-UNAVAILABLE-01
       x-fyniq-exempt:
         Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
       x-fyniq-permission:
         capability: (Super admins)
         note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).
@@ -2294,6 +2348,7 @@ paths:
         - API-UNAVAILABLE-01
       x-fyniq-exempt:
         Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
+        Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
       x-fyniq-permission:
         capability: (Super admins)
         note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). The other Super admin confirms; nobody confirms their own recovery.

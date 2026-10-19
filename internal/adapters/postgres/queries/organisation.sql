@@ -6,6 +6,11 @@ SELECT uuidv7()::uuid AS id;
 -- never carries one tenant into the next transaction.
 SELECT set_config('app.org_id', sqlc.arg(org_id)::text, true), set_config('lock_timeout', sqlc.arg(lock_timeout)::text, true);
 
+-- name: CheckDeferred :exec
+-- A preview's last statement before it rolls back (FR-INT-14): the deferred checks (INV-01's balance,
+-- the audit requirements) run now, as they would at commit.
+SET CONSTRAINTS ALL IMMEDIATE;
+
 -- name: InsertOrganisation :one
 INSERT INTO fyniq.organisation (name, base_currency, base_minor_units)
 SELECT sqlc.arg(name)::text, c.code, c.minor_units FROM fyniq.currencies c WHERE c.code = sqlc.arg(base_currency)::text

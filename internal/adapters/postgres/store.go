@@ -149,7 +149,17 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 			return err
 		}
 		// The audit events go last, just before commit: the chain head is the last lock (ENG-47).
-		return u.flush(ctx)
+		if err := u.flush(ctx); err != nil {
+			return err
+		}
+		if storage.IsPreview(ctx) {
+			// Every check the commit would run, then roll back: preview and commit cannot disagree.
+			if err := q.CheckDeferred(ctx); err != nil {
+				return err
+			}
+			return storage.ErrPreviewed
+		}
+		return nil
 	})
 	if err == nil && u != nil {
 		for _, f := range u.afterCommit {

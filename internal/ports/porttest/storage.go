@@ -143,6 +143,67 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		wantCode(t, err, storage.CodeUnbalanced)
 	})
 
+	// req: FR-INT-14
+	t.Run("a preview runs every check the commit would, then saves nothing", func(t *testing.T) {
+		b := books(t)
+		head := func() int64 {
+			var seq int64
+			if err := worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				h, err := u.Audit().Head(ctx)
+				seq = h.Seq
+				return err
+			}); err != nil {
+				t.Fatal(err)
+			}
+			return seq
+		}
+		revision := func() int64 {
+			var rev int64
+			if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				rev, err = u.Ledger().Revision(ctx)
+				return err
+			}); err != nil {
+				t.Fatal(err)
+			}
+			return rev
+		}
+		before := head()
+		var previewed storage.Entry
+		committed := false
+		err := s.Do(storage.WithPreview(ctx), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			u.AfterCommit(func(context.Context) { committed = true })
+			var err error
+			previewed, err = u.Ledger().Append(ctx, Sale("previewed", Day(10, 14), b, "100.00"))
+			return err
+		})
+		if !errors.Is(err, storage.ErrPreviewed) || previewed.LedgerRevision != 1 || len(previewed.Lines) != 2 {
+			t.Fatalf("a valid preview: %v, %+v", err, previewed)
+		}
+		if committed || head() != before || revision() != 0 {
+			t.Fatalf("the preview left something behind: after-commit ran %v, audit head %d (was %d), revision %d", committed, head(), before, revision())
+		}
+
+		// The deferred balance check (INV-01) runs before the rollback, so the preview refuses what the
+		// commit would.
+		e := Sale("unbalanced-preview", Day(10, 14), b, "100.00")
+		e.Lines[1].Amount, e.Lines[1].BaseAmount = "-99.99", "-99.99"
+		wantCode(t, s.Do(storage.WithPreview(ctx), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Ledger().Append(ctx, e)
+			return err
+		}), storage.CodeUnbalanced)
+
+		// A unit of work that joins an open one stays part of it: the outer one commits.
+		if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return s.Do(storage.WithPreview(ctx), b.Org, func(ctx context.Context, inner storage.UnitOfWork) error {
+				_, err := inner.Ledger().Append(ctx, Sale("previewed", Day(10, 14), b, "100.00"))
+				return err
+			})
+		}); err != nil || revision() != 1 {
+			t.Fatalf("a joined preview: %v, revision %d; want the outer unit of work to commit", err, revision())
+		}
+	})
+
 	t.Run("a posting identity is never used twice", func(t *testing.T) {
 		b := books(t)
 		post := func() error {

@@ -1,7 +1,7 @@
 // The conventions of PRD-001 §8.18.1 that every operation gets, checked over the whole contract
 // (`make api-check`, part of `make test`): deprecation with six months' notice (FR-INT-06),
 // Idempotency-Key on writes (FR-INT-08), ETag and If-Match on versioned records (FR-INT-09), cursor
-// lists (FR-INT-10). An operation opts out of one only with
+// lists (FR-INT-10), preview before commit (FR-INT-14). An operation opts out of one only with
 // x-fyniq-exempt naming the convention and the reason; TestConventionExemptions in internal/api lists
 // every exemption, so a new one is reviewed.
 const WRITES = ['post', 'put', 'patch', 'delete'];
@@ -90,6 +90,14 @@ export default (paths) => {
       // FR-INT-08: a POST that creates or changes state takes Idempotency-Key.
       if (method === 'post' && !header(op, 'Idempotency-Key') && !exempt(op, 'Idempotency-Key')) {
         flag(path, method, `${op.operationId} changes state but takes no Idempotency-Key header (FR-INT-08).`);
+      }
+      // FR-INT-14: a write can be previewed, and its 200 answer says when it was.
+      if (!exempt(op, 'Prefer')) {
+        const ok = (op.responses || {})['200'];
+        const says = ok && Object.keys(ok.headers || {}).some((h) => h.toLowerCase() === 'preference-applied');
+        if (!header(op, 'Prefer') || !says) {
+          flag(path, method, `${op.operationId} cannot be previewed: it needs the Prefer header and a 200 response with Preference-Applied (FR-INT-14).`);
+        }
       }
       // FR-INT-09: a command on a record you can read (the record itself, or an action under it) requires
       // If-Match, and the record's read returns its ETag.

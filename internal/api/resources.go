@@ -388,6 +388,7 @@ type JournalPath struct {
 
 type createJournalInput struct {
 	KeyHeader
+	PreferHeader
 	Body JournalDraft
 }
 
@@ -396,6 +397,7 @@ type journalOutput struct {
 	ETag     string `header:"ETag" doc:"The journal's version and status, for If-Match."`
 	Location string `header:"Location" doc:"The journal's URL."`
 	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
 	Body     Journal
 }
 
@@ -408,6 +410,7 @@ type postJournalInput struct {
 	JournalPath
 	KeyHeader
 	IfMatchHeader
+	PreferHeader
 }
 
 // Reversal is how a posted journal is reversed.
@@ -420,12 +423,14 @@ type reverseJournalInput struct {
 	JournalPath
 	KeyHeader
 	IfMatchHeader
+	PreferHeader
 	Body Reversal
 }
 
 type postingOutput struct {
 	ETag     string `header:"ETag" doc:"The journal's new version and status, for If-Match."`
 	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved, and the entry shows what posting would write (FR-INT-14)."`
 	Body     JournalPosting
 }
 
@@ -439,7 +444,7 @@ func registerJournals(a *API) {
 		money.CodeNotDecimal, money.CodePrecision, money.CodeRange, money.CodeCurrency, money.CodeRate, storage.CodeRetry, storage.CodeLockTimeout},
 		func(ctx context.Context, in *createJournalInput) (*journalOutput, error) {
 			p, _ := authn.From(ctx)
-			w, err := write(ctx, a, in.IdempotencyKey, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (Journal, error) {
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (Journal, error) {
 				org, err := u.Organisation(ctx)
 				if err != nil {
 					return Journal{}, err
@@ -460,6 +465,9 @@ func registerJournals(a *API) {
 			})
 			if err != nil {
 				return nil, err
+			}
+			if w.Previewed { // a preview reserves nothing: no version to match, no URL to follow
+				return &journalOutput{Status: w.Status, Applied: applied(w), Body: w.Body}, nil
 			}
 			return &journalOutput{Status: w.Status, ETag: journalETag(w.Body), Location: "/v1/journals/" + w.Body.ID,
 				Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
@@ -504,7 +512,7 @@ func registerJournals(a *API) {
 			"Needs If-Match with the draft's ETag. Approval policy: the Accountant's amount limit and SOD-3 apply from P1. " +
 			"Idempotent with Idempotency-Key; the same version never posts twice.",
 	}, append([]string{journal.CodeNotDraft}, postingCodes...), func(ctx context.Context, in *postJournalInput) (*postingOutput, error) {
-		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in, func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
+		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
 			return a.journals.Post(ctx, p.Organisation, id)
 		})
 	})
@@ -520,7 +528,7 @@ func registerJournals(a *API) {
 		if err != nil {
 			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.date", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"}})
 		}
-		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in, func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
+		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
 			return a.journals.Reverse(ctx, p.Organisation, id, date, in.Body.Reason)
 		})
 	})
@@ -528,7 +536,7 @@ func registerJournals(a *API) {
 
 // posting runs a command that posts for a journal: If-Match is checked against the journal locked in
 // the same unit of work, so nothing can change it between the check and the command.
-func (a *API) posting(ctx context.Context, rawID, key, ifMatch string, request any,
+func (a *API) posting(ctx context.Context, rawID, key, ifMatch, prefer string, request any,
 	command func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Entry, error)) (*postingOutput, error) {
 	id, err := parseID("journal_id", rawID)
 	if err != nil {
@@ -538,7 +546,7 @@ func (a *API) posting(ctx context.Context, rawID, key, ifMatch string, request a
 		return nil, checkIfMatch(ifMatch, "")
 	}
 	p, _ := authn.From(ctx)
-	w, err := write(ctx, a, key, request, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (JournalPosting, error) {
+	w, err := write(ctx, a, key, prefer, request, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (JournalPosting, error) {
 		doc, err := u.Documents().Lock(ctx, id)
 		if err != nil {
 			return JournalPosting{}, err
@@ -563,6 +571,9 @@ func (a *API) posting(ctx context.Context, rawID, key, ifMatch string, request a
 	})
 	if err != nil {
 		return nil, err
+	}
+	if w.Previewed {
+		return &postingOutput{Applied: applied(w), Body: w.Body}, nil
 	}
 	return &postingOutput{ETag: journalETag(w.Body.Journal), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
 }

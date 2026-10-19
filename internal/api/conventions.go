@@ -33,11 +33,12 @@ type KeyHeader struct {
 }
 
 // written is the outcome of a write: its body, the status it was first answered with, and whether
-// this answer is a replay.
+// this answer is a replay, or a preview that saved nothing.
 type written[B any] struct {
-	Body     B
-	Status   int
-	Replayed bool
+	Body      B
+	Status    int
+	Replayed  bool
+	Previewed bool
 }
 
 // write runs a command as one unit of work for the caller's organisation, with its Idempotency-Key:
@@ -45,16 +46,24 @@ type written[B any] struct {
 // (the command's own unit of work joins it), so they commit together or not at all. A repeat with the
 // same key and request gets the saved response; nothing runs again. A failed command saves nothing,
 // so the key can be used again. request is what the key's hash covers.
-func write[B any](ctx context.Context, a *API, key string, request any, status int,
+//
+// When prefer asks for return=preview, the command runs in a preview (FR-INT-14): every check the
+// commit would run, then a rollback. The answer is the command's own body with status 200, or the
+// error the commit would have given; the key is neither claimed nor looked up.
+func write[B any](ctx context.Context, a *API, key, prefer string, request any, status int,
 	run func(ctx context.Context, u storage.UnitOfWork) (B, error)) (written[B], error) {
 	p, _ := authn.From(ctx)
 	var out written[B]
+	preview := wantsPreview(prefer)
+	if preview {
+		ctx, key, status = storage.WithPreview(ctx), "", http.StatusOK
+	}
 	hash, err := requestHash(ctx, request)
 	if err != nil {
 		return out, err
 	}
 	for attempt := 1; ; attempt++ {
-		out = written[B]{Status: status}
+		out = written[B]{Status: status, Previewed: preview}
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			if key != "" {
 				now := a.deps.Clock.Now()
@@ -84,6 +93,9 @@ func write[B any](ctx context.Context, a *API, key string, request any, status i
 		var se *storage.Error
 		if err != nil && errors.As(err, &se) && se.Retryable() && attempt < retries {
 			continue
+		}
+		if preview && errors.Is(err, storage.ErrPreviewed) {
+			err = nil
 		}
 		return out, err
 	}
@@ -125,6 +137,68 @@ type operationKey struct{}
 func replayedHeader(replayed bool) string {
 	if replayed {
 		return "true"
+	}
+	return ""
+}
+
+// ------------------------------------------------------------------ preview before commit (FR-INT-14)
+
+// PreferHeader lets a write be previewed.
+type PreferHeader struct {
+	Prefer string `header:"Prefer" doc:"return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept." example:"return=preview"`
+}
+
+// previewApplied is Preference-Applied on a preview's answer.
+const previewApplied = "return=preview"
+
+// wantsPreview reports whether a Prefer header (RFC 7240) asks for return=preview; other preferences
+// are ignored.
+func wantsPreview(prefer string) bool {
+	for _, pref := range strings.Split(prefer, ",") {
+		pref, _, _ = strings.Cut(pref, ";")
+		name, value, _ := strings.Cut(pref, "=")
+		if strings.EqualFold(strings.TrimSpace(name), "return") && strings.EqualFold(strings.Trim(strings.TrimSpace(value), `"`), "preview") {
+			return true
+		}
+	}
+	return false
+}
+
+// describePreview documents a previewable command's preview: the 200 response with the command's own
+// body and Preference-Applied, which no other response carries.
+func describePreview(_ *huma.OpenAPI, op *huma.Operation) {
+	if !slices.ContainsFunc(op.Parameters, func(p *huma.Param) bool { return p.In == "header" && p.Name == "Prefer" }) {
+		return
+	}
+	var success *huma.Response
+	for status, r := range op.Responses {
+		if strings.HasPrefix(status, "2") {
+			success = r
+		}
+		if status != "200" {
+			delete(r.Headers, "Preference-Applied")
+		}
+	}
+	ok := op.Responses["200"]
+	if ok == nil && success != nil {
+		ok = &huma.Response{Content: success.Content}
+		op.Responses["200"] = ok
+	}
+	if ok == nil {
+		return
+	}
+	ok.Description = "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+	if ok.Headers == nil {
+		ok.Headers = map[string]*huma.Param{}
+	}
+	ok.Headers["Preference-Applied"] = &huma.Param{Description: "return=preview when this is a preview: nothing was saved (FR-INT-14).",
+		Schema: &huma.Schema{Type: "string", Examples: []any{previewApplied}}}
+}
+
+// applied is the Preference-Applied header of an answer.
+func applied[B any](w written[B]) string {
+	if w.Previewed {
+		return previewApplied
 	}
 	return ""
 }
@@ -227,7 +301,7 @@ func pageOf[T any](items []T, key func(T) string, q PageQuery) ([]T, string, err
 
 // ------------------------------------------------------------------ exemptions
 
-// exempt opts op out of one convention of §8.18.1 (Idempotency-Key, If-Match or cursor), with the
+// exempt opts op out of one convention of §8.18.1 (Idempotency-Key, If-Match, Prefer or cursor), with the
 // reason, as x-fyniq-exempt. The contract lint (contracts/openapi/spectral.yaml) accepts no other
 // way out, and TestConventionExemptions lists every exemption, so a new one is reviewed.
 func exempt(op huma.Operation, convention, reason string) huma.Operation {
@@ -245,10 +319,12 @@ func exempt(op huma.Operation, convention, reason string) huma.Operation {
 
 // oneTimeSecret exempts a command whose response carries a one-time secret from Idempotency-Key
 // (FR-INT-08, rev 0.27): a stored response would keep the secret at rest, and the code already makes
-// the command one-time.
+// the command one-time; and from preview (FR-INT-14, rev 0.28), which would confirm the code without
+// spending it.
 func oneTimeSecret(op huma.Operation) huma.Operation {
-	return exempt(op, "Idempotency-Key", "Its response carries a one-time secret, which a stored response would keep at rest; "+
+	op = exempt(op, "Idempotency-Key", "Its response carries a one-time secret, which a stored response would keep at rest; "+
 		"the code already makes the command one-time (FR-INT-08, rev 0.27).")
+	return exempt(op, "Prefer", "A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).")
 }
 
 // ------------------------------------------------------------------ deprecation (FR-INT-06)
