@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The stable error code.",
+      "examples": [
+        "LEDGER-04"
+      ],
+      "type": "string"
+    },
+    "field": {
+      "description": "The JSON path of the field: in the request body (body.…), the query (query.…), a header (header.…), or the saved record a command acts on.",
+      "examples": [
+        "lines[0].account_id"
+      ],
+      "type": "string"
+    },
+    "fix": {
+      "description": "How to fix it.",
+      "examples": [
+        "Choose an account from the chart of accounts"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What is wrong with it.",
+      "examples": [
+        "the account does not exist in this organisation"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "field",
+    "message",
+    "fix"
+  ],
+  "title": "FieldProblem",
+  "type": "object"
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "Up to 250 drafts, each saved on its own (FR-INT-11).",
+      "items": {
+        "$ref": "JournalDraft.schema.json"
+      },
+      "maxItems": 250,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "JournalDrafts",
+  "type": "object"
+}

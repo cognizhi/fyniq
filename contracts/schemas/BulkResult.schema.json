@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "etag": {
+      "description": "The saved record's ETag, for If-Match; absent when the item was refused or previewed.",
+      "examples": [
+        "\"1-draft\""
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The saved record's ID; absent when the item was refused or previewed.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "index": {
+      "description": "The item's position in the request, from 0.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "problem": {
+      "$ref": "Problem.schema.json",
+      "description": "Why the item was refused (RFC 9457), with its stable code; absent when it was saved or previewed."
+    },
+    "status": {
+      "description": "What the item's own request would have answered: 201 saved, 200 previewed (nothing saved), or the status of its problem.",
+      "examples": [
+        201
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "index",
+    "status"
+  ],
+  "title": "BulkResult",
+  "type": "object"
+}
