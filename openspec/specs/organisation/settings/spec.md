@@ -122,6 +122,17 @@ Source: PRD-001 §8.1 · Priority M · Phase P1
 - **WHEN** documents of that type are numbered
 - **THEN** the sequence leaves no gaps
 
+#### Scenario: A gap-free sequence numbers a document when it posts
+- **GIVEN** a document type's sequence is gap-free
+- **WHEN** a document of that type posts, or its posting fails
+- **THEN** it is numbered in the transaction that posts it, under the sequence's lock (ENG-47), so a failed posting takes no number
+
+#### Scenario: Another sequence numbers a document when it is saved
+- **GIVEN** a document type's sequence is not gap-free
+- **WHEN** a document of that type is saved
+- **THEN** it is numbered then, so an abandoned draft leaves a gap
+- **AND** a number never changes and never repeats within its document type
+
 #### Scenario: Other defaults are stored
 - **WHEN** the payment terms, the rounding and FX tolerances and the capitalisation threshold are set
 - **THEN** they are stored as the organisation's defaults
