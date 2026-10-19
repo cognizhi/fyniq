@@ -144,6 +144,7 @@ func TestErrorsAreProblemDetailsWithStableCodes(t *testing.T) {
 }
 
 // req: FR-INT-08
+// req: data/data-model Idempotency keys and posting identity
 func TestIdempotencyKeyReplaysAndRefusesReuse(t *testing.T) {
 	e := newEnv(t)
 	accountant := e.as(authz.Accountant)
@@ -223,6 +224,7 @@ func TestIdempotencyKeyReplaysAndRefusesReuse(t *testing.T) {
 }
 
 // req: FR-INT-09
+// req: data/data-model Versioning of records
 func TestETagAndIfMatch(t *testing.T) {
 	e := newEnv(t)
 	accountant := e.as(authz.Accountant)

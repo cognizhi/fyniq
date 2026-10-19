@@ -208,6 +208,7 @@ func TestRaceReopenAgainstPosting(t *testing.T) {
 // req: ENG-46
 // req: QA-ENG-05
 // asvs: V15.4.1
+// req: data/data-model Reports as at a ledger revision
 func TestRaceRevisionsAreGapFreeAndAsAtIsStable(t *testing.T) {
 	ctx := context.Background()
 	s := store(t, "fyniq_api")
@@ -311,6 +312,7 @@ func asDecimal(cents int64) storage.Decimal {
 
 // req: INV-08
 // req: INV-09
+// req: data/data-model Balances are a rebuildable cache
 func TestRandomPostingsKeepTheCacheAndTrialBalanceExact(t *testing.T) {
 	ctx := context.Background()
 	s, worker := store(t, "fyniq_api"), store(t, "fyniq_worker")
