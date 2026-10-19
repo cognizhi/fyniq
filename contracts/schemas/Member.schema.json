@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "display_name": {
+      "description": "Their name.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The membership's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "roles": {
+      "description": "Their live roles, by role.",
+      "items": {
+        "$ref": "MemberRole.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "user_id": {
+      "description": "The member's user.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "display_name",
+    "roles"
+  ],
+  "title": "Member",
+  "type": "object"
+}

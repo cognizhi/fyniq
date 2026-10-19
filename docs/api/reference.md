@@ -865,6 +865,165 @@ Changes the fields sent and keeps the rest; "" clears a text, -1 the payment ter
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CT-01`, `CT-02`, `CT-03`, `CT-04`, `CT-05`, `CT-06`, `CT-07`, `CT-08`, `CT-09`, `CT-10`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+## Members
+
+Members of the organisation, their roles, and invitations to join it (FR-ADM-01).
+
+### `GET /v1/members`
+
+**List the members** (`listMembers`)
+
+The organisation's active members, in the order they joined, with their names and live roles (FR-ADM-01). Read-only; no side effects.
+
+- **Permission:** View on Users, roles, team mode
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`MemberPage`](../../contracts/schemas/MemberPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/members`
+
+**Join an organisation with an invitation** (`acceptMemberInvitation`)
+
+Redeems an invitation: you (a new user, or the one your sign-in belongs to) become a member of the organisation that made it, with its roles; your session is in that organisation from your next request (FR-ADM-01). Needs a person signed in. Side effects: your user and sign-in identity when new, the membership, the roles and their audit events. A wrong, used, withdrawn or expired code, or an organisation you belong to already, changes nothing. It takes no Idempotency-Key and no preview: its code makes it one-time (FR-INT-08, rev 0.35).
+
+- **Permission:** Create on (joining by invitation). The invitation's code decides; a person signed in, never the AI or an OAuth client.
+- **Request body:** [`JoinRequest`](../../contracts/schemas/JoinRequest.schema.json)
+- **Responses:**
+  - `201` Created [`Joined`](../../contracts/schemas/Joined.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in.
+  - `409` Conflict: `API-SUPERADMIN-01` Code refused.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-SUPERADMIN-01`, `API-UNAVAILABLE-01`
+
+### `GET /v1/members/invitations`
+
+**List the pending invitations** (`listMemberInvitations`)
+
+The invitations neither accepted, withdrawn nor expired, oldest first, without their codes (FR-ADM-01). Read-only; no side effects.
+
+- **Permission:** View on Users, roles, team mode
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`MemberInvitationPage`](../../contracts/schemas/MemberInvitationPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/members/invitations`
+
+**Invite someone to the organisation** (`createMemberInvitation`)
+
+Makes a one-time invitation that gives its redeemer the roles named, valid 7 days (FR-ADM-01). Give the code in person or on a call; invitation emails arrive later. A role change falls under FM-1: until the organisation has a second member its Owner acts alone (the founder bootstrap, rev 0.35), and after that it is refused until the approval engine; an invitation made before keeps its roles. Side effects: the invitation and its audit event. It takes no Idempotency-Key and no preview: its code makes it one-time (FR-INT-08, rev 0.35).
+
+- **Permission:** Create on Users, roles, team mode. Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine.
+- **Request body:** [`NewMemberInvitation`](../../contracts/schemas/NewMemberInvitation.schema.json)
+- **Responses:**
+  - `201` Created [`MemberInvitationCode`](../../contracts/schemas/MemberInvitationCode.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `409` Conflict: `MEM-05` Needs a second approver; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-05`, `MEM-06`, `MEM-07`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`
+
+### `DELETE /v1/members/invitations/{invitation_id}`
+
+**Withdraw an invitation** (`withdrawMemberInvitation`)
+
+Ends an unused invitation: its code stops working (FR-ADM-01). Withdrawing grants nothing, so it is never held back for a second approver. Side effects: the withdrawal and its audit event. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Users, roles, team mode
+- **Parameters:**
+  - `invitation_id` (path, required): The invitation's ID.
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`MemberInvitation`](../../contracts/schemas/MemberInvitation.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/members/{member_id}/roles`
+
+**Give a member a role** (`assignRole`)
+
+Gives a member a role, theirs until it is revoked or, for an external user, until it expires (FR-ADM-01). A role change falls under FM-1: until the organisation has a second member its Owner acts alone, their own roles included (the founder bootstrap, rev 0.35), and after that it is refused until the approval engine. Side effects: the role and its audit event; the member's next request holds it, and their OAuth tokens are revoked (AI-38). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Users, roles, team mode. Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine.
+- **Parameters:**
+  - `member_id` (path, required): The membership's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`RoleGrant`](../../contracts/schemas/RoleGrant.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Member`](../../contracts/schemas/Member.schema.json)
+  - `201` Created [`Member`](../../contracts/schemas/Member.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `MEM-05` Needs a second approver; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-05`, `MEM-06`, `MEM-07`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`
+
+### `DELETE /v1/members/{member_id}/roles/{role}`
+
+**End a member's role** (`revokeRole`)
+
+Ends a member's role; their next request no longer holds it (FR-ADM-01). The organisation always keeps an Owner. A role change falls under FM-1: until the organisation has a second member its Owner acts alone (the founder bootstrap, rev 0.35), and after that it is refused until the approval engine. Side effects: the revocation and its audit event, and the member's OAuth tokens are revoked (AI-38). Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Users, roles, team mode. Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine.
+- **Parameters:**
+  - `member_id` (path, required): The membership's ID.
+  - `role` (path, required): The role to end.
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Member`](../../contracts/schemas/Member.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `MEM-05` Needs a second approver; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `MEM-01`, `MEM-02`, `MEM-03`, `MEM-04`, `MEM-05`, `MEM-06`, `MEM-07`, `STORAGE-LOCK-01`, `STORAGE-MEMBER-01`, `STORAGE-RETRY-01`
+
 ## Items
 
 Products and services the organisation sells, with a price per currency (FR-ITM-01).

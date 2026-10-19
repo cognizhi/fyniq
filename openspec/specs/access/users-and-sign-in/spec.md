@@ -23,6 +23,23 @@ Source: PRD-001 §8.21 · Priority M · Phase P1
 - **WHEN** the expiry date passes
 - **THEN** the user no longer has access
 
+#### Scenario: The Owner administers alone until a second member joins
+- **GIVEN** the organisation's only active member is its Owner
+- **WHEN** the Owner invites someone with roles, or assigns or revokes a role, their own included
+- **THEN** the change is applied and audited, and listed for the weekly review once another founder joins (rev 0.35)
+
+#### Scenario: Role changes then wait for the approval engine
+- **GIVEN** the organisation has two or more active members
+- **WHEN** anyone invites someone with roles, or assigns or revokes a role
+- **THEN** the change falls under FM-1 and is refused, never applied, until the approval engine exists
+- **AND** an invitation made during the bootstrap keeps its roles when it is accepted
+
+#### Scenario: An invitation is a one-time code
+- **WHEN** someone is invited
+- **THEN** the invitation is a code shown once, valid 7 days, that works once and can be withdrawn while unused
+- **AND** withdrawing grants nothing, so it stays open to the Owner and the Administrator after the bootstrap
+- **AND** the organisation always keeps an Owner
+
 ### Requirement: FR-ADM-02 Authentication with mandatory MFA
 The system SHALL make MFA (TOTP or passkey) mandatory for every user, use passkeys (WebAuthn) for step-up and approvals, allow Google sign-in with MFA, and offer SSO (SAML/OIDC) and SCIM in Enterprise mode.
 

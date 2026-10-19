@@ -29,6 +29,7 @@ const (
 	Journals            Capability = "Journals"
 	OrganisationProfile Capability = "Organisation profile, financial year, defaults (rev 0.29)"
 	ContactsAndItems    Capability = "Contacts and items (rev 0.33)"
+	UsersAndRoles       Capability = "Users, roles, team mode"
 	// Membership is not an Appendix D row: the caller's organisation (its name and base currency),
 	// which every screen shows, is readable by every member of it. AI acts for a member; the Super
 	// admin and the HR officer (Nemura only) are not members through those roles.
@@ -43,6 +44,9 @@ const (
 	// Session is the caller's own sign-in (SEC-05): not an Appendix D row either. The providers to sign
 	// in with are public; a session reads only itself, and the AI has none.
 	Session Capability = "(your session)"
+	// Joining is redeeming an invitation to an organisation (FR-ADM-01): not an Appendix D row either. The
+	// person has no organisation yet; the invitation's code decides, and the AI never joins.
+	Joining Capability = "(joining by invitation)"
 )
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
@@ -63,6 +67,11 @@ var Grants = map[Capability]map[string]Cell{
 		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""},
 		"AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""},
 		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"V", ""}, "AI": {"V", ""},
+	},
+	UsersAndRoles: {
+		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {},
+		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
+		"Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
 	},
 	ContactsAndItems: {
 		"Owner": {"V", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""},
@@ -85,6 +94,9 @@ type Policy struct {
 	MaskedFields []string
 	// Note is what the policy does not enforce yet and where it will, stated in the contract.
 	Note string
+	// OwnerMay lets the Owner run it although their cell holds no such right: FR-ADM-01's founder bootstrap
+	// (rev 0.35). The decision says so (ByOwner), and the handler decides when it holds.
+	OwnerMay bool
 	// Public operations need no credential at all; NoOrganisation ones need a principal but no
 	// organisation. Only the installation's operations (setup, Super admins) are either (a test keeps
 	// it so).
@@ -103,6 +115,17 @@ var (
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	UpdateAccount = Policy{Operation: "updateAccount", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
+	ListMembers            = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
+	ListMemberInvitations  = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
+	CreateMemberInvitation = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
+		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine."}
+	WithdrawMemberInvitation = Policy{Operation: "withdrawMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true}
+	AssignRole               = Policy{Operation: "assignRole", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
+		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine."}
+	RevokeRole = Policy{Operation: "revokeRole", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
+		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they are refused until the approval engine."}
+	AcceptMemberInvitation = Policy{Operation: "acceptMemberInvitation", Capability: Joining, Need: Create, NoOrganisation: true,
+		Note: "The invitation's code decides; a person signed in, never the AI or an OAuth client."}
 	ListContacts      = Policy{Operation: "listContacts", Capability: ContactsAndItems, Need: View}
 	GetContact        = Policy{Operation: "getContact", Capability: ContactsAndItems, Need: View}
 	CreateContact     = Policy{Operation: "createContact", Capability: ContactsAndItems, Need: Create}
@@ -172,7 +195,8 @@ var (
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
-	CreateContact, UpdateContact, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
+	RevokeRole, AcceptMemberInvitation, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 
@@ -193,6 +217,8 @@ type Decision struct {
 	Masked  []string // fields to mask in the response
 	Right   Right    // the right that allowed it
 	Reason  string   // why it was refused, for the security log
+	// ByOwner is set when only the policy's OwnerMay allowed it: the handler checks the founder bootstrap.
+	ByOwner bool
 }
 
 // Decide checks whether a caller holding roles may run the operation of p. When ai is true the
@@ -202,7 +228,7 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 	if p.Operation == "" {
 		return Decision{Reason: "the operation has no policy"}
 	}
-	if p.Capability == Setup || p.Capability == SuperAdmins || p.Capability == Session { // the codes, the database and a person's sign-in decide
+	if p.Capability == Setup || p.Capability == SuperAdmins || p.Capability == Session || p.Capability == Joining { // the codes, the database and a person's sign-in decide
 		if ai {
 			return Decision{Reason: "the AI cannot set up the installation, change its Super admins or hold a session"}
 		}
@@ -214,6 +240,9 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 		if aiRight, ok = holds(p, []Role{AI}); ok && rank(aiRight) < rank(best) {
 			best = aiRight
 		}
+	}
+	if !ok && p.OwnerMay && !ai && slices.Contains(roles, Owner) {
+		return Decision{Allowed: true, Right: p.Need, ByOwner: true}
 	}
 	if !ok {
 		who := "these roles"

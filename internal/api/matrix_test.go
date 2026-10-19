@@ -55,6 +55,25 @@ func matrixItem(e *env) string {
 	return e.call(http.MethodPost, "/v1/items", e.as(authz.Accountant), map[string]any{"code": "MATRIX", "name": "Matrix item", "type": "service"}).str("id")
 }
 
+// matrixMember returns the ID of a member of e's organisation, inviting and adding one first if needed. The
+// organisation keeps one member at most, so role changes stay in the founder bootstrap (FR-ADM-01).
+func matrixMember(e *env) string {
+	l := e.call(http.MethodGet, "/v1/members", e.as(authz.Administrator), nil)
+	if items, _ := l.Body["items"].([]any); len(items) > 0 {
+		return items[0].(map[string]any)["id"].(string)
+	}
+	code := e.call(http.MethodPost, "/v1/members/invitations", e.as(authz.Administrator), map[string]any{"display_name": "Matrix member",
+		"roles": []string{"employee"}}).str("code")
+	return e.call(http.MethodPost, "/v1/members", e.principal(authn.Principal{Subject: "matrix-member", Client: "web"}),
+		map[string]any{"invitation_code": code, "display_name": "Matrix member"}).str("member_id")
+}
+
+// matrixInvitation returns the ID of a new pending invitation of e's organisation.
+func matrixInvitation(e *env) string {
+	return e.call(http.MethodPost, "/v1/members/invitations", e.as(authz.Administrator), map[string]any{"display_name": "Matrix invitee",
+		"roles": []string{"bookkeeper"}}).str("id")
+}
+
 // matrixCalls has one request per operation; an operation without one fails the test.
 var matrixCalls = map[string]matrixCall{
 	"getOrganisation": func(e *env, tok string) (response, func() bool) {
@@ -192,6 +211,50 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPatch, path, tok, map[string]any{"value": "31"}, "If-Match", "*")
 		return r, func() bool { return version() == was }
 	},
+	"listMembers": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/members", tok, nil), nil
+	},
+	"listMemberInvitations": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/members/invitations", tok, nil), nil
+	},
+	"createMemberInvitation": func(e *env, tok string) (response, func() bool) {
+		name := "Matrix " + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/members/invitations", tok, map[string]any{"display_name": name, "roles": []string{"bookkeeper"}})
+		return r, func() bool {
+			return !strings.Contains(e.call(http.MethodGet, "/v1/members/invitations?page_size=500", e.as(authz.Administrator), nil).Raw, name)
+		}
+	},
+	"withdrawMemberInvitation": func(e *env, tok string) (response, func() bool) {
+		id := matrixInvitation(e)
+		r := e.call(http.MethodDelete, "/v1/members/invitations/"+id, tok, nil)
+		return r, func() bool {
+			return strings.Contains(e.call(http.MethodGet, "/v1/members/invitations?page_size=500", e.as(authz.Administrator), nil).Raw, id)
+		}
+	},
+	"acceptMemberInvitation": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/members", tok, map[string]any{"invitation_code": "NEVER-A-VALID-INVITATION-0", "display_name": "Matrix"}), nil
+	},
+	"assignRole": func(e *env, tok string) (response, func() bool) {
+		id := matrixMember(e)
+		r := e.call(http.MethodPost, "/v1/members/"+id+"/roles", tok, map[string]any{"role": "auditor"})
+		held := func() bool {
+			return strings.Contains(e.call(http.MethodGet, "/v1/members", e.as(authz.Administrator), nil).Raw, `"auditor"`)
+		}
+		if held() { // allowed: end it again, so the next principal can be given it
+			e.call(http.MethodDelete, "/v1/members/"+id+"/roles/auditor", e.as(authz.Administrator), nil)
+		}
+		return r, func() bool { return !held() }
+	},
+	"revokeRole": func(e *env, tok string) (response, func() bool) {
+		id := matrixMember(e)
+		e.call(http.MethodPost, "/v1/members/"+id+"/roles", e.as(authz.Administrator), map[string]any{"role": "tax_agent"})
+		r := e.call(http.MethodDelete, "/v1/members/"+id+"/roles/tax_agent", tok, nil)
+		held := strings.Contains(e.call(http.MethodGet, "/v1/members", e.as(authz.Administrator), nil).Raw, `"tax_agent"`)
+		if held { // refused: end it, so the next principal can try again
+			e.call(http.MethodDelete, "/v1/members/"+id+"/roles/tax_agent", e.as(authz.Administrator), nil)
+		}
+		return r, func() bool { return held }
+	},
 	"listItems": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/items", tok, nil), nil
 	},
@@ -283,8 +346,10 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 	switch {
 	case p.Public:
 		return true, false
-	case p.Capability == authz.Setup || p.Capability == authz.SuperAdmins || p.Capability == authz.Session: // any person; never the AI
+	case p.Capability == authz.Setup || p.Capability == authz.SuperAdmins || p.Capability == authz.Session || p.Capability == authz.Joining: // any person; never the AI
 		return role != authz.AI, false
+	case p.OwnerMay && role == authz.Owner: // FR-ADM-01's founder bootstrap (rev 0.35): the matrix's organisation has no second member
+		return true, false
 	}
 	col := authz.Column(role)
 	if col == "" {

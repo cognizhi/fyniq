@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The one-time code. It is shown once and cannot be shown again; give it to the person in person or on a call. Case, spaces and dashes do not matter.",
+      "examples": [
+        "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+      ],
+      "type": "string"
+    },
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2026-10-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "display_name": {
+      "description": "Who it is for.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When it stops working, if unused.",
+      "examples": [
+        "2026-10-27T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The invitation's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "roles": {
+      "description": "The roles they will hold.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "roles_expire_at": {
+      "description": "When those roles end, for an external user.",
+      "examples": [
+        "2027-03-31T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "withdrawn_at": {
+      "description": "When it was withdrawn.",
+      "examples": [
+        "2026-10-21T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "id",
+    "display_name",
+    "roles",
+    "created_at",
+    "expires_at"
+  ],
+  "title": "MemberInvitationCode",
+  "type": "object"
+}

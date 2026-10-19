@@ -54,6 +54,7 @@ type UnitOfWork interface {
 	Balances() Balances
 	Audit() Audit
 	Members() Members
+	MemberInvitations() MemberInvitations
 	SuperAdmins() SuperAdmins
 	Idempotency() Idempotency
 	RateLimits() RateLimits

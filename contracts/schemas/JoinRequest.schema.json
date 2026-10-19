@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "display_name": {
+      "description": "Your name, used when your sign-in has no Fyniq user yet.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "invitation_code": {
+      "description": "The code you were given. Case, spaces and dashes do not matter.",
+      "examples": [
+        "ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"
+      ],
+      "maxLength": 64,
+      "type": "string"
+    }
+  },
+  "required": [
+    "invitation_code",
+    "display_name"
+  ],
+  "title": "JoinRequest",
+  "type": "object"
+}

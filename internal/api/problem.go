@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/item"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/member"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
@@ -147,6 +148,13 @@ var codeFacts = map[string]struct {
 	contact.CodePeppol:         {422, "Not a Peppol participant ID"},
 	contact.CodeText:           {422, "A text is too long"},
 	contact.CodeCategory:       {422, "Not an account that takes postings"},
+	member.CodeRole:            {422, "Not a role a member can hold"},
+	member.CodeName:            {422, "The name is not valid"},
+	member.CodeRoles:           {422, "No role, or a role named twice"},
+	member.CodeExpiry:          {422, "Not an expiry for these roles"},
+	member.CodeSecondApprover:  {409, "Needs a second approver"},
+	member.CodeLastOwner:       {409, "The last Owner keeps the role"},
+	member.CodeHeld:            {409, "The member holds that role already, or does not hold it"},
 	settings.CodeValue:         {422, "Not a value for this setting"},
 	settings.CodeBackdated:     {422, "A setting never changes in the past"},
 	settings.CodeShortened:     {422, "The setting can only lengthen"},
@@ -171,6 +179,7 @@ var codeFacts = map[string]struct {
 	chart.CodeProtected:        {422, "Changes only with an approval"},
 	chart.CodeSystem:           {422, "A system account stays active"},
 	storage.CodeAccountFixed:   {409, "The account cannot change that way"},
+	storage.CodeMembership:     {409, "The membership or role cannot change that way"},
 	storage.CodeAccountTree:    {409, "The account cannot sit there"},
 	storage.CodeVersion:        {412, "The record changed since you read it"},
 	storage.CodeOrganisation:   {422, "The organisation's details are not valid"},
@@ -225,6 +234,7 @@ var storageFixes = map[string]string{
 	storage.CodeOverlap:      "Change the dates so they neither overlap another version nor end before they start",
 	storage.CodeOrganisation: "Correct the value the message names and send the change again",
 	storage.CodeVersion:      "Read the record again, check what changed, and send your change with its new ETag",
+	storage.CodeMembership:   "Check the member's roles: the organisation keeps an Owner, and each role is held once",
 	storage.CodeSequence:     "Move the next number forward, or use another prefix; a number is never issued twice",
 	storage.CodeDuplicate:    "Check whether it was done already; for a new record, use a code or key not in use",
 	storage.CodeInvalid:      "Correct the value the message names and send it again",

@@ -110,6 +110,7 @@ func Config(version string) huma.Config {
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
 		{Name: "Journals", Description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."},
 		{Name: "Contacts", Description: "Customers and vendors (FR-CT-01)."},
+		{Name: "Members", Description: "Members of the organisation, their roles, and invitations to join it (FR-ADM-01)."},
 		{Name: "Items", Description: "Products and services the organisation sells, with a price per currency (FR-ITM-01)."},
 	}
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
@@ -147,6 +148,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerContacts(a)
 	registerItems(a)
 	registerSettings(a)
+	registerMembers(a)
 	registerJournals(a)
 	registerSetup(a)
 	registerSuperAdmins(a)

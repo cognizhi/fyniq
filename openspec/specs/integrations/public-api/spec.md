@@ -148,6 +148,11 @@ Source: PRD-001 §8.18.1 · Priority M · Phase P1
 - **THEN** it takes no `Idempotency-Key` and is named with `x-fyniq-exempt`, so its response with the secret is never stored
 - **AND** the contract lint refuses any other state-changing `POST` without the header
 
+#### Scenario: An invitation to an organisation and its redemption take no key
+- **GIVEN** an invitation to an organisation, which shows its code once, or its redemption, whose caller has no organisation yet
+- **WHEN** its contract is read
+- **THEN** it takes no `Idempotency-Key` and is named with `x-fyniq-exempt` (rev 0.35)
+
 ### Requirement: FR-INT-09 Optimistic concurrency
 Versioned resources SHALL return an `ETag`, and updates to them SHALL require `If-Match`, using the same row versions as `base_versions` in §9.5.
 

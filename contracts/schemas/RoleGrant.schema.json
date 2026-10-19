@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expires_at": {
+      "description": "For an external user: when it ends. Never on the Owner role.",
+      "examples": [
+        "2027-03-31T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "role": {
+      "description": "The role (PRD-001 §6.2).",
+      "examples": [
+        "owner"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "role"
+  ],
+  "title": "RoleGrant",
+  "type": "object"
+}
