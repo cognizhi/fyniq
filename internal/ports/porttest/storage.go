@@ -204,6 +204,7 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		}
 	})
 
+	// req: data/data-model Idempotency keys and posting identity
 	t.Run("a posting identity is never used twice", func(t *testing.T) {
 		b := books(t)
 		post := func() error {
@@ -315,6 +316,7 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		wantCode(t, err, storage.CodeInvalid)
 	})
 
+	// req: data/data-model Tenancy and row-level security
 	t.Run("one organisation never sees another's rows", func(t *testing.T) {
 		a, b := books(t), books(t)
 		var entry storage.Entry
@@ -380,6 +382,7 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		})
 	})
 
+	// req: data/data-model Balances are a rebuildable cache
 	t.Run("balances follow the lines and rebuild to the same figures", func(t *testing.T) {
 		b := books(t)
 		err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {

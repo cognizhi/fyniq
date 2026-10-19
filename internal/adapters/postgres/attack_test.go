@@ -158,6 +158,7 @@ func TestAttackUnbalancedEntriesFailAtCommit(t *testing.T) {
 // req: INV-02
 // req: QA-ENG-05
 // asvs: V13.2.2
+// req: data/data-model Insert-only ledger records
 func TestAttackPostedHistoryCannotChange(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Attack INV-02 Pte Ltd")
@@ -363,6 +364,7 @@ VALUES ($1, $2, $3, 'SGD', 2, $4::numeric, $5::numeric, 1)`, b.Org, account, b.O
 // req: INV-05
 // req: QA-ENG-05
 // asvs: V2.2.1
+// req: data/data-model Money columns
 func TestAttackAmountsOffScaleNaNOrOutOfRangeFail(t *testing.T) {
 	b := books(t, "Attack INV-05 Pte Ltd")
 	for col, attack := range nanAttacks {
@@ -391,6 +393,8 @@ func TestAttackAmountsOffScaleNaNOrOutOfRangeFail(t *testing.T) {
 // req: SEC-02
 // req: QA-ENG-05
 // asvs: V8.4.1
+// req: data/data-model Keys
+// req: data/data-model Tenancy and row-level security
 func TestAttackCrossTenantReadsAndWritesFail(t *testing.T) {
 	ctx := context.Background()
 	a, b := books(t, "Attack INV-06 A Pte Ltd"), books(t, "Attack INV-06 B Pte Ltd")
@@ -443,6 +447,7 @@ VALUES ($1, $2, 'SGD', 2, 0, 0, 1, $3)`, a.Bank.ID, a.Oct.ID, b.Org)
 // req: SEC-02
 // req: QA-ENG-05
 // asvs: V8.4.1
+// req: data/data-model Tenancy and row-level security
 func TestAttackPooledConnectionWithoutTenantSeesNothing(t *testing.T) {
 	ctx := context.Background()
 	a, b := books(t, "Attack pooled A Pte Ltd"), books(t, "Attack pooled B Pte Ltd")

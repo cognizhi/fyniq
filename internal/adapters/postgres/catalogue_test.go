@@ -98,6 +98,8 @@ SELECT c.relname,
 // req: INV-06
 // req: CTL-IAM-05
 // asvs: V8.4.1
+// req: data/data-model Tenancy and row-level security
+// req: data/data-model Global tables
 func TestEveryTenantTableForcesRowLevelSecurity(t *testing.T) {
 	c := conn(t, "fyniq")
 	// An empty search_path makes pg_get_expr qualify every name, so the policy must call
@@ -126,6 +128,8 @@ func TestEveryTenantTableForcesRowLevelSecurity(t *testing.T) {
 }
 
 // req: INV-06
+// req: data/data-model Keys
+// req: data/data-model Tenancy and row-level security
 func TestTenantKeysIndexesAndForeignKeys(t *testing.T) {
 	c := conn(t, "fyniq")
 	tenant := map[string]bool{}
@@ -205,6 +209,9 @@ ORDER BY 1, 2, 4, 3`
 
 // req: SEC-03
 // asvs: V13.2.2
+// req: data/data-model Tenancy and row-level security
+// req: data/data-model Global tables
+// req: data/data-model Insert-only ledger records
 func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 	c := conn(t, "fyniq")
 	var b strings.Builder
@@ -236,6 +243,9 @@ func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 			t.Errorf("%s holds %s on %s: no application role gets TRUNCATE, REFERENCES, TRIGGER or MAINTAIN (§11.4)", grantee, priv, object)
 		case writes[priv] && (grantee == "fyniq_ai" || grantee == "fyniq_readonly"):
 			t.Errorf("%s holds %s on %s: the AI and read-only roles never write (AI-P2, CMP-AI-01)", grantee, priv, object)
+		case writes[priv] && slices.Contains(globalTables, object):
+			t.Errorf("%s holds %s on %s: a global table is read-only to every application role; it changes only through "+
+				"the installation's audited functions or a release (§11.4)", grantee, priv, object)
 		case (priv == "UPDATE" || priv == "DELETE") && (strings.HasPrefix(object, "journal_") || object == "ledger_revision"):
 			t.Errorf("%s holds %s on %s: posted history is append-only (INV-02)", grantee, priv, object)
 		case (priv == "UPDATE" || priv == "DELETE") && strings.HasPrefix(object, "audit_"):
@@ -258,6 +268,7 @@ func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 
 // req: SEC-03
 // asvs: V13.2.2
+// req: data/data-model Tenancy and row-level security
 func TestRolesCannotBypassTheDatabase(t *testing.T) {
 	c := conn(t, "fyniq")
 	for _, r := range rows(t, c, `
@@ -306,6 +317,7 @@ SELECT p.proname, coalesce(array_to_string(p.proconfig, ','), '')
 
 // req: QA-ENG-05
 // asvs: V2.2.1
+// req: data/data-model Money columns
 func TestEveryNumericColumnHasPrecisionAndRefusesNaN(t *testing.T) {
 	c := conn(t, "fyniq")
 	for _, r := range rows(t, c, `
@@ -341,6 +353,7 @@ SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace,
 
 // The schema as the migrations leave it: tables, columns, constraints, indexes, triggers, policies and
 // functions. A migration that changes any of them changes this file, so the review sees it.
+// req: data/data-model Logical data model
 func TestSchemaSnapshot(t *testing.T) {
 	c := conn(t, "fyniq")
 	var b strings.Builder

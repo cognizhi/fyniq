@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -193,6 +194,40 @@ func goFiles(t *testing.T, dir string, fn func(rel string, src []byte)) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Every posting goes through one path: only the posting service (internal/domain/journal) appends to
+// the ledger, and the database's triggers are the backstop, not the logic (§11.4). The storage port's
+// conformance suite and the adapter's own tests are the other callers.
+// req: data/data-model Single posting path
+func TestOnlyThePostingServiceAppendsToTheLedger(t *testing.T) {
+	root := repoRoot(t)
+	allowed := []string{"internal/domain/journal/", "internal/ports/porttest/", "internal/adapters/postgres/"}
+	var found []string
+	err := filepath.WalkDir(filepath.Join(root, "internal"), func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || filepath.Ext(path) != ".go" {
+			return err
+		}
+		rel, _ := filepath.Rel(root, path)
+		rel = filepath.ToSlash(rel)
+		if slices.ContainsFunc(allowed, func(p string) bool { return strings.HasPrefix(rel, p) }) || strings.HasSuffix(rel, "_test.go") {
+			return nil
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if bytes.Contains(b, []byte("Ledger().Append(")) {
+			found = append(found, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(found) > 0 {
+		t.Fatalf("these append to the ledger outside the posting service: %v", found)
 	}
 }
 

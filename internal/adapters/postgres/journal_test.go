@@ -106,6 +106,8 @@ func TestPostingCommitsWithTheDocumentOrNotAtAll(t *testing.T) {
 
 // req: ENG-03
 // req: ENG-14
+// req: data/data-model Insert-only ledger records
+// req: data/data-model Accounting date and recorded time
 func TestPostedEntriesCarryTheirProvenance(t *testing.T) {
 	ctx := context.Background()
 	s := store(t, "fyniq_api")
@@ -141,6 +143,7 @@ func TestPostedEntriesCarryTheirProvenance(t *testing.T) {
 
 // req: FR-GL-12
 // req: QA-ENG-03
+// req: data/data-model Insert-only ledger records
 func TestReversalUndoesAPostedJournal(t *testing.T) {
 	ctx := context.Background()
 	s := store(t, "fyniq_api")

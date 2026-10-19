@@ -2,7 +2,25 @@
 
 ## 1. Data model claimed
 
-- [ ] 1.1 Map each of the 14 `data/data-model` requirements to the P0 test that already proves it, and tag the test (`// req: data/data-model <title>`, one tag per requirement). List what is missing in this file
+- [x] 1.1 Map each of the 14 `data/data-model` requirements to the P0 test that already proves it, and tag the test (`// req: data/data-model <title>`, one tag per requirement). List what is missing in this file
+  (19 Oct 2026, tagged `// req: data/data-model <title>`.)
+
+  | Requirement | Proved by (P0) | Missing |
+  |---|---|---|
+  | Logical data model | `TestSchemaSnapshot` | The entities arrive with their modules; this change adds settings, dimensions, contacts and items |
+  | Keys | `TestTenantKeysIndexesAndForeignKeys`, `TestAttackCrossTenantReadsAndWritesFail` | Gap-free human numbers per sequence (task 2.2) |
+  | Tenancy and row-level security | `TestEveryTenantTableForcesRowLevelSecurity`, `TestTenantKeysIndexesAndForeignKeys`, `TestEachRoleHoldsExactlyItsGrants`, `TestRolesCannotBypassTheDatabase`, `TestAttackCrossTenantReadsAndWritesFail`, `TestAttackPooledConnectionWithoutTenantSeesNothing`, conformance "one organisation never sees another's rows" | The scope predicate on payroll and employee-identifier tables (with payroll) |
+  | Global tables | `TestEveryTenantTableForcesRowLevelSecurity` (the explicit list), `TestEachRoleHoldsExactlyItsGrants` (now: no service role writes any global table) | Reads through column views: today the installation tables are reached through `SECURITY DEFINER` functions, which expose only what each caller needs; the published statutory packs and connector manifests arrive with their changes |
+  | Versioning of records | `TestETagAndIfMatch` (documents) | Version counters and stale refusals for contacts and settings (tasks 2.1, 4.1) |
+  | Insert-only ledger records | `TestAttackPostedHistoryCannotChange`, `TestPostedEntriesCarryTheirProvenance`, `TestReversalUndoesAPostedJournal`, `TestEachRoleHoldsExactlyItsGrants` | — |
+  | Money columns | `TestEveryNumericColumnHasPrecisionAndRefusesNaN`, `TestAttackAmountsOffScaleNaNOrOutOfRangeFail` | — |
+  | Effective-dated reference data | — | `WITHOUT OVERLAPS` keys, with the organisation's settings (task 2.1); master-data versions recording their ledger revision |
+  | Idempotency keys and posting identity | `TestIdempotencyKeyReplaysAndRefusesReuse`, conformance "a posting identity is never used twice" | Imports and proposal executions, with their changes |
+  | Single posting path | `TestOnlyThePostingServiceAppendsToTheLedger` (new archtest) | — |
+  | Balances are a rebuildable cache | `TestRandomPostingsKeepTheCacheAndTrialBalanceExact`, conformance "balances follow the lines and rebuild to the same figures" | Keyed by dimension set (task 3.3) |
+  | Accounting date and recorded time | `TestPostedEntriesCarryTheirProvenance` | — |
+  | Reports as at a ledger revision | `TestRaceRevisionsAreGapFreeAndAsAtIsStable` | The reports themselves (`p1-reports`) |
+  | Valid time and system time for master data | — | Effective-dated settings and account attributes (tasks 2.1, 3.2) |
 - [ ] 1.2 Add what is missing:
   - effective-dated reference data with `WITHOUT OVERLAPS` keys (`btree_gist`);
   - the explicit list of global tables, which application roles may only read;
