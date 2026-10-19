@@ -31,7 +31,8 @@ python3 -c 'import json,sys; v=json.loads(sys.argv[1]); assert v["flavour"]=="lo
   || fail "the API is not the local flavour: $version"
 
 doc=$(curl -fsS "$origin/api/v1/openapi.json") || fail "no API document at $origin/api/v1/openapi.json"
-python3 -c 'import json,sys; d=json.loads(sys.argv[1]); assert "/v1/journals" in d["paths"], list(d["paths"])' "$doc" \
+# The document goes through stdin: it is longer than a command line may be.
+printf '%s' "$doc" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "/v1/journals" in d["paths"], list(d["paths"])' \
   || fail "the API document lacks the journals"
 
 discovery=$(curl -fsS "$origin/oauth/.well-known/openid-configuration") || fail "the OAuth server does not answer at $origin/oauth/"
