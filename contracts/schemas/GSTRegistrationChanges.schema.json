@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounting_basis": {
+      "description": "invoice.",
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "deregistered_from": {
+      "description": "The first day it is no longer registered, YYYY-MM-DD; \"\" clears it.",
+      "examples": [
+        "2028-01-01"
+      ],
+      "type": "string"
+    },
+    "gst_number": {
+      "description": "The GST registration number.",
+      "examples": [
+        "202312345K"
+      ],
+      "maxLength": 20,
+      "type": "string"
+    },
+    "quarter_start_month": {
+      "description": "1, 2 or 3.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "registered_from": {
+      "description": "The first day the organisation is registered, YYYY-MM-DD.",
+      "examples": [
+        "2026-04-01"
+      ],
+      "type": "string"
+    },
+    "return_frequency": {
+      "description": "quarterly or monthly.",
+      "examples": [
+        "monthly"
+      ],
+      "type": "string"
+    }
+  },
+  "title": "GSTRegistrationChanges",
+  "type": "object"
+}

@@ -3,9 +3,11 @@
 package api
 
 import (
+	"fmt"
 	"maps"
 	"net/http"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -18,6 +20,20 @@ import (
 // matrixCall makes one operation's request for a caller, with fresh records where it changes one, and
 // reports whether the call changed nothing when it was refused.
 type matrixCall func(e *env, token string) (r response, unchanged func() bool)
+
+// gstYears keeps the matrix's GST registrations apart, a year each.
+var gstYears int
+
+// matrixGST returns the ID of a GST registration of e's organisation, recording one first if needed.
+func matrixGST(e *env) string {
+	l := e.call(http.MethodGet, "/v1/organisation/gst-registrations", e.as(authz.Controller), nil)
+	if items, _ := l.Body["items"].([]any); len(items) > 0 {
+		return items[0].(map[string]any)["id"].(string)
+	}
+	r := e.call(http.MethodPost, "/v1/organisation/gst-registrations", e.as(authz.Controller),
+		map[string]any{"registered_from": "2090-01-01", "deregistered_from": "2090-12-31", "gst_number": "202312345K"})
+	return r.str("id")
+}
 
 // matrixCalls has one request per operation; an operation without one fails the test.
 var matrixCalls = map[string]matrixCall{
@@ -35,6 +51,35 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPatch, "/v1/organisation/profile", tok, map[string]any{"document_footer": footer}, "If-Match", "*")
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/organisation/profile", e.as(authz.Controller), nil).Body["document_footer"] != footer
+		}
+	},
+	"listGSTRegistrations": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/gst-registrations", tok, nil), nil
+	},
+	"getGSTStatus": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/gst-status?date=2026-10-20", tok, nil), nil
+	},
+	"getGSTRegistration": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/gst-registrations/"+matrixGST(e), tok, nil), nil
+	},
+	// Each allowed call records a registration a year after the last, so none overlaps.
+	"createGSTRegistration": func(e *env, tok string) (response, func() bool) {
+		gstYears++
+		from := fmt.Sprintf("%d-01-01", 2100+gstYears)
+		r := e.call(http.MethodPost, "/v1/organisation/gst-registrations", tok, map[string]any{"registered_from": from,
+			"deregistered_from": fmt.Sprintf("%d-12-31", 2100+gstYears), "gst_number": "202312345K"})
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/organisation/gst-registrations?page_size=500", e.as(authz.Controller), nil)
+			return !strings.Contains(l.Raw, `"registered_from":"`+from+`"`)
+		}
+	},
+	"updateGSTRegistration": func(e *env, tok string) (response, func() bool) {
+		id := matrixGST(e)
+		number := fmt.Sprintf("M%d", gstYears+100000)
+		gstYears++
+		r := e.call(http.MethodPatch, "/v1/organisation/gst-registrations/"+id, tok, map[string]any{"gst_number": number}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/organisation/gst-registrations/"+id, e.as(authz.Controller), nil).str("gst_number") != number
 		}
 	},
 	"getAccount": func(e *env, tok string) (response, func() bool) {

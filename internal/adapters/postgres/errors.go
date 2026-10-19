@@ -64,6 +64,12 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"organisation_uen_format":            {storage.CodeOrganisation, "a UEN is not 9 or 10 capital letters and digits"},
 	"organisation_fy_start_month_range":  {storage.CodeOrganisation, "the financial year's start month is not 1 to 12"},
 	"organisation_first_year":            {storage.CodeOrganisation, "the first financial year does not end after the books start, on the day before a year starts"},
+	"gst_registration_no_overlap":        {storage.CodeOverlap, "the GST registration overlaps another registration's dates"},
+	"gst_registration_dates":             {storage.CodeOverlap, "the GST registration is deregistered on or before the date it starts"},
+	"gst_registration_basis_known":       {storage.CodeOrganisation, "the GST accounting basis is not one Fyniq offers: invoice basis only (ENG-45)"},
+	"gst_registration_frequency_known":   {storage.CodeOrganisation, "the GST return frequency is not quarterly or monthly"},
+	"gst_registration_quarter_start":     {storage.CodeOrganisation, "the quarters' start month is not 1, 2 or 3"},
+	"gst_registration_number_length":     {storage.CodeOrganisation, "the GST registration number is blank or longer than 20 characters"},
 }
 
 // mapError turns database errors into storage errors with stable codes (ENG-23) and "no rows" into

@@ -56,6 +56,16 @@ document_version | document_id | uuid | not null |
 document_version | version | integer | not null | 
 document_version | payload | jsonb | not null | 
 document_version | created_at | timestamp with time zone | not null | now()
+gst_registration | organisation_id | uuid | not null | current_org()
+gst_registration | id | uuid | not null | uuidv7()
+gst_registration | registered_from | date | not null | 
+gst_registration | deregistered_from | date | null | 
+gst_registration | gst_number | text | not null | 
+gst_registration | return_frequency | text | not null | 'quarterly'::text
+gst_registration | quarter_start_month | smallint | not null | 1
+gst_registration | accounting_basis | text | not null | 'invoice'::text
+gst_registration | version | integer | not null | 1
+gst_registration | recorded_at | timestamp with time zone | not null | 
 heartbeat | name | text | not null | 
 heartbeat | last_beat | timestamp with time zone | not null | 
 heartbeat | detail | text | null | 
@@ -328,6 +338,25 @@ document_version | document_version_pkey | PRIMARY KEY (organisation_id, id)
 document_version | document_version_positive | CHECK ((version > 0))
 document_version | document_version_version_not_null | NOT NULL version
 document_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+gst_registration | gst_registration_accounting_basis_not_null | NOT NULL accounting_basis
+gst_registration | gst_registration_basis_known | CHECK ((accounting_basis = 'invoice'::text))
+gst_registration | gst_registration_dates | CHECK ((deregistered_from > registered_from))
+gst_registration | gst_registration_frequency_known | CHECK ((return_frequency = ANY (ARRAY['quarterly'::text, 'monthly'::text])))
+gst_registration | gst_registration_gst_number_not_null | NOT NULL gst_number
+gst_registration | gst_registration_id_not_null | NOT NULL id
+gst_registration | gst_registration_no_overlap | EXCLUDE USING gist (organisation_id WITH =, daterange(registered_from, deregistered_from, '[)'::text) WITH &&)
+gst_registration | gst_registration_number_length | CHECK (((length(btrim(gst_number)) >= 1) AND (length(btrim(gst_number)) <= 20)))
+gst_registration | gst_registration_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+gst_registration | gst_registration_organisation_id_not_null | NOT NULL organisation_id
+gst_registration | gst_registration_pkey | PRIMARY KEY (organisation_id, id)
+gst_registration | gst_registration_quarter_start | CHECK (((quarter_start_month >= 1) AND (quarter_start_month <= 3)))
+gst_registration | gst_registration_quarter_start_month_not_null | NOT NULL quarter_start_month
+gst_registration | gst_registration_recorded_at_not_null | NOT NULL recorded_at
+gst_registration | gst_registration_registered_from_not_null | NOT NULL registered_from
+gst_registration | gst_registration_return_frequency_not_null | NOT NULL return_frequency
+gst_registration | gst_registration_version_not_null | NOT NULL version
+gst_registration | gst_registration_version_positive | CHECK ((version > 0))
+gst_registration | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 heartbeat | heartbeat_detail_length | CHECK ((length(detail) <= 2000))
 heartbeat | heartbeat_last_beat_not_null | NOT NULL last_beat
 heartbeat | heartbeat_name_format | CHECK (((name ~ '^[a-z][a-z0-9_.]*$'::text) AND (length(name) <= 100)))
@@ -574,6 +603,7 @@ user_session | user_session_user_fkey | FOREIGN KEY (user_id) REFERENCES app_use
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
+CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
 CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (organisation_id, expires_at)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
@@ -600,6 +630,7 @@ CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
 CREATE UNIQUE INDEX document_pkey ON fyniq.document USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree (organisation_id, id)
 CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
 CREATE UNIQUE INDEX idempotency_key_pkey ON fyniq.idempotency_key USING btree (organisation_id, id)
@@ -635,6 +666,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
@@ -679,6 +711,7 @@ audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organi
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())

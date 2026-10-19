@@ -98,6 +98,13 @@ var (
 	GetOrganisationProfile    = Policy{Operation: "getOrganisationProfile", Capability: OrganisationProfile, Need: View}
 	UpdateOrganisationProfile = Policy{Operation: "updateOrganisationProfile", Capability: OrganisationProfile, Need: Create,
 		Note: "The Owner approves changes to the profile; the approval itself arrives with the approval engine (P1)."}
+	ListGSTRegistrations  = Policy{Operation: "listGSTRegistrations", Capability: OrganisationProfile, Need: View}
+	GetGSTRegistration    = Policy{Operation: "getGSTRegistration", Capability: OrganisationProfile, Need: View}
+	GetGSTStatus          = Policy{Operation: "getGSTStatus", Capability: OrganisationProfile, Need: View}
+	CreateGSTRegistration = Policy{Operation: "createGSTRegistration", Capability: OrganisationProfile, Need: Create,
+		Note: "The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1)."}
+	UpdateGSTRegistration = Policy{Operation: "updateGSTRegistration", Capability: OrganisationProfile, Need: Create,
+		Note: "The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1)."}
 	GetJournal  = Policy{Operation: "getJournal", Capability: Journals, Need: View}
 	PostJournal = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
@@ -135,7 +142,8 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListAccounts, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
+	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListAccounts, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 

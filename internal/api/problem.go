@@ -11,6 +11,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -129,6 +130,12 @@ var codeFacts = map[string]struct {
 	organisation.CodeBank:      {422, "Not a bank account number"},
 	storage.CodeVersion:        {412, "The record changed since you read it"},
 	storage.CodeOrganisation:   {422, "The organisation's details are not valid"},
+	storage.CodeOverlap:        {409, "The dates overlap another version"},
+	gst.CodeDates:              {422, "The registration's dates do not fit"},
+	gst.CodeNumber:             {422, "The GST registration number is not valid"},
+	gst.CodeFrequency:          {422, "Not a return frequency"},
+	gst.CodeQuarter:            {422, "Not a quarters' start month"},
+	gst.CodeBasis:              {422, "An accounting basis Fyniq does not offer"},
 	journal.CodeNotJournal:     {404, "Not a manual journal"},
 	journal.CodeNotDraft:       {409, "The journal is not a draft"},
 	journal.CodeNotPosted:      {409, "The journal is not posted"},
@@ -167,6 +174,13 @@ var codeFacts = map[string]struct {
 	storage.CodeLockTimeout:    {409, "Another change is in progress"},
 	storage.CodeInvalid:        {422, "The request is not valid"},
 	storage.CodeStorageFailure: {500, "Something went wrong"},
+}
+
+// storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
+var storageFixes = map[string]string{
+	storage.CodeOverlap:      "Change the dates so they neither overlap another version nor end before they start",
+	storage.CodeOrganisation: "Correct the value the message names and send the change again",
+	storage.CodeVersion:      "Read the record again, check what changed, and send your change with its new ETag",
 }
 
 // problem builds a Problem for one of the catalogue's codes.
@@ -306,7 +320,11 @@ func problemFrom(ctx context.Context, err error) *Problem {
 			return problem(CodeNotFound, "No record with that ID exists in this organisation.",
 				"Check the ID. Records of other organisations are never shown.")
 		}
-		out := problem(ste.Code, sentence(ste.Message), sentence(ste.Hint))
+		fix := ste.Hint
+		if fix == "" {
+			fix = storageFixes[ste.Code]
+		}
+		out := problem(ste.Code, sentence(ste.Message), sentence(fix))
 		switch ste.Code {
 		case storage.CodeRetry, storage.CodeLockTimeout:
 			out.withHeader("Retry-After", "1")
