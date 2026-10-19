@@ -295,6 +295,58 @@ func (r accounts) Page(ctx context.Context, after string, limit int) ([]storage.
 	return out, nil
 }
 
+func (r accounts) Update(ctx context.Context, id uuid.UUID, version int, c storage.AccountChange) (storage.Account, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Account{}, err
+	}
+	cur, err := r.u.q.LockAccount(ctx, id)
+	if err != nil {
+		return storage.Account{}, mapError(err)
+	}
+	before := toAccount(accountRow(cur))
+	if before.Version != version {
+		return storage.Account{}, &storage.Error{Code: storage.CodeVersion,
+			Message: fmt.Sprintf("account %s changed since it was read: it is at version %d, not %d", before.Code, before.Version, version)}
+	}
+	row, err := r.u.q.UpdateAccount(ctx, sqlcdb.UpdateAccountParams{ID: id, Name: c.Name, ParentID: c.ParentID, IsGroup: c.Group,
+		IsActive: c.Active, ReportGroup: opt(c.ReportGroup), CashFlowLine: opt(c.CashFlowLine), Function: opt(c.Function),
+		IsMoneyAccount: c.MoneyAccount, DefaultGstCode: opt(c.DefaultGSTCode), Currency: opt(c.Currency), IsControl: c.Control,
+		IsPayrollCost: c.PayrollCost, Guidance: opt(c.Guidance)})
+	if err != nil {
+		return storage.Account{}, mapError(err)
+	}
+	after := toAccount(accountRow(row))
+	changes := map[string][2]any{"version": {before.Version, after.Version}}
+	diff := func(k string, x, y any) {
+		if fmt.Sprint(x) != fmt.Sprint(y) {
+			changes[k] = [2]any{x, y}
+		}
+	}
+	parent := func(p *uuid.UUID) any {
+		if p == nil {
+			return nil
+		}
+		return p.String()
+	}
+	diff("name", before.Name, after.Name)
+	diff("parent_id", parent(before.ParentID), parent(after.ParentID))
+	diff("is_group", before.Group, after.Group)
+	diff("is_active", before.Active, after.Active)
+	diff("report_group", before.ReportGroup, after.ReportGroup)
+	diff("cash_flow_line", before.CashFlowLine, after.CashFlowLine)
+	diff("function", before.Function, after.Function)
+	diff("is_money_account", before.MoneyAccount, after.MoneyAccount)
+	diff("default_gst_code", before.DefaultGSTCode, after.DefaultGSTCode)
+	diff("currency", before.Currency, after.Currency)
+	diff("is_control", before.Control, after.Control)
+	diff("is_payroll_cost", before.PayrollCost, after.PayrollCost)
+	diff("guidance", before.Guidance, after.Guidance)
+	if err := r.u.event(ctx, "account.updated", "account", after.ID, &after.Version, changes); err != nil {
+		return storage.Account{}, err
+	}
+	return after, nil
+}
+
 func (r accounts) Count(ctx context.Context) (int64, error) {
 	if err := r.u.check(); err != nil {
 		return 0, err

@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
@@ -736,6 +737,87 @@ func TestStandardChart(t *testing.T) {
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.as(authz.Accountant), nil), "loadStandardChart", 409, CodeChartLoaded)
 	if n := len(list()); n != 86 {
 		t.Errorf("a refused load changed the chart: %d accounts", n)
+	}
+}
+
+// The chart is editable: accounts are added under a group, renamed and deactivated at their version;
+// a deactivated account takes no new postings; the protected flags wait for approval; a system account
+// stays active.
+// req: FR-COA-01
+// req: FR-COA-03
+// req: FR-COA-04
+// req: FR-COA-05
+func TestEditingTheChart(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	parent := e.books.Expenses.ID.String()
+	draft := map[string]any{"code": "6115", "name": "Co-working memberships", "type": "expense", "parent_id": parent,
+		"report_group": "Premises & office", "function": "G&A", "default_gst_code": "TX", "guidance": "Hot-desk and co-working memberships."}
+	if pv := e.call(http.MethodPost, "/v1/accounts", accountant, draft, "Prefer", "return=preview"); pv.Status != 200 ||
+		pv.Header.Get("Preference-Applied") != "return=preview" {
+		t.Fatalf("the preview: %d %s", pv.Status, pv.Raw)
+	}
+	r := e.call(http.MethodPost, "/v1/accounts", accountant, draft, "Idempotency-Key", uuid.NewString())
+	if r.Status != 201 || r.str("parent_id") != parent || r.Body["function"] != "G&A" || r.Header.Get("Location") != "/v1/accounts/"+r.str("id") {
+		t.Fatalf("adding an account: %d %v %s", r.Status, r.Header, r.Raw)
+	}
+	id, tag := r.str("id"), r.Header.Get("ETag")
+	e.problemIs(e.call(http.MethodPost, "/v1/accounts", accountant, draft), "createAccount", 409, storage.CodeDuplicate)
+	r = e.call(http.MethodPost, "/v1/accounts", accountant, map[string]any{"code": "-1", "name": "X", "type": "income", "function": "Ops"})
+	e.problemIs(r, "createAccount", 422, CodeInvalid)
+	if f := fields(r); f["body.code"] != "COA-01" || f["body.type"] != "COA-03" || f["body.function"] != "COA-04" {
+		t.Errorf("every rule at once: %v", f)
+	}
+
+	// Rename it; the protected flags wait for approval; a stale ETag is refused.
+	r = e.call(http.MethodPatch, "/v1/accounts/"+id, accountant, map[string]any{"name": "Co-working", "guidance": ""}, "If-Match", tag)
+	if r.Status != 200 || r.Body["name"] != "Co-working" || r.Body["guidance"] != nil || r.Body["code"] != "6115" {
+		t.Fatalf("renaming: %d %s", r.Status, r.Raw)
+	}
+	next := r.Header.Get("ETag")
+	r = e.call(http.MethodPatch, "/v1/accounts/"+id, accountant, map[string]any{"control": true, "payroll_cost": true}, "If-Match", next)
+	if f := fields(r); r.Status != 422 || f["body.control"] != "COA-08" || f["body.payroll_cost"] != "COA-08" {
+		t.Errorf("changing the protected flags: %d %v", r.Status, f)
+	}
+	e.problemIs(e.call(http.MethodPatch, "/v1/accounts/"+id, accountant, map[string]any{"name": "X"}, "If-Match", tag), "updateAccount", 412, CodeStale)
+
+	// A group cannot sit under its own child.
+	r = e.call(http.MethodGet, "/v1/accounts/"+parent, accountant, nil)
+	e.problemIs(e.call(http.MethodPatch, "/v1/accounts/"+parent, accountant, map[string]any{"parent_id": id}, "If-Match", r.Header.Get("ETag")),
+		"updateAccount", 409, storage.CodeAccountTree)
+
+	// Deactivated, it takes no new postings (FR-COA-04).
+	r = e.call(http.MethodPatch, "/v1/accounts/"+id, accountant, map[string]any{"active": false}, "If-Match", next)
+	if r.Status != 200 || r.Body["active"] != false {
+		t.Fatalf("deactivating: %d %s", r.Status, r.Raw)
+	}
+	d := e.draft("10.00")
+	d["lines"].([]map[string]any)[0]["account_id"] = id
+	j := e.call(http.MethodPost, "/v1/journals", accountant, d)
+	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+j.str("id")+"/post", accountant, nil, "If-Match", j.Header.Get("ETag")),
+		"postJournal", 422, ledger.CodeInactiveAccount)
+
+	// A system account stays active (FR-COA-03).
+	org, err := e.store.CreateOrganisation(context.Background(), storage.NewOrganisation{Name: "System Accounts Pte Ltd", BaseCurrency: "SGD"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: org.ID, Roles: []authz.Role{authz.Accountant}})
+	if r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", other, nil); r.Status != 201 {
+		t.Fatalf("loading the chart: %d %s", r.Status, r.Raw)
+	}
+	var ar map[string]any
+	for _, x := range e.call(http.MethodGet, "/v1/accounts?page_size=500", other, nil).Body["items"].([]any) {
+		if a := x.(map[string]any); a["code"] == "1100" {
+			ar = a
+		}
+	}
+	if ar["role"] != "accounts-receivable" {
+		t.Fatalf("1100's role: %v", ar)
+	}
+	r = e.call(http.MethodPatch, "/v1/accounts/"+ar["id"].(string), other, map[string]any{"active": false}, "If-Match", "*")
+	if f := fields(r); r.Status != 422 || f["body.active"] != "COA-09" {
+		t.Errorf("deactivating AR: %d %v", r.Status, f)
 	}
 }
 

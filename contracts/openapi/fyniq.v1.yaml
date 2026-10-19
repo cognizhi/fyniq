@@ -127,6 +127,167 @@ components:
         - control
         - payroll_cost
       type: object
+    AccountChanges:
+      additionalProperties: false
+      properties:
+        active:
+          description: false blocks new postings (FR-COA-04); a system account stays active.
+          examples:
+            - false
+          type: boolean
+        cash_flow_line:
+          description: Its cash-flow line.
+          examples:
+            - Payables & accruals
+          maxLength: 60
+          type: string
+        control:
+          description: "Changes only with an approval, which arrives with the approval engine: refused until then."
+          examples:
+            - false
+          type: boolean
+        currency:
+          description: A bank account's currency; "" clears it.
+          examples:
+            - USD
+          type: string
+        default_gst_code:
+          description: The GST code a line on it starts with; "" clears it.
+          examples:
+            - TX
+          type: string
+        function:
+          description: COGS, R&D, S&M, G&A or Other; "" clears it.
+          examples:
+            - G&A
+          type: string
+        group:
+          description: Whether it is a heading; an account with postings stays a leaf.
+          examples:
+            - false
+          type: boolean
+        guidance:
+          description: Shown when someone picks the account; "" clears it.
+          examples:
+            - Office rent and co-working memberships.
+          maxLength: 500
+          type: string
+        money_account:
+          description: A bank, cash, card or wallet account.
+          examples:
+            - true
+          type: boolean
+        name:
+          description: Its name.
+          examples:
+            - Rent & co-working
+          maxLength: 200
+          type: string
+        parent_id:
+          description: The group account it sits under; "" moves it to the top.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+          type: string
+        payroll_cost:
+          description: "Changes only with an approval, like the control flag: refused until then."
+          examples:
+            - false
+          type: boolean
+        report_group:
+          description: Where the statements show it.
+          examples:
+            - Premises & office
+          maxLength: 60
+          type: string
+      type: object
+    AccountDraft:
+      additionalProperties: false
+      properties:
+        cash_flow_line:
+          description: Its cash-flow line, for balance-sheet accounts.
+          examples:
+            - Payables & accruals
+          maxLength: 60
+          type: string
+        code:
+          description: "Its code: 1 to 20 letters, digits, dots or hyphens; it never changes."
+          examples:
+            - "6115"
+          maxLength: 20
+          type: string
+        control:
+          description: Has a sub-ledger.
+          examples:
+            - false
+          type: boolean
+        currency:
+          description: A bank account's currency.
+          examples:
+            - SGD
+          type: string
+        default_gst_code:
+          description: The GST code a line on it starts with.
+          examples:
+            - TX
+          type: string
+        function:
+          description: COGS, R&D, S&M, G&A or Other.
+          examples:
+            - G&A
+          type: string
+        group:
+          description: "A group account is a heading: postings go only to the accounts under it."
+          examples:
+            - false
+          type: boolean
+        guidance:
+          description: Shown when someone picks the account.
+          examples:
+            - Hot-desk and co-working memberships.
+          maxLength: 500
+          type: string
+        money_account:
+          description: A bank, cash, card or wallet account money moves through.
+          examples:
+            - false
+          type: boolean
+        name:
+          description: Its name.
+          examples:
+            - Co-working memberships
+          maxLength: 200
+          type: string
+        parent_id:
+          description: The group account it sits under (FR-COA-05).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+          type: string
+        payroll_cost:
+          description: Carries payroll cost.
+          examples:
+            - false
+          type: boolean
+        report_group:
+          description: Where the statements show it.
+          examples:
+            - Premises & office
+          maxLength: 60
+          type: string
+        role:
+          description: "A system role (FR-COA-03); it never changes. Usually left empty: the standard chart sets them."
+          examples:
+            - suspense
+          type: string
+        type:
+          description: asset, liability, equity, revenue or expense; it never changes.
+          examples:
+            - expense
+          type: string
+      required:
+        - code
+        - name
+        - type
+      type: object
     AccountPage:
       additionalProperties: false
       properties:
@@ -1659,6 +1820,207 @@ paths:
       x-fyniq-permission:
         capability: Chart of accounts, dimensions
         right: V
+    post:
+      description: "Adds an account to the chart (FR-COA-01, FR-COA-02), as a leaf or as a group under which others sit (FR-COA-05). Its code, type and role never change. Side effects: the account and its audit event. Approval policy: the Owner and the Controller approve chart changes once the approval engine arrives (P1). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: createAccount
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The account's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The account's URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ACCOUNT-01` The account cannot change that way; `STORAGE-ACCOUNT-02` The account cannot sit there; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Add an account
+      tags:
+        - Chart of accounts
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - COA-01
+        - COA-02
+        - COA-03
+        - COA-04
+        - COA-05
+        - COA-06
+        - COA-07
+        - COA-08
+        - COA-09
+        - STORAGE-ACCOUNT-01
+        - STORAGE-ACCOUNT-02
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Chart of accounts, dimensions
+        note: The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1).
+        right: C
   /v1/accounts/{account_id}:
     get:
       description: Returns one account with its ETag. Read-only; no side effects.
@@ -1768,6 +2130,213 @@ paths:
       x-fyniq-permission:
         capability: Chart of accounts, dimensions
         right: V
+    patch:
+      description: "Changes the fields sent and keeps the rest: the name, the group it sits under, whether it is a group, whether it is active (FR-COA-04: an inactive account takes no new postings; a system account stays active, FR-COA-03), and the FR-COA-02 attributes. Its code, type and role never change. The control and payroll-cost flags change only with an approval, which arrives with the approval engine: refused until then. Side effects: the next version and its audit event. Needs If-Match with the account's ETag. Prefer: return=preview checks it and saves nothing."
+      operationId: updateAccount
+      parameters:
+        - description: The account's ID.
+          in: path
+          name: account_id
+          required: true
+          schema:
+            description: The account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+            format: uuid
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountChanges"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The account's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The account's URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-ACCOUNT-01` The account cannot change that way; `STORAGE-ACCOUNT-02` The account cannot sit there; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change an account
+      tags:
+        - Chart of accounts
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - COA-01
+        - COA-02
+        - COA-03
+        - COA-04
+        - COA-05
+        - COA-06
+        - COA-07
+        - COA-08
+        - COA-09
+        - STORAGE-ACCOUNT-01
+        - STORAGE-ACCOUNT-02
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Chart of accounts, dimensions
+        note: The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1).
+        right: C
   /v1/accounts:load-standard-chart:
     post:
       description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 86 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."

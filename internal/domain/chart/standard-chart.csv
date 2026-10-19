@@ -11,43 +11,44 @@
 # - source "workbook-moved": 7050, the workbook's 7040 (disposals), because 7040 is unrealised FX in Fyniq;
 # - source "prd-b5": 2120, 3300 and 7040, which PRD-001 B.5 adds;
 # - control_account on the sub-ledger accounts (1100, 2010, 2500, 2120), payroll_cost on 5050, 6011-6013,
-#   6050, 6020 and 6030 (FR-COA-02, read as rev 0.31 records [verify]), role share-capital on 3010 and 3020.
+#   6050, 6020 and 6030 (FR-COA-02, read as rev 0.31 records [verify]), and the role of each system
+#   account of B.5 (FR-COA-03, rev 0.32), share-capital on 3010 and 3020.
 code,name,type,report_group,cash_flow_line,function,money_account,default_gst_code,control_account,payroll_cost,role,source,guidance
 1010,Petty cash,asset,Cash & bank,Cash & cash equivalents,,yes,NA,no,no,,workbook,Cash kept in the office for small purchases.
 1020,Bank - Operating account,asset,Cash & bank,Cash & cash equivalents,,yes,NA,no,no,,workbook,"Main business current account. Rename to your bank, e.g. 'DBS Current'."
 1030,Bank - Savings / reserve,asset,Cash & bank,Cash & cash equivalents,,yes,NA,no,no,,workbook,Savings or fixed-deposit account for reserves.
 1040,Bank - Foreign currency wallet,asset,Cash & bank,Cash & cash equivalents,,yes,NA,no,no,,workbook,Multi-currency account (e.g. Wise / Airwallex). Record the SGD value of each movement.
 1050,Payment gateway (e.g. Stripe),asset,Cash & bank,Cash & cash equivalents,,yes,NA,no,no,,workbook,Money collected by Stripe / PayPal that has not yet been paid out to the bank.
-1100,Accounts receivable,asset,Receivables,Receivables,,no,NA,yes,no,,workbook,SYSTEM. Choose this when a customer pays one of your invoices (put the invoice # in Reference).
+1100,Accounts receivable,asset,Receivables,Receivables,,no,NA,yes,no,accounts-receivable,workbook,SYSTEM. Choose this when a customer pays one of your invoices (put the invoice # in Reference).
 1150,Other receivables,asset,Other current assets,Other current assets,,no,NA,no,no,,workbook,"Money owed to the company that is not a customer invoice, e.g. a grant approved but not yet received."
-1210,Prepayments,asset,Other current assets,Other current assets,,no,NA,no,no,,workbook,SYSTEM. Costs paid in advance (filled automatically when you 'spread' a payment over months).
+1210,Prepayments,asset,Other current assets,Other current assets,,no,NA,no,no,prepayments,workbook,SYSTEM. Costs paid in advance (filled automatically when you 'spread' a payment over months).
 1220,Deposits,asset,Other current assets,Other current assets,,no,NA,no,no,,workbook,"Refundable deposits, e.g. office rental or utilities deposit."
 1250,Staff & director advances,asset,Other current assets,Other current assets,,no,NA,no,no,,workbook,Money advanced to staff or directors that they will repay or account for.
 1510,Computer equipment,asset,"Property, plant & equipment",Capital expenditure,,no,TX,no,no,,workbook,"Laptops, servers, monitors above the capitalisation threshold. Also add them to the asset register."
 1520,Office equipment & furniture,asset,"Property, plant & equipment",Capital expenditure,,no,TX,no,no,,workbook,"Desks, chairs, printers, AV equipment. Also add them to the asset register."
 1530,Renovation & fit-out,asset,"Property, plant & equipment",Capital expenditure,,no,TX,no,no,,workbook,Office renovation and fit-out works. Also add them to the asset register.
 1540,Software & intangible assets,asset,Intangible assets,Capital expenditure,,no,TX,no,no,,workbook,"Purchased or capitalised software, trademarks, domain portfolios. Add them to the asset register."
-1590,Accumulated depreciation,asset,Accumulated depreciation,Depreciation & amortisation,,no,NA,no,no,,workbook,SYSTEM. Reduces the value of assets over time (from the asset register). Normally a negative balance.
-2010,Accounts payable,liability,Payables & accruals,Payables & accruals,,no,NA,yes,no,,workbook,SYSTEM. Choose this when you pay a supplier bill recorded in Bills (put the bill # in Reference).
+1590,Accumulated depreciation,asset,Accumulated depreciation,Depreciation & amortisation,,no,NA,no,no,accumulated-depreciation,workbook,SYSTEM. Reduces the value of assets over time (from the asset register). Normally a negative balance.
+2010,Accounts payable,liability,Payables & accruals,Payables & accruals,,no,NA,yes,no,accounts-payable,workbook,SYSTEM. Choose this when you pay a supplier bill recorded in Bills (put the bill # in Reference).
 2020,Accrued expenses,liability,Payables & accruals,Payables & accruals,,no,NA,no,no,,workbook,Costs already incurred but not yet billed (usually used by your accountant in the Journal).
 2030,Company credit card,liability,Payables & accruals,Payables & accruals,,yes,NA,no,no,,workbook,Company credit card. Record card spending as Money Out from this account; paying the card bill is a transfer from the bank.
-2100,Salaries payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,no,no,,workbook,SYSTEM. Choose this when you pay staff their net salary (after the pay run).
-2110,CPF & SDL payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,no,no,,workbook,"SYSTEM. Choose this when you pay CPF Board (CPF, SDL and self-help group funds)."
-2120,Deferred remuneration payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,yes,no,,prd-b5,"Pay a founder or director has agreed to defer, owed to them until paid (PRD-001 B.7); a sub-ledger per person."
-2150,Expense claims payable (staff),liability,Payables & accruals,Payables & accruals,,yes,NA,no,no,,workbook,Staff paid for company expenses personally: record the expense as Money Out from this account; reimbursing them is a transfer from the bank to this account.
-2200,GST control,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,,workbook,"SYSTEM. GST owed to IRAS (or refundable). Choose this when you pay GST to, or receive a GST refund from, IRAS."
-2300,Income tax payable,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,,workbook,Corporate income tax owed to IRAS. Choose this when paying corporate tax.
-2400,Deferred revenue,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,,workbook,SYSTEM. Customer money received in advance for future months (filled automatically when revenue is spread).
+2100,Salaries payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,no,no,salaries-payable,workbook,SYSTEM. Choose this when you pay staff their net salary (after the pay run).
+2110,CPF & SDL payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,no,no,cpf-sdl-payable,workbook,"SYSTEM. Choose this when you pay CPF Board (CPF, SDL and self-help group funds)."
+2120,Deferred remuneration payable,liability,Payroll liabilities,Payroll liabilities,,no,NA,yes,no,deferred-remuneration,prd-b5,"Pay a founder or director has agreed to defer, owed to them until paid (PRD-001 B.7); a sub-ledger per person."
+2150,Expense claims payable (staff),liability,Payables & accruals,Payables & accruals,,yes,NA,no,no,expense-claims-payable,workbook,Staff paid for company expenses personally: record the expense as Money Out from this account; reimbursing them is a transfer from the bank to this account.
+2200,GST control,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,gst-control,workbook,"SYSTEM. GST owed to IRAS (or refundable). Choose this when you pay GST to, or receive a GST refund from, IRAS."
+2300,Income tax payable,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,income-tax-payable,workbook,Corporate income tax owed to IRAS. Choose this when paying corporate tax.
+2400,Deferred revenue,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,deferred-revenue,workbook,SYSTEM. Customer money received in advance for future months (filled automatically when revenue is spread).
 2410,Customer deposits & retainers,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,,workbook,Advance payments / retainers received before any invoice. Apply them later with a Journal.
-2500,Loan from director / shareholder,liability,Borrowings,Borrowings,,no,NA,yes,no,,workbook,"Money lent to the company by founders or shareholders, and repayments of it."
+2500,Loan from director / shareholder,liability,Borrowings,Borrowings,,no,NA,yes,no,director-loan,workbook,"Money lent to the company by founders or shareholders, and repayments of it."
 2600,Bank loan,liability,Borrowings,Borrowings,,no,NA,no,no,,workbook,Bank or government-assisted loans (principal only; interest goes to Interest expense).
 2700,Convertible notes / SAFE,liability,Borrowings,Borrowings,,no,NA,no,no,,workbook,"Investor money received under a SAFE or convertible note, before it converts into shares."
-2999,Suspense - ask accountant,liability,Payables & accruals,Payables & accruals,,no,NA,no,no,,workbook,"Not sure where something goes? Use this, then ask your accountant. Must be cleared before closing a month."
+2999,Suspense - ask accountant,liability,Payables & accruals,Payables & accruals,,no,NA,no,no,suspense,workbook,"Not sure where something goes? Use this, then ask your accountant. Must be cleared before closing a month."
 3010,Share capital - Ordinary,equity,Share capital,Share capital,,no,NA,no,no,share-capital,workbook,Money received from shareholders for ordinary shares.
 3020,Share capital - Preference,equity,Share capital,Share capital,,no,NA,no,no,share-capital,workbook,Money received from investors for preference shares.
-3100,Retained earnings,equity,Retained earnings,Dividends & other equity,,no,NA,no,no,,workbook,SYSTEM. Accumulated profits / (losses) of previous years. Enter the opening balance here (negative if losses).
+3100,Retained earnings,equity,Retained earnings,Dividends & other equity,,no,NA,no,no,retained-earnings,workbook,SYSTEM. Accumulated profits / (losses) of previous years. Enter the opening balance here (negative if losses).
 3200,Dividends,equity,Other equity,Dividends & other equity,,no,NA,no,no,,workbook,Dividends paid to shareholders.
-3300,Capital contribution,equity,Other equity,Dividends & other equity,,no,NA,no,no,,prd-b5,"A founder's balance waived as a shareholder (FR-EQ-07): equity, not income."
+3300,Capital contribution,equity,Other equity,Dividends & other equity,,no,NA,no,no,capital-contribution,prd-b5,"A founder's balance waived as a shareholder (FR-EQ-07): equity, not income."
 4010,Subscription revenue,revenue,Subscription revenue,,,no,SR,no,no,,workbook,Recurring software / platform subscription fees (monthly or annual plans).
 4020,Consulting & services revenue,revenue,Services & project revenue,,,no,SR,no,no,,workbook,"Consulting, implementation, training and other service fees."
 4030,AI project & solution revenue,revenue,Services & project revenue,,,no,SR,no,no,,workbook,Fixed-price or milestone-based AI / software project work.
@@ -62,8 +63,8 @@ code,name,type,report_group,cash_flow_line,function,money_account,default_gst_co
 6011,Salaries - Product & engineering,expense,Salaries & staff costs,,R&D,no,NA,no,yes,,workbook,"Gross salaries of product, engineering and data staff (set by the pay run)."
 6012,Salaries - Sales & marketing,expense,Salaries & staff costs,,S&M,no,NA,no,yes,,workbook,"Gross salaries of sales, marketing and partnerships staff."
 6013,Salaries - General & admin,expense,Salaries & staff costs,,G&A,no,NA,no,yes,,workbook,"Gross salaries of management, finance, HR and admin staff."
-6020,Employer CPF contributions,expense,Salaries & staff costs,,G&A,no,NA,no,yes,,workbook,SYSTEM. Employer's share of CPF (calculated by the pay run).
-6030,Skills development levy & levies,expense,Salaries & staff costs,,G&A,no,NA,no,yes,,workbook,SYSTEM. SDL (calculated by the pay run) and foreign worker levies.
+6020,Employer CPF contributions,expense,Salaries & staff costs,,G&A,no,NA,no,yes,employer-cpf,workbook,SYSTEM. Employer's share of CPF (calculated by the pay run).
+6030,Skills development levy & levies,expense,Salaries & staff costs,,G&A,no,NA,no,yes,sdl,workbook,SYSTEM. SDL (calculated by the pay run) and foreign worker levies.
 6040,Staff benefits & medical,expense,Salaries & staff costs,,G&A,no,TX,no,no,,workbook,"Medical, insurance, wellness and other staff benefits."
 6050,Directors' fees,expense,Salaries & staff costs,,G&A,no,NA,no,yes,,workbook,Fees paid to non-executive directors.
 6060,Recruitment,expense,Salaries & staff costs,,G&A,no,TX,no,no,,workbook,"Recruiter fees, job ads, work-pass application fees."
@@ -88,14 +89,14 @@ code,name,type,report_group,cash_flow_line,function,money_account,default_gst_co
 6510,Local transport,expense,Travel & entertainment,,G&A,no,TX,no,no,,workbook,"Taxis, ride-hailing, parking, public transport for business."
 6520,Overseas travel,expense,Travel & entertainment,,S&M,no,ZP,no,no,,workbook,"Flights, hotels and allowances for business trips."
 6530,Meals & entertainment,expense,Travel & entertainment,,G&A,no,TX,no,no,,workbook,Business meals and client entertainment.
-6610,Depreciation,expense,Depreciation & amortisation,,G&A,no,NA,no,no,,workbook,SYSTEM. Monthly depreciation from the asset register.
+6610,Depreciation,expense,Depreciation & amortisation,,G&A,no,NA,no,no,depreciation,workbook,SYSTEM. Monthly depreciation from the asset register.
 6620,Amortisation,expense,Depreciation & amortisation,,G&A,no,NA,no,no,,workbook,Amortisation of intangible assets (via the Journal).
 6900,Miscellaneous expenses,expense,General & administrative,,G&A,no,TX,no,no,,workbook,Small expenses that do not fit another category.
 7010,Government grants & subsidies,revenue,Grants & subsidies,,Other,no,NA,no,no,,workbook,Grants and wage subsidies received from government agencies.
 7020,Interest income,revenue,Interest & other income,,Other,no,ES,no,no,,workbook,Interest earned on bank deposits.
-7030,FX & rounding differences,revenue,FX & rounding,,Other,no,NA,no,no,,workbook,SYSTEM. Exchange-rate and small rounding differences when invoices / bills are settled.
-7040,Unrealised FX gain or loss,revenue,FX & rounding,,Other,no,NA,no,no,,prd-b5,Month-end revaluation of open foreign-currency items and balances (FR-GL-04); reverses on the first day of the next period.
+7030,FX & rounding differences,revenue,FX & rounding,,Other,no,NA,no,no,fx-rounding,workbook,SYSTEM. Exchange-rate and small rounding differences when invoices / bills are settled.
+7040,Unrealised FX gain or loss,revenue,FX & rounding,,Other,no,NA,no,no,unrealised-fx,prd-b5,Month-end revaluation of open foreign-currency items and balances (FR-GL-04); reverses on the first day of the next period.
 7050,Gain / (loss) on disposal of assets,revenue,Interest & other income,,Other,no,NA,no,no,,workbook-moved,"Profit or loss when you sell or scrap an asset (via the Journal). (7040 in the workbook: moved because 7040 is unrealised FX in Fyniq, PRD-001 B.5)"
 7110,Interest expense & loan charges,expense,Finance costs,,Other,no,EP,no,no,,workbook,Interest and fees on loans.
 7120,Penalties & non-deductible expenses,expense,Other expenses,,Other,no,NA,no,no,,workbook,"Late-payment penalties, fines and other non-deductible items."
-8010,Income tax expense,expense,Income tax,,Other,no,NA,no,no,,workbook,Corporate income tax charge for the year (via the Journal).
+8010,Income tax expense,expense,Income tax,,Other,no,NA,no,no,income-tax-expense,workbook,Corporate income tax charge for the year (via the Journal).

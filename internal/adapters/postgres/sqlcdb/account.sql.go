@@ -278,6 +278,57 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 	return items, nil
 }
 
+const lockAccount = `-- name: LockAccount :one
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance FROM fyniq.account WHERE id = $1 FOR UPDATE
+`
+
+type LockAccountRow struct {
+	ID             uuid.UUID
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	Version        int32
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
+}
+
+func (q *Queries) LockAccount(ctx context.Context, id uuid.UUID) (LockAccountRow, error) {
+	row := q.db.QueryRow(ctx, lockAccount, id)
+	var i LockAccountRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.Type,
+		&i.ParentID,
+		&i.IsGroup,
+		&i.IsActive,
+		&i.Version,
+		&i.Role,
+		&i.ReportGroup,
+		&i.CashFlowLine,
+		&i.Function,
+		&i.IsMoneyAccount,
+		&i.DefaultGstCode,
+		&i.Currency,
+		&i.IsControl,
+		&i.IsPayrollCost,
+		&i.Guidance,
+	)
+	return i, err
+}
+
 const pageAccounts = `-- name: PageAccounts :many
 SELECT id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance FROM fyniq.account
 WHERE code > $1::text ORDER BY code LIMIT $2
@@ -383,6 +434,95 @@ type SetAccountActiveRow struct {
 func (q *Queries) SetAccountActive(ctx context.Context, arg SetAccountActiveParams) (SetAccountActiveRow, error) {
 	row := q.db.QueryRow(ctx, setAccountActive, arg.IsActive, arg.ID)
 	var i SetAccountActiveRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.Type,
+		&i.ParentID,
+		&i.IsGroup,
+		&i.IsActive,
+		&i.Version,
+		&i.Role,
+		&i.ReportGroup,
+		&i.CashFlowLine,
+		&i.Function,
+		&i.IsMoneyAccount,
+		&i.DefaultGstCode,
+		&i.Currency,
+		&i.IsControl,
+		&i.IsPayrollCost,
+		&i.Guidance,
+	)
+	return i, err
+}
+
+const updateAccount = `-- name: UpdateAccount :one
+UPDATE fyniq.account SET name = $1, parent_id = $2, is_group = $3,
+  is_active = $4, report_group = $5, cash_flow_line = $6,
+  function = $7, is_money_account = $8, default_gst_code = $9,
+  currency = $10, is_control = $11, is_payroll_cost = $12,
+  guidance = $13, version = version + 1
+WHERE id = $14
+RETURNING id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance
+`
+
+type UpdateAccountParams struct {
+	Name           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
+	ID             uuid.UUID
+}
+
+type UpdateAccountRow struct {
+	ID             uuid.UUID
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	Version        int32
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
+}
+
+func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (UpdateAccountRow, error) {
+	row := q.db.QueryRow(ctx, updateAccount,
+		arg.Name,
+		arg.ParentID,
+		arg.IsGroup,
+		arg.IsActive,
+		arg.ReportGroup,
+		arg.CashFlowLine,
+		arg.Function,
+		arg.IsMoneyAccount,
+		arg.DefaultGstCode,
+		arg.Currency,
+		arg.IsControl,
+		arg.IsPayrollCost,
+		arg.Guidance,
+		arg.ID,
+	)
+	var i UpdateAccountRow
 	err := row.Scan(
 		&i.ID,
 		&i.Code,

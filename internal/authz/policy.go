@@ -90,9 +90,13 @@ type Policy struct {
 // approval engine (FR-APR, P1). AI cells without letters ("Proposal") grant nothing through the API:
 // the AI's only write path is a proposal (golden rule 5), which arrives in P1.
 var (
-	GetOrganisation   = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
-	ListAccounts      = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
-	GetAccount        = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
+	GetOrganisation = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
+	ListAccounts    = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
+	GetAccount      = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
+	CreateAccount   = Policy{Operation: "createAccount", Capability: ChartOfAccounts, Need: Create,
+		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
+	UpdateAccount = Policy{Operation: "updateAccount", Capability: ChartOfAccounts, Need: Create,
+		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	LoadStandardChart = Policy{Operation: "loadStandardChart", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	CreateJournal             = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
@@ -149,7 +153,7 @@ var (
 
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
-	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListAccounts, LoadStandardChart, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 

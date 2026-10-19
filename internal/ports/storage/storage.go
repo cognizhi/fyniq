@@ -79,6 +79,9 @@ type Accounts interface {
 	Page(ctx context.Context, after string, limit int) ([]Account, error)
 	// Count returns how many accounts the organisation has.
 	Count(ctx context.Context) (int64, error)
+	// Update changes an account at its version, and returns it at its next: CodeVersion when it changed
+	// since. The database keeps its code, type and role, and a system account active.
+	Update(ctx context.Context, id uuid.UUID, version int, c AccountChange) (Account, error)
 }
 
 // Documents are the source documents and their immutable versions (§11.4).
@@ -207,6 +210,22 @@ type AccountRole string
 // The account roles. A share-capital account changes only through the register of share issues or
 // opening balances: a manual journal line to it is refused (INV-13, from P0).
 const RoleShareCapital AccountRole = "share-capital"
+
+// SystemRoles are the roles of B.5's system accounts (FR-COA-03, rev 0.32): each is on one account,
+// share capital on two or more. The engine finds a system account by its role.
+var SystemRoles = []AccountRole{"accounts-receivable", "accounts-payable", "gst-control", "fx-rounding", "unrealised-fx",
+	"deferred-revenue", "prepayments", "salaries-payable", "cpf-sdl-payable", "employer-cpf", "sdl", "depreciation",
+	"accumulated-depreciation", "suspense", "retained-earnings", "expense-claims-payable", "income-tax-payable", "income-tax-expense",
+	"director-loan", "deferred-remuneration", RoleShareCapital, "capital-contribution"}
+
+// AccountChange is what may change on an account: never its code, type or role (FR-COA-03).
+type AccountChange struct {
+	Name     string
+	ParentID *uuid.UUID
+	Group    bool
+	Active   bool
+	AccountAttributes
+}
 
 // Account is an account of the chart.
 type Account struct {

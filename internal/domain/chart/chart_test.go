@@ -77,7 +77,9 @@ func TestTheStandardChart(t *testing.T) {
 		"payroll cost":  {flagged(func(a Account) bool { return a.PayrollCost }), []string{"5050", "6011", "6012", "6013", "6020", "6030", "6050"}},
 		"control":       {flagged(func(a Account) bool { return a.Control }), []string{"1100", "2010", "2120", "2500"}},
 		"share capital": {flagged(func(a Account) bool { return a.Role == storage.RoleShareCapital }), []string{"3010", "3020"}},
-		"money":         {flagged(func(a Account) bool { return a.MoneyAccount }), []string{"1010", "1020", "1030", "1040", "1050", "2030", "2150"}},
+		"system": {flagged(func(a Account) bool { return a.Role != "" }), []string{"1100", "1210", "1590", "2010", "2100", "2110", "2120",
+			"2150", "2200", "2300", "2400", "2500", "2999", "3010", "3020", "3100", "3300", "6020", "6030", "6610", "7030", "7040", "8010"}},
+		"money": {flagged(func(a Account) bool { return a.MoneyAccount }), []string{"1010", "1020", "1030", "1040", "1050", "2030", "2150"}},
 	} {
 		if !slices.Equal(c.got, c.want) {
 			t.Errorf("%s accounts: %v; want %v", name, c.got, c.want)
