@@ -8,7 +8,7 @@
 ## 2. Selection, tax point and rounding
 
 - [x] 2.1 Write `pack.At(name, date)` and the tax-point rule as pure functions. Test `// req: ENG-31`: a future rate never changes a past document (20 Oct 2026: `pack.At`, `RateOn`, `GSTRate`, `TaxPoint` and `PaymentTaxPoint` under the rule `sg-gst/earlier-of@1`)
-- [ ] 2.2 Implement the tax point and GST dates under the named `sg-gst` rule. Test `// req: ENG-45` with the pinned cases G4-018…021 (20 Oct 2026: the tax points of G4-018 and G4-019 are pinned. **Left:** the amount taxed at a deposit (G4-018 keeps its [verify]), G4-020 (registration mid-service), G4-021 (the claim-date policy) and the GST dates stored on documents, with `p1-gst`)
+- [ ] 2.2 Implement the tax point and GST dates under the named `sg-gst` rule. Test `// req: ENG-45` with the pinned cases G4-018…021 (20 Oct 2026: the tax points of G4-018 and G4-019 are pinned. **Left:** the amount taxed at a deposit (G4-018 keeps its [verify]), G4-020 (registration mid-service: `gst.StatusOn` at the tax point; not done here), and, with `p1-gst`, G4-021 (the claim-date policy and the FR-TAX-12 queue) and the GST dates stored on documents)
 - [ ] 2.3 Apply RND-GST-EXCL per subtotal or per line, as the organisation's setting says, and RND-GST-INCL extraction. Tests `// req: RND-GST-EXCL` and `// req: RND-GST-INCL`, with cases worked by hand (**Left:** the rounding package sits under the oracle's differential and mutation gates, so this goes with the oracle's half in `p1-gst`)
 
 ## 3. Activation
