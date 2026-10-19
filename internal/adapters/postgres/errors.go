@@ -48,10 +48,13 @@ var fyCodes = map[string]string{
 	"FY102": storage.CodeApproval,
 	"FY103": storage.CodeApproval,
 	"FY042": storage.CodeAccountFixed,
+	"FY110": storage.CodePack,
 }
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
 var constraintCodes = map[string]struct{ code, message string }{
+	"statutory_pack_activation_two_people":  {storage.CodePack, "the person who proposed activating the pack version cannot approve it (SOD-10)"},
+	"statutory_pack_activation_version_key": {storage.CodeDuplicate, "the organisation has activated that pack version already"},
 	"journal_entry_posting_identity_key":    {storage.CodeDuplicate, "this posting was already made: its posting identity is in use"},
 	"journal_entry_reverses_key":            {storage.CodeDuplicate, "that entry was already reversed"},
 	"account_code_key":                      {storage.CodeDuplicate, "an account with this code already exists"},

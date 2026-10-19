@@ -1,0 +1,13 @@
+case,date,want_rate,why,source
+GST-R-01,1994-03-31,none,the day before GST was introduced: no rate,iras-current-rates
+GST-R-02,1994-04-01,0.03,GST introduced at 3%,iras-current-rates
+GST-R-03,2002-12-31,0.03,last day of 3%,iras-current-rates
+GST-R-04,2003-01-01,0.04,first day of 4%,iras-current-rates
+GST-R-05,2004-01-01,0.05,first day of 5%,iras-current-rates
+GST-R-06,2007-06-30,0.05,last day of 5%,iras-current-rates
+GST-R-07,2007-07-01,0.07,first day of 7%,iras-current-rates
+GST-R-08,2022-12-31,0.07,last day of 7%,iras-current-rates
+GST-R-09,2023-01-01,0.08,first day of 8% (Budget 2022 step 1),iras-rate-change
+GST-R-10,2023-12-31,0.08,last day of 8% (PRD §14.2 golden test),iras-rate-change
+GST-R-11,2024-01-01,0.09,first day of 9% (PRD §14.2 golden test),iras-rate-change
+GST-R-12,2026-10-20,0.09,the current rate,iras-current-rates

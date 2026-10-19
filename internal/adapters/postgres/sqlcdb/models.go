@@ -414,6 +414,64 @@ type FyniqRoleAssignment struct {
 	RevokedAt      *time.Time
 }
 
+type FyniqStatutoryPackActivation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	VersionID      string
+	ProposedBy     uuid.UUID
+	ApprovedBy     uuid.UUID
+	ApprovalID     uuid.UUID
+	ActivatedAt    time.Time
+}
+
+type FyniqStatutoryPackRow struct {
+	VersionID string
+	TableName string
+	Pinned    bool
+	RowNo     int32
+	Cells     []byte
+}
+
+type FyniqStatutoryPackRows struct {
+	VersionID string
+	TableName string
+	Pinned    bool
+	RowNo     int32
+	Cells     []byte
+}
+
+type FyniqStatutoryPackVersion struct {
+	ID            string
+	Pack          string
+	Title         string
+	EffectiveFrom time.Time
+	EffectiveTo   pgtype.Date
+	Supersedes    *string
+	ReviewDate    time.Time
+	Verifier      string
+	Conditions    string
+	TaxPointRule  *string
+	Sources       []byte
+	Digest        string
+	LoadedAt      time.Time
+}
+
+type FyniqStatutoryPackVersions struct {
+	ID            string
+	Pack          string
+	Title         string
+	EffectiveFrom time.Time
+	EffectiveTo   pgtype.Date
+	Supersedes    *string
+	ReviewDate    time.Time
+	Verifier      string
+	Conditions    string
+	TaxPointRule  *string
+	Sources       []byte
+	Digest        string
+	LoadedAt      time.Time
+}
+
 type FyniqSuperAdmin struct {
 	UserID    uuid.UUID
 	AddedAt   time.Time

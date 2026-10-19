@@ -67,6 +67,14 @@ sessions (000013): `user_session` (each session token as its SHA-256, with the s
 provider and the step-up time), reached only through `start_session`, `session_for`, `end_session` and
 `end_user_sessions` (the API); `session_for` reads the identity's user, organisation and live roles on
 every request, one organisation at a time under its row-level security.
+The statutory packs (000033, ENG-30): `statutory_pack_version` (a version's metadata, sources and
+SHA-256 digest) and `statutory_pack_row` (its tables and pinned cases, each row as an object of strings,
+so decimals stay exact), read by every service through `statutory_pack_versions` and
+`statutory_pack_rows`, and written only by the migrator, which loads the versions a release ships
+(`packs/`, after the migrations); a loaded version never changes or goes (`statutory_pack_immutable`,
+FY110) and no value marked `[verify]` is stored. Each organisation's activation of a version is a tenant
+row, `statutory_pack_activation` (000034): insert-only, audited, approved by someone other than its
+proposer (SOD-10); no role may insert one until the approval engine lands.
 Add one only with its access model here and in the test's list.
 - **The installation organisation** (`organisation.kind = 'installation'`, one per installation,
   created by first-run setup) holds only the installation's audit trail: setup and Super-admin events.
@@ -140,5 +148,6 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY081, FY082 | STORAGE-MEMBER-01 | An organisation's kind cannot change, the installation organisation exists already, nobody is a member of it, or a role assignment changes instead of being revoked |
 | FY083, FY084 | STORAGE-SUPERADMIN-01 | The last Super admin cannot be removed; a Super admin is removed, never changed or deleted; at most two Super admins in P0 |
 | FY085 | STORAGE-GRANT-01 | An invitation, recovery code, confirmation or deployment recovery is not valid, used or expired (one answer for every reason), or the user is not an active Super admin |
+| FY110 | STORAGE-PACK-01 | A loaded statutory pack version never changes and is never removed: a correction is a new version (ENG-30) |
 | 40001, 40P01 | STORAGE-RETRY-01 | Serialisation failure or deadlock: retry with the same Idempotency-Key (ENG-47) |
 | 55P03 | STORAGE-LOCK-01 | A lock wait exceeded the unit of work's lock timeout (5 s by default, ENG-47) |

@@ -19,6 +19,21 @@ Source: PRD-001 §10.6 · Priority M · Phase P1
 - **THEN** it records `effective_from`, `effective_to`, the official source URL, the retrieval date, the verifier and the approver
 - **AND** the source section, the kind of source (law, regulation, official guidance, contract term, product policy), the conditions under which the rule applies, and a review date
 
+#### Scenario: A version's layout and loading (rev 0.37, provisional)
+- **WHEN** a pack version is published
+- **THEN** it is a directory `packs/<pack>/<year>.<n>/` with `pack.toml`, CSV tables whose rows name their sources, and `pinned/`, its hand-pinned statutory tests, with values as exact decimal strings
+- **AND** the release loads it into global tables that only the migrator writes and that never change once loaded; a correction is a new version
+
+#### Scenario: An incomplete or unverified version is refused (rev 0.37)
+- **GIVEN** a version missing a source URL, a verifier or a review date, or holding a value still marked [verify]
+- **WHEN** it is loaded
+- **THEN** the whole version is refused
+
+#### Scenario: Verifier and approver (rev 0.37, provisional)
+- **WHEN** a version is published
+- **THEN** its verifier is whoever checked each value against its official page, which may be its author
+- **AND** the approver is recorded when an organisation activates it (ENG-32), not in the file
+
 #### Scenario: Pack past its review date needs review (C.2 #16)
 - **GIVEN** a pack version past its review date
 - **WHEN** Checks are shown
@@ -56,6 +71,15 @@ Source: PRD-001 §10.6 · Priority M · Phase P1
 - **GIVEN** a new pack version whose pinned statutory tests for its effective date fail
 - **WHEN** activation is attempted
 - **THEN** it is not activated
+
+#### Scenario: Activation is the organisation's own record (rev 0.37, provisional)
+- **WHEN** an organisation activates a pack version
+- **THEN** a row of its own names the proposer, an approver who is not the proposer, and the approval engine's record
+
+#### Scenario: No activation before the approval engine (rev 0.37, provisional)
+- **GIVEN** `p1-approval-engine` has not landed
+- **WHEN** any organisation, the local sample company included, tries to activate a pack version
+- **THEN** it is refused
 
 ### Requirement: ENG-33 Published pack updates
 The platform team SHALL publish pack updates (e.g. every January and after each Budget), and each organisation SHALL see a "parameter update available" task with a diff.

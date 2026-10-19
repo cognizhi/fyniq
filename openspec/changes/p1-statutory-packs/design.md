@@ -33,8 +33,13 @@ computations get the oracle's half in `p1-gst`, not here.
   is computed first, by the rule named in the `sg-gst` pack version; the version is then chosen at the
   tax point. Both are pure functions with table tests, and they never call the clock.
 - **Activation goes through the approval engine.** It is a high-risk action (SOD-10, FM-1). Until
-  `p1-approval-engine` lands, activation is refused unless the organisation is the local sample
-  company, which is seeded active.
+  `p1-approval-engine` lands, activation is refused ~~unless the organisation is the local sample
+  company, which is seeded active~~. (20 Oct 2026, PRD rev 0.37, provisional: the sample company is
+  refused too. Nothing marks an organisation as the sample company, and seeding a two-person approval
+  would fake SOD-10; no role may insert an activation until the engine's executor gets the grant.)
+- **Layout (20 Oct 2026, rev 0.37):** `packs/<pack>/<year>.<n>/` (the skill's nesting) with
+  `id = "<pack>@<year>.<n>"` inside, rather than a directory named `sg-gst@2026.1`. Rows of every table
+  name their source ids; pinned cases are worked from the sources, not from the tables.
 - **`[verify]` blocks activation.** The loader fails a pack version whose metadata marks any value
   unverified, so an unconfirmed rate cannot reach a posting.
 - **Rounding stays in the money package.** RND-GST-EXCL and RND-GST-INCL are named policies there;
