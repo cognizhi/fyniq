@@ -23,7 +23,7 @@ commands are the §12.8 contract and arrive in P0.
 | `db/migrations/` | goose SQL migrations (expand-and-contract; linted by squawk) |
 | `internal/` | Go domain: commands, validators, posting engine, balance service, adapters |
 | `cmd/<service>/` | One entry point per service: `api`, `ai`, `mcp`, `worker`, `executor`, `jobs`, `migrate` |
-| `apps/web/` | React SPA; generated TS client; `src/ui/modes.ts` feature registry |
+| `apps/web/` | React SPA; generated TS client; `src/registry.ts` feature registry |
 | `oracle/` | Independent Python reference ledger (QA-ENG-01) |
 | `packs/` | Effective-dated statutory parameter packs (data) |
 | `compliance/controls/` | Control registry as code (Appendix F) |
@@ -47,7 +47,7 @@ reads around the balance service.
 | 8 | **Approvals** (if it changes money, master data or controls) | approval policies | Object type in FR-APR-01; the approver sees the ledger impact and diff (FR-APR-02); payload hash signed (FR-APR-03); (rev 0.3) an **evidence rule** for the activity (required / recommended / optional, FR-DOC-06) with a recommended default (FR-ORG-08) |
 | 9 | **AI impact** | `contracts/ai/` | New data → read tool or semantic-layer measure? New write → does a catalogue task type need it (it is off by default, AI-32)? Exclusions (AI-02)? MCP scope (§9.7)? Never-list (§9.6). See **fyniq-ai-proposals** and **fyniq-mcp-server** |
 | 10 | **Checks** | checks engine | A new failure mode gets a status and, if it deserves its own line, a check with severity, explanation, drill-down and owner (FR-CTL-01) |
-| 11 | **UI** | `apps/web/` | Generated client only; **tag every route, field group and action `basic` or `expert`** in `src/ui/modes.ts` (FR-UX-29); safety information visible in both modes; tokens only. See **fyniq-design-system** |
+| 11 | **UI** | `apps/web/` | Generated client only; **tag every route, field group and action `basic` or `expert`** in `src/registry.ts` (FR-UX-29); safety information visible in both modes; tokens only. See **fyniq-design-system** |
 | 12 | **Tests** | each level | Unit, property, DB invariants, oracle differential, contract, authz matrix, UI component and story, E2E journey; every visible number verified (QA-RPT-01) and every new message triggered (QA-RPT-02); `// req: FR-…` tags (QA-TRACE-01). See **fyniq-quality-gates** |
 | 13 | **Docs and help** | `docs/user-guide/`, help registry, API reference, runbook | Plain words; (rev 0.3) a **help key** with tooltip text for every field, column, chip and tile, a guide page whose front-matter `key` matches, and a tour step if the feature is on the first-run path (§7.9, QA-UI-05/06); the API reference comes from the contract; update the PRD requirement row if the scope changed |
 | 14 | **Commit** | — | Conventional Commit with scope; upgrade notes in the body if users, operators or integrators must act. See **fyniq-release** |

@@ -1,0 +1,5 @@
+/* Tailwind's colour palette is switched off before tokens.css maps the semantic colours, so a
+   palette class (blue, red, 500 and the like) does not exist in this app (golden rule 11). */
+@theme {
+  --color-*: initial;
+}

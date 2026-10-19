@@ -68,13 +68,14 @@ reset: ## Stop everything and delete local data: the database volume and .data/
 	@rm -rf .data
 	@echo "✔ local data removed; run make dev to start again"
 
-test: ## Run every merge gate offline (Docker needed for the database suites): migrations, Go in both flavours, web, the API contract, the oracle, make check
+test: ## Run every merge gate offline (Docker needed for the database suites): migrations, Go in both flavours, web typecheck and unit tests (Vitest with axe), the API contract, the oracle, make check
 	@$(MAKE) --no-print-directory db-lint
 	@$(MISE) go vet ./...
 	@$(MISE) go vet -tags local ./...
 	@$(MISE) go test ./...
 	@$(MISE) go test -tags local ./...
 	@$(MISE) pnpm -r typecheck
+	@$(MISE) pnpm -r --if-present test
 	@$(MAKE) --no-print-directory api-check
 	@$(MAKE) --no-print-directory oracle-test
 	@$(MAKE) --no-print-directory check
