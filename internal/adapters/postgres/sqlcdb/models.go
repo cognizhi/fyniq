@@ -23,6 +23,15 @@ type FyniqAccount struct {
 	Version        int32
 	CreatedAt      time.Time
 	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
 }
 
 type FyniqAppUser struct {

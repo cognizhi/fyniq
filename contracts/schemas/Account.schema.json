@@ -9,10 +9,52 @@
       ],
       "type": "boolean"
     },
+    "cash_flow_line": {
+      "description": "Its line in the cash-flow statement, for balance-sheet accounts.",
+      "examples": [
+        "Payables \u0026 accruals"
+      ],
+      "type": "string"
+    },
     "code": {
       "description": "The account code.",
       "examples": [
         "6100"
+      ],
+      "type": "string"
+    },
+    "control": {
+      "description": "Has a sub-ledger (AR, AP, a director's account).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "currency": {
+      "description": "A bank account's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "default_gst_code": {
+      "description": "The GST code a line on it starts with.",
+      "examples": [
+        "TX"
+      ],
+      "type": "string"
+    },
+    "function": {
+      "description": "The function its costs belong to.",
+      "enum": [
+        "COGS",
+        "R\u0026D",
+        "S\u0026M",
+        "G\u0026A",
+        "Other"
+      ],
+      "examples": [
+        "G\u0026A"
       ],
       "type": "string"
     },
@@ -23,6 +65,13 @@
       ],
       "type": "boolean"
     },
+    "guidance": {
+      "description": "Shown when someone picks the account.",
+      "examples": [
+        "Office rent, co-working memberships and short-term space."
+      ],
+      "type": "string"
+    },
     "id": {
       "description": "The account's ID.",
       "examples": [
@@ -30,6 +79,13 @@
       ],
       "format": "uuid",
       "type": "string"
+    },
+    "money_account": {
+      "description": "A bank, cash, card or wallet account money moves through.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
     },
     "name": {
       "description": "The account name.",
@@ -48,6 +104,27 @@
         "string",
         "null"
       ]
+    },
+    "payroll_cost": {
+      "description": "Carries payroll cost (FR-PRJ-12, FR-PAY-13).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "report_group": {
+      "description": "Where the statements show it.",
+      "examples": [
+        "Premises \u0026 office"
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "A role the rules treat specially, such as share-capital.",
+      "examples": [
+        "share-capital"
+      ],
+      "type": "string"
     },
     "type": {
       "description": "The account type.",
@@ -80,7 +157,10 @@
     "parent_id",
     "group",
     "active",
-    "version"
+    "version",
+    "money_account",
+    "control",
+    "payroll_cost"
   ],
   "title": "Account",
   "type": "object"

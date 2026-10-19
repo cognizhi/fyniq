@@ -11,20 +11,40 @@ import (
 	"github.com/google/uuid"
 )
 
+const countAccounts = `-- name: CountAccounts :one
+SELECT count(*) FROM fyniq.account
+`
+
+func (q *Queries) CountAccounts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAccounts)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getAccount = `-- name: GetAccount :one
-SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account WHERE id = $1
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance FROM fyniq.account WHERE id = $1
 `
 
 type GetAccountRow struct {
-	ID       uuid.UUID
-	Code     string
-	Name     string
-	Type     string
-	ParentID *uuid.UUID
-	IsGroup  bool
-	IsActive bool
-	Version  int32
-	Role     *string
+	ID             uuid.UUID
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	Version        int32
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
 }
 
 func (q *Queries) GetAccount(ctx context.Context, id uuid.UUID) (GetAccountRow, error) {
@@ -40,24 +60,42 @@ func (q *Queries) GetAccount(ctx context.Context, id uuid.UUID) (GetAccountRow, 
 		&i.IsActive,
 		&i.Version,
 		&i.Role,
+		&i.ReportGroup,
+		&i.CashFlowLine,
+		&i.Function,
+		&i.IsMoneyAccount,
+		&i.DefaultGstCode,
+		&i.Currency,
+		&i.IsControl,
+		&i.IsPayrollCost,
+		&i.Guidance,
 	)
 	return i, err
 }
 
 const getAccountByCode = `-- name: GetAccountByCode :one
-SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account WHERE code = $1
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance FROM fyniq.account WHERE code = $1
 `
 
 type GetAccountByCodeRow struct {
-	ID       uuid.UUID
-	Code     string
-	Name     string
-	Type     string
-	ParentID *uuid.UUID
-	IsGroup  bool
-	IsActive bool
-	Version  int32
-	Role     *string
+	ID             uuid.UUID
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	Version        int32
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
 }
 
 func (q *Queries) GetAccountByCode(ctx context.Context, code string) (GetAccountByCodeRow, error) {
@@ -73,35 +111,65 @@ func (q *Queries) GetAccountByCode(ctx context.Context, code string) (GetAccount
 		&i.IsActive,
 		&i.Version,
 		&i.Role,
+		&i.ReportGroup,
+		&i.CashFlowLine,
+		&i.Function,
+		&i.IsMoneyAccount,
+		&i.DefaultGstCode,
+		&i.Currency,
+		&i.IsControl,
+		&i.IsPayrollCost,
+		&i.Guidance,
 	)
 	return i, err
 }
 
 const insertAccount = `-- name: InsertAccount :one
-INSERT INTO fyniq.account (code, name, type, parent_id, is_group, role)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, code, name, type, parent_id, is_group, is_active, version, role
+INSERT INTO fyniq.account (code, name, type, parent_id, is_group, role, report_group, cash_flow_line, function, is_money_account,
+  default_gst_code, currency, is_control, is_payroll_cost, guidance)
+VALUES ($1, $2, $3, $4, $5, $6,
+  $7, $8, $9, $10, $11,
+  $12, $13, $14, $15)
+RETURNING id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance
 `
 
 type InsertAccountParams struct {
-	Code     string
-	Name     string
-	Type     string
-	ParentID *uuid.UUID
-	IsGroup  bool
-	Role     *string
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
 }
 
 type InsertAccountRow struct {
-	ID       uuid.UUID
-	Code     string
-	Name     string
-	Type     string
-	ParentID *uuid.UUID
-	IsGroup  bool
-	IsActive bool
-	Version  int32
-	Role     *string
+	ID             uuid.UUID
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	Version        int32
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
 }
 
 func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (InsertAccountRow, error) {
@@ -112,6 +180,15 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (I
 		arg.ParentID,
 		arg.IsGroup,
 		arg.Role,
+		arg.ReportGroup,
+		arg.CashFlowLine,
+		arg.Function,
+		arg.IsMoneyAccount,
+		arg.DefaultGstCode,
+		arg.Currency,
+		arg.IsControl,
+		arg.IsPayrollCost,
+		arg.Guidance,
 	)
 	var i InsertAccountRow
 	err := row.Scan(
@@ -124,24 +201,42 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (I
 		&i.IsActive,
 		&i.Version,
 		&i.Role,
+		&i.ReportGroup,
+		&i.CashFlowLine,
+		&i.Function,
+		&i.IsMoneyAccount,
+		&i.DefaultGstCode,
+		&i.Currency,
+		&i.IsControl,
+		&i.IsPayrollCost,
+		&i.Guidance,
 	)
 	return i, err
 }
 
 const listAccounts = `-- name: ListAccounts :many
-SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account ORDER BY code
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance FROM fyniq.account ORDER BY code
 `
 
 type ListAccountsRow struct {
-	ID       uuid.UUID
-	Code     string
-	Name     string
-	Type     string
-	ParentID *uuid.UUID
-	IsGroup  bool
-	IsActive bool
-	Version  int32
-	Role     *string
+	ID             uuid.UUID
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	Version        int32
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
 }
 
 func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
@@ -163,6 +258,15 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 			&i.IsActive,
 			&i.Version,
 			&i.Role,
+			&i.ReportGroup,
+			&i.CashFlowLine,
+			&i.Function,
+			&i.IsMoneyAccount,
+			&i.DefaultGstCode,
+			&i.Currency,
+			&i.IsControl,
+			&i.IsPayrollCost,
+			&i.Guidance,
 		); err != nil {
 			return nil, err
 		}
@@ -175,7 +279,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 }
 
 const pageAccounts = `-- name: PageAccounts :many
-SELECT id, code, name, type, parent_id, is_group, is_active, version, role FROM fyniq.account
+SELECT id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance FROM fyniq.account
 WHERE code > $1::text ORDER BY code LIMIT $2
 `
 
@@ -185,15 +289,24 @@ type PageAccountsParams struct {
 }
 
 type PageAccountsRow struct {
-	ID       uuid.UUID
-	Code     string
-	Name     string
-	Type     string
-	ParentID *uuid.UUID
-	IsGroup  bool
-	IsActive bool
-	Version  int32
-	Role     *string
+	ID             uuid.UUID
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	Version        int32
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
 }
 
 func (q *Queries) PageAccounts(ctx context.Context, arg PageAccountsParams) ([]PageAccountsRow, error) {
@@ -215,6 +328,15 @@ func (q *Queries) PageAccounts(ctx context.Context, arg PageAccountsParams) ([]P
 			&i.IsActive,
 			&i.Version,
 			&i.Role,
+			&i.ReportGroup,
+			&i.CashFlowLine,
+			&i.Function,
+			&i.IsMoneyAccount,
+			&i.DefaultGstCode,
+			&i.Currency,
+			&i.IsControl,
+			&i.IsPayrollCost,
+			&i.Guidance,
 		); err != nil {
 			return nil, err
 		}
@@ -229,7 +351,7 @@ func (q *Queries) PageAccounts(ctx context.Context, arg PageAccountsParams) ([]P
 const setAccountActive = `-- name: SetAccountActive :one
 UPDATE fyniq.account SET is_active = $1, version = version + 1
 WHERE id = $2
-RETURNING id, code, name, type, parent_id, is_group, is_active, version, role
+RETURNING id, code, name, type, parent_id, is_group, is_active, version, role, report_group, cash_flow_line, function, is_money_account, default_gst_code, currency, is_control, is_payroll_cost, guidance
 `
 
 type SetAccountActiveParams struct {
@@ -238,15 +360,24 @@ type SetAccountActiveParams struct {
 }
 
 type SetAccountActiveRow struct {
-	ID       uuid.UUID
-	Code     string
-	Name     string
-	Type     string
-	ParentID *uuid.UUID
-	IsGroup  bool
-	IsActive bool
-	Version  int32
-	Role     *string
+	ID             uuid.UUID
+	Code           string
+	Name           string
+	Type           string
+	ParentID       *uuid.UUID
+	IsGroup        bool
+	IsActive       bool
+	Version        int32
+	Role           *string
+	ReportGroup    *string
+	CashFlowLine   *string
+	Function       *string
+	IsMoneyAccount bool
+	DefaultGstCode *string
+	Currency       *string
+	IsControl      bool
+	IsPayrollCost  bool
+	Guidance       *string
 }
 
 func (q *Queries) SetAccountActive(ctx context.Context, arg SetAccountActiveParams) (SetAccountActiveRow, error) {
@@ -262,6 +393,15 @@ func (q *Queries) SetAccountActive(ctx context.Context, arg SetAccountActivePara
 		&i.IsActive,
 		&i.Version,
 		&i.Role,
+		&i.ReportGroup,
+		&i.CashFlowLine,
+		&i.Function,
+		&i.IsMoneyAccount,
+		&i.DefaultGstCode,
+		&i.Currency,
+		&i.IsControl,
+		&i.IsPayrollCost,
+		&i.Guidance,
 	)
 	return i, err
 }

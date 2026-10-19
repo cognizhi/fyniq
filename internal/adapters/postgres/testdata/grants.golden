@@ -2,7 +2,7 @@
 # a change here is a change to who may do what (SEC-03), so review it like code.
 fyniq_ai        USAGE     schema fyniq
 fyniq_api       EXECUTE   accept_super_admin_invitation()
-fyniq_api       INSERT    account (code, is_active, is_group, name, parent_id, role, type)
+fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, role, type)
 fyniq_api       SELECT    account
 fyniq_api       UPDATE    account (is_active, is_group, name, parent_id, version)
 fyniq_api       INSERT    audit_event (body, id)

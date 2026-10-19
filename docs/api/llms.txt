@@ -15,6 +15,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 
 - `GET /v1/accounts` (listAccounts): List the chart of accounts
 - `GET /v1/accounts/{account_id}` (getAccount): Get an account
+- `POST /v1/accounts:load-standard-chart` (loadStandardChart): Load the standard chart of accounts
 - `POST /v1/journals` (createJournal): Save a draft journal
 - `GET /v1/journals/{journal_id}` (getJournal): Get a journal
 - `POST /v1/journals/{journal_id}/post` (postJournal): Post a draft journal

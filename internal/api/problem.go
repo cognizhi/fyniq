@@ -132,6 +132,7 @@ var codeFacts = map[string]struct {
 	organisation.CodeNext:      {422, "The next number does not fit"},
 	organisation.CodeDigits:    {422, "Not a number of digits"},
 	storage.CodeSequence:       {409, "The number sequence cannot be set that way"},
+	CodeChartLoaded:            {409, "The organisation has accounts already"},
 	storage.CodeVersion:        {412, "The record changed since you read it"},
 	storage.CodeOrganisation:   {422, "The organisation's details are not valid"},
 	storage.CodeOverlap:        {409, "The dates overlap another version"},

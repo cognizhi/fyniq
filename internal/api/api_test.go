@@ -679,6 +679,66 @@ func TestDocumentNumbers(t *testing.T) {
 	}
 }
 
+// The standard chart loads once into an organisation with no account: 86 accounts with every attribute;
+// a second load, or a load into an organisation with accounts, is refused.
+// req: FR-COA-01
+// req: FR-COA-02
+func TestStandardChart(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	org, err := e.store.CreateOrganisation(ctx, storage.NewOrganisation{Name: "Standard Chart Pte Ltd", BaseCurrency: "SGD"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	accountant := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: org.ID, Roles: []authz.Role{authz.Accountant}})
+	list := func() map[string]map[string]any {
+		r := e.call(http.MethodGet, "/v1/accounts?page_size=500", accountant, nil)
+		out := map[string]map[string]any{}
+		for _, x := range r.Body["items"].([]any) {
+			a := x.(map[string]any)
+			out[a["code"].(string)] = a
+		}
+		return out
+	}
+
+	if r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Prefer", "return=preview"); r.Status != 200 ||
+		r.Body["accounts"] != float64(86) || len(list()) != 0 {
+		t.Fatalf("the preview: %d %s", r.Status, r.Raw)
+	}
+	r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Idempotency-Key", uuid.NewString())
+	if r.Status != 201 || r.Body["accounts"] != float64(86) || r.Header.Get("Location") != "/v1/accounts" {
+		t.Fatalf("loading the chart: %d %v %s", r.Status, r.Header, r.Raw)
+	}
+	accounts := list()
+	if len(accounts) != 86 {
+		t.Fatalf("%d accounts after loading", len(accounts))
+	}
+	for code, want := range map[string]map[string]any{
+		"1020": {"type": "asset", "report_group": "Cash & bank", "cash_flow_line": "Cash & cash equivalents", "money_account": true, "default_gst_code": "NA"},
+		"1100": {"type": "asset", "control": true, "money_account": false},
+		"3010": {"type": "equity", "role": "share-capital"},
+		"5010": {"type": "expense", "function": "COGS", "default_gst_code": "TX"},
+		"6020": {"type": "expense", "payroll_cost": true, "function": "G&A"},
+		"7040": {"type": "revenue", "name": "Unrealised FX gain or loss"},
+		"7050": {"name": "Gain / (loss) on disposal of assets"},
+	} {
+		for field, v := range want {
+			if accounts[code][field] != v {
+				t.Errorf("account %s: %s is %v; want %v", code, field, accounts[code][field], v)
+			}
+		}
+		if g, _ := accounts[code]["guidance"].(string); g == "" {
+			t.Errorf("account %s has no guidance", code)
+		}
+	}
+
+	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil), "loadStandardChart", 409, CodeChartLoaded)
+	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.as(authz.Accountant), nil), "loadStandardChart", 409, CodeChartLoaded)
+	if n := len(list()); n != 86 {
+		t.Errorf("a refused load changed the chart: %d accounts", n)
+	}
+}
+
 // req: FR-INT-10
 func TestCursorListsAndValueFormats(t *testing.T) {
 	e := newEnv(t)
