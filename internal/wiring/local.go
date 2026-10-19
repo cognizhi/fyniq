@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/adapters/clamav"
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -50,5 +51,17 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Jobs:   local.HTTPJobs{URL: worker, Tokens: tokens},
 		Blobs:  blobs,
 		Signer: signer,
+		// Local mode keeps staging and committed evidence under their own prefixes of the same directory, which
+		// enforces retention in code, and scans with clamd when FYNIQ_CLAMD_ADDR names one (the stack's scanner
+		// profile), else with the EICAR fake (SEC-24).
+		Staging: blobs, Evidence: blobs, Scanner: scanner(local.EICARScanner{}),
 	}, nil
+}
+
+// scanner is clamd at FYNIQ_CLAMD_ADDR when it is set, else fallback.
+func scanner(fallback ports.Scanner) ports.Scanner {
+	if addr := os.Getenv("FYNIQ_CLAMD_ADDR"); addr != "" {
+		return clamav.Scanner{Addr: addr}
+	}
+	return fallback
 }

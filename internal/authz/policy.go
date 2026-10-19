@@ -30,6 +30,7 @@ const (
 	OrganisationProfile Capability = "Organisation profile, financial year, defaults (rev 0.29)"
 	ContactsAndItems    Capability = "Contacts and items (rev 0.33)"
 	UsersAndRoles       Capability = "Users, roles, team mode"
+	Evidence            Capability = "Evidence: add, supersede (rev 0.3)"
 	// Membership is not an Appendix D row: the caller's organisation (its name and base currency),
 	// which every screen shows, is readable by every member of it. AI acts for a member; the Super
 	// admin and the HR officer (Nemura only) are not members through those roles.
@@ -83,6 +84,12 @@ var Grants = map[Capability]map[string]Cell{
 		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
 		"Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal"},
 	},
+	Evidence: {
+		"Owner": {"C", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""},
+		"AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", "payroll"}, "Releaser": {"C", ""}, "Approver": {"C", ""},
+		"Employee": {"C", "own"}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"V", ""},
+		"AI": {"", "Proposal (`doc.attach`)"},
+	},
 }
 
 // Policy is what one operation needs.
@@ -94,6 +101,10 @@ type Policy struct {
 	MaskedFields []string
 	// Note is what the policy does not enforce yet and where it will, stated in the contract.
 	Note string
+	// Parent is the capability of the record the operation acts under, such as Journals for a journal's
+	// evidence: the caller must also be able to view that record (object-level access), so a right on
+	// evidence never reaches a record its holder cannot see.
+	Parent Capability
 	// OwnerMay lets the Owner run it although their cell holds no such right: FR-ADM-01's founder bootstrap
 	// (rev 0.35). The decision says so (ByOwner), and the handler decides when it holds.
 	OwnerMay bool
@@ -161,6 +172,17 @@ var (
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
 	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
 		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
+	// A journal's evidence needs the evidence right and the right to view the journal (FR-DOC-05, FR-DOC-11).
+	// The AI's cell is a proposal (doc.attach): an AI or MCP client never uploads, lists or reads evidence here.
+	AddJournalEvidence = Policy{Operation: "addJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
+		Note: "Needs the right to view the journal as well. AI and MCP clients only propose attaching a document (doc.attach), " +
+			"which a person approves; the evidence rules per activity (FR-DOC-06) arrive later in P1."}
+	ListJournalEvidence = Policy{Operation: "listJournalEvidence", Capability: Evidence, Need: View, Parent: Journals,
+		Note: "Needs the right to view the journal as well."}
+	GetJournalEvidence = Policy{Operation: "getJournalEvidence", Capability: Evidence, Need: View, Parent: Journals,
+		Note: "Needs the right to view the journal as well."}
+	RemoveJournalEvidence = Policy{Operation: "removeJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
+		Note: "Needs the right to view the journal as well; only while the journal is a draft (FR-DOC-07)."}
 )
 
 var (
@@ -197,6 +219,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 
@@ -239,6 +262,19 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 		var aiRight Right
 		if aiRight, ok = holds(p, []Role{AI}); ok && rank(aiRight) < rank(best) {
 			best = aiRight
+		}
+	}
+	if ok && p.Parent != "" { // the record it acts under must be visible too
+		parent := Policy{Operation: p.Operation, Capability: p.Parent, Need: View}
+		var seen Right
+		if seen, ok = holds(parent, roles); ok && ai {
+			_, ok = holds(parent, []Role{AI})
+		}
+		if ok && seen == Masked {
+			ok = false // a masked view of the record is not enough to act on what is under it
+		}
+		if !ok {
+			return Decision{Reason: fmt.Sprintf("these roles cannot view the %q record it is under", p.Parent)}
 		}
 	}
 	if !ok && p.OwnerMay && !ai && slices.Contains(roles, Owner) {

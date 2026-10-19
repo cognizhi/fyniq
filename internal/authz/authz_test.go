@@ -198,3 +198,29 @@ func TestTheOwnerMayActUnderTheFounderBootstrap(t *testing.T) {
 		t.Errorf("the bootstrap reaches beyond members: %+v", d)
 	}
 }
+
+// Evidence on a record needs the evidence right and the right to view the record: a Bookkeeper (C on
+// evidence, nothing on journals) cannot reach a journal's evidence; the AI only proposes (doc.attach).
+// req: FR-DOC-11
+// req: SEC-02
+// asvs: V8.2.2
+func TestEvidenceNeedsTheRecordToo(t *testing.T) {
+	for _, c := range []struct {
+		roles []authz.Role
+		ai    bool
+		want  bool
+	}{
+		{[]authz.Role{authz.Accountant}, false, true},
+		{[]authz.Role{authz.Bookkeeper}, false, false},
+		{[]authz.Role{authz.Bookkeeper, authz.Auditor}, false, true}, // C on evidence, V on journals
+		{[]authz.Role{authz.Auditor}, false, false},                  // V on evidence: views, never adds
+		{[]authz.Role{authz.Owner, authz.Accountant}, true, false},   // the AI proposes only
+	} {
+		if d := authz.Decide(authz.AddJournalEvidence, c.roles, c.ai); d.Allowed != c.want {
+			t.Errorf("%v (AI %v) adding a journal's evidence: %+v; want allowed %v", c.roles, c.ai, d, c.want)
+		}
+	}
+	if d := authz.Decide(authz.ListJournalEvidence, []authz.Role{authz.Auditor}, false); !d.Allowed {
+		t.Errorf("an Auditor views a journal's evidence: %+v", d)
+	}
+}

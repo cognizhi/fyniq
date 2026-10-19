@@ -43,6 +43,10 @@ type Deps struct {
 	Log          *slog.Logger
 	Version      string // the platform version: the document's info.version
 	Limits       Limits // the requests a client may make a minute in an organisation (FR-INT-16); zero: DefaultLimits
+	// Staging keeps uploads until their record is final, and Scanner checks them for malware (FR-DOC-13,
+	// FR-DOC-01); without either, no file can be attached.
+	Staging ports.BlobStore
+	Scanner ports.Scanner
 }
 
 // API is the registered API.
@@ -112,6 +116,7 @@ func Config(version string) huma.Config {
 		{Name: "Contacts", Description: "Customers and vendors (FR-CT-01)."},
 		{Name: "Members", Description: "Members of the organisation, their roles, and invitations to join it (FR-ADM-01)."},
 		{Name: "Items", Description: "Products and services the organisation sells, with a price per currency (FR-ITM-01)."},
+		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 	}
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		"bearer": {Type: "http", Scheme: "bearer", Description: "An access token from Fyniq's OAuth server (ADR-T3), for integrations and MCP " +
@@ -134,9 +139,10 @@ func New(mux humago.Mux, d Deps) *API {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}}
+	a.journals.AfterPosting = a.commitEvidence // a posted journal's files go to the locked store (FR-DOC-13)
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
-	a.API = humago.New(mux, cfg)
+	a.API = humago.New(limitUploads{mux}, cfg)
 	a.UseMiddleware(a.requestContext, a.authenticate, a.limit, a.authorise)
 	registerOrganisation(a)
 	registerProfile(a)
@@ -150,6 +156,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSettings(a)
 	registerMembers(a)
 	registerJournals(a)
+	registerEvidence(a)
 	registerSetup(a)
 	registerSuperAdmins(a)
 	registerSession(a)

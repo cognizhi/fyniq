@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/app"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -28,6 +31,12 @@ func main() {
 		kinds := map[string]outbox.Work{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
 			kinds[tokens.Kind] = tokens.Work(hydra.New(admin)) // AI-38: revoke a user's tokens after a change
+		}
+		if c, ok := kit.Committer(deps.Clock); ok { // FR-DOC-13: commit a final record's files to the locked store
+			kinds[evidence.CommitKind] = func(ctx context.Context, org uuid.UUID, _ storage.OutboxRow) error {
+				_, err := c.Commit(ctx, org)
+				return err
+			}
 		}
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds})

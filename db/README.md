@@ -140,5 +140,10 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY081, FY082 | STORAGE-MEMBER-01 | An organisation's kind cannot change, the installation organisation exists already, nobody is a member of it, or a role assignment changes instead of being revoked |
 | FY083, FY084 | STORAGE-SUPERADMIN-01 | The last Super admin cannot be removed; a Super admin is removed, never changed or deleted; at most two Super admins in P0 |
 | FY085 | STORAGE-GRANT-01 | An invitation, recovery code, confirmation or deployment recovery is not valid, used or expired (one answer for every reason), or the user is not an active Super admin |
+| FY120 | STORAGE-EVIDENCE-01 | An evidence file keeps what it is (file, hashes, parent, uploader, source) and, once final, its locked copy |
+| FY121 | STORAGE-EVIDENCE-01 | Evidence is removed only while its record is a draft: append-only after (FR-DOC-07) |
+| FY122 | STORAGE-EVIDENCE-01 | Evidence moves attached → removed (draft) or attached → final (record not a draft), never back |
+| FY123 | STORAGE-EVIDENCE-01 | An evidence file's retain-until only moves later (FR-DOC-02) |
+| FY124 | STORAGE-EVIDENCE-01 | Evidence is never deleted |
 | 40001, 40P01 | STORAGE-RETRY-01 | Serialisation failure or deadlock: retry with the same Idempotency-Key (ENG-47) |
 | 55P03 | STORAGE-LOCK-01 | A lock wait exceeded the unit of work's lock timeout (5 s by default, ENG-47) |

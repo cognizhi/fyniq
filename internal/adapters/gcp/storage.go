@@ -15,6 +15,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -27,7 +28,10 @@ const StorageAPI = "https://storage.googleapis.com"
 type Storage struct {
 	Endpoint string // StorageAPI, or the emulator's address
 	Bucket   string
-	r        rest
+	// Clock decides whether an object's retain-until has passed, for the adapter's own check; nil reads the
+	// wall clock. Cloud Storage judges by its own clock.
+	Clock ports.Clock
+	r     rest
 }
 
 var _ ports.BlobStore = (*Storage)(nil)
@@ -57,8 +61,11 @@ func (s *Storage) upload(ctx context.Context, key string, r io.Reader, extra url
 	return s.r.do(ctx, http.MethodPost, u, "application/octet-stream", bytes.NewReader(b), nil)
 }
 
-// Put implements ports.BlobStore.
+// Put implements ports.BlobStore: a retained object is never replaced.
 func (s *Storage) Put(ctx context.Context, key string, r io.Reader) error {
+	if err := s.retained(ctx, key); err != nil {
+		return err
+	}
 	return s.upload(ctx, key, r, nil)
 }
 
@@ -116,11 +123,109 @@ func (s *Storage) List(ctx context.Context, prefix string) ([]string, error) {
 // Delete implements ports.BlobStore. In a bucket under a retention policy, Cloud Storage refuses to
 // delete an object younger than the retention period, whoever asks.
 func (s *Storage) Delete(ctx context.Context, key string) error {
+	if err := s.retained(ctx, key); err != nil {
+		return err
+	}
 	err := s.r.do(ctx, http.MethodDelete, s.object(key), "", nil, nil)
 	if errors.Is(err, errNotFound) {
 		return nil
 	}
 	return err
+}
+
+// The object's retention (FR-DOC-02): Cloud Storage's Object Retention Lock and temporary hold enforce it
+// in the bucket; the adapter checks them as well before it deletes or replaces an object, so the emulator,
+// which records a retention but enforces nothing, behaves as the cloud does. The hold is also kept in the
+// object's metadata, which the emulator keeps.
+const holdMetadata = "fyniq-legal-hold"
+
+type objectRetention struct {
+	Retention *struct {
+		Mode            string    `json:"mode"`
+		RetainUntilTime time.Time `json:"retainUntilTime"`
+	} `json:"retention"`
+	TemporaryHold bool              `json:"temporaryHold"`
+	Metadata      map[string]string `json:"metadata"`
+}
+
+func (o objectRetention) until() time.Time {
+	if o.Retention == nil {
+		return time.Time{}
+	}
+	return o.Retention.RetainUntilTime
+}
+
+func (o objectRetention) held() bool { return o.TemporaryHold || o.Metadata[holdMetadata] == "true" }
+
+func (s *Storage) now() time.Time {
+	if s.Clock != nil {
+		return s.Clock.Now()
+	}
+	return clock.System{}.Now()
+}
+
+// retention reads an object's retention; ErrNotFound when there is no object.
+func (s *Storage) retention(ctx context.Context, key string) (objectRetention, error) {
+	var o objectRetention
+	err := s.r.do(ctx, http.MethodGet, s.object(key)+"?fields=retention,temporaryHold,metadata", "", nil, &o)
+	if errors.Is(err, errNotFound) {
+		return o, fmt.Errorf("blob %s: %w", key, ports.ErrNotFound)
+	}
+	return o, err
+}
+
+// retained returns ErrRetained when the object is under retention or hold; nil when it is free or missing.
+func (s *Storage) retained(ctx context.Context, key string) error {
+	o, err := s.retention(ctx, key)
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if o.held() || o.until().After(s.now()) {
+		return fmt.Errorf("blob %s: %w", key, ports.ErrRetained)
+	}
+	return nil
+}
+
+func (s *Storage) patch(ctx context.Context, key string, body any) error {
+	b, err := jsonBody(body)
+	if err != nil {
+		return err
+	}
+	err = s.r.do(ctx, http.MethodPatch, s.object(key), "application/json", b, nil)
+	if errors.Is(err, errNotFound) {
+		return fmt.Errorf("blob %s: %w", key, ports.ErrNotFound)
+	}
+	return err
+}
+
+// SetRetainUntil implements ports.BlobStore with a locked object retention: Cloud Storage itself refuses to
+// shorten one, and the adapter refuses first.
+func (s *Storage) SetRetainUntil(ctx context.Context, key string, until time.Time) error {
+	o, err := s.retention(ctx, key)
+	if err != nil {
+		return err
+	}
+	if until.Before(o.until()) {
+		return fmt.Errorf("blob %s is kept until %s, not %s: %w", key, o.until().UTC().Format(time.RFC3339),
+			until.UTC().Format(time.RFC3339), ports.ErrRetentionShortened)
+	}
+	if until.Equal(o.until()) {
+		return nil // already so; a locked retention is patched only to move it later
+	}
+	return s.patch(ctx, key, map[string]any{"retention": map[string]any{"mode": "Locked",
+		"retainUntilTime": until.UTC().Format(time.RFC3339Nano)}})
+}
+
+// SetLegalHold implements ports.BlobStore with a temporary hold, which does not restart the retention
+// clock (FR-DOC-02).
+func (s *Storage) SetLegalHold(ctx context.Context, key string, hold bool) error {
+	if _, err := s.retention(ctx, key); err != nil {
+		return err
+	}
+	return s.patch(ctx, key, map[string]any{"temporaryHold": hold, "metadata": map[string]any{holdMetadata: strconv.FormatBool(hold)}})
 }
 
 // Retention is a bucket's retention policy.

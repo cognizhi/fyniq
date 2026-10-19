@@ -44,6 +44,11 @@ var fyCodes = map[string]string{
 	"FY092": storage.CodeGrant,
 	"FY093": storage.CodeMembership,
 	"FY042": storage.CodeAccountFixed,
+	"FY120": storage.CodeEvidence,
+	"FY121": storage.CodeEvidence,
+	"FY122": storage.CodeEvidence,
+	"FY123": storage.CodeEvidence,
+	"FY124": storage.CodeEvidence,
 }
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
@@ -102,6 +107,16 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"gst_registration_frequency_known":      {storage.CodeOrganisation, "the GST return frequency is not quarterly or monthly"},
 	"gst_registration_quarter_start":        {storage.CodeOrganisation, "the quarters' start month is not 1, 2 or 3"},
 	"gst_registration_number_length":        {storage.CodeOrganisation, "the GST registration number is blank or longer than 20 characters"},
+	"evidence_document_fkey":                {storage.CodeInvalid, "the evidence's record is not a document of this organisation"},
+	"evidence_staging_key":                  {storage.CodeDuplicate, "that staged file is attached already"},
+	"evidence_lengths":                      {storage.CodeInvalid, "a text of the evidence is empty or too long"},
+	"evidence_media_type_known":             {storage.CodeInvalid, "the file's type is not one Fyniq accepts"},
+	"evidence_size_range":                   {storage.CodeInvalid, "the file is empty or larger than 25 MB"},
+	"evidence_hash_format":                  {storage.CodeInvalid, "a file hash is not a SHA-256 in hexadecimal"},
+	"evidence_source_known":                 {storage.CodeInvalid, "the evidence's source is not upload, paste, email or API"},
+	"evidence_data_class_known":             {storage.CodeInvalid, "the data class is not general, personal, bank, payroll or identity"},
+	"evidence_key_format":                   {storage.CodeInvalid, "a store key is not where evidence is kept"},
+	"evidence_state_fields":                 {storage.CodeEvidence, "the evidence's state does not match its removal or its committed copy"},
 }
 
 // mapError turns database errors into storage errors with stable codes (ENG-23) and "no rows" into

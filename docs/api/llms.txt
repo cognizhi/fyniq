@@ -28,6 +28,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PATCH /v1/items/{item_id}` (updateItem): Change an item
 - `POST /v1/journals` (createJournal): Save a draft journal
 - `GET /v1/journals/{journal_id}` (getJournal): Get a journal
+- `GET /v1/journals/{journal_id}/evidence` (listJournalEvidence): List a journal's evidence
+- `POST /v1/journals/{journal_id}/evidence` (addJournalEvidence): Attach evidence to a journal
+- `GET /v1/journals/{journal_id}/evidence/{evidence_id}` (getJournalEvidence): Get a journal's evidence file
+- `DELETE /v1/journals/{journal_id}/evidence/{evidence_id}` (removeJournalEvidence): Remove evidence from a draft journal
 - `POST /v1/journals/{journal_id}/post` (postJournal): Post a draft journal
 - `POST /v1/journals/{journal_id}/reverse` (reverseJournal): Reverse a posted journal
 - `POST /v1/journals:bulk` (bulkCreateJournals): Save up to 250 draft journals

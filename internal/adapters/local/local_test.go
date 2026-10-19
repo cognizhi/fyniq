@@ -50,6 +50,28 @@ func TestBlobStoreConformance(t *testing.T) {
 	})
 }
 
+// The local directory keeps a retained blob as the locked bucket does: no delete or replace before its
+// retain-until or while on hold, and a retain-until that only moves later.
+// req: FR-DOC-02
+// req: NFR-PORT-04
+// asvs: V14.2.7
+func TestBlobRetentionConformance(t *testing.T) {
+	porttest.BlobRetention(t, func(t *testing.T, c ports.Clock) ports.BlobStore {
+		d, err := NewDir(t.TempDir())
+		if err != nil {
+			t.Fatal(err)
+		}
+		d.Clock = c
+		return d
+	})
+}
+
+// The local scanner flags the EICAR test file wherever it sits in the stream, and passes anything else.
+// req: FR-DOC-01
+func TestEICARScanner(t *testing.T) {
+	porttest.Scanner(t, EICARScanner{})
+}
+
 // req: NFR-PORT-04
 // req: CTL-AUD-02
 func TestSignerConformance(t *testing.T) {

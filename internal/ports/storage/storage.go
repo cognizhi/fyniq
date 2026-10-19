@@ -62,6 +62,7 @@ type UnitOfWork interface {
 	Sequences() Sequences
 	Contacts() Contacts
 	Items() Items
+	Evidence() EvidenceFiles
 	Settings() Settings
 	Outbox() Outbox
 	Sweeping() Sweeping
@@ -419,6 +420,9 @@ const (
 	CodeVersion        = "STORAGE-VERSION-01"  // the record changed since it was read (FR-INT-09)
 	CodeOverlap        = "STORAGE-DATES-01"    // a version's validity overlaps another's, or ends before it starts
 	CodeSequence       = "STORAGE-SEQUENCE-01" // a number sequence cannot be set that way, or a number is used already
+	// CodeEvidence: evidence keeps what it is, is removed only from a draft, is append-only once its record is
+	// not a draft, keeps a retain-until that only moves later, and is never deleted (FR-DOC-02, FR-DOC-07).
+	CodeEvidence = "STORAGE-EVIDENCE-01"
 )
 
 // ErrPreviewed is what Do returns for a preview that passed every check the commit would run: nothing

@@ -30,6 +30,9 @@ fyniq_api       INSERT    document_version (document_id, payload, version)
 fyniq_api       SELECT    document_version
 fyniq_api       EXECUTE   end_session()
 fyniq_api       EXECUTE   end_user_sessions()
+fyniq_api       INSERT    evidence (data_class, document_id, evidence_type, file_name, media_type, note, original_sha256, relates_on, sha256, size_bytes, source, staging_key, uploaded_by)
+fyniq_api       SELECT    evidence
+fyniq_api       UPDATE    evidence (removed_at, state, version)
 fyniq_api       EXECUTE   finish_job_slot()
 fyniq_api       INSERT    gst_registration (accounting_basis, deregistered_from, gst_number, quarter_start_month, recorded_at, registered_from, return_frequency)
 fyniq_api       SELECT    gst_registration
@@ -105,6 +108,7 @@ fyniq_executor  SELECT    document_sequence
 fyniq_executor  UPDATE    document_sequence (next_number)
 fyniq_executor  INSERT    document_version (document_id, payload, version)
 fyniq_executor  SELECT    document_version
+fyniq_executor  SELECT    evidence
 fyniq_executor  SELECT    gst_registration
 fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
@@ -132,6 +136,7 @@ fyniq_readonly  SELECT    document
 fyniq_readonly  SELECT    document_number
 fyniq_readonly  SELECT    document_sequence
 fyniq_readonly  SELECT    document_version
+fyniq_readonly  SELECT    evidence
 fyniq_readonly  SELECT    gst_registration
 fyniq_readonly  SELECT    heartbeats
 fyniq_readonly  SELECT    idempotency_key
@@ -165,6 +170,8 @@ fyniq_worker    SELECT    document
 fyniq_worker    SELECT    document_number
 fyniq_worker    SELECT    document_sequence
 fyniq_worker    SELECT    document_version
+fyniq_worker    SELECT    evidence
+fyniq_worker    UPDATE    evidence (finalised_at, locked_key, retain_until, state, version)
 fyniq_worker    EXECUTE   finish_job_slot()
 fyniq_worker    SELECT    gst_registration
 fyniq_worker    SELECT    heartbeats

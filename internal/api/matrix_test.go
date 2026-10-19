@@ -74,8 +74,44 @@ func matrixInvitation(e *env) string {
 		"roles": []string{"bookkeeper"}}).str("id")
 }
 
+// matrixEvidence attaches a receipt to a new draft journal as an Accountant and returns both IDs.
+func matrixEvidence(e *env) (journalID, evidenceID string) {
+	journalID, _ = e.createDraft("10.00")
+	r := e.upload("/v1/journals/"+journalID+"/evidence", e.as(authz.Accountant), map[string]string{"evidence_type": "receipt"},
+		"receipt.pdf", []byte("%PDF-1.7 matrix receipt"), "If-Match", "*")
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("addJournalEvidence = %d: %s", r.Status, r.Raw)
+	}
+	return journalID, r.str("id")
+}
+
 // matrixCalls has one request per operation; an operation without one fails the test.
 var matrixCalls = map[string]matrixCall{
+	"addJournalEvidence": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createDraft("10.00")
+		r := e.upload("/v1/journals/"+id+"/evidence", tok, map[string]string{"evidence_type": "receipt"}, "receipt.pdf",
+			[]byte("%PDF-1.7 matrix receipt"), "If-Match", "*")
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/journals/"+id+"/evidence", e.as(authz.Accountant), nil)
+			items, _ := l.Body["items"].([]any)
+			return l.Status == http.StatusOK && len(items) == 0
+		}
+	},
+	"listJournalEvidence": func(e *env, tok string) (response, func() bool) {
+		id, _ := matrixEvidence(e)
+		return e.call(http.MethodGet, "/v1/journals/"+id+"/evidence", tok, nil), nil
+	},
+	"getJournalEvidence": func(e *env, tok string) (response, func() bool) {
+		id, ev := matrixEvidence(e)
+		return e.call(http.MethodGet, "/v1/journals/"+id+"/evidence/"+ev, tok, nil), nil
+	},
+	"removeJournalEvidence": func(e *env, tok string) (response, func() bool) {
+		id, ev := matrixEvidence(e)
+		r := e.call(http.MethodDelete, "/v1/journals/"+id+"/evidence/"+ev, tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/journals/"+id+"/evidence/"+ev, e.as(authz.Accountant), nil).str("state") == "attached"
+		}
+	},
 	"getOrganisation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation", tok, nil), nil
 	},
@@ -362,7 +398,17 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 	if !ok {
 		t.Fatalf("Appendix D has no row %q", p.Capability)
 	}
-	return authztest.Allows(authztest.ParseCell(row[col]), p.Need)
+	allowed, masked = authztest.Allows(authztest.ParseCell(row[col]), p.Need)
+	if allowed && p.Parent != "" { // and the record it is under must be visible, unmasked
+		parent, ok := rows[string(p.Parent)]
+		if !ok {
+			t.Fatalf("Appendix D has no row %q", p.Parent)
+		}
+		if sees, partly := authztest.Allows(authztest.ParseCell(parent[col]), authz.View); !sees || partly {
+			return false, false
+		}
+	}
+	return allowed, masked
 }
 
 // The authorisation matrix: every role of §7.1, the AI and the Super admin × every operation,
