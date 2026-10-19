@@ -61,6 +61,7 @@ type UnitOfWork interface {
 	Sequences() Sequences
 	Contacts() Contacts
 	Items() Items
+	Settings() Settings
 	Outbox() Outbox
 	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a

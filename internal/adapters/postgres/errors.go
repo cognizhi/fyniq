@@ -40,6 +40,7 @@ var fyCodes = map[string]string{
 	"FY084": storage.CodeSuperAdmin,
 	"FY085": storage.CodeGrant,
 	"FY090": storage.CodeSequence,
+	"FY091": storage.CodeInvalid,
 	"FY042": storage.CodeAccountFixed,
 }
 
@@ -77,6 +78,10 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"contact_terms_range":                {storage.CodeInvalid, "the payment terms are not 0 to 365 days"},
 	"contact_gst_code_format":            {storage.CodeInvalid, "the default GST code is not 2 to 4 capital letters"},
 	"contact_default_account_fkey":       {storage.CodeAccountNotPost, "the default category is not an account of this organisation"},
+	"organisation_setting_version_key":   {storage.CodeVersion, "the setting changed since it was read: another change took its next version"},
+	"organisation_setting_region_fixed":  {storage.CodeInvalid, "the data region is set by the platform and never changes"},
+	"organisation_setting_key_format":    {storage.CodeInvalid, "the setting's key is not one Fyniq knows"},
+	"organisation_setting_value_length":  {storage.CodeInvalid, "the setting's value is empty or longer than 200 characters"},
 	"item_code_key":                      {storage.CodeDuplicate, "an item with this code already exists"},
 	"item_code_format":                   {storage.CodeInvalid, "the item code is not 1 to 30 letters, digits, dots, underscores, slashes or hyphens"},
 	"item_lengths":                       {storage.CodeInvalid, "a text of the item is empty or too long"},

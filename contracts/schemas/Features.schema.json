@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ai_assistant": {
+      "description": "The AI assistant.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "multi_currency": {
+      "description": "Documents and accounts in other currencies.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "payroll": {
+      "description": "Payroll and its pages.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "portals": {
+      "description": "Portals for customers and investors.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "projects": {
+      "description": "Projects and time.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "multi_currency",
+    "payroll",
+    "projects",
+    "portals",
+    "ai_assistant"
+  ],
+  "title": "Features",
+  "type": "object"
+}

@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -146,6 +147,12 @@ var codeFacts = map[string]struct {
 	contact.CodePeppol:         {422, "Not a Peppol participant ID"},
 	contact.CodeText:           {422, "A text is too long"},
 	contact.CodeCategory:       {422, "Not an account that takes postings"},
+	settings.CodeValue:         {422, "Not a value for this setting"},
+	settings.CodeBackdated:     {422, "A setting never changes in the past"},
+	settings.CodeShortened:     {422, "The setting can only lengthen"},
+	settings.CodeFixed:         {409, "Set by the platform"},
+	settings.CodeDualControl:   {409, "Needs a second approver"},
+	settings.CodeValueOrReset:  {422, "Send a value or a reset"},
 	item.CodeCode:              {422, "Not an item code"},
 	item.CodeName:              {422, "The item's name is not valid"},
 	item.CodeType:              {422, "Neither a product nor a service"},

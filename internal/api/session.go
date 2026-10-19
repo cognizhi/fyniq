@@ -11,7 +11,9 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // SignInProvider is a provider people may sign in with.
@@ -38,6 +40,34 @@ type SessionInfo struct {
 	Roles          []RoleName `json:"roles" doc:"Your roles in that organisation (PRD-001 §7.1); they are read on every request, so a change applies at once."`
 	SuperAdmin     bool       `json:"super_admin" doc:"Whether you are a Super admin of this installation (FR-ADM-07)." example:"false"`
 	SteppedUpUntil *time.Time `json:"stepped_up_until,omitempty" doc:"Until when your last step-up (a second factor at sign-in) counts for the actions that need one; absent when it does not." example:"2026-10-15T09:05:00Z"`
+	Features       *Features  `json:"features,omitempty" doc:"The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."`
+}
+
+// Features are the organisation's feature switches on a day (FR-ORG-06): the web app shows only what is on.
+type Features struct {
+	MultiCurrency bool `json:"multi_currency" doc:"Documents and accounts in other currencies." example:"true"`
+	Payroll       bool `json:"payroll" doc:"Payroll and its pages." example:"false"`
+	Projects      bool `json:"projects" doc:"Projects and time." example:"false"`
+	Portals       bool `json:"portals" doc:"Portals for customers and investors." example:"false"`
+	AIAssistant   bool `json:"ai_assistant" doc:"The AI assistant." example:"false"`
+}
+
+// featuresOn reads the organisation's feature switches today.
+func featuresOn(ctx context.Context, a *API, u storage.UnitOfWork) (*Features, error) {
+	today, err := orgToday(ctx, a, u)
+	if err != nil {
+		return nil, err
+	}
+	changes, err := u.Settings().Changes(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	on := func(key string) bool {
+		d, _ := settings.Lookup(key)
+		return settings.On(d, changes, today).Value == "true"
+	}
+	return &Features{MultiCurrency: on("features.multi_currency"), Payroll: on("features.payroll"), Projects: on("features.projects"),
+		Portals: on("features.portals"), AIAssistant: on("features.ai_assistant")}, nil
 }
 
 // RoleName is a role of PRD-001 §7.1, as the API names it.
@@ -77,7 +107,7 @@ func registerSession(a *API) {
 		OperationID: "getSession", Method: http.MethodGet, Path: "/v1/session", Tags: []string{"Session"},
 		Summary: "Get your session",
 		Description: "Who you are signed in as: the provider, your user, the organisation your session is in, your roles there, whether " +
-			"you are a Super admin and until when your step-up counts (SEC-05, FR-ADM-07). The web app reads it after signing in; a 401 " +
+			"you are a Super admin, until when your step-up counts (SEC-05, FR-ADM-07), and the organisation's feature switches (FR-ORG-06). The web app reads it after signing in; a 401 " +
 			"means it should show the sign-in page. Needs a person signed in; an OAuth client or the AI is refused. Read-only; no side effects.",
 	}, []string{CodeSessionRequired, CodeUnavailable}, func(ctx context.Context, _ *struct{}) (*sessionOutput, error) {
 		p, err := signedInPerson(ctx, "Reading your session")
@@ -93,6 +123,14 @@ func registerSession(a *API) {
 		}
 		if p.Organisation != uuid.Nil {
 			out.OrganisationID = p.Organisation.String()
+			err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+				var err error
+				out.Features, err = featuresOn(ctx, a, u)
+				return err
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 		if a.deps.Installation != nil {
 			_, err := a.deps.Installation.SuperAdminFor(ctx, p.Issuer, p.Subject)

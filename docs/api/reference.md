@@ -179,7 +179,7 @@ Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-0
 
 **Get your session** (`getSession`)
 
-Who you are signed in as: the provider, your user, the organisation your session is in, your roles there, whether you are a Super admin and until when your step-up counts (SEC-05, FR-ADM-07). The web app reads it after signing in; a 401 means it should show the sign-in page. Needs a person signed in; an OAuth client or the AI is refused. Read-only; no side effects.
+Who you are signed in as: the provider, your user, the organisation your session is in, your roles there, whether you are a Super admin, until when your step-up counts (SEC-05, FR-ADM-07), and the organisation's feature switches (FR-ORG-06). The web app reads it after signing in; a 401 means it should show the sign-in page. Needs a person signed in; an OAuth client or the AI is refused. Read-only; no side effects.
 
 - **Permission:** View on (your session). Needs a person signed in to Fyniq; an OAuth client or the AI is refused.
 - **Responses:**
@@ -448,6 +448,75 @@ Sets up or changes a document type's number sequence: its prefix, next number (f
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `ORG-08`, `ORG-09`, `ORG-10`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SEQUENCE-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/organisation/settings`
+
+**List the organisation settings** (`listSettings`)
+
+Every organisation setting by key, with its value on a day (today when on is left out), its recommended value and whether it holds it, why, its guide section, whether it needs a second approver or is set by the platform, and the changes scheduled after that day (FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08). Read-only; no side effects.
+
+- **Permission:** View on Organisation profile, financial year, defaults (rev 0.29)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `on` (query): The day to read the values for; today, in the organisation's time zone, when left out.
+- **Responses:**
+  - `200` OK [`SettingPage`](../../contracts/schemas/SettingPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `GET /v1/organisation/settings/{key}`
+
+**Get an organisation setting** (`getSetting`)
+
+One setting with its value on a day (today when on is left out), every recorded change and its ETag (FR-ORG-08). Read-only; no side effects.
+
+- **Permission:** View on Organisation profile, financial year, defaults (rev 0.29)
+- **Parameters:**
+  - `key` (path, required): The setting's key.
+  - `on` (query): The day to read the values for; today, in the organisation's time zone, when left out.
+- **Responses:**
+  - `200` OK [`Setting`](../../contracts/schemas/Setting.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `PATCH /v1/organisation/settings/{key}`
+
+**Change an organisation setting** (`updateSetting`)
+
+Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never changes, and one under dual control (FM-1: thresholds, retention, AI) is refused until the approval engine arrives: nothing is applied. Side effects: the setting's next version and its audit event, with the value before and after. Needs If-Match with its ETag ("0" before any change). Approval policy: the Owner approves once the approval engine arrives (P1). Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Organisation profile, financial year, defaults (rev 0.29). The Owner approves once the approval engine arrives (P1); a setting under dual control (FM-1) is refused until then.
+- **Parameters:**
+  - `key` (path, required): The setting's key.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`SettingUpdate`](../../contracts/schemas/SettingUpdate.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Setting`](../../contracts/schemas/Setting.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `SET-04` Set by the platform; `SET-05` Needs a second approver; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `SET-01`, `SET-02`, `SET-03`, `SET-04`, `SET-05`, `SET-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ## Chart of accounts
 

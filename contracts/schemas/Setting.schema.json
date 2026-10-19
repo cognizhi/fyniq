@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "changes": {
+      "description": "Every recorded change, by version; only when one setting is read or changed.",
+      "items": {
+        "$ref": "SettingChange.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "effective_from": {
+      "description": "The day that value took effect; absent while it has the value it shipped with.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "group": {
+      "description": "Where settings show it.",
+      "examples": [
+        "Defaults"
+      ],
+      "type": "string"
+    },
+    "guide": {
+      "description": "The guide section that explains it.",
+      "examples": [
+        "/help/organisation-settings#payment-terms"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "The setting's key.",
+      "examples": [
+        "sales.payment_terms_days"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "What it holds: switch is \"true\" or \"false\"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text.",
+      "enum": [
+        "switch",
+        "days",
+        "years",
+        "amount_sgd",
+        "percent",
+        "text"
+      ],
+      "examples": [
+        "days"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "Its name.",
+      "examples": [
+        "Payment terms for invoices"
+      ],
+      "type": "string"
+    },
+    "lengthen_only": {
+      "description": "A change may only lengthen it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "max": {
+      "description": "The largest value a number may take.",
+      "examples": [
+        "365"
+      ],
+      "type": "string"
+    },
+    "min": {
+      "description": "The smallest value a number may take.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
+    "needs_second_approver": {
+      "description": "Under dual control (FM-1): it keeps its recommended value until the approval engine arrives.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "reason": {
+      "description": "Why the recommended value.",
+      "examples": [
+        "An invoice to a customer with no terms of its own falls due 30 days after its date"
+      ],
+      "type": "string"
+    },
+    "recommended_value": {
+      "description": "The value it ships with (FR-ORG-08).",
+      "examples": [
+        "30"
+      ],
+      "type": "string"
+    },
+    "requirement": {
+      "description": "The PRD requirement it implements.",
+      "examples": [
+        "FR-ORG-04"
+      ],
+      "type": "string"
+    },
+    "scheduled": {
+      "description": "Changes recorded to take effect after that day, by date.",
+      "items": {
+        "$ref": "SettingChange.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "set_by_platform": {
+      "description": "Set by the platform: shown, never changed (FR-ORG-07).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "status": {
+      "description": "recommended while it holds the recommended value; changed otherwise.",
+      "enum": [
+        "recommended",
+        "changed"
+      ],
+      "examples": [
+        "recommended"
+      ],
+      "type": "string"
+    },
+    "value": {
+      "description": "Its value on the day asked for, as a string.",
+      "examples": [
+        "30"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The setting's version: its latest change's, 0 before any. It also makes the ETag.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "key",
+    "group",
+    "label",
+    "kind",
+    "value",
+    "recommended_value",
+    "status",
+    "reason",
+    "guide",
+    "requirement",
+    "needs_second_approver",
+    "set_by_platform",
+    "lengthen_only",
+    "scheduled",
+    "version"
+  ],
+  "title": "Setting",
+  "type": "object"
+}

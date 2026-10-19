@@ -424,6 +424,50 @@ export interface paths {
         patch: operations["updateSequence"];
         trace?: never;
     };
+    "/v1/organisation/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the organisation settings
+         * @description Every organisation setting by key, with its value on a day (today when on is left out), its recommended value and whether it holds it, why, its guide section, whether it needs a second approver or is set by the platform, and the changes scheduled after that day (FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08). Read-only; no side effects.
+         */
+        get: operations["listSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organisation/settings/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an organisation setting
+         * @description One setting with its value on a day (today when on is left out), every recorded change and its ETag (FR-ORG-08). Read-only; no side effects.
+         */
+        get: operations["getSetting"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change an organisation setting
+         * @description Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never changes, and one under dual control (FM-1: thresholds, retention, AI) is refused until the approval engine arrives: nothing is applied. Side effects: the setting's next version and its audit event, with the value before and after. Needs If-Match with its ETag ("0" before any change). Approval policy: the Owner approves once the approval engine arrives (P1). Prefer: return=preview checks it and saves nothing.
+         */
+        patch: operations["updateSetting"];
+        trace?: never;
+    };
     "/v1/session": {
         parameters: {
             query?: never;
@@ -433,7 +477,7 @@ export interface paths {
         };
         /**
          * Get your session
-         * @description Who you are signed in as: the provider, your user, the organisation your session is in, your roles there, whether you are a Super admin and until when your step-up counts (SEC-05, FR-ADM-07). The web app reads it after signing in; a 401 means it should show the sign-in page. Needs a person signed in; an OAuth client or the AI is refused. Read-only; no side effects.
+         * @description Who you are signed in as: the provider, your user, the organisation your session is in, your roles there, whether you are a Super admin, until when your step-up counts (SEC-05, FR-ADM-07), and the organisation's feature switches (FR-ORG-06). The web app reads it after signing in; a 401 means it should show the sign-in page. Needs a person signed in; an OAuth client or the AI is refused. Read-only; no side effects.
          */
         get: operations["getSession"];
         put?: never;
@@ -1233,6 +1277,33 @@ export interface components {
              * @example 1
              */
             line_no: number;
+        };
+        Features: {
+            /**
+             * @description The AI assistant.
+             * @example false
+             */
+            ai_assistant: boolean;
+            /**
+             * @description Documents and accounts in other currencies.
+             * @example true
+             */
+            multi_currency: boolean;
+            /**
+             * @description Payroll and its pages.
+             * @example false
+             */
+            payroll: boolean;
+            /**
+             * @description Portals for customers and investors.
+             * @example false
+             */
+            portals: boolean;
+            /**
+             * @description Projects and time.
+             * @example false
+             */
+            projects: boolean;
         };
         FieldProblem: {
             /**
@@ -2089,6 +2160,8 @@ export interface components {
             next_cursor?: string;
         };
         SessionInfo: {
+            /** @description The organisation's feature switches today (FR-ORG-06); absent when you are a member of none. */
+            features?: components["schemas"]["Features"];
             /**
              * Format: uuid
              * @description The organisation your session is in; absent when you are a member of none.
@@ -2119,6 +2192,159 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
              */
             user_id?: string;
+        };
+        Setting: {
+            /** @description Every recorded change, by version; only when one setting is read or changed. */
+            changes?: components["schemas"]["SettingChange"][] | null;
+            /**
+             * Format: date
+             * @description The day that value took effect; absent while it has the value it shipped with.
+             * @example 2026-11-01
+             */
+            effective_from?: string;
+            /**
+             * @description Where settings show it.
+             * @example Defaults
+             */
+            group: string;
+            /**
+             * @description The guide section that explains it.
+             * @example /help/organisation-settings#payment-terms
+             */
+            guide: string;
+            /**
+             * @description The setting's key.
+             * @example sales.payment_terms_days
+             */
+            key: string;
+            /**
+             * @description What it holds: switch is "true" or "false"; days and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text.
+             * @example days
+             * @enum {string}
+             */
+            kind: "switch" | "days" | "years" | "amount_sgd" | "percent" | "text";
+            /**
+             * @description Its name.
+             * @example Payment terms for invoices
+             */
+            label: string;
+            /**
+             * @description A change may only lengthen it.
+             * @example false
+             */
+            lengthen_only: boolean;
+            /**
+             * @description The largest value a number may take.
+             * @example 365
+             */
+            max?: string;
+            /**
+             * @description The smallest value a number may take.
+             * @example 0
+             */
+            min?: string;
+            /**
+             * @description Under dual control (FM-1): it keeps its recommended value until the approval engine arrives.
+             * @example false
+             */
+            needs_second_approver: boolean;
+            /**
+             * @description Why the recommended value.
+             * @example An invoice to a customer with no terms of its own falls due 30 days after its date
+             */
+            reason: string;
+            /**
+             * @description The value it ships with (FR-ORG-08).
+             * @example 30
+             */
+            recommended_value: string;
+            /**
+             * @description The PRD requirement it implements.
+             * @example FR-ORG-04
+             */
+            requirement: string;
+            /** @description Changes recorded to take effect after that day, by date. */
+            scheduled: components["schemas"]["SettingChange"][] | null;
+            /**
+             * @description Set by the platform: shown, never changed (FR-ORG-07).
+             * @example false
+             */
+            set_by_platform: boolean;
+            /**
+             * @description recommended while it holds the recommended value; changed otherwise.
+             * @example recommended
+             * @enum {string}
+             */
+            status: "recommended" | "changed";
+            /**
+             * @description Its value on the day asked for, as a string.
+             * @example 30
+             */
+            value: string;
+            /**
+             * Format: int64
+             * @description The setting's version: its latest change's, 0 before any. It also makes the ETag.
+             * @example 0
+             */
+            version: number;
+        };
+        SettingChange: {
+            /**
+             * Format: date
+             * @description The day it takes effect.
+             * @example 2026-11-01
+             */
+            effective_from: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-10-20T09:30:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description The value from its date.
+             * @example 45
+             */
+            value: string;
+            /**
+             * Format: int64
+             * @description The setting's version this change made.
+             * @example 2
+             */
+            version: number;
+        };
+        SettingPage: {
+            /** @description The settings on this page. */
+            items: components["schemas"]["Setting"][] | null;
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6ImZlYXR1cmVzLnBheXJvbGwifQ
+             */
+            next_cursor?: string;
+            /**
+             * Format: date
+             * @description The day the values are for.
+             * @example 2026-10-20
+             */
+            on: string;
+        };
+        SettingUpdate: {
+            /**
+             * Format: date
+             * @description The day it takes effect: today, in the organisation's time zone, or later; today when left out.
+             * @example 2026-11-01
+             */
+            effective_from?: string;
+            /**
+             * @description true records the recommended value as a new change, instead of a value.
+             * @example false
+             */
+            reset?: boolean;
+            /**
+             * @description The new value, as its kind writes it; or send reset.
+             * @example 45
+             */
+            value?: string;
         };
         SetupRequest: {
             /**
@@ -5556,6 +5782,341 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `ORG-08` Not a prefix; `ORG-09` The next number does not fit; `ORG-10` Not a number of digits. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSettings: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description The day to read the values for; today, in the organisation's time zone, when left out. */
+                on?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSetting: {
+        parameters: {
+            query?: {
+                /** @description The day to read the values for; today, in the organisation's time zone, when left out. */
+                on?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The setting's key. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Setting"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateSetting: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The setting's key. */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Setting"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `SET-04` Set by the platform; `SET-05` Needs a second approver; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset. */
             422: {
                 headers: {
                     [name: string]: unknown;

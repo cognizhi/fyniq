@@ -137,6 +137,11 @@ Source: PRD-001 §8.1 · Priority M · Phase P1
 - **WHEN** the payment terms, the rounding and FX tolerances and the capitalisation threshold are set
 - **THEN** they are stored as the organisation's defaults
 
+#### Scenario: The defaults' recommended values
+- **WHEN** an organisation has not changed its defaults
+- **THEN** invoices and bills of a contact with no payment terms of its own fall due 30 days after their date
+- **AND** the capitalisation threshold is S$1,000, under FM-1 (rev 0.34, provisional until sign-off)
+
 ### Requirement: FR-ORG-05 Effective-dated statutory parameters
 The system SHALL maintain effective-dated statutory parameters (GST rates and codes, CPF rate tables and ceilings, SDL, SHG, CIT tiers and rebates) as versioned packs with source URL, effective date, verifier and dual approval (§10.6).
 
@@ -162,6 +167,15 @@ Source: PRD-001 §8.1 · Priority S · Phase P1
 - **WHEN** a user of that organisation uses the UI
 - **THEN** the UI does not show that feature
 
+#### Scenario: The switches' recommended values reach the session
+- **WHEN** an organisation has not changed its feature switches
+- **THEN** multi-currency is on, and payroll, projects, portals and the AI assistant are off
+- **AND** the session carries the switches in effect today (rev 0.34, provisional until sign-off)
+
+#### Scenario: The AI assistant switches on only under dual control
+- **WHEN** someone switches the AI assistant on
+- **THEN** the change needs FM-1's dual approval, and until the approval engine exists it is refused
+
 ### Requirement: FR-ORG-07 Data region and retention visible to the Owner
 The system SHALL show the data region and retention settings to the Owner.
 
@@ -175,6 +189,12 @@ Source: PRD-001 §8.1 · Priority S · Phase P1
 - **GIVEN** the data region or a retention setting is fixed by the platform
 - **WHEN** the Owner views it
 - **THEN** it is shown read-only
+
+#### Scenario: The records' retention only lengthens
+- **GIVEN** records are kept 7 years after the financial year, the recommended value
+- **WHEN** a change would shorten it, from its date or by a change already recorded for later
+- **THEN** the change is refused, by the database as well as the application (rev 0.34)
+- **AND** AI conversations are kept 365 days, and both retention settings are under FM-1
 
 ### Requirement: FR-ORG-08 Recommended defaults, configurable
 Every policy the founders were asked to decide (§20, recommended defaults) and every evidence rule (FR-DOC-06) SHALL ship set to its recommended value, with a one-line reason and a link to the guide, and SHALL stay configurable.
@@ -200,6 +220,20 @@ Source: PRD-001 §8.1 · Priority M · Phase P1
 - **GIVEN** a setting to which FM-1 applies (thresholds, retention, AI and MCP settings, approval policies)
 - **WHEN** it is changed
 - **THEN** the change needs dual approval
+
+#### Scenario: A change never takes effect in the past
+- **WHEN** a setting is changed
+- **THEN** the change takes effect from today in the organisation's time zone, or a later date, never an earlier one
+- **AND** earlier values are kept with their dates, so the value on any day can be read again (rev 0.34)
+
+#### Scenario: Reset records the recommended value
+- **WHEN** the user chooses "Reset to recommended"
+- **THEN** the recommended value is recorded as a new change, and nothing is deleted (rev 0.34)
+
+#### Scenario: FM-1 settings wait for the approval engine
+- **GIVEN** the approval engine does not exist yet
+- **WHEN** a setting under FM-1 is changed
+- **THEN** the change is refused, never applied, and the setting keeps its recommended value (rev 0.34, provisional until sign-off)
 
 ### Requirement: FR-ORG-09 Company logo and brand, applied everywhere at once
 The Owner or Administrator SHALL be able to upload the company logo (SVG or PNG; light and dark variants; a square icon for the browser tab and app icon) and, optionally, an accent colour, and the change SHALL apply everywhere at once.
