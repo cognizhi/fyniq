@@ -123,6 +123,23 @@ var matrixCalls = map[string]matrixCall{
 			return n == 0
 		}
 	},
+	// Each allowed call adds an account with a code of its own.
+	"createAccount": func(e *env, tok string) (response, func() bool) {
+		gstYears++
+		code := fmt.Sprintf("9%03d", gstYears)
+		r := e.call(http.MethodPost, "/v1/accounts", tok, map[string]any{"code": code, "name": "Matrix " + code, "type": "expense"})
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/accounts?page_size=500", e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"code":"`+code+`"`)
+		}
+	},
+	"updateAccount": func(e *env, tok string) (response, func() bool) {
+		name := "Rent " + uuid.NewString()[:8]
+		r := e.call(http.MethodPatch, "/v1/accounts/"+e.books.Rent.ID.String(), tok, map[string]any{"name": name}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/accounts/"+e.books.Rent.ID.String(), e.as(authz.Accountant), nil).str("name") != name
+		}
+	},
 	"getAccount": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/accounts/"+e.books.Bank.ID.String(), tok, nil), nil
 	},

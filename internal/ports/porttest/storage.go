@@ -711,6 +711,70 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		})
 	})
 
+	// req: FR-COA-03
+	// req: FR-COA-04
+	// req: FR-COA-05
+	t.Run("an account changes at its version; a system account keeps its role and stays active", func(t *testing.T) {
+		b := books(t)
+		do := func(fn func(ctx context.Context, a storage.Accounts) error) error {
+			return s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error { return fn(ctx, u.Accounts()) })
+		}
+		change := func(a storage.Account) storage.AccountChange {
+			return storage.AccountChange{Name: a.Name, ParentID: a.ParentID, Group: a.Group, Active: a.Active, AccountAttributes: a.AccountAttributes}
+		}
+		c := change(b.Rent)
+		c.Name, c.ReportGroup, c.Guidance = "Rent & co-working", "Premises & office", "Office rent and co-working."
+		var renamed storage.Account
+		if err := do(func(ctx context.Context, a storage.Accounts) error {
+			var err error
+			renamed, err = a.Update(ctx, b.Rent.ID, b.Rent.Version, c)
+			return err
+		}); err != nil || renamed.Version != b.Rent.Version+1 || renamed.Name != "Rent & co-working" || renamed.Code != b.Rent.Code {
+			t.Fatalf("Update: %v, %+v", err, renamed)
+		}
+		wantCode(t, do(func(ctx context.Context, a storage.Accounts) error {
+			_, err := a.Update(ctx, b.Rent.ID, b.Rent.Version, c)
+			return err
+		}),
+			storage.CodeVersion)
+
+		// The hierarchy: a group cannot sit under its own child.
+		g := change(b.Expenses)
+		g.ParentID = &b.Rent.ID
+		wantCode(t, do(func(ctx context.Context, a storage.Accounts) error {
+			_, err := a.Update(ctx, b.Expenses.ID, b.Expenses.Version, g)
+			return err
+		}),
+			storage.CodeAccountTree)
+
+		// System accounts: one per role, and they stay active.
+		var suspense storage.Account
+		if err := do(func(ctx context.Context, a storage.Accounts) error {
+			var err error
+			suspense, err = a.Create(ctx, storage.NewAccount{Code: "2999", Name: "Suspense", Type: storage.Liability, Role: "suspense"})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		wantCode(t, do(func(ctx context.Context, a storage.Accounts) error {
+			_, err := a.Create(ctx, storage.NewAccount{Code: "2998", Name: "Suspense too", Type: storage.Liability, Role: "suspense"})
+			return err
+		}), storage.CodeAccountFixed)
+		off := change(suspense)
+		off.Active = false
+		wantCode(t, do(func(ctx context.Context, a storage.Accounts) error {
+			_, err := a.Update(ctx, suspense.ID, suspense.Version, off)
+			return err
+		}),
+			storage.CodeAccountFixed)
+		_ = worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if h, _ := u.Audit().Head(ctx); h.Action != "account.created" {
+				t.Errorf("the last audit event is %q; refused changes must leave none", h.Action)
+			}
+			return nil
+		})
+	})
+
 	// req: FR-INT-16
 	t.Run("a rate-limit window counts a client's requests by kind until the worker purges it", func(t *testing.T) {
 		b, other := books(t), books(t)

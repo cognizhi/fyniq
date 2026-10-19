@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "false blocks new postings (FR-COA-04); a system account stays active.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "cash_flow_line": {
+      "description": "Its cash-flow line.",
+      "examples": [
+        "Payables \u0026 accruals"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    },
+    "control": {
+      "description": "Changes only with an approval, which arrives with the approval engine: refused until then.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "currency": {
+      "description": "A bank account's currency; \"\" clears it.",
+      "examples": [
+        "USD"
+      ],
+      "type": "string"
+    },
+    "default_gst_code": {
+      "description": "The GST code a line on it starts with; \"\" clears it.",
+      "examples": [
+        "TX"
+      ],
+      "type": "string"
+    },
+    "function": {
+      "description": "COGS, R\u0026D, S\u0026M, G\u0026A or Other; \"\" clears it.",
+      "examples": [
+        "G\u0026A"
+      ],
+      "type": "string"
+    },
+    "group": {
+      "description": "Whether it is a heading; an account with postings stays a leaf.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "guidance": {
+      "description": "Shown when someone picks the account; \"\" clears it.",
+      "examples": [
+        "Office rent and co-working memberships."
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "money_account": {
+      "description": "A bank, cash, card or wallet account.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Rent \u0026 co-working"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "parent_id": {
+      "description": "The group account it sits under; \"\" moves it to the top.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61"
+      ],
+      "type": "string"
+    },
+    "payroll_cost": {
+      "description": "Changes only with an approval, like the control flag: refused until then.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "report_group": {
+      "description": "Where the statements show it.",
+      "examples": [
+        "Premises \u0026 office"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    }
+  },
+  "title": "AccountChanges",
+  "type": "object"
+}

@@ -68,6 +68,13 @@
   sample company's own chart into a new organisation. The first-run wizard calls it when the screens arrive. **For the
   accountant:** the data file, the payroll-cost set (rev 0.31 [verify]) and the control accounts.)
 - [ ] 3.2 System accounts by role, deactivation, the approved journal-preserving merge, and the hierarchy with posting only to leaves. Tests `// req: FR-COA-03`, `// req: FR-COA-04` and `// req: FR-COA-05`, each attacked as the application role
+  (19 Oct 2026: migrations 000024 and 000025 give every B.5 system account its role, one account per role, two for
+  share capital, and keep a system account active (PRD-001 rev 0.32); the standard chart sets the roles. P0 already
+  keeps code, type and role fixed, accounts undeletable, the hierarchy acyclic with postings only to active leaves.
+  `POST /v1/accounts` and `PATCH /v1/accounts/{account_id}` add and change accounts at their version; changes to the
+  control and payroll-cost flags are refused until the approval engine. Manual journals to system accounts post, as
+  question 55 decided, except share capital (INV-13). **Left:** the approved journal-preserving merge (FR-COA-04), which
+  needs the approval engine; the ⚠ on a manual journal to a control account (question 55), with the checks.)
 - [ ] 3.3 Dimensions and dimension sets on journal lines. The balances cache is keyed by dimension set, and the INV-08 rebuild and the oracle's half are extended. Tests `// req: FR-DIM-01` and `// req: FR-DIM-02`; the differential gate is green
 
 ## 4. Contacts and items

@@ -11,6 +11,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -133,6 +134,17 @@ var codeFacts = map[string]struct {
 	organisation.CodeDigits:    {422, "Not a number of digits"},
 	storage.CodeSequence:       {409, "The number sequence cannot be set that way"},
 	CodeChartLoaded:            {409, "The organisation has accounts already"},
+	chart.CodeAccountCode:      {422, "Not an account code"},
+	chart.CodeText:             {422, "A text is blank or too long"},
+	chart.CodeType:             {422, "Not an account type"},
+	chart.CodeFunction:         {422, "Not a function"},
+	chart.CodeGSTCode:          {422, "Not a GST code"},
+	chart.CodeCurrency:         {422, "Not a currency"},
+	chart.CodeRole:             {422, "Not a system role"},
+	chart.CodeProtected:        {422, "Changes only with an approval"},
+	chart.CodeSystem:           {422, "A system account stays active"},
+	storage.CodeAccountFixed:   {409, "The account cannot change that way"},
+	storage.CodeAccountTree:    {409, "The account cannot sit there"},
 	storage.CodeVersion:        {412, "The record changed since you read it"},
 	storage.CodeOrganisation:   {422, "The organisation's details are not valid"},
 	storage.CodeOverlap:        {409, "The dates overlap another version"},
@@ -187,6 +199,7 @@ var storageFixes = map[string]string{
 	storage.CodeOrganisation: "Correct the value the message names and send the change again",
 	storage.CodeVersion:      "Read the record again, check what changed, and send your change with its new ETag",
 	storage.CodeSequence:     "Move the next number forward, or use another prefix; a number is never issued twice",
+	storage.CodeDuplicate:    "Check whether it was done already; for a new record, use a code or key not in use",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

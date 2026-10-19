@@ -59,6 +59,15 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 - **WHEN** a user tries to delete a system account or change its type
 - **THEN** the change is refused
 
+#### Scenario: System accounts carry their roles
+- **WHEN** a system account is created
+- **THEN** it carries its role, such as accounts-receivable, which never changes
+- **AND** each role is on one account, share capital on two (3010, 3020) (rev 0.32)
+
+#### Scenario: A system account cannot be deactivated
+- **WHEN** a user tries to deactivate a system account
+- **THEN** the change is refused, because the engine posts to it (rev 0.32)
+
 #### Scenario: No manual posting where the engine owns the account
 - **GIVEN** a system account the engine owns
 - **WHEN** a user tries to post to it manually

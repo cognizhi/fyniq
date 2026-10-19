@@ -40,6 +40,7 @@ var fyCodes = map[string]string{
 	"FY084": storage.CodeSuperAdmin,
 	"FY085": storage.CodeGrant,
 	"FY090": storage.CodeSequence,
+	"FY042": storage.CodeAccountFixed,
 }
 
 // constraintCodes maps named constraints to the port's stable codes and plain messages.
