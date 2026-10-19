@@ -21,6 +21,14 @@
 ## 2. New conventions
 
 - [ ] 2.1 Long and bulk operations: an operation resource through the queue port, and per-item results. Test `// req: FR-INT-11`
+  (19 Oct 2026, the bulk half: `POST /v1/journals:bulk` saves up to 250 drafts, each in a unit of work of its own, and
+  answers with a result per item in order; a refused item carries its problem with field paths into the request, and
+  the Idempotency-Key and preview cover the whole request. FR-INT-11 allows 1,000, but 1,000 took 5.3 s locally and would
+  pass 10 s at Cloud SQL's latency, so the cap is 250 (1.25 s); `TestBulkCreateJournals` measures it. **Left:** the
+  operation resource (`202` and `GET /v1/operations/{id}`) arrives with the first operation that takes longer than 10 s,
+  in its own change (likely `p1-reports`' asynchronous exports). Which service and database role runs a long write a
+  person asked for is an open design point: the worker's and the executor's grants do not cover it, and widening them
+  needs an ADR)
 - [x] 2.2 Preview before commit with `Prefer: return=preview`, run in a rolled-back transaction. Test `// req: FR-INT-14`: the database is unchanged and the impact equals that of the committed command
   (19 Oct 2026: `storage.WithPreview` makes the outermost unit of work run the command, flush its audit events and
   `SET CONSTRAINTS ALL IMMEDIATE`, then roll back with `storage.ErrPreviewed`, so the deferred balance check runs; a

@@ -35,6 +35,9 @@ var matrixCalls = map[string]matrixCall{
 	"createJournal": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/journals", tok, e.draft("10.00")), nil
 	},
+	"bulkCreateJournals": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/journals:bulk", tok, map[string]any{"items": []any{e.draft("10.00")}}), nil
+	},
 	"postJournal": func(e *env, tok string) (response, func() bool) {
 		id, tag := e.createDraft("10.00")
 		r := e.call(http.MethodPost, "/v1/journals/"+id+"/post", tok, nil, "If-Match", tag)

@@ -401,6 +401,23 @@ type journalOutput struct {
 	Body     Journal
 }
 
+// JournalDrafts are the drafts a bulk request saves.
+type JournalDrafts struct {
+	Items []JournalDraft `json:"items" minItems:"1" maxItems:"250" doc:"Up to 250 drafts, each saved on its own (FR-INT-11)."`
+}
+
+type bulkCreateJournalsInput struct {
+	KeyHeader
+	PreferHeader
+	Body JournalDrafts
+}
+
+type bulkOutput struct {
+	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: every item was checked and none was saved (FR-INT-14)."`
+	Body     BulkResults
+}
+
 type journalReadOutput struct {
 	ETag string `header:"ETag" doc:"The journal's version and status, for If-Match."`
 	Body Journal
@@ -471,6 +488,46 @@ func registerJournals(a *API) {
 			}
 			return &journalOutput{Status: w.Status, ETag: journalETag(w.Body), Location: "/v1/journals/" + w.Body.ID,
 				Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
+		})
+
+	register(a, authz.BulkCreateJournals, huma.Operation{
+		OperationID: "bulkCreateJournals", Method: http.MethodPost, Path: "/v1/journals:bulk", Tags: []string{"Journals"},
+		Summary: "Save up to 250 draft journals",
+		Description: "Saves each draft on its own, as createJournal does, and answers with one result per item in the order sent " +
+			"(FR-INT-11): 201 with the draft's ID and ETag, or the item's problem details. An item that is refused takes no other " +
+			"item with it, and is never left out. A request whose items break the schema is refused whole, with every invalid field " +
+			"listed. Side effects: a draft document and its audit event per saved item. Idempotent with Idempotency-Key, which covers " +
+			"the whole request; with Prefer: return=preview every item is checked and none is saved.",
+		MaxBodyBytes: 8 << 20,
+	}, []string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+		money.CodeNotDecimal, money.CodePrecision, money.CodeRange, money.CodeCurrency, money.CodeRate, storage.CodeRetry, storage.CodeLockTimeout},
+		func(ctx context.Context, in *bulkCreateJournalsInput) (*bulkOutput, error) {
+			p, _ := authn.From(ctx)
+			w, err := bulk(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, len(in.Body.Items),
+				func(ctx context.Context, u storage.UnitOfWork, i int) (BulkResult, error) {
+					org, err := u.Organisation(ctx)
+					if err != nil {
+						return BulkResult{}, err
+					}
+					base, err := money.Lookup(org.BaseCurrency)
+					if err != nil {
+						return BulkResult{}, err
+					}
+					d, err := draftOf(in.Body.Items[i], base)
+					if err != nil {
+						return BulkResult{}, err
+					}
+					doc, err := a.journals.Create(ctx, p.Organisation, d)
+					if err != nil {
+						return BulkResult{}, err
+					}
+					j, err := journalOf(doc)
+					return BulkResult{Status: http.StatusCreated, ID: j.ID, ETag: journalETag(j)}, err
+				})
+			if err != nil {
+				return nil, err
+			}
+			return &bulkOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 		})
 
 	register(a, authz.GetJournal, huma.Operation{
