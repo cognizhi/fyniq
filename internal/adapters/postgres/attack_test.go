@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -664,4 +666,64 @@ func TestAttackDocumentVersionsAndStatusesCannotBeRewound(t *testing.T) {
 		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
 		wantState(t, c.role+": "+c.stmt, err, c.state)
 	}
+}
+
+// An organisation reads only its own members' names, and an invitation is withdrawn or accepted once, never
+// changed again; the last Owner keeps the role (FR-ADM-01, rev 0.35).
+// req: FR-ADM-01
+// req: SEC-02
+// asvs: V8.2.1, V8.4.1
+func TestAttackMembersNamesInvitationsAndTheLastOwner(t *testing.T) {
+	ctx := context.Background()
+	a, b := books(t, "Attack members A Pte Ltd"), books(t, "Attack members B Pte Ltd")
+	st := store(t, "fyniq_api")
+	// A member of A, through an invitation redeemed for a new sign-in.
+	hash := make([]byte, 32)
+	hash[0] = 7
+	if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: "Only in A", Roles: []string{"owner"},
+			ExpiresAt: clock.System{}.Now().Add(time.Hour)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	j, err := st.JoinOrganisation(ctx, storage.NewJoin{CodeHash: hash, DisplayName: "Only in A", Issuer: "urn:fyniq:attack", Subject: uuid.NewString(),
+		Now: clock.System{}.Now()})
+	if err != nil || j.OrganisationID != a.Org || len(j.Roles) != 1 {
+		t.Fatalf("joining A: %v %+v", err, j)
+	}
+	names := func(org uuid.UUID) []string {
+		var out []string
+		if err := asOrg(ctx, conn(t, "fyniq_api"), org, func(tx pgx.Tx) error {
+			rows, err := tx.Query(ctx, "SELECT display_name FROM fyniq.member_names()")
+			if err != nil {
+				return err
+			}
+			out, err = pgx.CollectRows(rows, pgx.RowTo[string])
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	if got := names(a.Org); !slices.Contains(got, "Only in A") {
+		t.Errorf("A's members' names: %v", got)
+	}
+	if got := names(b.Org); slices.Contains(got, "Only in A") {
+		t.Errorf("B reads A's member: %v", got)
+	}
+
+	// The accepted invitation never changes again, even to be withdrawn.
+	err = asOrg(ctx, conn(t, "fyniq_api"), a.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "UPDATE fyniq.member_invitation SET withdrawn_at = now() WHERE code_hash = $1", hash)
+		return err
+	})
+	wantState(t, "withdraw an accepted invitation", err, "FY092", "23514")
+
+	// The organisation's only Owner keeps the role.
+	err = asOrg(ctx, conn(t, "fyniq_api"), a.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "UPDATE fyniq.role_assignment SET revoked_at = now() WHERE role = 'owner' AND revoked_at IS NULL")
+		return err
+	})
+	wantState(t, "revoke the last Owner", err, "FY093")
 }

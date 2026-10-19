@@ -199,26 +199,24 @@ func TestBrowserSessions(t *testing.T) {
 	}
 	s.problemIs(a.call(http.MethodGet, "/v1/session", "same-origin", nil, "Authorization", "Bearer not-a-token"), "getSession", 401, CodeUnauthenticated)
 
-	// A role change applies at the next request: no token or snapshot to wait for.
+	// A role change applies at the next request: no token or snapshot to wait for. (The last Owner keeps the
+	// role, rev 0.35, so the founder gains a role and loses it again.)
 	userID, orgID := uuid.MustParse(user), uuid.MustParse(org)
-	var owner uuid.UUID
-	if err := s.store.Do(ctx, orgID, func(ctx context.Context, u storage.UnitOfWork) error {
-		live, err := u.Members().Roles(ctx, userID, s.clock.Now())
-		if len(live) == 1 {
-			owner = live[0].ID
-		}
-		return err
-	}); err != nil || owner == uuid.Nil {
-		t.Fatalf("the Owner's assignment: %v", err)
-	}
-	if err := members.Revoke(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: user}}), s.store, s.out,
-		orgID, userID, owner, "test: the Owner steps down"); err != nil {
+	as := storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: user}})
+	given, err := members.Assign(as, s.store, s.out, orgID, userID, string(authz.Accountant), nil, "test: the founder keeps the books")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if r := a.session(); roles(r) != "" {
+	if r := a.session(); roles(r) != "accountant,owner" {
+		t.Errorf("the new role is not in the session: %s", r.Raw)
+	}
+	if err := members.Revoke(as, s.store, s.out, orgID, userID, given.ID, "test: the founder hands the books over"); err != nil {
+		t.Fatal(err)
+	}
+	if r := a.session(); roles(r) != "owner" {
 		t.Errorf("the revoked role is still in the session: %s", r.Raw)
 	}
-	s.problemIs(a.call(http.MethodGet, "/v1/organisation", "same-origin", nil), "getOrganisation", 403, CodeForbidden)
+	s.problemIs(a.call(http.MethodPost, "/v1/journals", "same-origin", map[string]any{}), "createJournal", 403, CodeForbidden)
 
 	// 30 minutes idle end a session; activity keeps it to 12 hours at most.
 	s.clock.Advance(authn.SessionIdle + time.Minute)

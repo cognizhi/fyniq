@@ -90,6 +90,12 @@ Source: PRD-001 §6.4
 - **WHEN** a high-risk action is initiated and approved
 - **THEN** both founders pass step-up authentication with a passkey or TOTP
 
+#### Scenario: The founder bootstrap is the one exception
+- **GIVEN** the organisation has only one active member, its Owner
+- **WHEN** the Owner changes roles, their own included, or invites someone with roles
+- **THEN** no second founder is needed, because there is none yet (FR-ADM-01, rev 0.35)
+- **AND** the change is audited and listed for the weekly review once another founder joins
+
 ### Requirement: FM-2 Self-approval below a threshold
 In Founder mode, a founder SHALL be allowed to self-approve routine items at or below a threshold (default S$2,000 per document; configurable), and each self-approval SHALL be flagged "self-approved" and queued for review.
 

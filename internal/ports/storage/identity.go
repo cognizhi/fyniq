@@ -25,6 +25,11 @@ type Installation interface {
 	InstallationOrganisation(ctx context.Context) (uuid.UUID, error)
 	// CountSuperAdmins returns how many active Super admins can sign in (CTL-IAM-07).
 	CountSuperAdmins(ctx context.Context) (int, error)
+	// JoinOrganisation redeems an invitation for a sign-in identity: the user behind it, or a new one, becomes a
+	// member of the inviting organisation with the invitation's roles, in one audited transaction. A wrong,
+	// used, withdrawn or expired code, or a sign-in already a member there, fails with CodeGrant and changes
+	// nothing.
+	JoinOrganisation(ctx context.Context, j NewJoin) (Joined, error)
 }
 
 // NewSetup is what CompleteSetup needs. CodeHash is the SHA-256 of the setup code: the code itself
@@ -150,6 +155,12 @@ type Members interface {
 	Revoke(ctx context.Context, assignmentID uuid.UUID) error
 	// Roles returns the roles a user holds now: live, unexpired assignments of an active membership.
 	Roles(ctx context.Context, userID uuid.UUID, now time.Time) ([]RoleAssignment, error)
+	// List returns the active members with their names and live roles at now, by membership ID (the order they
+	// joined).
+	List(ctx context.Context, now time.Time) ([]Member, error)
+	// Count returns how many active members the organisation has, under the members' lock for the rest of the
+	// unit of work: someone joining waits for it, so a role change sees the count it is decided on.
+	Count(ctx context.Context) (int, error)
 }
 
 // Membership is a user's membership of the organisation.

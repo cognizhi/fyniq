@@ -193,6 +193,17 @@ journal_line | description | text | null |
 journal_line | recorded_at | timestamp with time zone | not null | now()
 ledger_revision | organisation_id | uuid | not null | current_org()
 ledger_revision | revision | bigint | not null | 0
+member_invitation | organisation_id | uuid | not null | current_org()
+member_invitation | id | uuid | not null | uuidv7()
+member_invitation | code_hash | bytea | not null | 
+member_invitation | display_name | text | not null | 
+member_invitation | roles | text[] | not null | 
+member_invitation | roles_expire_at | timestamp with time zone | null | 
+member_invitation | created_at | timestamp with time zone | not null | now()
+member_invitation | expires_at | timestamp with time zone | not null | 
+member_invitation | accepted_at | timestamp with time zone | null | 
+member_invitation | accepted_by | uuid | null | 
+member_invitation | withdrawn_at | timestamp with time zone | null | 
 organisation | organisation_id | uuid | not null | current_org()
 organisation | name | text | not null | 
 organisation | base_currency | text | not null | 
@@ -603,6 +614,24 @@ ledger_revision | ledger_revision_organisation_fkey | FOREIGN KEY (organisation_
 ledger_revision | ledger_revision_organisation_id_not_null | NOT NULL organisation_id
 ledger_revision | ledger_revision_pkey | PRIMARY KEY (organisation_id)
 ledger_revision | ledger_revision_revision_not_null | NOT NULL revision
+member_invitation | member_invitation_accepted_by_fkey | FOREIGN KEY (accepted_by) REFERENCES app_user(user_id)
+member_invitation | member_invitation_code_hash_not_null | NOT NULL code_hash
+member_invitation | member_invitation_code_key | UNIQUE (organisation_id, code_hash)
+member_invitation | member_invitation_created_at_not_null | NOT NULL created_at
+member_invitation | member_invitation_display_name_not_null | NOT NULL display_name
+member_invitation | member_invitation_expires_at_not_null | NOT NULL expires_at
+member_invitation | member_invitation_expiry_after_creation | CHECK (((expires_at > created_at) AND ((roles_expire_at IS NULL) OR (roles_expire_at > created_at))))
+member_invitation | member_invitation_hash_length | CHECK ((octet_length(code_hash) = 32))
+member_invitation | member_invitation_id_not_null | NOT NULL id
+member_invitation | member_invitation_name_length | CHECK (((length(btrim(display_name)) >= 1) AND (length(btrim(display_name)) <= 200)))
+member_invitation | member_invitation_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+member_invitation | member_invitation_organisation_id_not_null | NOT NULL organisation_id
+member_invitation | member_invitation_owner_never_expires | CHECK (((roles_expire_at IS NULL) OR (NOT ('owner'::text = ANY (roles)))))
+member_invitation | member_invitation_pkey | PRIMARY KEY (organisation_id, id)
+member_invitation | member_invitation_roles_known | CHECK ((((cardinality(roles) >= 1) AND (cardinality(roles) <= 16)) AND (roles <@ ARRAY['employee'::text, 'approver'::text, 'bookkeeper'::text, 'ar_specialist'::text, 'ap_specialist'::text, 'payment_releaser'::text, 'payroll_administrator'::text, 'accountant'::text, 'controller'::text, 'owner'::text, 'administrator'::text, 'auditor'::text, 'tax_agent'::text, 'board_viewer'::text, 'company_secretary'::text, 'dpo'::text])))
+member_invitation | member_invitation_roles_not_null | NOT NULL roles
+member_invitation | member_invitation_used_once | CHECK ((((accepted_at IS NULL) = (accepted_by IS NULL)) AND ((accepted_at IS NULL) OR (withdrawn_at IS NULL))))
+member_invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 organisation | organisation_base_currency_fkey | FOREIGN KEY (base_currency, base_minor_units) REFERENCES currency(code, minor_units)
 organisation | organisation_base_currency_not_null | NOT NULL base_currency
 organisation | organisation_base_minor_units_not_null | NOT NULL base_minor_units
@@ -815,6 +844,8 @@ CREATE UNIQUE INDEX journal_entry_revision_key ON fyniq.journal_entry USING btre
 CREATE UNIQUE INDEX journal_line_entry_line_key ON fyniq.journal_line USING btree (organisation_id, entry_id, line_no)
 CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
+CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
+CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_pkey ON fyniq.organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX organisation_setting_pkey ON fyniq.organisation_setting USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_setting_version_key ON fyniq.organisation_setting USING btree (organisation_id, key, version)
@@ -847,6 +878,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
@@ -871,7 +903,9 @@ CREATE TRIGGER journal_line_balances AFTER INSERT ON fyniq.journal_line REFERENC
 CREATE TRIGGER journal_line_check BEFORE INSERT ON fyniq.journal_line FOR EACH ROW EXECUTE FUNCTION journal_line_check()
 CREATE TRIGGER journal_line_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_line FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_line_no_truncate BEFORE TRUNCATE ON fyniq.journal_line FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
+CREATE TRIGGER last_owner_guard BEFORE UPDATE OF revoked_at ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION last_owner_guard()
 CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_revision FOR EACH ROW EXECUTE FUNCTION ledger_revision_guard()
+CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION member_invitation_guard()
 CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER organisation_created AFTER INSERT ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_created()
 CREATE TRIGGER organisation_guard BEFORE UPDATE ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_guard()
@@ -903,6 +937,7 @@ item_price | tenant_isolation | * | (organisation_id = current_org()) | (organis
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation_setting | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -912,6 +947,7 @@ role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (or
 user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
 ## functions
+accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone, OUT organisation_id uuid, OUT invitation_id uuid, OUT user_id uuid, OUT new_user boolean, OUT membership_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 373d5598a87ef8c472e30e47598b7407
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
 audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 91e817a2872fcf6bd69bb233274ae47b
@@ -938,9 +974,12 @@ journal_entry_assign() → trigger | security definer | v | search_path=pg_catal
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa57168cbf58f452c6da510c88fcfb2f
+last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
+member_invitation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bbbd3cfc69b3ef2e3f033c058258160c
+member_names() → TABLE(user_id uuid, display_name text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9cbac1cf633afffdb29757fcd8b4615f
 membership_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 128d9c99c0ed6f6f65e25de8d48962e4
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6

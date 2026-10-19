@@ -275,6 +275,20 @@ type FyniqLedgerRevision struct {
 	Revision       int64
 }
 
+type FyniqMemberInvitation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	CodeHash       []byte
+	DisplayName    string
+	Roles          []string
+	RolesExpireAt  *time.Time
+	CreatedAt      time.Time
+	ExpiresAt      time.Time
+	AcceptedAt     *time.Time
+	AcceptedBy     *uuid.UUID
+	WithdrawnAt    *time.Time
+}
+
 type FyniqOrganisation struct {
 	OrganisationID    uuid.UUID
 	Name              string

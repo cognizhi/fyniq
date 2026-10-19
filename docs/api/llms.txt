@@ -31,6 +31,13 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/journals/{journal_id}/post` (postJournal): Post a draft journal
 - `POST /v1/journals/{journal_id}/reverse` (reverseJournal): Reverse a posted journal
 - `POST /v1/journals:bulk` (bulkCreateJournals): Save up to 250 draft journals
+- `GET /v1/members` (listMembers): List the members
+- `POST /v1/members` (acceptMemberInvitation): Join an organisation with an invitation
+- `GET /v1/members/invitations` (listMemberInvitations): List the pending invitations
+- `POST /v1/members/invitations` (createMemberInvitation): Invite someone to the organisation
+- `DELETE /v1/members/invitations/{invitation_id}` (withdrawMemberInvitation): Withdraw an invitation
+- `POST /v1/members/{member_id}/roles` (assignRole): Give a member a role
+- `DELETE /v1/members/{member_id}/roles/{role}` (revokeRole): End a member's role
 - `GET /v1/organisation` (getOrganisation): Get your organisation
 - `GET /v1/organisation/gst-registrations` (listGSTRegistrations): List the GST registrations
 - `POST /v1/organisation/gst-registrations` (createGSTRegistration): Record a GST registration

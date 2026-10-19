@@ -10,6 +10,16 @@
 ## 2. People and sign-in
 
 - [ ] 2.1 Invitations with roles, scopes and expiry. Tests `// req: FR-ADM-01` and `// req: SEC-06`, including the quarterly review list of external users
+  (20 Oct 2026, built before `p1-approval-engine` so the founders can work in Fyniq: PRD-001 rev 0.35's founder
+  bootstrap. Migration 000029 adds `member_invitation` (a one-time code kept as its SHA-256, valid 7 days, withdrawable,
+  accepted once), `accept_member_invitation` (in whichever organisation holds the code, under its row-level security;
+  every refusal the same FY092), `member_names()` (only the organisation's own members) and a trigger that keeps the last
+  Owner (FY093). `GET /v1/members`, `GET`/`POST /v1/members/invitations`, `DELETE /v1/members/invitations/{id}`,
+  `POST`/`DELETE /v1/members/{id}/roles`, and `POST /v1/members` to join. Until the organisation has a second active
+  member the Owner acts alone, their own roles included; after that every role change is refused until the approval
+  engine (`member.Bootstrap`, under a members' lock that joining takes too). **Left:** scopes (entity, department),
+  invitation emails (`p1-templates-email`), the quarterly review of external users (SEC-06), listing the bootstrap's
+  changes in FM-3's weekly review (with `p1-approval-engine` 3.2), the join and members screens (4.1).)
 - [ ] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
 - [ ] 2.3 Sessions: idle and absolute timeouts, the device list, revocation and sign-in alerts through the outbox. Tests `// req: FR-ADM-03`, `// req: SEC-05` and `// req: SEC-08` extend P0's
 - [ ] 2.4 Sign-in providers by configuration, allowed domains and identity linking; the Super admin's scope; Owner succession with dual control. Tests `// req: FR-ADM-07`, `// req: FR-ADM-08` and `// req: FR-ADM-09` extend P0's
@@ -20,6 +30,8 @@
 - [ ] 3.1 OAuth clients with class, owner, expiry and scopes; `private_key_jwt` for confidential clients, PKCE for public ones, exact redirect URIs. Test `// req: SEC-07`
 - [ ] 3.2 Authorisation on every derived output and channel: exports, events, cached reports and notifications. The role change takes effect within 60 seconds. Test `// req: SEC-34` with G4-064
 - [ ] 3.3 Administrative changes go through the approval policy once `p1-approval-engine` lands, and are refused until then. Test `// req: FR-ADM-04`
+  (20 Oct 2026: role changes are refused once a second member exists (MEM-05), as FM-1 needs; the other
+  administrative changes of FR-ADM-04 arrive with their features.)
 
 ## 4. Screens
 

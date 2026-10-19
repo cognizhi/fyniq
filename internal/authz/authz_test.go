@@ -143,13 +143,15 @@ func TestParseCell(t *testing.T) {
 	}
 }
 
-// Only the installation's operations (setup, Super admins) and the caller's own session bypass the
-// organisation, and only the setup status and the sign-in providers need no credential.
+// Only the installation's operations (setup, Super admins), the caller's own session and joining an
+// organisation by invitation bypass the organisation, and only the setup status and the sign-in providers
+// need no credential.
 // req: SEC-02
 // asvs: V8.2.1
 func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 	for op, p := range authz.Policies {
-		installation := p.Capability == authz.Setup || p.Capability == authz.SuperAdmins || p.Capability == authz.Session
+		installation := p.Capability == authz.Setup || p.Capability == authz.SuperAdmins || p.Capability == authz.Session ||
+			p.Capability == authz.Joining
 		public := op == "getSetupStatus" || op == "listSignInProviders"
 		noOrg := installation && !public
 		if p.Public != public || p.NoOrganisation != noOrg {
@@ -164,5 +166,35 @@ func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 	}
 	if d := authz.Decide(authz.CompleteSetup, []authz.Role{authz.SuperAdmin}, false); !d.Allowed {
 		t.Error("a person outside every organisation may complete setup (the code decides)")
+	}
+}
+
+// The Owner may run what the founder bootstrap lets them (FR-ADM-01, rev 0.35), and the decision says the
+// handler must check it; the Administrator holds the right itself; the AI and the other roles do not.
+// req: FR-ADM-01
+// req: SEC-02
+// asvs: V8.2.1, V8.3.1
+func TestTheOwnerMayActUnderTheFounderBootstrap(t *testing.T) {
+	for _, p := range []authz.Policy{authz.CreateMemberInvitation, authz.AssignRole, authz.RevokeRole, authz.WithdrawMemberInvitation} {
+		if d := authz.Decide(p, []authz.Role{authz.Owner}, false); !d.Allowed || !d.ByOwner {
+			t.Errorf("%s: the Owner: %+v", p.Operation, d)
+		}
+		if d := authz.Decide(p, []authz.Role{authz.Administrator}, false); !d.Allowed || d.ByOwner {
+			t.Errorf("%s: the Administrator: %+v", p.Operation, d)
+		}
+		for _, roles := range [][]authz.Role{{authz.Controller}, {authz.Auditor}, {authz.Employee}} {
+			if d := authz.Decide(p, roles, false); d.Allowed {
+				t.Errorf("%s: %v allowed", p.Operation, roles)
+			}
+		}
+		if d := authz.Decide(p, []authz.Role{authz.Owner, authz.Administrator}, true); d.Allowed {
+			t.Errorf("%s: the AI acting for an Owner allowed", p.Operation)
+		}
+	}
+	if d := authz.Decide(authz.ListMembers, []authz.Role{authz.Owner}, false); !d.Allowed || d.ByOwner {
+		t.Errorf("listing members: the Owner views with their own right: %+v", d)
+	}
+	if d := authz.Decide(authz.UpdateSetting, []authz.Role{authz.Owner}, false); d.Allowed {
+		t.Errorf("the bootstrap reaches beyond members: %+v", d)
 	}
 }

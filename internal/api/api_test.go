@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/member"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/wiring"
@@ -1046,6 +1047,124 @@ func TestOrganisationSettings(t *testing.T) {
 	e.call(http.MethodPatch, "/v1/organisation/settings/features.projects", ctl, map[string]any{"value": "true"}, "If-Match", `"0"`)
 	if s := e.call(http.MethodGet, "/v1/session", ctl, nil); !strings.Contains(s.Raw, `"projects":true`) {
 		t.Errorf("projects switched on, the session: %s", s.Raw)
+	}
+}
+
+// Members: until a second member joins, the Owner invites people with roles and changes roles alone (the
+// founder bootstrap); an invitation is a one-time code, kept without it, withdrawable; one made before keeps its
+// roles when accepted after; the last Owner keeps the role; from the second member on, role changes are
+// refused until the approval engine, and nothing changes.
+// req: FR-ADM-01
+// req: FM-1
+func TestMembersAndTheFounderBootstrap(t *testing.T) {
+	e := newEnv(t)
+	owner := e.as(authz.Owner)
+	person := func(subject string) string { return e.principal(authn.Principal{Subject: subject, Client: "web"}) }
+	invite := func(name string, roles []string, extra ...any) response {
+		body := map[string]any{"display_name": name, "roles": roles}
+		for i := 0; i+1 < len(extra); i += 2 {
+			body[extra[i].(string)] = extra[i+1]
+		}
+		return e.call(http.MethodPost, "/v1/members/invitations", owner, body)
+	}
+	join := func(subject, code string) response {
+		return e.call(http.MethodPost, "/v1/members", person(subject), map[string]any{"invitation_code": code, "display_name": subject})
+	}
+	roles := func() map[string][]string {
+		out := map[string][]string{}
+		for _, it := range e.call(http.MethodGet, "/v1/members", e.as(authz.Auditor), nil).Body["items"].([]any) {
+			m := it.(map[string]any)
+			for _, r := range m["roles"].([]any) {
+				out[m["display_name"].(string)] = append(out[m["display_name"].(string)], r.(map[string]any)["role"].(string))
+			}
+		}
+		return out
+	}
+
+	// Invitations while the organisation has no second member: a code shown once, valid 7 days.
+	cofounder := invite("weiling", []string{"controller", "accountant"})
+	if cofounder.Status != 201 || len(cofounder.str("code")) < 20 || cofounder.str("expires_at") != "2026-10-22T09:00:00Z" {
+		t.Fatalf("inviting a co-founder: %d %s", cofounder.Status, cofounder.Raw)
+	}
+	third := invite("ahkow", []string{"bookkeeper"})
+	auditor := invite("auditor", []string{"auditor"}, "roles_expire_at", "2027-03-31T00:00:00Z")
+	r := invite("x", []string{"super_admin", "owner", "owner"}, "roles_expire_at", "2026-10-01T00:00:00Z")
+	e.problemIs(r, "createMemberInvitation", 422, CodeInvalid)
+	if f := fields(r); f["body.roles[0]"] != member.CodeRole || f["body.roles[2]"] != member.CodeRoles || f["body.roles_expire_at"] != member.CodeExpiry {
+		t.Errorf("every rule at once: %v", f)
+	}
+	l := e.call(http.MethodGet, "/v1/members/invitations", e.as(authz.Auditor), nil)
+	if l.Status != 200 || len(l.Body["items"].([]any)) != 3 || strings.Contains(l.Raw, cofounder.str("code")) || strings.Contains(l.Raw, `"code"`) {
+		t.Fatalf("the pending invitations, without their codes: %d %s", l.Status, l.Raw)
+	}
+
+	// Withdrawn: its code stops working, and a wrong code is refused the same way.
+	if w := e.call(http.MethodDelete, "/v1/members/invitations/"+auditor.str("id"), owner, nil); w.Status != 200 || w.str("withdrawn_at") == "" {
+		t.Fatalf("withdrawing: %d %s", w.Status, w.Raw)
+	}
+	e.problemIs(join("auditor", auditor.str("code")), "acceptMemberInvitation", 409, CodeCodeRefused)
+	e.problemIs(join("guesser", "NEVER-A-VALID-INVITATION-0"), "acceptMemberInvitation", 409, CodeCodeRefused)
+
+	// The co-founder joins with the invitation's roles; the code works once.
+	j := join("weiling", cofounder.str("code"))
+	if j.Status != 201 || !strings.Contains(j.Raw, `"roles":["accountant","controller"]`) || j.str("organisation_id") != e.books.Org.String() {
+		t.Fatalf("joining: %d %s", j.Status, j.Raw)
+	}
+	e.problemIs(join("someone", cofounder.str("code")), "acceptMemberInvitation", 409, CodeCodeRefused)
+	mid := j.str("member_id")
+
+	// Still one member: the Owner changes roles alone; the last Owner keeps the role.
+	if a := e.call(http.MethodPost, "/v1/members/"+mid+"/roles", owner, map[string]any{"role": "owner"}); a.Status != 201 {
+		t.Fatalf("making the co-founder Owner: %d %s", a.Status, a.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/members/"+mid+"/roles", owner, map[string]any{"role": "owner"}), "assignRole", 409, member.CodeHeld)
+	e.problemIs(e.call(http.MethodDelete, "/v1/members/"+mid+"/roles/owner", owner, nil), "revokeRole", 409, member.CodeLastOwner)
+	if d := e.call(http.MethodDelete, "/v1/members/"+mid+"/roles/accountant", owner, nil); d.Status != 200 || strings.Contains(d.Raw, "accountant") {
+		t.Fatalf("ending a role: %d %s", d.Status, d.Raw)
+	}
+
+	// The third founder's invitation, made before, keeps its roles; now role changes wait for the approval engine.
+	if j := join("ahkow", third.str("code")); j.Status != 201 || !strings.Contains(j.Raw, `"roles":["bookkeeper"]`) {
+		t.Fatalf("joining as the second member: %d %s", j.Status, j.Raw)
+	}
+	before := roles()
+	e.problemIs(e.call(http.MethodPost, "/v1/members/"+mid+"/roles", owner, map[string]any{"role": "accountant"}), "assignRole", 409, member.CodeSecondApprover)
+	e.problemIs(e.call(http.MethodDelete, "/v1/members/"+mid+"/roles/controller", e.as(authz.Administrator), nil), "revokeRole", 409, member.CodeSecondApprover)
+	e.problemIs(invite("late", []string{"employee"}), "createMemberInvitation", 409, member.CodeSecondApprover)
+	if after := roles(); fmt.Sprint(after) != fmt.Sprint(before) || fmt.Sprint(after["weiling"]) != "[controller owner]" {
+		t.Errorf("roles changed after the bootstrap: %v, then %v", before, after)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/members", e.as(authz.Employee), nil), "listMembers", 403, CodeForbidden)
+
+	// Every change is in the organisation's trail, and no invitation code reaches the trail or a log (SEC-15).
+	reader, err := postgres.Open(context.Background(), db.URL("fyniq_readonly"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	var trail strings.Builder
+	if err := reader.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		events, err := u.Audit().Events(ctx, 0, 1000)
+		for _, ev := range events {
+			trail.WriteString(ev.Body + "\n")
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, action := range []string{"member_invitation.created", "member_invitation.withdrawn", "member_invitation.accepted", "user_membership.created",
+		"role_assignment.created", "role_assignment.revoked"} {
+		if !strings.Contains(trail.String(), `"action":"`+action+`"`) {
+			t.Errorf("no %s in the trail", action)
+		}
+	}
+	for _, c := range []string{cofounder.str("code"), third.str("code"), auditor.str("code")} {
+		bare := strings.ReplaceAll(c, "-", "")
+		for where, text := range map[string]string{"trail": trail.String(), "log": e.log.String()} {
+			if strings.Contains(text, c) || strings.Contains(text, bare) {
+				t.Errorf("an invitation code reached the %s (SEC-15)", where)
+			}
+		}
 	}
 }
 

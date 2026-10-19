@@ -14,15 +14,15 @@ import (
 )
 
 // An operation opts out of a convention of §8.18.1 only with x-fyniq-exempt, and only these do: the
-// commands whose response carries a one-time secret take no Idempotency-Key (FR-INT-08, rev 0.27) and
-// no preview (FR-INT-14, rev 0.28). A new exemption fails this test until it is added here, in a
+// commands whose response carries a one-time secret, and (rev 0.35) an invitation to an organisation and its
+// redemption, take no Idempotency-Key (FR-INT-08, rev 0.27) and no preview (FR-INT-14, rev 0.28). A new exemption fails this test until it is added here, in a
 // reviewed change.
 // req: FR-INT-08
 // req: FR-INT-14
 func TestConventionExemptions(t *testing.T) {
 	var want []string
-	for _, op := range []string{"acceptSuperAdminInvitation", "completeSetup", "confirmSuperAdminRecovery", "createSuperAdminInvitation",
-		"recoverSuperAdmin", "replaceSuperAdminRecoveryCodes"} {
+	for _, op := range []string{"acceptMemberInvitation", "acceptSuperAdminInvitation", "completeSetup", "confirmSuperAdminRecovery",
+		"createMemberInvitation", "createSuperAdminInvitation", "recoverSuperAdmin", "replaceSuperAdminRecoveryCodes"} {
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}
 	var got []string

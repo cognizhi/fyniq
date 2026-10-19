@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "member_id": {
+      "description": "Your membership.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "organisation_id": {
+      "description": "The organisation you joined; your session is in it from your next request.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "roles": {
+      "description": "Your roles there.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "user_id": {
+      "description": "Your Fyniq user.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "organisation_id",
+    "user_id",
+    "member_id",
+    "roles"
+  ],
+  "title": "Joined",
+  "type": "object"
+}
