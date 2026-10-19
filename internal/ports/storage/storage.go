@@ -57,6 +57,7 @@ type UnitOfWork interface {
 	SuperAdmins() SuperAdmins
 	Idempotency() Idempotency
 	RateLimits() RateLimits
+	GSTRegistrations() GSTRegistrations
 	Outbox() Outbox
 	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
@@ -373,6 +374,7 @@ const (
 	CodeStorageFailure = "STORAGE-FAILURE-01"
 	CodePreviewed      = "STORAGE-PREVIEW-01" // not a failure: a preview passed every check and was rolled back
 	CodeVersion        = "STORAGE-VERSION-01" // the record changed since it was read (FR-INT-09)
+	CodeOverlap        = "STORAGE-DATES-01"   // a version's validity overlaps another's, or ends before it starts
 )
 
 // ErrPreviewed is what Do returns for a preview that passed every check the commit would run: nothing

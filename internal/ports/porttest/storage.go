@@ -551,6 +551,85 @@ func Storage(t *testing.T, build func(t *testing.T, service string) storage.Stor
 		wantCode(t, err, storage.CodeOrganisation)
 	})
 
+	// req: FR-ORG-03
+	// req: data/data-model Effective-dated reference data
+	// req: data/data-model Valid time and system time for master data
+	t.Run("GST registrations are effective-dated: overlaps are refused, every version recorded and audited", func(t *testing.T) {
+		b := books(t)
+		do := func(fn func(ctx context.Context, g storage.GSTRegistrations) error) error {
+			return s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error { return fn(ctx, u.GSTRegistrations()) })
+		}
+		recorded := time.Date(2026, 10, 19, 9, 0, 0, 0, time.UTC)
+		deregistered := Day(12, 31)
+		first := storage.NewGSTRegistration{RegisteredFrom: Day(4, 1), DeregisteredFrom: &deregistered, GSTNumber: "202312345K",
+			ReturnFrequency: storage.ReturnQuarterly, QuarterStartMonth: 1, AccountingBasis: storage.BasisInvoice, RecordedAt: recorded}
+		var reg storage.GSTRegistration
+		if err := do(func(ctx context.Context, g storage.GSTRegistrations) error {
+			var err error
+			reg, err = g.Create(ctx, first)
+			return err
+		}); err != nil || reg.Version != 1 || !reg.RecordedAt.Equal(recorded) || !reg.DeregisteredFrom.Equal(deregistered) {
+			t.Fatalf("Create: %v, %+v", err, reg)
+		}
+
+		// Valid time: a registration overlapping it is refused; one starting the day it ends is not.
+		overlapping := first
+		overlapping.RegisteredFrom, overlapping.DeregisteredFrom = Day(12, 1), nil
+		wantCode(t, do(func(ctx context.Context, g storage.GSTRegistrations) error {
+			_, err := g.Create(ctx, overlapping)
+			return err
+		}), storage.CodeOverlap)
+		next := first
+		next.RegisteredFrom, next.DeregisteredFrom = deregistered, nil
+		if err := do(func(ctx context.Context, g storage.GSTRegistrations) error { _, err := g.Create(ctx, next); return err }); err != nil {
+			t.Fatalf("a registration starting the day the last one ends: %v", err)
+		}
+
+		// System time: a change is the next version, recorded when it was made, at the version read.
+		later := recorded.Add(24 * time.Hour)
+		changed := first
+		changed.ReturnFrequency, changed.RecordedAt = storage.ReturnMonthly, later
+		var updated storage.GSTRegistration
+		if err := do(func(ctx context.Context, g storage.GSTRegistrations) error {
+			var err error
+			updated, err = g.Update(ctx, reg.ID, reg.Version, changed)
+			return err
+		}); err != nil || updated.Version != 2 || updated.ReturnFrequency != storage.ReturnMonthly || !updated.RecordedAt.Equal(later) {
+			t.Fatalf("Update: %v, %+v", err, updated)
+		}
+		wantCode(t, do(func(ctx context.Context, g storage.GSTRegistrations) error {
+			_, err := g.Update(ctx, reg.ID, reg.Version, changed)
+			return err
+		}),
+			storage.CodeVersion)
+		_ = worker.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if h, _ := u.Audit().Head(ctx); h.Action != "gst_registration.updated" {
+				t.Errorf("the last audit event is %q; want gst_registration.updated", h.Action)
+			}
+			list, err := u.GSTRegistrations().List(ctx)
+			if err != nil || len(list) != 2 || !list[0].RegisteredFrom.Equal(Day(4, 1)) {
+				t.Errorf("List: %v, %+v", err, list)
+			}
+			return err
+		})
+
+		// The database refuses what no registration may hold: a deregistration on or before its start,
+		// and any basis but invoice basis (ENG-45).
+		backwards := changed
+		before := Day(4, 1)
+		backwards.DeregisteredFrom = &before
+		wantCode(t, do(func(ctx context.Context, g storage.GSTRegistrations) error {
+			_, err := g.Update(ctx, reg.ID, 2, backwards)
+			return err
+		}), storage.CodeOverlap)
+		cash := changed
+		cash.AccountingBasis = "cash"
+		wantCode(t, do(func(ctx context.Context, g storage.GSTRegistrations) error {
+			_, err := g.Update(ctx, reg.ID, 2, cash)
+			return err
+		}), storage.CodeOrganisation)
+	})
+
 	// req: FR-INT-16
 	t.Run("a rate-limit window counts a client's requests by kind until the worker purges it", func(t *testing.T) {
 		b, other := books(t), books(t)

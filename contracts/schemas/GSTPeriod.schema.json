@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ends_on": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-06-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "starts_on": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-04-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "starts_on",
+    "ends_on"
+  ],
+  "title": "GSTPeriod",
+  "type": "object"
+}

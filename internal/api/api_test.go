@@ -516,6 +516,80 @@ func TestOrganisationProfile(t *testing.T) {
 	}
 }
 
+// The GST status follows the registrations' effective dates, its return periods their frequency and
+// quarters, and only invoice basis is offered until the Cash Accounting Scheme's rules are pinned.
+// req: FR-ORG-03
+func TestGSTRegistrationAndStatus(t *testing.T) {
+	e := newEnv(t)
+	controller := e.as(authz.Controller)
+	status := func(date string) response {
+		t.Helper()
+		r := e.call(http.MethodGet, "/v1/organisation/gst-status?date="+date, controller, nil)
+		if r.Status != 200 {
+			t.Fatalf("the status on %s: %d %s", date, r.Status, r.Raw)
+		}
+		return r
+	}
+	if r := status("2026-05-10"); r.Body["registered"] != false || r.Body["registration"] != nil {
+		t.Fatalf("before any registration: %s", r.Raw)
+	}
+
+	// Cash basis is refused with its reason; everything wrong is listed at once.
+	r := e.call(http.MethodPost, "/v1/organisation/gst-registrations", controller,
+		map[string]any{"registered_from": "2026-04-01", "gst_number": " ", "accounting_basis": "cash", "quarter_start_month": 5})
+	e.problemIs(r, "createGSTRegistration", 422, CodeInvalid)
+	if f := fields(r); f["body.accounting_basis"] != "GST-05" || f["body.gst_number"] != "GST-02" || f["body.quarter_start_month"] != "GST-04" {
+		t.Errorf("want each field with its code, got %v", f)
+	}
+
+	r = e.call(http.MethodPost, "/v1/organisation/gst-registrations", controller,
+		map[string]any{"registered_from": "2026-04-01", "gst_number": "202312345K"}, "Idempotency-Key", uuid.NewString())
+	if r.Status != 201 || r.Body["return_frequency"] != "quarterly" || r.Body["quarter_start_month"] != float64(1) ||
+		r.Body["accounting_basis"] != "invoice" || r.Header.Get("Location") != "/v1/organisation/gst-registrations/"+r.str("id") {
+		t.Fatalf("a registration with the defaults: %d %v %s", r.Status, r.Header, r.Raw)
+	}
+	id, tag := r.str("id"), r.Header.Get("ETag")
+	s := status("2026-05-10")
+	period, _ := s.Body["return_period"].(map[string]any)
+	if s.Body["registered"] != true || period["starts_on"] != "2026-04-01" || period["ends_on"] != "2026-06-30" {
+		t.Errorf("registered on 10 May: %s", s.Raw)
+	}
+	if s := status("2026-03-31"); s.Body["registered"] != false {
+		t.Errorf("the day before registration: %s", s.Raw)
+	}
+
+	// Deregistering is recording the date; a preview saves nothing; the status follows the dates.
+	dereg := map[string]any{"deregistered_from": "2027-02-15", "return_frequency": "monthly"}
+	if pv := e.call(http.MethodPatch, "/v1/organisation/gst-registrations/"+id, controller, dereg, "If-Match", tag, "Prefer", "return=preview"); pv.Status != 200 ||
+		pv.Header.Get("Preference-Applied") != "return=preview" {
+		t.Fatalf("the preview: %d %s", pv.Status, pv.Raw)
+	}
+	if s := status("2027-03-01"); s.Body["registered"] != true {
+		t.Fatalf("the preview deregistered it: %s", s.Raw)
+	}
+	r = e.call(http.MethodPatch, "/v1/organisation/gst-registrations/"+id, controller, dereg, "If-Match", tag)
+	if r.Status != 200 || r.Body["version"] != float64(2) || r.Body["deregistered_from"] != "2027-02-15" {
+		t.Fatalf("deregistering: %d %s", r.Status, r.Raw)
+	}
+	s = status("2027-02-10")
+	period, _ = s.Body["return_period"].(map[string]any)
+	if period["starts_on"] != "2027-02-01" || period["ends_on"] != "2027-02-14" {
+		t.Errorf("the last, short monthly period: %s", s.Raw)
+	}
+	if s := status("2027-02-15"); s.Body["registered"] != false {
+		t.Errorf("the day of deregistration: %s", s.Raw)
+	}
+	e.problemIs(e.call(http.MethodPatch, "/v1/organisation/gst-registrations/"+id, controller, dereg, "If-Match", tag),
+		"updateGSTRegistration", 412, CodeStale)
+
+	// A registration overlapping another is refused.
+	e.problemIs(e.call(http.MethodPost, "/v1/organisation/gst-registrations", controller,
+		map[string]any{"registered_from": "2027-01-01", "gst_number": "202312345K"}), "createGSTRegistration", 409, storage.CodeOverlap)
+	if l := e.call(http.MethodGet, "/v1/organisation/gst-registrations", controller, nil); l.Status != 200 || len(l.Body["items"].([]any)) != 1 {
+		t.Errorf("the list: %d %s", l.Status, l.Raw)
+	}
+}
+
 // req: FR-INT-10
 func TestCursorListsAndValueFormats(t *testing.T) {
 	e := newEnv(t)

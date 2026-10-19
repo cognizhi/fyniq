@@ -230,6 +230,117 @@ Returns the organisation your session is in: its name and base currency, which e
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
 
+### `GET /v1/organisation/gst-registrations`
+
+**List the GST registrations** (`listGSTRegistrations`)
+
+The organisation's GST registrations with their effective dates, by the date each starts, a page at a time (FR-ORG-03). Read-only; no side effects.
+
+- **Permission:** View on Organisation profile, financial year, defaults (rev 0.29)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`GSTRegistrationPage`](../../contracts/schemas/GSTRegistrationPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/organisation/gst-registrations`
+
+**Record a GST registration** (`createGSTRegistration`)
+
+Records that the organisation is GST-registered from a date, with its registration number, return frequency and quarters, and its accounting basis (FR-ORG-03). A registration may not overlap another (409). Side effects: the registration and its audit event. Approval policy: the Owner approves once the approval engine arrives (P1). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Organisation profile, financial year, defaults (rev 0.29). The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1).
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`GSTRegistrationDraft`](../../contracts/schemas/GSTRegistrationDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`GSTRegistration`](../../contracts/schemas/GSTRegistration.schema.json)
+  - `201` Created [`GSTRegistration`](../../contracts/schemas/GSTRegistration.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DATES-01` The dates overlap another version; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `GST-01` The registration's dates do not fit; `GST-02` The GST registration number is not valid; `GST-03` Not a return frequency; `GST-04` Not a quarters' start month; `GST-05` An accounting basis Fyniq does not offer; `STORAGE-ORG-01` The organisation's details are not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `GST-01`, `GST-02`, `GST-03`, `GST-04`, `GST-05`, `STORAGE-DATES-01`, `STORAGE-LOCK-01`, `STORAGE-ORG-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/organisation/gst-registrations/{registration_id}`
+
+**Get a GST registration** (`getGSTRegistration`)
+
+Returns one GST registration with its ETag (FR-ORG-03). Read-only; no side effects.
+
+- **Permission:** View on Organisation profile, financial year, defaults (rev 0.29)
+- **Parameters:**
+  - `registration_id` (path, required): The registration's ID.
+- **Responses:**
+  - `200` OK [`GSTRegistration`](../../contracts/schemas/GSTRegistration.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `PATCH /v1/organisation/gst-registrations/{registration_id}`
+
+**Change a GST registration** (`updateGSTRegistration`)
+
+Changes the fields sent and keeps the rest; "" clears the deregistration date. Deregistering is recording deregistered_from (FR-ORG-03). A change may not make it overlap another registration (409). Side effects: the next version and its audit event. Needs If-Match with the registration's ETag. Approval policy: the Owner approves once the approval engine arrives (P1). Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Organisation profile, financial year, defaults (rev 0.29). The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1).
+- **Parameters:**
+  - `registration_id` (path, required): The registration's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`GSTRegistrationChanges`](../../contracts/schemas/GSTRegistrationChanges.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`GSTRegistration`](../../contracts/schemas/GSTRegistration.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-DATES-01` The dates overlap another version; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `GST-01` The registration's dates do not fit; `GST-02` The GST registration number is not valid; `GST-03` Not a return frequency; `GST-04` Not a quarters' start month; `GST-05` An accounting basis Fyniq does not offer; `STORAGE-ORG-01` The organisation's details are not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `GST-01`, `GST-02`, `GST-03`, `GST-04`, `GST-05`, `STORAGE-DATES-01`, `STORAGE-LOCK-01`, `STORAGE-ORG-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `GET /v1/organisation/gst-status`
+
+**Get the GST status on a date** (`getGSTStatus`)
+
+Whether the organisation is GST-registered on a date, under which registration, and the return period that contains the date, from the registrations' effective dates, return frequency and quarters (FR-ORG-03). Read-only; no side effects.
+
+- **Permission:** View on Organisation profile, financial year, defaults (rev 0.29)
+- **Parameters:**
+  - `date` (query, required): The date to ask about, YYYY-MM-DD.
+- **Responses:**
+  - `200` OK [`GSTStatus`](../../contracts/schemas/GSTStatus.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ### `GET /v1/organisation/profile`
 
 **Get the organisation's profile** (`getOrganisationProfile`)

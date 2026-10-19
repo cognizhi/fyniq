@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The date asked about.",
+      "examples": [
+        "2026-05-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "registered": {
+      "description": "Whether the organisation is GST-registered on that date.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "registration": {
+      "$ref": "GSTRegistration.schema.json",
+      "description": "The registration in force that day; absent when not registered."
+    },
+    "return_period": {
+      "$ref": "GSTPeriod.schema.json",
+      "description": "The return period containing that day; absent when not registered."
+    }
+  },
+  "required": [
+    "date",
+    "registered"
+  ],
+  "title": "GSTStatus",
+  "type": "object"
+}

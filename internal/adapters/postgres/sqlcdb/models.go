@@ -93,6 +93,19 @@ type FyniqDocumentVersion struct {
 	CreatedAt      time.Time
 }
 
+type FyniqGstRegistration struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	RegisteredFrom    time.Time
+	DeregisteredFrom  pgtype.Date
+	GstNumber         string
+	ReturnFrequency   string
+	QuarterStartMonth int16
+	AccountingBasis   string
+	Version           int32
+	RecordedAt        time.Time
+}
+
 type FyniqHeartbeat struct {
 	Name     string
 	LastBeat time.Time
