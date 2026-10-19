@@ -28,6 +28,7 @@ const (
 	ChartOfAccounts     Capability = "Chart of accounts, dimensions"
 	Journals            Capability = "Journals"
 	OrganisationProfile Capability = "Organisation profile, financial year, defaults (rev 0.29)"
+	ContactsAndItems    Capability = "Contacts and items (rev 0.33)"
 	// Membership is not an Appendix D row: the caller's organisation (its name and base currency),
 	// which every screen shows, is readable by every member of it. AI acts for a member; the Super
 	// admin and the HR officer (Nemura only) are not members through those roles.
@@ -63,6 +64,11 @@ var Grants = map[Capability]map[string]Cell{
 		"AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""},
 		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"V", ""}, "AI": {"V", ""},
 	},
+	ContactsAndItems: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""},
+		"AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {}, "Releaser": {"V", ""}, "Approver": {"V", ""},
+		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"V", ""},
+	},
 	Journals: {
 		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", "limit"}, "Bookkeeper": {},
 		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
@@ -97,6 +103,10 @@ var (
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	UpdateAccount = Policy{Operation: "updateAccount", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
+	ListContacts      = Policy{Operation: "listContacts", Capability: ContactsAndItems, Need: View}
+	GetContact        = Policy{Operation: "getContact", Capability: ContactsAndItems, Need: View}
+	CreateContact     = Policy{Operation: "createContact", Capability: ContactsAndItems, Need: Create}
+	UpdateContact     = Policy{Operation: "updateContact", Capability: ContactsAndItems, Need: Create}
 	LoadStandardChart = Policy{Operation: "loadStandardChart", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	CreateJournal             = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
@@ -153,7 +163,8 @@ var (
 
 // Policies are every policy, by operation. An operation without one is refused.
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
-	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
+	CreateContact, UpdateContact, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession)
 

@@ -542,6 +542,23 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the organisation's profile, financial year and defaults
 - **THEN** the Employee has no right over it (—)
 
+### Requirement: Permission matrix: Contacts and items
+In Standard mode, each role SHALL hold only the rights over contacts and items that the permission matrix gives it (rev 0.33).
+
+Source: PRD-001 §D
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on contacts and items
+- **THEN** the Finance controller, the Accountant, the Bookkeeper, the AR specialist and the AP specialist can create or prepare (C)
+
+#### Scenario: View
+- **WHEN** a role acts on contacts and items
+- **THEN** the Owner, the Payment releaser, the Approver, the Auditor, the Tax agent, the Compliance officer / DPO and the AI assistant can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on contacts and items
+- **THEN** the Administrator, the Payroll administrator, the Employee and the Board viewer have no right over it (—)
+
 ### Requirement: Permission matrix: Statutory parameters
 In Standard mode, each role SHALL hold only the rights over statutory parameters that the permission matrix gives it.
 
