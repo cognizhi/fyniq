@@ -240,7 +240,7 @@ Source: PRD-001 §8.18.1 · Priority M · Phase P1
 - **AND** the agent guide explains how to read, how to propose and what is never allowed
 
 ### Requirement: FR-INT-14 Preview before commit
-Every write command SHALL support a dry run (`Prefer: return=preview`) that returns the validation result and the ledger impact without committing.
+Every write command SHALL support a dry run (`Prefer: return=preview`) that returns the validation result and the ledger impact without committing, except a command whose response carries a one-time secret.
 
 Source: PRD-001 §8.18.1 · Priority S · Phase P1
 
@@ -252,6 +252,17 @@ Source: PRD-001 §8.18.1 · Priority S · Phase P1
 #### Scenario: Same simulation as proposals
 - **WHEN** a preview is computed
 - **THEN** it uses the same simulation the proposal layer uses (§9.3)
+
+#### Scenario: A preview answers as the command would
+- **WHEN** a client previews a write command
+- **THEN** the response is the command's own body with `Preference-Applied: return=preview`, or the problem details the command would return
+- **AND** the checks the database defers to commit run before the preview rolls back
+- **AND** no `Idempotency-Key` is claimed
+
+#### Scenario: A command that returns a one-time secret takes no preview
+- **GIVEN** a command whose response carries a one-time secret (FR-INT-08)
+- **WHEN** its contract is read
+- **THEN** it takes no `Prefer` header and is named with `x-fyniq-exempt`, so a preview cannot confirm a one-time code without spending it
 
 ### Requirement: FR-INT-15 Semantic metrics endpoint
 The system SHALL expose the semantic layer (AI-03) through `POST /v1/metrics:query` to any authorised client.
