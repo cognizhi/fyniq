@@ -1,6 +1,6 @@
 # Build, hybrid or buy: the comparison question 26 asks for
 
-PRD-001 open question 26 and default 26 (rev 0.25): P1 build starts once this page is signed. It compares,
+PRD-001 open question 26 and default 26 (rev 0.25): P1 build starts once this page is signed. **Signed for build on 19 Oct 2026** (signature block below). It compares,
 over **24 months (Nov 2026 – Oct 2028)**:
 
 - **A · Buy:** Xero Premium as the ledger, and Talenox for payroll once someone is paid;
@@ -58,11 +58,11 @@ plus whichever of evidence, planning and proposals is still worth building on to
 
 | | |
 |---|---|
-| Decision | ☐ Build ☐ Hybrid ☐ Buy |
-| The objective only a build meets (question 1) | *Proposed; edit before signing:* keep Fyniq a product that can be offered to other companies after six months of live use, under the control model above |
-| Founder time budgeted | ___ hours a week, reviewed every ___ months against progress on the launch subset |
-| Signed (each founder) | Name ___________ Date ___________ |
-| | Name ___________ Date ___________ |
+| Decision | ☒ Build ☐ Hybrid ☐ Buy |
+| The objective only a build meets (question 1) | Keep Fyniq a product that can be offered to other companies after six months of live use, under the control model above |
+| Founder time budgeted | 10 hours a week to start, as a trial that the founders adjust as the pace shows; reviewed every 3 months against progress on the launch subset |
+| Signed (each founder) | cyyeong, 19 Oct 2026 |
+| | Open: the second founder signs here when ready |
 
 ---
 
