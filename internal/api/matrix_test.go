@@ -46,6 +46,15 @@ func matrixContact(e *env) string {
 	return e.call(http.MethodPost, "/v1/contacts", e.as(authz.Accountant), map[string]any{"legal_name": "Matrix contact", "customer": true}).str("id")
 }
 
+// matrixItem returns the ID of an item of e's organisation, adding one first if needed.
+func matrixItem(e *env) string {
+	l := e.call(http.MethodGet, "/v1/items", e.as(authz.Accountant), nil)
+	if items, _ := l.Body["items"].([]any); len(items) > 0 {
+		return items[0].(map[string]any)["id"].(string)
+	}
+	return e.call(http.MethodPost, "/v1/items", e.as(authz.Accountant), map[string]any{"code": "MATRIX", "name": "Matrix item", "type": "service"}).str("id")
+}
+
 // matrixCalls has one request per operation; an operation without one fails the test.
 var matrixCalls = map[string]matrixCall{
 	"getOrganisation": func(e *env, tok string) (response, func() bool) {
@@ -168,6 +177,27 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPatch, "/v1/contacts/"+id, tok, map[string]any{"phone": phone}, "If-Match", "*")
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/contacts/"+id, e.as(authz.Accountant), nil).str("phone") != phone
+		}
+	},
+	"listItems": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/items", tok, nil), nil
+	},
+	"getItem": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/items/"+matrixItem(e), tok, nil), nil
+	},
+	"createItem": func(e *env, tok string) (response, func() bool) {
+		code := "M-" + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/items", tok, map[string]any{"code": code, "name": "Matrix item", "type": "product"})
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/items?page_size=500", e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"code":"`+code+`"`)
+		}
+	},
+	"updateItem": func(e *env, tok string) (response, func() bool) {
+		id, unit := matrixItem(e), uuid.NewString()[:8]
+		r := e.call(http.MethodPatch, "/v1/items/"+id, tok, map[string]any{"unit": unit}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/items/"+id, e.as(authz.Accountant), nil).str("unit") != unit
 		}
 	},
 	"getAccount": func(e *env, tok string) (response, func() bool) {

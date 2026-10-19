@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
+	"github.com/cognizhi/fyniq/internal/domain/item"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -145,6 +146,14 @@ var codeFacts = map[string]struct {
 	contact.CodePeppol:         {422, "Not a Peppol participant ID"},
 	contact.CodeText:           {422, "A text is too long"},
 	contact.CodeCategory:       {422, "Not an account that takes postings"},
+	item.CodeCode:              {422, "Not an item code"},
+	item.CodeName:              {422, "The item's name is not valid"},
+	item.CodeType:              {422, "Neither a product nor a service"},
+	item.CodeText:              {422, "A text is too long"},
+	item.CodeCurrency:          {422, "Not a currency, or priced twice"},
+	item.CodePrice:             {422, "Not a unit price"},
+	item.CodeGSTCode:           {422, "Not a GST code"},
+	item.CodeAccount:           {422, "Not a revenue account that takes postings"},
 	chart.CodeAccountCode:      {422, "Not an account code"},
 	chart.CodeText:             {422, "A text is blank or too long"},
 	chart.CodeType:             {422, "Not an account type"},

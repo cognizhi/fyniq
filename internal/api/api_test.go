@@ -882,6 +882,73 @@ func TestContacts(t *testing.T) {
 	e.problemIs(e.call(http.MethodGet, "/v1/contacts/"+id, e.as(authz.Employee), nil), "getContact", 403, CodeForbidden)
 }
 
+// Items: added with a price per currency as exact decimals, refused when a rule breaks, changed at their
+// version with their prices replaced, listed by code.
+// req: FR-ITM-01
+func TestItems(t *testing.T) {
+	e := newEnv(t)
+	ar := e.as(authz.ARSpecialist)
+	consult := map[string]any{"code": "CONSULT-HR", "name": "HR consulting", "description": "HR consulting, by the hour", "type": "service",
+		"unit": "hour", "revenue_account_id": e.books.Sales.ID.String(), "gst_code": "SR",
+		"prices": []map[string]any{{"currency": "USD", "unit_price": "135.5"}, {"currency": "SGD", "unit_price": "180.123456"}}}
+	r := e.call(http.MethodPost, "/v1/items", ar, consult, "Idempotency-Key", uuid.NewString())
+	if r.Status != 201 || r.Header.Get("Location") != "/v1/items/"+r.str("id") ||
+		!strings.Contains(r.Raw, `"prices":[{"currency":"SGD","unit_price":"180.123456"},{"currency":"USD","unit_price":"135.50"}]`) {
+		t.Fatalf("adding an item: %d %v %s", r.Status, r.Header, r.Raw)
+	}
+	id, tag := r.str("id"), r.Header.Get("ETag")
+	e.problemIs(e.call(http.MethodPost, "/v1/items", ar, map[string]any{"code": "CONSULT-HR", "name": "Again", "type": "service"}),
+		"createItem", 409, storage.CodeDuplicate)
+
+	// Previewed: checked and not saved.
+	pv := e.call(http.MethodPost, "/v1/items", ar, map[string]any{"code": "BOOK-01", "name": "The handbook", "type": "product"}, "Prefer", "return=preview")
+	if pv.Status != 200 || pv.Header.Get("Preference-Applied") != "return=preview" {
+		t.Fatalf("a preview: %d %s", pv.Status, pv.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/items", ar, nil); len(l.Body["items"].([]any)) != 1 {
+		t.Errorf("the preview saved an item: %s", l.Raw)
+	}
+
+	// Every broken rule at once: the code, two prices in one currency, a group as the revenue account.
+	r = e.call(http.MethodPost, "/v1/items", ar, map[string]any{"code": "-X", "name": "X", "type": "service", "gst_code": "sr",
+		"revenue_account_id": e.books.Expenses.ID.String(),
+		"prices":             []map[string]any{{"currency": "SGD", "unit_price": "1"}, {"currency": "SGD", "unit_price": "2"}}})
+	e.problemIs(r, "createItem", 422, CodeInvalid)
+	if f := fields(r); f["body.code"] != "ITM-01" || f["body.gst_code"] != "ITM-07" || f["body.prices[1].currency"] != "ITM-05" ||
+		f["body.revenue_account_id"] != "ITM-08" {
+		t.Errorf("every rule at once: %v", f)
+	}
+	// An expense account is no revenue account.
+	r = e.call(http.MethodPost, "/v1/items", ar, map[string]any{"code": "RENT", "name": "Rent", "type": "service", "revenue_account_id": e.books.Rent.ID.String()})
+	if f := fields(r); r.Status != 422 || f["body.revenue_account_id"] != "ITM-08" {
+		t.Errorf("an expense account as the revenue account: %d %v", r.Status, f)
+	}
+
+	// A change at its version replaces every price; the rest is kept.
+	r = e.call(http.MethodPatch, "/v1/items/"+id, ar, map[string]any{"prices": []map[string]any{{"currency": "JPY", "unit_price": "15000"}}, "active": false},
+		"If-Match", tag)
+	if r.Status != 200 || r.Body["active"] != false || r.Body["unit"] != "hour" || r.Body["version"] != float64(2) ||
+		!strings.Contains(r.Raw, `"prices":[{"currency":"JPY","unit_price":"15000"}]`) {
+		t.Fatalf("changing the item: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(e.call(http.MethodPatch, "/v1/items/"+id, ar, map[string]any{"unit": "day"}, "If-Match", tag), "updateItem", 412, CodeStale)
+
+	// Listed by code, a page at a time.
+	e.call(http.MethodPost, "/v1/items", ar, map[string]any{"code": "BOOK-01", "name": "The handbook", "type": "product"})
+	l := e.call(http.MethodGet, "/v1/items?page_size=1", ar, nil)
+	if l.Status != 200 || len(l.Body["items"].([]any)) != 1 || l.Body["items"].([]any)[0].(map[string]any)["code"] != "BOOK-01" || l.str("next_cursor") == "" {
+		t.Fatalf("the first page: %d %s", l.Status, l.Raw)
+	}
+	l = e.call(http.MethodGet, "/v1/items?page_size=1&cursor="+l.str("next_cursor"), ar, nil)
+	if l.Status != 200 || len(l.Body["items"].([]any)) != 1 || l.Body["items"].([]any)[0].(map[string]any)["id"] != id || l.Body["next_cursor"] != nil {
+		t.Errorf("the next page: %d %s", l.Status, l.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/items/"+id, e.as(authz.Auditor), nil); g.Status != 200 || g.Header.Get("ETag") == "" {
+		t.Errorf("the auditor reading an item: %d %s", g.Status, g.Raw)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/items/"+id, e.as(authz.Employee), nil), "getItem", 403, CodeForbidden)
+}
+
 // req: FR-INT-10
 func TestCursorListsAndValueFormats(t *testing.T) {
 	e := newEnv(t)

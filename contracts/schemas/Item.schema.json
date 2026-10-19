@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active": {
+      "description": "An inactive item is kept for its history and offered for nothing new.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "code": {
+      "description": "Its code; it never changes.",
+      "examples": [
+        "CONSULT-HR"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What documents print on its lines.",
+      "examples": [
+        "HR consulting, by the hour"
+      ],
+      "type": "string"
+    },
+    "gst_code": {
+      "description": "The GST code its lines start with.",
+      "examples": [
+        "SR"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The item's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "HR consulting"
+      ],
+      "type": "string"
+    },
+    "prices": {
+      "description": "Its unit price in each currency it is sold in, by currency.",
+      "items": {
+        "$ref": "ItemPrice.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "revenue_account_id": {
+      "description": "The revenue account its sales post to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "type": {
+      "description": "A product or a service.",
+      "enum": [
+        "product",
+        "service"
+      ],
+      "examples": [
+        "service"
+      ],
+      "type": "string"
+    },
+    "unit": {
+      "description": "What a quantity of one is.",
+      "examples": [
+        "hour"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The item's version; it also makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "code",
+    "name",
+    "type",
+    "prices",
+    "active",
+    "version"
+  ],
+  "title": "Item",
+  "type": "object"
+}
