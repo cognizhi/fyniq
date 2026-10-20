@@ -5,15 +5,38 @@ package postgres_test
 import (
 	"context"
 	"crypto/sha256"
+	"fmt"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
+
+// founder joins org as an Owner through an invitation and returns their user ID; n makes the invitation's code hash.
+func founder(t *testing.T, st *postgres.Store, org uuid.UUID, n byte, now time.Time) uuid.UUID {
+	t.Helper()
+	ctx := context.Background()
+	hash := make([]byte, 32)
+	hash[0], hash[1], hash[2] = 9, n, org[15]
+	if err := st.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: "Founder", Roles: []string{"owner"},
+			ExpiresAt: now.Add(time.Hour)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	j, err := st.JoinOrganisation(ctx, storage.NewJoin{CodeHash: hash, DisplayName: "Founder", Issuer: "urn:fyniq:attack", Subject: uuid.NewString(), Now: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return j.UserID
+}
 
 // The database refuses an approval that is not a signature of exactly the envelope asked for (migration 000030):
 // a request whose hash is not its envelope's; a signed approval without a hash or a fresh second factor, of
@@ -30,23 +53,7 @@ func TestAttackApprovalsAreSignedEnvelopes(t *testing.T) {
 	a, b := books(t, "Attack approvals A Pte Ltd"), books(t, "Attack approvals B Pte Ltd")
 	st := store(t, "fyniq_api")
 	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
-	user := func(n byte) uuid.UUID {
-		hash := make([]byte, 32)
-		hash[0], hash[1] = 9, n
-		if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
-			_, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: "Founder", Roles: []string{"owner"},
-				ExpiresAt: now.Add(time.Hour)})
-			return err
-		}); err != nil {
-			t.Fatal(err)
-		}
-		j, err := st.JoinOrganisation(ctx, storage.NewJoin{CodeHash: hash, DisplayName: "Founder", Issuer: "urn:fyniq:attack", Subject: uuid.NewString(), Now: now})
-		if err != nil {
-			t.Fatal(err)
-		}
-		return j.UserID
-	}
-	requester, approver := user(1), user(2)
+	requester, approver := founder(t, st, a.Org, 1, now), founder(t, st, a.Org, 2, now)
 	envelope := `{"object":{"id":"bank.tolerance_base","type":"organisation_setting"}}`
 	sum := sha256.Sum256([]byte(envelope))
 	var req storage.ApprovalRequest
@@ -54,7 +61,8 @@ func TestAttackApprovalsAreSignedEnvelopes(t *testing.T) {
 		var err error
 		req, err = u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: "organisation_setting", ObjectKey: "bank.tolerance_base",
 			Operation: "organisation_setting.change", Summary: "Change the tolerance", Change: []byte(`{"execute":{}}`), Envelope: envelope,
-			EnvelopeHash: sum[:], PolicyVersion: "founder/organisation_setting@2026-10-20.1", RequestedBy: requester, RequestedAt: now,
+			EnvelopeHash: sum[:], PolicyVersion: "founder/organisation_setting@2026-10-20.1", PolicySteps: []storage.ApprovalStep{{Quorum: 1}},
+			RequestedBy: requester, RequestedAt: now,
 			RequesterMFAMethod: "session_step_up", RequesterMFAAt: now, ExpiresAt: now.Add(7 * 24 * time.Hour)})
 		return err
 	}); err != nil {
@@ -143,5 +151,159 @@ func TestAttackApprovalsAreSignedEnvelopes(t *testing.T) {
 		if n := count(t, a.Org, table); n != 1 {
 			t.Errorf("A sees %d rows of its %s, not 1", n, table)
 		}
+	}
+}
+
+// request records a pending request in org under policy steps, with an envelope of its own; change is its change.
+func request(t *testing.T, st *postgres.Store, org, requester uuid.UUID, objectType, key, operation, change string, steps []storage.ApprovalStep,
+	now time.Time) storage.ApprovalRequest {
+	t.Helper()
+	envelope := fmt.Sprintf(`{"object":{"id":%q,"type":%q},"nonce":%q}`, key, objectType, uuid.NewString())
+	sum := sha256.Sum256([]byte(envelope))
+	var req storage.ApprovalRequest
+	if err := st.Do(context.Background(), org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		req, err = u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: objectType, ObjectKey: key, Operation: operation,
+			Summary: "A change", Change: []byte(change), Envelope: envelope, EnvelopeHash: sum[:], PolicyVersion: "p", PolicySteps: steps,
+			RequestedBy: requester, RequestedAt: now, RequesterMFAMethod: "session_step_up", RequesterMFAAt: now, ExpiresAt: now.Add(7 * 24 * time.Hour)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return req
+}
+
+// signs signs req's step as signer, through the unit of work, and returns the error.
+func signs(st *postgres.Store, org uuid.UUID, req storage.ApprovalRequest, step int, signer uuid.UUID, now time.Time) error {
+	return st.Do(context.Background(), org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: req.ID, Step: step, Signer: signer, Decision: "approve",
+			EnvelopeHash: req.EnvelopeHash, MFAMethod: "session_step_up", MFAAt: now, SignedAt: now})
+		return err
+	})
+}
+
+// decides moves req to status through the unit of work, and returns the error.
+func decides(st *postgres.Store, org uuid.UUID, req storage.ApprovalRequest, status string, now time.Time) error {
+	return st.Do(context.Background(), org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Approvals().Decide(ctx, req.ID, req.Version, status, "", now)
+		return err
+	})
+}
+
+// A request keeps its policy's steps, and the database holds the engine to them: a signature signs the current
+// step only, in order, to its quorum, and a request is approved only when every step has its quorum (rev 0.40).
+// req: FR-APR-01
+// req: FR-APR-03
+// asvs: V8.2.2
+func TestAttackApprovalStepsAreSignedInOrder(t *testing.T) {
+	ctx := context.Background()
+	a := books(t, "Attack steps Pte Ltd")
+	st := store(t, "fyniq_api")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	requester, ann, ben := founder(t, st, a.Org, 1, now), founder(t, st, a.Org, 2, now), founder(t, st, a.Org, 3, now)
+	req := request(t, st, a.Org, requester, "organisation_setting", "bank.tolerance_base", "organisation_setting.change", `{"execute":{}}`,
+		[]storage.ApprovalStep{{Quorum: 1}, {Quorum: 1}}, now)
+	wantState(t, "signing the second step first", signs(st, a.Org, req, 2, ann, now), "FY106")
+	wantState(t, "signing a step the policy does not have", signs(st, a.Org, req, 3, ann, now), "FY106")
+	if err := signs(st, a.Org, req, 1, ann, now); err != nil {
+		t.Fatal(err)
+	}
+	wantState(t, "signing a step past its quorum", signs(st, a.Org, req, 1, ben, now), "FY106")
+	wantState(t, "approving with a step unsigned", decides(st, a.Org, req, "approved", now), "FY100")
+	if err := signs(st, a.Org, req, 2, ben, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := decides(st, a.Org, req, "approved", now); err != nil {
+		t.Fatalf("approving with every step signed: %v", err)
+	}
+
+	envelope := `{"steps":"bad"}`
+	sum := sha256.Sum256([]byte(envelope))
+	for _, steps := range []string{`[]`, `[{"quorum":0,"roles":[],"users":[]}]`, `[{"quorum":1}]`, `[{"quorum":1,"roles":["owner"],"users":["` + ann.String() + `"]}]`,
+		`[{"quorum":1,"roles":[],"users":["not-a-uuid"]},{"quorum":1,"roles":[],"users":[]}]`, `[{"quorum":6,"roles":[],"users":[]}]`,
+		`[{"quorum":1,"roles":[],"users":[],"limit":"5000.00"}]`} {
+		err := asOrg(ctx, conn(t, "fyniq_api"), a.Org, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.approval_request (object_type, object_key, operation, summary, change, envelope, envelope_hash,
+				policy_version, policy_steps, requested_by, requested_at, requester_mfa_method, requester_mfa_at, expires_at)
+				VALUES ('organisation_setting', 'retention.records_years', 'organisation_setting.change', 'x', '{}', $1, $2, 'p', $3, $4, $5,
+				'session_step_up', $5, $6)`, envelope, sum[:], steps, requester, now, now.Add(time.Hour))
+			return err
+		})
+		wantState(t, "a request whose steps are "+steps, err, "23514")
+	}
+}
+
+// A version of an approval policy exists only as the next one, with the approved request that holds exactly its
+// steps; it never changes; adding one voids every pending request of its object type, audited (rev 0.40).
+// req: FR-APR-09
+// req: FR-APR-10
+// asvs: V8.2.2, V16.3.3
+func TestAttackApprovalPoliciesAreApprovedVersions(t *testing.T) {
+	ctx := context.Background()
+	a, b := books(t, "Attack policies A Pte Ltd"), books(t, "Attack policies B Pte Ltd")
+	st := store(t, "fyniq_api")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	requester, approver := founder(t, st, a.Org, 1, now), founder(t, st, a.Org, 2, now)
+	one := []storage.ApprovalStep{{Quorum: 1}}
+	steps := []storage.ApprovalStep{{Quorum: 2, Roles: []string{"owner"}}}
+	waiting := request(t, st, a.Org, requester, "organisation_setting", "bank.tolerance_base", "organisation_setting.change", `{"execute":{}}`, one, now)
+	pol := request(t, st, a.Org, requester, "approval_policy", "organisation_setting", "approval_policy.change",
+		`{"execute":{"object_type":"organisation_setting","version":1,"steps":[{"quorum":2,"roles":["owner"],"users":[]}]}}`, one, now)
+	add := func(n storage.NewApprovalPolicy) error {
+		return st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.ApprovalPolicies().Add(ctx, n)
+			return err
+		})
+	}
+	ok := storage.NewApprovalPolicy{ObjectType: "organisation_setting", Version: 1, Steps: steps, RequestID: pol.ID, CreatedBy: requester, CreatedAt: now}
+	wantState(t, "a version whose request is pending", add(ok), "FY105")
+	if err := signs(st, a.Org, pol, 1, approver, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := decides(st, a.Org, pol, "approved", now); err != nil {
+		t.Fatal(err)
+	}
+	other, gap, by, typ := ok, ok, ok, ok
+	other.Steps = one
+	gap.Version = 2
+	by.CreatedBy = approver
+	typ.ObjectType = "membership"
+	wantState(t, "a version with steps other than the approved", add(other), "FY105")
+	wantState(t, "a version past the next", add(gap), "FY105")
+	wantState(t, "a version made by someone other than its requester", add(by), "FY105")
+	wantState(t, "a version of another object type", add(typ), "FY105")
+	if err := add(ok); err != nil {
+		t.Fatalf("the approved version: %v", err)
+	}
+	wantState(t, "the same version again", add(ok), "FY105", "23505")
+	if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		r, err := u.Approvals().Get(ctx, waiting.ID)
+		if err == nil && (r.Status != "void" || r.StatusReason != "the approval policy changed after the request") {
+			t.Errorf("a pending request of the object type after its policy changed: %+v", r)
+		}
+		ps, err2 := u.ApprovalPolicies().List(ctx)
+		if err2 != nil || len(ps) != 1 || ps[0].Version != 1 || len(ps[0].Steps) != 1 || ps[0].Steps[0].Quorum != 2 || ps[0].RequestID != pol.ID {
+			t.Errorf("the policies: %+v (%v)", ps, err2)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct{ role, what, stmt, state string }{
+		{"fyniq_api", "the API changing a version", "UPDATE fyniq.approval_policy SET steps = '[]'", "42501"},
+		{"fyniq_api", "the API deleting a version", "DELETE FROM fyniq.approval_policy", "42501"},
+		{"fyniq_migrator", "the owner changing a version", `UPDATE fyniq.approval_policy SET created_at = now()`, "FY104"},
+		{"fyniq_migrator", "the owner deleting a version", "DELETE FROM fyniq.approval_policy", "FY104"},
+		{"fyniq_worker", "the worker adding a version", `INSERT INTO fyniq.approval_policy (object_type, version, steps, request_id, created_by, created_at)
+			SELECT 'membership', 1, '[{"quorum":1,"roles":[],"users":[]}]', gen_random_uuid(), gen_random_uuid(), now()`, "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.what, err, c.state)
+	}
+	if n := count(t, b.Org, "fyniq.approval_policy"); n != 0 {
+		t.Errorf("B sees %d of A's policy versions", n)
+	}
+	if got := actions(t, a.Org, waiting.ID); !slices.Contains(got, "approval.void") {
+		t.Errorf("the voided request's trail: %v", got)
 	}
 }

@@ -72,6 +72,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/approval-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the approval policies
+         * @description The approval policy in force for each kind of change the approval engine covers: who signs a request, as ordered steps with a quorum of people who hold the approval right (A) on the object's Appendix D row, narrowed to roles or named members (FR-APR-01). The built-in policy, one step with a quorum of one, applies until the organisation changes it. Read-only; no side effects.
+         */
+        get: operations["listApprovalPolicies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/approval-policies/{object_type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an approval policy
+         * @description The approval policy in force for one kind of change, with every version the organisation has had of it and the approved request that made each (FR-APR-01, FR-APR-09). Its ETag is the policy's number. Read-only; no side effects.
+         */
+        get: operations["getApprovalPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Ask to change an approval policy
+         * @description Asks for the policy's next version: its ordered steps, each a quorum of 1 to 5 people who hold the approval right (A) on the object's Appendix D row, narrowed to roles or to named members, never both (FR-APR-01). A policy never adds anyone Appendix D does not, and its steps must be ones the members can sign (APR-08). The change is never made at once: the answer is 202 with an approval request, which a member who holds A on "Approval policies, AI catalogue" (the Owner or the Controller) and is not the requester approves (FR-APR-09, SOD-8). On its approval the version is added, and every pending request of that kind restarts: the database voids them (FR-APR-10). The policy for approval policies is fixed (APR-09). Asking needs a person signed in who passed step-up in the last 5 minutes and If-Match with the policy's ETag. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        patch: operations["changeApprovalPolicy"];
+        trace?: never;
+    };
     "/v1/approvals": {
         parameters: {
             query?: never;
@@ -123,7 +167,7 @@ export interface paths {
         put?: never;
         /**
          * Approve a request
-         * @description Signs the request's envelope and, once its policy's steps are signed, carries out its change in the same transaction (FR-APR-03, FR-APR-10, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, and did not ask for it; and envelope_hash must be the request's, and If-Match its ETag. The envelope is rebuilt from current data with its rows locked: if the record or any dependency changed since the request, nothing executes, the request becomes void and APR-04 says so (FR-APR-05). Side effects: the signed approval, the request approved, the change itself and their audit events, which name the approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Signs the request's current step and, once every step of its policy has its quorum, carries out its change in the same transaction (FR-APR-01, FR-APR-03, FR-APR-10, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, is one the current step names (APR-11), did not ask for it and has not signed it; and envelope_hash must be the request's, and If-Match its ETag. The envelope is rebuilt from current data with its rows locked: if the record, any dependency or the approval policy changed since the request, nothing executes, the request becomes void and APR-04 says so (FR-APR-05); if an earlier approver no longer holds the right their step needs, APR-10 does. Side effects: the signed approval and its audit event; on the last step, the request approved, the change itself and their audit events, which name the approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["approveApproval"];
         delete?: never;
@@ -143,9 +187,29 @@ export interface paths {
         put?: never;
         /**
          * Reject a request
-         * @description Signs a rejection of the request's envelope, with your reason; the change never executes (FR-APR-03, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, and did not ask for it; and envelope_hash must be the request's, and If-Match its ETag. Side effects: the signed rejection, the request rejected and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Signs a rejection of the request's envelope at its current step, with your reason; the change never executes (FR-APR-03, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, is one the current step names, did not ask for it and has not signed it; and envelope_hash must be the request's, and If-Match its ETag. Side effects: the signed rejection, the request rejected and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["rejectApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/approvals/{approval_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw your request
+         * @description Withdraws a pending request you asked for: it becomes void with the reason "withdrawn by its requester", and any signatures it has are voided; the change never executes (rev 0.40). Needs the person who asked for it, signed in to Fyniq, and If-Match with its ETag. Side effects: the request void and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["withdrawApproval"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1164,6 +1228,12 @@ export interface components {
         };
         Approval: {
             /**
+             * Format: int64
+             * @description The step the next signature signs, from 1; 0 once every step has its quorum.
+             * @example 1
+             */
+            current_step: number;
+            /**
              * Format: date-time
              * @description When it was approved, rejected or voided.
              * @example 2026-10-20T09:30:00Z
@@ -1199,7 +1269,7 @@ export interface components {
              */
             invitation_code?: string;
             /**
-             * @description Which one: the setting's key, the membership's ID, or the invitation's code hash.
+             * @description Which one: the setting's key, the membership's ID, the invitation's code hash, or the object type whose approval policy changes.
              * @example bank.tolerance_base
              */
             object_key: string;
@@ -1208,13 +1278,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member_invitation.create";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member_invitation.create" | "approval_policy.change";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -1240,7 +1310,7 @@ export interface components {
             /** @description Its signed approvals and rejections, in order (FR-APR-03). */
             signatures: components["schemas"]["ApprovalSignature"][] | null;
             /**
-             * @description pending waits for approval; approved executed it; void means its record or a dependency changed (FR-APR-05); expired after 7 days.
+             * @description pending waits for approval; approved executed it; void means its record, a dependency or its approval policy changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days.
              * @example pending
              * @enum {string}
              */
@@ -1250,6 +1320,8 @@ export interface components {
              * @example the setting changed after the request
              */
             status_reason?: string;
+            /** @description The steps of that policy, in order, with the approvals each has (FR-APR-01, rev 0.40). */
+            steps: components["schemas"]["ApprovalProgress"][] | null;
             /**
              * @description What it does, in a sentence.
              * @example Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20
@@ -1305,6 +1377,144 @@ export interface components {
              */
             next_cursor?: string;
         };
+        ApprovalPolicy: {
+            /**
+             * @description true while the built-in policy applies: one step with a quorum of one.
+             * @example true
+             */
+            built_in: boolean;
+            /**
+             * @description true for the policy for approval policies, which no organisation changes, so a change can never lock it out (FR-APR-09).
+             * @example false
+             */
+            fixed: boolean;
+            /**
+             * Format: int64
+             * @description The organisation's version of it; 0 while the built-in policy applies.
+             * @example 0
+             */
+            number: number;
+            /**
+             * @description The kind of change it covers.
+             * @example organisation_setting
+             * @enum {string}
+             */
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy";
+            /**
+             * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
+             * @example Organisation profile, financial year, defaults (rev 0.29)
+             */
+            row: string;
+            /** @description Its ordered steps: each needs its quorum before the next is signed (FR-APR-01). */
+            steps: components["schemas"]["ApprovalStep"][] | null;
+            /**
+             * @description The version string each request records (G4-057).
+             * @example founder/organisation_setting@2026-10-20.1
+             */
+            version: string;
+        };
+        ApprovalPolicyChange: {
+            /** @description The ordered steps: 1 to 5. */
+            steps: components["schemas"]["ApprovalStepChange"][] | null;
+        };
+        ApprovalPolicyDetail: {
+            /**
+             * @description true while the built-in policy applies: one step with a quorum of one.
+             * @example true
+             */
+            built_in: boolean;
+            /**
+             * @description true for the policy for approval policies, which no organisation changes, so a change can never lock it out (FR-APR-09).
+             * @example false
+             */
+            fixed: boolean;
+            /** @description The organisation's versions of it, oldest first; empty while the built-in policy applies. */
+            history: components["schemas"]["ApprovalPolicyVersion"][] | null;
+            /**
+             * Format: int64
+             * @description The organisation's version of it; 0 while the built-in policy applies.
+             * @example 0
+             */
+            number: number;
+            /**
+             * @description The kind of change it covers.
+             * @example organisation_setting
+             * @enum {string}
+             */
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy";
+            /**
+             * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
+             * @example Organisation profile, financial year, defaults (rev 0.29)
+             */
+            row: string;
+            /** @description Its ordered steps: each needs its quorum before the next is signed (FR-APR-01). */
+            steps: components["schemas"]["ApprovalStep"][] | null;
+            /**
+             * @description The version string each request records (G4-057).
+             * @example founder/organisation_setting@2026-10-20.1
+             */
+            version: string;
+        };
+        ApprovalPolicyPage: {
+            /** @description The policy in force for each object type, by object type. */
+            items: components["schemas"]["ApprovalPolicy"][] | null;
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6Im1lbWJlcnNoaXAifQ
+             */
+            next_cursor?: string;
+        };
+        ApprovalPolicyVersion: {
+            /**
+             * Format: date-time
+             * @description When it took effect: when its request was approved.
+             * @example 2026-10-20T09:30:00Z
+             */
+            changed_at: string;
+            /**
+             * Format: uuid
+             * @description Who asked for it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            changed_by: string;
+            /**
+             * Format: int64
+             * @description Its number, from 1.
+             * @example 1
+             */
+            number: number;
+            /**
+             * Format: uuid
+             * @description The approved request that made it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            request_id: string;
+            /** @description Its ordered steps. */
+            steps: components["schemas"]["ApprovalStep"][] | null;
+            /**
+             * @description The version string the requests made under it record.
+             * @example organisation_setting/v1
+             */
+            version: string;
+        };
+        ApprovalProgress: {
+            /**
+             * Format: int64
+             * @description The approvals signed in this step, not voided.
+             * @example 0
+             */
+            approvals: number;
+            /**
+             * Format: int64
+             * @description How many people sign this step, each once.
+             * @example 1
+             */
+            quorum: number;
+            /** @description Only people holding one of these roles sign it; empty, with users empty, for anyone who holds the approval right (A) on the object's Appendix D row. */
+            roles: string[] | null;
+            /** @description Only these members sign it; empty, with roles empty, for anyone who holds the approval right. */
+            users: string[] | null;
+        };
         ApprovalSignature: {
             /**
              * @description What they decided.
@@ -1345,6 +1555,30 @@ export interface components {
              * @example false
              */
             voided: boolean;
+        };
+        ApprovalStep: {
+            /**
+             * Format: int64
+             * @description How many people sign this step, each once.
+             * @example 1
+             */
+            quorum: number;
+            /** @description Only people holding one of these roles sign it; empty, with users empty, for anyone who holds the approval right (A) on the object's Appendix D row. */
+            roles: string[] | null;
+            /** @description Only these members sign it; empty, with roles empty, for anyone who holds the approval right. */
+            users: string[] | null;
+        };
+        ApprovalStepChange: {
+            /**
+             * Format: int64
+             * @description How many people sign this step, each once: 1 to 5.
+             * @example 1
+             */
+            quorum: number;
+            /** @description Only people holding one of these roles sign it: roles whose Appendix D cell holds A on the object's row. Never with users. */
+            roles?: string[] | null;
+            /** @description Only these members sign it: active members whose roles hold A on the object's row. Never with roles. */
+            users?: string[] | null;
         };
         BulkResult: {
             /**
@@ -3859,6 +4093,353 @@ export interface operations {
             };
         };
     };
+    listApprovalPolicies: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalPolicyPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getApprovalPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The kind of change the policy covers. */
+                object_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalPolicyDetail"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    changeApprovalPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The kind of change the policy covers. */
+                object_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalPolicyChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-08` The policy's steps cannot be signed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listApprovals: {
         parameters: {
             query?: {
@@ -4086,7 +4667,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4104,7 +4685,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4140,7 +4721,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-07` A rejection needs its reason; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -4250,7 +4831,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4268,7 +4849,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-10` An earlier approver no longer holds the right: nothing was changed; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4297,6 +4878,139 @@ export interface operations {
             };
             /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
             415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-07` A rejection needs its reason. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawApproval: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The request's ID. */
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `APR-12` Only the person who asked for it withdraws it. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-10` An earlier approver no longer holds the right: nothing was changed; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };

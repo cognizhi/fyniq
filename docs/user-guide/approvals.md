@@ -3,7 +3,7 @@ key: approvals.decide
 title: Approve a change
 mode: basic
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [FM-1, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10]
+requirements: [FM-1, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10]
 ---
 
 # Approve a change
@@ -34,9 +34,23 @@ Only one request waits for each setting or person at a time.
 Your approval signs exactly what you were shown. Fyniq records who approved, when, and how they
 confirmed it was them, in the audit trail.
 
+Some changes need more than one approval, in steps ([Choose who approves a change](approval-policies.md)).
+The request shows each step and the approvals it has. The change is made with the last approval.
+You approve a request once, and only at a step that names you or one of your roles.
+
+## Withdraw your request
+
+1. Open the request you asked for.
+2. Select **Withdraw**.
+
+The request is cancelled with any approvals it had, and nothing changes. Only the person who asked
+can withdraw a request; anyone else who disagrees rejects it with a reason.
+
 ## When a request can no longer be approved
 
-- **Changed**: if the setting or the person's roles changed after the request, the request is
-  void and nothing changes. Ask for the change again.
+- **Changed**: if the setting, the person's roles or the approval policy changed after the
+  request, the request is void and nothing changes. Ask for the change again.
+- **An approver lost their right**: if someone who approved an earlier step no longer has the
+  role their step needed when the last approval comes, nothing changes and the request is void.
 - **Expired**: a request waits 7 days. After that, ask for the change again.
 - **Rejected**: the change is not made. The reason is shown on the request.

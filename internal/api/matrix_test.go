@@ -303,6 +303,22 @@ var matrixCalls = map[string]matrixCall{
 	// Each approval's own policy decides what a person sees and signs (rev 0.36), so the matrix asks for a request
 	// that does not exist: allowed means the API looked past the operation's policy (404, or step-up for a signature);
 	// approvals_test.go signs real ones.
+	"withdrawApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/approvals/"+uuid.NewString()+"/withdraw", steppedUp(e, tok), nil, "If-Match", `"1"`), nil
+	},
+	"listApprovalPolicies": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/approval-policies", tok, nil), nil
+	},
+	"getApprovalPolicy": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/approval-policies/organisation_setting", tok, nil), nil
+	},
+	// A policy change always waits for approval: an allowed role, as a person who passed step-up, gets the request.
+	"changeApprovalPolicy": func(e *env, tok string) (response, func() bool) {
+		was := policyRequests(e)
+		r := e.call(http.MethodPatch, "/v1/approval-policies/membership", steppedUp(e, tok), map[string]any{"steps": []map[string]any{{"quorum": 1}}},
+			"If-Match", `"0"`)
+		return r, func() bool { return policyRequests(e) == was }
+	},
 	"listApprovals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/approvals", tok, nil), nil
 	},

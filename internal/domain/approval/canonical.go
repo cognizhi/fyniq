@@ -2,6 +2,7 @@ package approval
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
@@ -14,7 +15,8 @@ const maxSafeInteger = 1<<53 - 1
 
 // Canonical serialises v as RFC 8785 JSON (the JSON Canonicalization Scheme): no whitespace, object members
 // sorted by their names' UTF-16 code units, strings with only the escapes ECMAScript's JSON.stringify makes,
-// and numbers in their shortest form. v is built from map[string]any, []any, string, bool, nil and integers;
+// and numbers in their shortest form. v is built from map[string]any, []any, string, bool, nil and integers (a
+// json.Number read back from a stored change counts when it is an integer);
 // money and every other decimal travel as strings (ENG-10), so an envelope never holds a binary fraction, and a
 // float or any other type is refused rather than serialised in a form two builds might disagree on.
 func Canonical(v any) ([]byte, error) {
@@ -39,6 +41,12 @@ func canonical(b *bytes.Buffer, v any) error {
 		return integer(b, x)
 	case int32:
 		return integer(b, int64(x))
+	case json.Number:
+		n, err := strconv.ParseInt(string(x), 10, 64)
+		if err != nil {
+			return fmt.Errorf("an envelope holds integers only, not %s: use a string for decimals and text", x)
+		}
+		return integer(b, n)
 	case map[string]any:
 		names := make([]string, 0, len(x))
 		for k := range x {

@@ -24,10 +24,20 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **THEN** each step names a role or a named user and a quorum
 - **AND** the steps are taken in their order
 
-#### Scenario: Policies as code until they are data
-- **GIVEN** FR-APR-09's versioned policy data does not exist yet
+#### Scenario: The built-in policy until the organisation changes it
+- **GIVEN** the organisation has not changed the policy of an object type
 - **WHEN** a setting under FM-1, a role change or an invitation after the founder bootstrap waits for approval
-- **THEN** its policy is code with a version string the envelope records: one step, a quorum of one, signed by a member holding A on the object's Appendix D row (rev 0.36, provisional until sign-off)
+- **THEN** its policy is the built-in one, with a version string the envelope records: one step, a quorum of one, signed by a member holding A on the object's Appendix D row (rev 0.36; rev 0.40 makes policies data, provisional until sign-off)
+
+#### Scenario: Steps narrow who signs and never add anyone
+- **WHEN** an organisation's policy is set (rev 0.40)
+- **THEN** it has one to five ordered steps, each a quorum of one to five people who hold A on the object's Appendix D row
+- **AND** a step may narrow them to some roles or to named members, never both, and never names a role or member without that right
+
+#### Scenario: A person signs a request once
+- **GIVEN** a policy with several steps or a quorum above one
+- **WHEN** a person who signed a request tries to sign it again, at any step
+- **THEN** the signature is refused with APR-11, and the step needs someone else (rev 0.40)
 
 ### Requirement: FR-APR-02 The approver sees exactly what is approved
 The system SHALL show the approver exactly what is approved: the document, the ledger impact (debits and credits), the affected balances and checks, and a diff against the previous version.
@@ -137,6 +147,12 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **WHEN** the bank change itself is approved
 - **THEN** the payment batch is still blocked for re-approval (FR-CT-03)
 
+#### Scenario: The requester withdraws a pending request
+- **GIVEN** a pending request, with or without signatures
+- **WHEN** the person who asked for it withdraws it
+- **THEN** it becomes void with the reason "withdrawn by its requester", its signatures are voided, and nothing changes
+- **AND** anyone else trying to withdraw it is refused with APR-12 (rev 0.40)
+
 #### Scenario: G4-055 Vendor bank details change after a batch is approved
 - **GIVEN** a payment batch is approved
 - **WHEN** the vendor's bank details change and that change is approved
@@ -203,6 +219,22 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **WHEN** an approval policy change is approved
 - **THEN** it becomes a new version of the policy and earlier versions are kept
 
+#### Scenario: Who asks for and who approves a policy change
+- **WHEN** a member who holds C on "Approval policies, AI catalogue" (the Administrator) asks to change a policy
+- **THEN** the answer is an approval request that a member who holds A on that row (the Owner or the Controller), never the requester, approves, and the version is added then (rev 0.40)
+
+#### Scenario: The policy for approval policies is fixed
+- **WHEN** someone asks to change the policy for approval policies
+- **THEN** it is refused with APR-09, so no change can lock the organisation out of changing its policies (rev 0.40)
+
+#### Scenario: Steps the members cannot sign are refused
+- **WHEN** a policy change names a role or member who never approves the object, or a quorum more than the members who may sign
+- **THEN** it is refused with APR-08 when asked for, and voided with APR-08 if the members changed before it executes (rev 0.40)
+
+#### Scenario: The database keeps the versions
+- **WHEN** a version of a policy is added
+- **THEN** the database adds it only as the next version, with the approved request that holds exactly its steps, and never changes or deletes one (rev 0.40)
+
 #### Scenario: G4-057 Policy or pack changes while an approval is pending
 - **GIVEN** an approval is pending
 - **WHEN** the approval policy or a parameter pack changes
@@ -233,6 +265,15 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **WHEN** the approval policy changes (FR-APR-09)
 - **THEN** the pending approval restarts
 
+#### Scenario: The database holds the steps' order and quorum
+- **GIVEN** a request keeps the steps of the policy it started under
+- **WHEN** a signature signs a step whose earlier steps lack their quorum, a step past its quorum, or a step the policy does not have
+- **THEN** the database refuses it, and it approves the request only when every step has its quorum (rev 0.40)
+
+#### Scenario: A new policy version voids the pending requests of its kind
+- **WHEN** a new version of an object type's policy is added
+- **THEN** the database voids every pending request of that object type, audited in the same transaction (rev 0.40)
+
 #### Scenario: Envelope rebuilt and checked at execution
 - **WHEN** an approved item executes
 - **THEN** in the executing transaction the platform rebuilds the envelope from current data and compares its hash with the approved hash
@@ -241,6 +282,11 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 #### Scenario: Any difference blocks execution
 - **WHEN** the rebuilt envelope's hash differs, or an approver no longer holds the authority
 - **THEN** execution is blocked with a stable error code
+
+#### Scenario: An earlier approver who lost their right
+- **GIVEN** a request whose earlier step was signed by a member
+- **WHEN** that member no longer holds A on the object's row, or is no longer one their step names, when the last step is signed
+- **THEN** nothing executes, the request becomes void and APR-10 says so (rev 0.40)
 
 #### Scenario: Each object type declares its dependencies
 - **WHEN** the envelope of a setting change or a role change is built

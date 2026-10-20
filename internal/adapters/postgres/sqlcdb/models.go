@@ -41,6 +41,17 @@ type FyniqAppUser struct {
 	CreatedAt   time.Time
 }
 
+type FyniqApprovalPolicy struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ObjectType     string
+	Version        int32
+	Steps          []byte
+	RequestID      uuid.UUID
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqApprovalRequest struct {
 	OrganisationID     uuid.UUID
 	ID                 uuid.UUID
@@ -62,6 +73,7 @@ type FyniqApprovalRequest struct {
 	StatusReason       *string
 	VoidedXact         *int64
 	Version            int32
+	PolicySteps        []byte
 }
 
 type FyniqApprovalSignature struct {

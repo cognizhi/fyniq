@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -22,11 +23,37 @@ type approvals struct{ u *unitOfWork }
 // approvalRow is every query's request row: they all select the same columns.
 type approvalRow = sqlcdb.GetApprovalRequestRow
 
-func toApproval(r approvalRow) storage.ApprovalRequest {
+func toApproval(r approvalRow) (storage.ApprovalRequest, error) {
+	steps, err := stepsOf(r.PolicySteps)
 	return storage.ApprovalRequest{ID: r.ID, ObjectType: r.ObjectType, ObjectKey: r.ObjectKey, Operation: r.Operation, Summary: r.Summary,
-		Change: r.Change, Envelope: r.Envelope, EnvelopeHash: r.EnvelopeHash, PolicyVersion: r.PolicyVersion, RequestedBy: r.RequestedBy,
-		RequestedAt: r.RequestedAt, RequesterMFAMethod: r.RequesterMfaMethod, RequesterMFAAt: r.RequesterMfaAt, ExpiresAt: r.ExpiresAt,
-		Status: r.Status, DecidedAt: r.DecidedAt, StatusReason: str(r.StatusReason), Version: int(r.Version)}
+		Change: r.Change, Envelope: r.Envelope, EnvelopeHash: r.EnvelopeHash, PolicyVersion: r.PolicyVersion, PolicySteps: steps,
+		RequestedBy: r.RequestedBy, RequestedAt: r.RequestedAt, RequesterMFAMethod: r.RequesterMfaMethod, RequesterMFAAt: r.RequesterMfaAt,
+		ExpiresAt: r.ExpiresAt, Status: r.Status, DecidedAt: r.DecidedAt, StatusReason: str(r.StatusReason), Version: int(r.Version)}, err
+}
+
+// stepsOf reads a policy's steps as the database keeps them.
+func stepsOf(b []byte) ([]storage.ApprovalStep, error) {
+	var steps []storage.ApprovalStep
+	if err := json.Unmarshal(b, &steps); err != nil {
+		return nil, fmt.Errorf("postgres: a policy's steps: %w", err)
+	}
+	return steps, nil
+}
+
+// stepsJSON writes a policy's steps as the database checks them: every step with its quorum and both lists, empty
+// rather than null.
+func stepsJSON(steps []storage.ApprovalStep) ([]byte, error) {
+	out := make([]storage.ApprovalStep, len(steps))
+	for i, s := range steps {
+		out[i] = storage.ApprovalStep{Quorum: s.Quorum, Roles: s.Roles, Users: s.Users}
+		if out[i].Roles == nil {
+			out[i].Roles = []string{}
+		}
+		if out[i].Users == nil {
+			out[i].Users = []uuid.UUID{}
+		}
+	}
+	return json.Marshal(out)
 }
 
 func toSignature(r sqlcdb.ApprovalSignaturesRow) storage.ApprovalSignature {
@@ -38,18 +65,26 @@ func (r approvals) Request(ctx context.Context, n storage.NewApprovalRequest) (s
 	if err := r.u.check(); err != nil {
 		return storage.ApprovalRequest{}, err
 	}
+	steps, err := stepsJSON(n.PolicySteps)
+	if err != nil {
+		return storage.ApprovalRequest{}, err
+	}
 	row, err := r.u.q.InsertApprovalRequest(ctx, sqlcdb.InsertApprovalRequestParams{ObjectType: n.ObjectType, ObjectKey: n.ObjectKey,
 		Operation: n.Operation, Summary: n.Summary, Change: n.Change, Envelope: n.Envelope, EnvelopeHash: n.EnvelopeHash,
-		PolicyVersion: n.PolicyVersion, RequestedBy: n.RequestedBy, RequestedAt: n.RequestedAt, RequesterMfaMethod: n.RequesterMFAMethod,
-		RequesterMfaAt: n.RequesterMFAAt, ExpiresAt: n.ExpiresAt})
+		PolicyVersion: n.PolicyVersion, PolicySteps: steps, RequestedBy: n.RequestedBy, RequestedAt: n.RequestedAt,
+		RequesterMfaMethod: n.RequesterMFAMethod, RequesterMfaAt: n.RequesterMFAAt, ExpiresAt: n.ExpiresAt})
 	if err != nil {
 		return storage.ApprovalRequest{}, mapError(err)
 	}
-	a := toApproval(approvalRow(row))
+	a, err := toApproval(approvalRow(row))
+	if err != nil {
+		return storage.ApprovalRequest{}, err
+	}
 	if err := r.u.event(ctx, "approval.requested", "approval_request", a.ID, &a.Version, map[string][2]any{
 		"object_type": {nil, a.ObjectType}, "object_key": {nil, a.ObjectKey}, "operation": {nil, a.Operation}, "summary": {nil, a.Summary},
 		"envelope_hash": {nil, hex.EncodeToString(a.EnvelopeHash)}, "policy_version": {nil, a.PolicyVersion},
-		"requested_by": {nil, a.RequestedBy}, "requester_mfa_method": {nil, a.RequesterMFAMethod}, "expires_at": {nil, a.ExpiresAt}}); err != nil {
+		"policy_steps": {nil, a.PolicySteps}, "requested_by": {nil, a.RequestedBy}, "requester_mfa_method": {nil, a.RequesterMFAMethod},
+		"expires_at": {nil, a.ExpiresAt}}); err != nil {
 		return storage.ApprovalRequest{}, err
 	}
 	return a, nil
@@ -66,7 +101,7 @@ func (r approvals) Get(ctx context.Context, id uuid.UUID) (storage.ApprovalReque
 	if err != nil {
 		return storage.ApprovalRequest{}, mapError(err)
 	}
-	return toApproval(row), nil
+	return toApproval(row)
 }
 
 func (r approvals) Lock(ctx context.Context, id uuid.UUID) (storage.ApprovalRequest, error) {
@@ -80,7 +115,7 @@ func (r approvals) Lock(ctx context.Context, id uuid.UUID) (storage.ApprovalRequ
 	if err != nil {
 		return storage.ApprovalRequest{}, mapError(err)
 	}
-	return toApproval(approvalRow(row)), nil
+	return toApproval(approvalRow(row))
 }
 
 func (r approvals) List(ctx context.Context, status string) ([]storage.ApprovalRequest, error) {
@@ -93,7 +128,9 @@ func (r approvals) List(ctx context.Context, status string) ([]storage.ApprovalR
 	}
 	out := make([]storage.ApprovalRequest, len(rows))
 	for i, row := range rows {
-		out[i] = toApproval(approvalRow(row))
+		if out[i], err = toApproval(approvalRow(row)); err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }
@@ -156,12 +193,73 @@ func (r approvals) Decide(ctx context.Context, id uuid.UUID, version int, status
 	if err != nil {
 		return storage.ApprovalRequest{}, mapError(err)
 	}
-	a := toApproval(approvalRow(row))
+	a, err := toApproval(approvalRow(row))
+	if err != nil {
+		return storage.ApprovalRequest{}, err
+	}
 	if err := r.u.event(ctx, "approval."+a.Status, "approval_request", a.ID, &a.Version, map[string][2]any{
 		"status": {"pending", a.Status}, "decided_at": {nil, a.DecidedAt}, "status_reason": {nil, nilIfEmpty(a.StatusReason)}}); err != nil {
 		return storage.ApprovalRequest{}, err
 	}
 	return a, nil
+}
+
+func (u *unitOfWork) ApprovalPolicies() storage.ApprovalPolicies { return approvalPolicies{u} }
+
+type approvalPolicies struct{ u *unitOfWork }
+
+func toApprovalPolicy(r sqlcdb.ListApprovalPoliciesRow) (storage.ApprovalPolicy, error) {
+	steps, err := stepsOf(r.Steps)
+	return storage.ApprovalPolicy{ID: r.ID, ObjectType: r.ObjectType, Version: int(r.Version), Steps: steps, RequestID: r.RequestID,
+		CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt}, err
+}
+
+func (r approvalPolicies) List(ctx context.Context) ([]storage.ApprovalPolicy, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ListApprovalPolicies(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ApprovalPolicy, len(rows))
+	for i, row := range rows {
+		if out[i], err = toApprovalPolicy(row); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+func (r approvalPolicies) Add(ctx context.Context, n storage.NewApprovalPolicy) (storage.ApprovalPolicy, error) {
+	if err := r.u.check(); err != nil {
+		return storage.ApprovalPolicy{}, err
+	}
+	if n.Version < 1 || n.Version > 1_000_000 {
+		return storage.ApprovalPolicy{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("version %d of an approval policy", n.Version)}
+	}
+	steps, err := stepsJSON(n.Steps)
+	if err != nil {
+		return storage.ApprovalPolicy{}, err
+	}
+	row, err := r.u.q.InsertApprovalPolicy(ctx, sqlcdb.InsertApprovalPolicyParams{ObjectType: n.ObjectType, Version: int32(n.Version), // 1 to 1,000,000, checked above
+		Steps: steps, RequestID: n.RequestID, CreatedBy: n.CreatedBy, CreatedAt: n.CreatedAt})
+	if err != nil {
+		return storage.ApprovalPolicy{}, mapError(err)
+	}
+	p, err := toApprovalPolicy(sqlcdb.ListApprovalPoliciesRow(row))
+	if err != nil {
+		return storage.ApprovalPolicy{}, err
+	}
+	if err := r.u.event(ctx, "approval_policy.changed", "approval_policy", p.ID, &p.Version, map[string][2]any{
+		"object_type": {nil, p.ObjectType}, "version": {nil, p.Version}, "steps": {nil, p.Steps}, "request_id": {nil, p.RequestID},
+		"created_by": {nil, p.CreatedBy}}); err != nil {
+		return storage.ApprovalPolicy{}, err
+	}
+	if err := r.u.auditVoids(ctx); err != nil {
+		return storage.ApprovalPolicy{}, err
+	}
+	return p, nil
 }
 
 // auditVoids records an audit event for each pending request the database voided in this transaction because

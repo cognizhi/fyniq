@@ -8,13 +8,17 @@
 // declares (Dependencies), the policy version and the requester. A request expires 7 days after it is made,
 // by the app's clock (FR-APR-05); the database voids it when its record changes (migration 000030).
 //
-// Policies are code in this slice, each with a version string recorded in the envelope (provisional until
-// FR-APR-09's approval-gated policy changes arrive); the team mode is Founder mode, the default at go-live.
+// A policy says who signs (FR-APR-01, rev 0.40): ordered steps, each a quorum of people who hold the approve right
+// (A) on the object's Appendix D row (Rows), narrowed to some roles or to named members; a policy never adds anyone
+// Appendix D does not. Each object type has a built-in policy (Policies) until its organisation changes it; a
+// change is itself an approval request under the policy for approval policies, which is fixed (FR-APR-09, SOD-8).
+// The team mode is Founder mode, the default at go-live.
 package approval
 
 import (
 	"crypto/sha256"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,6 +35,7 @@ const (
 	ObjectSetting    = "organisation_setting" // an organisation setting under dual control (FR-ORG-08, FM-1)
 	ObjectMembership = "membership"           // a member's roles after the founder bootstrap (FR-ADM-01, FM-1)
 	ObjectInvitation = "member_invitation"    // an invitation with roles after the founder bootstrap (FR-ADM-01, FM-1)
+	ObjectPolicy     = "approval_policy"      // an object type's approval policy (FR-APR-09, SOD-8); its key is that object type
 )
 
 // The operations: what executes on the final approval.
@@ -39,6 +44,7 @@ const (
 	OpRoleAssign    = "role.assign"
 	OpRoleRevoke    = "role.revoke"
 	OpInvite        = "member_invitation.create"
+	OpPolicyChange  = "approval_policy.change"
 )
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -51,36 +57,58 @@ var Dependencies = map[string][]string{
 	ObjectMembership: {"member_status", "member_version", "live_roles"},
 	// nothing but the policy: the invitation does not exist until it is approved
 	ObjectInvitation: {},
+	// the version of the object type's policy in force: the change is from it
+	ObjectPolicy: {"policy_version"},
 }
 
-// Step is one ordered step of a policy: Quorum people who hold the approve right (A) on Row, the Appendix D
-// capability of the object, sign the same envelope.
+// Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
+// person see a request. A policy narrows who signs among them and never adds anyone.
+var Rows = map[string]string{
+	ObjectSetting:    "Organisation profile, financial year, defaults (rev 0.29)",
+	ObjectMembership: "Users, roles, team mode",
+	ObjectInvitation: "Users, roles, team mode",
+	ObjectPolicy:     "Approval policies, AI catalogue",
+}
+
+// The limits of a policy.
+const (
+	MaxSteps  = 5 // ordered steps
+	MaxQuorum = 5 // people in one step
+)
+
+// Step is one ordered step of a policy: Quorum people who hold A on the object's row sign the same envelope; Roles,
+// when given, narrows them to people holding one of those roles, and Users to those members (never both).
 type Step struct {
-	Row    string
 	Quorum int
+	Roles  []string
+	Users  []uuid.UUID
 }
 
-// Policy says who approves an object type (FR-APR-01): its ordered steps, and in Founder mode that the
-// requester never signs (FM-1) and every signer passes step-up (FR-APR-04).
+// Policy says who approves an object type (FR-APR-01): its ordered steps. In Founder mode the requester never signs
+// (FM-1) and every signer passes step-up (FR-APR-04), whatever the policy.
 type Policy struct {
 	ObjectType string
 	Version    string // recorded in the envelope; a pending request keeps it (G4-057)
-	Mode       string // the team mode it is for
+	Number     int    // the organisation's version of it; 0 for the built-in policy
 	Steps      []Step
+	Fixed      bool // no organisation changes it: the policy for approval policies
 }
+
+// Label is the version string of an organisation's version n of an object type's policy.
+func Label(objectType string, n int) string { return fmt.Sprintf("%s/v%d", objectType, n) }
 
 // TeamModeFounder is Founder mode (§6.4), the default team mode at go-live.
 const TeamModeFounder = "founder"
 
-// Policies are the Founder-mode policies of the object types (provisional until FR-APR-09: policies as
-// versioned, approval-gated data). Organisation settings and roles are the Owner's to approve (Appendix D).
+// Policies are the built-in policies of the object types, which apply until an organisation changes one: one step,
+// with a quorum of one, of anyone who holds A on the object's row (the Owner for settings and roles; the Owner and
+// the Controller for policies, Appendix D). The policy for approval policies is fixed, so no change can lock an
+// organisation out of changing its policies (rev 0.40).
 var Policies = map[string]Policy{
-	ObjectSetting: {ObjectType: ObjectSetting, Version: "founder/organisation_setting@2026-10-20.1", Mode: TeamModeFounder,
-		Steps: []Step{{Row: "Organisation profile, financial year, defaults (rev 0.29)", Quorum: 1}}},
-	ObjectMembership: {ObjectType: ObjectMembership, Version: "founder/membership@2026-10-20.1", Mode: TeamModeFounder,
-		Steps: []Step{{Row: "Users, roles, team mode", Quorum: 1}}},
-	ObjectInvitation: {ObjectType: ObjectInvitation, Version: "founder/member_invitation@2026-10-20.1", Mode: TeamModeFounder,
-		Steps: []Step{{Row: "Users, roles, team mode", Quorum: 1}}},
+	ObjectSetting:    {ObjectType: ObjectSetting, Version: "founder/organisation_setting@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectMembership: {ObjectType: ObjectMembership, Version: "founder/membership@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectInvitation: {ObjectType: ObjectInvitation, Version: "founder/member_invitation@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPolicy:     {ObjectType: ObjectPolicy, Version: "founder/approval_policy@2026-10-20.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
@@ -158,6 +186,11 @@ const (
 	CodeNotApprover = "APR-05" // the person holds no approve right on the object's Appendix D row
 	CodePending     = "APR-06" // a request for the same object is waiting already
 	CodeReason      = "APR-07" // a rejection needs a reason
+	CodeSteps       = "APR-08" // a policy's steps are not ones that can be signed (FR-APR-01)
+	CodeFixed       = "APR-09" // the policy for approval policies is fixed (FR-APR-09)
+	CodeAuthority   = "APR-10" // an earlier approver no longer holds the right their step needs; nothing executed (FR-APR-10)
+	CodeNotYourStep = "APR-11" // the request's current step needs someone else (FR-APR-01)
+	CodeNotYours    = "APR-12" // only its requester withdraws a request
 )
 
 // Status is where a request stands.
@@ -211,4 +244,127 @@ func CheckSigner(r Request, signer uuid.UUID, now time.Time) *Problem {
 			"Ask another member who holds the approval right to approve it"}
 	}
 	return nil
+}
+
+// Eligible reports whether a person with roles may sign step s, besides holding A on the object's row: the step
+// names none, one of their roles, or them.
+func Eligible(s Step, user uuid.UUID, roles []string) bool {
+	if len(s.Roles) == 0 && len(s.Users) == 0 {
+		return true
+	}
+	if slices.Contains(s.Users, user) {
+		return true
+	}
+	for _, r := range roles {
+		if slices.Contains(s.Roles, r) {
+			return true
+		}
+	}
+	return false
+}
+
+// Signature is what the step rules need of a signature that is not voided.
+type Signature struct {
+	Step    int // 1-based
+	Signer  uuid.UUID
+	Approve bool
+}
+
+// CurrentStep is the 1-based step a request's next signature signs: the first whose quorum of approvals is not met;
+// 0 when every step's is.
+func CurrentStep(steps []Step, sigs []Signature) int {
+	for i, s := range steps {
+		n := 0
+		for _, g := range sigs {
+			if g.Step == i+1 && g.Approve {
+				n++
+			}
+		}
+		if n < s.Quorum {
+			return i + 1
+		}
+	}
+	return 0
+}
+
+// FieldProblem is a problem with one field of a change.
+type FieldProblem struct {
+	Field, Code, Message, Fix string
+}
+
+// Member is what CheckSteps needs of an active member: who they are, their live roles, and whether those roles hold
+// A on the object's row.
+type Member struct {
+	UserID   uuid.UUID
+	Roles    []string
+	Approves bool
+}
+
+// CheckSteps returns the problems with steps as the next version of a policy whose object's row is row, or none. A
+// role must be one that holds A on the row (approves); a named member must be an active member whose roles do. Each
+// step needs at least its quorum of members who may sign it, and the quorums together no more than the members who
+// may sign any step, since a person signs a request once.
+func CheckSteps(row string, steps []Step, approves func(role string) bool, members []Member) []FieldProblem {
+	var out []FieldProblem
+	if len(steps) < 1 || len(steps) > MaxSteps {
+		return []FieldProblem{{"body.steps", CodeSteps, fmt.Sprintf("a policy has 1 to %d steps, not %d", MaxSteps, len(steps)),
+			fmt.Sprintf("Give the policy between 1 and %d ordered steps", MaxSteps)}}
+	}
+	signers := map[uuid.UUID]bool{}
+	total := 0
+	for i, s := range steps {
+		at := fmt.Sprintf("body.steps[%d]", i)
+		if s.Quorum < 1 || s.Quorum > MaxQuorum {
+			out = append(out, FieldProblem{at + ".quorum", CodeSteps, fmt.Sprintf("a step's quorum is 1 to %d people, not %d", MaxQuorum, s.Quorum),
+				fmt.Sprintf("Ask for between 1 and %d approvals in the step", MaxQuorum)})
+			continue
+		}
+		total += s.Quorum
+		if len(s.Roles) > 0 && len(s.Users) > 0 {
+			out = append(out, FieldProblem{at, CodeSteps, "a step names roles or members, not both",
+				"Split it into two steps, or keep either the roles or the members"})
+			continue
+		}
+		bad := false
+		for j, r := range s.Roles {
+			switch {
+			case slices.Index(s.Roles, r) < j:
+				out, bad = append(out, FieldProblem{fmt.Sprintf("%s.roles[%d]", at, j), CodeSteps, r + " is named twice", "Name each role once"}), true
+			case !approves(r):
+				out, bad = append(out, FieldProblem{fmt.Sprintf("%s.roles[%d]", at, j), CodeSteps,
+					fmt.Sprintf("%s is not a role that approves %s (Appendix D)", r, row), "Name a role that holds A on that row, such as owner"}), true
+			}
+		}
+		for j, u := range s.Users {
+			k := slices.IndexFunc(members, func(m Member) bool { return m.UserID == u })
+			switch {
+			case slices.Index(s.Users, u) < j:
+				out, bad = append(out, FieldProblem{fmt.Sprintf("%s.users[%d]", at, j), CodeSteps, "that member is named twice", "Name each member once"}), true
+			case k < 0 || !members[k].Approves:
+				out, bad = append(out, FieldProblem{fmt.Sprintf("%s.users[%d]", at, j), CodeSteps,
+					fmt.Sprintf("%s is not an active member whose roles approve %s", u, row),
+					"Name a member who holds a role with A on that row, or give them such a role first"}), true
+			}
+		}
+		if bad {
+			continue
+		}
+		n := 0
+		for _, m := range members {
+			if m.Approves && Eligible(s, m.UserID, m.Roles) {
+				n++
+				signers[m.UserID] = true
+			}
+		}
+		if n < s.Quorum {
+			out = append(out, FieldProblem{at + ".quorum", CodeSteps, fmt.Sprintf("the step needs %d approvals but only %d members may sign it", s.Quorum, n),
+				"Lower the quorum, or name more roles or members"})
+		}
+	}
+	if len(out) == 0 && total > len(signers) {
+		out = append(out, FieldProblem{"body.steps", CodeSteps,
+			fmt.Sprintf("the steps need %d approvals in all but only %d members may sign them, and a person signs a request once", total, len(signers)),
+			"Lower the quorums, or name more roles or members"})
+	}
+	return out
 }

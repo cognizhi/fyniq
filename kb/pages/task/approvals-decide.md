@@ -2,9 +2,9 @@
 key: approvals.decide
 type: task
 title: Ask for, approve or reject a change that needs a second approver
-summary: Which changes wait for a second person, how to approve or reject one from the Inbox, and why a request becomes void or expires
+summary: Which changes wait for a second person, approving or rejecting in steps from the Inbox, withdrawing your request, and why one becomes void or expires
 sources:
-  - docs/user-guide/approvals.md sha256:989775143149d16b5e9811e491ebe2a503b534bbb7293d32f7067c6ac6cdb44d
+  - docs/user-guide/approvals.md sha256:42b31cc619dfe5250d3846314fcba828ecf3110a79966cf54a4c6195f29f315f
 data_class: general
 taint: trusted
 status: published
@@ -17,6 +17,8 @@ aliases:
   - second approver
   - waiting for approval
   - to approve
+  - withdraw a request
+  - cancel my request
 ---
 
 # Ask for, approve or reject a change that needs a second approver
@@ -42,12 +44,23 @@ aliases:
 - **Inbox → To approve**, choose the request and check each value before and after.
 - Confirm it's you, then **Approve** to make the change now, or **Reject** and say why.
 - An approval signs exactly what was shown; who approved, when and how they confirmed it is in the audit trail.
+- Some changes need more than one approval, in steps set by the approval policy ([[approvals.policies]]); the request shows each step and its approvals, and the change is made with the last approval.
+- You approve a request once, and only at a step that names you or one of your roles.
 
 (src: docs/user-guide/approvals.md#approve-or-reject)
 
+## Withdraw your request
+
+- Open the request you asked for and select **Withdraw**.
+- The request is cancelled with any approvals it had, and nothing changes.
+- Only the person who asked can withdraw it; anyone else who disagrees rejects it with a reason.
+
+(src: docs/user-guide/approvals.md#withdraw-your-request)
+
 ## When it can no longer be approved
 
-- **Changed**: the setting or the person's roles changed after the request, so it is void and nothing changes; ask again.
+- **Changed**: the setting, the person's roles or the approval policy changed after the request, so it is void and nothing changes; ask again.
+- **An approver lost their right**: someone who approved an earlier step no longer has the role their step needed when the last approval comes, so nothing changes and the request is void.
 - **Expired**: a request waits 7 days; then ask again.
 - **Rejected**: the change is not made, and the reason is shown.
 

@@ -32,10 +32,25 @@
 - [ ] 2.1 Policies per object type, with conditions and ordered steps with a quorum. Test `// req: FR-APR-01`
   (20 Oct 2026, provisional (PRD rev 0.36): policies are code, `approval.Policies`, one per object type with a version
   string each envelope records, ordered steps naming an Appendix D row and a quorum; the three built are one step,
-  quorum 1, A on the row (the Owner). **Left:** conditions (amount, entity, department, account, vendor, risk tier),
-  named users, policies as data.)
-- [ ] 2.2 Policy changes are approval-gated (SOD-8) and versioned; a pending approval keeps its version, and a change restarts it. Test `// req: FR-APR-09` (G4-057)
-  **Left:** with policies as data. A pending request already keeps the policy version it started under.
+  quorum 1, A on the row (the Owner). Rev 0.40: policies are each organisation's versioned data (migration 000039,
+  `approval_policy`), one to five ordered steps, each a quorum of 1 to 5 people who hold A on the object's row
+  (`approval.Rows`), narrowed to roles or named members, never both, so a policy never grants a right Appendix D does
+  not; `approval.CheckSteps` refuses steps the active members cannot sign (APR-08); the built-in policy applies until
+  changed. A request keeps its steps (`policy_steps`), and the database lets a signature sign only the current step
+  and approves only when every step has its quorum (FY100, FY106); a person signs a request once (APR-11). Tests:
+  `TestStepsAreSignedInOrderToTheirQuorum`, `TestAPolicysStepsCanBeSigned`, `TestAttackApprovalStepsAreSignedInOrder`,
+  `TestStepsAreSignedInOrderAndRechecked`. **Left:** conditions (amount, entity, department, account, vendor, risk
+  tier), with the first object types that carry them (wave 2's documents).)
+- [x] 2.2 Policy changes are approval-gated (SOD-8) and versioned; a pending approval keeps its version, and a change restarts it. Test `// req: FR-APR-09` (G4-057)
+  (20 Oct 2026, provisional (PRD rev 0.40): `PATCH /v1/approval-policies/{object_type}` always answers 202 with an
+  `approval_policy.change` request; the Administrator (C on "Approval policies, AI catalogue") asks, the Owner or the
+  Controller (A), never the requester, approves; the policy for approval policies is fixed (APR-09). The steps are
+  checked when asked for and again when the change executes. The database adds a version only as the next, with the
+  approved request holding exactly its steps, never changes one (FY104, FY105), and voids every pending request of its
+  object type when one is added; the executing transaction re-checks every earlier approver (APR-10). `GET
+  /v1/approval-policies` and `GET /v1/approval-policies/{object_type}` (with its history). Tests:
+  `TestApprovalPolicyChangesAreApprovedAndKept`, `TestAttackApprovalPoliciesAreApprovedVersions`. The pack-version
+  half of G4-057 arrives with pack activation (task 4.1).)
 - [ ] 2.3 The approval view: document, ledger impact, affected balances and checks, and the diff against the previous version. Test `// req: FR-APR-02`
   (20 Oct 2026: `GET /v1/approvals` and `GET /v1/approvals/{id}` show the envelope, its hash, what the request changes
   before and after, the signatures and whether the caller may sign; a request is shown to its requester and to whoever
@@ -51,8 +66,9 @@
   hash the approver sends; the requester never signs (APR-01, and FY101 in the database); the signer holds A on the
   object's row (the Owner), passes step-up and is a person, never the AI. The final approval executes the change in
   the same transaction, audited with the approval's ID. Tests: `TestTwoPersonRuleForASetting`,
-  `TestRoleChangesAfterTheBootstrapWaitForApproval`. **Left:** FM-2 and FM-3 (the weekly review, which also lists the
-  founder bootstrap's changes); the requester withdrawing their own request.)
+  `TestRoleChangesAfterTheBootstrapWaitForApproval`. Rev 0.40: the requester withdraws their pending request
+  (`POST /v1/approvals/{id}/withdraw`), which voids it and its signatures; anyone else is refused (APR-12). **Left:**
+  FM-2 and FM-3 (the weekly review, which also lists the founder bootstrap's changes).)
 - [ ] 3.3 FM-8 break-glass and FM-9 beneficiary exclusion. Tests `// req: FM-8` (G4-062, G4-063) and `// req: FM-9`
   **Left.**
 - [ ] 3.4 The rules and records for FM-4, FM-5 and FM-7, called by the close (wave 2) and reconciliation (wave 3). FM-6's advisory review arrives with wave 6. Tests `// req: FM-4`, `// req: FM-5` and `// req: FM-7` on the records (G4-109)

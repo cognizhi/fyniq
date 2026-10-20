@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "quorum": {
+      "description": "How many people sign this step, each once: 1 to 5.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 5,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "roles": {
+      "description": "Only people holding one of these roles sign it: roles whose Appendix D cell holds A on the object's row. Never with users.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "maxItems": 16,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "users": {
+      "description": "Only these members sign it: active members whose roles hold A on the object's row. Never with roles.",
+      "items": {
+        "description": "A member's user ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 16,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "quorum"
+  ],
+  "title": "ApprovalStepChange",
+  "type": "object"
+}

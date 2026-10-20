@@ -6,12 +6,17 @@ fyniq_api       EXECUTE   accept_super_admin_invitation()
 fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, role, type)
 fyniq_api       SELECT    account
 fyniq_api       UPDATE    account (cash_flow_line, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, version)
-fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
+fyniq_api       INSERT    approval_policy (created_at, created_by, object_type, request_id, steps, version)
+fyniq_api       SELECT    approval_policy
+fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_steps, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
 fyniq_api       SELECT    approval_request
 fyniq_api       UPDATE    approval_request (decided_at, status, status_reason, version)
 fyniq_api       INSERT    approval_signature (decision, envelope_hash, mfa_at, mfa_method, reason, request_id, signed_at, signer, step)
 fyniq_api       SELECT    approval_signature
+fyniq_api       EXECUTE   approval_steps_met()
+fyniq_api       EXECUTE   approval_steps_valid()
 fyniq_api       EXECUTE   approval_void_pending()
+fyniq_api       EXECUTE   approval_void_pending_type()
 fyniq_api       INSERT    audit_event (body, id)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   beat()
@@ -104,6 +109,7 @@ fyniq_api       INSERT    user_membership (user_id)
 fyniq_api       SELECT    user_membership
 fyniq_api       UPDATE    user_membership (status, version)
 fyniq_executor  SELECT    account
+fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request
 fyniq_executor  SELECT    approval_signature
 fyniq_executor  INSERT    audit_event (body, id)
@@ -141,6 +147,7 @@ fyniq_executor  SELECT    statutory_pack_activation
 fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    account
+fyniq_readonly  SELECT    approval_policy
 fyniq_readonly  SELECT    approval_request
 fyniq_readonly  SELECT    approval_signature
 fyniq_readonly  SELECT    audit_chain
@@ -178,6 +185,7 @@ fyniq_readonly  SELECT    statutory_pack_rows
 fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    user_membership
 fyniq_worker    SELECT    account
+fyniq_worker    SELECT    approval_policy
 fyniq_worker    SELECT    approval_request
 fyniq_worker    SELECT    approval_signature
 fyniq_worker    SELECT    audit_chain

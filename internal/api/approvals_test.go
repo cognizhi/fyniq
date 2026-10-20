@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -111,7 +112,8 @@ func TestTwoPersonRuleForASetting(t *testing.T) {
 	// The requester never approves their own; nobody without the approval right, without step-up, or with another
 	// envelope's hash signs; the AI and an Employee never reach it.
 	e.problemIs(f.decide(ahkow, id, "approve", hashOf(r)), "approveApproval", 403, approval.CodeOwnRequest)
-	e.problemIs(f.decide(f.as(f.weiling, authz.Controller, authz.Accountant), id, "approve", hashOf(r)), "approveApproval", 403, CodeForbidden)
+	e.problemIs(f.decide(f.as(f.weiling, authz.Controller, authz.Accountant), id, "approve", hashOf(r)), "approveApproval", 403, approval.CodeNotApprover)
+	e.problemIs(f.decide(f.as(f.weiling, authz.Accountant), id, "approve", hashOf(r)), "approveApproval", 403, CodeForbidden)
 	e.problemIs(f.decide(e.as(authz.Owner), id, "approve", hashOf(r)), "approveApproval", 403, CodeStepUpRequired)
 	e.problemIs(f.decide(weiling, id, "approve", map[string]any{"envelope_hash": strings.Repeat("ab", 32)}), "approveApproval", 409, approval.CodeChanged)
 	e.problemIs(e.call(http.MethodPost, "/v1/approvals/"+id+"/approve", weiling, hashOf(r)), "approveApproval", 428, CodeIfMatchRequired)
@@ -292,14 +294,14 @@ func TestRoleChangesAfterTheBootstrapWaitForApproval(t *testing.T) {
 	}
 }
 
-// Every approval policy names an Appendix D row the API grants from, and declares its dependencies.
+// Every object type the engine covers names an Appendix D row the API grants from, one of the rows approvals cover,
+// and declares its dependencies.
 // req: FR-APR-01
 func TestApprovalPoliciesNameAppendixDRows(t *testing.T) {
-	for typ, p := range approval.Policies {
-		for _, s := range p.Steps {
-			if _, ok := authz.Grants[authz.Capability(s.Row)]; !ok {
-				t.Errorf("%s: the step's row %q is not a capability authz grants", typ, s.Row)
-			}
+	for typ := range approval.Policies {
+		row := authz.Capability(approval.Rows[typ])
+		if _, ok := authz.Grants[row]; !ok || !slices.Contains(authz.ApprovalRows, row) {
+			t.Errorf("%s: the row %q is not a capability authz grants and approvals cover", typ, row)
 		}
 		if _, ok := approval.Dependencies[typ]; !ok {
 			t.Errorf("%s declares no dependencies", typ)

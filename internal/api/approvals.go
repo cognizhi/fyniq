@@ -48,11 +48,11 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation" doc:"What it changes." example:"organisation_setting"`
-	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, or the invitation's code hash." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create" doc:"What executes on its approval." example:"organisation_setting.change"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy" doc:"What it changes." example:"organisation_setting"`
+	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, or the object type whose approval policy changes." example:"bank.tolerance_base"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
-	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record or a dependency changed (FR-APR-05); expired after 7 days." example:"pending"`
+	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency or its approval policy changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
 	RequestedBy     string              `json:"requested_by" format:"uuid" doc:"The user who asked for it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	RequestedByName string              `json:"requested_by_name" doc:"Their name." example:"Ah Kow Lim"`
@@ -60,6 +60,8 @@ type Approval struct {
 	ExpiresAt       time.Time           `json:"expires_at" doc:"When it expires unless decided: 7 days after it was asked for (FR-APR-05)." example:"2026-10-27T09:00:00Z"`
 	DecidedAt       *time.Time          `json:"decided_at,omitempty" doc:"When it was approved, rejected or voided." example:"2026-10-20T09:30:00Z"`
 	Policy          string              `json:"policy" doc:"The approval policy's version it keeps (G4-057)." example:"founder/organisation_setting@2026-10-20.1"`
+	Steps           []ApprovalProgress  `json:"steps" doc:"The steps of that policy, in order, with the approvals each has (FR-APR-01, rev 0.40)."`
+	CurrentStep     int                 `json:"current_step" doc:"The step the next signature signs, from 1; 0 once every step has its quorum." example:"1"`
 	Envelope        string              `json:"envelope" doc:"The approval envelope exactly as signed: RFC 8785 canonical JSON (FR-APR-10)." example:"{\"amounts\":[]}"`
 	EnvelopeHash    string              `json:"envelope_hash" doc:"The envelope's SHA-256, in hex: send it to approve or reject exactly what you were shown." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 	Diff            []ApprovalDiff      `json:"diff" doc:"What it changes, before and after (FR-APR-02)."`
@@ -67,6 +69,12 @@ type Approval struct {
 	YouMayApprove   bool                `json:"you_may_approve" doc:"true when you may approve or reject it now: it is pending, you did not ask for it and you hold the approval right." example:"true"`
 	Version         int                 `json:"version" doc:"The request's version." example:"1"`
 	InvitationCode  string              `json:"invitation_code,omitempty" doc:"Only in the 202 answer to an invitation: its one-time code, shown once, which works once the invitation is approved." example:"ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"`
+}
+
+// ApprovalProgress is one step of a request's policy and the approvals it has.
+type ApprovalProgress struct {
+	ApprovalStep
+	Approvals int `json:"approvals" doc:"The approvals signed in this step, not voided." example:"0"`
 }
 
 // waitsForApproval makes write answer 202 Accepted with the request.
@@ -96,6 +104,13 @@ type approvalListInput struct {
 
 type approvalGetInput struct{ ApprovalPath }
 
+type approvalWithdrawInput struct {
+	ApprovalPath
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+}
+
 type approvalDecideInput struct {
 	ApprovalPath
 	KeyHeader
@@ -119,7 +134,7 @@ type approvalWriteOutput struct {
 
 // ApprovalCodes are the approval engine's rules (internal/domain/approval).
 var ApprovalCodes = []string{approval.CodeOwnRequest, approval.CodeNotPending, approval.CodeExpired, approval.CodeChanged,
-	approval.CodeNotApprover, approval.CodePending, approval.CodeReason}
+	approval.CodeNotApprover, approval.CodePending, approval.CodeReason, approval.CodeAuthority, approval.CodeNotYourStep}
 
 // stepUpMethod is how a session's step-up is recorded as the MFA claim of a signature: the second factor the
 // session passed (SEC-01). Passkey and TOTP approvals bound to the envelope arrive with p1-users-roles (task 2.2).
@@ -178,9 +193,13 @@ type stored struct {
 	Amounts []approval.Amount `json:"amounts"`
 }
 
+// storedOf reads what a request keeps of its change, its numbers as exact integers, so the envelope rebuilt from it is
+// the one signed (FR-APR-10).
 func storedOf(r storage.ApprovalRequest) (stored, error) {
 	var s stored
-	err := json.Unmarshal(r.Change, &s)
+	d := json.NewDecoder(bytes.NewReader(r.Change))
+	d.UseNumber()
+	err := d.Decode(&s)
 	return s, err
 }
 
@@ -237,6 +256,13 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.Dependencies["member_status"] = status
 		e.Dependencies["member_version"] = e.ObjectVersion
 		e.Dependencies["live_roles"] = roles
+	case approval.ObjectPolicy:
+		current, _, err := a.policyFor(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = current.Number
+		e.Dependencies["policy_version"] = current.Version
 	}
 	return e.Canonical()
 }
@@ -248,7 +274,10 @@ func (a *API) requestApproval(ctx context.Context, u storage.UnitOfWork, c pendi
 	if err != nil {
 		return Approval{}, err
 	}
-	policy := approval.Policies[c.ObjectType]
+	policy, _, err := a.policyFor(ctx, u, c.ObjectType)
+	if err != nil {
+		return Approval{}, err
+	}
 	pending, err := u.Approvals().List(ctx, string(approval.Pending))
 	if err != nil {
 		return Approval{}, err
@@ -281,7 +310,7 @@ func (a *API) requestApproval(ctx context.Context, u storage.UnitOfWork, c pendi
 	}
 	r, err := u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: c.ObjectType, ObjectKey: c.ObjectKey, Operation: c.Operation,
 		Summary: c.Summary, Change: change, Envelope: string(envelope), EnvelopeHash: approval.Hash(envelope), PolicyVersion: policy.Version,
-		RequestedBy: p.UserID, RequestedAt: now, RequesterMFAMethod: stepUpMethod, RequesterMFAAt: p.StepUpAt, ExpiresAt: now.Add(approval.TTL)})
+		PolicySteps: storageSteps(policy.Steps), RequestedBy: p.UserID, RequestedAt: now, RequesterMFAMethod: stepUpMethod, RequesterMFAAt: p.StepUpAt, ExpiresAt: now.Add(approval.TTL)})
 	if err != nil {
 		return Approval{}, err
 	}
@@ -292,9 +321,42 @@ func requestOf(r storage.ApprovalRequest) approval.Request {
 	return approval.Request{Status: approval.Status(r.Status), RequestedBy: r.RequestedBy, ExpiresAt: r.ExpiresAt}
 }
 
-// approvalRow is the Appendix D row of the object a request changes: its policy's first step.
+// approvalRow is the Appendix D row of the object a request changes: A on it signs, any right on it sees.
 func approvalRow(objectType string) authz.Capability {
-	return authz.Capability(approval.Policies[objectType].Steps[0].Row)
+	return authz.Capability(approval.Rows[objectType])
+}
+
+// rolesOf are a principal's roles as the policies name them.
+func rolesOf(rs []authz.Role) []string {
+	out := make([]string, len(rs))
+	for i, r := range rs {
+		out[i] = string(r)
+	}
+	return out
+}
+
+// signaturesOf are a request's signatures that are not voided, as the step rules read them.
+func signaturesOf(sigs []storage.ApprovalSignature) []approval.Signature {
+	var out []approval.Signature
+	for _, s := range sigs {
+		if s.VoidedAt == nil {
+			out = append(out, approval.Signature{Step: s.Step, Signer: s.Signer, Approve: s.Decision == "approve"})
+		}
+	}
+	return out
+}
+
+// mayDecide reports whether p may sign a request's current step now: a person other than its requester who has not
+// signed it, holds A on its row and is one the step names.
+func mayDecide(p authn.Principal, r storage.ApprovalRequest, sigs []storage.ApprovalSignature) bool {
+	if p.UserID == uuid.Nil || p.UserID == r.RequestedBy || !mayApprove(p, r.ObjectType) {
+		return false
+	}
+	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool { return s.Signer == p.UserID }) {
+		return false
+	}
+	step := approval.CurrentStep(domainSteps(r.PolicySteps), signaturesOf(sigs))
+	return step > 0 && approval.Eligible(domainSteps(r.PolicySteps)[step-1], p.UserID, rolesOf(p.Roles))
 }
 
 // mayApprove reports whether p holds the approve right (A) on the request's row; the AI never does.
@@ -331,9 +393,19 @@ func (a *API) approvalOf(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		Status: string(status), StatusReason: r.StatusReason, RequestedBy: r.RequestedBy.String(), RequestedByName: names[r.RequestedBy],
 		RequestedAt: r.RequestedAt.UTC(), ExpiresAt: r.ExpiresAt.UTC(), DecidedAt: r.DecidedAt, Policy: r.PolicyVersion, Envelope: r.Envelope,
 		EnvelopeHash: hex.EncodeToString(r.EnvelopeHash), Diff: s.Diff, Signatures: []ApprovalSignature{}, Version: r.Version,
-		YouMayApprove: status == approval.Pending && p.UserID != uuid.Nil && p.UserID != r.RequestedBy && mayApprove(p, r.ObjectType)}
+		YouMayApprove: status == approval.Pending && mayDecide(p, r, sigs), Steps: []ApprovalProgress{},
+		CurrentStep: approval.CurrentStep(domainSteps(r.PolicySteps), signaturesOf(sigs))}
 	if out.Diff == nil {
 		out.Diff = []ApprovalDiff{}
+	}
+	for i, st := range r.PolicySteps {
+		n := 0
+		for _, g := range signaturesOf(sigs) {
+			if g.Step == i+1 && g.Approve {
+				n++
+			}
+		}
+		out.Steps = append(out.Steps, ApprovalProgress{ApprovalStep: apiStep(st), Approvals: n})
 	}
 	for _, sg := range sigs {
 		out.Signatures = append(out.Signatures, ApprovalSignature{Signer: sg.Signer.String(), SignerName: names[sg.Signer], Decision: sg.Decision,
@@ -381,18 +453,19 @@ func (a *API) end(ctx context.Context, b *blocked) error {
 	return b.problem
 }
 
-// sign checks that the caller may sign the request now and returns it locked, with what it keeps: they passed
-// step-up, hold the approve right, did not ask for it, and sent the hash of its envelope.
-func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID, ifMatch, hash string) (storage.ApprovalRequest, error) {
+// sign checks that the caller may sign the request now and returns it locked, with what it keeps and the step they
+// sign: they passed step-up, hold the approve right, did not ask for it or sign it already, are one its current step
+// names, and sent the hash of its envelope.
+func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID, ifMatch, hash string) (storage.ApprovalRequest, int, error) {
 	r, err := u.Approvals().Lock(ctx, id)
 	if errors.Is(err, ports.ErrNotFound) || (err == nil && !maySee(p, r)) {
-		return r, problem(CodeNotFound, "No approval request with that ID exists in this organisation.", "List the approvals to find their IDs")
+		return r, 0, problem(CodeNotFound, "No approval request with that ID exists in this organisation.", "List the approvals to find their IDs")
 	}
 	if err != nil {
-		return r, err
+		return r, 0, err
 	}
 	if !mayApprove(p, r.ObjectType) {
-		return r, problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
+		return r, 0, problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
 			"Ask a member who holds it, such as an Owner, to decide it")
 	}
 	now := a.deps.Clock.Now()
@@ -400,18 +473,122 @@ func (a *API) sign(ctx context.Context, u storage.UnitOfWork, p authn.Principal,
 	if x := approval.CheckSigner(requestOf(r), p.UserID, now); x != nil {
 		pr := problem(x.Code, strings.ToUpper(x.Message[:1])+x.Message[1:]+".", x.Fix)
 		if x.Code == approval.CodeExpired {
-			return r, &blocked{id: r.ID, version: r.Version, status: approval.Expired, problem: pr}
+			return r, 0, &blocked{id: r.ID, version: r.Version, status: approval.Expired, problem: pr}
 		}
-		return r, pr
+		return r, 0, pr
 	}
 	if err := checkIfMatch(ifMatch, etag(r.Version)); err != nil {
-		return r, err
+		return r, 0, err
 	}
 	if hash != hex.EncodeToString(r.EnvelopeHash) {
-		return r, problem(approval.CodeChanged, "The envelope you were shown is not the request's.",
+		return r, 0, problem(approval.CodeChanged, "The envelope you were shown is not the request's.",
 			"Read the request again and decide what it holds now")
 	}
-	return r, nil
+	sigs, err := u.Approvals().Signatures(ctx, r.ID)
+	if err != nil {
+		return r, 0, err
+	}
+	if slices.ContainsFunc(sigs, func(s storage.ApprovalSignature) bool { return s.Signer == p.UserID }) {
+		return r, 0, problem(approval.CodeNotYourStep, "You signed this request already, and a person signs a request once.",
+			"Ask another member the policy names to sign its next step")
+	}
+	steps := domainSteps(r.PolicySteps)
+	step := approval.CurrentStep(steps, signaturesOf(sigs))
+	if step == 0 || !approval.Eligible(steps[step-1], p.UserID, rolesOf(p.Roles)) {
+		return r, 0, problem(approval.CodeNotYourStep, fmt.Sprintf("Step %d of the request's policy needs %s.", step, describe(steps[max(step, 1)-1])),
+			"Ask a member that step names to sign it; the steps are signed in order")
+	}
+	return r, step, nil
+}
+
+// describe says whom a step needs, in a sentence's words.
+func describe(s approval.Step) string {
+	switch {
+	case len(s.Roles) > 0:
+		return fmt.Sprintf("%d approval(s) from someone holding one of these roles: %s", s.Quorum, strings.Join(s.Roles, ", "))
+	case len(s.Users) > 0:
+		return fmt.Sprintf("%d approval(s) from the members it names", s.Quorum)
+	}
+	return fmt.Sprintf("%d approval(s) from anyone who holds the approval right", s.Quorum)
+}
+
+// recheck is FR-APR-10's last check before an approved change executes: every earlier approver is still an active
+// member whose live roles hold A on the object's row and whom their step names. The current signer was checked by
+// sign.
+func (a *API) recheck(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, sigs []storage.ApprovalSignature, current uuid.UUID) error {
+	members, err := u.Members().List(ctx, a.deps.Clock.Now())
+	if err != nil {
+		return err
+	}
+	steps := domainSteps(r.PolicySteps)
+	for _, g := range signaturesOf(sigs) {
+		if !g.Approve || g.Signer == current {
+			continue
+		}
+		i := slices.IndexFunc(members, func(m storage.Member) bool { return m.UserID == g.Signer })
+		if i >= 0 {
+			roles := memberRoles(members[i])
+			if approves(roles, r.ObjectType) && approval.Eligible(steps[g.Step-1], g.Signer, roles) {
+				continue
+			}
+		}
+		return &blocked{id: r.ID, version: r.Version, status: approval.Void, reason: "an earlier approver no longer holds the right their step needs",
+			problem: problem(approval.CodeAuthority, "An earlier approver of this request no longer holds the right their step needs, so nothing was changed and the request is void.",
+				"Ask for the change again if it is still needed")}
+	}
+	return nil
+}
+
+// memberRoles are a member's live roles, as the policies name them.
+func memberRoles(m storage.Member) []string {
+	out := make([]string, len(m.Roles))
+	for i, r := range m.Roles {
+		out[i] = r.Role
+	}
+	return out
+}
+
+// approves reports whether roles hold A on the row of objectType.
+func approves(roles []string, objectType string) bool {
+	rs := make([]authz.Role, len(roles))
+	for i, r := range roles {
+		rs[i] = authz.Role(r)
+	}
+	return authz.Decide(authz.Policy{Operation: "approve", Capability: approvalRow(objectType), Need: authz.Approve}, rs, false).Allowed
+}
+
+// policyChange is what an approval_policy.change request executes.
+type policyChange struct {
+	Version int                    `json:"version"`
+	Steps   []storage.ApprovalStep `json:"steps"`
+}
+
+func policyChangeOf(x map[string]any) (policyChange, error) {
+	var c policyChange
+	b, err := json.Marshal(x)
+	if err == nil {
+		err = json.Unmarshal(b, &c)
+	}
+	return c, err
+}
+
+// executable is the last check before an approved change executes, with the request still pending: a policy change
+// is added only while the active members can sign its steps, since they may have changed since the request.
+func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored) error {
+	if r.Operation != approval.OpPolicyChange {
+		return nil
+	}
+	c, err := policyChangeOf(s.Execute)
+	if err != nil {
+		return err
+	}
+	fps, err := a.checkSteps(ctx, u, r.ObjectKey, domainSteps(c.Steps))
+	if err != nil || len(fps) == 0 {
+		return err
+	}
+	return &blocked{id: r.ID, version: r.Version, status: approval.Void, reason: "the policy's steps can no longer be signed",
+		problem: problem(approval.CodeSteps, "The policy's steps can no longer be signed: "+fps[0].Message+", so nothing was changed and the request is void.",
+			"Ask for a policy whose steps the members can sign")}
 }
 
 // execute carries out an approved request's change in the approving unit of work, audited with the approval
@@ -466,6 +643,14 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		}
 		_, err = u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: text("display_name"), Roles: roles,
 			RolesExpireAt: expires, ExpiresAt: a.deps.Clock.Now().Add(InvitationTTL)})
+		return err
+	case approval.OpPolicyChange:
+		c, err := policyChangeOf(x)
+		if err != nil {
+			return err
+		}
+		_, err = u.ApprovalPolicies().Add(ctx, storage.NewApprovalPolicy{ObjectType: r.ObjectKey, Version: c.Version, Steps: c.Steps,
+			RequestID: r.ID, CreatedBy: r.RequestedBy, CreatedAt: a.deps.Clock.Now()})
 		return err
 	}
 	return fmt.Errorf("approval: no operation %s", r.Operation)
@@ -544,15 +729,17 @@ func registerApprovals(a *API) {
 	register(a, authz.ApproveApproval, huma.Operation{
 		OperationID: "approveApproval", Method: http.MethodPost, Path: "/v1/approvals/{approval_id}/approve", Tags: []string{"Approvals"},
 		Summary: "Approve a request",
-		Description: "Signs the request's envelope and, once its policy's steps are signed, carries out its change in the same transaction " +
-			"(FR-APR-03, FR-APR-10, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on " +
-			"the object's Appendix D row, and did not ask for it; and envelope_hash must be the request's, and If-Match its ETag. The envelope is rebuilt from " +
-			"current data with its rows locked: if the record or any dependency changed since the request, nothing executes, the request " +
-			"becomes void and APR-04 says so (FR-APR-05). Side effects: the signed approval, the request approved, the change itself and their " +
-			"audit events, which name the approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+		Description: "Signs the request's current step and, once every step of its policy has its quorum, carries out its change in the same " +
+			"transaction (FR-APR-01, FR-APR-03, FR-APR-10, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the " +
+			"approval right (A) on the object's Appendix D row, is one the current step names (APR-11), did not ask for it and has not signed " +
+			"it; and envelope_hash must be the request's, and If-Match its ETag. The envelope is rebuilt from current data with its rows locked: " +
+			"if the record, any dependency or the approval policy changed since the request, nothing executes, the request becomes void and " +
+			"APR-04 says so (FR-APR-05); if an earlier approver no longer holds the right their step needs, APR-10 does. Side effects: the signed " +
+			"approval and its audit event; on the last step, the request approved, the change itself and their audit events, which name the " +
+			"approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership},
-		append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...)...),
+		append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
 			id, err := parseID("approval_id", in.ApprovalID)
 			if err != nil {
@@ -563,7 +750,7 @@ func registerApprovals(a *API) {
 				return nil, err
 			}
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (decided, error) {
-				r, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
+				r, step, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
 				if err != nil {
 					return decided{}, err
 				}
@@ -577,8 +764,14 @@ func registerApprovals(a *API) {
 						return decided{}, err
 					}
 				}
+				// The policy in force now: a request under an older version differs (FR-APR-10), which the database's voiding
+				// on a new version makes rare.
+				current, _, err := a.policyFor(ctx, u, r.ObjectType)
+				if err != nil {
+					return decided{}, err
+				}
 				envelope, err := a.envelopeOf(ctx, u, p.Organisation, pendingChange{ObjectType: r.ObjectType, ObjectKey: r.ObjectKey,
-					Operation: r.Operation, Execute: s.Execute, Amounts: s.Amounts}, r.RequestedBy, r.PolicyVersion)
+					Operation: r.Operation, Execute: s.Execute, Amounts: s.Amounts}, r.RequestedBy, current.Version)
 				if err != nil {
 					return decided{}, err
 				}
@@ -589,7 +782,7 @@ func registerApprovals(a *API) {
 							"Read the record again and ask for the change again if it is still needed")}
 				}
 				now := a.deps.Clock.Now()
-				if _, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: r.ID, Step: 1, Signer: p.UserID, Decision: "approve",
+				if _, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "approve",
 					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now}); err != nil {
 					return decided{}, err
 				}
@@ -597,7 +790,13 @@ func registerApprovals(a *API) {
 				if err != nil {
 					return decided{}, err
 				}
-				if signed(sigs, approval.Policies[r.ObjectType]) {
+				if approval.CurrentStep(domainSteps(r.PolicySteps), signaturesOf(sigs)) == 0 {
+					if err := a.recheck(ctx, u, r, sigs, p.UserID); err != nil {
+						return decided{}, err
+					}
+					if err := a.executable(ctx, u, r, s); err != nil {
+						return decided{}, err
+					}
 					if r, err = u.Approvals().Decide(ctx, r.ID, r.Version, string(approval.Approved), "", now); err != nil {
 						return decided{}, err
 					}
@@ -624,10 +823,11 @@ func registerApprovals(a *API) {
 	register(a, authz.RejectApproval, huma.Operation{
 		OperationID: "rejectApproval", Method: http.MethodPost, Path: "/v1/approvals/{approval_id}/reject", Tags: []string{"Approvals"},
 		Summary: "Reject a request",
-		Description: "Signs a rejection of the request's envelope, with your reason; the change never executes (FR-APR-03, FM-1). Needs a " +
-			"person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, and " +
-			"did not ask for it; and envelope_hash must be the request's, and If-Match its ETag. Side effects: the signed rejection, the request rejected and their " +
-			"audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+		Description: "Signs a rejection of the request's envelope at its current step, with your reason; the change never executes " +
+			"(FR-APR-03, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's " +
+			"Appendix D row, is one the current step names, did not ask for it and has not signed it; and envelope_hash must be the request's, " +
+			"and If-Match its ETag. Side effects: the signed rejection, the request rejected and their audit events. Idempotent with " +
+			"Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion}, append(locks, ApprovalCodes...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
@@ -645,16 +845,80 @@ func registerApprovals(a *API) {
 					Fix: "Say why you reject it, so the requester knows what to change"}})
 			}
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (decided, error) {
-				r, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
+				r, step, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
 				if err != nil {
 					return decided{}, err
 				}
 				now := a.deps.Clock.Now()
-				if _, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: r.ID, Step: 1, Signer: p.UserID, Decision: "reject",
+				if _, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "reject",
 					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now, Reason: reason}); err != nil {
 					return decided{}, err
 				}
 				if r, err = u.Approvals().Decide(ctx, r.ID, r.Version, string(approval.Rejected), reason, now); err != nil {
+					return decided{}, err
+				}
+				v, err := a.approvalOf(ctx, u, r)
+				return decided{v}, err
+			})
+			var b *blocked
+			if errors.As(err, &b) {
+				if w.Previewed {
+					return nil, b.problem
+				}
+				return nil, a.end(ctx, b)
+			}
+			if err != nil {
+				return nil, err
+			}
+			return &approvalWriteOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body.Approval}, nil
+		})
+
+	register(a, authz.WithdrawApproval, huma.Operation{
+		OperationID: "withdrawApproval", Method: http.MethodPost, Path: "/v1/approvals/{approval_id}/withdraw", Tags: []string{"Approvals"},
+		Summary: "Withdraw your request",
+		Description: "Withdraws a pending request you asked for: it becomes void with the reason \"withdrawn by its requester\", and any " +
+			"signatures it has are voided; the change never executes (rev 0.40). Needs the person who asked for it, signed in to Fyniq, and " +
+			"If-Match with its ETag. Side effects: the request void and its audit event. Idempotent with Idempotency-Key; Prefer: " +
+			"return=preview checks it and saves nothing.",
+	}, append([]string{CodeNotFound, CodeSessionRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale,
+		CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, approval.CodeNotYours}, append(locks, ApprovalCodes...)...),
+		func(ctx context.Context, in *approvalWithdrawInput) (*approvalWriteOutput, error) {
+			id, err := parseID("approval_id", in.ApprovalID)
+			if err != nil {
+				return nil, err
+			}
+			p, _ := authn.From(ctx)
+			if p.Via != authn.ViaSession || p.AI() || p.UserID == uuid.Nil {
+				return nil, problem(CodeSessionRequired, "Withdrawing a request needs the person who asked for it, signed in to Fyniq.",
+					"Sign in to Fyniq in the browser and withdraw it there.")
+			}
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (decided, error) {
+				r, err := u.Approvals().Lock(ctx, id)
+				if errors.Is(err, ports.ErrNotFound) || (err == nil && !maySee(p, r)) {
+					return decided{}, problem(CodeNotFound, "No approval request with that ID exists in this organisation.", "List the approvals to find their IDs")
+				}
+				if err != nil {
+					return decided{}, err
+				}
+				if r.RequestedBy != p.UserID {
+					return decided{}, problem(approval.CodeNotYours, "Only the person who asked for this change withdraws it.",
+						"Reject it with a reason instead, if you hold the approval right")
+				}
+				now := a.deps.Clock.Now()
+				switch approval.StatusAt(requestOf(r), now) {
+				case approval.Pending:
+				case approval.Expired:
+					return decided{}, &blocked{id: r.ID, version: r.Version, status: approval.Expired,
+						problem: problem(approval.CodeExpired, "The request expired already.", "Nothing to withdraw")}
+				case approval.Void:
+					return decided{}, problem(approval.CodeChanged, "The request is void already.", "Nothing to withdraw")
+				default:
+					return decided{}, problem(approval.CodeNotPending, fmt.Sprintf("The request is %s already.", r.Status), "Nothing to withdraw")
+				}
+				if err := checkIfMatch(in.IfMatch, etag(r.Version)); err != nil {
+					return decided{}, err
+				}
+				if r, err = u.Approvals().Decide(ctx, r.ID, r.Version, string(approval.Void), "withdrawn by its requester", now); err != nil {
 					return decided{}, err
 				}
 				v, err := a.approvalOf(ctx, u, r)
@@ -679,22 +943,6 @@ func registerApprovals(a *API) {
 type decided struct{ Approval }
 
 func (decided) waitsForApproval() bool { return false }
-
-// signed reports whether every step of the policy has its quorum of approvals that are not voided.
-func signed(sigs []storage.ApprovalSignature, p approval.Policy) bool {
-	for i, step := range p.Steps {
-		n := 0
-		for _, s := range sigs {
-			if s.Step == i+1 && s.Decision == "approve" && s.VoidedAt == nil {
-				n++
-			}
-		}
-		if n < step.Quorum {
-			return false
-		}
-	}
-	return true
-}
 
 func cmpOr(s, def string) string {
 	if s == "" {
