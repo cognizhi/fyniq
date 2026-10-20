@@ -1,6 +1,7 @@
 package signin
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -44,7 +45,13 @@ type Flow struct {
 	Origin   string // the web app's origin as the browser sees it: http://localhost:8080, https://…
 	Base     string // where the API is mounted on that origin: /api
 	Log      *slog.Logger
+	// Alert tells a person they signed in (FR-ADM-03); nil sends none. A failed alert is logged and never stops the
+	// sign-in.
+	Alert Alert
 }
+
+// Alert tells the person who signed in, with the browser they used, that they did.
+type Alert func(ctx context.Context, who ports.SignedIn, userAgent string, at time.Time) error
 
 // Register adds the routes to mux.
 func (f Flow) Register(mux interface {
@@ -124,10 +131,16 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 		stepUp = who.AuthTime
 	}
 	token := rand.Text() + rand.Text()
+	agent := r.UserAgent()
 	if err := f.Sessions.StartSession(r.Context(), storage.NewSession{TokenHash: authn.HashToken(token), Issuer: who.Issuer,
-		Subject: who.Subject, Provider: who.Provider, StepUpAt: stepUp, Now: now, Expires: now.Add(authn.SessionLifetime)}); err != nil {
+		Subject: who.Subject, Provider: who.Provider, StepUpAt: stepUp, Now: now, Expires: now.Add(authn.SessionLifetime), UserAgent: agent}); err != nil {
 		f.fail(w, r, CodeFailure, "session", err)
 		return
+	}
+	if f.Alert != nil {
+		if err := f.Alert(r.Context(), who, agent, now); err != nil {
+			f.log().Error("auth.signin.alert_failed", "provider", who.Provider, "error", err.Error())
+		}
 	}
 	f.endCurrent(r) // a new sign-in replaces the browser's session, never adds to it
 	http.SetCookie(w, f.cookie(authn.SessionCookie(f.Secure()), token, authn.SessionLifetime))

@@ -451,6 +451,7 @@ user_session | expires_at | timestamp with time zone | not null |
 user_session | step_up_at | timestamp with time zone | null | 
 user_session | ended_at | timestamp with time zone | null | 
 user_session | step_up_method | text | null | 
+user_session | user_agent | text | null | 
 webauthn_challenge | id | uuid | not null | uuidv7()
 webauthn_challenge | user_id | uuid | not null | 
 webauthn_challenge | purpose | text | not null | 
@@ -719,7 +720,7 @@ email_message | email_message_lengths | CHECK ((((length(recipient) >= 3) AND (l
 email_message | email_message_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 email_message | email_message_organisation_id_not_null | NOT NULL organisation_id
 email_message | email_message_pkey | PRIMARY KEY (organisation_id, id)
-email_message | email_message_purpose_known | CHECK ((purpose = 'test'::text))
+email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text])))
 email_message | email_message_purpose_not_null | NOT NULL purpose
 email_message | email_message_recipient_not_null | NOT NULL recipient
 email_message | email_message_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'accepted'::text, 'failed'::text, 'unknown'::text])))
@@ -1158,6 +1159,7 @@ user_session | user_session_subject_length | CHECK (((length(subject) >= 1) AND 
 user_session | user_session_subject_not_null | NOT NULL subject
 user_session | user_session_token_hash_not_null | NOT NULL token_hash
 user_session | user_session_token_sha256 | CHECK ((length(token_hash) = 32))
+user_session | user_session_user_agent_length | CHECK ((length(user_agent) <= 300))
 user_session | user_session_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 webauthn_challenge | webauthn_challenge_answer_fkey | FOREIGN KEY (answered_by) REFERENCES webauthn_credential(id)
 webauthn_challenge | webauthn_challenge_answered_once_taken | CHECK (((answered_by IS NULL) OR (taken_at IS NOT NULL)))
@@ -1451,6 +1453,7 @@ document_sequence_guard() → trigger | security invoker | v | search_path=pg_ca
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
+end_user_session(p_user uuid, p_hash bytea, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b349d69ee0308bbba7c1aca8c62af95f
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
 evidence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e9a4de22d514e03c7917f207a26849f9
 evidence_never_deleted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c4003638e114bc7cbc14e63a1e638b1e
@@ -1497,6 +1500,7 @@ setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq,
 skip_job_slots(p_job text, p_slots timestamp with time zone[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8f2a4dc16b9baa48f2314e6e58698273
 sod_override_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e021a424a2fa6f356b652fb6b46c466d
 start_session(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 74b70160438f9f79c162de86f4e58276
+start_session_from(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone, p_user_agent text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1cf88db937e5114212c27309fb2c56ba
 started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7
 statutory_pack_activation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ef02590dc3dd32325e6222bb4d1789d
 statutory_pack_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c9f66a7d4fd181c1348790e46eaba6d7
@@ -1506,6 +1510,7 @@ super_admin_no_delete() → trigger | security invoker | v | search_path=pg_cata
 team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9
 team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1e8ab28fa03705e0a02ec3819d22d067
 user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb
+user_sessions(p_user uuid, p_now timestamp with time zone, p_idle interval) → SETOF user_session | security definer | s | search_path=pg_catalog, fyniq, pg_temp | d713068278e40cd6ed6ba927ea5a0c69
 webauthn_approval_answer(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f481503b48994d66ccc92191380d8e36
 webauthn_approval_challenge_issue(p_session bytea, p_request uuid, p_envelope_hash bytea, p_nonce bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e140920fc5b676db4cb8e722e83c934a
 webauthn_approval_proof(p_challenge uuid, OUT organisation_id uuid, OUT request_id uuid, OUT envelope_hash bytea, OUT user_id uuid, OUT answered_by uuid, OUT taken_at timestamp with time zone) → record | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2f7c40781b20001dbfbd10008d0a0154

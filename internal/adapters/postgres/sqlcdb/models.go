@@ -609,6 +609,7 @@ type FyniqUserSession struct {
 	StepUpAt     *time.Time
 	EndedAt      *time.Time
 	StepUpMethod *string
+	UserAgent    *string
 }
 
 type FyniqWebauthnChallenge struct {

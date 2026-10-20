@@ -45,7 +45,9 @@ func startSessions(t *testing.T) *sessionStack {
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	flow := signin.Flow{Sessions: e.store, Clock: e.clock, Origin: srv.URL, Base: "", Log: slog.New(slog.NewJSONHandler(e.log, nil))}
+	out := outbox.Dispatcher{Store: e.store, Queue: local.NewMemory(), Clock: e.clock}
+	flow := signin.Flow{Sessions: e.store, Clock: e.clock, Origin: srv.URL, Base: "", Log: slog.New(slog.NewJSONHandler(e.log, nil)),
+		Alert: signin.EmailAlert(e.store, e.store, out)}
 	dev, err := local.NewDevSignIn([]signin.Provider{local.DevSignInProvider}, "", flow.Callback(), e.clock)
 	if err != nil {
 		t.Fatal(err)
@@ -54,7 +56,7 @@ func startSessions(t *testing.T) *sessionStack {
 	flow.Register(mux)
 	dev.Register(mux)
 	s := &sessionStack{env: e, migrator: fresh.URL("fyniq_migrator"), readonly: fresh.URL("fyniq_readonly"), api: fresh.URL("fyniq_api"),
-		out: outbox.Dispatcher{Store: e.store, Queue: local.NewMemory(), Clock: e.clock}}
+		out: out}
 	auth := authn.Local{Dev: e.tokens, Sessions: authn.Sessions{Store: e.store, Clock: e.clock, Cookie: authn.SessionCookie(false)}}
 	e.api = New(mux, Deps{Store: e.store, Installation: e.store, Outbox: &s.out, Clock: e.clock, Auth: auth, SignIn: dev,
 		Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test", Origin: strings.Replace(srv.URL, "127.0.0.1", "localhost", 1)}) // a relying party ID is a host name
@@ -62,10 +64,12 @@ func startSessions(t *testing.T) *sessionStack {
 	return s
 }
 
-// browser is a user agent with its own cookies on the stack's origin.
+// browser is a user agent with its own cookies on the stack's origin; email, when set, is the address its sign-ins
+// give the provider.
 type browser struct {
-	s *sessionStack
-	c *http.Client
+	s     *sessionStack
+	c     *http.Client
+	email string
 }
 
 func (s *sessionStack) browser() *browser {
@@ -90,6 +94,9 @@ func (b *browser) signIn(subject string, secondFactor bool) string {
 	form.Set("decision", "sign-in")
 	if secondFactor {
 		form.Set("second_factor", "yes")
+	}
+	if b.email != "" {
+		form.Set("email", b.email)
 	}
 	resp, err = b.c.PostForm(b.s.srv.URL+"/auth/dev/authorize", form)
 	if err != nil {

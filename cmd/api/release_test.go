@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,6 +28,12 @@ func (noSessions) Session(context.Context, []byte, time.Time, time.Duration) (st
 	return storage.Session{}, ports.ErrNotFound
 }
 func (noSessions) EndSession(context.Context, []byte, time.Time) error { return nil }
+func (noSessions) UserSessions(context.Context, uuid.UUID, time.Time, time.Duration) ([]storage.Device, error) {
+	return nil, nil
+}
+func (noSessions) EndUserSession(context.Context, uuid.UUID, []byte, time.Time) error {
+	return ports.ErrNotFound
+}
 
 func configure(t *testing.T, origin string) {
 	t.Setenv("FYNIQ_SIGNIN", "identity-platform")
@@ -51,7 +58,7 @@ func TestTheReleaseBuildSignsInOnlyWhenConfigured(t *testing.T) {
 		t.Fatal("without sign-in configured the release build accepts a credential")
 	}
 	s := httpserver.New(version.Info{Service: "api"})
-	if registerSignIn(s, c, noSessions{}) != nil {
+	if registerSignIn(s, c, noSessions{}, nil) != nil {
 		t.Fatal("without sign-in configured the release build signs people in")
 	}
 
@@ -85,7 +92,7 @@ func TestTheReleaseBuildSignsInOnlyWhenConfigured(t *testing.T) {
 		t.Error("the release build took a dev token")
 	}
 	s = httpserver.New(version.Info{Service: "api"})
-	p := registerSignIn(s, c, noSessions{})
+	p := registerSignIn(s, c, noSessions{}, nil)
 	if p == nil || len(p.Providers()) != 1 || p.Providers()[0].ID != "zoho" {
 		t.Fatalf("the configured providers: %v", p)
 	}

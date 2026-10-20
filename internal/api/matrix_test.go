@@ -358,6 +358,17 @@ var matrixCalls = map[string]matrixCall{
 		return e.call(http.MethodPost, "/v1/session/step-up", tok, map[string]any{"challenge_id": uuid.NewString(),
 			"credential": map[string]any{"id": "AAAA"}}), nil
 	},
+	// A person's devices are their browser sessions, which the matrix's principals lack: an allowed role is refused past
+	// its policy (API-AUTHZ-04). TestYourDevices runs them with real sessions.
+	"listDevices": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/session/devices", tok, nil), nil
+	},
+	"signOutDevice": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodDelete, "/v1/session/devices/00000000000000000000000000000000", tok, nil), nil
+	},
+	"signOutOtherDevices": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/session/devices/sign-out-others", tok, nil), nil
+	},
 	"getTeamMode": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/team-mode", tok, nil), nil
 	},

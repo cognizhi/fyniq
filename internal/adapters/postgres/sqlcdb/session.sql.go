@@ -26,6 +26,23 @@ func (q *Queries) EndSession(ctx context.Context, arg EndSessionParams) error {
 	return err
 }
 
+const endUserSession = `-- name: EndUserSession :one
+SELECT fyniq.end_user_session($1::uuid, $2::bytea, $3::timestamptz)::boolean AS ended
+`
+
+type EndUserSessionParams struct {
+	UserID    uuid.UUID
+	TokenHash []byte
+	Now       time.Time
+}
+
+func (q *Queries) EndUserSession(ctx context.Context, arg EndUserSessionParams) (bool, error) {
+	row := q.db.QueryRow(ctx, endUserSession, arg.UserID, arg.TokenHash, arg.Now)
+	var ended bool
+	err := row.Scan(&ended)
+	return ended, err
+}
+
 const endUserSessions = `-- name: EndUserSessions :one
 SELECT fyniq.end_user_sessions($1::uuid, $2::text, $3::text,
   $4::text[], $5::timestamptz)::integer AS ended
@@ -101,8 +118,8 @@ func (q *Queries) SessionFor(ctx context.Context, arg SessionForParams) (Session
 }
 
 const startSession = `-- name: StartSession :exec
-SELECT fyniq.start_session($1::bytea, $2::text, $3::text, $4::text,
-  $5::timestamptz, $6::timestamptz, $7::timestamptz)
+SELECT fyniq.start_session_from($1::bytea, $2::text, $3::text, $4::text,
+  $5::timestamptz, $6::timestamptz, $7::timestamptz, $8::text)
 `
 
 type StartSessionParams struct {
@@ -113,6 +130,7 @@ type StartSessionParams struct {
 	Now       time.Time
 	Expires   time.Time
 	StepUpAt  *time.Time
+	UserAgent string
 }
 
 func (q *Queries) StartSession(ctx context.Context, arg StartSessionParams) error {
@@ -124,6 +142,57 @@ func (q *Queries) StartSession(ctx context.Context, arg StartSessionParams) erro
 		arg.Now,
 		arg.Expires,
 		arg.StepUpAt,
+		arg.UserAgent,
 	)
 	return err
+}
+
+const userSessions = `-- name: UserSessions :many
+SELECT s.token_hash, s.provider, s.created_at, s.last_seen_at, s.expires_at, coalesce(s.step_up_method, '')::text AS step_up_method,
+       coalesce(s.user_agent, '')::text AS user_agent
+  FROM fyniq.user_sessions($1::uuid, $2::timestamptz, $3::bigint * interval '1 second') AS s
+`
+
+type UserSessionsParams struct {
+	UserID      uuid.UUID
+	Now         time.Time
+	IdleSeconds int64
+}
+
+type UserSessionsRow struct {
+	TokenHash    []byte
+	Provider     string
+	CreatedAt    time.Time
+	LastSeenAt   time.Time
+	ExpiresAt    time.Time
+	StepUpMethod string
+	UserAgent    string
+}
+
+func (q *Queries) UserSessions(ctx context.Context, arg UserSessionsParams) ([]UserSessionsRow, error) {
+	rows, err := q.db.Query(ctx, userSessions, arg.UserID, arg.Now, arg.IdleSeconds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserSessionsRow
+	for rows.Next() {
+		var i UserSessionsRow
+		if err := rows.Scan(
+			&i.TokenHash,
+			&i.Provider,
+			&i.CreatedAt,
+			&i.LastSeenAt,
+			&i.ExpiresAt,
+			&i.StepUpMethod,
+			&i.UserAgent,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

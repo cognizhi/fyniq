@@ -119,6 +119,21 @@ type Sessions interface {
 	Session(ctx context.Context, tokenHash []byte, now time.Time, idle time.Duration) (Session, error)
 	// EndSession ends a session: its holder signed out.
 	EndSession(ctx context.Context, tokenHash []byte, now time.Time) error
+	// UserSessions returns a user's live sessions at now, newest first (FR-ADM-03): their devices.
+	UserSessions(ctx context.Context, userID uuid.UUID, now time.Time, idle time.Duration) ([]Device, error)
+	// EndUserSession ends one of a user's sessions, or returns ports.ErrNotFound when they have no live one with that hash.
+	EndUserSession(ctx context.Context, userID uuid.UUID, tokenHash []byte, now time.Time) error
+}
+
+// Device is one of a user's live sessions.
+type Device struct {
+	TokenHash    []byte // the session token's SHA-256: never shown; the API derives the device's ID from it
+	Provider     string
+	SignedInAt   time.Time
+	LastSeenAt   time.Time
+	ExpiresAt    time.Time
+	StepUpMethod string // sign_in, passkey or empty
+	UserAgent    string // the browser that began it, as it said; empty when it said nothing
 }
 
 // NewSession is what StartSession needs. TokenHash is the SHA-256 of the session token: the token
@@ -129,6 +144,8 @@ type NewSession struct {
 	// StepUpAt is when the sign-in passed a second factor (SEC-01); zero when it passed none.
 	StepUpAt     time.Time
 	Now, Expires time.Time
+	// UserAgent is the browser's User-Agent, kept to tell devices apart (FR-ADM-03); at most 300 characters are kept.
+	UserAgent string
 }
 
 // Session is a live session.

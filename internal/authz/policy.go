@@ -392,6 +392,14 @@ var (
 
 const passkeyNote = "Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-02, SEC-01)."
 
+const deviceNote = "Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-03)."
+
+var (
+	ListDevices         = Policy{Operation: "listDevices", Capability: Session, Need: View, NoOrganisation: true, Note: deviceNote}
+	SignOutDevice       = Policy{Operation: "signOutDevice", Capability: Session, Need: Create, NoOrganisation: true, Note: deviceNote}
+	SignOutOtherDevices = Policy{Operation: "signOutOtherDevices", Capability: Session, Need: Create, NoOrganisation: true, Note: deviceNote}
+)
+
 var (
 	ListPasskeys             = Policy{Operation: "listPasskeys", Capability: Session, Need: View, NoOrganisation: true, Note: passkeyNote}
 	StartPasskeyRegistration = Policy{Operation: "startPasskeyRegistration", Capability: Session, Need: Create, NoOrganisation: true,
@@ -415,7 +423,8 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
-	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp)
+	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
+	ListDevices, SignOutDevice, SignOutOtherDevices)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

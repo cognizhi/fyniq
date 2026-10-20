@@ -1305,6 +1305,94 @@ components:
       required:
         - items
       type: object
+    Device:
+      additionalProperties: false
+      properties:
+        browser:
+          description: The browser that signed in, as it described itself; absent when it said nothing.
+          examples:
+            - Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 Safari/605.1.15
+          type: string
+        current:
+          description: true for the session making this request.
+          examples:
+            - true
+          type: boolean
+        expires_at:
+          description: "When it ends at the latest: 12 hours after it signed in (SEC-05)."
+          examples:
+            - "2026-10-20T21:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: "The device's ID: derived from its session, never the session itself."
+          examples:
+            - 3f0c9a1b5d7e4c2a8b6f1e0d9c8b7a65
+          pattern: ^[0-9a-f]{32}$
+          type: string
+        last_seen_at:
+          description: When it was last used, to the minute.
+          examples:
+            - "2026-10-20T09:30:00Z"
+          format: date-time
+          type: string
+        provider:
+          description: The sign-in provider it used.
+          examples:
+            - google
+          type: string
+        signed_in_at:
+          description: When it signed in.
+          examples:
+            - "2026-10-20T09:00:00Z"
+          format: date-time
+          type: string
+        step_up_method:
+          description: How it last passed a second factor.
+          enum:
+            - sign_in
+            - passkey
+          examples:
+            - sign_in
+          type: string
+      required:
+        - id
+        - provider
+        - signed_in_at
+        - last_seen_at
+        - expires_at
+        - current
+      type: object
+    DevicePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: Your signed-in sessions on this page.
+          items:
+            $ref: "#/components/schemas/Device"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjNmMGM5YTFiIn0
+          type: string
+      required:
+        - items
+      type: object
+    DevicesEnded:
+      additionalProperties: false
+      properties:
+        ended:
+          description: How many of your other sessions were signed out.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - ended
+      type: object
     EmailMessage:
       additionalProperties: false
       properties:
@@ -13070,6 +13158,326 @@ paths:
         capability: (your session)
         note: Needs a person signed in to Fyniq; an OAuth client or the AI is refused.
         right: V
+  /v1/session/devices:
+    get:
+      description: "The browsers you are signed in on: your live sessions, newest first, with the one making this request marked (FR-ADM-03). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused. Read-only; no side effects."
+      operationId: listDevices
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DevicePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List your devices
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: (your session)
+        note: Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-03).
+        right: V
+  /v1/session/devices/sign-out-others:
+    post:
+      description: "Ends every one of your sessions but the one making this request (FR-ADM-03). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused. Side effects: those sessions end, and the security log records each."
+      operationId: signOutOtherDevices
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DevicesEnded"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Sign out everywhere else
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-exempt:
+        Idempotency-Key: "Signing out everywhere else is safe to repeat as it is: sent again, it ends any session begun since (FR-INT-08, rev 0.45)."
+        Prefer: Signing out everywhere else only ends your own sessions; it is checked and done at once (FR-INT-14, rev 0.45).
+      x-fyniq-permission:
+        capability: (your session)
+        note: Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-03).
+        right: C
+  /v1/session/devices/{device_id}:
+    delete:
+      description: "Ends one of your sessions, such as on a lost phone: its next request is signed out (FR-ADM-03). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused. Side effects: the session ends, and the security log records it."
+      operationId: signOutDevice
+      parameters:
+        - description: The device's ID.
+          in: path
+          name: device_id
+          required: true
+          schema:
+            description: The device's ID.
+            examples:
+              - 3f0c9a1b5d7e4c2a8b6f1e0d9c8b7a65
+            pattern: ^[0-9a-f]{32}$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Sign a device out
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-exempt:
+        Prefer: Signing a device out only ends one of your own sessions; it is checked and done at once (FR-INT-14, rev 0.45).
+      x-fyniq-permission:
+        capability: (your session)
+        note: Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-03).
+        right: C
   /v1/session/passkeys:
     get:
       description: Your passkeys that work, oldest first (FR-ADM-02). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-02, SEC-01). Read-only; no side effects.

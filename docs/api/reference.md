@@ -192,6 +192,60 @@ Who you are signed in as: the provider, your user, the organisation your session
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`
 
+### `GET /v1/session/devices`
+
+**List your devices** (`listDevices`)
+
+The browsers you are signed in on: your live sessions, newest first, with the one making this request marked (FR-ADM-03). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused. Read-only; no side effects.
+
+- **Permission:** View on (your session). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-03).
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`DevicePage`](../../contracts/schemas/DevicePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/session/devices/sign-out-others`
+
+**Sign out everywhere else** (`signOutOtherDevices`)
+
+Ends every one of your sessions but the one making this request (FR-ADM-03). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused. Side effects: those sessions end, and the security log records each.
+
+- **Permission:** Create on (your session). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-03).
+- **Responses:**
+  - `200` OK [`DevicesEnded`](../../contracts/schemas/DevicesEnded.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `DELETE /v1/session/devices/{device_id}`
+
+**Sign a device out** (`signOutDevice`)
+
+Ends one of your sessions, such as on a lost phone: its next request is signed out (FR-ADM-03). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused. Side effects: the session ends, and the security log records it.
+
+- **Permission:** Create on (your session). Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-03).
+- **Parameters:**
+  - `device_id` (path, required): The device's ID.
+- **Responses:**
+  - `200` OK [`Device`](../../contracts/schemas/Device.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
 ### `GET /v1/session/passkeys`
 
 **List your passkeys** (`listPasskeys`)
