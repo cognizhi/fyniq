@@ -32,7 +32,8 @@
         "member_invitation",
         "approval_policy",
         "statutory_pack",
-        "team_mode"
+        "team_mode",
+        "period"
       ],
       "examples": [
         "organisation_setting"

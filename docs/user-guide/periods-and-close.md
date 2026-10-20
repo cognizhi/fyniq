@@ -55,7 +55,17 @@ the close is refused: run them again. A closed month refuses every posting dated
 The close keeps a fingerprint (a SHA-256 hash) of the trial balance at the month's end, and the
 ledger revision it closed at.
 
-Reopening a closed month needs a second founder's approval and a reason. It arrives soon.
+## Reopen a month
+
+Only the latest closed month reopens: months reopen in the reverse of the order they closed.
+
+1. An Accountant or a Controller opens the closed month and selects **Ask to reopen**.
+2. They say why, and confirm it's them.
+3. Another founder who may close periods approves the request in their **Inbox**. Until then, the
+   month stays closed.
+
+Once approved, the month takes postings again until it is closed again. Fyniq keeps the close's
+fingerprint as the one before, and takes a new one of the trial balance as the one after.
 
 ## Common problems
 
@@ -69,6 +79,9 @@ Reopening a closed month needs a second founder's approval and a reason. It arri
 | An earlier period is open (CLOSE-03) | Close the earlier months first |
 | The checks refused the close (CLOSE-04) | Fix what the checks found and run them again |
 | Another founder attests the close (CLOSE-05) | Ask another founder: you ran the checks |
+| The period is not closed (CLOSE-07) | Only a closed month reopens |
+| A later period is closed (CLOSE-08) | Reopen the latest closed month first |
+| A change to this record is waiting for approval already (APR-06) | Approve or reject the waiting request first |
 
 ## Related
 

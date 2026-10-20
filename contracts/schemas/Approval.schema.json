@@ -80,7 +80,8 @@
         "member_invitation",
         "approval_policy",
         "statutory_pack",
-        "team_mode"
+        "team_mode",
+        "period"
       ],
       "examples": [
         "organisation_setting"
@@ -96,7 +97,8 @@
         "member_invitation.create",
         "approval_policy.change",
         "statutory_pack.activate",
-        "team_mode.change"
+        "team_mode.change",
+        "period.reopen"
       ],
       "examples": [
         "organisation_setting.change"

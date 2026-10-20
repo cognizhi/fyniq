@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -95,5 +95,50 @@ describe("the period close page", () => {
     expect(screen.getByText("The checks are out of date")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Run the checks again" }));
     expect(await screen.findByText("The checks did not run")).toBeTruthy();
+  });
+
+  // req: FR-GL-08
+  it("asks to reopen a closed month with a reason, then shows the request and the reopening", async () => {
+    const record = { id: "x1", checks_id: "c1", attested_by: { kind: "user" as const, id: "u2", name: "Wei Ling" }, attested_at: "2026-11-03T02:00:00Z", statement: "Reviewed.", closed_revision: 41, snapshot_sha256: "3f9a".padEnd(60, "0") + "c21e" };
+    const closed = { ...period, status: "closed" as const, closed_revision: 41, version: 2 };
+    let asked = false;
+    answer({
+      "GET /v1/periods/p10/close": () => ({ status: 200, body: asked ? { period: closed, close: record, you_may_attest: false, reopen_asked: "a1" } : { period: closed, close: record, you_may_attest: false }, headers: { ETag: `"2-closed"` } }),
+      "POST /v1/periods/p10/reopen": () => {
+        asked = true;
+        return { status: 202, body: { id: "a1", status: "pending" } };
+      },
+    });
+    renderPage(PeriodClose, { ...at(), session: controller });
+    fireEvent.click(await screen.findByRole("button", { name: "Ask to reopen…" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask to reopen" }));
+    expect(await within(dialog).findByText(/Say why/)).toBeTruthy();
+    expect(seen.filter((x) => x.method === "POST")).toEqual([]);
+    fireEvent.change(within(dialog).getByLabelText("Why it reopens"), { target: { value: "A late invoice" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask to reopen" }));
+    expect(await screen.findByText("Asked to reopen October 2026: another founder approves it.")).toBeTruthy();
+    const sent = seen.find((x) => x.method === "POST")!;
+    expect(sent.body).toEqual({ reason: "A late invoice" });
+    expect(sent.headers.get("If-Match")).toBe(`"2-closed"`);
+    expect(sent.headers.get("Idempotency-Key")).toBeTruthy();
+    expect(await screen.findByText("A request to reopen October 2026 waits for approval")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "See the request" }).getAttribute("href")).toBe("/approvals/a1");
+    expect(screen.queryByRole("button", { name: "Ask to reopen…" })).toBeNull();
+  });
+
+  it("shows the latest reopening with its snapshots", async () => {
+    answer({
+      "GET /v1/periods/p10/close": {
+        status: 200,
+        body: { period, checks, you_may_attest: false, reopen: { id: "r1", approval_id: "a1", reopened_by: { kind: "user", id: "u2", name: "Wei Ling" }, reopened_at: "2026-11-05T01:00:00Z", reason: "A late invoice", reopened_revision: 42, before_sha256: "aaaa".padEnd(60, "0") + "bbbb", after_sha256: "cccc".padEnd(60, "0") + "dddd" } },
+        headers: { ETag: `"3-open"` },
+      },
+    });
+    renderPage(PeriodClose, { ...at(), session: controller });
+    expect(await screen.findByText("Reopened")).toBeTruthy();
+    expect(screen.getByText(/Approved by Wei Ling/)).toBeTruthy();
+    expect(screen.getByText("sha256 aaaa…bbbb")).toBeTruthy();
+    expect(screen.getByText("sha256 cccc…dddd")).toBeTruthy();
   });
 });

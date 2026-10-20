@@ -4,7 +4,7 @@ type: task
 title: Open the financial year and close the periods
 summary: What accounting periods are, how the financial years run from the books start, opening the next financial year, and closing a month with two people
 sources:
-  - docs/user-guide/periods-and-close.md sha256:f98ffbb5a9642fa17f4769fba8e41570f0cafbdb728fa9e4b49f128980b4d678
+  - docs/user-guide/periods-and-close.md sha256:55f927549ccc0566c90b416560f00b774c1809c275348234a8d3a89f3cbaf6e4
 data_class: general
 taint: trusted
 status: draft
@@ -22,6 +22,7 @@ aliases:
   - month end
   - close a month
   - attestation
+  - reopen a month
 ---
 
 # Open the financial year and close the periods
@@ -50,10 +51,17 @@ aliases:
 - The checks: every earlier month closed (months close in order); the balances agreeing with the ledger; the trial balance at the month's end adding up to zero; draft journals dated in the month (⚠); in the month the books start, the opening balances posted (⚠). ✖ blocks the close, ⚠ needs a look.
 - If anything dated in or before the month posts after the checks ran, they are out of date and the close is refused: run them again.
 - A closed month refuses every posting dated in it, by anyone; the close keeps a SHA-256 fingerprint of the trial balance at the month's end and the ledger revision it closed at.
-- Reopening needs a second founder's approval and a reason; it arrives soon.
 - Related: preparing and posting journals ([[accounting.journals]]); entering the opening balances ([[accounting.opening-balances]]).
 
 (src: docs/user-guide/periods-and-close.md#close-a-month) (src: docs/user-guide/periods-and-close.md#related)
+
+## Reopen a month
+
+- Only the latest closed month reopens: months reopen in the reverse of the order they closed.
+- An Accountant or a Controller opens the closed month, selects **Ask to reopen**, says why and confirms it's them; another founder who may close periods approves it in their **Inbox**, and until then the month stays closed.
+- Once approved, the month takes postings again until it is closed again; Fyniq keeps the close's fingerprint as the one before and takes a new one as the one after.
+
+(src: docs/user-guide/periods-and-close.md#reopen-a-month)
 
 ## Common problems
 
@@ -65,5 +73,8 @@ aliases:
 - CLOSE-03, an earlier period is open: close the earlier months first.
 - CLOSE-04, the checks refused the close: fix what they found and run them again.
 - CLOSE-05, another founder attests the close: ask another founder, as you ran the checks.
+- CLOSE-07, the period is not closed: only a closed month reopens.
+- CLOSE-08, a later period is closed: reopen the latest closed month first.
+- APR-06, a request is waiting already: approve or reject it first.
 
 (src: docs/user-guide/periods-and-close.md#common-problems)

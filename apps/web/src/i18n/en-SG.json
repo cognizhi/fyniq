@@ -263,6 +263,10 @@
     "close.attest": {
       "label": "Attest and close",
       "tooltip": "Confirm the month's figures and close it: nothing posts in it afterwards. You cannot attest checks you ran."
+    },
+    "close.reopen": {
+      "label": "Ask to reopen",
+      "tooltip": "Ask for the month to take postings again, with a reason; another founder approves it."
     }
   }
 }
