@@ -204,7 +204,12 @@ const (
 	CodeAuthority   = "APR-10" // an earlier approver no longer holds the right their step needs; nothing executed (FR-APR-10)
 	CodeNotYourStep = "APR-11" // the request's current step needs someone else (FR-APR-01)
 	CodeNotYours    = "APR-12" // only its requester withdraws a request
+	CodeReviewOwn   = "APR-13" // a high-risk action is reviewed by someone other than the one who acted (FM-3)
+	CodeReviewed    = "APR-14" // the action was reviewed already (FM-3)
 )
+
+// ReviewOverdue is how long a high-risk action may wait for its review before it is overdue in Founder mode (FM-3).
+const ReviewOverdue = 14 * 24 * time.Hour
 
 // Status is where a request stands.
 type Status string

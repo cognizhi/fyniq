@@ -931,6 +931,12 @@ func registerApprovals(a *API) {
 					if err := a.execute(ctx, u, r, s, p.UserID); err != nil {
 						return decided{}, err
 					}
+					// FM-3: the change is logged for another founder's weekly review.
+					requester, approvalID := r.RequestedBy, r.ID
+					if _, err := u.ReviewLog().Log(ctx, storage.NewReviewLogEntry{Kind: storage.ReviewApprovedChange, ObjectType: r.ObjectType,
+						ObjectKey: r.ObjectKey, Summary: r.Summary, Actor: &requester, ApprovalID: &approvalID, LoggedAt: now}); err != nil {
+						return decided{}, err
+					}
 				}
 				v, err := a.approvalOf(ctx, u, r)
 				return decided{v}, err

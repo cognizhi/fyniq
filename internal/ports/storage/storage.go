@@ -68,6 +68,7 @@ type UnitOfWork interface {
 	ApprovalPolicies() ApprovalPolicies
 	TeamModes() TeamModes
 	Passkeys() Passkeys
+	ReviewLog() ReviewLog
 	Packs() Packs
 	EmailMessages() EmailMessages
 	Outbox() Outbox

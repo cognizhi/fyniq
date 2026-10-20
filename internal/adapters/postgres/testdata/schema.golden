@@ -347,6 +347,21 @@ rate_limit_window | client_id | text | not null |
 rate_limit_window | kind | text | not null | 
 rate_limit_window | window_start | timestamp with time zone | not null | 
 rate_limit_window | used | integer | not null | 1
+review_log_entry | organisation_id | uuid | not null | current_org()
+review_log_entry | id | uuid | not null | uuidv7()
+review_log_entry | kind | text | not null | 
+review_log_entry | object_type | text | not null | 
+review_log_entry | object_key | text | not null | 
+review_log_entry | summary | text | not null | 
+review_log_entry | actor | uuid | null | 
+review_log_entry | approval_id | uuid | null | 
+review_log_entry | logged_at | timestamp with time zone | not null | 
+review_log_review | organisation_id | uuid | not null | current_org()
+review_log_review | id | uuid | not null | uuidv7()
+review_log_review | entry_id | uuid | not null | 
+review_log_review | reviewed_by | uuid | not null | 
+review_log_review | reviewed_at | timestamp with time zone | not null | 
+review_log_review | note | text | null | 
 role_assignment | organisation_id | uuid | not null | current_org()
 role_assignment | id | uuid | not null | uuidv7()
 role_assignment | membership_id | uuid | not null | 
@@ -1009,6 +1024,33 @@ rate_limit_window | rate_limit_window_pkey | PRIMARY KEY (organisation_id, id)
 rate_limit_window | rate_limit_window_used_not_null | NOT NULL used
 rate_limit_window | rate_limit_window_used_positive | CHECK ((used > 0))
 rate_limit_window | rate_limit_window_window_start_not_null | NOT NULL window_start
+review_log_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+review_log_entry | review_log_entry_actor_fkey | FOREIGN KEY (actor) REFERENCES app_user(user_id)
+review_log_entry | review_log_entry_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
+review_log_entry | review_log_entry_approval_kind | CHECK (((kind = 'approved_change'::text) = (approval_id IS NOT NULL)))
+review_log_entry | review_log_entry_approval_once | UNIQUE (organisation_id, approval_id)
+review_log_entry | review_log_entry_id_not_null | NOT NULL id
+review_log_entry | review_log_entry_kind_known | CHECK ((kind = ANY (ARRAY['approved_change'::text, 'founder_bootstrap'::text])))
+review_log_entry | review_log_entry_kind_not_null | NOT NULL kind
+review_log_entry | review_log_entry_logged_at_not_null | NOT NULL logged_at
+review_log_entry | review_log_entry_object_key_not_null | NOT NULL object_key
+review_log_entry | review_log_entry_object_type_not_null | NOT NULL object_type
+review_log_entry | review_log_entry_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+review_log_entry | review_log_entry_organisation_id_not_null | NOT NULL organisation_id
+review_log_entry | review_log_entry_pkey | PRIMARY KEY (organisation_id, id)
+review_log_entry | review_log_entry_summary_not_null | NOT NULL summary
+review_log_entry | review_log_entry_texts | CHECK ((((length(object_type) >= 1) AND (length(object_type) <= 60)) AND ((length(object_key) >= 1) AND (length(object_key) <= 200)) AND ((length(btrim(summary)) >= 1) AND (length(btrim(summary)) <= 500))))
+review_log_review | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+review_log_review | review_log_review_by_fkey | FOREIGN KEY (reviewed_by) REFERENCES app_user(user_id)
+review_log_review | review_log_review_entry_fkey | FOREIGN KEY (organisation_id, entry_id) REFERENCES review_log_entry(organisation_id, id)
+review_log_review | review_log_review_entry_id_not_null | NOT NULL entry_id
+review_log_review | review_log_review_id_not_null | NOT NULL id
+review_log_review | review_log_review_note_length | CHECK (((note IS NULL) OR ((length(btrim(note)) >= 1) AND (length(btrim(note)) <= 500))))
+review_log_review | review_log_review_once | UNIQUE (organisation_id, entry_id)
+review_log_review | review_log_review_organisation_id_not_null | NOT NULL organisation_id
+review_log_review | review_log_review_pkey | PRIMARY KEY (organisation_id, id)
+review_log_review | review_log_review_reviewed_at_not_null | NOT NULL reviewed_at
+review_log_review | review_log_review_reviewed_by_not_null | NOT NULL reviewed_by
 role_assignment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 role_assignment | role_assignment_created_at_not_null | NOT NULL created_at
 role_assignment | role_assignment_expiry_after_creation | CHECK ((expires_at > created_at))
@@ -1218,6 +1260,7 @@ CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organis
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
+CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
 CREATE INDEX sod_override_lookup ON fyniq.sod_override USING btree (organisation_id, team_mode_version, user_id, conflict)
 CREATE INDEX super_admin_grant_created_by_idx ON fyniq.super_admin_grant USING btree (created_by)
@@ -1282,6 +1325,10 @@ CREATE UNIQUE INDEX outbox_pkey ON fyniq.outbox USING btree (organisation_id, id
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
+CREATE UNIQUE INDEX review_log_entry_approval_once ON fyniq.review_log_entry USING btree (organisation_id, approval_id)
+CREATE UNIQUE INDEX review_log_entry_pkey ON fyniq.review_log_entry USING btree (organisation_id, id)
+CREATE UNIQUE INDEX review_log_review_once ON fyniq.review_log_review USING btree (organisation_id, entry_id)
+CREATE UNIQUE INDEX review_log_review_pkey ON fyniq.review_log_review USING btree (organisation_id, id)
 CREATE UNIQUE INDEX role_assignment_one_live ON fyniq.role_assignment USING btree (organisation_id, membership_id, role) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX role_assignment_pkey ON fyniq.role_assignment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sod_override_once ON fyniq.sod_override USING btree (organisation_id, request_id, user_id, conflict)
@@ -1314,6 +1361,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
@@ -1376,6 +1425,8 @@ CREATE TRIGGER outbox_guard BEFORE UPDATE ON fyniq.outbox FOR EACH ROW EXECUTE F
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON fyniq.outbox FOR EACH STATEMENT EXECUTE FUNCTION outbox_no_delete()
 CREATE TRIGGER period_guard BEFORE UPDATE ON fyniq.period FOR EACH ROW EXECUTE FUNCTION period_guard()
+CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
+CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER role_assignment_guard BEFORE UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER role_assignment_voids AFTER INSERT OR UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION role_assignment_voids()
 CREATE TRIGGER sod_override_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sod_override FOR EACH ROW EXECUTE FUNCTION sod_override_guard()
@@ -1417,6 +1468,8 @@ organisation_setting | tenant_isolation | * | (organisation_id = current_org()) 
 outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1490,6 +1543,7 @@ require_installation_audit() → trigger | security definer | v | search_path=pg
 require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
 require_passkey_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 98f44603b09487ab03360525adf3b07c
 require_super_admin(p_user uuid) → void | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c817be869461445bf3e2ff0f94e5b146
+review_log_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba89ef09634a7863076fa4da1d77bebb
 role_assignment_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 802ca214ce4476cbc77f0a6d8d36eb9e
 session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1fa557346732ac0de88a7a7d9407fedc
 session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 557b605544981a727167d857731ab8f9

@@ -471,3 +471,46 @@ func TestAttackTeamModesAreApprovedSwitches(t *testing.T) {
 		t.Errorf("the voided request's trail: %v", got)
 	}
 }
+
+// The review log never changes: an entry and its review are added once, and the one who acted never reviews it; another
+// organisation sees neither (FM-3, rev 0.46).
+// req: FM-3
+// asvs: V8.2.2, V16.3.3
+func TestAttackTheReviewLogNeverChanges(t *testing.T) {
+	ctx := context.Background()
+	a, b := books(t, "Attack review log A Pte Ltd"), books(t, "Attack review log B Pte Ltd")
+	st := store(t, "fyniq_api")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	actor, reviewer := founder(t, st, a.Org, 1, now), founder(t, st, a.Org, 2, now)
+	var entry uuid.UUID
+	if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		entry, err = u.ReviewLog().Log(ctx, storage.NewReviewLogEntry{Kind: storage.ReviewFounderBootstrap, ObjectType: "membership",
+			ObjectKey: "x", Summary: "Give Ann the role owner", Actor: &actor, LoggedAt: now})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	review := func(by uuid.UUID, at time.Time) error {
+		return st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error { return u.ReviewLog().Review(ctx, entry, by, at, "") })
+	}
+	wantState(t, "the one who acted reviewing", review(actor, now), "FY151")
+	wantState(t, "a review before the action", review(reviewer, now.Add(-time.Hour)), "FY151")
+	if err := review(reviewer, now); err != nil {
+		t.Fatalf("another founder's review: %v", err)
+	}
+	wantState(t, "a second review", review(reviewer, now), "23505")
+	for _, c := range []struct{ role, what, stmt, state string }{
+		{"fyniq_api", "the API changing an entry", "UPDATE fyniq.review_log_entry SET summary = 'x'", "42501"},
+		{"fyniq_api", "the API deleting a review", "DELETE FROM fyniq.review_log_review", "42501"},
+		{"fyniq_migrator", "the owner changing an entry", "UPDATE fyniq.review_log_entry SET summary = 'x'", "FY150"},
+		{"fyniq_migrator", "the owner deleting a review", "DELETE FROM fyniq.review_log_review", "FY150"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.what, err, c.state)
+	}
+	for _, table := range []string{"review_log_entry", "review_log_review"} {
+		if n := count(t, b.Org, table); n != 0 {
+			t.Errorf("B sees %d of A's rows in %s", n, table)
+		}
+	}
+}

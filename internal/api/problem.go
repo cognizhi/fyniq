@@ -184,6 +184,8 @@ var codeFacts = map[string]struct {
 	approval.CodeAuthority:     {409, "An earlier approver no longer holds the right: nothing was changed"},
 	approval.CodeNotYourStep:   {403, "The request's current step needs someone else"},
 	approval.CodeNotYours:      {403, "Only the person who asked for it withdraws it"},
+	approval.CodeReviewOwn:     {403, "Another person reviews what you did"},
+	approval.CodeReviewed:      {409, "Reviewed already"},
 	pack.CodeTable:             {409, "This release cannot read that pack version"},
 	pack.CodePinned:            {409, "A pinned statutory test fails"},
 	pack.CodeApproval:          {409, "Activating it needs a second approver"},

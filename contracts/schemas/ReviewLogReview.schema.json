@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry_ids": {
+      "description": "The entries you reviewed: none you acted on.",
+      "items": {
+        "description": "An entry's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "note": {
+      "description": "What you noted, recorded with each.",
+      "examples": [
+        "Agreed at Monday's meeting"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    }
+  },
+  "required": [
+    "entry_ids"
+  ],
+  "title": "ReviewLogReview",
+  "type": "object"
+}
