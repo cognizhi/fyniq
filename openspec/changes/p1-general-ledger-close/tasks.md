@@ -29,7 +29,12 @@
   period's version and status, the close and whether a later period is closed; `getPeriodClose` shows the latest
   reopening and a pending request. Tests: `TestReopeningAClosedPeriod` (own request refused, approval, snapshots, reverse
   order, a request voided by a later close), `TestAttackAReopeningIsTheApprovedRequest`, an authorisation-matrix row.)
-- [ ] 1.4 Year-end: retained earnings as the profit and loss of every earlier year, without closing entries; open items carried forward. Test `// req: FR-GL-10` (the optional closing entry waits for question 31)
+- [x] 1.4 Year-end: retained earnings as the profit and loss of every earlier year, without closing entries; open items carried forward. Test `// req: FR-GL-10` (the optional closing entry waits for question 31)
+  (21 Oct 2026, PRD rev 0.56: `balance.before` and the new `balance.Position` fold every earlier financial year's
+  revenue and expense into the account with the `retained-earnings` role; the close's checks and snapshot use
+  `Position`; the general ledger refuses a range across a year's start (REPORT-02); no financial years or no
+  retained-earnings account: nothing folds. Tests: `TestYearEndFoldsEarlierYearsIntoRetainedEarnings`,
+  `TestTheGeneralLedgerReadsOneFinancialYearAtATime`. Open items carry forward with the one ledger.)
 
 ## 2. Journals
 

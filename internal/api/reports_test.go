@@ -3,12 +3,15 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // The general ledger of an account over a range: its balance before (from the cached balances of earlier periods and
@@ -87,5 +90,30 @@ func TestTheGeneralLedger(t *testing.T) {
 	e.problemIs(report("account_id="+bank+"&from=2026-11-01&to=2026-11-30", e.as(authz.ARSpecialist)), "getGeneralLedger", 403, CodeForbidden)
 	if r := report("account_id="+bank+"&from=2026-11-01&to=2026-11-30", e.as(authz.Owner)); r.Status != 200 {
 		t.Errorf("the Owner reads the ledger: %d", r.Status)
+	}
+}
+
+// Year-end (FR-GL-10; rev 0.56): once the financial years and the retained-earnings account are set, a general ledger
+// range across the start of a financial year is refused, and one within a year is read.
+// req: FR-GL-10
+// req: FR-GL-11
+func TestTheGeneralLedgerReadsOneFinancialYearAtATime(t *testing.T) {
+	e := newEnv(t)
+	controller := e.as(authz.Controller)
+	g := e.call(http.MethodGet, "/v1/organisation/profile", controller, nil)
+	if r := e.call(http.MethodPatch, "/v1/organisation/profile", controller, map[string]any{"fy_start_month": 11, "books_start": "2026-01-01",
+		"first_year_end": "2026-10-31"}, "If-Match", g.Header.Get("ETag")); r.Status != 200 {
+		t.Fatalf("setting the years: %d %s", r.Status, r.Raw)
+	}
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "3100", Name: "Retained earnings", Type: storage.Equity, Role: storage.RoleRetainedEarnings})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	path := "/v1/reports/general-ledger?account_id=" + e.books.Sales.ID.String()
+	e.problemIs(e.call(http.MethodGet, path+"&from=2026-10-01&to=2026-11-30", controller, nil), "getGeneralLedger", 422, balance.CodeCrossesYear)
+	if r := e.call(http.MethodGet, path+"&from=2026-11-01&to=2026-11-30", controller, nil); r.Status != 200 {
+		t.Fatalf("a range within the second year: %d %s", r.Status, r.Raw)
 	}
 }

@@ -59,8 +59,12 @@ func Trial(ctx context.Context, u storage.UnitOfWork, base money.Currency, perio
 			return TrialBalance{}, err
 		}
 	}
-	sort.Slice(tb.Rows, func(i, j int) bool { return tb.Rows[i].AccountID.String() < tb.Rows[j].AccountID.String() })
+	sortRows(tb.Rows)
 	return tb, nil
+}
+
+func sortRows(rows []Row) {
+	sort.Slice(rows, func(i, j int) bool { return rows[i].AccountID.String() < rows[j].AccountID.String() })
 }
 
 // Differences counts the balances that differ from a recomputation from the journal lines (INV-08), in u's
@@ -151,9 +155,17 @@ type AccountLedger struct {
 }
 
 // GeneralLedger is the general ledger report of an account over from..to, in the base currency (FR-GL-11): the
-// balance before from, then each line dated in the range in posting order with the running balance.
+// balance before from, then each line dated in the range in posting order with the running balance. With year-end
+// (FR-GL-10), a range within one financial year: one that crosses a year's start is refused (CrossesYear).
 func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time) (AccountLedger, error) {
-	opening, err := before(ctx, u, base, account, from)
+	y, err := yearEndOf(ctx, u)
+	if err != nil {
+		return AccountLedger{}, err
+	}
+	if ys := y.start(to); !ys.IsZero() && from.Before(ys) && !y.start(from).IsZero() {
+		return AccountLedger{}, &CrossesYear{YearStart: ys}
+	}
+	opening, err := before(ctx, u, base, y, account, from)
 	if err != nil {
 		return AccountLedger{}, err
 	}
@@ -196,8 +208,11 @@ func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currenc
 }
 
 // before is an account's base-currency balance before a day: the cached balances of every period that ends before it
-// (INV-08), and the lines of the period that holds it dated before it.
-func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, day time.Time) (money.Money, error) {
+// (INV-08), and the lines of the period that holds it dated before it. Year-end applies (FR-GL-10): a revenue or expense
+// account counts only the periods of the financial year that holds the day, and the retained-earnings account also
+// counts the profit or loss of every earlier year.
+func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, y yearEnd, account uuid.UUID, day time.Time) (money.Money, error) {
+	ys := y.start(day)
 	total := money.Zero(base)
 	periods, err := u.Periods().List(ctx)
 	if err != nil {
@@ -217,8 +232,11 @@ func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, acco
 			if err != nil {
 				return total, err
 			}
+			past := earlier(p, ys)
 			for _, r := range rows {
-				if r.AccountID == account {
+				own := r.AccountID == account && !(past && y.pl[account])
+				folded := past && account == y.re && y.pl[r.AccountID]
+				if own || folded {
 					if err := add(r.BaseAmount); err != nil {
 						return total, err
 					}

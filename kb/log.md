@@ -81,3 +81,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/journals.md (edit a posted journal) → accounting.journals (p1-general-ledger-close 2.3, 7.1)
 
 ## [2026-10-21] compile | docs/user-guide/journals.md (journals that reverse by themselves) → accounting.journals (p1-general-ledger-close 2.4)
+
+## [2026-10-21] compile | docs/user-guide/general-ledger.md (a new financial year) → reports.general-ledger (p1-general-ledger-close 1.4)
