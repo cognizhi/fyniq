@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -850,23 +851,36 @@ func TestAttackAnEditReversesAndPostsTogether(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "attacker-test"}})
 	b := books(t, "Attack edits Pte Ltd")
 	st := store(t, "fyniq_api")
-	var posted, reversed storage.Document
+	var posted storage.Document
 	if err := st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		var err error
-		for _, d := range []*storage.Document{&posted, &reversed} {
-			if *d, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"lines":[]}`)}); err != nil {
-				return err
-			}
-			if err = u.Documents().SetStatus(ctx, d.ID, storage.DocumentPosted); err != nil {
-				return err
-			}
+		if posted, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"lines":[]}`)}); err != nil {
+			return err
 		}
-		return u.Documents().SetStatus(ctx, reversed.ID, storage.DocumentReversed)
+		return u.Documents().SetStatus(ctx, posted.ID, storage.DocumentPosted)
 	}); err != nil {
 		t.Fatal(err)
 	}
+	// A reversed journal, posted and reversed through the journal service.
+	svc := journal.Service{Store: st}
+	reversed, err := svc.Create(ctx, b.Org, saleDraft(t, b, porttest.Day(10, 5), "10.00"))
+	if err == nil {
+		_, err = svc.Post(ctx, b.Org, reversed.ID)
+	}
+	if err == nil {
+		_, err = svc.Reverse(ctx, b.Org, reversed.ID, porttest.Day(10, 6), "attack")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A posted document marked reversed without its reversal is refused at commit (rev 0.55).
+	if err := st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.Documents().SetStatus(ctx, posted.ID, storage.DocumentReversed)
+	}); storage.CodeOf(err) != storage.CodeDocumentEdit {
+		t.Errorf("a reversal without its entry: %v", err)
+	}
 	// Through the port: an edit with neither posting is refused at commit.
-	err := st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+	err = st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		_, err := u.Documents().Edit(ctx, posted.ID, []byte(`{"lines":[]}`), "")
 		return err
 	})
@@ -886,6 +900,9 @@ func TestAttackAnEditReversesAndPostsTogether(t *testing.T) {
 			"UPDATE fyniq.document SET current_version = 2, posted_by = 'user:x', posted_at = now() WHERE id = '" + p + "'", "FY055"},
 		// A reversed document never changes.
 		{"fyniq_api", version(r) + "UPDATE fyniq.document SET current_version = 2 WHERE id = '" + r + "'", "FY055"},
+		// The worker moves a status only with the reversal it needs, and saves no version.
+		{"fyniq_worker", "SET CONSTRAINTS fyniq.document_reversed_posted IMMEDIATE; UPDATE fyniq.document SET status = 'reversed' WHERE id = '" + p + "'", "FY056"},
+		{"fyniq_worker", version(p), "42501"},
 	} {
 		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
 		wantState(t, c.role+": "+c.stmt, err, c.state)

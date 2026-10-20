@@ -12,6 +12,43 @@ import (
 	"github.com/google/uuid"
 )
 
+const dueReversals = `-- name: DueReversals :many
+SELECT d.id
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+WHERE d.type = 'journal' AND d.status = 'posted'
+  AND coalesce(v.payload->>'reverse_on', '') <> '' AND v.payload->>'reverse_on' <= $1::text
+ORDER BY v.payload->>'reverse_on', d.id
+LIMIT $2
+`
+
+type DueReversalsParams struct {
+	OnDay   string
+	MaxRows int32
+}
+
+// Posted journals whose automatic reversal is dated on or before a day (FR-GL-02), earliest first: the scheduler
+// reverses them. Dates are ISO text, so comparing them as text orders them as dates.
+func (q *Queries) DueReversals(ctx context.Context, arg DueReversalsParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, dueReversals, arg.OnDay, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const editDocument = `-- name: EditDocument :exec
 UPDATE fyniq.document
 SET current_version = $1, posted_by = $2::text, posted_at = $3::timestamptz
@@ -323,6 +360,22 @@ func (q *Queries) SetDocumentStatus(ctx context.Context, arg SetDocumentStatusPa
 		arg.PostedAt,
 		arg.ID,
 	)
+	return err
+}
+
+const setDocumentStatusOnly = `-- name: SetDocumentStatusOnly :exec
+UPDATE fyniq.document SET status = $1 WHERE id = $2
+`
+
+type SetDocumentStatusOnlyParams struct {
+	Status string
+	ID     uuid.UUID
+}
+
+// A move that records no actor, such as reversing: it writes the status alone, so the worker, which may move a status
+// for the scheduler's automatic reversals but never name who posted, can run it (rev 0.55).
+func (q *Queries) SetDocumentStatusOnly(ctx context.Context, arg SetDocumentStatusOnlyParams) error {
+	_, err := q.db.Exec(ctx, setDocumentStatusOnly, arg.Status, arg.ID)
 	return err
 }
 

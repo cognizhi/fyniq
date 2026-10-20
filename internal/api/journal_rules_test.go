@@ -14,6 +14,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -177,4 +178,28 @@ func TestAJournalToShareCapitalIsRefused(t *testing.T) {
 	if r.Status != http.StatusUnprocessableEntity || r.problemCode() != ledger.CodeShareCapital || !strings.Contains(r.Raw, `"field":"lines[1].account_id"`) {
 		t.Errorf("a journal to share capital: %d %s", r.Status, r.Raw)
 	}
+}
+
+// FR-GL-02 (rev 0.55): a journal may carry the date the scheduler reverses it by itself, after its own date; posting
+// refuses one on or before it, and the journal shows the date once posted.
+// req: FR-GL-02
+func TestAJournalReversesByItselfOnItsDate(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	accrual := e.draft("300.00")
+	accrual["date"], accrual["reverse_on"] = "2026-10-31", "2026-10-31"
+	r := e.call(http.MethodPost, "/v1/journals", accountant, accrual)
+	if r.Status != http.StatusCreated || r.str("reverse_on") != "2026-10-31" {
+		t.Fatalf("a draft with a reversal date: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+r.str("id")+"/post", accountant, nil, "If-Match", r.Header.Get("ETag")), "postJournal", 422, journal.CodeReverseOn)
+	accrual["reverse_on"] = "2026-11-01"
+	r = e.call(http.MethodPut, "/v1/journals/"+r.str("id"), accountant, accrual, "If-Match", r.Header.Get("ETag"))
+	p := e.call(http.MethodPost, "/v1/journals/"+r.str("id")+"/post", accountant, nil, "If-Match", r.Header.Get("ETag"))
+	if p.Status != http.StatusOK || p.str("journal", "reverse_on") != "2026-11-01" {
+		t.Fatalf("posting an accrual that reverses on 1 November: %d %s", p.Status, p.Raw)
+	}
+	bad := e.draft("1.00")
+	bad["reverse_on"] = "1 Nov"
+	e.problemIs(e.call(http.MethodPost, "/v1/journals", accountant, bad), "createJournal", 422, CodeInvalid)
 }

@@ -28,6 +28,14 @@
       ],
       "maxLength": 1000,
       "type": "string"
+    },
+    "reverse_on": {
+      "description": "For a journal that reverses by itself, such as an accrual (FR-GL-02; PRD-001 rev 0.55): the date the scheduler posts its reversal, after the journal's date, often the first day of the next month. Posting refuses one on or before the journal's date (JOURNAL-11).",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
     }
   },
   "required": [

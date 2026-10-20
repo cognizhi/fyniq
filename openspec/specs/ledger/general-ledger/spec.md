@@ -65,6 +65,12 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** the next period begins
 - **THEN** the journal reverses on the 1st of the next period
 
+#### Scenario: A reversal date of its own (rev 0.55)
+- **GIVEN** a journal with a reversal date after its own date
+- **WHEN** it posts, and its reversal date arrives
+- **THEN** the scheduler posts its reversal on that date, with the reason "Automatic reversal", needing no approval of its own
+- **AND** a reversal date on or before the journal's date is refused when it posts (JOURNAL-11)
+
 ### Requirement: FR-GL-03 Schedules
 The system SHALL keep **schedules** for prepayments and deferred revenue (from bills, invoices and transactions with "spread over months"), depreciation and amortisation, recognising up to the current period only (workbook "as of" gate).
 

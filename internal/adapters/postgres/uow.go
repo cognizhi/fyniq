@@ -461,6 +461,14 @@ func (r documents) Edit(ctx context.Context, id uuid.UUID, payload []byte, prepa
 		Number: str(cur.Number), SavedBy: saver, PostedBy: by, PostedAt: &at}, nil
 }
 
+func (r documents) DueReversals(ctx context.Context, day string, limit int) ([]uuid.UUID, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	ids, err := r.u.q.DueReversals(ctx, sqlcdb.DueReversalsParams{OnDay: day, MaxRows: int32(min(limit, 10000))}) // #nosec G115 -- bounded above
+	return ids, mapError(err)
+}
+
 func (r documents) Page(ctx context.Context, f storage.DocumentFilter) ([]storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err
@@ -532,12 +540,12 @@ func (r documents) SetStatus(ctx context.Context, id uuid.UUID, to storage.Docum
 	if err != nil {
 		return mapError(err)
 	}
-	params := sqlcdb.SetDocumentStatusParams{ID: id, Status: string(to)}
 	if to == storage.DocumentPosted {
 		by, at := r.u.actor(ctx), r.u.store.clock.Now()
-		params.PostedBy, params.PostedAt = &by, &at
-	}
-	if err := r.u.q.SetDocumentStatus(ctx, params); err != nil {
+		if err := r.u.q.SetDocumentStatus(ctx, sqlcdb.SetDocumentStatusParams{ID: id, Status: string(to), PostedBy: &by, PostedAt: &at}); err != nil {
+			return mapError(err)
+		}
+	} else if err := r.u.q.SetDocumentStatusOnly(ctx, sqlcdb.SetDocumentStatusOnlyParams{ID: id, Status: string(to)}); err != nil {
 		return mapError(err)
 	}
 	return r.u.event(ctx, "document."+string(to), "document", id, nil, map[string][2]any{"status": {before, string(to)}})

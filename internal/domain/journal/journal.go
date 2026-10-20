@@ -23,6 +23,7 @@ const (
 	CodeNotDraft   = "JOURNAL-02" // only a draft can be posted
 	CodeNotPosted  = "JOURNAL-03" // only a posted journal can be reversed
 	CodeBadDraft   = "JOURNAL-04" // the saved draft cannot be read
+	CodeReverseOn  = "JOURNAL-11" // the automatic reversal is not dated after the journal (FR-GL-02)
 )
 
 // Error is a journal command failure with a stable code.
@@ -39,13 +40,17 @@ type Draft struct {
 	Date  time.Time
 	Memo  string
 	Lines []ledger.JournalLine
+	// ReverseOn is when the scheduler reverses the posted journal by itself (FR-GL-02): after Date, often the first day
+	// of the next period; zero for a journal that does not reverse by itself.
+	ReverseOn time.Time
 }
 
 // payload is a draft as the document version stores it: dates and amounts as text.
 type payload struct {
-	Date  string        `json:"date"`
-	Memo  string        `json:"memo,omitempty"`
-	Lines []payloadLine `json:"lines"`
+	Date      string        `json:"date"`
+	Memo      string        `json:"memo,omitempty"`
+	Lines     []payloadLine `json:"lines"`
+	ReverseOn string        `json:"reverse_on,omitempty"`
 }
 
 type payloadLine struct {
@@ -70,6 +75,9 @@ func encode(d Draft) ([]byte, error) {
 	p := payload{Date: d.Date.Format(time.DateOnly), Memo: d.Memo}
 	if d.Date.IsZero() {
 		p.Date = ""
+	}
+	if !d.ReverseOn.IsZero() {
+		p.ReverseOn = d.ReverseOn.Format(time.DateOnly)
 	}
 	for _, l := range d.Lines {
 		pl := payloadLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description}
@@ -345,9 +353,10 @@ func loadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, e
 // Saved is a journal version as it was saved, for reading it back: the date (empty when none was
 // entered), the memo and the lines, with amounts and rates as entered.
 type Saved struct {
-	Date  string
-	Memo  string
-	Lines []SavedLine
+	Date      string
+	Memo      string
+	Lines     []SavedLine
+	ReverseOn string // empty for a journal that does not reverse by itself
 }
 
 // SavedLine is one line of a saved journal.
@@ -380,7 +389,7 @@ func readSaved(doc storage.Document) (Saved, error) {
 	if err := json.Unmarshal(doc.Payload, &p); err != nil {
 		return Saved{}, &Error{CodeBadDraft, fmt.Sprintf("the saved journal cannot be read: %v", err), "Save the draft again"}
 	}
-	out := Saved{Date: p.Date, Memo: p.Memo, Lines: make([]SavedLine, 0, len(p.Lines))}
+	out := Saved{Date: p.Date, Memo: p.Memo, Lines: make([]SavedLine, 0, len(p.Lines)), ReverseOn: p.ReverseOn}
 	for _, l := range p.Lines {
 		out.Lines = append(out.Lines, SavedLine{AccountID: l.AccountID, Amount: l.Amount, FXRate: l.FXRate,
 			FXRateSource: l.FXRateSource, Description: l.Description})
@@ -401,6 +410,17 @@ func decode(doc storage.Document, base money.Currency) (ledger.Journal, error) {
 			return ledger.Journal{}, &Error{CodeBadDraft, fmt.Sprintf("the saved date %q is not a date", p.Date), "Save the draft again"}
 		}
 		j.Date = d
+	}
+	// The automatic reversal is after the journal (FR-GL-02): checked wherever the rules run, so it never posts otherwise.
+	if p.ReverseOn != "" {
+		on, err := time.Parse(time.DateOnly, p.ReverseOn)
+		if err != nil {
+			return ledger.Journal{}, &Error{CodeBadDraft, fmt.Sprintf("the saved reversal date %q is not a date", p.ReverseOn), "Save the draft again"}
+		}
+		if !j.Date.IsZero() && !on.After(j.Date) {
+			return ledger.Journal{}, &Error{CodeReverseOn, fmt.Sprintf("the automatic reversal is dated %s, not after the journal's date %s", p.ReverseOn, p.Date),
+				"Date the automatic reversal after the journal, such as the first day of the next month"}
+		}
 	}
 	for i, l := range p.Lines {
 		line := ledger.JournalLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description}

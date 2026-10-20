@@ -10,6 +10,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -53,6 +54,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 				return nil // no evidence stores: nothing can have been attached
 			}
 			_, err := c.CommitAll(ctx)
+			return err
+		},
+		"journals.auto-reverse": func(ctx context.Context) error {
+			_, err := journal.ReverseDueAll(ctx, k.Store, clock.Now())
 			return err
 		},
 		"evidence.verify": func(ctx context.Context) error {

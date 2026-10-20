@@ -66,6 +66,14 @@
       "$ref": "Person.schema.json",
       "description": "Who saved the current version; absent for journals from before it was recorded."
     },
+    "reverse_on": {
+      "description": "The date the scheduler reverses it by itself, if it does; once posted, it reverses on the first run on or after that date whose period is open.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
     "status": {
       "description": "Draft (✎), posted, or reversed by a reversing entry.",
       "enum": [

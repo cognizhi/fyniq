@@ -33,14 +33,15 @@ const CodeEditApproval = "JOURNAL-10"
 
 // JournalEdit is the correction of a posted journal: its new content, and why (FR-GL-12).
 type JournalEdit struct {
-	Date   string             `json:"date" format:"date" doc:"The date of the new version; its period must be open, as must the period of the entry it replaces." example:"2026-10-31"`
-	Memo   string             `json:"memo,omitempty" maxLength:"1000" doc:"What the journal is for." example:"October rent accrual"`
-	Lines  []JournalLineDraft `json:"lines" maxItems:"1000" doc:"Debits positive, credits negative."`
-	Reason string             `json:"reason" minLength:"1" maxLength:"500" doc:"Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12)." example:"The rent is 1,250.00, not 1,200.00"`
+	Date      string             `json:"date" format:"date" doc:"The date of the new version; its period must be open, as must the period of the entry it replaces." example:"2026-10-31"`
+	Memo      string             `json:"memo,omitempty" maxLength:"1000" doc:"What the journal is for." example:"October rent accrual"`
+	Lines     []JournalLineDraft `json:"lines" maxItems:"1000" doc:"Debits positive, credits negative."`
+	ReverseOn string             `json:"reverse_on,omitempty" format:"date" doc:"The date the new version reverses by itself, if it does (FR-GL-02); after its date." example:"2026-11-01"`
+	Reason    string             `json:"reason" minLength:"1" maxLength:"500" doc:"Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12)." example:"The rent is 1,250.00, not 1,200.00"`
 }
 
 func (e JournalEdit) draft() JournalDraft {
-	return JournalDraft{Date: e.Date, Memo: e.Memo, Lines: e.Lines}
+	return JournalDraft{Date: e.Date, Memo: e.Memo, Lines: e.Lines, ReverseOn: e.ReverseOn}
 }
 
 // JournalEdited is what an edit posted.
@@ -158,6 +159,9 @@ func editDiff(ctx context.Context, u storage.UnitOfWork, before Journal, after J
 	}
 	if before.Memo != after.Memo {
 		out = append(out, ApprovalDiff{Field: "memo", Before: before.Memo, After: after.Memo})
+	}
+	if before.ReverseOn != after.ReverseOn {
+		out = append(out, ApprovalDiff{Field: "reverse_on", Before: before.ReverseOn, After: after.ReverseOn})
 	}
 	out = append(out, ApprovalDiff{Field: "debits", Before: debitsBefore, After: debitsAfter})
 	for i := 0; i < max(len(before.Lines), len(after.Lines)); i++ {

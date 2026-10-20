@@ -244,9 +244,10 @@ const RateSourceDocument = "document"
 // checks the rest (it must balance, its accounts must take postings, its date must be in an open
 // period).
 type JournalDraft struct {
-	Date  string             `json:"date,omitempty" format:"date" doc:"The date the journal belongs to." example:"2026-10-31"`
-	Memo  string             `json:"memo,omitempty" maxLength:"1000" doc:"What the journal is for." example:"October rent accrual"`
-	Lines []JournalLineDraft `json:"lines" maxItems:"1000" doc:"Debits positive, credits negative."`
+	Date      string             `json:"date,omitempty" format:"date" doc:"The date the journal belongs to." example:"2026-10-31"`
+	Memo      string             `json:"memo,omitempty" maxLength:"1000" doc:"What the journal is for." example:"October rent accrual"`
+	Lines     []JournalLineDraft `json:"lines" maxItems:"1000" doc:"Debits positive, credits negative."`
+	ReverseOn string             `json:"reverse_on,omitempty" format:"date" doc:"For a journal that reverses by itself, such as an accrual (FR-GL-02; PRD-001 rev 0.55): the date the scheduler posts its reversal, after the journal's date, often the first day of the next month. Posting refuses one on or before the journal's date (JOURNAL-11)." example:"2026-11-01"`
 }
 
 // Journal is a manual journal: its current version and status.
@@ -258,6 +259,8 @@ type Journal struct {
 	Date    string             `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
 	Memo    string             `json:"memo,omitempty" doc:"What it is for." example:"October rent accrual"`
 	Lines   []JournalLineDraft `json:"lines" doc:"The lines as entered."`
+	// ReverseOn is when the scheduler reverses it by itself (FR-GL-02; rev 0.55).
+	ReverseOn string `json:"reverse_on,omitempty" format:"date" doc:"The date the scheduler reverses it by itself, if it does; once posted, it reverses on the first run on or after that date whose period is open." example:"2026-11-01"`
 	// The preparer and the approver are recorded (FR-GL-01; PRD-001 rev 0.48).
 	PreparedBy *Person    `json:"prepared_by,omitempty" doc:"Who saved the current version; absent for journals from before it was recorded."`
 	PostedBy   *Person    `json:"posted_by,omitempty" doc:"Who posted it, once posted; absent for journals from before it was recorded."`
@@ -404,7 +407,7 @@ func journalOf(doc storage.Document) (Journal, error) {
 	if err != nil {
 		return Journal{}, err
 	}
-	out := Journal{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo,
+	out := Journal{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo, ReverseOn: saved.ReverseOn,
 		Lines: make([]JournalLineDraft, 0, len(saved.Lines)), PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
 	for _, l := range saved.Lines {
 		out.Lines = append(out.Lines, JournalLineDraft{AccountID: l.AccountID.String(),
@@ -443,6 +446,13 @@ func draftOf(in JournalDraft, base money.Currency) (journal.Draft, error) {
 		d.Date = t
 	}
 	d.Memo = in.Memo
+	if in.ReverseOn != "" {
+		t, err := time.Parse(time.DateOnly, in.ReverseOn)
+		if err != nil {
+			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.reverse_on", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"})
+		}
+		d.ReverseOn = t
+	}
 	for i, l := range in.Lines {
 		at := func(f string) string { return "body.lines[" + strconv.Itoa(i) + "]." + f }
 		id, err := uuid.Parse(l.AccountID)
@@ -884,7 +894,7 @@ func registerJournals(a *API) {
 // postingCodes are the codes an operation that posts may answer.
 func postingCodes() []string {
 	codes := []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
-		journal.CodeNotJournal, journal.CodeBadDraft, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed,
+		journal.CodeNotJournal, journal.CodeBadDraft, journal.CodeReverseOn, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed,
 		storage.CodeAccountNotPost, storage.CodeAmount, storage.CodeDocumentStatus, storage.CodeDuplicate, storage.CodeRetry, storage.CodeLockTimeout,
 		storage.CodeShareCapital, team.CodeAction}
 	return append(codes, LedgerCodes...)

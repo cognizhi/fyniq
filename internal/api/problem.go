@@ -249,6 +249,7 @@ var codeFacts = map[string]struct {
 	journal.CodeNotDraft:       {409, "The journal is not a draft"},
 	journal.CodeNotPosted:      {409, "The journal is not posted"},
 	journal.CodeBadDraft:       {422, "The saved journal cannot be read"},
+	journal.CodeReverseOn:      {422, "The automatic reversal is not after the journal"},
 	CodeNeedsApproval:          {409, "The journal needs another person's approval"},
 	CodeVoidApproval:           {409, "Reversing needs a second person"},
 	CodeOwnJournal:             {403, "You prepared it, so another person approves it"},
