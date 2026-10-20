@@ -39,6 +39,7 @@ const (
 	CodeApproval = "PACK-10" // activation without a second approver through the approval engine (SOD-10)
 	CodeNone     = "PACK-11" // no version of the pack in force on the date
 	CodeRule     = "PACK-12" // a tax-point rule Fyniq does not know
+	CodeActive   = "PACK-13" // the organisation has activated that version already
 )
 
 // Kinds are the kinds of source ENG-30 names.

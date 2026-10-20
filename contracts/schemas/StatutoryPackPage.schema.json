@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The versions on this page.",
+      "items": {
+        "$ref": "StatutoryPack.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6InNnLWdzdEAyMDI2LjEifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "StatutoryPackPage",
+  "type": "object"
+}

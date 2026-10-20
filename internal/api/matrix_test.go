@@ -319,6 +319,23 @@ var matrixCalls = map[string]matrixCall{
 			"If-Match", `"0"`)
 		return r, func() bool { return policyRequests(e) == was }
 	},
+	"listStatutoryPacks": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/statutory-packs", tok, nil), nil
+	},
+	"getStatutoryPack": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/statutory-packs/sg-gst@2026.1", tok, nil), nil
+	},
+	// Asking to activate always waits for approval; an allowed role's request is withdrawn again, so the next role
+	// can ask too.
+	"activateStatutoryPack": func(e *env, tok string) (response, func() bool) {
+		was := packRequests(e)
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/statutory-packs/sg-gst@2026.1/activate", person, nil, "If-Match", `"0"`)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return packRequests(e) == was }
+	},
 	"listApprovals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/approvals", tok, nil), nil
 	},

@@ -263,6 +263,22 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		}
 		e.ObjectVersion = current.Number
 		e.Dependencies["policy_version"] = current.Version
+	case approval.ObjectPack:
+		v, activated, err := loadedPack(ctx, u, c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		to := ""
+		if v.EffectiveTo != nil {
+			to = dateOf(*v.EffectiveTo)
+		}
+		if activated != nil {
+			e.ObjectVersion = 1
+		}
+		e.Dependencies["digest"] = v.Digest
+		e.Dependencies["effective_from"] = dateOf(v.EffectiveFrom)
+		e.Dependencies["effective_to"] = to
+		e.Dependencies["activated"] = activated != nil
 	}
 	return e.Canonical()
 }
@@ -573,9 +589,14 @@ func policyChangeOf(x map[string]any) (policyChange, error) {
 }
 
 // executable is the last check before an approved change executes, with the request still pending: a policy change
-// is added only while the active members can sign its steps, since they may have changed since the request.
-func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored) error {
-	if r.Operation != approval.OpPolicyChange {
+// is added only while the active members can sign its steps, since they may have changed since the request; a pack
+// version is activated only while its pinned tests pass and its approver is not its proposer (ENG-32, SOD-10).
+func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored, signer uuid.UUID) error {
+	switch r.Operation {
+	case approval.OpPackActivate:
+		return a.packExecutable(ctx, u, r, signer)
+	case approval.OpPolicyChange:
+	default:
 		return nil
 	}
 	c, err := policyChangeOf(s.Execute)
@@ -592,8 +613,8 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 }
 
 // execute carries out an approved request's change in the approving unit of work, audited with the approval
-// (AUD-01).
-func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored) error {
+// (AUD-01); signer is the final approver.
+func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored, signer uuid.UUID) error {
 	audit := storage.AuditFrom(ctx)
 	audit.ApprovalIDs = append(slices.Clone(audit.ApprovalIDs), r.ID.String())
 	ctx = storage.WithAudit(ctx, audit)
@@ -651,6 +672,10 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		}
 		_, err = u.ApprovalPolicies().Add(ctx, storage.NewApprovalPolicy{ObjectType: r.ObjectKey, Version: c.Version, Steps: c.Steps,
 			RequestID: r.ID, CreatedBy: r.RequestedBy, CreatedAt: a.deps.Clock.Now()})
+		return err
+	case approval.OpPackActivate:
+		_, err := u.Packs().Activate(ctx, storage.NewPackActivation{VersionID: r.ObjectKey, ProposedBy: r.RequestedBy, ApprovedBy: signer,
+			Approval: r.ID, ActivatedAt: a.deps.Clock.Now()})
 		return err
 	}
 	return fmt.Errorf("approval: no operation %s", r.Operation)
@@ -739,7 +764,7 @@ func registerApprovals(a *API) {
 			"approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership},
-		append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...)...),
+		append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
 			id, err := parseID("approval_id", in.ApprovalID)
 			if err != nil {
@@ -794,13 +819,13 @@ func registerApprovals(a *API) {
 					if err := a.recheck(ctx, u, r, sigs, p.UserID); err != nil {
 						return decided{}, err
 					}
-					if err := a.executable(ctx, u, r, s); err != nil {
+					if err := a.executable(ctx, u, r, s, p.UserID); err != nil {
 						return decided{}, err
 					}
 					if r, err = u.Approvals().Decide(ctx, r.ID, r.Version, string(approval.Approved), "", now); err != nil {
 						return decided{}, err
 					}
-					if err := a.execute(ctx, u, r, s); err != nil {
+					if err := a.execute(ctx, u, r, s, p.UserID); err != nil {
 						return decided{}, err
 					}
 				}

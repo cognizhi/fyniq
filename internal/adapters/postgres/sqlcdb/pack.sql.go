@@ -53,6 +53,50 @@ func (q *Queries) ActivePackVersions(ctx context.Context) ([]ActivePackVersionsR
 	return items, nil
 }
 
+const insertPackActivation = `-- name: InsertPackActivation :one
+INSERT INTO fyniq.statutory_pack_activation (version_id, proposed_by, approved_by, approval_id, activated_at)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, version_id, proposed_by, approved_by, approval_id, activated_at
+`
+
+type InsertPackActivationParams struct {
+	VersionID   string
+	ProposedBy  uuid.UUID
+	ApprovedBy  uuid.UUID
+	ApprovalID  uuid.UUID
+	ActivatedAt time.Time
+}
+
+type InsertPackActivationRow struct {
+	ID          uuid.UUID
+	VersionID   string
+	ProposedBy  uuid.UUID
+	ApprovedBy  uuid.UUID
+	ApprovalID  uuid.UUID
+	ActivatedAt time.Time
+}
+
+// Activates a version as the record of its approved request (ENG-32, migration 000041).
+func (q *Queries) InsertPackActivation(ctx context.Context, arg InsertPackActivationParams) (InsertPackActivationRow, error) {
+	row := q.db.QueryRow(ctx, insertPackActivation,
+		arg.VersionID,
+		arg.ProposedBy,
+		arg.ApprovedBy,
+		arg.ApprovalID,
+		arg.ActivatedAt,
+	)
+	var i InsertPackActivationRow
+	err := row.Scan(
+		&i.ID,
+		&i.VersionID,
+		&i.ProposedBy,
+		&i.ApprovedBy,
+		&i.ApprovalID,
+		&i.ActivatedAt,
+	)
+	return i, err
+}
+
 const insertPackVersion = `-- name: InsertPackVersion :exec
 WITH version AS (
   INSERT INTO fyniq.statutory_pack_version (id, pack, title, effective_from, effective_to, supersedes, review_date,

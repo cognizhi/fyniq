@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "case": {
+      "description": "The case's name.",
+      "examples": [
+        "G4-001"
+      ],
+      "type": "string"
+    },
+    "got": {
+      "description": "What the table gives.",
+      "examples": [
+        "0.09"
+      ],
+      "type": "string"
+    },
+    "pass": {
+      "description": "true when the table gives what the case wants.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "table": {
+      "description": "The table it tests.",
+      "examples": [
+        "rates"
+      ],
+      "type": "string"
+    },
+    "want": {
+      "description": "What the case wants.",
+      "examples": [
+        "0.09"
+      ],
+      "type": "string"
+    },
+    "why": {
+      "description": "What it checks, worked by hand from the official page.",
+      "examples": [
+        "The rate on 1 Jan 2024 is 9%"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "table",
+    "case",
+    "why",
+    "pass",
+    "got",
+    "want"
+  ],
+  "title": "PackPinnedResult",
+  "type": "object"
+}

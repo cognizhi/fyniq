@@ -15,9 +15,8 @@ type Activation struct {
 
 // CheckActivation returns every reason v may not be activated as a (ENG-32): every pinned statutory test
 // of v must pass, and a second person must approve through the approval engine, never the one who
-// proposed it (SOD-10). Until p1-approval-engine lands no approval record exists, so every activation is
-// refused; the database refuses one approved by its proposer as well
-// (statutory_pack_activation_two_people).
+// proposed it (SOD-10). The database refuses an activation without its approved request, or approved by its
+// proposer, as well (migrations 000034, 000041).
 func CheckActivation(v Version, a Activation) Problems {
 	var out Problems
 	results := RunPinned(v)
@@ -31,8 +30,8 @@ func CheckActivation(v Version, a Activation) Problems {
 	}
 	switch {
 	case a.Approval == uuid.Nil:
-		out = append(out, Problem{CodeApproval, "approval", "activating a pack version needs a second approver through the approval engine, which is not built yet",
-			"Wait for the approval engine (p1-approval-engine); until then no organisation activates a pack version"})
+		out = append(out, Problem{CodeApproval, "approval", "activating a pack version needs a second approver through the approval engine",
+			"Ask to activate the version, and have another Owner or Controller approve the request (SOD-10)"})
 	case a.ProposedBy == uuid.Nil || a.ApprovedBy == uuid.Nil || a.ProposedBy == a.ApprovedBy:
 		out = append(out, Problem{CodeApproval, "approved_by", "the person who proposed the activation cannot approve it",
 			"Ask another Owner or Controller to approve it (SOD-10)"})

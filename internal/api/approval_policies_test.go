@@ -71,7 +71,7 @@ func TestApprovalPolicyChangesAreApprovedAndKept(t *testing.T) {
 	const path = "/v1/approval-policies/organisation_setting"
 
 	l := e.call(http.MethodGet, "/v1/approval-policies", ben, nil)
-	if l.Status != 200 || len(l.Body["items"].([]any)) != 4 ||
+	if l.Status != 200 || len(l.Body["items"].([]any)) != 5 ||
 		!strings.Contains(l.Raw, `{"object_type":"approval_policy","row":"Approval policies, AI catalogue","version":"founder/approval_policy@2026-10-20.1","number":0,"built_in":true,"fixed":true,"steps":[{"quorum":1,"roles":[],"users":[]}]}`) {
 		t.Fatalf("the policies in force: %d %s", l.Status, l.Raw)
 	}
@@ -274,6 +274,18 @@ func policyRequests(e *env) int {
 	items, _ := e.call(http.MethodGet, "/v1/approvals?status=all&page_size=500", e.as(authz.Owner), nil).Body["items"].([]any)
 	for _, it := range items {
 		if it.(map[string]any)["object_type"] == "approval_policy" {
+			n++
+		}
+	}
+	return n
+}
+
+// packRequests counts the organisation's requests to activate a statutory pack version.
+func packRequests(e *env) int {
+	n := 0
+	items, _ := e.call(http.MethodGet, "/v1/approvals?status=all&page_size=500", e.as(authz.Owner), nil).Body["items"].([]any)
+	for _, it := range items {
+		if it.(map[string]any)["object_type"] == "statutory_pack" {
 			n++
 		}
 	}

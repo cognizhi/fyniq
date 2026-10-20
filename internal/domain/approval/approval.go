@@ -36,6 +36,7 @@ const (
 	ObjectMembership = "membership"           // a member's roles after the founder bootstrap (FR-ADM-01, FM-1)
 	ObjectInvitation = "member_invitation"    // an invitation with roles after the founder bootstrap (FR-ADM-01, FM-1)
 	ObjectPolicy     = "approval_policy"      // an object type's approval policy (FR-APR-09, SOD-8); its key is that object type
+	ObjectPack       = "statutory_pack"       // a statutory pack version the organisation activates (ENG-32, SOD-10); its key is the version's id
 )
 
 // The operations: what executes on the final approval.
@@ -45,6 +46,7 @@ const (
 	OpRoleRevoke    = "role.revoke"
 	OpInvite        = "member_invitation.create"
 	OpPolicyChange  = "approval_policy.change"
+	OpPackActivate  = "statutory_pack.activate"
 )
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -59,6 +61,8 @@ var Dependencies = map[string][]string{
 	ObjectInvitation: {},
 	// the version of the object type's policy in force: the change is from it
 	ObjectPolicy: {"policy_version"},
+	// the loaded version's digest and dates, and whether the organisation has activated it already
+	ObjectPack: {"digest", "effective_from", "effective_to", "activated"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -68,6 +72,7 @@ var Rows = map[string]string{
 	ObjectMembership: "Users, roles, team mode",
 	ObjectInvitation: "Users, roles, team mode",
 	ObjectPolicy:     "Approval policies, AI catalogue",
+	ObjectPack:       "Statutory parameters",
 }
 
 // The limits of a policy.
@@ -102,13 +107,14 @@ const TeamModeFounder = "founder"
 
 // Policies are the built-in policies of the object types, which apply until an organisation changes one: one step,
 // with a quorum of one, of anyone who holds A on the object's row (the Owner for settings and roles; the Owner and
-// the Controller for policies, Appendix D). The policy for approval policies is fixed, so no change can lock an
+// the Controller for policies and statutory packs, Appendix D). The policy for approval policies is fixed, so no change can lock an
 // organisation out of changing its policies (rev 0.40).
 var Policies = map[string]Policy{
 	ObjectSetting:    {ObjectType: ObjectSetting, Version: "founder/organisation_setting@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
 	ObjectMembership: {ObjectType: ObjectMembership, Version: "founder/membership@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
 	ObjectInvitation: {ObjectType: ObjectInvitation, Version: "founder/member_invitation@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPolicy:     {ObjectType: ObjectPolicy, Version: "founder/approval_policy@2026-10-20.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
+	ObjectPack:       {ObjectType: ObjectPack, Version: "founder/statutory_pack@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

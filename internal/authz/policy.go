@@ -33,6 +33,7 @@ const (
 	Evidence            Capability = "Evidence: add, supersede (rev 0.3)"
 	Integrations        Capability = "Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)"
 	ApprovalPolicies    Capability = "Approval policies, AI catalogue"
+	StatutoryParameters Capability = "Statutory parameters"
 	// Membership is not an Appendix D row: the caller's organisation (its name and base currency),
 	// which every screen shows, is readable by every member of it. AI acts for a member; the Super
 	// admin and the HR officer (Nemura only) are not members through those roles.
@@ -58,8 +59,9 @@ const (
 )
 
 // ApprovalRows are the Appendix D rows of the objects the approval engine covers: organisation settings under dual
-// control, and members' roles and invitations after the founder bootstrap (rev 0.36); approval policies (rev 0.40).
-var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies}
+// control, and members' roles and invitations after the founder bootstrap (rev 0.36); approval policies (rev 0.40);
+// activating statutory pack versions (rev 0.41).
+var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -94,6 +96,11 @@ var Grants = map[Capability]map[string]Cell{
 		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"A", ""}, "Accountant": {"V", ""}, "Bookkeeper": {},
 		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
 		"Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	StatutoryParameters: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"CA", ""}, "Accountant": {"C", ""}, "Bookkeeper": {},
+		"AR": {}, "AP": {}, "Payroll": {"V", ""}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
+		"Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
 	},
 	ContactsAndItems: {
 		"Owner": {"V", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""},
@@ -224,8 +231,13 @@ var (
 )
 
 var (
-	ListApprovalPolicies = Policy{Operation: "listApprovalPolicies", Capability: ApprovalPolicies, Need: View}
-	GetApprovalPolicy    = Policy{Operation: "getApprovalPolicy", Capability: ApprovalPolicies, Need: View}
+	ListApprovalPolicies  = Policy{Operation: "listApprovalPolicies", Capability: ApprovalPolicies, Need: View}
+	GetApprovalPolicy     = Policy{Operation: "getApprovalPolicy", Capability: ApprovalPolicies, Need: View}
+	ListStatutoryPacks    = Policy{Operation: "listStatutoryPacks", Capability: StatutoryParameters, Need: View}
+	GetStatutoryPack      = Policy{Operation: "getStatutoryPack", Capability: StatutoryParameters, Need: View}
+	ActivateStatutoryPack = Policy{Operation: "activateStatutoryPack", Capability: StatutoryParameters, Need: Create,
+		Note: "Always waits for approval by a member who holds A on the row (the Owner or the Controller), never the proposer (ENG-32, SOD-10); " +
+			"needs a person signed in who passed step-up in the last 5 minutes."}
 	ChangeApprovalPolicy = Policy{Operation: "changeApprovalPolicy", Capability: ApprovalPolicies, Need: Create,
 		Note: "Always waits for approval by a member who holds A on the row (the Owner or the Controller), never the requester (FR-APR-09, SOD-8); " +
 			"needs a person signed in who passed step-up in the last 5 minutes."}
@@ -268,7 +280,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
-	WithdrawApproval, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy)
+	WithdrawApproval, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

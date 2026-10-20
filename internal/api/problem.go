@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/member"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
+	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -173,6 +174,10 @@ var codeFacts = map[string]struct {
 	approval.CodeAuthority:     {409, "An earlier approver no longer holds the right: nothing was changed"},
 	approval.CodeNotYourStep:   {403, "The request's current step needs someone else"},
 	approval.CodeNotYours:      {403, "Only the person who asked for it withdraws it"},
+	pack.CodeTable:             {409, "This release cannot read that pack version"},
+	pack.CodePinned:            {409, "A pinned statutory test fails"},
+	pack.CodeApproval:          {409, "Activating it needs a second approver"},
+	pack.CodeActive:            {409, "That pack version is activated already"},
 	storage.CodeApproval:       {409, "The approval cannot be made that way"},
 	settings.CodeValueOrReset:  {422, "Send a value or a reset"},
 	item.CodeCode:              {422, "Not an item code"},

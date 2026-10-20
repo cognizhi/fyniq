@@ -99,6 +99,7 @@ fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()
 fyniq_api       EXECUTE   start_session()
 fyniq_api       EXECUTE   started_job_slot()
+fyniq_api       INSERT    statutory_pack_activation (activated_at, approval_id, approved_by, proposed_by, version_id)
 fyniq_api       SELECT    statutory_pack_activation
 fyniq_api       SELECT    statutory_pack_rows
 fyniq_api       SELECT    statutory_pack_versions

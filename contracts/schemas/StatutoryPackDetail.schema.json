@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "activation": {
+      "$ref": "PackActivation.schema.json",
+      "description": "The organisation's activation; absent until it is activated (ENG-32)."
+    },
+    "conditions": {
+      "description": "The conditions it holds under, as the pack states them.",
+      "examples": [
+        "GST-registered businesses"
+      ],
+      "type": "string"
+    },
+    "digest": {
+      "description": "The SHA-256 of the version's files: a loaded version never changes.",
+      "examples": [
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      ],
+      "type": "string"
+    },
+    "effective_from": {
+      "description": "The first day it is in force.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "effective_to": {
+      "description": "The last day it is in force; absent while no later version ends it.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The version: \u003cpack\u003e@\u003cyear\u003e.\u003cn\u003e.",
+      "examples": [
+        "sg-gst@2026.1"
+      ],
+      "type": "string"
+    },
+    "pack": {
+      "description": "The pack.",
+      "examples": [
+        "sg-gst"
+      ],
+      "type": "string"
+    },
+    "pinned": {
+      "description": "Each pinned statutory test and its result.",
+      "items": {
+        "$ref": "PackPinnedResult.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "pinned_passed": {
+      "description": "Its pinned statutory tests that pass.",
+      "examples": [
+        22
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "pinned_total": {
+      "description": "Its pinned statutory tests.",
+      "examples": [
+        22
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "readable": {
+      "description": "true when this release carries the version exactly as it was loaded, so its pinned tests can run; only then can it be activated.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "review_date": {
+      "description": "When it is due for review (ENG-30).",
+      "examples": [
+        "2027-01-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "sources": {
+      "description": "The official sources its values come from.",
+      "items": {
+        "$ref": "PackSource.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "title": {
+      "description": "What it holds.",
+      "examples": [
+        "Singapore GST rates and tax codes"
+      ],
+      "type": "string"
+    },
+    "verifier": {
+      "description": "Who verified it against the sources.",
+      "examples": [
+        "Ah Kow Lim"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "verifier",
+    "conditions",
+    "sources",
+    "pinned",
+    "id",
+    "pack",
+    "title",
+    "effective_from",
+    "review_date",
+    "digest",
+    "readable",
+    "pinned_passed",
+    "pinned_total"
+  ],
+  "title": "StatutoryPackDetail",
+  "type": "object"
+}

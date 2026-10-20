@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "activated_at": {
+      "description": "When it was activated.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "approval_id": {
+      "description": "The approved request.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "approved_by": {
+      "description": "Who approved it: never the proposer (SOD-10).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "proposed_by": {
+      "description": "Who asked to activate it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "proposed_by",
+    "approved_by",
+    "approval_id",
+    "activated_at"
+  ],
+  "title": "PackActivation",
+  "type": "object"
+}

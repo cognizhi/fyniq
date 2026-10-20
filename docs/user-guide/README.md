@@ -53,7 +53,7 @@ books** (Expert only) · **Common problems** (each ✖ or ⚠ message and its fi
 | Payroll | Pay runs from Nemura or your payroll system · Salary payment batches · Payroll in the books (payslips, CPF and IR8A are in Nemura or the payroll provider's system, never in Fyniq) |
 | Accounting (Expert) | Journals · Chart of accounts · Period close · Fixed assets · Foreign currency · Year end |
 | Reports | Financial statements · Explain a number · Exports · Board pack |
-| Compliance | Statutory calendar · GST returns · Evidence: attach screenshots and files · Audit trail |
+| Compliance | ✔ [Activate a statutory pack](statutory-packs.md) · Statutory calendar · GST returns · Evidence: attach screenshots and files · Audit trail |
 | AI and integrations | Ask the AI · AI proposals and approvals · Connected apps and MCP · The API |
 | Reference | Keyboard shortcuts · Status chips (✔ ⚠ ✖ ⏰ ✎ 🔒) · Glossary · What's new |
 
