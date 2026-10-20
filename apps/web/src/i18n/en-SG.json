@@ -103,6 +103,30 @@
     "review.mark": {
       "label": "Mark as reviewed",
       "tooltip": "Record that you checked the actions you picked. Each is reviewed once."
+    },
+    "settings.members": {
+      "label": "Members and roles",
+      "tooltip": "Everyone in the company with their roles, invitations not yet used, and role changes waiting for approval."
+    },
+    "member.invite": {
+      "label": "Invite",
+      "tooltip": "Make a one-time code that gives a person the roles you choose. It works once, within 7 days."
+    },
+    "member.change-roles": {
+      "label": "Change roles",
+      "tooltip": "Add or end this person's roles. Once the company has a second member, the change waits for another Owner."
+    },
+    "member.add-role": {
+      "label": "Add role",
+      "tooltip": "Give the role; it takes effect on their next page, or after approval."
+    },
+    "member.end-role": {
+      "label": "End role",
+      "tooltip": "End the role; the company always keeps an Owner."
+    },
+    "member.withdraw-invitation": {
+      "label": "Withdraw",
+      "tooltip": "Stop this invitation's code working."
     }
   }
 }

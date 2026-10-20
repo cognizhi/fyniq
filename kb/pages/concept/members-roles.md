@@ -4,7 +4,7 @@ type: concept
 title: Members, roles and the first founder's setup
 summary: What roles do, why the Owner sets up members alone until a second person joins, and why role changes then need a second approver
 sources:
-  - docs/user-guide/members-and-roles.md sha256:b5c99e07c5fd223222c0ce570d037606b037ded74f5ba386e317567379c5a5c5
+  - docs/user-guide/members-and-roles.md sha256:f790a365bb33fa449acb8257b213e2d16e211b8f1634c8c8207a4518fb0bed2a
 data_class: general
 taint: trusted
 status: published
@@ -23,7 +23,7 @@ aliases:
 
 ## What roles do
 
-- **Settings → Members** lists everyone in the company with their roles.
+- **Settings → Members and roles** (Expert mode) lists everyone in the company with their roles, the invitations not yet used, and role changes waiting for approval.
 - A role decides what a person can see and do; one person can hold several roles.
 - The Owner approves; the Controller approves and keeps the defaults; the Accountant prepares and posts journals; the Bookkeeper records.
 
@@ -40,7 +40,8 @@ aliases:
 
 ## Changing roles
 
-- Choose the person, then **Add role** or **End role**; it takes effect on their next page.
+- **Change roles** next to the person, then choose a role and **Add role**, or **End role** next to one they hold; it takes effect on their next page.
+- A person whose roles conflict shows **Role conflict**.
 - The company always keeps an Owner: make someone else Owner before ending the last Owner's role.
 - Once the company has a second member, adding or ending a role, or inviting someone, waits for another Owner's approval.
 - In Standard mode, a role that conflicts with the person's other roles needs a reason, and an invitation cannot give roles that conflict ([[settings.team-mode]]).

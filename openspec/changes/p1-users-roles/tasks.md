@@ -74,7 +74,13 @@
   (20 Oct 2026, in part: Settings › Profile and security (`screens/settings/Profile.tsx`): whether you confirmed it's
   you and until when, your passkeys (add with the browser's ceremony, revoke) and your devices (sign one out, or every
   other one), with the guide page `profile-and-security.md` compiled into `preferences.security`. Tests
-  `Profile.test.tsx`, `stepup.test.tsx`, `passkey.test.ts`. **Left:** mfa-enrolment's guided steps and recovery codes
-  (TOTP is the provider's), users-roles, account-recovery, auditor-workspace and super-admin-console.)
+  `Profile.test.tsx`, `stepup.test.tsx`, `passkey.test.ts`. Then users-roles as Settings › Members and roles
+  (`screens/settings/Members.tsx`, Expert mode): the members with their roles and SOD-6 conflicts, the invitations not
+  yet used (withdraw), the role changes waiting for another Owner, inviting (the code shown once, at once in the
+  founder bootstrap or with the approval request after it) and adding or ending a role, with the conflict's reason in a
+  mode that blocks conflicts. Tests `Members.test.tsx`. **Left:** mfa-enrolment's guided steps and recovery codes (TOTP
+  is the provider's); on users-roles, the columns the API does not return yet (email, last sign-in, MFA status,
+  scopes), default experience mode per invitation, Owner transfer and succession, and the access review;
+  account-recovery, auditor-workspace and super-admin-console.)
 - [ ] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
 - [ ] 4.3 Finish with `make check` and `make test`

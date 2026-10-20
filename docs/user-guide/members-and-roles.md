@@ -10,7 +10,8 @@ requirements: [FR-ADM-01, FM-1]
 
 ## What it is
 
-**Settings → Members** lists everyone in the company with their roles. A role decides what a person
+**Settings → Members and roles** lists everyone in the company with their roles, the invitations
+not yet used, and the role changes waiting for approval. It is in Expert mode. A role decides what a person
 can see and do: the Owner approves, the Controller approves and keeps the defaults, the Accountant
 prepares and posts journals, the Bookkeeper records, and so on. One person can hold several roles.
 
@@ -30,13 +31,15 @@ joins saves those approvals.
 
 ## Invite someone
 
-1. Open **Settings → Members** and select **Invite**.
+1. Open **Settings → Members and roles** and select **Invite**.
 2. Enter the person's name and choose their roles. For someone from outside the company, such as an
    auditor, set the date their roles end. The Owner role never ends.
-3. Select **Create invitation**. The code is shown once: give it to the person in person or on a
-   call. It works once and stops working after 7 days.
+3. Select **Create invitation**, and confirm it's you if Fyniq asks. The code is shown once: copy
+   it and give it to the person in person or on a call. It works once and stops working after
+   7 days.
 
-You can **Withdraw** an invitation that has not been used; its code stops working at once.
+Under **Invitations not yet used**, you can **Withdraw** an invitation; its code stops working at
+once.
 
 ## Join with an invitation
 
@@ -48,9 +51,11 @@ A wrong, used, withdrawn or expired code is refused, and nothing changes. Ask fo
 
 ## Change someone's roles
 
-- In **Settings → Members**, choose the person, then **Add role** or **End role**.
+- In **Settings → Members and roles**, select **Change roles** next to the person. Choose a role
+  and select **Add role**, or select **End role** next to one they hold.
 - The company always keeps an Owner: make someone else Owner before ending the last Owner's role.
-- A change takes effect on the person's next page.
+- A change takes effect on the person's next page. A person whose roles conflict shows **Role
+  conflict**.
 - Once the company has a second member, adding or ending a role, or inviting someone, waits for
   another Owner's approval. An invitation's code is shown to you at once, and works once the
   invitation is approved.

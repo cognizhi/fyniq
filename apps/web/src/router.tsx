@@ -29,6 +29,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "review-log": lazyRouteComponent(() => import("./screens/approvals/ReviewLog"), "ReviewLog"),
   settings: lazyRouteComponent(() => import("./screens/settings/Settings"), "Settings"),
   "settings-profile": lazyRouteComponent(() => import("./screens/settings/Profile"), "Profile"),
+  "settings-members": lazyRouteComponent(() => import("./screens/settings/Members"), "Members"),
 };
 
 function Root() {
