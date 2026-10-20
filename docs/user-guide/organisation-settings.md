@@ -98,3 +98,8 @@ rounding** (7030) instead of leaving the document part-paid.
   the end of the financial year they relate to. It can be lengthened, never shortened.
 - **AI conversations kept for**: 365 days, then they are deleted. A proposal the AI made is kept
   with the audit trail.
+
+## Related
+
+- [Set up and keep the chart of accounts](chart-of-accounts.md)
+- [Approve a change](approvals.md)
