@@ -1,26 +1,185 @@
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { ChevronRight, Circle, CircleCheck, ClipboardCheck, ClockAlert, Stamp } from "lucide-react";
+import { api } from "../api/client";
 import { useSignedIn } from "../session";
+import { Icon } from "../ui";
 
-// Home is the first signed-in page: who is signed in and where. Its tiles and Inbox arrive with the
-// modules (docs/design/screens AppShell); the signed-in layout (session.tsx) gives it the frame.
+// Each read answers null when the person's roles may not read it: the step it feeds is left out
+// rather than shown as not done (the API decides who sees what).
+async function count<T>(read: () => Promise<{ data?: { items?: T[] | null }; error?: unknown }>, keep: (x: T) => boolean = () => true): Promise<number | null> {
+  const { data, error } = await read();
+  return error || !data ? null : (data.items ?? []).filter(keep).length;
+}
+
+function useCounts() {
+  const opts = { retry: false, staleTime: 30_000 };
+  return {
+    toApprove: useQuery({ ...opts, queryKey: ["approvals", "home"], queryFn: () => count(() => api.GET("/v1/approvals", { params: { query: { status: "pending", page_size: 500 } } }), (a) => a.you_may_approve) }),
+    review: useQuery({
+      ...opts,
+      queryKey: ["review-log", "home"],
+      queryFn: async () => {
+        const { data, error } = await api.GET("/v1/review-log", { params: { query: { status: "unreviewed", page_size: 200 } } });
+        return error || !data ? null : { mine: (data.items ?? []).filter((e) => e.you_may_review).length, overdue: data.overdue };
+      },
+    }),
+    profile: useQuery({
+      ...opts,
+      queryKey: ["profile", "home"],
+      queryFn: async () => {
+        const { data, error } = await api.GET("/v1/organisation/profile");
+        return error || !data ? null : data;
+      },
+    }),
+    accounts: useQuery({ ...opts, queryKey: ["accounts", "home"], queryFn: () => count(() => api.GET("/v1/accounts", { params: { query: { page_size: 500 } } })) }),
+    money: useQuery({ ...opts, queryKey: ["accounts", "home-money"], queryFn: () => count(() => api.GET("/v1/accounts", { params: { query: { page_size: 500 } } }), (a) => a.money_account && a.active) }),
+    contacts: useQuery({ ...opts, queryKey: ["contacts", "home"], queryFn: () => count(() => api.GET("/v1/contacts", { params: { query: { page_size: 1 } } })) }),
+    members: useQuery({ ...opts, queryKey: ["members", "home"], queryFn: () => count(() => api.GET("/v1/members", { params: { query: { page_size: 10 } } })) }),
+    invites: useQuery({ ...opts, queryKey: ["invitations", "home"], queryFn: () => count(() => api.GET("/v1/members/invitations", { params: { query: { page_size: 10 } } })) }),
+    passkeys: useQuery({ ...opts, queryKey: ["passkeys", "home"], queryFn: () => count(() => api.GET("/v1/session/passkeys", { params: { query: { page_size: 50 } } }), (k) => !k.revoked_at) }),
+  };
+}
+
+interface Step {
+  id: string;
+  title: string;
+  why: string;
+  done: boolean;
+  to: string;
+}
+
+// Waiting is what waits for the person now: approvals and the weekly review (FR-APR-01, FM-3).
+function Waiting({ toApprove, review }: { toApprove: number | null; review: { mine: number; overdue: number } | null }) {
+  if (toApprove === null && review === null) return null;
+  return (
+    <section className="fy-card" aria-labelledby="waiting-title">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="waiting-title">
+          Waiting for you
+        </h2>
+      </div>
+      <ul className="fy-list" aria-labelledby="waiting-title">
+        {toApprove !== null && (
+          <li>
+            <Link className="fy-list__item" to="/inbox">
+              <span className={toApprove ? "fy-list__icon fy-list__icon--brand" : "fy-list__icon"}>
+                <Icon of={Stamp} size={20} />
+              </span>
+              <span className="fy-list__main">
+                <span className="fy-list__title">{toApprove === 0 ? "Nothing to approve" : toApprove === 1 ? "1 request to approve" : `${toApprove} requests to approve`}</span>
+                <span className="fy-list__meta">Changes another person asked for, waiting for your approval</span>
+              </span>
+              <Icon of={ChevronRight} />
+            </Link>
+          </li>
+        )}
+        {review !== null && (
+          <li>
+            <Link className="fy-list__item" to="/review-log">
+              <span className={review.mine ? "fy-list__icon fy-list__icon--brand" : "fy-list__icon"}>
+                <Icon of={ClipboardCheck} size={20} />
+              </span>
+              <span className="fy-list__main">
+                <span className="fy-list__title">{review.mine === 0 ? "Nothing to review" : review.mine === 1 ? "1 high-risk action to review" : `${review.mine} high-risk actions to review`}</span>
+                <span className="fy-list__meta">The weekly review of another founder's actions</span>
+              </span>
+              {review.overdue > 0 && (
+                <span className="fy-chip fy-chip--serious">
+                  <Icon of={ClockAlert} />
+                  {review.overdue} overdue
+                </span>
+              )}
+              <Icon of={ChevronRight} />
+            </Link>
+          </li>
+        )}
+      </ul>
+    </section>
+  );
+}
+
+// SetUp is the guided set-up checklist (FR-UX-10, docs/design/screens guided-setup): the steps the
+// API can tell are done, with progress. Opening balances, bank feeds, employees and the workbook
+// import join it with their modules.
+function SetUp({ steps }: { steps: Step[] }) {
+  if (steps.length === 0) return null;
+  const done = steps.filter((s) => s.done).length;
+  return (
+    <section className="fy-card" aria-labelledby="setup-title">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="setup-title">
+          Set up the company
+        </h2>
+        <span className="fy-badge fy-badge--quiet">
+          {done} of {steps.length}
+        </span>
+      </div>
+      <div className="fy-card__body">
+        <div className="fy-progress fy-progress--good" role="progressbar" aria-label="Set-up progress" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done}>
+          <span className={["w-0", "w-1/8", "w-1/4", "w-3/8", "w-1/2", "w-5/8", "w-3/4", "w-7/8", "w-full"][Math.round((done / steps.length) * 8)]} />
+        </div>
+      </div>
+      <ol className="fy-list" aria-labelledby="setup-title">
+        {steps.map((s) => (
+          <li key={s.id}>
+            <Link className="fy-list__item" to={s.to}>
+              <span className={s.done ? "fy-list__icon fy-list__icon--good" : "fy-list__icon"}>
+                <Icon of={s.done ? CircleCheck : Circle} size={20} />
+              </span>
+              <span className="fy-list__main">
+                <span className="fy-list__title whitespace-normal">{s.title}</span>
+                <span className="fy-list__meta whitespace-normal">{s.why}</span>
+              </span>
+              <span className={s.done ? "fy-chip fy-chip--good" : "fy-chip fy-chip--neutral"}>{s.done ? "Done" : "To do"}</span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+// Home is the first signed-in page (docs/design/screens Home): what waits for the person, and while
+// the company is new, the set-up checklist. The pulse card, tiles and deadlines arrive with the
+// ledger's reports.
 export function Home() {
   const { session, organisation } = useSignedIn();
+  const c = useCounts();
+  const steps: Step[] = [];
+  const add = (id: string, known: unknown, done: boolean, title: string, why: string, to: string) => {
+    if (known !== null && known !== undefined) steps.push({ id, done, title, why, to });
+  };
+  const p = c.profile.data;
+  add("profile", p, Boolean(p?.legal_name && p.uen), "Enter the company's legal name and UEN", "Documents print them; Settings › Organisation", "/settings/organisation");
+  add("year", p, Boolean(p?.books_start), "Set when the books start", "The first day Fyniq keeps the books, and the financial year; Settings › Organisation", "/settings/organisation");
+  add("chart", c.accounts.data, (c.accounts.data ?? 0) > 0, "Load the chart of accounts", "Start from the standard Singapore start-up chart", "/accounting/chart-of-accounts");
+  add("bank", c.money.data, (c.money.data ?? 0) > 0, "Add the bank accounts", "Each bank, card or cash account as a money account in the chart", "/accounting/chart-of-accounts");
+  add("contacts", c.contacts.data, (c.contacts.data ?? 0) > 0, "Add customers and vendors", "Who you invoice, and whose bills you pay", "/contacts");
+  add("founders", c.members.data, (c.members.data ?? 0) > 1 || (c.invites.data ?? 0) > 0, "Invite the other founders", "Before the second one joins, your role changes are made at once", "/settings/members");
+  add("passkey", c.passkeys.data, (c.passkeys.data ?? 0) > 0, "Add a passkey", "Confirming it's you, and signing approvals, then takes a touch", "/settings/profile");
+  const allDone = steps.length > 0 && steps.every((s) => s.done);
+
   return (
     <div className="fy-page fy-page--narrow fy-enter">
       <div className="fy-pagehead">
         <div className="fy-pagehead__text">
-          <h1 className="fy-h1">Fyniq</h1>
-          <p className="fy-secondary">Intelligence behind every number.</p>
+          <h1 className="fy-h1">{organisation ? organisation.name : "Fyniq"}</h1>
+          <p className="fy-secondary">
+            {organisation ? `Books in ${organisation.base_currency}. ${organisation.team_mode === "standard" ? "Standard" : "Founder"} mode.` : "Intelligence behind every number."}
+          </p>
         </div>
       </div>
-      <p>The pages of your workspace arrive here, one module at a time.</p>
       <div role="status" aria-live="polite" className="api">
-        <p>
-          {organisation
-            ? `Signed in to ${organisation.name} (books in ${organisation.base_currency}).`
-            : "Signed in. You are not a member of an organisation yet."}
-          {session.super_admin && " You are a Super admin of this installation."}
-        </p>
+        {!organisation && <p>Signed in. You are not a member of an organisation yet.</p>}
+        {session.super_admin && <p className="fy-small fy-secondary">You are a Super admin of this installation.</p>}
       </div>
+      {organisation && (
+        <>
+          <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} />
+          {!allDone && <SetUp steps={steps} />}
+        </>
+      )}
     </div>
   );
 }

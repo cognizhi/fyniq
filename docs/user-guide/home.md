@@ -12,8 +12,13 @@ status: draft            # written with the app shell's first slice (P1); review
 ## What it is
 
 **Home** is where Fyniq opens once you are signed in. It says which organisation you are signed in
-to and which currency its books are kept in. The pages of your workspace appear as each module
-arrives; you only ever see the pages your roles allow.
+to, which currency its books are kept in, and its team mode. The pages of your workspace appear as
+each module arrives; you only ever see the pages your roles allow.
+
+- **Waiting for you** counts the requests waiting for your approval and the high-risk actions you
+  can review, with any that are overdue. Select one to open the Inbox or the review log.
+- **Set up the company** lists the first steps, each marked **Done** or **To do**, with progress.
+  It goes once every step is done.
 
 ## Before you start
 
@@ -21,6 +26,19 @@ arrives; you only ever see the pages your roles allow.
   setup page instead ([Set up a new installation](setup-first-run.md)).
 
 ## Steps
+
+### Set up the company
+
+Work down the list. Each step opens the page where you do it:
+
+- Enter the company's legal name and UEN, and set when the books start (**Settings → Organisation**).
+- Load the chart of accounts, and add the bank accounts to it (**Accounting → Chart of accounts**).
+- Add customers and vendors (**Contacts**).
+- Invite the other founders (**Settings → Members and roles**).
+- Add a passkey (**Settings → Profile and security**).
+
+A step your roles cannot see is left out. Opening balances, bank feeds, employees and importing
+from the workbook join the list as they arrive.
 
 ### Find anything with search
 
