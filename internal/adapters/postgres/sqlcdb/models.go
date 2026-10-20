@@ -467,6 +467,18 @@ type FyniqRoleAssignment struct {
 	RevokedAt      *time.Time
 }
 
+type FyniqSodOverride struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	TeamModeVersion int32
+	UserID          uuid.UUID
+	Conflict        string
+	Reason          string
+	RequestID       uuid.UUID
+	CreatedBy       uuid.UUID
+	CreatedAt       time.Time
+}
+
 type FyniqStatutoryPackActivation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -542,6 +554,16 @@ type FyniqSuperAdminGrant struct {
 	ExpiresAt *time.Time
 	UsedAt    *time.Time
 	UsedBy    *uuid.UUID
+}
+
+type FyniqTeamMode struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Version        int32
+	Mode           string
+	RequestID      uuid.UUID
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
 }
 
 type FyniqTenantDirectory struct {

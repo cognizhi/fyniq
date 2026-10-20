@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "description": "The team mode to switch to. Enterprise mode is not available yet (TEAM-03).",
+      "enum": [
+        "founder",
+        "standard",
+        "enterprise"
+      ],
+      "examples": [
+        "standard"
+      ],
+      "type": "string"
+    },
+    "overrides": {
+      "description": "For a mode that blocks conflicts: an override with a reason for each member's conflict that stays.",
+      "items": {
+        "$ref": "TeamModeOverride.schema.json"
+      },
+      "maxItems": 100,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "mode"
+  ],
+  "title": "TeamModeSwitch",
+  "type": "object"
+}

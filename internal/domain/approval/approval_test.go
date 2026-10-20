@@ -45,7 +45,7 @@ func envelope() Envelope {
 	return Envelope{Organisation: uuid.MustParse("01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"), ObjectType: ObjectSetting, ObjectID: "bank.tolerance_base",
 		ObjectVersion: 2, Operation: OpSettingChange, Change: map[string]any{"value": "5.00", "effective_from": "2026-11-01"},
 		Amounts: []Amount{{"5.00", "SGD"}}, Dependencies: map[string]any{"setting_version": 2, "value_in_effect": "1.00", "scheduled": []any{}},
-		Policy: Policies[ObjectSetting].Version, TeamMode: TeamModeFounder, RequestedBy: uuid.MustParse("01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01")}
+		Policy: Policies[ObjectSetting].Version, TeamMode: "founder", RequestedBy: uuid.MustParse("01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01")}
 }
 
 // The envelope's bytes and hash are pinned: the same change always signs the same bytes, and changing any part

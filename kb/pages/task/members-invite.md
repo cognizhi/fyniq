@@ -4,7 +4,7 @@ type: task
 title: Invite someone, or join with an invitation
 summary: Create a one-time invitation with roles, give the code in person, withdraw it if unused, and join a company with a code
 sources:
-  - docs/user-guide/members-and-roles.md sha256:8cb6790e7da388ded2d653e12232bbc36332c73ed25f845a8cb4a396279cca5b
+  - docs/user-guide/members-and-roles.md sha256:b5c99e07c5fd223222c0ce570d037606b037ded74f5ba386e317567379c5a5c5
 data_class: general
 taint: trusted
 status: published
@@ -34,6 +34,7 @@ aliases:
 
 - An invitation, like adding or ending a role, waits for another Owner's approval ([[approvals.decide]]).
 - Its code is shown to you at once, and works once the invitation is approved.
+- In Standard mode an invitation cannot give roles that conflict: invite with one role, then give the other with a reason ([[settings.team-mode]]).
 
 (src: docs/user-guide/members-and-roles.md#change-someones-roles)
 

@@ -577,7 +577,7 @@ export interface paths {
         };
         /**
          * Get your organisation
-         * @description Returns the organisation your session is in: its name and base currency, which every screen shows. Read-only; no side effects. Every member of the organisation may call it.
+         * @description Returns the organisation your session is in: its name, base currency and team mode, which every screen shows. Read-only; no side effects. Every member of the organisation may call it.
          */
         get: operations["getOrganisation"];
         put?: never;
@@ -1032,6 +1032,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/team-mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the team mode
+         * @description The organisation's team mode (PRD-001 §6.4), the conflicts of §6.3 its members' roles and pending invitations hold now, the overrides that let members keep them in a mode that blocks conflicts, and every version. Founder mode until the first switch. Its ETag is the version. Read-only; no side effects.
+         */
+        get: operations["getTeamMode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Ask to switch the team mode
+         * @description Asks for a switch of the team mode (PRD-001 §6.4, FR-ADM-04). The switch is never made at once: the answer is 202 with an approval request, which a member who holds A on "Users, roles, team mode" (an Owner) and is not the requester approves (dual control). A switch to a mode that blocks conflicts (Standard) lists every member whose roles conflict and waits until each is resolved or overridden: send an override with a reason for each conflict that stays (TEAM-01); a pending invitation whose roles conflict is withdrawn first. Enterprise mode is not available yet (TEAM-03). The approval records the overrides, which are reported with the team mode, and every pending approval request of the organisation becomes void, since each was asked for under the old mode. Asking needs a person signed in who passed step-up in the last 5 minutes and If-Match with the team mode's ETag. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        patch: operations["switchTeamMode"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1329,7 +1353,7 @@ export interface components {
              */
             invitation_code?: string;
             /**
-             * @description Which one: the setting's key, the membership's ID, the invitation's code hash, or the object type whose approval policy changes.
+             * @description Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode.
              * @example bank.tolerance_base
              */
             object_key: string;
@@ -1338,13 +1362,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member_invitation.create" | "approval_policy.change";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -1459,7 +1483,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -1501,7 +1525,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -2911,6 +2935,12 @@ export interface components {
              */
             name: string;
             /**
+             * @description The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42).
+             * @example founder
+             * @enum {string}
+             */
+            team_mode: "founder" | "standard" | "enterprise";
+            /**
              * Format: int64
              * @description The record's version; it also makes the ETag.
              * @example 1
@@ -3292,6 +3322,11 @@ export interface components {
              * @example owner
              */
             role: string;
+            /**
+             * @description In a team mode that blocks conflicts (Standard): why the member keeps the conflict of §6.3 this role makes. The role change's approver accepts the override, which is reported with the team mode (TEAM-02, rev 0.42).
+             * @example Founder who also keeps the books until we hire
+             */
+            sod_override_reason?: string;
         };
         Sequence: {
             /**
@@ -3618,6 +3653,47 @@ export interface components {
              */
             next_cursor?: string;
         };
+        SoDOverride: {
+            /**
+             * Format: uuid
+             * @description The approved request that holds it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            approval_id: string;
+            /**
+             * @description The conflict (PRD-001 §6.3).
+             * @example SOD-6
+             */
+            conflict: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-10-20T09:30:00Z
+             */
+            created_at: string;
+            /**
+             * @description Their name.
+             * @example Wei Ling Tan
+             */
+            display_name: string;
+            /**
+             * @description Why they keep it.
+             * @example Founder who also keeps the books until we hire
+             */
+            reason: string;
+            /**
+             * Format: int64
+             * @description The version of the team mode it is for: a later switch lists the conflict again.
+             * @example 1
+             */
+            team_mode_version: number;
+            /**
+             * Format: uuid
+             * @description The member's user.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            user_id: string;
+        };
         StatutoryPack: {
             /** @description The organisation's activation; absent until it is activated (ENG-32). */
             activation?: components["schemas"]["PackActivation"];
@@ -3782,6 +3858,128 @@ export interface components {
              * @example ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z
              */
             recovery_code?: string;
+        };
+        TeamMode: {
+            /**
+             * @description true in a mode that blocks conflicts unless they are overridden.
+             * @example false
+             */
+            blocks_conflicts: boolean;
+            /** @description The conflicts the members' roles and the pending invitations' roles hold now. A switch to a mode that blocks conflicts waits until each is resolved, or overridden with a reason. */
+            conflicts: components["schemas"]["TeamModeConflict"][] | null;
+            /** @description Every version, oldest first; empty until the first switch. */
+            history: components["schemas"]["TeamModeVersion"][] | null;
+            /**
+             * @description Founder mode allows the conflicts of §6.3 with the compensating controls FM-1 to FM-9; Standard and Enterprise mode block them (PRD-001 §6.4).
+             * @example founder
+             * @enum {string}
+             */
+            mode: "founder" | "standard" | "enterprise";
+            /** @description The overrides for the version in force: who keeps a conflict, and why (reported, §6.4). */
+            overrides: components["schemas"]["SoDOverride"][] | null;
+            /**
+             * Format: int64
+             * @description The team mode's version: 0 until the first switch; it also makes the ETag.
+             * @example 0
+             */
+            version: number;
+        };
+        TeamModeConflict: {
+            /**
+             * @description The conflict (PRD-001 §6.3): SOD-6, administering users or roles and posting or approving transactions, is the one a combination of roles makes; the others are checked on each item.
+             * @example SOD-6
+             */
+            conflict: string;
+            /**
+             * @description The member's or the invitee's name.
+             * @example Wei Ling Tan
+             */
+            display_name: string;
+            /**
+             * Format: uuid
+             * @description The pending invitation, for an invitation.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20
+             */
+            invitation_id?: string;
+            /**
+             * Format: uuid
+             * @description The member's membership, for a member.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+             */
+            member_id?: string;
+            /**
+             * @description true when an override for the team mode in force lets the member keep it.
+             * @example false
+             */
+            overridden: boolean;
+            /** @description The roles that make it. */
+            roles: string[] | null;
+            /**
+             * Format: uuid
+             * @description The member's user, for a member.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            user_id?: string;
+        };
+        TeamModeOverride: {
+            /**
+             * @description The conflict, as the team mode lists it.
+             * @example SOD-6
+             */
+            conflict: string;
+            /**
+             * Format: uuid
+             * @description The member's membership.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+             */
+            member_id: string;
+            /**
+             * @description Why they keep both sides of it.
+             * @example Founder who also keeps the books until we hire
+             */
+            reason: string;
+        };
+        TeamModeSwitch: {
+            /**
+             * @description The team mode to switch to. Enterprise mode is not available yet (TEAM-03).
+             * @example standard
+             * @enum {string}
+             */
+            mode: "founder" | "standard" | "enterprise";
+            /** @description For a mode that blocks conflicts: an override with a reason for each member's conflict that stays. */
+            overrides?: components["schemas"]["TeamModeOverride"][] | null;
+        };
+        TeamModeVersion: {
+            /**
+             * Format: uuid
+             * @description The approved request that made it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            approval_id: string;
+            /**
+             * Format: date-time
+             * @description When it took effect.
+             * @example 2026-10-20T09:30:00Z
+             */
+            created_at: string;
+            /**
+             * @description The team mode from then on.
+             * @example standard
+             * @enum {string}
+             */
+            mode: "founder" | "standard" | "enterprise";
+            /**
+             * Format: uuid
+             * @description The user who asked for it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            requested_by: string;
+            /**
+             * Format: int64
+             * @description The version, from 1.
+             * @example 1
+             */
+            version: number;
         };
     };
     responses: never;
@@ -7135,7 +7333,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `TEAM-04` Your roles conflict for this action. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7282,7 +7480,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `TEAM-04` Your roles conflict for this action. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -7871,7 +8069,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way. */
+            /** @description Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `TEAM-02` The roles would conflict. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8153,7 +8351,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `TEAM-02` The roles would conflict. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8180,7 +8378,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `TEAM-06` The override is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11236,6 +11434,249 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTeamMode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamMode"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    switchTeamMode: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamModeSwitch"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `TEAM-01` Conflicts of duties block the switch; `TEAM-02` The roles would conflict; `TEAM-05` The organisation is in that mode already. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TEAM-03` That team mode is not available; `TEAM-06` The override is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

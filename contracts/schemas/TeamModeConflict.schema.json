@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "conflict": {
+      "description": "The conflict (PRD-001 §6.3): SOD-6, administering users or roles and posting or approving transactions, is the one a combination of roles makes; the others are checked on each item.",
+      "examples": [
+        "SOD-6"
+      ],
+      "type": "string"
+    },
+    "display_name": {
+      "description": "The member's or the invitee's name.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "invitation_id": {
+      "description": "The pending invitation, for an invitation.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "member_id": {
+      "description": "The member's membership, for a member.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "overridden": {
+      "description": "true when an override for the team mode in force lets the member keep it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "roles": {
+      "description": "The roles that make it.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "user_id": {
+      "description": "The member's user, for a member.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "conflict",
+    "display_name",
+    "roles",
+    "overridden"
+  ],
+  "title": "TeamModeConflict",
+  "type": "object"
+}

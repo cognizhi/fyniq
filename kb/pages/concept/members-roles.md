@@ -4,7 +4,7 @@ type: concept
 title: Members, roles and the first founder's setup
 summary: What roles do, why the Owner sets up members alone until a second person joins, and why role changes then need a second approver
 sources:
-  - docs/user-guide/members-and-roles.md sha256:8cb6790e7da388ded2d653e12232bbc36332c73ed25f845a8cb4a396279cca5b
+  - docs/user-guide/members-and-roles.md sha256:b5c99e07c5fd223222c0ce570d037606b037ded74f5ba386e317567379c5a5c5
 data_class: general
 taint: trusted
 status: published
@@ -43,5 +43,6 @@ aliases:
 - Choose the person, then **Add role** or **End role**; it takes effect on their next page.
 - The company always keeps an Owner: make someone else Owner before ending the last Owner's role.
 - Once the company has a second member, adding or ending a role, or inviting someone, waits for another Owner's approval.
+- In Standard mode, a role that conflicts with the person's other roles needs a reason, and an invitation cannot give roles that conflict ([[settings.team-mode]]).
 
 (src: docs/user-guide/members-and-roles.md#change-someones-roles)

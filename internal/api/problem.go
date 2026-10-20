@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
+	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -179,6 +180,12 @@ var codeFacts = map[string]struct {
 	pack.CodeApproval:          {409, "Activating it needs a second approver"},
 	pack.CodeActive:            {409, "That pack version is activated already"},
 	storage.CodeApproval:       {409, "The approval cannot be made that way"},
+	team.CodeConflicts:         {409, "Conflicts of duties block the switch"},
+	team.CodeConflict:          {409, "The roles would conflict"},
+	team.CodeUnavailable:       {422, "That team mode is not available"},
+	team.CodeAction:            {403, "Your roles conflict for this action"},
+	team.CodeSame:              {409, "The organisation is in that mode already"},
+	team.CodeOverride:          {422, "The override is not valid"},
 	settings.CodeValueOrReset:  {422, "Send a value or a reset"},
 	item.CodeCode:              {422, "Not an item code"},
 	item.CodeName:              {422, "The item's name is not valid"},

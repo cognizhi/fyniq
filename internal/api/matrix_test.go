@@ -336,6 +336,20 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return packRequests(e) == was }
 	},
+	"getTeamMode": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/team-mode", tok, nil), nil
+	},
+	// Asking to switch always waits for approval; an allowed role's request is withdrawn again, so the next role finds
+	// none pending.
+	"switchTeamMode": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "team_mode")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPatch, "/v1/team-mode", person, map[string]any{"mode": "standard"}, "If-Match", `"0"`)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "team_mode") == was }
+	},
 	"listApprovals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/approvals", tok, nil), nil
 	},

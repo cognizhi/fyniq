@@ -373,3 +373,101 @@ func TestAttackPackActivationIsTheApprovedRequest(t *testing.T) {
 		t.Errorf("A sees %d activations, not 1", n)
 	}
 }
+
+// A version of the team mode exists only as the next one, with the approved switch that holds exactly it; adding one
+// voids every pending request of the organisation, audited. An override of a conflict exists only for the version in
+// force, with the approved switch or role change that holds exactly it. Neither ever changes, and another organisation
+// sees neither (rev 0.42).
+// req: access/team-modes Mode switching
+// req: SOD-6
+// req: FR-ADM-04
+// asvs: V8.2.2, V16.3.3
+func TestAttackTeamModesAreApprovedSwitches(t *testing.T) {
+	ctx := context.Background()
+	a, b := books(t, "Attack team mode A Pte Ltd"), books(t, "Attack team mode B Pte Ltd")
+	st := store(t, "fyniq_api")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	requester, approver := founder(t, st, a.Org, 1, now), founder(t, st, a.Org, 2, now)
+	one := []storage.ApprovalStep{{Quorum: 1}}
+	waiting := request(t, st, a.Org, requester, "organisation_setting", "bank.tolerance_base", "organisation_setting.change", `{"execute":{}}`, one, now)
+	sw := request(t, st, a.Org, requester, "team_mode", "organisation", "team_mode.change",
+		`{"execute":{"mode":"standard","version":1,"overrides":[{"user_id":"`+approver.String()+`","conflict":"SOD-6","reason":"Founder"}]}}`, one, now)
+	add := func(n storage.NewTeamMode) error {
+		return st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.TeamModes().Add(ctx, n)
+			return err
+		})
+	}
+	override := func(n storage.NewSoDOverride) error {
+		return st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.TeamModes().Override(ctx, n)
+			return err
+		})
+	}
+	ok := storage.NewTeamMode{Version: 1, Mode: "standard", RequestID: sw.ID, CreatedBy: requester, CreatedAt: now}
+	okOverride := storage.NewSoDOverride{TeamModeVersion: 1, UserID: approver, Conflict: "SOD-6", Reason: "Founder", RequestID: sw.ID,
+		CreatedBy: requester, CreatedAt: now}
+	wantState(t, "a version whose switch is pending", add(ok), "FY108")
+	if err := signs(st, a.Org, sw, 1, approver, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := decides(st, a.Org, sw, "approved", now); err != nil {
+		t.Fatal(err)
+	}
+	mode, gap, by := ok, ok, ok
+	mode.Mode = "enterprise"
+	gap.Version = 2
+	by.CreatedBy = approver
+	wantState(t, "a version of another mode than the approved", add(mode), "FY108")
+	wantState(t, "a version past the next", add(gap), "FY108")
+	wantState(t, "a version made by someone other than its requester", add(by), "FY108")
+	wantState(t, "an override before its version", override(okOverride), "FY109", "23503")
+	if err := add(ok); err != nil {
+		t.Fatalf("the approved version: %v", err)
+	}
+	wantState(t, "the same version again", add(ok), "FY108", "23505")
+	reason, who, conflict := okOverride, okOverride, okOverride
+	reason.Reason = "Another reason"
+	who.UserID = requester
+	conflict.Conflict = "SOD-2"
+	wantState(t, "an override with another reason than the approved", override(reason), "FY109")
+	wantState(t, "an override of another member", override(who), "FY109")
+	wantState(t, "an override of another conflict", override(conflict), "FY109")
+	if err := override(okOverride); err != nil {
+		t.Fatalf("the approved override: %v", err)
+	}
+	if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		r, err := u.Approvals().Get(ctx, waiting.ID)
+		if err == nil && (r.Status != "void" || r.StatusReason != "the team mode changed after the request") {
+			t.Errorf("a pending request after the team mode changed: %+v", r)
+		}
+		ms, err2 := u.TeamModes().List(ctx)
+		os, err3 := u.TeamModes().Overrides(ctx)
+		if err2 != nil || err3 != nil || len(ms) != 1 || ms[0].Mode != "standard" || len(os) != 1 || os[0].UserID != approver {
+			t.Errorf("the team modes %+v (%v) and overrides %+v (%v)", ms, err2, os, err3)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct{ role, what, stmt, state string }{
+		{"fyniq_api", "the API changing a version", "UPDATE fyniq.team_mode SET mode = 'founder'", "42501"},
+		{"fyniq_api", "the API deleting an override", "DELETE FROM fyniq.sod_override", "42501"},
+		{"fyniq_migrator", "the owner changing a version", "UPDATE fyniq.team_mode SET mode = 'founder'", "FY108"},
+		{"fyniq_migrator", "the owner deleting a version", "DELETE FROM fyniq.team_mode", "FY108"},
+		{"fyniq_migrator", "the owner changing an override", "UPDATE fyniq.sod_override SET reason = 'x'", "FY109"},
+		{"fyniq_worker", "the worker adding a version", `INSERT INTO fyniq.team_mode (version, mode, request_id, created_by, created_at)
+			SELECT 2, 'founder', gen_random_uuid(), gen_random_uuid(), now()`, "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.what, err, c.state)
+	}
+	for _, table := range []string{"team_mode", "sod_override"} {
+		if n := count(t, b.Org, table); n != 0 {
+			t.Errorf("B sees %d of A's rows in %s", n, table)
+		}
+	}
+	if got := actions(t, a.Org, waiting.ID); !slices.Contains(got, "approval.void") {
+		t.Errorf("the voided request's trail: %v", got)
+	}
+}

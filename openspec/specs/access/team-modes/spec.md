@@ -73,6 +73,40 @@ Source: PRD-001 §6.4
 - **THEN** the platform lists every such user
 - **AND** blocks the switch until each conflict is resolved or explicitly overridden
 
+#### Scenario: Founder mode until the first switch, asked for and approved by different people (rev 0.42)
+- **GIVEN** an organisation that has never switched its team mode
+- **THEN** it is in Founder mode
+- **WHEN** a member who holds C on "Users, roles, team mode" (the Administrator) asks for a switch
+- **THEN** the answer is an approval request, and the switch is made only when a member who holds A on that row (an Owner), never the requester, approves it
+- **AND** the database keeps each version of the team mode only with the approved request that holds it, and never changes one
+
+#### Scenario: The conflict a combination of roles makes (rev 0.42)
+- **WHEN** one person holds the Administrator role together with a role that holds P, A or R on a transaction row of Appendix D (Owner, Controller, Accountant, Bookkeeper, AR specialist, Payment releaser or Approver)
+- **THEN** their roles hold SOD-6
+- **AND** the Owner role alone, which holds both sides, is not a conflict, as Appendix D explains
+- **AND** the other conflicts of §6.3 concern one item and are checked when the action happens
+
+#### Scenario: Overrides and invitations in a switch (rev 0.42)
+- **WHEN** a switch to a mode that blocks conflicts is asked for
+- **THEN** each member's conflict is resolved or overridden with a reason, which the switch's approver accepts as the second approver
+- **AND** a pending invitation whose roles would conflict blocks the switch until it is withdrawn
+- **AND** an override lasts for that version of the team mode and is reported with it
+
+#### Scenario: A switch voids pending requests (rev 0.42)
+- **WHEN** a switch of the team mode is approved
+- **THEN** every pending approval request of the organisation becomes void, since each was asked for under the old mode
+
+#### Scenario: Conflicts while the mode blocks them (rev 0.42)
+- **GIVEN** an organisation in a mode that blocks conflicts
+- **WHEN** a role change would make a conflict
+- **THEN** it needs an override with its reason, approved with the change
+- **AND** an invitation whose roles conflict is refused
+- **AND** a person whose roles hold SOD-6 without an override for the mode in force is refused when they post
+
+#### Scenario: Enterprise mode is not available yet (rev 0.42)
+- **WHEN** a switch to Enterprise mode is asked for
+- **THEN** it is refused until approval matrices per entity and department, SSO, SCIM and quarterly access reviews exist
+
 ### Requirement: FM-1 Two-person rule for high-risk actions
 In Founder mode, the approval engine SHALL require a second founder for every high-risk action regardless of amount, with step-up authentication (passkey or TOTP) for both founders.
 

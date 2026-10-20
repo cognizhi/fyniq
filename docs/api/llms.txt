@@ -78,3 +78,5 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/super-admins/recovery` (recoverSuperAdmin): Recover your Super admin access
 - `POST /v1/super-admins/recovery-codes` (replaceSuperAdminRecoveryCodes): Replace your recovery codes
 - `POST /v1/super-admins/{user_id}/recovery-confirmations` (confirmSuperAdminRecovery): Confirm the other Super admin's recovery
+- `GET /v1/team-mode` (getTeamMode): Get the team mode
+- `PATCH /v1/team-mode` (switchTeamMode): Ask to switch the team mode

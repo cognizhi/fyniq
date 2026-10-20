@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "blocks_conflicts": {
+      "description": "true in a mode that blocks conflicts unless they are overridden.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "conflicts": {
+      "description": "The conflicts the members' roles and the pending invitations' roles hold now. A switch to a mode that blocks conflicts waits until each is resolved, or overridden with a reason.",
+      "items": {
+        "$ref": "TeamModeConflict.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "history": {
+      "description": "Every version, oldest first; empty until the first switch.",
+      "items": {
+        "$ref": "TeamModeVersion.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "mode": {
+      "description": "Founder mode allows the conflicts of §6.3 with the compensating controls FM-1 to FM-9; Standard and Enterprise mode block them (PRD-001 §6.4).",
+      "enum": [
+        "founder",
+        "standard",
+        "enterprise"
+      ],
+      "examples": [
+        "founder"
+      ],
+      "type": "string"
+    },
+    "overrides": {
+      "description": "The overrides for the version in force: who keeps a conflict, and why (reported, §6.4).",
+      "items": {
+        "$ref": "SoDOverride.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "version": {
+      "description": "The team mode's version: 0 until the first switch; it also makes the ETag.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "mode",
+    "version",
+    "blocks_conflicts",
+    "conflicts",
+    "overrides",
+    "history"
+  ],
+  "title": "TeamMode",
+  "type": "object"
+}

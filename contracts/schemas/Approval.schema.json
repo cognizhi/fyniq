@@ -66,7 +66,7 @@
       "type": "string"
     },
     "object_key": {
-      "description": "Which one: the setting's key, the membership's ID, the invitation's code hash, or the object type whose approval policy changes.",
+      "description": "Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode.",
       "examples": [
         "bank.tolerance_base"
       ],
@@ -78,7 +78,9 @@
         "organisation_setting",
         "membership",
         "member_invitation",
-        "approval_policy"
+        "approval_policy",
+        "statutory_pack",
+        "team_mode"
       ],
       "examples": [
         "organisation_setting"
@@ -92,7 +94,9 @@
         "role.assign",
         "role.revoke",
         "member_invitation.create",
-        "approval_policy.change"
+        "approval_policy.change",
+        "statutory_pack.activate",
+        "team_mode.change"
       ],
       "examples": [
         "organisation_setting.change"

@@ -40,7 +40,9 @@
         "organisation_setting",
         "membership",
         "member_invitation",
-        "approval_policy"
+        "approval_policy",
+        "statutory_pack",
+        "team_mode"
       ],
       "examples": [
         "organisation_setting"

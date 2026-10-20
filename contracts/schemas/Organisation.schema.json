@@ -32,6 +32,18 @@
       ],
       "type": "string"
     },
+    "team_mode": {
+      "description": "The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42).",
+      "enum": [
+        "founder",
+        "standard",
+        "enterprise"
+      ],
+      "examples": [
+        "founder"
+      ],
+      "type": "string"
+    },
     "version": {
       "description": "The record's version; it also makes the ETag.",
       "examples": [
@@ -46,6 +58,7 @@
     "name",
     "base_currency",
     "base_minor_units",
+    "team_mode",
     "version"
   ],
   "title": "Organisation",

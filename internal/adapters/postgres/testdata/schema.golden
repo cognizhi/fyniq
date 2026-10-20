@@ -349,6 +349,15 @@ role_assignment | role | text | not null |
 role_assignment | expires_at | timestamp with time zone | null | 
 role_assignment | created_at | timestamp with time zone | not null | now()
 role_assignment | revoked_at | timestamp with time zone | null | 
+sod_override | organisation_id | uuid | not null | current_org()
+sod_override | id | uuid | not null | uuidv7()
+sod_override | team_mode_version | integer | not null | 
+sod_override | user_id | uuid | not null | 
+sod_override | conflict | text | not null | 
+sod_override | reason | text | not null | 
+sod_override | request_id | uuid | not null | 
+sod_override | created_by | uuid | not null | 
+sod_override | created_at | timestamp with time zone | not null | 
 statutory_pack_activation | organisation_id | uuid | not null | current_org()
 statutory_pack_activation | id | uuid | not null | uuidv7()
 statutory_pack_activation | version_id | text | not null | 
@@ -405,6 +414,13 @@ super_admin_grant | created_at | timestamp with time zone | not null |
 super_admin_grant | expires_at | timestamp with time zone | null | 
 super_admin_grant | used_at | timestamp with time zone | null | 
 super_admin_grant | used_by | uuid | null | 
+team_mode | organisation_id | uuid | not null | current_org()
+team_mode | id | uuid | not null | uuidv7()
+team_mode | version | integer | not null | 
+team_mode | mode | text | not null | 
+team_mode | request_id | uuid | not null | 
+team_mode | created_by | uuid | not null | 
+team_mode | created_at | timestamp with time zone | not null | 
 tenant_directory | organisation_id | uuid | not null | 
 tenant_directory | created_at | timestamp with time zone | not null | now()
 tenants | organisation_id | uuid | null | 
@@ -469,7 +485,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -497,7 +513,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))))
+approval_request | approval_request_object_known | CHECK (((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -971,6 +987,25 @@ role_assignment | role_assignment_pkey | PRIMARY KEY (organisation_id, id)
 role_assignment | role_assignment_revoked_after_creation | CHECK ((revoked_at >= created_at))
 role_assignment | role_assignment_role_known | CHECK ((role = ANY (ARRAY['employee'::text, 'approver'::text, 'bookkeeper'::text, 'ar_specialist'::text, 'ap_specialist'::text, 'payment_releaser'::text, 'payroll_administrator'::text, 'accountant'::text, 'controller'::text, 'owner'::text, 'administrator'::text, 'auditor'::text, 'tax_agent'::text, 'board_viewer'::text, 'company_secretary'::text, 'dpo'::text])))
 role_assignment | role_assignment_role_not_null | NOT NULL role
+sod_override | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+sod_override | sod_override_conflict_known | CHECK ((conflict ~ '^SOD-([1-9]|10)$'::text))
+sod_override | sod_override_conflict_not_null | NOT NULL conflict
+sod_override | sod_override_created_at_not_null | NOT NULL created_at
+sod_override | sod_override_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+sod_override | sod_override_created_by_not_null | NOT NULL created_by
+sod_override | sod_override_id_not_null | NOT NULL id
+sod_override | sod_override_once | UNIQUE (organisation_id, request_id, user_id, conflict)
+sod_override | sod_override_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+sod_override | sod_override_organisation_id_not_null | NOT NULL organisation_id
+sod_override | sod_override_pkey | PRIMARY KEY (organisation_id, id)
+sod_override | sod_override_reason_length | CHECK (((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 500)))
+sod_override | sod_override_reason_not_null | NOT NULL reason
+sod_override | sod_override_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES approval_request(organisation_id, id)
+sod_override | sod_override_request_id_not_null | NOT NULL request_id
+sod_override | sod_override_team_mode_fkey | FOREIGN KEY (organisation_id, team_mode_version) REFERENCES team_mode(organisation_id, version)
+sod_override | sod_override_team_mode_version_not_null | NOT NULL team_mode_version
+sod_override | sod_override_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+sod_override | sod_override_user_id_not_null | NOT NULL user_id
 statutory_pack_activation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 statutory_pack_activation | statutory_pack_activation_activated_at_not_null | NOT NULL activated_at
 statutory_pack_activation | statutory_pack_activation_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
@@ -1034,6 +1069,22 @@ super_admin_grant | super_admin_grant_shape | CHECK ((((kind = 'invitation'::tex
 super_admin_grant | super_admin_grant_used_by_fkey | FOREIGN KEY (used_by) REFERENCES app_user(user_id)
 super_admin_grant | super_admin_grant_used_whole | CHECK (((used_at IS NULL) = (used_by IS NULL)))
 super_admin_grant | super_admin_grant_user_fkey | FOREIGN KEY (user_id) REFERENCES super_admin(user_id)
+team_mode | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+team_mode | team_mode_created_at_not_null | NOT NULL created_at
+team_mode | team_mode_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+team_mode | team_mode_created_by_not_null | NOT NULL created_by
+team_mode | team_mode_id_not_null | NOT NULL id
+team_mode | team_mode_mode_known | CHECK ((mode = ANY (ARRAY['founder'::text, 'standard'::text, 'enterprise'::text])))
+team_mode | team_mode_mode_not_null | NOT NULL mode
+team_mode | team_mode_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+team_mode | team_mode_organisation_id_not_null | NOT NULL organisation_id
+team_mode | team_mode_pkey | PRIMARY KEY (organisation_id, id)
+team_mode | team_mode_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES approval_request(organisation_id, id)
+team_mode | team_mode_request_id_not_null | NOT NULL request_id
+team_mode | team_mode_request_once | UNIQUE (organisation_id, request_id)
+team_mode | team_mode_version_not_null | NOT NULL version
+team_mode | team_mode_version_once | UNIQUE (organisation_id, version)
+team_mode | team_mode_version_range | CHECK (((version >= 1) AND (version <= 1000000)))
 tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
 tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
@@ -1093,6 +1144,7 @@ CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, stat
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
+CREATE INDEX sod_override_lookup ON fyniq.sod_override USING btree (organisation_id, team_mode_version, user_id, conflict)
 CREATE INDEX super_admin_grant_created_by_idx ON fyniq.super_admin_grant USING btree (created_by)
 CREATE INDEX super_admin_grant_used_by_idx ON fyniq.super_admin_grant USING btree (used_by)
 CREATE INDEX super_admin_grant_user_idx ON fyniq.super_admin_grant USING btree (user_id, kind)
@@ -1155,12 +1207,17 @@ CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USIN
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
 CREATE UNIQUE INDEX role_assignment_one_live ON fyniq.role_assignment USING btree (organisation_id, membership_id, role) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX role_assignment_pkey ON fyniq.role_assignment USING btree (organisation_id, id)
+CREATE UNIQUE INDEX sod_override_once ON fyniq.sod_override USING btree (organisation_id, request_id, user_id, conflict)
+CREATE UNIQUE INDEX sod_override_pkey ON fyniq.sod_override USING btree (organisation_id, id)
 CREATE UNIQUE INDEX statutory_pack_activation_pkey ON fyniq.statutory_pack_activation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX statutory_pack_activation_version_key ON fyniq.statutory_pack_activation USING btree (organisation_id, version_id)
 CREATE UNIQUE INDEX statutory_pack_row_pkey ON fyniq.statutory_pack_row USING btree (version_id, pinned, table_name, row_no)
 CREATE UNIQUE INDEX statutory_pack_version_pkey ON fyniq.statutory_pack_version USING btree (id)
 CREATE UNIQUE INDEX super_admin_grant_pkey ON fyniq.super_admin_grant USING btree (code_hash)
 CREATE UNIQUE INDEX super_admin_pkey ON fyniq.super_admin USING btree (user_id)
+CREATE UNIQUE INDEX team_mode_pkey ON fyniq.team_mode USING btree (organisation_id, id)
+CREATE UNIQUE INDEX team_mode_request_once ON fyniq.team_mode USING btree (organisation_id, request_id)
+CREATE UNIQUE INDEX team_mode_version_once ON fyniq.team_mode USING btree (organisation_id, version)
 CREATE UNIQUE INDEX tenant_directory_pkey ON fyniq.tenant_directory USING btree (organisation_id)
 CREATE UNIQUE INDEX user_identity_pkey ON fyniq.user_identity USING btree (issuer, subject)
 CREATE UNIQUE INDEX user_membership_pkey ON fyniq.user_membership USING btree (organisation_id, id)
@@ -1176,7 +1233,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
@@ -1237,11 +1296,14 @@ CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON fyniq.outbox FOR EACH STATE
 CREATE TRIGGER period_guard BEFORE UPDATE ON fyniq.period FOR EACH ROW EXECUTE FUNCTION period_guard()
 CREATE TRIGGER role_assignment_guard BEFORE UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER role_assignment_voids AFTER INSERT OR UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION role_assignment_voids()
+CREATE TRIGGER sod_override_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sod_override FOR EACH ROW EXECUTE FUNCTION sod_override_guard()
 CREATE TRIGGER statutory_pack_activation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.statutory_pack_activation FOR EACH ROW EXECUTE FUNCTION statutory_pack_activation_guard()
 CREATE TRIGGER statutory_pack_row_immutable BEFORE DELETE OR UPDATE ON fyniq.statutory_pack_row FOR EACH ROW EXECUTE FUNCTION statutory_pack_immutable()
 CREATE TRIGGER statutory_pack_version_immutable BEFORE DELETE OR UPDATE ON fyniq.statutory_pack_version FOR EACH ROW EXECUTE FUNCTION statutory_pack_immutable()
 CREATE TRIGGER super_admin_guard BEFORE INSERT OR UPDATE ON fyniq.super_admin FOR EACH ROW EXECUTE FUNCTION super_admin_guard()
 CREATE TRIGGER super_admin_no_delete BEFORE DELETE OR TRUNCATE ON fyniq.super_admin FOR EACH STATEMENT EXECUTE FUNCTION super_admin_no_delete()
+CREATE TRIGGER team_mode_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.team_mode FOR EACH ROW EXECUTE FUNCTION team_mode_guard()
+CREATE TRIGGER team_mode_voids AFTER INSERT ON fyniq.team_mode FOR EACH ROW EXECUTE FUNCTION team_mode_voids()
 
 ## policies
 account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1272,7 +1334,9 @@ outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisatio
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 role_assignment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+sod_override | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 statutory_pack_activation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+team_mode | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
 ## functions
@@ -1287,6 +1351,7 @@ approval_signature_check() → trigger | security invoker | v | search_path=pg_c
 approval_steps_met(p_org uuid, p_request uuid, p_hash bytea, p_steps jsonb, p_upto integer) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 87283a918dece8cd6ce8b836a822f76d
 approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_path=pg_catalog, pg_temp | d50ae4849ebdf5e7511ee70dc98ccfd3
 approval_void_pending(p_type text, p_key text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d881befb6ede26f4ea128fc16cd228d
+approval_void_pending_all(p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 741722484193d313eb1d8961a41dbf46
 approval_void_pending_type(p_type text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f8b69e58a60cc252f3e4b22a2cc98989
 audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 91e817a2872fcf6bd69bb233274ae47b
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
@@ -1344,6 +1409,7 @@ set_recovery_codes(p_user uuid, p_hashes bytea[], p_now timestamp with time zone
 set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1401833c664206cef80dad827e0bd549
 setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c
 skip_job_slots(p_job text, p_slots timestamp with time zone[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8f2a4dc16b9baa48f2314e6e58698273
+sod_override_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e021a424a2fa6f356b652fb6b46c466d
 start_session(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 44d3805f8ddaf3abbe864b9aaf1ea4dc
 started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7
 statutory_pack_activation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ef02590dc3dd32325e6222bb4d1789d
@@ -1351,6 +1417,8 @@ statutory_pack_immutable() → trigger | security invoker | v | search_path=pg_c
 super_admin_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | dc4916e4ee7460c18329392b923b6a4a
 super_admin_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 69611a1d7f11f9c63fa128f901944024
 super_admin_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54ab8e3adb579022cf3b8de46100e62c
+team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9
+team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1e8ab28fa03705e0a02ec3819d22d067
 user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb
 
 ## extensions

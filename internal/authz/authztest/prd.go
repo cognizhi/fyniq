@@ -85,6 +85,27 @@ func AppendixD(t testing.TB) (columns []string, rows map[string]map[string]strin
 	return columns, rows
 }
 
+// AppendixDRows returns Appendix D's row names in the PRD's order.
+func AppendixDRows(t testing.TB) []string {
+	t.Helper()
+	var out []string
+	header := false
+	for _, l := range section(t, PRD(t), "## Appendix D") {
+		if !strings.HasPrefix(l, "|") || strings.HasPrefix(l, "|---") {
+			continue
+		}
+		c := cells(l)
+		if c[0] == "Capability" {
+			header = true
+			continue
+		}
+		if header {
+			out = append(out, c[0])
+		}
+	}
+	return out
+}
+
 // RoleLabels returns the roles of §7.1's "What each role sees" table, in order.
 func RoleLabels(t testing.TB) []string {
 	t.Helper()

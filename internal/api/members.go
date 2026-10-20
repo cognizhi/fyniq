@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"slices"
@@ -17,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/member"
+	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/setupcode"
@@ -77,8 +79,9 @@ type MemberInvitationCode struct {
 
 // RoleGrant gives a member a role.
 type RoleGrant struct {
-	Role      RoleName   `json:"role" doc:"The role (PRD-001 §6.2)."`
-	ExpiresAt *time.Time `json:"expires_at,omitempty" doc:"For an external user: when it ends. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
+	Role              RoleName   `json:"role" doc:"The role (PRD-001 §6.2)."`
+	ExpiresAt         *time.Time `json:"expires_at,omitempty" doc:"For an external user: when it ends. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
+	SoDOverrideReason string     `json:"sod_override_reason,omitempty" maxLength:"500" doc:"In a team mode that blocks conflicts (Standard): why the member keeps the conflict of §6.3 this role makes. The role change's approver accepts the override, which is reported with the team mode (TEAM-02, rev 0.42)." example:"Founder who also keeps the books until we hire"`
 }
 
 // JoinRequest redeems an invitation.
@@ -156,6 +159,22 @@ type joinOutput struct{ Body Joined }
 
 // MemberCodes are the members' rules (internal/domain/member).
 var MemberCodes = []string{member.CodeRole, member.CodeName, member.CodeRoles, member.CodeExpiry, member.CodeLastOwner, member.CodeHeld}
+
+// invitationConflict refuses an invitation whose roles hold a conflict the team mode blocks: an invitation is never
+// overridden, so the person is invited with roles that do not conflict and given the other role with an override.
+func invitationConflict(ctx context.Context, u storage.UnitOfWork, name string, roles []string) error {
+	cs := authz.RoleConflicts(authzRoles(roles))
+	if len(cs) == 0 {
+		return nil
+	}
+	mode, _, _, err := teamModeOf(ctx, u)
+	if err != nil || !team.Blocks(mode) {
+		return err
+	}
+	return problem(team.CodeConflict, fmt.Sprintf("Inviting %s as %s would make %s (%s), which %s mode blocks.", name, strings.Join(roles, ", "),
+		cs[0].SoD, strings.Join(roleStrings(cs[0].Roles), ", "), mode),
+		"Invite them with roles that do not conflict, then give the other role with sod_override_reason once they join")
+}
 
 // approvalCodes are what asking for a change that waits for approval can return (FM-1, rev 0.36).
 var approvalCodes = []string{CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval}
@@ -339,7 +358,7 @@ func registerMembers(a *API) {
 			"in the last 5 minutes. An invitation made before keeps its roles. Side effects: the invitation, or the approval request, and " +
 			"its audit event." + noKey,
 	}, reflect.TypeFor[MemberInvitationCode]())), append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeMembership},
-		append(append(locks, approvalCodes...), MemberCodes...)...),
+		append(append(append(locks, approvalCodes...), MemberCodes...), team.CodeConflict)...),
 		func(ctx context.Context, in *invitationCreateInput) (*invitationCodeOutput, error) {
 			p, _ := authn.From(ctx)
 			now := a.deps.Clock.Now()
@@ -354,6 +373,9 @@ func registerMembers(a *API) {
 			err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 				wait, err := needsApproval(ctx, u)
 				if err != nil {
+					return err
+				}
+				if err := invitationConflict(ctx, u, name, roles); err != nil {
 					return err
 				}
 				if wait {
@@ -418,7 +440,7 @@ func registerMembers(a *API) {
 			"last 5 minutes. Side effects: the role and its audit event, or the approval request and its audit event; the member's next " +
 			"request holds the role, and their OAuth tokens are revoked (AI-38). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, reflect.TypeFor[Member]()), append([]string{CodeNotFound, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy,
-		CodeIdempotencyOld, storage.CodeMembership}, append(append(locks, approvalCodes...), MemberCodes...)...),
+		CodeIdempotencyOld, storage.CodeMembership}, append(append(append(locks, approvalCodes...), MemberCodes...), team.CodeConflict, team.CodeOverride)...),
 		func(ctx context.Context, in *roleAssignInput) (*memberWriteOutput, error) {
 			id, err := parseID("member_id", in.MemberID)
 			if err != nil {
@@ -438,12 +460,24 @@ func registerMembers(a *API) {
 				if err != nil {
 					return nil, err
 				}
-				if !wait {
-					return a.assignRoleNow(ctx, u, id, role, in.Body.ExpiresAt)
-				}
 				m, err := findMember(ctx, u, id, now)
 				if err != nil {
 					return nil, err
+				}
+				mode, _, _, err := teamModeOf(ctx, u)
+				if err != nil {
+					return nil, err
+				}
+				override, err := roleChangeConflict(mode, m, append(memberRoles(m), role), in.Body.SoDOverrideReason)
+				if err != nil {
+					return nil, err
+				}
+				if !wait {
+					if override != nil {
+						return nil, problem(team.CodeConflict, "An override needs a second approver, and the organisation has one active member.",
+							"Choose a role that does not conflict, or invite another member first")
+					}
+					return a.assignRoleNow(ctx, u, id, role, in.Body.ExpiresAt)
 				}
 				if slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == role }) {
 					return nil, problem(member.CodeHeld, m.DisplayName+" holds the role "+role+" already.", "Nothing to do; revoke it first to change its expiry")
@@ -453,10 +487,16 @@ func registerMembers(a *API) {
 					expires = in.Body.ExpiresAt.UTC().Format(time.RFC3339)
 				}
 				after := strings.Trim(liveRoles(m)+", "+role, ", ")
+				execute := map[string]any{"member_id": id.String(), "role": role, "expires_at": expires}
+				diff := []ApprovalDiff{{Field: "roles", Before: liveRoles(m), After: after}}
+				summary := "Give " + m.DisplayName + " the role " + role
+				if override != nil {
+					execute["sod_override"] = override
+					diff = append(diff, ApprovalDiff{Field: "sod_override", After: fmt.Sprintf("%s: %s", override["conflict"], override["reason"])})
+					summary += fmt.Sprintf(", overriding %s", override["conflict"])
+				}
 				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectMembership, ObjectKey: id.String(), Operation: approval.OpRoleAssign,
-					Summary: "Give " + m.DisplayName + " the role " + role,
-					Execute: map[string]any{"member_id": id.String(), "role": role, "expires_at": expires},
-					Diff:    []ApprovalDiff{{Field: "roles", Before: liveRoles(m), After: after}}})
+					Summary: summary, Execute: execute, Diff: diff})
 			})
 			if err != nil {
 				return nil, err
