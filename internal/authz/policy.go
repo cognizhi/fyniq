@@ -42,7 +42,7 @@ const (
 	CapTable            Capability = "Cap table, holders, investors, equity transactions (rev 0.3)"
 	Evidence            Capability = "Evidence: add, supersede (rev 0.3)"
 	KnowledgeBase       Capability = "Knowledge base: compiled pages and index (rev 0.4)"
-	AICompanySecretary  Capability = "AI company secretary: enable, schedule, runs and drafts (rev 0.6)"
+	AICompanySecretary  Capability = "AI company secretary: enable, schedule, runs and drafts (rev 0.6)" // #nosec G101 -- a permission row's name, not a credential
 	Integrations        Capability = "Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)"
 	Announcements       Capability = "Announcements to the organisation (rev 0.6)"
 	OwnNotifications    Capability = "Own notifications and preferences (rev 0.6)"
