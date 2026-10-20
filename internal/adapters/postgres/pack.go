@@ -157,3 +157,22 @@ func (r packsRepo) Activations(ctx context.Context) ([]storage.PackActivation, e
 	}
 	return out, nil
 }
+
+func (r packsRepo) Activate(ctx context.Context, n storage.NewPackActivation) (storage.PackActivation, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PackActivation{}, err
+	}
+	row, err := r.u.q.InsertPackActivation(ctx, sqlcdb.InsertPackActivationParams{VersionID: n.VersionID, ProposedBy: n.ProposedBy,
+		ApprovedBy: n.ApprovedBy, ApprovalID: n.Approval, ActivatedAt: n.ActivatedAt})
+	if err != nil {
+		return storage.PackActivation{}, mapError(err)
+	}
+	a := storage.PackActivation{VersionID: row.VersionID, ProposedBy: row.ProposedBy, ApprovedBy: row.ApprovedBy, Approval: row.ApprovalID,
+		ActivatedAt: row.ActivatedAt}
+	if err := r.u.event(ctx, "statutory_pack.activated", "statutory_pack_activation", row.ID, nil, map[string][2]any{
+		"version_id": {nil, a.VersionID}, "proposed_by": {nil, a.ProposedBy}, "approved_by": {nil, a.ApprovedBy},
+		"approval_id": {nil, a.Approval}, "activated_at": {nil, a.ActivatedAt}}); err != nil {
+		return storage.PackActivation{}, err
+	}
+	return a, nil
+}

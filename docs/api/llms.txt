@@ -70,6 +70,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers
+- `GET /v1/statutory-packs` (listStatutoryPacks): List the statutory pack versions
+- `GET /v1/statutory-packs/{version_id}` (getStatutoryPack): Get a statutory pack version
+- `POST /v1/statutory-packs/{version_id}/activate` (activateStatutoryPack): Ask to activate a statutory pack version
 - `POST /v1/super-admins` (acceptSuperAdminInvitation): Become a Super admin with an invitation
 - `POST /v1/super-admins/invitations` (createSuperAdminInvitation): Invite the second Super admin
 - `POST /v1/super-admins/recovery` (recoverSuperAdmin): Recover your Super admin access

@@ -26,3 +26,9 @@ SELECT id, pack, effective_from, effective_to, review_date, digest, loaded_at
 -- The organisation's activated versions (ENG-32), under its row-level security.
 SELECT version_id, proposed_by, approved_by, approval_id, activated_at
   FROM fyniq.statutory_pack_activation ORDER BY version_id;
+
+-- name: InsertPackActivation :one
+-- Activates a version as the record of its approved request (ENG-32, migration 000041).
+INSERT INTO fyniq.statutory_pack_activation (version_id, proposed_by, approved_by, approval_id, activated_at)
+VALUES (sqlc.arg(version_id), sqlc.arg(proposed_by), sqlc.arg(approved_by), sqlc.arg(approval_id), sqlc.arg(activated_at))
+RETURNING id, version_id, proposed_by, approved_by, approval_id, activated_at;

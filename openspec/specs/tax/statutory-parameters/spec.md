@@ -76,10 +76,20 @@ Source: PRD-001 §10.6 · Priority M · Phase P1
 - **WHEN** an organisation activates a pack version
 - **THEN** a row of its own names the proposer, an approver who is not the proposer, and the approval engine's record
 
-#### Scenario: No activation before the approval engine (rev 0.37, provisional)
-- **GIVEN** `p1-approval-engine` has not landed
-- **WHEN** any organisation, the local sample company included, tries to activate a pack version
-- **THEN** it is refused
+#### Scenario: Activation goes through the approval engine (rev 0.41, provisional)
+- **GIVEN** the approval engine has landed, superseding rev 0.37's refusal of every activation
+- **WHEN** a member who holds C on "Statutory parameters" (the Controller, the Accountant or the Tax agent) asks to activate a loaded version
+- **THEN** the answer is an approval request that a member who holds A on that row (the Owner or the Controller), never the proposer, approves
+- **AND** the pinned tests run again when it executes, and a failing case voids the request and activates nothing
+
+#### Scenario: Only a version the release carries as loaded (rev 0.41, provisional)
+- **WHEN** a version is asked to be activated that this release does not carry with the digest it was loaded with
+- **THEN** it is refused with PACK-07, since its pinned tests cannot run
+
+#### Scenario: The database keeps the activation as its approved request (rev 0.41, provisional)
+- **WHEN** an activation is recorded
+- **THEN** the database refuses it unless the approved request to activate exactly that version was made by the proposer and signed by the approver
+- **AND** it never changes or deletes an activation
 
 ### Requirement: ENG-33 Published pack updates
 The platform team SHALL publish pack updates (e.g. every January and after each Budget), and each organisation SHALL see a "parameter update available" task with a diff.

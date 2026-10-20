@@ -872,6 +872,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/statutory-packs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the statutory pack versions
+         * @description Every statutory pack version the release loaded (GST rates and codes, and later CPF, SDL and SHG), by ID: its effective dates, review date and digest, how many of its pinned statutory tests pass, and the organisation's activation of it (ENG-30, ENG-32, FR-ORG-05). Read-only; no side effects.
+         */
+        get: operations["listStatutoryPacks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/statutory-packs/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a statutory pack version
+         * @description One loaded version with its official sources, its verifier and conditions, each pinned statutory test and its result, and the organisation's activation of it (ENG-30, ENG-32). Read-only; no side effects.
+         */
+        get: operations["getStatutoryPack"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/statutory-packs/{version_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask to activate a statutory pack version
+         * @description Asks for the organisation to adopt a loaded version (ENG-32). Its pinned statutory tests must pass (PACK-09), this release must carry it as it was loaded (PACK-07), and the organisation must not have activated it already (PACK-13). It is never activated at once: the answer is 202 with an approval request, which a member who holds A on "Statutory parameters" (the Owner or the Controller) and is not the proposer approves (SOD-10, FM-1). On the approval the pinned tests run again and the activation is recorded, naming the proposer, the approver and the request. Asking needs a person signed in who passed step-up in the last 5 minutes, and If-Match with the version's ETag ("0" before it is activated). Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["activateStatutoryPack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/super-admins": {
         parameters: {
             query?: never;
@@ -2948,6 +3008,98 @@ export interface components {
              */
             website?: string;
         };
+        PackActivation: {
+            /**
+             * Format: date-time
+             * @description When it was activated.
+             * @example 2026-10-20T09:30:00Z
+             */
+            activated_at: string;
+            /**
+             * Format: uuid
+             * @description The approved request.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            approval_id: string;
+            /**
+             * Format: uuid
+             * @description Who approved it: never the proposer (SOD-10).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+             */
+            approved_by: string;
+            /**
+             * Format: uuid
+             * @description Who asked to activate it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            proposed_by: string;
+        };
+        PackPinnedResult: {
+            /**
+             * @description The case's name.
+             * @example G4-001
+             */
+            case: string;
+            /**
+             * @description What the table gives.
+             * @example 0.09
+             */
+            got: string;
+            /**
+             * @description true when the table gives what the case wants.
+             * @example true
+             */
+            pass: boolean;
+            /**
+             * @description The table it tests.
+             * @example rates
+             */
+            table: string;
+            /**
+             * @description What the case wants.
+             * @example 0.09
+             */
+            want: string;
+            /**
+             * @description What it checks, worked by hand from the official page.
+             * @example The rate on 1 Jan 2024 is 9%
+             */
+            why: string;
+        };
+        PackSource: {
+            /**
+             * @description The source's ID in the pack, which each row cites.
+             * @example iras-gst-rate
+             */
+            id: string;
+            /**
+             * @description The kind of source: law, regulation, official guidance, contract term or product policy.
+             * @example official guidance
+             */
+            kind: string;
+            /**
+             * Format: date
+             * @description When it was read.
+             * @example 2026-10-20
+             */
+            retrieved: string;
+            /**
+             * @description The section of the page the values come from.
+             * @example Current GST rate
+             */
+            section: string;
+            /**
+             * @description Its title.
+             * @example GST rate change
+             */
+            title: string;
+            /**
+             * Format: uri
+             * @description The official page.
+             * @example https://www.iras.gov.sg/taxes/goods-services-tax-(gst)
+             */
+            url: string;
+        };
         PossibleDuplicate: {
             /**
              * Format: uuid
@@ -3463,6 +3615,147 @@ export interface components {
             /**
              * @description Send it as cursor for the next page; absent on the last page.
              * @example eyJhZnRlciI6Imdvb2dsZSJ9
+             */
+            next_cursor?: string;
+        };
+        StatutoryPack: {
+            /** @description The organisation's activation; absent until it is activated (ENG-32). */
+            activation?: components["schemas"]["PackActivation"];
+            /**
+             * @description The SHA-256 of the version's files: a loaded version never changes.
+             * @example 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+             */
+            digest: string;
+            /**
+             * Format: date
+             * @description The first day it is in force.
+             * @example 2026-01-01
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description The last day it is in force; absent while no later version ends it.
+             * @example 2026-12-31
+             */
+            effective_to?: string;
+            /**
+             * @description The version: <pack>@<year>.<n>.
+             * @example sg-gst@2026.1
+             */
+            id: string;
+            /**
+             * @description The pack.
+             * @example sg-gst
+             */
+            pack: string;
+            /**
+             * Format: int64
+             * @description Its pinned statutory tests that pass.
+             * @example 22
+             */
+            pinned_passed: number;
+            /**
+             * Format: int64
+             * @description Its pinned statutory tests.
+             * @example 22
+             */
+            pinned_total: number;
+            /**
+             * @description true when this release carries the version exactly as it was loaded, so its pinned tests can run; only then can it be activated.
+             * @example true
+             */
+            readable: boolean;
+            /**
+             * Format: date
+             * @description When it is due for review (ENG-30).
+             * @example 2027-01-31
+             */
+            review_date: string;
+            /**
+             * @description What it holds.
+             * @example Singapore GST rates and tax codes
+             */
+            title: string;
+        };
+        StatutoryPackDetail: {
+            /** @description The organisation's activation; absent until it is activated (ENG-32). */
+            activation?: components["schemas"]["PackActivation"];
+            /**
+             * @description The conditions it holds under, as the pack states them.
+             * @example GST-registered businesses
+             */
+            conditions: string;
+            /**
+             * @description The SHA-256 of the version's files: a loaded version never changes.
+             * @example 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+             */
+            digest: string;
+            /**
+             * Format: date
+             * @description The first day it is in force.
+             * @example 2026-01-01
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description The last day it is in force; absent while no later version ends it.
+             * @example 2026-12-31
+             */
+            effective_to?: string;
+            /**
+             * @description The version: <pack>@<year>.<n>.
+             * @example sg-gst@2026.1
+             */
+            id: string;
+            /**
+             * @description The pack.
+             * @example sg-gst
+             */
+            pack: string;
+            /** @description Each pinned statutory test and its result. */
+            pinned: components["schemas"]["PackPinnedResult"][] | null;
+            /**
+             * Format: int64
+             * @description Its pinned statutory tests that pass.
+             * @example 22
+             */
+            pinned_passed: number;
+            /**
+             * Format: int64
+             * @description Its pinned statutory tests.
+             * @example 22
+             */
+            pinned_total: number;
+            /**
+             * @description true when this release carries the version exactly as it was loaded, so its pinned tests can run; only then can it be activated.
+             * @example true
+             */
+            readable: boolean;
+            /**
+             * Format: date
+             * @description When it is due for review (ENG-30).
+             * @example 2027-01-31
+             */
+            review_date: string;
+            /** @description The official sources its values come from. */
+            sources: components["schemas"]["PackSource"][] | null;
+            /**
+             * @description What it holds.
+             * @example Singapore GST rates and tax codes
+             */
+            title: string;
+            /**
+             * @description Who verified it against the sources.
+             * @example Ah Kow Lim
+             */
+            verifier: string;
+        };
+        StatutoryPackPage: {
+            /** @description The versions on this page. */
+            items: components["schemas"]["StatutoryPack"][] | null;
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6InNnLWdzdEAyMDI2LjEifQ
              */
             next_cursor?: string;
         };
@@ -4685,7 +4978,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -10107,6 +10400,322 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listStatutoryPacks: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatutoryPackPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getStatutoryPack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The version: <pack>@<year>.<n>. */
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatutoryPackDetail"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    activateStatutoryPack: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The version: <pack>@<year>.<n>. */
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

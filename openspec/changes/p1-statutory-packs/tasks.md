@@ -13,7 +13,7 @@
 
 ## 3. Activation
 
-- [x] 3.1 Activation needs the pinned tests to pass for the effective date, and a second approver through `p1-approval-engine` (SOD-10). Test `// req: ENG-32`; until the engine lands, activation is refused outside the sample company (20 Oct 2026: `pack.CheckActivation` refuses an activation without the engine's approval record, approved by its proposer, or with a failing pinned case; no role may insert an activation yet, and the database refuses one approved by its proposer. Provisional, rev 0.37: the sample company is refused too. **Left:** the activation command, its audit events and the executor's grant, with `p1-approval-engine`)
+- [x] 3.1 Activation needs the pinned tests to pass for the effective date, and a second approver through `p1-approval-engine` (SOD-10). Test `// req: ENG-32`; until the engine lands, activation is refused outside the sample company (20 Oct 2026: `pack.CheckActivation` refuses an activation without the engine's approval record, approved by its proposer, or with a failing pinned case; no role may insert an activation yet, and the database refuses one approved by its proposer. Provisional, rev 0.37: the sample company is refused too. Rev 0.41: `POST /v1/statutory-packs/{version_id}/activate` asks for activation through the approval engine (202): C on "Statutory parameters" asks, A approves, never the proposer; the pinned tests run when asked and again when it executes (`pack.CheckActivation` with the engine's record), and only a version this release carries with its loaded digest is activated (PACK-07); migration 000041 gives the API the INSERT grant and a guard (FY107) that records an activation only as its approved request, signed by its approver, and never changes one. Tests: `TestPackActivationWaitsForASecondApprover`, `TestAttackPackActivationIsTheApprovedRequest`, `TestAttackActivationNeedsTwoPeopleAndAnAuditEvent`)
 
 ## 4. The first packs
 
@@ -25,5 +25,8 @@
 
 ## 6. Screen
 
-- [ ] 6.1 (**Left**, with the read endpoints for packs) Build the statutory-packs screen as designed: list, version detail with its source and pinned results, and activation. Add help keys, a page in `docs/user-guide/` and a compiled `kb/` page; the page shows the FR-UX-41 banner while the GST review is pending
+- [ ] 6.1 Build the statutory-packs screen as designed: list, version detail with its source and pinned results, and activation. Add help keys, a page in `docs/user-guide/` and a compiled `kb/` page; the page shows the FR-UX-41 banner while the GST review is pending
+  (20 Oct 2026, rev 0.41: the read endpoints, `GET /v1/statutory-packs` and `GET /v1/statutory-packs/{version_id}` with
+  its sources and pinned results, and the guide page `statutory-packs.md` compiled into `settings.statutory-packs`.
+  **Left:** the screen and its help keys, with the FR-UX-41 banner.)
 - [ ] 6.2 Finish with `make check` and `make test`

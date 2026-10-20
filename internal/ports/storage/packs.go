@@ -26,11 +26,23 @@ type PackActivation struct {
 	ActivatedAt            time.Time
 }
 
+// NewPackActivation is what Packs.Activate needs.
+type NewPackActivation struct {
+	VersionID              string
+	ProposedBy, ApprovedBy uuid.UUID
+	Approval               uuid.UUID
+	ActivatedAt            time.Time
+}
+
 // Packs are the statutory pack versions the release loaded (global, read-only) and the organisation's
-// activations of them. Activating arrives with the approval engine (p1-approval-engine).
+// activations of them.
 type Packs interface {
 	// Versions returns every loaded version, by id.
 	Versions(ctx context.Context) ([]PackVersion, error)
 	// Activations returns the organisation's activations, by version id.
 	Activations(ctx context.Context) ([]PackActivation, error)
+	// Activate records an activation, audited, as the approval engine executes its approved request: the database
+	// refuses one without that request approved and signed by its approver, or approved by its proposer
+	// (CodePack), and a version activated already (CodeDuplicate) (rev 0.41).
+	Activate(ctx context.Context, n NewPackActivation) (PackActivation, error)
 }

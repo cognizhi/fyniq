@@ -11,8 +11,8 @@ requirements: [FM-1, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-A
 ## What it is
 
 Some changes are too important for one person to make alone: settings such as thresholds,
-retention and the AI assistant, and, once the company has a second member, adding or ending a
-role and inviting someone. Fyniq asks for approval instead of making the change. Another person
+retention and the AI assistant, activating a statutory pack version, and, once the company has a
+second member, adding or ending a role and inviting someone. Fyniq asks for approval instead of making the change. Another person
 who approves that kind of change, such as an Owner, then approves or rejects it. Nobody approves
 their own request.
 

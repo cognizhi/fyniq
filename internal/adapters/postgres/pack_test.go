@@ -123,8 +123,9 @@ VALUES ('sg-gst@2026.9', 'sg-gst', 'x', '2026-01-01', '2027-01-01', 'x', 'x', '[
 // req: SOD-10
 // req: QA-ENG-05
 // asvs: V8.2.2
-// An organisation's activation is its own audited tenant row. No application role may insert one until the
-// approval engine lands, and the database refuses one approved by the person who proposed it.
+// An organisation's activation is its own audited tenant row. Only the API inserts one, as the record of the
+// approved request to activate the version (rev 0.41; TestAttackPackActivationIsTheApprovedRequest), and the
+// database refuses one approved by the person who proposed it.
 func TestAttackActivationNeedsTwoPeopleAndAnAuditEvent(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Attack ENG-32 Pte Ltd")
@@ -137,11 +138,15 @@ VALUES ('sg-gst@2026.1', $1, $2, $3)`, proposer, approver, uuid.New())
 		})
 	}
 	for _, role := range serviceRoles {
-		wantState(t, role+" activates a pack version", insert(role, alice, bob), "42501")
+		want := "42501"
+		if role == "fyniq_api" {
+			want = "FY107" // the API may insert, only as the record of an approved request
+		}
+		wantState(t, role+" activates a pack version without an approved request", insert(role, alice, bob), want)
 	}
 	// As the owner, so only the table's own rules can refuse.
-	wantState(t, "approved by its proposer", insert("fyniq_migrator", alice, alice), "23514")
-	wantState(t, "an activation without its audit event", insert("fyniq_migrator", alice, bob), "FY060", "FY061")
+	wantState(t, "approved by its proposer", insert("fyniq_migrator", alice, alice), "FY107", "23514")
+	wantState(t, "an activation without an approved request", insert("fyniq_migrator", alice, bob), "FY107")
 	if n := count(t, b.Org, "statutory_pack_activation"); n != 0 {
 		t.Errorf("%d activations were stored; want none", n)
 	}

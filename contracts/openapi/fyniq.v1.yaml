@@ -2816,6 +2816,123 @@ components:
         - time_zone
         - version
       type: object
+    PackActivation:
+      additionalProperties: false
+      properties:
+        activated_at:
+          description: When it was activated.
+          examples:
+            - "2026-10-20T09:30:00Z"
+          format: date-time
+          type: string
+        approval_id:
+          description: The approved request.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+          format: uuid
+          type: string
+        approved_by:
+          description: "Who approved it: never the proposer (SOD-10)."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+          format: uuid
+          type: string
+        proposed_by:
+          description: Who asked to activate it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - proposed_by
+        - approved_by
+        - approval_id
+        - activated_at
+      type: object
+    PackPinnedResult:
+      additionalProperties: false
+      properties:
+        case:
+          description: The case's name.
+          examples:
+            - G4-001
+          type: string
+        got:
+          description: What the table gives.
+          examples:
+            - "0.09"
+          type: string
+        pass:
+          description: true when the table gives what the case wants.
+          examples:
+            - true
+          type: boolean
+        table:
+          description: The table it tests.
+          examples:
+            - rates
+          type: string
+        want:
+          description: What the case wants.
+          examples:
+            - "0.09"
+          type: string
+        why:
+          description: What it checks, worked by hand from the official page.
+          examples:
+            - The rate on 1 Jan 2024 is 9%
+          type: string
+      required:
+        - table
+        - case
+        - why
+        - pass
+        - got
+        - want
+      type: object
+    PackSource:
+      additionalProperties: false
+      properties:
+        id:
+          description: The source's ID in the pack, which each row cites.
+          examples:
+            - iras-gst-rate
+          type: string
+        kind:
+          description: "The kind of source: law, regulation, official guidance, contract term or product policy."
+          examples:
+            - official guidance
+          type: string
+        retrieved:
+          description: When it was read.
+          examples:
+            - "2026-10-20"
+          format: date
+          type: string
+        section:
+          description: The section of the page the values come from.
+          examples:
+            - Current GST rate
+          type: string
+        title:
+          description: Its title.
+          examples:
+            - GST rate change
+          type: string
+        url:
+          description: The official page.
+          examples:
+            - https://www.iras.gov.sg/taxes/goods-services-tax-(gst)
+          format: uri
+          type: string
+      required:
+        - id
+        - title
+        - url
+        - section
+        - kind
+        - retrieved
+      type: object
     PossibleDuplicate:
       additionalProperties: false
       properties:
@@ -3545,6 +3662,196 @@ components:
           description: Send it as cursor for the next page; absent on the last page.
           examples:
             - eyJhZnRlciI6Imdvb2dsZSJ9
+          type: string
+      required:
+        - items
+      type: object
+    StatutoryPack:
+      additionalProperties: false
+      properties:
+        activation:
+          $ref: "#/components/schemas/PackActivation"
+          description: The organisation's activation; absent until it is activated (ENG-32).
+        digest:
+          description: "The SHA-256 of the version's files: a loaded version never changes."
+          examples:
+            - 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          type: string
+        effective_from:
+          description: The first day it is in force.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        effective_to:
+          description: The last day it is in force; absent while no later version ends it.
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        id:
+          description: "The version: <pack>@<year>.<n>."
+          examples:
+            - sg-gst@2026.1
+          type: string
+        pack:
+          description: The pack.
+          examples:
+            - sg-gst
+          type: string
+        pinned_passed:
+          description: Its pinned statutory tests that pass.
+          examples:
+            - 22
+          format: int64
+          type: integer
+        pinned_total:
+          description: Its pinned statutory tests.
+          examples:
+            - 22
+          format: int64
+          type: integer
+        readable:
+          description: true when this release carries the version exactly as it was loaded, so its pinned tests can run; only then can it be activated.
+          examples:
+            - true
+          type: boolean
+        review_date:
+          description: When it is due for review (ENG-30).
+          examples:
+            - "2027-01-31"
+          format: date
+          type: string
+        title:
+          description: What it holds.
+          examples:
+            - Singapore GST rates and tax codes
+          type: string
+      required:
+        - id
+        - pack
+        - title
+        - effective_from
+        - review_date
+        - digest
+        - readable
+        - pinned_passed
+        - pinned_total
+      type: object
+    StatutoryPackDetail:
+      additionalProperties: false
+      properties:
+        activation:
+          $ref: "#/components/schemas/PackActivation"
+          description: The organisation's activation; absent until it is activated (ENG-32).
+        conditions:
+          description: The conditions it holds under, as the pack states them.
+          examples:
+            - GST-registered businesses
+          type: string
+        digest:
+          description: "The SHA-256 of the version's files: a loaded version never changes."
+          examples:
+            - 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          type: string
+        effective_from:
+          description: The first day it is in force.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        effective_to:
+          description: The last day it is in force; absent while no later version ends it.
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        id:
+          description: "The version: <pack>@<year>.<n>."
+          examples:
+            - sg-gst@2026.1
+          type: string
+        pack:
+          description: The pack.
+          examples:
+            - sg-gst
+          type: string
+        pinned:
+          description: Each pinned statutory test and its result.
+          items:
+            $ref: "#/components/schemas/PackPinnedResult"
+          type:
+            - array
+            - "null"
+        pinned_passed:
+          description: Its pinned statutory tests that pass.
+          examples:
+            - 22
+          format: int64
+          type: integer
+        pinned_total:
+          description: Its pinned statutory tests.
+          examples:
+            - 22
+          format: int64
+          type: integer
+        readable:
+          description: true when this release carries the version exactly as it was loaded, so its pinned tests can run; only then can it be activated.
+          examples:
+            - true
+          type: boolean
+        review_date:
+          description: When it is due for review (ENG-30).
+          examples:
+            - "2027-01-31"
+          format: date
+          type: string
+        sources:
+          description: The official sources its values come from.
+          items:
+            $ref: "#/components/schemas/PackSource"
+          type:
+            - array
+            - "null"
+        title:
+          description: What it holds.
+          examples:
+            - Singapore GST rates and tax codes
+          type: string
+        verifier:
+          description: Who verified it against the sources.
+          examples:
+            - Ah Kow Lim
+          type: string
+      required:
+        - verifier
+        - conditions
+        - sources
+        - pinned
+        - id
+        - pack
+        - title
+        - effective_from
+        - review_date
+        - digest
+        - readable
+        - pinned_passed
+        - pinned_total
+      type: object
+    StatutoryPackPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The versions on this page.
+          items:
+            $ref: "#/components/schemas/StatutoryPack"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6InNnLWdzdEAyMDI2LjEifQ
           type: string
       required:
         - items
@@ -5226,7 +5533,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way."
         "412":
           content:
             application/problem+json:
@@ -5334,6 +5641,10 @@ paths:
         - MEM-04
         - MEM-06
         - MEM-07
+        - PACK-07
+        - PACK-09
+        - PACK-10
+        - PACK-13
         - SET-01
         - SET-02
         - SET-03
@@ -12294,6 +12605,437 @@ paths:
       x-fyniq-permission:
         capability: (your session)
         right: V
+  /v1/statutory-packs:
+    get:
+      description: "Every statutory pack version the release loaded (GST rates and codes, and later CPF, SDL and SHG), by ID: its effective dates, review date and digest, how many of its pinned statutory tests pass, and the organisation's activation of it (ENG-30, ENG-32, FR-ORG-05). Read-only; no side effects."
+      operationId: listStatutoryPacks
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatutoryPackPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the statutory pack versions
+      tags:
+        - Statutory packs
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Statutory parameters
+        right: V
+  /v1/statutory-packs/{version_id}:
+    get:
+      description: One loaded version with its official sources, its verifier and conditions, each pinned statutory test and its result, and the organisation's activation of it (ENG-30, ENG-32). Read-only; no side effects.
+      operationId: getStatutoryPack
+      parameters:
+        - description: "The version: <pack>@<year>.<n>."
+          in: path
+          name: version_id
+          required: true
+          schema:
+            description: "The version: <pack>@<year>.<n>."
+            examples:
+              - sg-gst@2026.1
+            maxLength: 60
+            pattern: ^[a-z][a-z0-9-]*@[0-9]{4}\.[0-9]+$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatutoryPackDetail"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: "\"0\" until the organisation activates the version, then \"1\": send it as If-Match to ask to activate it."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a statutory pack version
+      tags:
+        - Statutory packs
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Statutory parameters
+        right: V
+  /v1/statutory-packs/{version_id}/activate:
+    post:
+      description: "Asks for the organisation to adopt a loaded version (ENG-32). Its pinned statutory tests must pass (PACK-09), this release must carry it as it was loaded (PACK-07), and the organisation must not have activated it already (PACK-13). It is never activated at once: the answer is 202 with an approval request, which a member who holds A on \"Statutory parameters\" (the Owner or the Controller) and is not the proposer approves (SOD-10, FM-1). On the approval the pinned tests run again and the activation is recorded, naming the proposer, the approver and the request. Asking needs a person signed in who passed step-up in the last 5 minutes, and If-Match with the version's ETag (\"0\" before it is activated). Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: activateStatutoryPack
+      parameters:
+        - description: "The version: <pack>@<year>.<n>."
+          in: path
+          name: version_id
+          required: true
+          schema:
+            description: "The version: <pack>@<year>.<n>."
+            examples:
+              - sg-gst@2026.1
+            maxLength: 60
+            pattern: ^[a-z][a-z0-9-]*@[0-9]{4}\.[0-9]+$
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask to activate a statutory pack version
+      tags:
+        - Statutory packs
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APR-06
+        - PACK-07
+        - PACK-09
+        - PACK-10
+        - PACK-13
+        - STORAGE-APPROVAL-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Statutory parameters
+        note: Always waits for approval by a member who holds A on the row (the Owner or the Controller), never the proposer (ENG-32, SOD-10); needs a person signed in who passed step-up in the last 5 minutes.
+        right: C
   /v1/super-admins:
     post:
       description: "Redeems a Super admin's invitation: you (a new user, or the one your sign-in belongs to) become a Super admin and receive your ten recovery codes, shown once (FR-ADM-06/09). Side effects: your user and sign-in identity when new, the Super admin, the recovery codes, events in the installation's trail. A wrong, used or expired invitation changes nothing. It takes no Idempotency-Key: a response with a code is never stored, and sending it again makes a new code that replaces the first."
@@ -12921,7 +13663,9 @@ tags:
     name: Members
   - description: Products and services the organisation sells, with a price per currency (FR-ITM-01).
     name: Items
-  - description: "Changes that wait for a second approver (FM-1): the envelope each approver signs, and their decisions (FR-APR-01…05, FR-APR-10)."
+  - description: "Changes that wait for a second approver (FM-1): the envelope each approver signs, their decisions, and the policies that say who approves (FR-APR-01…05, FR-APR-09, FR-APR-10)."
     name: Approvals
+  - description: Statutory parameters as versioned packs from official sources, with pinned tests, and the organisation's activation of each version (ENG-30, ENG-32).
+    name: Statutory packs
   - description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."
     name: Evidence

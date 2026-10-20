@@ -307,3 +307,69 @@ func TestAttackApprovalPoliciesAreApprovedVersions(t *testing.T) {
 		t.Errorf("the voided request's trail: %v", got)
 	}
 }
+
+// An organisation activates a statutory pack version only as the record of the approved request to activate exactly
+// that version: made by the proposer, signed by the approver, who is someone else. An activation never changes, the
+// worker never writes one, and another organisation sees none (rev 0.41).
+// req: ENG-32
+// req: SOD-10
+// req: FR-ORG-05
+// asvs: V8.2.2, V8.3.1
+func TestAttackPackActivationIsTheApprovedRequest(t *testing.T) {
+	ctx := context.Background()
+	a, b := books(t, "Attack activation A Pte Ltd"), books(t, "Attack activation B Pte Ltd")
+	st := store(t, "fyniq_api")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	proposer, approver, other := founder(t, st, a.Org, 1, now), founder(t, st, a.Org, 2, now), founder(t, st, a.Org, 3, now)
+	const version = "sg-gst@2026.1"
+	req := request(t, st, a.Org, proposer, "statutory_pack", version, "statutory_pack.activate", `{"execute":{}}`,
+		[]storage.ApprovalStep{{Quorum: 1}}, now)
+	activate := func(n storage.NewPackActivation) error {
+		return st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Packs().Activate(ctx, n)
+			return err
+		})
+	}
+	ok := storage.NewPackActivation{VersionID: version, ProposedBy: proposer, ApprovedBy: approver, Approval: req.ID, ActivatedAt: now}
+	wantState(t, "an activation whose request is pending", activate(ok), "FY107")
+	if err := signs(st, a.Org, req, 1, approver, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := decides(st, a.Org, req, "approved", now); err != nil {
+		t.Fatal(err)
+	}
+	notSigner, byApprover, self := ok, ok, ok
+	notSigner.ApprovedBy = other
+	byApprover.ProposedBy = approver
+	self.ApprovedBy = proposer
+	wantState(t, "an activation approved by someone who did not sign", activate(notSigner), "FY107")
+	wantState(t, "an activation proposed by someone other than the requester", activate(byApprover), "FY107")
+	wantState(t, "an activation approved by its proposer", activate(self), "FY107", "23514")
+	err := asOrg(ctx, conn(t, "fyniq_api"), a.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.statutory_pack_activation (version_id, proposed_by, approved_by, approval_id) VALUES ($1, $2, $3, $4)`,
+			version, proposer, approver, req.ID)
+		return err
+	})
+	wantState(t, "an activation without its audit event", err, "FY060", "FY061")
+	if err := activate(ok); err != nil {
+		t.Fatalf("the approved activation: %v", err)
+	}
+	wantState(t, "the same version again", activate(ok), "23505")
+	for _, c := range []struct{ role, what, stmt, state string }{
+		{"fyniq_api", "the API changing an activation", "UPDATE fyniq.statutory_pack_activation SET activated_at = now()", "42501"},
+		{"fyniq_api", "the API deleting an activation", "DELETE FROM fyniq.statutory_pack_activation", "42501"},
+		{"fyniq_migrator", "the owner changing an activation", "UPDATE fyniq.statutory_pack_activation SET activated_at = now()", "FY107"},
+		{"fyniq_migrator", "the owner deleting an activation", "DELETE FROM fyniq.statutory_pack_activation", "FY107"},
+		{"fyniq_worker", "the worker activating a version", `INSERT INTO fyniq.statutory_pack_activation (version_id, proposed_by, approved_by, approval_id)
+			SELECT 'sg-gst@2026.1', gen_random_uuid(), gen_random_uuid(), gen_random_uuid()`, "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.what, err, c.state)
+	}
+	if n := count(t, b.Org, "fyniq.statutory_pack_activation"); n != 0 {
+		t.Errorf("B sees %d of A's activations", n)
+	}
+	if n := count(t, a.Org, "fyniq.statutory_pack_activation"); n != 1 {
+		t.Errorf("A sees %d activations, not 1", n)
+	}
+}

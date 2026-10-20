@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The source's ID in the pack, which each row cites.",
+      "examples": [
+        "iras-gst-rate"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "The kind of source: law, regulation, official guidance, contract term or product policy.",
+      "examples": [
+        "official guidance"
+      ],
+      "type": "string"
+    },
+    "retrieved": {
+      "description": "When it was read.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "section": {
+      "description": "The section of the page the values come from.",
+      "examples": [
+        "Current GST rate"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "GST rate change"
+      ],
+      "type": "string"
+    },
+    "url": {
+      "description": "The official page.",
+      "examples": [
+        "https://www.iras.gov.sg/taxes/goods-services-tax-(gst)"
+      ],
+      "format": "uri",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "url",
+    "section",
+    "kind",
+    "retrieved"
+  ],
+  "title": "PackSource",
+  "type": "object"
+}

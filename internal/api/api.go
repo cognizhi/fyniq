@@ -116,7 +116,8 @@ func Config(version string) huma.Config {
 		{Name: "Contacts", Description: "Customers and vendors (FR-CT-01)."},
 		{Name: "Members", Description: "Members of the organisation, their roles, and invitations to join it (FR-ADM-01)."},
 		{Name: "Items", Description: "Products and services the organisation sells, with a price per currency (FR-ITM-01)."},
-		{Name: "Approvals", Description: "Changes that wait for a second approver (FM-1): the envelope each approver signs, and their decisions (FR-APR-01…05, FR-APR-10)."},
+		{Name: "Approvals", Description: "Changes that wait for a second approver (FM-1): the envelope each approver signs, their decisions, and the policies that say who approves (FR-APR-01…05, FR-APR-09, FR-APR-10)."},
+		{Name: "Statutory packs", Description: "Statutory parameters as versioned packs from official sources, with pinned tests, and the organisation's activation of each version (ENG-30, ENG-32)."},
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 	}
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
@@ -159,6 +160,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerMembers(a)
 	registerApprovals(a)
 	registerApprovalPolicies(a)
+	registerPacks(a)
 	registerJournals(a)
 	registerEvidence(a)
 	registerSetup(a)

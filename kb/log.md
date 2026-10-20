@@ -23,3 +23,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | docs/user-guide/home.md, docs/user-guide/appearance.md → home.overview, preferences.appearance (new guide pages for the app shell's first slice: Home, search and commands, appearance)
 
 ## [2026-10-20] compile | docs/user-guide/approval-policies.md, docs/user-guide/approvals.md → approvals.policies, approvals.decide (approval policies as data, steps, withdrawing a request; PRD rev 0.40)
+
+## [2026-10-20] compile | docs/user-guide/statutory-packs.md → settings.statutory-packs (activating a pack version through the approval engine; PRD rev 0.41)
+
+## [2026-10-20] compile | docs/user-guide/approvals.md → approvals.decide (activating a statutory pack waits for approval; links settings.statutory-packs)
