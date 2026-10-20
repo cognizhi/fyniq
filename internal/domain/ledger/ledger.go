@@ -25,6 +25,12 @@ const (
 	RuleManualJournal   = "manual_journal@1"
 )
 
+// The opening balances' source type and rule version (FR-GL-06, posting rule "Opening balances"; PRD-001 rev 0.49).
+const (
+	SourceOpeningBalance = "opening_balance"
+	RuleOpeningBalance   = "opening_balance@1"
+)
+
 // Account is what the engine needs to know about an account (INV-04, INV-13).
 type Account struct {
 	ID     uuid.UUID
@@ -111,6 +117,7 @@ const (
 	CodeBaseRange       = "LEDGER-14" // a computed base amount its column cannot hold (ENG-44, ENG-24 rule 6)
 	CodeShareCapital    = "LEDGER-15" // a manual journal line to a share-capital account (INV-13)
 	CodeReversalDate    = "LEDGER-16" // a reversal dated before the entry it reverses (FR-GL-12)
+	CodeForeignOpening  = "LEDGER-17" // an opening balance not in the base currency (FR-GL-06, rev 0.49)
 )
 
 // Problem is one validation failure: a stable code, the field, what is wrong and how to fix it.
@@ -144,7 +151,24 @@ func (p Problems) Has(code string) bool {
 
 // JournalIdentity is the posting identity of a journal version under a rule version (§11.4).
 func JournalIdentity(id uuid.UUID, version int, rule string) string {
-	return fmt.Sprintf("%s:%s:v%d:%s", SourceManualJournal, id, version, rule)
+	return identity(SourceManualJournal, id, version, rule)
+}
+
+// OpeningIdentity is the posting identity of a version of the opening balances under a rule version.
+func OpeningIdentity(id uuid.UUID, version int, rule string) string {
+	return identity(SourceOpeningBalance, id, version, rule)
+}
+
+func identity(source string, id uuid.UUID, version int, rule string) string {
+	return fmt.Sprintf("%s:%s:v%d:%s", source, id, version, rule)
+}
+
+// asEntered are the differences between the sources whose lines post as entered (§10.2).
+type asEntered struct {
+	source, rule string
+	what         string // the document, as the messages name it
+	shareCapital bool   // lines may post to share-capital accounts (INV-13)
+	baseOnly     bool   // every line is in the base currency
 }
 
 // PostJournal turns one version of a manual journal into its entry (FR-GL-01 in P0 form) under the
@@ -153,17 +177,30 @@ func JournalIdentity(id uuid.UUID, version int, rule string) string {
 // it post (§10.2). The balance rules (7 and 8) are checked whenever every line has a base amount, so
 // they are reported beside any other failure.
 func PostJournal(j Journal, s Settings) (Entry, error) {
+	return post(j, s, asEntered{source: SourceManualJournal, rule: RuleManualJournal, what: "journal"})
+}
+
+// PostOpening turns one version of the opening balances into its entry (FR-GL-06; posting rule "Opening balances"):
+// posted as entered at the books start, netting to zero. It checks ENG-24's rules as a manual journal does, except
+// that share capital may take a line (INV-13: share capital changes through the register of share issues or opening
+// balances) and every line is in the base currency (rev 0.49): open items in other currencies come with sales and
+// purchases. The caller dates it at the books start.
+func PostOpening(j Journal, s Settings) (Entry, error) {
+	return post(j, s, asEntered{source: SourceOpeningBalance, rule: RuleOpeningBalance, what: "opening balance entry", shareCapital: true, baseOnly: true})
+}
+
+func post(j Journal, s Settings, r asEntered) (Entry, error) {
 	var probs Problems
 	add := func(code, field, msg, fix string) { probs = append(probs, Problem{code, field, msg, fix}) }
 
 	if j.Date.IsZero() {
-		add(CodeNoDate, "date", "the journal has no date", "Enter the date the journal belongs to")
+		add(CodeNoDate, "date", fmt.Sprintf("the %s has no date", r.what), "Enter the date the journal belongs to")
 	}
 	if len(j.Memo) > MaxMemo {
 		add(CodeTooLong, "memo", fmt.Sprintf("the memo has %d characters; the most is %d", len(j.Memo), MaxMemo), "Shorten the memo")
 	}
 	if len(j.Lines) < 2 {
-		add(CodeTooFewLines, "lines", fmt.Sprintf("the journal has %d line(s)", len(j.Lines)),
+		add(CodeTooFewLines, "lines", fmt.Sprintf("the %s has %d line(s)", r.what, len(j.Lines)),
 			"Add at least one debit and one credit line")
 	}
 
@@ -183,7 +220,7 @@ func PostJournal(j Journal, s Settings) (Entry, error) {
 			add(CodeGroupAccount, f("account"), fmt.Sprintf("account %s is a group heading", acc.Code), "Post to an account under it")
 		case !acc.Active:
 			add(CodeInactiveAccount, f("account"), fmt.Sprintf("account %s is inactive", acc.Code), "Reactivate it or choose another account")
-		case acc.ShareCapital:
+		case acc.ShareCapital && !r.shareCapital:
 			add(CodeShareCapital, f("account"), fmt.Sprintf("account %s is share capital, which changes only through the register of share issues or opening balances", acc.Code),
 				"Record the share issue in the register of share issues instead of a manual journal")
 		}
@@ -205,6 +242,12 @@ func PostJournal(j Journal, s Settings) (Entry, error) {
 		// other line has a rate into the base currency, with its source.
 		rate := money.Identity(s.Base)
 		cur := l.Amount.Currency()
+		if r.baseOnly && cur != s.Base {
+			add(CodeForeignOpening, f("amount"), fmt.Sprintf("the line is in %s; opening balances are in the base currency %s", cur, s.Base),
+				fmt.Sprintf("Enter the balance in %s; open invoices and bills in other currencies come with sales and purchases", s.Base))
+			converted = false
+			continue
+		}
 		switch {
 		case cur == s.Base && l.Rate != nil:
 			add(CodeRateOnBase, f("fx_rate"), fmt.Sprintf("the line is in the base currency %s, so it takes no exchange rate", s.Base),
@@ -264,9 +307,9 @@ func PostJournal(j Journal, s Settings) (Entry, error) {
 	y, m, d := j.Date.Date()
 	return Entry{
 		PostingDate:     time.Date(y, m, d, 0, 0, 0, 0, time.UTC),
-		Source:          Source{Type: SourceManualJournal, ID: j.ID.String(), Version: j.Version},
-		RuleVersion:     RuleManualJournal,
-		PostingIdentity: JournalIdentity(j.ID, j.Version, RuleManualJournal),
+		Source:          Source{Type: r.source, ID: j.ID.String(), Version: j.Version},
+		RuleVersion:     r.rule,
+		PostingIdentity: identity(r.source, j.ID, j.Version, r.rule),
 		Memo:            j.Memo,
 		Lines:           lines,
 	}, nil

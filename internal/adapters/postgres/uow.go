@@ -373,6 +373,11 @@ func (r documents) Create(ctx context.Context, d storage.NewDocument) (storage.D
 		CreatedBy: &by}); err != nil {
 		return storage.Document{}, mapError(err)
 	}
+	if d.Type == storage.DocumentOpeningBalance {
+		if err := r.u.q.InsertOpeningBalance(ctx, row.ID); err != nil {
+			return storage.Document{}, mapError(err)
+		}
+	}
 	payload, err := jsonValue(d.Payload)
 	if err != nil {
 		return storage.Document{}, err
@@ -447,6 +452,19 @@ func (r documents) Get(ctx context.Context, id uuid.UUID) (storage.Document, err
 		return storage.Document{}, err
 	}
 	row, err := r.u.q.GetDocument(ctx, id)
+	if err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+		Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy),
+		PostedBy: str(row.PostedBy), PostedAt: row.PostedAt}, nil
+}
+
+func (r documents) OpeningBalance(ctx context.Context) (storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Document{}, err
+	}
+	row, err := r.u.q.GetOpeningBalance(ctx)
 	if err != nil {
 		return storage.Document{}, mapError(err)
 	}

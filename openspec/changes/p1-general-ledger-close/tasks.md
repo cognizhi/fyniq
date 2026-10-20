@@ -32,7 +32,15 @@
 
 ## 3. Opening balances
 
-- [ ] 3.1 One opening-balance document per organisation at the books start, in base currency, posting only when it nets to zero; INV-13 as an allow list (`opening_balance`, `share_issue`) in a new migration. Tests `// req: FR-GL-06`, `// req: ledger/posting-rules Opening balances` and a database attack test `// req: INV-13`
+- [x] 3.1 One opening-balance document per organisation at the books start, in base currency, posting only when it nets to zero; INV-13 as an allow list (`opening_balance`, `share_issue`) in a new migration. Tests `// req: FR-GL-06`, `// req: ledger/posting-rules Opening balances` and a database attack test `// req: INV-13`
+  (21 Oct 2026, PRD rev 0.49: migration 000054 adds the `opening_balance` document type and the `opening_balance` table
+  keyed on the organisation (one per organisation; FY054 keeps it of its type and unchanged) and makes INV-13's
+  `journal_line_check` an allow list; 000055 validates the type check. `ledger.PostOpening` posts as entered under
+  `opening_balance@1`, share capital allowed, base currency only (LEDGER-17). `GET/PUT /v1/opening-balances` (ETag
+  `"0-none"` before the first save) and `POST /v1/opening-balances/post`. Tests: `TestOpeningBalancesPostAsEnteredWithShareCapital`,
+  `TestOpeningBalancesNetToZeroInTheBaseCurrency`, `TestOpeningBalances`, `TestAttackOpeningBalancesAreOneAndOnlyTheyReachShareCapital`,
+  the allow list in `TestAttackManualJournalToShareCapitalFails`, three authorisation-matrix rows. **Left:** the
+  oracle's side (8.1); changes after posting with FM-1 (2.3); the screen (7.2).)
 
 ## 4. The general ledger report
 

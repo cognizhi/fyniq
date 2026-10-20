@@ -60,6 +60,43 @@ func (q *Queries) GetDocumentStatusForUpdate(ctx context.Context, id uuid.UUID) 
 	return status, err
 }
 
+const getOpeningBalance = `-- name: GetOpeningBalance :one
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
+FROM fyniq.opening_balance o
+JOIN fyniq.document d ON d.organisation_id = o.organisation_id AND d.id = o.document_id
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+`
+
+type GetOpeningBalanceRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+}
+
+func (q *Queries) GetOpeningBalance(ctx context.Context) (GetOpeningBalanceRow, error) {
+	row := q.db.QueryRow(ctx, getOpeningBalance)
+	var i GetOpeningBalanceRow
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Status,
+		&i.CurrentVersion,
+		&i.Payload,
+		&i.Number,
+		&i.CreatedBy,
+		&i.PostedBy,
+		&i.PostedAt,
+	)
+	return i, err
+}
+
 const insertDocument = `-- name: InsertDocument :one
 INSERT INTO fyniq.document (type) VALUES ($1) RETURNING id, type, status, current_version
 `
@@ -101,6 +138,16 @@ func (q *Queries) InsertDocumentVersion(ctx context.Context, arg InsertDocumentV
 		arg.Payload,
 		arg.CreatedBy,
 	)
+	return err
+}
+
+const insertOpeningBalance = `-- name: InsertOpeningBalance :exec
+INSERT INTO fyniq.opening_balance (document_id) VALUES ($1)
+`
+
+// The organisation's one opening balances document (FR-GL-06): its key is the organisation.
+func (q *Queries) InsertOpeningBalance(ctx context.Context, documentID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, insertOpeningBalance, documentID)
 	return err
 }
 

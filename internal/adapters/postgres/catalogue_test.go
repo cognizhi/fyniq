@@ -34,7 +34,7 @@ var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbe
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
-var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain"}
+var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}
 
 var serviceRoles = []string{"fyniq_api", "fyniq_worker", "fyniq_executor", "fyniq_ai", "fyniq_readonly"}
 

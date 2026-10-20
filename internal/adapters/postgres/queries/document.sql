@@ -54,3 +54,14 @@ WHERE id = sqlc.arg(id);
 
 -- name: GetDocumentStatusForUpdate :one
 SELECT status FROM fyniq.document WHERE id = $1 FOR UPDATE;
+
+-- name: InsertOpeningBalance :exec
+-- The organisation's one opening balances document (FR-GL-06): its key is the organisation.
+INSERT INTO fyniq.opening_balance (document_id) VALUES ($1);
+
+-- name: GetOpeningBalance :one
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
+FROM fyniq.opening_balance o
+JOIN fyniq.document d ON d.organisation_id = o.organisation_id AND d.id = o.document_id
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id;

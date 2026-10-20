@@ -142,6 +142,12 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** opening invoices and bills are imported
 - **THEN** each is imported as an open item with its currency
 
+#### Scenario: One set of opening balances, posted once (rev 0.49)
+- **GIVEN** the books start is set
+- **WHEN** the opening balances are saved and posted
+- **THEN** they are one document per organisation, saved as a draft a version at a time and posted once at the books start
+- **AND** they post only when they net to zero, every line in the base currency, share capital included
+
 ### Requirement: FR-GL-07 Period close workflow
 The system SHALL provide a **period close workflow** per month: a close checklist, checks that must be clean, reconciliations signed off and an attestation (FM-4); closing locks the period.
 

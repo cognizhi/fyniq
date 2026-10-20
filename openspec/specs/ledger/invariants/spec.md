@@ -230,6 +230,10 @@ Source: PRD-001 §10.7
 - **WHEN** a line posts to a share-capital account from a source other than the register of share issues or opening balances
 - **THEN** the trigger on the posting source rejects it
 
+#### Scenario: Only those two sources (rev 0.49)
+- **WHEN** a posting source other than the register of share issues and the opening balances is added
+- **THEN** the trigger refuses its lines to share capital without being told of it
+
 #### Scenario: Per-person sub-ledgers equal 2500 and 2120
 - **WHEN** the nightly verification runs
 - **THEN** the per-person sub-ledgers equal accounts 2500 and 2120

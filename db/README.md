@@ -118,7 +118,7 @@ Add one only with its access model here and in the test's list.
 | INV-12 audit chain | `audit_event_append` chains every event, `SHA-256(prev_hash ‖ body)`, under the chain head's lock; events and the head are immutable (`FY060`); format in `contracts/audit/` | `TestTamperingWithTheTrailIsDetected`, `TestTheChainStaysLinearUnderConcurrentWrites` |
 | AUD-08 no change without its event | `require_audit` constraint triggers at commit (`FY061`); no role can update, delete or truncate the trail, or turn triggers off | `TestAttackChangesWithoutAnAuditEventFail` |
 | Outbox (§12.11, ADR-T7) | `outbox` rows are written in the change's transaction; `outbox_guard` keeps the state machine pending → dispatched → running → done, failed, unknown_outcome or dead (dead → pending for a manual replay), and rows are never deleted | `TestOutboxRowsCommitWithTheirChangeOrNotAtAll`, `TestADeliveredTwiceTaskHasOneEffect` |
-| INV-13 no manual journal to share capital (rev 0.24, from P0) | `account.role = 'share-capital'` (000014), set at creation and fixed by `account_guard` (`FY040`); `journal_line_check` refuses a `manual_journal` line to such an account (`FY007`); other sources (the register of share issues, P1) may post | `TestAttackManualJournalToShareCapitalFails` |
+| INV-13 share capital only from the register or the opening balances (rev 0.24, from P0; rev 0.49) | `account.role = 'share-capital'` (000014), set at creation and fixed by `account_guard` (`FY040`); `journal_line_check` refuses a line to such an account from any source but `share_issue` and `opening_balance` (`FY007`, an allow list since 000054) | `TestAttackManualJournalToShareCapitalFails`, `TestAttackOpeningBalancesAreOneAndOnlyTheyReachShareCapital` |
 | Documents (§11.4, FR-GL-12) | `document_version` rows immutable; `document_guard`: draft → posted → reversed only, type fixed, version only forward; the current version must exist (deferred FK) | `TestAttackDocumentVersionsAndStatusesCannotBeRewound` |
 | Preparer and approver (FR-GL-01, rev 0.48) | `document_version.created_by` required on every new version (`document_version_created_by`, `FY053`); `document.posted_by` and `posted_at` set with the move from draft to posted and never changed (`document_guard`, `FY053`) | `TestAttackDocumentActorsAreRecordedOnce` |
 
@@ -148,6 +148,7 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY050, FY052 | STORAGE-DOC-01 | A document's type cannot change, nor its version go back |
 | FY051 | STORAGE-DOC-02 | A document moves only draft → posted → reversed |
 | FY053 | STORAGE-DOC-03 | A document version names who saved it; a posting names who posted it and when, set once |
+| FY054 | STORAGE-DOC-01 | The opening balances document is one per organisation, of its own type, and never changes or goes |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

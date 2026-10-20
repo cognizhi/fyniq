@@ -4,6 +4,7 @@ package postgres_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"testing"
@@ -13,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -299,8 +301,13 @@ VALUES ('2026-10-14', $1, $2, $1, 1, 'attack@1') RETURNING id`, uuid.NewString()
 		})
 	}
 	wantState(t, "a manual journal line to share capital", post("manual_journal"), "FY007")
-	if err := post("share_issue"); err != nil {
-		t.Errorf("another source could not post to share capital: %v", err)
+	// INV-13 is an allow list since 000054: only the register of share issues and the opening balances reach share
+	// capital; any other source is refused, a new one included (rev 0.49).
+	wantState(t, "an invoice line to share capital", post("invoice"), "FY007")
+	for _, source := range []string{"share_issue", "opening_balance"} {
+		if err := post(source); err != nil {
+			t.Errorf("%s could not post to share capital: %v", source, err)
+		}
 	}
 	err := asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, "UPDATE fyniq.account SET role = NULL WHERE id = $1", capital.ID)
@@ -312,6 +319,68 @@ VALUES ('2026-10-14', $1, $2, $1, 1, 'attack@1') RETURNING id`, uuid.NewString()
 		return err
 	})
 	wantState(t, "mark an account as the API", err, "42501")
+}
+
+// The opening balances are one document per organisation, of their own type, never changed or removed (FR-GL-06,
+// rev 0.49).
+// req: FR-GL-06
+func TestAttackOpeningBalancesAreOneAndOnlyTheyReachShareCapital(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack opening balances Pte Ltd")
+	st := store(t, "fyniq_api")
+	var first, journal storage.Document
+	if err := st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		if first, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentOpeningBalance, Payload: []byte(`{"lines":[]}`)}); err != nil {
+			return err
+		}
+		journal, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"lines":[]}`)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var found storage.Document
+	if err := st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		found, err = u.Documents().OpeningBalance(ctx)
+		return err
+	}); err != nil || found.ID != first.ID || found.Type != storage.DocumentOpeningBalance {
+		t.Fatalf("the opening balances: %v %+v", err, found)
+	}
+	// A second one is refused, through the port or by hand.
+	err := st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentOpeningBalance, Payload: []byte(`{"lines":[]}`)})
+		return err
+	})
+	if storage.CodeOf(err) != storage.CodeDuplicate {
+		t.Errorf("a second opening balances document: %v", err)
+	}
+	other := books(t, "Attack opening balances B Pte Ltd")
+	if err := st.Do(ctx, other.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Documents().OpeningBalance(ctx)
+		return err
+	}); !errors.Is(err, ports.ErrNotFound) {
+		t.Errorf("another organisation sees an opening balances document: %v", err)
+	}
+	for _, c := range []struct{ role, stmt, state string }{
+		{"fyniq_api", "INSERT INTO fyniq.opening_balance (document_id) VALUES ('" + journal.ID.String() + "')", "FY054"},
+		{"fyniq_migrator", "DELETE FROM fyniq.opening_balance", "FY054"},
+		{"fyniq_migrator", "UPDATE fyniq.opening_balance SET document_id = '" + journal.ID.String() + "'", "FY054"},
+		{"fyniq_api", "DELETE FROM fyniq.opening_balance", "42501"},
+		{"fyniq_api", "UPDATE fyniq.document SET type = 'opening_balance' WHERE id = '" + journal.ID.String() + "'", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.role+": "+c.stmt, err, c.state)
+	}
+	// A second opening balances document by hand: the organisation's key refuses it.
+	err = asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		var id uuid.UUID
+		if err := tx.QueryRow(ctx, "INSERT INTO fyniq.document (type) VALUES ('opening_balance') RETURNING id").Scan(&id); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, "INSERT INTO fyniq.opening_balance (document_id) VALUES ($1)", id)
+		return err
+	})
+	wantState(t, "a second opening balances row", err, "23505")
 }
 
 // nanAttacks try NaN and an out-of-range value in each numeric column; TestEveryNumericColumn…
