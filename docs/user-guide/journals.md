@@ -46,7 +46,8 @@ unit buys.
    currency, without saving anything.
 3. Select **Post**. The journal takes its number and posts on its date.
 
-Fyniq records who posted it and when. Once posted, a journal is never edited.
+Fyniq records who posted it and when. Once posted, a journal never changes in place: it is edited or
+reversed, and the ledger keeps every entry.
 
 ## Journals above the self-approval threshold
 
@@ -76,6 +77,25 @@ In Founder mode a reversal needs a second person: the button says **Ask to rever
 date and the reason the same way and select **Ask to reverse**; another founder approves it in
 **Inbox → To approve**, and the reversal posts then.
 
+## Edit a posted journal
+
+A posted journal in a month that is still open can be corrected instead of reversed and entered
+again.
+
+1. Open the posted journal and select **Edit**.
+2. Change the date, the description or the lines, and say why it is edited.
+3. Select **Check the edit** to see what it posts, without saving anything.
+4. Select **Post the edit**.
+
+The entry the journal had is reversed on its own date, and the new version posts on its date, both at
+once; both months must be open. The journal keeps its number and stays **Posted**, and Fyniq records
+who prepared the new version and who posted the edit. The ledger keeps the first entry, its reversal
+and the new one.
+
+In Founder mode an edit needs a second person: the button says **Ask to post the edit**, and another
+founder approves it in **Inbox → To approve**, where each changed line is listed. An edit whose new
+debits are above the self-approval threshold needs another person's approval in any mode.
+
 ## Common problems
 
 | Message | What to do |
@@ -91,6 +111,7 @@ date and the reason the same way and select **Ask to reverse**; another founder 
 | Its debits are above the self-approval threshold (JOURNAL-07) | Select **Ask for approval** |
 | In Founder mode a reversal needs a second person (JOURNAL-08) | Select **Ask to reverse** |
 | You prepared this journal (JOURNAL-09) | Another person who did not prepare it approves it |
+| In Founder mode an edit needs a second person (JOURNAL-10) | Select **Ask to post the edit** |
 
 ## Related
 

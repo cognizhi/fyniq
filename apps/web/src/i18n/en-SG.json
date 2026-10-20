@@ -232,6 +232,18 @@
       "label": "Ask for approval",
       "tooltip": "Its debits are above the self-approval threshold: another person, who did not prepare it, approves it and it posts then."
     },
+    "journal.edit": {
+      "label": "Edit",
+      "tooltip": "Correct a posted journal: the entry it has is reversed on its date and the new version posts, in one step, with a reason."
+    },
+    "journal.post-edit": {
+      "label": "Post the edit",
+      "tooltip": "Reverse the entry the journal has, on its date, and post the new version: both months must be open."
+    },
+    "journal.ask-edit": {
+      "label": "Ask to post the edit",
+      "tooltip": "In Founder mode another founder approves an edit first; it posts when they approve it."
+    },
     "journal.ask-reverse": {
       "label": "Ask to reverse",
       "tooltip": "In Founder mode another founder approves a reversal first; it posts on the date you choose once they approve."
