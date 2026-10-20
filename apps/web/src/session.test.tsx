@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, Outlet, RouterProvider } from "@tanstack/react-router";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { SignedIn } from "./session";
 import { answer, ownerSession } from "./test/api";
@@ -17,7 +17,7 @@ function renderLayout(path = "/settings/profile") {
     ),
   });
   const layout = createRoute({ getParentRoute: () => root, id: "signed-in", component: SignedIn });
-  const page = createRoute({ getParentRoute: () => layout, path: "/settings/profile", component: () => <p>The page</p> });
+  const page = createRoute({ getParentRoute: () => layout, path, component: () => <p>The page</p> });
   const router = createRouter({ routeTree: root.addChildren([layout.addChildren([page])]), history: createMemoryHistory({ initialEntries: [path] }) });
   return render(<RouterProvider router={router} />);
 }
@@ -46,5 +46,18 @@ describe("the signed-in layout", () => {
     expect(screen.queryByText("The page")).toBeNull();
     expect(screen.getByRole("button", { name: "Use a passkey" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Sign in again" })).toBeTruthy();
+  });
+
+  // req: FR-UX-26
+  // req: FR-UX-24
+  it("shows an Expert page in Basic mode too, saying so and offering to switch", async () => {
+    answer({ "GET /v1/setup": { status: 200, body: { done: true } }, "GET /v1/session": { status: 200, body: ownerSession }, "GET /v1/organisation": { status: 200, body: organisation } });
+    renderLayout("/settings/members");
+    expect(await screen.findByText("The page")).toBeTruthy();
+    expect(screen.getByText(/This page is part of Expert mode/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Switch to Expert" }));
+    expect(window.localStorage.getItem("fyniq.mode")).toBe("expert");
+    expect(await screen.findByRole("radio", { name: "Expert", checked: true })).toBeTruthy();
+    expect(screen.queryByText(/This page is part of Expert mode/)).toBeNull();
   });
 });

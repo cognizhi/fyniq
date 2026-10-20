@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, useRouterState } from "@tanstack/react-router";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
 import { createContext, useContext, useEffect } from "react";
 import { DeviceRoot } from "./components/ui/dialog";
 import { api, type Organisation, type Session } from "./api/client";
 import { helpText } from "./i18n";
-import { useMode } from "./mode";
+import { setMode, useMode } from "./mode";
 import { routes, type Mode } from "./registry";
 import { go } from "./route";
 import { AppFrame } from "./shell/AppFrame";
@@ -88,11 +88,26 @@ function SecondFactor({ provider }: { provider?: string }) {
   );
 }
 
-// titleOf is the page's name for the header: its route's help label.
-function useTitle(): string {
+// useRoute is the registry's entry for the page shown.
+function useRoute() {
   const path: string = useRouterState({ select: (s) => String(s.matches.at(-1)?.fullPath ?? "/") });
-  const r = routes.find((x) => x.path === path || `${x.path}/` === path);
-  return helpText(r?.help ?? "home.overview").label;
+  return routes.find((x) => x.path === path || `${x.path}/` === path);
+}
+
+// ExpertHint says when a page of Expert mode is reached in Basic mode, such as from search or a
+// link, and offers to switch (FR-UX-26). The page still shows: the mode is presentation only.
+function ExpertHint() {
+  return (
+    <div className="fy-banner fy-banner--info fy-banner--strip" role="note">
+      <Icon of={Sparkles} size={20} />
+      <div className="fy-banner__text">
+        <span className="fy-small">This page is part of Expert mode. Its details and the organisation's other settings show in Expert mode.</span>
+      </div>
+      <button type="button" className="fy-btn fy-btn--secondary fy-btn--sm" onClick={() => setMode("expert")}>
+        Switch to Expert
+      </button>
+    </div>
+  );
 }
 
 // SignedIn is the layout of every signed-in page (p1-app-shell 2.1): it asks the API where the
@@ -103,7 +118,8 @@ export function SignedIn() {
   const state: Shell | { kind: "checking" } = shell.isError ? { kind: "down" } : (shell.data ?? { kind: "checking" });
   const session = state.kind === "signed-in" ? state.session : undefined;
   const mode = useMode(session?.roles);
-  const title = useTitle();
+  const route = useRoute();
+  const title = helpText(route?.help ?? "home.overview").label;
   const device = useContext(DeviceRoot);
 
   // The kit shows .fy-basic-only and .fy-expert-only by the device's data-mode (presentation only).
@@ -134,6 +150,7 @@ export function SignedIn() {
     <Ctx.Provider value={{ session: state.session, organisation: state.organisation, mode }}>
       <StepUpProvider provider={state.session.provider}>
         <AppFrame session={state.session} title={title} mode={mode}>
+          {route?.mode === "expert" && mode === "basic" && <ExpertHint />}
           <Outlet />
         </AppFrame>
       </StepUpProvider>
