@@ -90,7 +90,7 @@ function SecondFactor({ provider }: { provider?: string }) {
 
 // titleOf is the page's name for the header: its route's help label.
 function useTitle(): string {
-  const path = useRouterState({ select: (s) => s.matches.at(-1)?.fullPath ?? "/" });
+  const path: string = useRouterState({ select: (s) => String(s.matches.at(-1)?.fullPath ?? "/") });
   const r = routes.find((x) => x.path === path || `${x.path}/` === path);
   return helpText(r?.help ?? "home.overview").label;
 }

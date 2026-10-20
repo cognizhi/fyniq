@@ -4,7 +4,7 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving or rejecting in steps from the Inbox, withdrawing your request, and why one becomes void or expires
 sources:
-  - docs/user-guide/approvals.md sha256:6e64d0185037cd0091acb7b72b2f6c7b863e56e65d68284e21c59af54522cdfa
+  - docs/user-guide/approvals.md sha256:988f4b7e3988ff6bcb44e0e4e34577958d4bbf05b8dd15c9acf7463d1c8d223b
 data_class: general
 taint: trusted
 status: published
@@ -21,6 +21,9 @@ aliases:
   - to approve
   - withdraw a request
   - cancel my request
+  - inbox
+  - weekly review
+  - review log
 ---
 
 # Ask for, approve or reject a change that needs a second approver
@@ -45,7 +48,9 @@ aliases:
 ## Approve or reject
 
 - **Inbox → To approve**, choose the request and check each value before and after.
-- Confirm it's you, then **Approve** to make the change now, or **Reject** and say why.
+- **Approve…** or **Reject…** opens the confirmation: exactly what is signed, the step, and the request's fingerprint; a rejection needs a reason.
+- **Approve with passkey** (or **Reject with passkey**) and confirm on the device; without a passkey, **Approve** or **Reject** and confirm it's you when asked.
+- The Inbox never approves by itself: every decision goes through the confirmation.
 - An approval signs exactly what was shown; who approved, when and how they confirmed it is in the audit trail.
 - With a passkey the device signs the request itself: the confirmation carries a fingerprint of exactly what is approved or rejected, works once for that request within 5 minutes, and the device's signature is kept with the approval so it can be verified later ([[auth.sign-in]]).
 - Some changes need more than one approval, in steps set by the approval policy ([[approvals.policies]]); the request shows each step and its approvals, and the change is made with the last approval.
@@ -55,7 +60,7 @@ aliases:
 
 ## Withdraw your request
 
-- Open the request you asked for and select **Withdraw**.
+- Open the request from **Inbox → Your requests, waiting**, select **Withdraw…**, then **Withdraw**.
 - The request is cancelled with any approvals it had, and nothing changes.
 - Only the person who asked can withdraw it; anyone else who disagrees rejects it with a reason.
 
@@ -64,8 +69,8 @@ aliases:
 ## Review high-risk actions
 
 - Every high-risk change is logged when it is made: each change another person approved, and each role or invitation the Owner set up alone before a second person joined; another founder reviews the log weekly.
-- **Review log** lists the unreviewed actions and who did each; choose the ones checked, add a note if wanted, and select **Mark as reviewed**.
-- Nobody reviews their own action; each is reviewed once; one still unreviewed 14 days after it was made shows as overdue on **Checks**.
+- **Inbox → Weekly review** opens the **Review log** of unreviewed actions and who did each; tick the ones checked, select **Mark as reviewed**, add a note if wanted, and confirm.
+- Nobody reviews their own action; each is reviewed once; one still unreviewed 14 days after it was made shows as overdue in the Inbox and the review log.
 
 (src: docs/user-guide/approvals.md#review-high-risk-actions)
 

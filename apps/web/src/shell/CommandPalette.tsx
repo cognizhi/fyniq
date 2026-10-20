@@ -56,7 +56,7 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
               <Command.Empty className="px-3 py-6 text-center text-base text-muted-foreground">Nothing matches. Try another word.</Command.Empty>
               <Command.Group heading="Go to" className={group}>
                 {routes
-                  .filter((r) => r.signedIn)
+                  .filter((r) => r.signedIn && !r.path.includes("$")) // a page of one record is reached from its list
                   .map((r) => action(helpText(r.help).label, <Icon of={House} />, run(() => void navigate({ to: r.path })), r.mode))}
               </Command.Group>
               <Command.Group heading={helpText("appearance.theme").label} className={group}>

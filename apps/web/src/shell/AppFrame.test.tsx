@@ -46,7 +46,7 @@ describe("the app frame", () => {
   it("shows a person with no role only what every signed-in person may see", async () => {
     renderFrame({ roles: [], features: undefined });
     const side = await screen.findByRole("navigation", { name: "Main" });
-    expect(within(side).getAllByRole("link").map((a) => a.getAttribute("aria-label") ?? a.textContent)).toEqual(["Fyniq home", "Home", "Settings"]);
+    expect(within(side).getAllByRole("link").map((a) => a.getAttribute("aria-label") ?? a.textContent)).toEqual(["Fyniq home", "Home", "Inbox", "Settings"]);
   });
 
   // req: experience/visual-design Themes

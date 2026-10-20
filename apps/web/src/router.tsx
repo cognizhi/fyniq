@@ -1,6 +1,6 @@
 import { CSPProvider } from "@base-ui/react/csp-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRootRoute, createRoute, createRouter, lazyRouteComponent, Outlet, type RouteComponent } from "@tanstack/react-router";
+import { createRootRoute, createRoute, createRouter, lazyRouteComponent, Outlet, type AnyRoute, type RouteComponent } from "@tanstack/react-router";
 import { useRef } from "react";
 import { useMotion } from "./appearance";
 import { DeviceRoot } from "./components/ui/dialog";
@@ -24,6 +24,9 @@ const screens: Record<RouteId, RouteComponent> = {
   home: Home,
   "sign-in": lazyRouteComponent(() => import("./screens/SignIn"), "SignIn"),
   install: lazyRouteComponent(() => import("./screens/Install"), "Install"),
+  inbox: lazyRouteComponent(() => import("./screens/approvals/Inbox"), "Inbox"),
+  approval: lazyRouteComponent(() => import("./screens/approvals/ApprovalPage"), "ApprovalPage"),
+  "review-log": lazyRouteComponent(() => import("./screens/approvals/ReviewLog"), "ReviewLog"),
   settings: lazyRouteComponent(() => import("./screens/settings/Settings"), "Settings"),
   "settings-profile": lazyRouteComponent(() => import("./screens/settings/Profile"), "Profile"),
 };
@@ -64,9 +67,11 @@ const rootRoute = createRootRoute({ component: Root, notFoundComponent: NotFound
 // belongs and wraps the page in the app frame (session.tsx). Sign-in and setup stand alone.
 const signedIn = createRoute({ getParentRoute: () => rootRoute, id: "signed-in", component: SignedIn });
 
+// The routes come from the registry's data, so TypeScript sees one route type for all of them; each
+// is typed as any route, and a link to a page with a parameter passes its params by name.
 const routeTree = rootRoute.addChildren([
-  signedIn.addChildren(routes.filter((r) => r.signedIn).map((r) => createRoute({ getParentRoute: () => signedIn, path: r.path, component: screens[r.id] }))),
-  ...routes.filter((r) => !r.signedIn).map((r) => createRoute({ getParentRoute: () => rootRoute, path: r.path, component: screens[r.id] })),
+  signedIn.addChildren(routes.filter((r) => r.signedIn).map((r): AnyRoute => createRoute({ getParentRoute: () => signedIn, path: r.path, component: screens[r.id] }))),
+  ...routes.filter((r) => !r.signedIn).map((r): AnyRoute => createRoute({ getParentRoute: () => rootRoute, path: r.path, component: screens[r.id] })),
 ]);
 
 export function makeRouter() {

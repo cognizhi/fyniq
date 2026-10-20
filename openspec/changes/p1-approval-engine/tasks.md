@@ -112,5 +112,11 @@
 
 - [ ] 5.1 Build the screens as designed: accountant-review, approval-confirmation, approval-policies, bank-details-change, payment-batch (approval part), personal-approvals and team-mode. Add help keys and `docs/user-guide/` pages compiled into `kb/`; the Inbox approve shortcut opens the confirmation and never approves directly (FR-UX-03)
   (20 Oct 2026: the guide page `approvals.md`, compiled into `approvals.decide`, and the settings and members pages
-  updated. **Left:** the screens and their help keys.)
+  updated. Later the same day: the Inbox (`screens/approvals/Inbox.tsx`: To approve, your requests, others', the weekly
+  review), the request page with approval-confirmation (`ApprovalPage.tsx`, `Decide.tsx`: the diff, the steps and
+  signatures, the envelope's hash with copy; Approve and Reject open the confirmation, which signs with a passkey over
+  the challenge for the version shown, or with the session's step-up when there is no passkey; a rejection needs a
+  reason; the requester withdraws) and the review log (`ReviewLog.tsx`, FM-3). Tests `approvals.test.tsx`.
+  **Left:** accountant-review, approval-policies, bank-details-change, payment-batch, personal-approvals and team-mode;
+  the Inbox's keyboard triage (J/K, A opens the confirmation) with p1-app-shell 2.2.)
 - [ ] 5.2 Finish with `make check` and `make test`
