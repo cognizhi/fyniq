@@ -43,6 +43,13 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** the change is saved as its next version and the earlier versions are kept
 - **AND** a posted journal changes only by reversal
 
+#### Scenario: A journal above the threshold posts on another person's approval (rev 0.53)
+- **GIVEN** a draft journal whose debits in the base currency are above the self-approval threshold (FM-2)
+- **WHEN** a person who holds P on Journals asks for approval to post it, stepped up, at the version read
+- **THEN** a member who holds A on Journals, who did not ask and did not save the version (SOD-3, JOURNAL-09), approves it
+- **AND** on the approval the journal posts with the approver as its poster
+- **AND** any change to the draft voids the request
+
 ### Requirement: FR-GL-02 Recurring and auto-reversing journals
 The system SHALL support recurring journals and **auto-reversing** journals.
 

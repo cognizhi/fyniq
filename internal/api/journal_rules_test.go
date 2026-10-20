@@ -134,6 +134,7 @@ func TestATypedRateIsTheDocuments(t *testing.T) {
 // req: FR-GL-12
 func TestAReversalIsDatedOnOrAfterItsJournalAndHappensOnce(t *testing.T) {
 	e := newEnv(t)
+	standardMode(e) // a void in Founder mode needs a second person (FM-1)
 	accountant := e.as(authz.Accountant)
 	id, tag := e.postedJournal("10.00") // dated 2026-10-20
 	reverse := func(date, etag string) response {

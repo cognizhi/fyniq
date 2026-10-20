@@ -81,7 +81,8 @@
         "approval_policy",
         "statutory_pack",
         "team_mode",
-        "period"
+        "period",
+        "journal"
       ],
       "examples": [
         "organisation_setting"
@@ -98,7 +99,9 @@
         "approval_policy.change",
         "statutory_pack.activate",
         "team_mode.change",
-        "period.reopen"
+        "period.reopen",
+        "journal.post",
+        "journal.reverse"
       ],
       "examples": [
         "organisation_setting.change"

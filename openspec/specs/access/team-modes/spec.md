@@ -136,6 +136,13 @@ Source: PRD-001 §6.4
 - **THEN** the answer is an approval request that another member holding A on the object's Appendix D row approves, and the change is made then
 - **AND** the requester never approves their own, which the database refuses too (rev 0.36)
 
+#### Scenario: A void in Founder mode is asked for (rev 0.53)
+- **GIVEN** the organisation is in Founder mode
+- **WHEN** a founder reverses a posted journal
+- **THEN** the reversal is refused (JOURNAL-08) and asked for instead, with its date and reason
+- **AND** another member who holds A on Journals approves it, and the reversal posts then
+- **AND** in Standard and Enterprise modes a person who holds P on Journals reverses directly
+
 ### Requirement: FM-2 Self-approval below a threshold
 In Founder mode, a founder SHALL be allowed to self-approve routine items at or below a threshold (default S$2,000 per document; configurable), and each self-approval SHALL be flagged "self-approved" and queued for review.
 
@@ -160,6 +167,17 @@ Source: PRD-001 §6.4
 #### Scenario: Threshold is configurable
 - **WHEN** the self-approval threshold is changed
 - **THEN** the new threshold applies instead of the S$2,000 default
+
+#### Scenario: Manual journals above the threshold wait for approval (rev 0.53)
+- **GIVEN** the setting "Self-approval threshold" is S$2,000.00
+- **WHEN** a journal whose debits in the base currency are S$2,000.01 is posted, in any team mode
+- **THEN** the post is refused (JOURNAL-07), and a person who holds P on Journals asks another person's approval instead
+
+#### Scenario: Founder-mode posts at or below the threshold are logged (rev 0.53)
+- **GIVEN** the organisation is in Founder mode
+- **WHEN** a founder posts a journal whose debits are S$2,000.00 alone
+- **THEN** the post is logged as self-approved in the review log, for another founder to review (FM-3)
+- **AND** in Standard and Enterprise modes nothing is logged
 
 ### Requirement: FM-3 Weekly review
 In Founder mode, another founder SHALL review the log of self-approved and high-risk items every week, as an Inbox task.

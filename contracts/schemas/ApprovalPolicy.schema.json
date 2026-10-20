@@ -33,7 +33,8 @@
         "approval_policy",
         "statutory_pack",
         "team_mode",
-        "period"
+        "period",
+        "journal"
       ],
       "examples": [
         "organisation_setting"

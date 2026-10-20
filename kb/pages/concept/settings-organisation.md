@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: The company-wide settings (features, payment terms, settlement tolerances, capitalisation threshold, data region, retention) and the value each ships with
+summary: Company-wide settings (features, payment terms, tolerances, capitalisation and self-approval thresholds, data region, retention) and their recommended values
 sources:
-  - docs/user-guide/organisation-settings.md sha256:f374e8f2e9205e304168f6468e9098e08e4802c0b2b07d7f9c9fad2f38e41320
+  - docs/user-guide/organisation-settings.md sha256:73363f8105bc0c18ef18ba6cb53c18ed522977ac51c66e2532b4ea685ba8d6f6
 data_class: general
 taint: trusted
 status: draft
@@ -18,6 +18,8 @@ aliases:
   - tolerance
   - retention period
   - data residency
+  - self-approval threshold
+  - self-approved
 ---
 
 # Organisation settings and their recommended values
@@ -62,6 +64,14 @@ aliases:
 - The company's accountant confirms it.
 
 (src: docs/user-guide/organisation-settings.md#capitalisation-threshold)
+
+## Self-approval threshold
+
+- In Founder mode a founder posts a journal of up to S$2,000 alone; it is flagged as self-approved and listed in the weekly review, where another founder reviews it.
+- Above the threshold, posting a journal needs another founder's approval, and the one who prepared it never approves it ([[approvals.decide]]).
+- Changing the threshold needs a second approver.
+
+(src: docs/user-guide/organisation-settings.md#self-approval-threshold)
 
 ## Data region and retention
 

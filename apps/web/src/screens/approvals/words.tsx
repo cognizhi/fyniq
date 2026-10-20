@@ -16,6 +16,8 @@ const operations: Record<Approval["operation"], string> = {
   "statutory_pack.activate": "Activate a statutory pack version",
   "team_mode.change": "Switch the team mode",
   "period.reopen": "Reopen a closed period",
+  "journal.post": "Post a journal",
+  "journal.reverse": "Reverse a journal",
 };
 
 export function operationLabel(op: string): string {
@@ -30,6 +32,7 @@ const objects: Record<string, string> = {
   statutory_pack: "Statutory pack",
   team_mode: "Team mode",
   period: "Accounting period",
+  journal: "Journal",
 };
 
 export function objectLabel(t: string): string {

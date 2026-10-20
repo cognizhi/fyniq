@@ -11,6 +11,7 @@ import (
 const (
 	ReviewApprovedChange   = "approved_change"   // an approved request executed (FM-1)
 	ReviewFounderBootstrap = "founder_bootstrap" // the Owner changed roles or invited someone alone, before a second member (FR-ADM-01)
+	ReviewSelfApproved     = "self_approved"     // a founder posted alone at or below the self-approval threshold (FM-2)
 )
 
 // ReviewLogEntry is a high-risk action that executed, with its review once it has one.

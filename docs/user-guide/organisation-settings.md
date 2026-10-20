@@ -93,6 +93,14 @@ rounding** (7030) instead of leaving the document part-paid.
 - A purchase of S$1,000 or more is offered as a fixed asset; a smaller one is an expense.
 - The company's accountant confirms the threshold.
 
+## Self-approval threshold
+
+- In Founder mode a founder posts a journal of up to S$2,000 alone. It is flagged as self-approved
+  and listed in the weekly review, where another founder reviews it.
+- Above the threshold, posting a journal needs another founder's approval, and the one who prepared
+  it never approves it.
+- Changing the threshold needs a second approver.
+
 ## Data region and retention
 
 - **Data region**: every record is kept and processed in Google Cloud's Singapore region. The

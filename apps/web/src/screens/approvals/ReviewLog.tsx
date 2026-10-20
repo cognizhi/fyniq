@@ -22,6 +22,7 @@ async function listReviewLog(status: Filter) {
 const kinds: Record<ReviewEntry["kind"], string> = {
   approved_change: "Approved change",
   founder_bootstrap: "Set up by the Owner alone, before a second member joined",
+  self_approved: "Posted alone, at or below the self-approval threshold",
 };
 
 function MarkReviewed({ ids, open, onClose, onDone }: { ids: string[]; open: boolean; onClose: () => void; onDone: (n: number) => void }) {

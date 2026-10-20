@@ -53,7 +53,7 @@ type ApprovalPolicyVersion struct {
 
 // ApprovalPolicy is the policy in force for an object type: who signs a request for it.
 type ApprovalPolicy struct {
-	ObjectType string         `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period" doc:"The kind of change it covers." example:"organisation_setting"`
+	ObjectType string         `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal" doc:"The kind of change it covers." example:"organisation_setting"`
 	Row        string         `json:"row" doc:"The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone." example:"Organisation profile, financial year, defaults (rev 0.29)"`
 	Version    string         `json:"version" doc:"The version string each request records (G4-057)." example:"founder/organisation_setting@2026-10-20.1"`
 	Number     int            `json:"number" doc:"The organisation's version of it; 0 while the built-in policy applies." example:"0"`

@@ -97,8 +97,9 @@ const (
 
 // ApprovalRows are the Appendix D rows of the objects the approval engine covers: organisation settings under dual
 // control, and members' roles and invitations after the founder bootstrap (rev 0.36); approval policies (rev 0.40);
-// activating statutory pack versions (rev 0.41); reopening a closed period (rev 0.51).
-var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose}
+// activating statutory pack versions (rev 0.41); reopening a closed period (rev 0.51); posting a journal above the
+// self-approval threshold, and voiding one (rev 0.53).
+var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -319,6 +320,10 @@ var (
 	GetOpeningBalances     = Policy{Operation: "getOpeningBalances", Capability: Journals, Need: View}
 	ReplaceOpeningBalances = Policy{Operation: "replaceOpeningBalances", Capability: Journals, Need: Create}
 	PostOpeningBalances    = Policy{Operation: "postOpeningBalances", Capability: Journals, Need: Post}
+	// Asking for approval to post or to void a journal is what posting it would be (P); another person who holds A approves
+	// it through the approval engine (FM-1, FM-2, SOD-3; rev 0.53).
+	RequestJournalPost     = Policy{Operation: "requestJournalPost", Capability: Journals, Need: Post}
+	RequestJournalReversal = Policy{Operation: "requestJournalReversal", Capability: Journals, Need: Post}
 	// Changing a draft is preparing it, as saving one is (FR-GL-01).
 	ReplaceJournal = Policy{Operation: "replaceJournal", Capability: Journals, Need: Create}
 	// Periods are read by whoever holds a right on the close (FR-ORG-02, FR-GL-08); opening a year is preparing the
@@ -451,7 +456,7 @@ var (
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal,
+	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
