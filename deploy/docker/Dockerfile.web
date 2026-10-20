@@ -12,6 +12,8 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --froze
 COPY apps/web apps/web
 COPY docs/design-system/fyniq/tokens.css docs/design-system/fyniq/tokens.css
 COPY docs/design/screens/kit/ui.css docs/design/screens/kit/ui.css
+# The review register: the "Needs additional verification" banner reads it at build time (FR-UX-41).
+COPY docs/prd/reviews/review-status.json docs/prd/reviews/review-status.json
 RUN pnpm --filter @fyniq/web build
 
 # Runs as UID 101 on port 8080, with a read-only root filesystem in Compose.

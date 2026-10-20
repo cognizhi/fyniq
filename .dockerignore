@@ -17,6 +17,7 @@
 !apps/web/
 !docs/design-system/fyniq/tokens.css
 !docs/design/screens/kit/ui.css
+!docs/prd/reviews/review-status.json
 !deploy/docker/
 !mise.toml
 apps/web/node_modules
