@@ -77,17 +77,6 @@ func earlier(all []storage.Period, p storage.Period) []storage.Period {
 	return out
 }
 
-// throughEnd are the IDs of p and every period before it: the trial balance at p's end sums them.
-func throughEnd(all []storage.Period, p storage.Period) []uuid.UUID {
-	var out []uuid.UUID
-	for _, x := range all {
-		if !x.EndsOn.After(p.EndsOn) {
-			out = append(out, x.ID)
-		}
-	}
-	return out
-}
-
 func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Organisation, error) {
 	o, err := u.Organisation(ctx)
 	if err != nil {
@@ -131,7 +120,7 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([]Check, 
 	} else {
 		out = append(out, Check{"balances", OK, "The balances agree with the ledger", ""})
 	}
-	tb, err := balance.Trial(ctx, u, cur, throughEnd(all, p)...)
+	tb, err := balance.Position(ctx, u, cur, all, p)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +221,7 @@ func snapshot(ctx context.Context, u storage.UnitOfWork, p storage.Period, all [
 	if err != nil {
 		return nil, nil, err
 	}
-	tb, err := balance.Trial(ctx, u, cur, throughEnd(all, p)...)
+	tb, err := balance.Position(ctx, u, cur, all, p)
 	if err != nil {
 		return nil, nil, err
 	}

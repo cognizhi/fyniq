@@ -76,9 +76,12 @@ func registerReports(a *API) {
 			"provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the " +
 			"running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one " +
 			"ledger revision. At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. " +
+			"Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the " +
+			"retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a " +
+			"range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). " +
 			"Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack " +
 			"does not reach every line. Read-only; no side effects.",
-	}, []string{CodeInvalid, CodeNotFound, balance.CodeTooManyLines}, func(ctx context.Context, in *generalLedgerInput) (*generalLedgerOutput, error) {
+	}, []string{CodeInvalid, CodeNotFound, balance.CodeTooManyLines, balance.CodeCrossesYear}, func(ctx context.Context, in *generalLedgerInput) (*generalLedgerOutput, error) {
 		p, _ := authn.From(ctx)
 		var bad []FieldProblem
 		from, err := time.Parse(time.DateOnly, in.From)
@@ -137,6 +140,11 @@ func registerReports(a *API) {
 		if errors.As(err, &many) {
 			return nil, problem(balance.CodeTooManyLines, fmt.Sprintf("An account has more than %d lines from %s to %s.", balance.MaxLedgerLines, in.From, in.To),
 				"Choose a shorter range of dates")
+		}
+		var crosses *balance.CrossesYear
+		if errors.As(err, &crosses) {
+			return nil, problem(balance.CodeCrossesYear, fmt.Sprintf("The range %s to %s crosses the start of the financial year on %s: revenue and expense accounts start each year from nothing.",
+				in.From, in.To, crosses.YearStart.Format(time.DateOnly)), "Choose a range within one financial year, or read each year on its own")
 		}
 		return &out, err
 	})

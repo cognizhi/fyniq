@@ -34,6 +34,16 @@ ledger**.
 
 At most 5,000 lines of one account show at once. If an account has more, choose a shorter range.
 
+## A new financial year
+
+Once the company's financial years are set in **Settings → Organisation**, each year starts afresh
+for income and expenses: on the first day of a financial year, a revenue or expense account opens at
+nothing, and **Retained earnings** opens with the profit or loss of every earlier year. Bank,
+customer, supplier and other balance-sheet accounts carry on. Fyniq works this out whenever it reads
+a balance, so there is no closing entry to post.
+
+Read one financial year at a time: a range that starts in one year and ends in the next is refused.
+
 ## Export it
 
 Select **Export CSV**. The file has one row per line, with each account's opening and closing
@@ -45,6 +55,7 @@ spreadsheet would read as a formula starts with an apostrophe.
 | Message | What to do |
 |---|---|
 | Too many lines for one report (REPORT-01) | Choose a shorter range of dates |
+| The range crosses a financial year (REPORT-02) | Choose a range within one financial year, or read each year on its own |
 | Your roles hold no right to it (API-AUTHZ-01) | Ask an Owner for a role that views every report |
 
 ## Related

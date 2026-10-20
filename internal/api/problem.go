@@ -162,6 +162,7 @@ var codeFacts = map[string]struct {
 	period.CodeYearsOpen:       {409, "The financial years are fixed"},
 	closing.CodeNotOpen:        {409, "The period is not open"},
 	balance.CodeTooManyLines:   {422, "Too many lines for one report"},
+	balance.CodeCrossesYear:    {422, "The range crosses a financial year"},
 	closing.CodeStale:          {409, "The checks are stale"},
 	closing.CodeOrder:          {409, "An earlier period is open"},
 	closing.CodeNotClean:       {409, "The checks refused the close"},

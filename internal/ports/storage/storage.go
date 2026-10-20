@@ -276,6 +276,9 @@ type AccountRole string
 // opening balances: a manual journal line to it is refused (INV-13, from P0).
 const RoleShareCapital AccountRole = "share-capital"
 
+// RoleRetainedEarnings is the account that carries the profit or loss of every earlier financial year (FR-GL-10).
+const RoleRetainedEarnings AccountRole = "retained-earnings"
+
 // SystemRoles are the roles of B.5's system accounts (FR-COA-03, rev 0.32): each is on one account,
 // share capital on two or more. The engine finds a system account by its role.
 var SystemRoles = []AccountRole{"accounts-receivable", "accounts-payable", "gst-control", "fx-rounding", "unrealised-fx",

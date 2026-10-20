@@ -469,3 +469,89 @@ func TestAutomaticReversals(t *testing.T) {
 		t.Fatalf("the second run: %+v %v", again, err)
 	}
 }
+
+// Year-end without closing entries (FR-GL-10; rev 0.56): with the first financial year ending 31 October, November
+// opens the second year. A revenue account opens it at nothing, retained earnings opens it with October's profit, and
+// a balance-sheet account carries on; the position at November's end folds October's revenue into retained earnings
+// and still nets to zero; a general ledger range across 1 November is refused. Nothing is posted for any of it.
+// req: FR-GL-10
+func TestYearEndFoldsEarlierYearsIntoRetainedEarnings(t *testing.T) {
+	ctx := context.Background()
+	s := store(t, "fyniq_api")
+	b := books(t, "Year end Pte Ltd")
+	var re storage.Account
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		p := o.Profile
+		start, end := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), porttest.Day(10, 31)
+		p.BooksStart, p.FirstYearEnd, p.FYStartMonth = &start, &end, 11
+		if _, err := u.UpdateOrganisation(ctx, o.Version, p); err != nil {
+			return err
+		}
+		re, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "3100", Name: "Retained earnings", Type: storage.Equity, Role: storage.RoleRetainedEarnings})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	svc := journal.Service{Store: s}
+	for _, sale := range []struct {
+		on     time.Time
+		amount string
+	}{{porttest.Day(10, 5), "1000.00"}, {porttest.Day(11, 3), "200.00"}} {
+		doc, err := svc.Create(ctx, b.Org, saleDraft(t, b, sale.on, sale.amount))
+		if err == nil {
+			_, err = svc.Post(ctx, b.Org, doc.ID)
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		opening := func(account uuid.UUID, want, wantClosing string) {
+			t.Helper()
+			gl, err := balance.GeneralLedger(ctx, u, sgd, account, porttest.Day(11, 1), porttest.Day(11, 30))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if gl.Opening.String() != want || gl.Closing.String() != wantClosing {
+				t.Errorf("account %s in November: opens %s, closes %s; want %s and %s", account, gl.Opening, gl.Closing, want, wantClosing)
+			}
+		}
+		opening(b.Sales.ID, "0.00", "-200.00")   // revenue starts the year from nothing
+		opening(re.ID, "-1000.00", "-1000.00")   // and October's profit is in retained earnings
+		opening(b.Bank.ID, "1000.00", "1200.00") // a balance-sheet account carries on
+		if _, err := balance.GeneralLedger(ctx, u, sgd, b.Sales.ID, porttest.Day(10, 1), porttest.Day(11, 30)); err == nil {
+			t.Error("a range across the start of the year was read")
+		} else if c := (*balance.CrossesYear)(nil); !errors.As(err, &c) || !c.YearStart.Equal(porttest.Day(11, 1)) {
+			t.Errorf("a range across the start of the year: %v", err)
+		}
+		periods := []storage.Period{b.Oct, b.Nov}
+		position := func(through storage.Period) map[uuid.UUID]string {
+			t.Helper()
+			tb, err := balance.Position(ctx, u, sgd, periods, through)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !tb.Total.IsZero() {
+				t.Errorf("the position at %s does not net to zero: %s", through.EndsOn.Format(time.DateOnly), tb.Total)
+			}
+			out := map[uuid.UUID]string{}
+			for _, r := range tb.Rows {
+				out[r.AccountID] = r.Base.String()
+			}
+			return out
+		}
+		if oct := position(b.Oct); oct[b.Sales.ID] != "-1000.00" || oct[re.ID] != "" {
+			t.Errorf("the position at the end of October: %v", oct)
+		}
+		if nov := position(b.Nov); nov[b.Sales.ID] != "-200.00" || nov[re.ID] != "-1000.00" || nov[b.Bank.ID] != "1200.00" {
+			t.Errorf("the position at the end of November: %v", nov)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}

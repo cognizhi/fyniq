@@ -268,6 +268,16 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** a new financial year begins
 - **THEN** open items carry forward automatically in the one continuous ledger
 
+#### Scenario: Year-end computed in the balance service (rev 0.56)
+- **GIVEN** an organisation with its financial years and a retained-earnings account
+- **WHEN** a balance is read on a day of its second financial year
+- **THEN** a revenue or expense account counts only that year, and retained earnings also counts the profit or loss of every earlier year
+- **AND** the close's trial balance uses the same position and still nets to zero, and nothing is posted
+
+#### Scenario: A general ledger range within one financial year (rev 0.56)
+- **WHEN** a general ledger range starts in one financial year and ends in the next
+- **THEN** it is refused (REPORT-02), with a fix that asks for a range within one year
+
 ### Requirement: FR-GL-11 General ledger report
 The system SHALL provide a general ledger report for any account or accounts and any date range, with running balance, export and drill to source.
 
