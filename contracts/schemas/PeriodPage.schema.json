@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "Period.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Pass it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjIwMjYtMTAtMDEifQ"
+      ],
+      "type": "string"
+    },
+    "next_year": {
+      "$ref": "FinancialYear.schema.json",
+      "description": "The financial year that opens next with openFinancialYear; absent until the books start and the first year end are set."
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "PeriodPage",
+  "type": "object"
+}

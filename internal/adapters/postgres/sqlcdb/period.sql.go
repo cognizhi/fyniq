@@ -72,6 +72,46 @@ func (q *Queries) InsertPeriod(ctx context.Context, arg InsertPeriodParams) (Ins
 	return i, err
 }
 
+const listPeriods = `-- name: ListPeriods :many
+SELECT id, starts_on, ends_on, status, closed_revision, version FROM fyniq.period ORDER BY starts_on
+`
+
+type ListPeriodsRow struct {
+	ID             uuid.UUID
+	StartsOn       time.Time
+	EndsOn         time.Time
+	Status         string
+	ClosedRevision *int64
+	Version        int32
+}
+
+func (q *Queries) ListPeriods(ctx context.Context) ([]ListPeriodsRow, error) {
+	rows, err := q.db.Query(ctx, listPeriods)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPeriodsRow
+	for rows.Next() {
+		var i ListPeriodsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.StartsOn,
+			&i.EndsOn,
+			&i.Status,
+			&i.ClosedRevision,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockLedger = `-- name: LockLedger :one
 SELECT fyniq.lock_ledger()::bigint AS revision
 `

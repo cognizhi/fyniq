@@ -40,6 +40,16 @@ Source: PRD-001 §8.1 · Priority M · Phase P1
 - **WHEN** the books start date and the time zone are set
 - **THEN** both are stored with the financial year and base currency
 
+#### Scenario: Periods of a financial year (rev 0.47)
+- **WHEN** a financial year is opened
+- **THEN** its periods are calendar months, the first one short when the books start mid-month
+- **AND** a whole year opens at a time, at most one year past the year that holds today
+
+#### Scenario: The years are fixed once a period exists (rev 0.47)
+- **GIVEN** the books start and the first year end are set and a period exists
+- **WHEN** the books start, the start month or the first year end is changed
+- **THEN** the change is refused
+
 ### Requirement: FR-ORG-10 Accounting framework and policies
 The system SHALL record the accounting framework (FRS, SFRS(I) or SFRS for Small Entities) and its edition, effective from a financial year, with the accountant's confirmation of eligibility, and the accounting policies the engine applies, each policy with its approver and date.
 

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "starts_on": {
+      "description": "The first day of the year to open: next_year.starts_on from listPeriods. A year that is not the next one is refused, so a repeated request never opens a second year.",
+      "examples": [
+        "2026-03-15"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "starts_on"
+  ],
+  "title": "OpenYearRequest",
+  "type": "object"
+}

@@ -2,7 +2,16 @@
 
 ## 1. Periods and the financial year
 
-- [ ] 1.1 List periods and open a financial year from the books start and the first year end, as calendar months cut at the year ends; refuse a year more than one past today's, and changes to the books start once a period exists. Tests `// req: FR-ORG-02` and `// req: ledger/posting-rules Posting conventions` (the period of a posting)
+- [x] 1.1 List periods and open a financial year from the books start and the first year end, as calendar months cut at the year ends; refuse a year more than one past today's, and changes to the books start once a period exists. Tests `// req: FR-ORG-02` and `// req: ledger/posting-rules Posting conventions` (the period of a posting)
+  (21 Oct 2026, PRD rev 0.47: `internal/domain/period` works out the years and their months; `GET /v1/periods` lists them a
+  page at a time with each one's financial year and the year that opens next (`next_year`, with `may_open`); `GET
+  /v1/periods/{id}` with its ETag; `POST /v1/periods:open-year` names the year's first day, so a repeat never opens a second
+  year (PERIOD-03), refuses a year more than one past today's (PERIOD-02) or without the years set (PERIOD-01). The profile
+  refuses a change to the books start, the start month or the first year end once they are set and a period exists
+  (PERIOD-04); setting them for the first time beside earlier periods opens the rest of that year. Rights: V on "Period
+  close / reopen" to read, C to open. Tests: `TestYearsAreCalendarMonthsCutAtTheBooksStartAndTheYearEnds`,
+  `TestTheNextYearToOpen`, `TestAYearOpensAtMostOneYearAhead`, `TestTheYearsAreFixedOnceAPeriodExists`,
+  `TestPeriodsAndFinancialYears`, three authorisation-matrix rows.)
 - [ ] 1.2 The close checks with their result and the ledger revision they saw; the attestation and close by a second person; the revision check; the close snapshot. Tests `// req: FR-GL-07` (including G4-053 on two connections), `// req: FM-4` and `// req: AUD-04`
 - [ ] 1.3 Reopening the latest closed period through the approval engine (object type `period`), with a reason and before and after snapshots; posting into a closed period refused by the database. Tests `// req: FR-GL-08`
 - [ ] 1.4 Year-end: retained earnings as the profit and loss of every earlier year, without closing entries; open items carried forward. Test `// req: FR-GL-10` (the optional closing entry waits for question 31)

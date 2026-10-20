@@ -309,8 +309,13 @@ var (
 		Note: "The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1)."}
 	UpdateGSTRegistration = Policy{Operation: "updateGSTRegistration", Capability: OrganisationProfile, Need: Create,
 		Note: "The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1)."}
-	GetJournal  = Policy{Operation: "getJournal", Capability: Journals, Need: View}
-	PostJournal = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
+	GetJournal = Policy{Operation: "getJournal", Capability: Journals, Need: View}
+	// Periods are read by whoever holds a right on the close (FR-ORG-02, FR-GL-08); opening a year is preparing the
+	// close's calendar, so it needs C (the Accountant and the Controller; PRD-001 rev 0.47, provisional).
+	ListPeriods       = Policy{Operation: "listPeriods", Capability: PeriodClose, Need: View}
+	GetPeriod         = Policy{Operation: "getPeriod", Capability: PeriodClose, Need: View}
+	OpenFinancialYear = Policy{Operation: "openFinancialYear", Capability: PeriodClose, Need: Create}
+	PostJournal       = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
 	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
 		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
@@ -423,6 +428,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+	ListPeriods, GetPeriod, OpenFinancialYear,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

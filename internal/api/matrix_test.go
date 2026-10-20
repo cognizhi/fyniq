@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -432,6 +433,49 @@ var matrixCalls = map[string]matrixCall{
 	},
 	"getAccount": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/accounts/"+e.books.Bank.ID.String(), tok, nil), nil
+	},
+	"listPeriods": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/periods", tok, nil), nil
+	},
+	"getPeriod": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/periods/"+e.books.Oct.ID.String(), tok, nil), nil
+	},
+	// Each call opens the first year of an organisation of its own, whose years are set.
+	"openFinancialYear": func(e *env, tok string) (response, func() bool) {
+		ctx := context.Background()
+		org, err := e.store.CreateOrganisation(ctx, storage.NewOrganisation{Name: "Matrix year " + uuid.NewString()[:8], BaseCurrency: "SGD"})
+		if err != nil {
+			panic(err)
+		}
+		start, end := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+		if err := e.store.Do(ctx, org.ID, func(ctx context.Context, u storage.UnitOfWork) error {
+			o, err := u.Organisation(ctx)
+			if err != nil {
+				return err
+			}
+			p := o.Profile
+			p.FYStartMonth, p.BooksStart, p.FirstYearEnd = 1, &start, &end
+			_, err = u.UpdateOrganisation(ctx, o.Version, p)
+			return err
+		}); err != nil {
+			panic(err)
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation != uuid.Nil {
+			p.Organisation = org.ID
+		}
+		r := e.call(http.MethodPost, "/v1/periods:open-year", e.principal(p), map[string]any{"starts_on": "2026-10-01"})
+		return r, func() bool {
+			var n int
+			_ = e.store.Do(ctx, org.ID, func(ctx context.Context, u storage.UnitOfWork) error {
+				ps, err := u.Periods().List(ctx)
+				n = len(ps)
+				return err
+			})
+			return n == 0
+		}
 	},
 	"getJournal": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createDraft("10.00")

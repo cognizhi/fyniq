@@ -11,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
+	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -161,8 +162,9 @@ func registerProfile(a *API) {
 			"that fails is reported at once (UEN, email, time zone, a first financial year that ends after the books start, on the " +
 			"day before a year starts). Side effects: the organisation's next version and an audit event with the changes, bank and " +
 			"PayNow numbers masked. Needs If-Match with the organisation's ETag. Approval policy: the Owner approves profile changes " +
-			"once the approval engine arrives (P1). Prefer: return=preview checks the change and saves nothing.",
-	}, append([]string{CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeVersion, storage.CodeOrganisation, storage.CodeRetry,
+			"once the approval engine arrives (P1). Once a period exists, the books start, the start month and the first year end no longer " +
+			"change (PERIOD-04). Prefer: return=preview checks the change and saves nothing.",
+	}, append([]string{CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, storage.CodeVersion, storage.CodeOrganisation, storage.CodeRetry, period.CodeYearsOpen,
 		storage.CodeLockTimeout}, OrganisationCodes...),
 		func(ctx context.Context, in *updateProfileInput) (*profileOutput, error) {
 			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (OrganisationProfile, error) {
@@ -179,6 +181,13 @@ func registerProfile(a *API) {
 				}
 				if len(bad) > 0 {
 					return OrganisationProfile{}, invalid(bad)
+				}
+				periods, err := u.Periods().List(ctx)
+				if err != nil {
+					return OrganisationProfile{}, err
+				}
+				if err := period.Fixed(o.Profile, p, len(periods)); err != nil {
+					return OrganisationProfile{}, err
 				}
 				after, err := u.UpdateOrganisation(ctx, o.Version, p)
 				return profileOf(after), err
