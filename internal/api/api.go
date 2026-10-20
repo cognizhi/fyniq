@@ -118,6 +118,7 @@ func Config(version string) huma.Config {
 		{Name: "Organisation", Description: "The organisation your session is in."},
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
 		{Name: "Journals", Description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."},
+		{Name: "Periods", Description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."},
 		{Name: "Contacts", Description: "Customers and vendors (FR-CT-01)."},
 		{Name: "Members", Description: "Members of the organisation, their roles, and invitations to join it (FR-ADM-01)."},
 		{Name: "Items", Description: "Products and services the organisation sells, with a price per currency (FR-ITM-01)."},
@@ -164,6 +165,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSequences(a)
 	registerAccounts(a)
 	registerChart(a)
+	registerPeriods(a)
 	registerAccountEditing(a)
 	registerContacts(a)
 	registerItems(a)

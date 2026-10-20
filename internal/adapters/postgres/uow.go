@@ -458,6 +458,21 @@ func (r periods) Get(ctx context.Context, id uuid.UUID) (storage.Period, error) 
 	return toPeriod(row.ID, row.StartsOn, row.EndsOn, row.Status, row.ClosedRevision, row.Version), nil
 }
 
+func (r periods) List(ctx context.Context) ([]storage.Period, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ListPeriods(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Period, len(rows))
+	for i, row := range rows {
+		out[i] = toPeriod(row.ID, row.StartsOn, row.EndsOn, row.Status, row.ClosedRevision, row.Version)
+	}
+	return out, nil
+}
+
 // Close and Reopen follow ENG-47: the ledger lock first, then the period FOR UPDATE, then the status.
 // A posting holds the same ledger lock until it commits, so the two never interleave.
 func (r periods) Close(ctx context.Context, id uuid.UUID) (storage.Period, error) {

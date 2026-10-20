@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "periods": {
+      "items": {
+        "$ref": "Period.schema.json"
+      },
+      "type": "array"
+    },
+    "year": {
+      "$ref": "FinancialYear.schema.json"
+    }
+  },
+  "required": [
+    "year",
+    "periods"
+  ],
+  "title": "FinancialYearOpened",
+  "type": "object"
+}

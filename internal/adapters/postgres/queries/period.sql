@@ -19,3 +19,6 @@ UPDATE fyniq.period
 SET status = sqlc.arg(status), version = version + 1
 WHERE id = sqlc.arg(id)
 RETURNING id, starts_on, ends_on, status, closed_revision, version;
+
+-- name: ListPeriods :many
+SELECT id, starts_on, ends_on, status, closed_revision, version FROM fyniq.period ORDER BY starts_on;

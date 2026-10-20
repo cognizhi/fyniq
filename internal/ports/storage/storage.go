@@ -113,6 +113,8 @@ type Documents interface {
 type Periods interface {
 	Create(ctx context.Context, p NewPeriod) (Period, error)
 	Get(ctx context.Context, id uuid.UUID) (Period, error)
+	// List returns every period, earliest first.
+	List(ctx context.Context) ([]Period, error)
 	// Close hard-locks a period (INV-03) under the ENG-47 lock order and records the ledger revision
 	// it closed at.
 	Close(ctx context.Context, id uuid.UUID) (Period, error)

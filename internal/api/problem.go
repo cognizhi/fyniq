@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -151,6 +152,11 @@ var codeFacts = map[string]struct {
 	organisation.CodeDigits:    {422, "Not a number of digits"},
 	storage.CodeSequence:       {409, "The number sequence cannot be set that way"},
 	CodeChartLoaded:            {409, "The organisation has accounts already"},
+	storage.CodePeriodDates:    {409, "A period overlaps another"},
+	period.CodeNoYear:          {409, "The financial years are not set"},
+	period.CodeTooFar:          {409, "The year starts too far ahead"},
+	period.CodeNotNext:         {409, "Not the next year to open"},
+	period.CodeYearsOpen:       {409, "The financial years are fixed"},
 	contact.CodeName:           {422, "The legal name is not valid"},
 	contact.CodeRole:           {422, "Neither a customer nor a vendor"},
 	contact.CodeEmail:          {422, "Not an email address"},
@@ -396,6 +402,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		se  huma.StatusError
 		lp  ledger.Problems
 		je  *journal.Error
+		pe  *period.Error
 		me  *money.Error
 		ste *storage.Error
 	)
@@ -411,6 +418,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 			"Correct the draft and post it again.", fields...)
 	case errors.As(err, &je):
 		return problem(je.Code, sentence(je.Message), sentence(je.Fix))
+	case errors.As(err, &pe):
+		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &me):
 		return problem(me.Code, sentence(me.Message), sentence(me.Fix),
 			FieldProblem{Code: me.Code, Field: me.Field, Message: me.Message, Fix: me.Fix})

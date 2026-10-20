@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ends_on": {
+      "description": "Its last day.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "may_open": {
+      "description": "false while it starts more than a year after the year that holds today.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "number": {
+      "description": "1 for the first financial year.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "periods": {
+      "description": "How many periods it has: its months, the first one short when the books start mid-month.",
+      "examples": [
+        13
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "starts_on": {
+      "description": "Its first day: the books start for the first year.",
+      "examples": [
+        "2026-03-15"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "number",
+    "starts_on",
+    "ends_on",
+    "periods",
+    "may_open"
+  ],
+  "title": "FinancialYear",
+  "type": "object"
+}
