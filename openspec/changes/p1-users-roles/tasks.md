@@ -47,8 +47,8 @@
   recovers (API-AUTHZ-07, `authz.Policy.SingleFactor`). Tests: `TestPasskeyCeremonies`, `TestPasskeys`,
   `TestAttackPasskeysAreAnsweredChallenges`, `TestOnlyStepUpAndRecoveryNeedNoSecondFactor`; threat model
   `docs/security/threat-models/passkeys.md`. **Left:** the browser ceremonies' screens (4.1, with `p1-app-shell`), so
-  founders cannot add a passkey from the web app yet; the sign-in half of NFR-A11Y-05; approvals signed with a passkey
-  assertion over the envelope hash (`p1-approval-engine` 1.2, G4-056).)
+  founders cannot add a passkey from the web app yet; the sign-in half of NFR-A11Y-05. Rev 0.44: approvals signed with a
+  passkey assertion over the envelope hash (`p1-approval-engine` 1.2, G4-056) are built.)
 - [ ] 2.3 Sessions: idle and absolute timeouts, the device list, revocation and sign-in alerts through the outbox. Tests `// req: FR-ADM-03`, `// req: SEC-05` and `// req: SEC-08` extend P0's
 - [ ] 2.4 Sign-in providers by configuration, allowed domains and identity linking; the Super admin's scope; Owner succession with dual control. Tests `// req: FR-ADM-07`, `// req: FR-ADM-08` and `// req: FR-ADM-09` extend P0's
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060

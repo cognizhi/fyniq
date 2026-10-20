@@ -34,6 +34,10 @@ Only one request waits for each setting or person at a time.
 Your approval signs exactly what you were shown. Fyniq records who approved, when, and how they
 confirmed it was them, in the audit trail.
 
+With a passkey, your device signs the request itself: the confirmation carries a fingerprint of
+exactly what you approve or reject, and works once, for that request, within 5 minutes. Fyniq keeps
+your device's signature with the approval, so anyone checking later can verify it.
+
 Some changes need more than one approval, in steps ([Choose who approves a change](approval-policies.md)).
 The request shows each step and the approvals it has. The change is made with the last approval.
 You approve a request once, and only at a step that names you or one of your roles.

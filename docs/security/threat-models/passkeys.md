@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Passkeys (WebAuthn) for step-up and the mandatory second factor: FR-ADM-02, SEC-01, SEC-05, FR-APR-04 (PRD-001 rev 0.43); `p1-users-roles` task 2.2 |
+| Feature and requirement IDs | Passkeys (WebAuthn) for step-up, the mandatory second factor and passkey-signed approvals: FR-ADM-02, SEC-01, SEC-05, FR-APR-03, FR-APR-04, G4-056 (PRD-001 rev 0.43, 0.44); `p1-users-roles` task 2.2, `p1-approval-engine` task 1.2 |
 | Author, reviewer, date | Claude Code for the founders, 20 Oct 2026; reviewer: a founder at sign-off (second human review waived before production, AGENTS.md) |
 | Data and its class | Passkey public keys, credential IDs, AAGUIDs and signature counters (internal; no secret is stored: the private key never leaves the authenticator); challenges (32 random bytes, single use); session token hashes |
 | Who acts | A person in a browser session (every role); never the AI, an MCP client or an OAuth client |
@@ -29,6 +29,8 @@ functions are the only write path), authenticator ↔ browser (outside Fyniq).
 | T5 | API logs | Information disclosure: challenges, keys or session tokens in the logs | Replay material leaks | Low |
 | T6 | any operation | Elevation of privilege: a session without a second factor uses Fyniq | MFA not mandatory in fact | Medium |
 | T7 | revocation | Repudiation: a passkey added or revoked with no record | No trail of who changed their factors | Low |
+| T8 | browser → API, approval | Spoofing / replay: a passkey answer for one approval used on another organisation's or request's, on a changed envelope, or late (G4-056) | A change approved that its signer never saw | Medium |
+| T9 | approval record | Repudiation: a signer denies having approved | A disputed approval | Low |
 
 ## 3. What we do about it
 
@@ -41,6 +43,8 @@ functions are the only write path), authenticator ↔ browser (outside Fyniq).
 | T5 | Refusals log the library's reason and the operation only; the passkey ID on success; never the challenge, key or token (SEC-15) | `TestPasskeys` (log checks) |
 | T6 | `authorise` refuses a session with no step-up unless the operation is `SingleFactor` (getSession, startStepUp, stepUp, recoverSuperAdmin), and a test pins that set | `TestOnlyStepUpAndRecoveryNeedNoSecondFactor`, `TestPasskeys` (SEC-01; V6.3.3) |
 | T7 | Registering and revoking write an event to the installation's trail in the same transaction (`require_passkey_audit`) | `TestPasskeys` |
+| T8 | The approval challenge is 16 random bytes and the envelope's SHA-256, issued only for a pending request's own envelope at the version shown, bound to the session, organisation and request, taken and answered once within 5 minutes in the deciding transaction; the signature trigger refuses a passkey signature that is not the signer's answer to that organisation's, request's and envelope's challenge (FY142) | `TestPasskeySignedApprovals`, `TestAttackPasskeySignaturesAnswerTheirChallenge` (FR-APR-03; V6.5.1, V6.7.2) |
+| T9 | The signature keeps the passkey, authenticator data, client data and signature, never changed (FY102), and `passkey.Reverify` checks them again with the passkey's key | `TestAKeptAssertionVerifiesAgain`, `TestPasskeySignedApprovals` |
 
 ## 4. What remains
 
@@ -48,7 +52,7 @@ functions are the only write path), authenticator ↔ browser (outside Fyniq).
   Provisional (rev 0.43) until an organisation asks to restrict authenticator models.
 - The browser ceremonies have no screen yet (`p1-app-shell`, `p1-users-roles` 4.1): until then the second factor in
   local mode is the sign-in page's tick, and in production the provider's TOTP.
-- Approvals signed with a passkey assertion over the envelope hash (FR-APR-03, G4-056) follow in the next change; until
-  then an approval records the session's step-up, which a passkey may have passed.
+- Approvals signed with a passkey keep their assertion (rev 0.44); approvals signed with the session's step-up (TOTP at
+  sign-in, or an earlier passkey step-up) are bound by the signed approval record only, as FR-APR-03 allows for TOTP.
 - Losing every authenticator: a member signs in again with the provider's TOTP; a Super admin recovers with two proofs
   (SEC-35). Account recovery for other members arrives with task 2.5.
