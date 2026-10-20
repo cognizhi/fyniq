@@ -51,6 +51,9 @@
   the sidebar's foot; the Settings page lists its pages from the registry's `settingsNav`, cut by role and mode, and in
   Basic says how many more Expert mode shows (FR-UX-26). An unknown address says so, with a link to Home.)
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
+  (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
+  and only its confirmation decides (FR-UX-03). The command palette leaves out pages of one record. **Left:** global
+  search, the Inbox's other groups as their modules arrive, and keyboard triage.)
 - [ ] 2.3 Drill-down to the Trace panel, side peeks and split view, keyboard-first entry and the shortcut sheet. Tests `// req: FR-UX-04`, `// req: FR-UX-05` and `// req: FR-UX-06`
 
 ## 3. Grids, records and correctness

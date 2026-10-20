@@ -28,8 +28,12 @@ Only one request waits for each setting or person at a time.
 
 1. Open **Inbox → To approve** and choose the request.
 2. Check what it changes: each value before and after.
-3. Confirm it's you with your passkey or authenticator app.
-4. Select **Approve** to make the change now, or **Reject** and say why.
+3. Select **Approve…** or **Reject…**. The confirmation shows exactly what you sign, your step, and
+   the request's fingerprint. To reject, say why.
+4. Select **Approve with passkey** (or **Reject with passkey**) and confirm on your device. Without
+   a passkey, select **Approve** or **Reject** and confirm it's you when Fyniq asks.
+
+The Inbox never approves anything by itself: every decision goes through the confirmation.
 
 Your approval signs exactly what you were shown. Fyniq records who approved, when, and how they
 confirmed it was them, in the audit trail.
@@ -44,8 +48,8 @@ You approve a request once, and only at a step that names you or one of your rol
 
 ## Withdraw your request
 
-1. Open the request you asked for.
-2. Select **Withdraw**.
+1. Open the request you asked for, from **Inbox → Your requests, waiting**.
+2. Select **Withdraw…**, then **Withdraw**.
 
 The request is cancelled with any approvals it had, and nothing changes. Only the person who asked
 can withdraw a request; anyone else who disagrees rejects it with a reason.
@@ -56,11 +60,13 @@ Every high-risk change is logged when it is made: each change another person app
 or invitation the Owner set up alone before a second person joined. Once a week, another founder
 reviews the log.
 
-1. Open **Review log**. It lists the actions nobody has reviewed yet, with who did each.
-2. Choose the ones you checked, add a note if you like, and select **Mark as reviewed**.
+1. Open **Inbox → Weekly review**. The **Review log** lists the actions nobody has reviewed yet,
+   with who did each.
+2. Tick the ones you checked and select **Mark as reviewed**. Add a note if you like, then select
+   **Mark as reviewed** again.
 
 You can't review an action you took yourself. Each action is reviewed once. An action still
-unreviewed 14 days after it was made shows as overdue on **Checks**.
+unreviewed 14 days after it was made shows as overdue in the Inbox and the review log.
 
 ## When a request can no longer be approved
 

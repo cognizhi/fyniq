@@ -71,6 +71,38 @@
     "device.sign-out-others": {
       "label": "Sign out everywhere else",
       "tooltip": "End every session but this one."
+    },
+    "inbox.overview": {
+      "label": "Inbox",
+      "tooltip": "What waits for you: requests to approve, your own requests, and the weekly review of high-risk actions."
+    },
+    "approvals.request": {
+      "label": "Approval request",
+      "tooltip": "One request: what it changes, who approves it in which step, and the signatures so far."
+    },
+    "approvals.review-log": {
+      "label": "Review log",
+      "tooltip": "Every high-risk action, for another founder to review once a week. Nobody reviews their own."
+    },
+    "approval.approve": {
+      "label": "Approve",
+      "tooltip": "Opens the confirmation: what you sign, then your passkey. The change is made with the last approval."
+    },
+    "approval.reject": {
+      "label": "Reject",
+      "tooltip": "Opens the confirmation: say why, then sign. Nothing changes."
+    },
+    "approval.withdraw": {
+      "label": "Withdraw",
+      "tooltip": "Cancel your own request, with any approvals it has. Nothing changes."
+    },
+    "approval.copy-hash": {
+      "label": "Copy",
+      "tooltip": "Copy the envelope's fingerprint (SHA-256), to compare it with what another approver sees."
+    },
+    "review.mark": {
+      "label": "Mark as reviewed",
+      "tooltip": "Record that you checked the actions you picked. Each is reviewed once."
     }
   }
 }
