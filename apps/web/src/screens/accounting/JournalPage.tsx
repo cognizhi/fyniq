@@ -45,6 +45,7 @@ export interface Form {
   date: string;
   memo: string;
   lines: Line[];
+  reverse_on: string; // empty: the journal does not reverse by itself (FR-GL-02)
 }
 
 let keys = 0;
@@ -56,6 +57,7 @@ export function formOf(j: Journal): Form {
   return {
     date: j.date ?? "",
     memo: j.memo ?? "",
+    reverse_on: j.reverse_on ?? "",
     lines: (j.lines ?? []).map((l) => {
       const credit = l.amount.amount.startsWith("-");
       return {
@@ -81,6 +83,7 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
   const errors: Errors = {};
   const lines: Draft["lines"] = [];
   if (!f.date) errors.date = "Enter the date the journal belongs to.";
+  if (f.reverse_on && f.date && f.reverse_on <= f.date) errors.reverse_on = "Date the reversal after the journal's date, such as the first day of the next month.";
   for (const l of f.lines) {
     if (blank(l)) continue;
     const debit = typed(l.debit);
@@ -105,7 +108,7 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
   }
   if (lines.length === 0) errors.lines = "Add a line.";
   if (Object.keys(errors).length > 0) return { errors };
-  return { draft: { date: f.date, memo: f.memo.trim() || undefined, lines }, errors };
+  return { draft: { date: f.date, memo: f.memo.trim() || undefined, lines, reverse_on: f.reverse_on || undefined }, errors };
 }
 
 export interface Balance {
@@ -134,6 +137,13 @@ export function balances(f: Form, base: string): Balance[] {
       const credits = sum(t.c);
       return { currency, debits, credits, difference: minus(debits, credits) };
     });
+}
+
+// firstOfNextMonth is the usual date an accrual reverses on: the first day of the month after date (YYYY-MM-DD).
+export function firstOfNextMonth(date: string): string {
+  const [y, m] = date.split("-").map(Number);
+  if (!y || !m) return "";
+  return m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
 }
 
 // today is the date in the organisation's time zone, as YYYY-MM-DD.
@@ -365,7 +375,7 @@ export function JournalPage() {
   const j = one.data?.journal;
   const editable = mayPrepare && (isNew || j?.status === "draft");
   const [form, setForm] = useState<Form | null>(null);
-  const loaded = isNew ? { date: today(), memo: "", lines: [newLine(base), newLine(base)] } : j ? formOf(j) : null;
+  const loaded = isNew ? { date: today(), memo: "", lines: [newLine(base), newLine(base)], reverse_on: "" } : j ? formOf(j) : null;
   const f = form ?? loaded;
   const dirty = form !== null;
   const [errors, setErrors] = useState<Errors>({});
@@ -392,6 +402,7 @@ export function JournalPage() {
   const founder = organisation?.team_mode === "founder";
   const asked = j?.approval_asked;
   const editHelp = helpText("journal.edit");
+  const reverseOnHelp = helpText("journal.reverse-on");
   const postEditHelp = helpText(founder ? "journal.ask-edit" : "journal.post-edit");
   const editingPosted = editing && j?.status === "posted" && mayPost;
 
@@ -489,7 +500,7 @@ export function JournalPage() {
       setStatus("Fix the fields marked, then try again.");
       return null;
     }
-    return { date: draft.date ?? f.date, memo: draft.memo, lines: draft.lines, reason: why };
+    return { date: draft.date ?? f.date, memo: draft.memo, lines: draft.lines, reverse_on: draft.reverse_on, reason: why };
   };
 
   const stopEditing = () => {
@@ -761,6 +772,39 @@ export function JournalPage() {
                 </label>
                 <input className="fy-input" id={`${id}-memo`} value={f.memo} maxLength={1000} placeholder="What the journal is for" onChange={(e) => change({ ...f, memo: e.target.value })} />
               </div>
+              <div className="fy-field">
+                <label className="fy-row gap-2 fy-label">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(f.reverse_on)}
+                    onChange={(e) => change({ ...f, reverse_on: e.target.checked ? firstOfNextMonth(f.date || today()) : "" })}
+                    title={reverseOnHelp.tooltip}
+                  />
+                  {reverseOnHelp.label}
+                </label>
+                {f.reverse_on && (
+                  <>
+                    <label className="fy-sr" htmlFor={`${id}-reverse-on`}>
+                      Reversal date
+                    </label>
+                    <input
+                      className="fy-input"
+                      id={`${id}-reverse-on`}
+                      type="date"
+                      value={f.reverse_on}
+                      min={f.date || undefined}
+                      onChange={(e) => change({ ...f, reverse_on: e.target.value })}
+                      aria-invalid={errors.reverse_on ? true : undefined}
+                      aria-describedby={described("reverse_on") ?? `${id}-reverse-on-help`}
+                    />
+                    {fieldError("reverse_on") ?? (
+                      <span className="fy-help" id={`${id}-reverse-on-help`}>
+                        Fyniq posts the reversal on this date by itself once the journal is posted, as for an accrual reversing on the first of the next month.
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </section>
 
@@ -861,6 +905,7 @@ export function JournalPage() {
               {j.date ? date(j.date) : "No date yet"}
             </h2>
             {j.status === "draft" && <span className="fy-small fy-muted">An Accountant or a Tax agent changes drafts.</span>}
+            {j.reverse_on && j.status !== "reversed" && <span className="fy-chip fy-chip--neutral">Reverses by itself on {date(j.reverse_on)}</span>}
           </div>
           <Lines
             caption="Lines as entered"

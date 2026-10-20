@@ -79,3 +79,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/journals.md (journals above the self-approval threshold, ask to reverse), approvals.md (journal approvals, self-approved log) → accounting.journals, approvals.decide (p1-general-ledger-close 2.2)
 
 ## [2026-10-21] compile | docs/user-guide/journals.md (edit a posted journal) → accounting.journals (p1-general-ledger-close 2.3, 7.1)
+
+## [2026-10-21] compile | docs/user-guide/journals.md (journals that reverse by themselves) → accounting.journals (p1-general-ledger-close 2.4)

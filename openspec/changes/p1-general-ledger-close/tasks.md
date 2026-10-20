@@ -62,8 +62,8 @@
 - [ ] 2.4 Auto-reversing journals (the reversal date, by default the first day of the next period) and recurring journal templates. Tests `// req: FR-GL-02`
   (21 Oct 2026, part, PRD rev 0.55: a journal carries `reverse_on`, after its date (JOURNAL-11); the scheduler's hourly
   `journals.auto-reverse` reverses it on that date as `scheduler:journals.auto-reverse` (5.1). Tests:
-  `TestAutomaticReversals`, `TestAJournalReversesByItselfOnItsDate`. **Left:** recurring journal templates; the
-  editor's reversal date.)
+  `TestAutomaticReversals`, `TestAJournalReversesByItselfOnItsDate`. The editor's "Reverses by itself", the first of
+  the next month suggested; the journal shows the date. **Left:** recurring journal templates.)
 
 ## 3. Opening balances
 

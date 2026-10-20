@@ -3,7 +3,7 @@ key: accounting.journals
 title: Prepare, post and reverse journals
 mode: expert
 roles: [accountant, tax_agent, controller, owner, auditor]
-requirements: [FR-GL-01, FR-GL-12, FR-INT-14, ENG-24, FM-1, FM-2, SOD-3]
+requirements: [FR-GL-01, FR-GL-02, FR-GL-12, FR-INT-14, ENG-24, FM-1, FM-2, SOD-3]
 status: draft            # written with the journal screens (P1, p1-general-ledger-close); reviewed with the accountant
 ---
 
@@ -48,6 +48,19 @@ unit buys.
 
 Fyniq records who posted it and when. Once posted, a journal never changes in place: it is edited or
 reversed, and the ledger keeps every entry.
+
+## Journals that reverse by themselves
+
+An accrual is often reversed on the first day of the next month. Instead of reversing it by hand:
+
+1. While preparing the journal, tick **Reverses by itself**. Fyniq suggests the first day of the
+   month after the journal's date; change it if you need another date after the journal's.
+2. Post the journal as usual.
+
+On that date Fyniq reverses the journal by itself, with the reason "Automatic reversal", and the
+journal shows **Reversed**. The reversal belongs to the journal you posted, so it needs no approval of
+its own. If the month of the reversal is closed or not open yet, the reversal waits and Fyniq tries
+again every hour. The journal page shows the date until it reverses.
 
 ## Journals above the self-approval threshold
 
@@ -107,6 +120,7 @@ debits are above the self-approval threshold needs another person's approval in 
 | The account is a group or inactive (LEDGER-05, LEDGER-06) | Choose an active account that is not a group |
 | A rate is missing, or entered on a base-currency line (LEDGER-07, LEDGER-13) | Enter a rate only on a line in another currency |
 | A reversal dated before the journal (LEDGER-16) | Date the reversal on or after the journal's date |
+| The automatic reversal is not after the journal (JOURNAL-11) | Date it after the journal's date, such as the first of the next month |
 | The journal is not a draft (JOURNAL-02) | A posted journal is reversed, not changed |
 | Its debits are above the self-approval threshold (JOURNAL-07) | Select **Ask for approval** |
 | In Founder mode a reversal needs a second person (JOURNAL-08) | Select **Ask to reverse** |

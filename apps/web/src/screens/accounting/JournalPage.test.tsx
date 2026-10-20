@@ -6,7 +6,7 @@ import { SignedInProvider } from "../../session";
 import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
-import { balances, check, JournalPage, type Form } from "./JournalPage";
+import { balances, check, firstOfNextMonth, JournalPage, type Form } from "./JournalPage";
 
 type Account = components["schemas"]["Account"];
 type Journal = components["schemas"]["Journal"];
@@ -63,7 +63,7 @@ const line = (key: string, extra: Partial<Form["lines"][number]> = {}) => ({ key
 // req: FR-UX-20
 describe("what a journal's form sends", () => {
   it("turns debits and credits into signed amounts, leaving out blank lines", () => {
-    const out = check({ date: "2026-10-31", memo: " Rent ", lines: [line("1", { debit: "1,200.00" }), line("2", { credit: "S$1,200.00" }), line("3", { account_id: "" })] }, "SGD");
+    const out = check({ date: "2026-10-31", memo: " Rent ", reverse_on: "", lines: [line("1", { debit: "1,200.00" }), line("2", { credit: "S$1,200.00" }), line("3", { account_id: "" })] }, "SGD");
     expect(out.errors).toEqual({});
     expect(out.draft).toEqual({
       date: "2026-10-31",
@@ -76,7 +76,7 @@ describe("what a journal's form sends", () => {
   });
 
   it("says what to fix under each field", () => {
-    const out = check({ date: "", memo: "", lines: [line("1", { debit: "5", credit: "5" }), line("2", { account_id: "", debit: "abc" }), line("3", { debit: "-5" }), line("4", { debit: "10", currency: "USD" })] }, "SGD");
+    const out = check({ date: "", memo: "", reverse_on: "", lines: [line("1", { debit: "5", credit: "5" }), line("2", { account_id: "", debit: "abc" }), line("3", { debit: "-5" }), line("4", { debit: "10", currency: "USD" })] }, "SGD");
     expect(out.draft).toBeUndefined();
     expect(out.errors).toEqual({
       date: "Enter the date the journal belongs to.",
@@ -86,11 +86,20 @@ describe("what a journal's form sends", () => {
       "3.debit": "Enter the amount without a minus sign: a credit goes under Credit.",
       "4.fx_rate": "Enter the rate: SGD for 1 USD, such as 1.3472.",
     });
-    expect(check({ date: "2026-10-31", memo: "", lines: [] }, "SGD").errors.lines).toBe("Add a line.");
+    expect(check({ date: "2026-10-31", memo: "", reverse_on: "", lines: [] }, "SGD").errors.lines).toBe("Add a line.");
+  });
+
+  // req: FR-GL-02
+  it("sends a reversal date after the journal's, suggesting the first of the next month", () => {
+    expect(firstOfNextMonth("2026-10-31")).toBe("2026-11-01");
+    expect(firstOfNextMonth("2026-12-15")).toBe("2027-01-01");
+    const lines = [line("1", { debit: "100" }), line("2", { credit: "100" })];
+    expect(check({ date: "2026-10-31", memo: "", reverse_on: "2026-10-31", lines }, "SGD").errors.reverse_on).toMatch(/after the journal's date/);
+    expect(check({ date: "2026-10-31", memo: "", reverse_on: "2026-11-01", lines }, "SGD").draft?.reverse_on).toBe("2026-11-01");
   });
 
   it("adds up each currency exactly", () => {
-    const f: Form = { date: "", memo: "", lines: [line("1", { debit: "0.10" }), line("2", { debit: "0.20" }), line("3", { credit: "0.30" }), line("4", { debit: "100", currency: "USD", fx_rate: "1.35" })] };
+    const f: Form = { date: "", memo: "", reverse_on: "", lines: [line("1", { debit: "0.10" }), line("2", { debit: "0.20" }), line("3", { credit: "0.30" }), line("4", { debit: "100", currency: "USD", fx_rate: "1.35" })] };
     expect(balances(f, "SGD")).toEqual([
       { currency: "SGD", debits: "0.30", credits: "0.30", difference: "0.00" },
       { currency: "USD", debits: "100", credits: "0", difference: "100" },
@@ -335,6 +344,32 @@ describe("the journal page", () => {
     expect(sent.body).toEqual({ date: "2026-11-01", reason: "Posted to the wrong account" });
     expect(sent.headers.get("If-Match")).toBe(`"2-posted"`);
     expect(sent.headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
+  // req: FR-GL-02
+  it("saves a journal that reverses by itself on the first of the next month, and says so once posted", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "POST /v1/journals": { status: 201, body: { ...draft, id: "j9", reverse_on: "2026-11-01" }, headers: { ETag: `"1-draft"` } },
+      "GET /v1/journals/j9": { status: 200, body: { ...posted, id: "j9", reverse_on: "2026-11-01" }, headers: { ETag: `"1-posted"` } },
+    });
+    renderPage(page(accountant), { path: "/accounting/journals/new", route: "/accounting/journals/new" });
+    fireEvent.change(await screen.findByLabelText("Date"), { target: { value: "2026-10-31" } });
+    fireEvent.click(screen.getByLabelText("Reverses by itself"));
+    expect((screen.getByLabelText("Reversal date") as HTMLInputElement).value).toBe("2026-11-01");
+    fireEvent.change(screen.getByLabelText("Line 1: Account"), { target: { value: "a-rent" } });
+    fireEvent.change(screen.getByLabelText("Line 1: Debit"), { target: { value: "500" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Account"), { target: { value: "a-bank" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Credit"), { target: { value: "500" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Save as a draft" })[0]!);
+    await waitFor(() => expect(seen.some((s) => s.method === "POST")).toBe(true));
+    expect((seen.find((s) => s.method === "POST")!.body as { reverse_on?: string }).reverse_on).toBe("2026-11-01");
+  });
+
+  it("shows when a posted journal reverses by itself", async () => {
+    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1": { status: 200, body: { ...posted, reverse_on: "2026-11-01" }, headers: { ETag: `"2-posted"` } } });
+    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    expect(await screen.findByText("Reverses by itself on 1 Nov 2026")).toBeTruthy();
   });
 
   it("shows an Owner a draft read-only, with nothing to post", async () => {
