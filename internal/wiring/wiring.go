@@ -22,4 +22,7 @@ type Kit struct {
 	// file can be attached.
 	Staging, Evidence ports.BlobStore
 	Scanner           ports.Scanner
+	// Email sends outbound mail (FR-INT-21), from MailFrom; nil when no provider is configured.
+	Email    ports.Email
+	MailFrom string
 }

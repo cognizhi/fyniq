@@ -181,6 +181,22 @@ type FyniqDocumentVersion struct {
 	CreatedAt      time.Time
 }
 
+type FyniqEmailMessage struct {
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	Purpose          string
+	Recipient        string
+	Subject          string
+	Status           string
+	Provider         *string
+	ProviderID       *string
+	Attempts         int32
+	AttemptStartedAt *time.Time
+	AcceptedAt       *time.Time
+	LastError        *string
+	CreatedAt        time.Time
+}
+
 type FyniqEvidence struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

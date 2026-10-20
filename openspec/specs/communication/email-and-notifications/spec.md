@@ -92,6 +92,25 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** a test send is available
 - **AND** in staging each provider's sandbox is used
 
+#### Scenario: The test send goes only to the organisation's own address
+- **WHEN** an Administrator sends a test message (rev 0.39)
+- **THEN** it goes only to the organisation's email address from its profile, so it cannot mail anyone else
+- **AND** while the profile has no email address the test is refused and nothing is queued
+
+#### Scenario: An SMTP send that may have been handed over is not sent again
+- **GIVEN** SMTP cannot be asked what became of a message (rev 0.39)
+- **WHEN** a send's connection breaks after the message's data
+- **THEN** the message is recorded as unknown and never sent again on a guess
+
+#### Scenario: A refused send is retried, then failed
+- **WHEN** the provider refuses a send (rev 0.39)
+- **THEN** the outbox retries it
+- **AND** on its last attempt the message is recorded as failed with the provider's answer
+
+#### Scenario: SMTP outside local mode speaks only STARTTLS
+- **WHEN** an SMTP relay is used outside local mode (rev 0.39)
+- **THEN** a server that does not offer STARTTLS is refused and nothing is sent
+
 #### Scenario: Message log without bodies
 - **WHEN** a message is sent
 - **THEN** it is logged with recipient, template, status and provider

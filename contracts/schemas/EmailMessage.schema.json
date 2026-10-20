@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accepted_at": {
+      "description": "When the provider accepted it.",
+      "examples": [
+        "2026-10-20T09:00:05Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "attempts": {
+      "description": "How many times the worker tried.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "created_at": {
+      "description": "When it was queued.",
+      "examples": [
+        "2026-10-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The message's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "last_error": {
+      "description": "Why the last attempt did not end it.",
+      "examples": [
+        "the email provider refused the message: 554 rejected"
+      ],
+      "type": "string"
+    },
+    "provider": {
+      "description": "The provider that took or refused it.",
+      "examples": [
+        "smtp"
+      ],
+      "type": "string"
+    },
+    "purpose": {
+      "description": "Why it was sent.",
+      "enum": [
+        "test"
+      ],
+      "examples": [
+        "test"
+      ],
+      "type": "string"
+    },
+    "recipient": {
+      "description": "Who it goes to.",
+      "examples": [
+        "accounts@example.com"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "queued until the worker sends it; accepted when the provider took it; failed when every attempt was refused; unknown when an attempt may have handed it over and the provider cannot say, so it is never sent again on a guess.",
+      "enum": [
+        "queued",
+        "accepted",
+        "failed",
+        "unknown"
+      ],
+      "examples": [
+        "queued"
+      ],
+      "type": "string"
+    },
+    "subject": {
+      "description": "Its subject.",
+      "examples": [
+        "Fyniq test message"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "purpose",
+    "recipient",
+    "subject",
+    "status",
+    "attempts",
+    "created_at"
+  ],
+  "title": "EmailMessage",
+  "type": "object"
+}

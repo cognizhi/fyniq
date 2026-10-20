@@ -160,6 +160,7 @@ var codeFacts = map[string]struct {
 	settings.CodeBackdated:     {422, "A setting never changes in the past"},
 	settings.CodeShortened:     {422, "The setting can only lengthen"},
 	settings.CodeFixed:         {409, "Set by the platform"},
+	CodeNoEmailAddress:         {409, "The organisation has no email address"},
 	approval.CodeOwnRequest:    {403, "You asked for it, so another person approves it"},
 	approval.CodeNotPending:    {409, "The request was decided already"},
 	approval.CodeExpired:       {409, "The request expired"},

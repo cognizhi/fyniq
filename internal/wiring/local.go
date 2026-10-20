@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/clamav"
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/adapters/smtp"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -55,6 +56,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// enforces retention in code, and scans with clamd when FYNIQ_CLAMD_ADDR names one (the stack's scanner
 		// profile), else with the EICAR fake (SEC-24).
 		Staging: blobs, Evidence: blobs, Scanner: scanner(local.EICARScanner{}),
+		// Mailpit (`make deps-up`, or the stack's mailpit), spoken to in the clear: local mode only.
+		Email:    smtp.New(cmp.Or(os.Getenv("FYNIQ_SMTP_ADDR"), "localhost:1025"), "fyniq.local", true),
+		MailFrom: cmp.Or(os.Getenv("FYNIQ_MAIL_FROM"), "Fyniq <no-reply@fyniq.local>"),
 	}, nil
 }
 

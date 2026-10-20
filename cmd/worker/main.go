@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -37,6 +38,9 @@ func main() {
 				_, err := c.Commit(ctx, org)
 				return err
 			}
+		}
+		if kit.Email != nil {
+			kinds[email.Kind] = email.Work(kit.Email, kit.Store, kit.MailFrom, deps.Clock) // FR-INT-21: send queued mail once
 		}
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds})

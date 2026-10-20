@@ -112,6 +112,15 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/journals/"+id+"/evidence/"+ev, e.as(authz.Accountant), nil).str("state") == "attached"
 		}
 	},
+	"sendTestEmail": func(e *env, tok string) (response, func() bool) {
+		matrixProfileEmail(e)
+		drainWork(e.t, e)
+		r := e.call(http.MethodPost, "/v1/organisation/email/test-messages", tok, nil)
+		return r, func() bool { return nextWork(e.t, e) == "" }
+	},
+	"getEmailMessage": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/email/messages/"+matrixEmail(e), tok, nil), nil
+	},
 	"getOrganisation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation", tok, nil), nil
 	},

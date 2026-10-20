@@ -11,6 +11,17 @@
 ## 2. Email
 
 - [ ] 2.1 The `Email` port with ZeptoMail, Resend and SMTP adapters against fakes and Mailpit: a sender per purpose, the daily domain check, webhooks, outbox sends with reconciliation before retry, failover only for unaccepted sends, and a log without bodies. Test `// req: FR-INT-21` (G4-073)
+  (20 Oct 2026, first slice, PRD-001 rev 0.39: the `Email` port (`internal/ports/email.go`) and the SMTP adapter
+  (`internal/adapters/smtp`: Mailpit locally, STARTTLS only elsewhere, header injection refused, a Message-ID per message;
+  a 4xx or 5xx answer to the data is a refusal, a broken connection after it is unknown). Migration 000038 adds
+  `email_message` (purpose, recipient, subject, provider, attempts and outcome, never the body; an outcome never changes,
+  FY130; the API only queues, the worker only records attempts and outcomes). `internal/email` queues a send in the outbox
+  and the worker sends it once: a refusal is retried and fails on the last attempt; an attempt that may have handed the
+  message over is reconciled first, and when the provider cannot say (SMTP) the message is unknown and never resent.
+  `POST /v1/organisation/email/test-messages` sends only to the organisation's own address (EML-01 without one) and
+  `GET /v1/organisation/email/messages/{message_id}` shows the outcome. Left: ZeptoMail and Resend, a sender per
+  purpose, the daily domain check, webhooks and suppression, failover, the staging sandboxes, and the test send's help
+  page with the connector-detail screen.)
 - [ ] 2.2 The `InboundMail` port: messages stored with their authentication results, attachments through the evidence upload and scanner, and unknown senders quarantined. Test `// req: FR-INT-22`
 - [ ] 2.3 Interchangeable adapters and the §8.24 launch adapters and local substitutes for this change's capabilities. Tests `// req: communication/email-and-notifications Outside services behind interchangeable adapters` and `… Launch adapters and local substitutes`
 
