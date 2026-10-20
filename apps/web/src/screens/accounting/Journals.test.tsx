@@ -25,8 +25,23 @@ describe("the journals list", () => {
           status: 200,
           body: {
             items: [
-              sum("j1", { date: "2026-10-31", memo: "Audit fee accrual", prepared_by: { kind: "user", id: "u1", name: "Ah Kow" } }),
-              sum("j2", { status: "posted", number: "JNL-0001", date: "2026-10-20", memo: "Rent", posted_by: { kind: "user", id: "u2", name: "Wei Ling" } }),
+              sum("j1", {
+                date: "2026-10-31",
+                memo: "Audit fee accrual",
+                prepared_by: { kind: "user", id: "u1", name: "Ah Kow" },
+                checks: [
+                  { severity: "error", code: "LEDGER-09", title: "Entry does not balance", detail: "the debits and the credits differ" },
+                  { severity: "error", code: "LEDGER-06", title: "The account is inactive", detail: "account 6110 is inactive" },
+                ],
+              }),
+              sum("j2", {
+                status: "posted",
+                number: "JNL-0001",
+                date: "2026-10-20",
+                memo: "Rent",
+                posted_by: { kind: "user", id: "u2", name: "Wei Ling" },
+                checks: [{ severity: "ok", code: "JOURNAL-LOCKED", title: "Locked (closed month)", detail: "Its month is closed." }],
+              }),
               sum("j3", { debits: [{ amount: "100.00", currency: "USD" }, { amount: "135.00", currency: "SGD" }] }),
             ],
             next_cursor: "more",
@@ -40,6 +55,8 @@ describe("the journals list", () => {
     expect(within(table).getByRole("link", { name: "JNL-0001" }).getAttribute("href")).toBe("/accounting/journals/j2");
     expect(within(table).getByText("100.00 USD · 135.00 SGD")).toBeTruthy();
     expect(within(table).getByText("Wei Ling")).toBeTruthy();
+    expect(within(table).getByText("Entry does not balance (+1)")).toBeTruthy(); // req: ENG-21
+    expect(within(table).getByText("Locked (closed month)")).toBeTruthy();
     expect(screen.getByRole("link", { name: "New journal" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Show more" })).toBeTruthy();
     await noViolations(document.body);

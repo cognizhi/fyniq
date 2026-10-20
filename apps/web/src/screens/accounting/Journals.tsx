@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CircleCheck, PencilLine, Plus, Search, Undo2 } from "lucide-react";
+import { BookOpen, CircleCheck, CircleX, Lock, PencilLine, Plus, Search, TriangleAlert, Undo2 } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -14,6 +14,7 @@ import { Icon, problemOf } from "../../ui";
 
 type Summary = components["schemas"]["JournalSummary"];
 type Status = Summary["status"];
+export type Check = components["schemas"]["JournalCheck"];
 export type Person = components["schemas"]["Person"];
 
 // Who prepares journals: C on "Journals" (Appendix D): the Accountant and the Tax agent. The API decides; the page
@@ -48,6 +49,45 @@ export function StatusChip({ status }: { status: Status }) {
       Posted
     </span>
   );
+}
+
+// CheckChip is a journal's first status, as the workbook showed it (ENG-20, ENG-21): the first error (✖) that stops it
+// posting, a warning (⚠), or that a draft is ready or a posted journal locked. Nothing more for a posted journal that is
+// merely OK: its status says so.
+export function CheckChip({ checks }: { checks: Check[] | null | undefined }) {
+  const first = checks?.[0];
+  if (!first) return null;
+  const errors = checks.filter((c) => c.severity === "error").length;
+  if (first.severity === "error")
+    return (
+      <span className="fy-chip fy-chip--critical" title={first.detail}>
+        <Icon of={CircleX} />
+        {first.title}
+        {errors > 1 ? ` (+${errors - 1})` : ""}
+      </span>
+    );
+  if (first.severity === "warning")
+    return (
+      <span className="fy-chip fy-chip--warning" title={first.detail}>
+        <Icon of={TriangleAlert} />
+        {first.title}
+      </span>
+    );
+  if (first.code === "JOURNAL-LOCKED")
+    return (
+      <span className="fy-chip fy-chip--neutral" title={first.detail}>
+        <Icon of={Lock} />
+        {first.title}
+      </span>
+    );
+  if (first.code === "JOURNAL-OK")
+    return (
+      <span className="fy-chip fy-chip--good" title={first.detail}>
+        <Icon of={CircleCheck} />
+        Ready to post
+      </span>
+    );
+  return null;
 }
 
 // who names a person: a member by name, the AI as such, a service by its name.
@@ -191,7 +231,10 @@ export function Journals() {
                     {who(j.posted_by)}
                   </td>
                   <td data-card="status">
-                    <StatusChip status={j.status} />
+                    <span className="fy-row fy-row--wrap gap-2">
+                      <StatusChip status={j.status} />
+                      <CheckChip checks={j.checks} />
+                    </span>
                   </td>
                 </tr>
               ))}

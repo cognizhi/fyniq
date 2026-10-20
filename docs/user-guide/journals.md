@@ -3,7 +3,7 @@ key: accounting.journals
 title: Prepare, post and reverse journals
 mode: expert
 roles: [accountant, tax_agent, controller, owner, auditor]
-requirements: [FR-GL-01, FR-GL-02, FR-GL-12, FR-INT-14, ENG-24, FM-1, FM-2, SOD-3]
+requirements: [FR-GL-01, FR-GL-02, FR-GL-12, FR-INT-14, ENG-20, ENG-21, ENG-24, FM-1, FM-2, SOD-3]
 status: draft            # written with the journal screens (P1, p1-general-ledger-close); reviewed with the accountant
 ---
 
@@ -40,6 +40,11 @@ line in another currency, enter its currency code and the rate: how much of the 
 unit buys.
 
 ## Check and post a journal
+
+A draft says what stops it posting, as the workbook's Journal sheet did: the list shows the first
+problem beside its status, such as **Entry does not balance**, and the draft lists every one with how
+to fix it. A draft with nothing to fix shows **Ready to post**. A posted journal whose month is closed
+shows **Locked (closed month)**.
 
 1. Open the draft from the list.
 2. Select **Check**. Fyniq runs every posting rule and shows what posting writes in the base
