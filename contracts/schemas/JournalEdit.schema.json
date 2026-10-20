@@ -37,6 +37,14 @@
       "maxLength": 500,
       "minLength": 1,
       "type": "string"
+    },
+    "reverse_on": {
+      "description": "The date the new version reverses by itself, if it does (FR-GL-02); after its date.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
     }
   },
   "required": [

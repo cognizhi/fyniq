@@ -15,6 +15,17 @@ UPDATE fyniq.document
 SET current_version = sqlc.arg(version), posted_by = sqlc.arg(posted_by)::text, posted_at = sqlc.arg(posted_at)::timestamptz
 WHERE id = sqlc.arg(id);
 
+-- name: DueReversals :many
+-- Posted journals whose automatic reversal is dated on or before a day (FR-GL-02), earliest first: the scheduler
+-- reverses them. Dates are ISO text, so comparing them as text orders them as dates.
+SELECT d.id
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+WHERE d.type = 'journal' AND d.status = 'posted'
+  AND coalesce(v.payload->>'reverse_on', '') <> '' AND v.payload->>'reverse_on' <= sqlc.arg(on_day)::text
+ORDER BY v.payload->>'reverse_on', d.id
+LIMIT sqlc.arg(max_rows);
+
 -- name: GetDocument :one
 SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
 FROM fyniq.document d
@@ -58,6 +69,11 @@ SET status = sqlc.arg(status),
     posted_by = coalesce(sqlc.narg(posted_by)::text, posted_by),
     posted_at = coalesce(sqlc.narg(posted_at)::timestamptz, posted_at)
 WHERE id = sqlc.arg(id);
+
+-- name: SetDocumentStatusOnly :exec
+-- A move that records no actor, such as reversing: it writes the status alone, so the worker, which may move a status
+-- for the scheduler's automatic reversals but never name who posted, can run it (rev 0.55).
+UPDATE fyniq.document SET status = sqlc.arg(status) WHERE id = sqlc.arg(id);
 
 -- name: GetDocumentStatusForUpdate :one
 SELECT status FROM fyniq.document WHERE id = $1 FOR UPDATE;

@@ -19,6 +19,11 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **THEN** a Cloud Scheduler tick starts it through Cloud Tasks
 - **AND** no process has to stay running for it to run (ADR-T7)
 
+#### Scenario: Automatic reversals run hourly (rev 0.55)
+- **WHEN** the tick reaches the hourly slot of `journals.auto-reverse`
+- **THEN** each posted journal due by its organisation's own today is reversed, each in its own transaction
+- **AND** a run reverses at most 500 per organisation, and the next run takes the rest
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 
@@ -33,6 +38,11 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **GIVEN** a period is locked
 - **WHEN** an automated posting is dated in that period
 - **THEN** it is not posted in the locked period
+
+#### Scenario: Automatic reversals under their own principal (rev 0.55)
+- **WHEN** the scheduler reverses a journal by itself
+- **THEN** every audit event of it names `scheduler:journals.auto-reverse`, and it runs with the worker's role, which may move a document's status and nothing else of it
+- **AND** one whose period is closed or not open yet waits, with an audit event that says why, and the next run tries it again
 
 #### Scenario: Automated posting respects approval policies
 - **GIVEN** an approval policy applies to a posting

@@ -60,6 +60,10 @@
   `TestAttackAnEditReversesAndPostsTogether`, the matrix rows. The oracle's edit shape stays with 8.1; the web
   follows.)
 - [ ] 2.4 Auto-reversing journals (the reversal date, by default the first day of the next period) and recurring journal templates. Tests `// req: FR-GL-02`
+  (21 Oct 2026, part, PRD rev 0.55: a journal carries `reverse_on`, after its date (JOURNAL-11); the scheduler's hourly
+  `journals.auto-reverse` reverses it on that date as `scheduler:journals.auto-reverse` (5.1). Tests:
+  `TestAutomaticReversals`, `TestAJournalReversesByItselfOnItsDate`. **Left:** recurring journal templates; the
+  editor's reversal date.)
 
 ## 3. Opening balances
 
@@ -86,6 +90,11 @@
 ## 5. Scheduler and system postings
 
 - [ ] 5.1 The scheduler tick: due items once per slot, under the `system:scheduler` principal, period locks and approval policies applied. Tests `// req: FR-AUT-01` and `// req: FR-AUT-02`
+  (21 Oct 2026, part, PRD rev 0.55: the tick's platform schedules gain `journals.auto-reverse`, hourly at :20, run with
+  the worker's role (migration 000063: UPDATE (status) on `document`, and `document_reversed_posted`, FY056, so any
+  reversal needs its entry); each run names `scheduler:journals.auto-reverse`; a reversal whose period is closed or not
+  open waits with `journal.reversal_waiting`. The principal is per job rather than one `system:scheduler`, so the audit
+  trail says which job acted. **Left:** recurring templates, and the other automated postings with their sources.)
 - [ ] 5.2 Recognition up to the current period only, with future amounts as projections. Test `// req: ENG-05`
 - [ ] 5.3 Versioned posting rules with a replay test per rule version. Test `// req: ENG-06` (QA-ENG-06)
 

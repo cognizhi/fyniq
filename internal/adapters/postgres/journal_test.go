@@ -379,3 +379,93 @@ func TestTheExecutorNumbersDocuments(t *testing.T) {
 		t.Error("the executor changed a sequence's settings")
 	}
 }
+
+// The scheduler reverses each posted journal whose automatic reversal is due, on its reversal date, under its own
+// principal and the worker's role; one whose period is not open waits, with an audit event, and is tried again on the
+// next run; a run twice posts nothing twice. A reversal dated on or before its journal never posts (rev 0.55).
+// req: FR-GL-02
+// req: FR-AUT-01
+// req: FR-AUT-02
+func TestAutomaticReversals(t *testing.T) {
+	ctx := context.Background()
+	api := journal.Service{Store: store(t, "fyniq_api")}
+	b := books(t, "Automatic reversals Pte Ltd")
+	posted := func(date, reverseOn time.Time) uuid.UUID {
+		t.Helper()
+		d := saleDraft(t, b, date, "100.00")
+		d.ReverseOn = reverseOn
+		doc, err := api.Create(ctx, b.Org, d)
+		if err == nil {
+			_, err = api.Post(ctx, b.Org, doc.ID)
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		return doc.ID
+	}
+	accrual := posted(porttest.Day(10, 31), porttest.Day(11, 1))
+	early := posted(porttest.Day(10, 5), porttest.Day(10, 6))
+	december := posted(porttest.Day(11, 20), time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)) // no period covers it yet
+	later := posted(porttest.Day(11, 2), porttest.Day(11, 30))
+	plain := posted(porttest.Day(10, 7), time.Time{})
+
+	// A reversal on or before the journal's date never posts.
+	bad := saleDraft(t, b, porttest.Day(10, 9), "5.00")
+	bad.ReverseOn = porttest.Day(10, 9)
+	doc, err := api.Create(ctx, b.Org, bad)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var je *journal.Error
+	if _, err := api.Post(ctx, b.Org, doc.ID); !errors.As(err, &je) || je.Code != journal.CodeReverseOn {
+		t.Fatalf("a reversal dated on the journal's date: %v", err)
+	}
+
+	worker := journal.Service{Store: store(t, "fyniq_worker")}
+	run, err := worker.ReverseDue(ctx, b.Org, time.Date(2026, 12, 5, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if run.Reversed != 3 || run.Waiting != 1 {
+		t.Fatalf("the first run: %+v", run)
+	}
+	s := store(t, "fyniq_api")
+	for id, want := range map[uuid.UUID]storage.DocumentStatus{accrual: storage.DocumentReversed, early: storage.DocumentReversed,
+		later: storage.DocumentReversed, december: storage.DocumentPosted, plain: storage.DocumentPosted} {
+		if d := document(t, s, b.Org, id); d.Status != want {
+			t.Errorf("journal %s is %s; want %s", id, d.Status, want)
+		}
+	}
+	// The accrual's reversal is dated on its reversal date, and its audit events name the scheduler.
+	if err := store(t, "fyniq_readonly").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		e, err := u.Ledger().ByIdentity(ctx, ledger.ReversalIdentity(ledger.JournalIdentity(accrual, 1, ledger.RuleManualJournal)))
+		if err != nil {
+			return err
+		}
+		if !e.PostingDate.Equal(porttest.Day(11, 1)) || e.PeriodID != b.Nov.ID || e.Memo != "Reversal: "+journal.AutoReversalReason {
+			t.Errorf("the accrual's reversal: %+v", e)
+		}
+		events, err := u.Audit().Events(ctx, 0, 10000)
+		if err != nil {
+			return err
+		}
+		var trail strings.Builder
+		for _, ev := range events {
+			trail.WriteString(ev.Body + "\n")
+		}
+		for _, want := range []string{`"actor":{"type":"scheduler","id":"journals.auto-reverse"}`, `"action":"journal.reversal_waiting"`,
+			`"waiting_for":[null,"STORAGE-PERIOD-01"]`} {
+			if !strings.Contains(trail.String(), want) {
+				t.Errorf("the audit trail lacks %s", want)
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// A second run posts nothing twice; the December reversal still waits.
+	again, err := worker.ReverseDue(ctx, b.Org, time.Date(2026, 12, 5, 0, 0, 0, 0, time.UTC))
+	if err != nil || again.Reversed != 0 || again.Waiting != 1 {
+		t.Fatalf("the second run: %+v %v", again, err)
+	}
+}

@@ -247,6 +247,7 @@ fyniq_worker    EXECUTE   count_super_admins()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
 fyniq_worker    SELECT    document
+fyniq_worker    UPDATE    document (status)
 fyniq_worker    SELECT    document_number
 fyniq_worker    SELECT    document_sequence
 fyniq_worker    SELECT    document_version

@@ -118,6 +118,9 @@ type Documents interface {
 	Edit(ctx context.Context, id uuid.UUID, payload []byte, preparer string) (Document, error)
 	// Page lists documents of a type at their current version, newest date first, after a cursor.
 	Page(ctx context.Context, f DocumentFilter) ([]Document, error)
+	// DueReversals lists the posted journals whose automatic reversal is dated on or before day (YYYY-MM-DD), earliest
+	// first, at most limit (FR-GL-02).
+	DueReversals(ctx context.Context, day string, limit int) ([]uuid.UUID, error)
 	// OpeningBalance is the organisation's opening balances document at its current version, or ports.ErrNotFound.
 	// Create makes it, one at most: a second is refused (CodeDuplicate).
 	OpeningBalance(ctx context.Context) (Document, error)
@@ -472,7 +475,7 @@ const (
 	CodeDocument       = "STORAGE-DOC-01"        // a document's type cannot change, or its version go back
 	CodeDocumentStatus = "STORAGE-DOC-02"        // a document cannot move to that status
 	CodeDocumentActor  = "STORAGE-DOC-03"        // a version or a posting names no actor, or who posted it changed
-	CodeDocumentEdit   = "STORAGE-DOC-04"        // an edit of a posted document posts and reverses together; a reversed one never changes
+	CodeDocumentEdit   = "STORAGE-DOC-04"        // an edit or a reversal of a posted document posts its entries with it; a reversed one never changes
 	CodeClose          = "STORAGE-CLOSE-01"      // a close is attested by the one who ran its checks, or on checks not clean or of another period; or a close record changed
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
