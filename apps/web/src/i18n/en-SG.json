@@ -35,6 +35,42 @@
     "auth.sign-out": {
       "label": "Sign out",
       "tooltip": "Ends your session in this browser."
+    },
+    "shell.mode": {
+      "label": "Experience mode",
+      "tooltip": "Basic shows the essentials; Expert adds accounts, settings and every detail. It changes only what you see, never what you may do."
+    },
+    "settings.overview": {
+      "label": "Settings",
+      "tooltip": "Your own settings, and the organisation's that your roles let you see."
+    },
+    "settings.profile": {
+      "label": "Profile and security",
+      "tooltip": "Your experience mode, your passkeys and the devices you are signed in on."
+    },
+    "session.step-up": {
+      "label": "Use a passkey",
+      "tooltip": "Confirm it's you with your fingerprint, face or device PIN. It counts for 5 minutes."
+    },
+    "session.sign-in-again": {
+      "label": "Sign in again",
+      "tooltip": "Sign in again with your provider and its authenticator app; you come back to this page."
+    },
+    "passkey.add": {
+      "label": "Add a passkey",
+      "tooltip": "Make a passkey on this device, so confirming it's you takes a touch. Needs a second factor in the last 5 minutes."
+    },
+    "passkey.revoke": {
+      "label": "Revoke",
+      "tooltip": "Stop this passkey working, for example on a lost device. It cannot be undone; add a new one instead."
+    },
+    "device.sign-out": {
+      "label": "Sign out",
+      "tooltip": "End this session. It is signed out at its next request."
+    },
+    "device.sign-out-others": {
+      "label": "Sign out everywhere else",
+      "tooltip": "End every session but this one."
     }
   }
 }

@@ -4,7 +4,7 @@ type: task
 title: Sign in to Fyniq, confirm it's you with a passkey, or join as the second Super admin
 summary: Signing in with a second factor, passkeys, your devices and sign-in emails, when a session ends, joining as the second Super admin, and errors
 sources:
-  - docs/user-guide/sign-in.md sha256:a55d4f7fce58a05672d6e249cc4bc184046c191ae392007d5368c9d1d91e4197
+  - docs/user-guide/sign-in.md sha256:0b156c107b8bd77d5758bda0d3501c04c72abeec6c1e8bbfe16ff01726a1b07a
 data_class: general
 taint: trusted
 status: published
@@ -51,7 +51,7 @@ aliases:
 ## Passkeys
 
 - A passkey confirms it's you with a fingerprint, face or device PIN instead of a code; asking for or approving a change needs that confirmation in the last 5 minutes ([[approvals.decide]]).
-- Add one within 5 minutes of signing in with the authenticator app, and name it, such as "Work laptop".
+- Add one in **Settings › Profile and security** within 5 minutes of signing in with the authenticator app, and name it, such as "Work laptop" ([[preferences.security]]).
 - When Fyniq asks, choose the passkey and confirm on the device; the confirmation counts for 5 minutes.
 - Revoke a passkey on a lost device: it works no more.
 - Each request to confirm works once, for 5 minutes, and only on this site.
@@ -61,7 +61,7 @@ aliases:
 ## Your devices
 
 - Each sign-in sends an email, to the address the provider confirmed, with when, which provider and which browser; if it was not you, end that session.
-- **Your devices** lists every browser signed in, with when it signed in and was last used; the current one is marked.
+- **Your devices**, in **Settings › Profile and security**, lists every browser signed in, with when it signed in and was last used; the current one is marked.
 - **Sign out** next to a device ends that session, such as on a lost phone, at its next request.
 - **Sign out everywhere else** ends every session but the current one.
 

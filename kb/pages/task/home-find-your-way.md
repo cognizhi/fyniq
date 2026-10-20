@@ -1,10 +1,10 @@
 ---
 key: home.overview
 type: task
-title: The Home page, search and commands, and signing out
-summary: What Home shows once signed in, how to find a page or run a command with Search and commands (Ctrl+K), and how to sign out
+title: The Home page, search and commands, Settings, and signing out
+summary: What Home shows once signed in, how to find a page or run a command with Search and commands (Ctrl+K), where Settings is, and how to sign out
 sources:
-  - docs/user-guide/home.md sha256:40cc51aabb24494f13e9865944a28d9d3b6359c15fd9597cbb3eda02a4ccd898
+  - docs/user-guide/home.md sha256:613c776e5273f45bf4b94c5127d4349177c6005737d959a9aa8c26480933eca6
 data_class: general
 taint: trusted
 status: draft
@@ -18,9 +18,11 @@ aliases:
   - home page
   - log out
   - where is everything
+  - settings
+  - preferences
 ---
 
-# The Home page, search and commands, and signing out
+# The Home page, search and commands, Settings, and signing out
 
 ## What Home shows
 
@@ -39,6 +41,14 @@ aliases:
 - **Appearance** in the header changes theme, high contrast, density and motion: [[preferences.appearance]].
 
 (src: docs/user-guide/home.md#find-anything-with-search) (src: docs/user-guide/home.md#change-how-fyniq-looks)
+
+## Settings
+
+- **Settings** sits at the foot of the sidebar; on a phone it is under **More**.
+- It lists the person's own settings first, such as their profile and security ([[preferences.security]]), then the organisation's settings their roles let them see.
+- Most organisation settings are in Expert mode; in Basic mode Settings says how many more there are and offers to switch.
+
+(src: docs/user-guide/home.md#settings)
 
 ## Sign out
 

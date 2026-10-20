@@ -76,3 +76,15 @@ body {
   white-space: normal;
   text-align: start;
 }
+
+/* The current page in a list used as navigation (Settings): the kit's selected row. */
+.fy-list__item[aria-current="page"] {
+  background: color-mix(in oklch, var(--primary-subtle) 55%, var(--surface-1));
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+
+/* Native radios and checkboxes take the brand colour (MASTER.md: teal for selection). */
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: var(--primary);
+}

@@ -71,5 +71,10 @@
 ## 4. Screens
 
 - [ ] 4.1 Build the screens as designed: account-recovery, auditor-workspace, mfa-enrolment, super-admin-console and users-roles. Add help keys, tooltips and `docs/user-guide/` pages compiled into `kb/`; mfa-enrolment is a first-run tour step
+  (20 Oct 2026, in part: Settings › Profile and security (`screens/settings/Profile.tsx`): whether you confirmed it's
+  you and until when, your passkeys (add with the browser's ceremony, revoke) and your devices (sign one out, or every
+  other one), with the guide page `profile-and-security.md` compiled into `preferences.security`. Tests
+  `Profile.test.tsx`, `stepup.test.tsx`, `passkey.test.ts`. **Left:** mfa-enrolment's guided steps and recovery codes
+  (TOTP is the provider's), users-roles, account-recovery, auditor-workspace and super-admin-console.)
 - [ ] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
 - [ ] 4.3 Finish with `make check` and `make test`

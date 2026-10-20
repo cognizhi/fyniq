@@ -5,6 +5,7 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import type { Session } from "../api/client";
 import { Button, buttonVariants } from "../components/ui/button";
 import { helpText } from "../i18n";
+import { setMode } from "../mode";
 import { nav, type Mode, type NavFeature } from "../registry";
 import { Icon } from "../ui";
 import { AppearanceMenu } from "./AppearanceMenu";
@@ -12,9 +13,12 @@ import { bottomBar, navFor } from "./navigation";
 
 const CommandPalette = lazy(() => import("./CommandPalette"));
 
-// Until the mode toggle (p1-app-shell 4.1) stores the person's mode, the shell shows Basic: it hides
-// only Expert-only items and never safety information (FR-UX-24).
-const mode: Mode = "basic";
+const mainGroups = [
+  ["personal", "For you"],
+  ["main", "Workspace"],
+] as const;
+const footGroups = [["footer", ""]] as const;
+const allGroups = [...mainGroups, ["footer", "Settings"]] as const;
 
 function NavItem({ item, current, className, onNavigate }: { item: NavFeature; current: boolean; className: string; onNavigate?: () => void }) {
   const label = helpText(item.help).label;
@@ -26,20 +30,21 @@ function NavItem({ item, current, className, onNavigate }: { item: NavFeature; c
   );
 }
 
-function NavList({ items, path, onNavigate }: { items: readonly NavFeature[]; path: string; onNavigate?: () => void }) {
-  const groups = [
-    ["personal", "For you"],
-    ["main", "Workspace"],
-  ] as const;
+// current says whether an item is the page shown: its route, or a page under it (Settings › …).
+function current(item: NavFeature, path: string): boolean {
+  return item.route === "/" ? path === "/" : path === item.route || path.startsWith(`${item.route}/`);
+}
+
+function NavList({ items, path, onNavigate, groups = mainGroups }: { items: readonly NavFeature[]; path: string; onNavigate?: () => void; groups?: readonly (readonly [NavFeature["group"], string])[] }) {
   return (
     <div className="fy-nav">
       {groups.map(([g, title]) => {
         const mine = items.filter((n) => n.group === g);
         return mine.length === 0 ? null : (
           <div key={g} className="contents">
-            <div className="fy-nav__group fy-eyebrow">{title}</div>
+            {title && <div className="fy-nav__group fy-eyebrow">{title}</div>}
             {mine.map((n) => (
-              <NavItem key={n.id} item={n} current={n.route === path} className="fy-nav__item" onNavigate={onNavigate} />
+              <NavItem key={n.id} item={n} current={current(n, path)} className="fy-nav__item" onNavigate={onNavigate} />
             ))}
           </div>
         );
@@ -48,12 +53,40 @@ function NavList({ items, path, onNavigate }: { items: readonly NavFeature[]; pa
   );
 }
 
+// ModeSwitch is the header's Basic | Expert control (FR-UX-23, experience/modes): the current mode
+// is always visible. It changes only what is shown (FR-UX-24); the page, its filters and drafts stay.
+export function ModeSwitch({ mode }: { mode: Mode }) {
+  const h = helpText("shell.mode");
+  const choices: [Mode, string][] = [
+    ["basic", "Basic"],
+    ["expert", "Expert"],
+  ];
+  return (
+    <div className="fy-segmented" role="radiogroup" aria-label={h.label} title={h.tooltip}>
+      {choices.map(([m, label]) => (
+        <button key={m} type="button" role="radio" aria-checked={mode === m} tabIndex={mode === m ? 0 : -1} onClick={() => setMode(m)}
+          onKeyDown={(e) => {
+            if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
+              e.preventDefault();
+              const next = m === "basic" ? "expert" : "basic";
+              setMode(next);
+              (e.currentTarget.parentElement?.querySelector(`[data-mode="${next}"]`) as HTMLElement | null)?.focus();
+            }
+          }}
+          data-mode={m}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // AppFrame is the frame of every signed-in page (MASTER.md §5, §5.1; docs/design/screens AppShell):
 // the sidebar (a rail in the medium class, a bottom bar in compact) cut to the person's roles and
 // the organisation's feature switches (FR-UX-40), the header with search and commands (Ctrl+K or
-// ⌘K), appearance and sign out, and the main region. The organisation switcher, the Basic | Expert
-// toggle, notifications and the AI button join it with p1-app-shell 2.1–4.1 and wave 6.
-export function AppFrame({ session, title, children }: { session: Pick<Session, "roles" | "features">; title: string; children: ReactNode }) {
+// ⌘K), the Basic | Expert switch, appearance and sign out, and the main region. The organisation
+// switcher, notifications and the AI button join it with p1-app-shell 2.1–4.1 and wave 6.
+export function AppFrame({ session, title, mode, children }: { session: Pick<Session, "roles" | "features">; title: string; mode: Mode; children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [wanted, setWanted] = useState(false); // load the palette's code only once it is asked for
@@ -94,6 +127,9 @@ export function AppFrame({ session, title, children }: { session: Pick<Session, 
           </span>
         </Link>
         <NavList items={visible} path={path} />
+        <div className="fy-side__foot">
+          <NavList items={visible} path={path} groups={footGroups} />
+        </div>
       </nav>
       <header className="fy-top">
         <Link to="/" className="fy-brand" aria-label="Fyniq home">
@@ -108,6 +144,7 @@ export function AppFrame({ session, title, children }: { session: Pick<Session, 
           <span className="fy-kbd">Ctrl K</span>
         </button>
         <div className="fy-top__actions">
+          <ModeSwitch mode={mode} />
           <Button variant="ghost" size="icon" className="fy-until-expanded" onClick={openPalette} aria-label={search.label} title={search.tooltip}>
             <Icon of={Search} size={20} />
           </Button>
@@ -124,10 +161,10 @@ export function AppFrame({ session, title, children }: { session: Pick<Session, 
       </main>
       <nav className="fy-bottom" aria-label="Main, bottom bar">
         {bottom.items.map((n) => (
-          <NavItem key={n.id} item={n} current={n.route === path} className="fy-bottom__item" />
+          <NavItem key={n.id} item={n} current={current(n, path)} className="fy-bottom__item" />
         ))}
         {bottom.more && (
-          <button type="button" className="fy-bottom__item" onClick={() => setMore(true)}>
+          <button type="button" className="fy-bottom__item border-0 bg-transparent font-[inherit]" onClick={() => setMore(true)}>
             <Icon of={LayoutGrid} />
             <span>More</span>
           </button>
@@ -144,7 +181,7 @@ export function AppFrame({ session, title, children }: { session: Pick<Session, 
                   <Icon of={X} size={20} />
                 </Dialog.Close>
               </div>
-              <NavList items={visible} path={path} onNavigate={() => setMore(false)} />
+              <NavList items={visible} path={path} onNavigate={() => setMore(false)} groups={allGroups} />
             </Dialog.Popup>
           </Dialog.Portal>
         </Dialog.Root>

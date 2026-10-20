@@ -39,3 +39,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | docs/user-guide/sign-in.md → auth.sign-in (your devices and sign-in emails, PRD rev 0.45)
 
 ## [2026-10-20] compile | docs/user-guide/approvals.md → approvals.decide (the review log, PRD rev 0.46)
+
+## [2026-10-20] compile | home.md, sign-in.md, profile-and-security.md → home.overview, auth.sign-in, preferences.security (Settings and Profile and security pages in the web app)
+
+## [2026-10-20] compile | home.md, sign-in.md, profile-and-security.md → home.overview, auth.sign-in, preferences.security (Settings and Profile and security pages in the web app)

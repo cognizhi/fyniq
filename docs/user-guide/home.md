@@ -35,6 +35,13 @@ Results marked **Expert** belong to Expert mode.
 Select **Appearance** in the header to change the theme, high contrast, density and motion. See
 [Change how Fyniq looks](appearance.md).
 
+### Settings
+
+Select **Settings** at the foot of the sidebar (on a phone, under **More**). It lists your own
+settings first, such as [Your profile and security](profile-and-security.md), then the
+organisation's settings your roles let you see. Most of the organisation's settings are in Expert
+mode: in Basic mode, Settings says how many more there are and offers to switch.
+
 ### Sign out
 
 Select **Sign out** in the header. Fyniq ends your session in this browser and returns you to the
@@ -52,3 +59,4 @@ sign-in page.
 
 - [Change how Fyniq looks](appearance.md)
 - [Sign in to Fyniq](sign-in.md)
+- [Your profile and security](profile-and-security.md)
