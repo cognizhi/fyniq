@@ -31,6 +31,9 @@ each module arrives; you only ever see the pages your roles allow.
 
 Work down the list. Each step opens the page where you do it:
 
+- Give yourself the roles you work in, such as **Controller** and **Accountant**: the Owner role
+  approves but does not keep the books (**Settings → Members and roles**). Before a second person
+  joins, the change is made at once.
 - Enter the company's legal name and UEN, and set when the books start (**Settings → Organisation**).
 - Load the chart of accounts, and add the bank accounts to it (**Accounting → Chart of accounts**).
 - Add customers and vendors (**Contacts**).

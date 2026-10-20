@@ -150,6 +150,10 @@ export function Home() {
   const add = (id: string, known: unknown, done: boolean, title: string, why: string, to: string) => {
     if (known !== null && known !== undefined) steps.push({ id, done, title, why, to });
   };
+  // An Owner approves but does not keep the books (Appendix D): a founder set up as Owner alone gives
+  // themselves the roles they work in first, such as Controller and Accountant (FR-ADM-01, rev 0.35).
+  const roles = session.roles ?? [];
+  add("roles", c.members.data, roles.some((r) => r !== "owner"), "Give yourself the roles you work in", "The Owner approves; the Controller, Accountant or Bookkeeper keeps the books. Settings › Members and roles", "/settings/members");
   const p = c.profile.data;
   add("profile", p, Boolean(p?.legal_name && p.uen), "Enter the company's legal name and UEN", "Documents print them; Settings › Organisation", "/settings/organisation");
   add("year", p, Boolean(p?.books_start), "Set when the books start", "The first day Fyniq keeps the books, and the financial year; Settings › Organisation", "/settings/organisation");

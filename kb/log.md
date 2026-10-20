@@ -61,3 +61,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | chart-of-accounts.md → accounting.chart (related pages)
 
 ## [2026-10-20] compile | home.md → home.overview (Home's Waiting for you and Set up the company)
+
+## [2026-10-20] compile | home.md → home.overview (the roles step on Home's checklist)
