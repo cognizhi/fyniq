@@ -36,7 +36,7 @@ func register(t *testing.T, rp *passkey.RelyingParty, u passkey.User, a *passkey
 // req: FR-ADM-02
 // req: SEC-01
 // req: FR-APR-04
-// asvs: V6.5.1, V6.5.4
+// asvs: V6.5.1, V6.7.2
 func TestPasskeyCeremonies(t *testing.T) {
 	rp, err := passkey.New(origin + "/")
 	if err != nil || rp.ID() != "fyniq.example" {

@@ -78,7 +78,7 @@ func credential(t *testing.T, b []byte) map[string]any {
 // req: SEC-01
 // req: SEC-05
 // req: FR-APR-04
-// asvs: V6.3.3, V6.5.1, V6.5.4
+// asvs: V6.3.3, V6.5.1, V6.7.2
 func TestPasskeys(t *testing.T) {
 	ctx := context.Background()
 	s := startSessions(t)
@@ -234,7 +234,7 @@ func (s *sessionStack) sessionHash(b *browser) []byte {
 // req: FR-ADM-02
 // req: SEC-01
 // req: FR-APR-04
-// asvs: V6.5.1, V6.5.4, V8.2.2
+// asvs: V6.5.1, V6.7.2, V8.2.2
 func TestAttackPasskeysAreAnsweredChallenges(t *testing.T) {
 	ctx := context.Background()
 	s := startSessions(t)

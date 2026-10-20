@@ -1,31 +1,37 @@
 ---
 key: auth.sign-in
 type: task
-title: Sign in to Fyniq, or join as the second Super admin
-summary: How to sign in with a provider, when a session ends, how the second Super admin joins with an invitation code, and what each sign-in error means
+title: Sign in to Fyniq, confirm it's you with a passkey, or join as the second Super admin
+summary: Signing in with a second factor, adding and using a passkey, when a session ends, joining as the second Super admin, and the sign-in errors
 sources:
-  - docs/user-guide/sign-in.md sha256:91075e4ebc067b9014ef4e5af6de22091fbd99ee7612737746ae66c13e37b102
+  - docs/user-guide/sign-in.md sha256:60fb4b8e182aeeb6ce36c17155a36aa15a23ea0d6e06314f60b84e463b58413a
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-15
+compiled_at: 2026-10-20
 aliases:
   - log in
   - login
   - signed out
   - session expired
   - invitation code
+  - passkey
+  - two-factor
+  - 2FA
+  - authenticator app
+  - confirm it's you
 ---
 
-# Sign in to Fyniq, or join as the second Super admin
+# Sign in to Fyniq, confirm it's you with a passkey, or join as the second Super admin
 
 ## How sign-in works
 
 - Fyniq signs a person in with an account they already have at a sign-in provider, such as Google or Zoho.
 - The Super admin chooses which providers the installation offers.
+- Every user signs in with a second factor: an authenticator-app code the provider asks for, or a passkey; a sign-in without one can only confirm it's you with a passkey until it does.
 - A session ends after 30 minutes without activity, and after 12 hours in all; signing in again returns to the page the person was on.
 
 (src: docs/user-guide/sign-in.md#what-it-is)
@@ -37,6 +43,16 @@ aliases:
 - **Sign out** leaves.
 
 (src: docs/user-guide/sign-in.md#steps)
+
+## Passkeys
+
+- A passkey confirms it's you with a fingerprint, face or device PIN instead of a code; asking for or approving a change needs that confirmation in the last 5 minutes ([[approvals.decide]]).
+- Add one within 5 minutes of signing in with the authenticator app, and name it, such as "Work laptop".
+- When Fyniq asks, choose the passkey and confirm on the device; the confirmation counts for 5 minutes.
+- Revoke a passkey on a lost device: it works no more.
+- Each request to confirm works once, for 5 minutes, and only on this site.
+
+(src: docs/user-guide/sign-in.md#confirm-its-you-with-a-passkey)
 
 ## Joining as the second Super admin
 
@@ -54,5 +70,9 @@ aliases:
 - AUTH-SIGNIN-03: the provider's answer did not pass Fyniq's checks; sign in again, and tell the Super admin if it repeats.
 - AUTH-SIGNIN-04: the sign-in service did not answer; try again in a moment.
 - An invitation code that is not valid, used or expired: ask the Super admin for a new invitation.
+- API-AUTHZ-07, a second factor is required: sign in again with the authenticator app, or confirm with a passkey.
+- API-PASSKEY-02, no passkey: sign in again with the authenticator app, then add a passkey.
+- API-PASSKEY-01, the passkey's answer was refused: try again on this site with a passkey added here, confirming with fingerprint, face or PIN.
+- API-PASSKEY-03, the challenge cannot be used: it was used already or 5 minutes passed; start again.
 
 (src: docs/user-guide/sign-in.md#common-problems)

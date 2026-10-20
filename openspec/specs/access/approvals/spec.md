@@ -115,6 +115,10 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **WHEN** a user approves a high-risk item
 - **THEN** they must pass step-up authentication with a passkey or TOTP before the approval is recorded
 
+#### Scenario: A passkey step-up counts (rev 0.43)
+- **WHEN** the requester or an approver stepped their session up with a passkey in the last 5 minutes
+- **THEN** it satisfies the step-up, like the provider's second factor at sign-in
+
 ### Requirement: FR-APR-05 Approval expiry and invalidation
 Approvals SHALL expire (default 7 days) and SHALL become invalid if the underlying record changes, including any dependency version in the approval envelope (FR-APR-10).
 
