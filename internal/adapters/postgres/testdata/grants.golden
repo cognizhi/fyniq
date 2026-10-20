@@ -95,6 +95,8 @@ fyniq_api       SELECT    role_assignment
 fyniq_api       UPDATE    role_assignment (revoked_at)
 fyniq_api       USAGE     schema fyniq
 fyniq_api       EXECUTE   session_for()
+fyniq_api       EXECUTE   session_step_up()
+fyniq_api       EXECUTE   session_step_up_method()
 fyniq_api       EXECUTE   set_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()
@@ -114,6 +116,11 @@ fyniq_api       EXECUTE   user_for_identity()
 fyniq_api       INSERT    user_membership (user_id)
 fyniq_api       SELECT    user_membership
 fyniq_api       UPDATE    user_membership (status, version)
+fyniq_api       EXECUTE   webauthn_challenge_issue()
+fyniq_api       EXECUTE   webauthn_challenge_take()
+fyniq_api       EXECUTE   webauthn_credential_register()
+fyniq_api       EXECUTE   webauthn_credential_revoke()
+fyniq_api       EXECUTE   webauthn_credentials()
 fyniq_executor  SELECT    account
 fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request

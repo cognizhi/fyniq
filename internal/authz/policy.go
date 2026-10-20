@@ -249,6 +249,9 @@ type Policy struct {
 	// organisation. Only the installation's operations (setup, Super admins) are either (a test keeps
 	// it so).
 	Public, NoOrganisation bool
+	// SingleFactor operations are open to a session that passed no second factor yet: reading the session and
+	// stepping it up with a passkey. Every other operation refuses such a session (SEC-01, rev 0.43).
+	SingleFactor bool
 }
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
@@ -374,15 +377,31 @@ var (
 		Note: superAdminNote}
 	ConfirmSuperAdminRecovery = Policy{Operation: "confirmSuperAdminRecovery", Capability: SuperAdmins, Need: Approve, NoOrganisation: true,
 		Note: superAdminNote + " The other Super admin confirms; nobody confirms their own recovery."}
-	RecoverSuperAdmin = Policy{Operation: "recoverSuperAdmin", Capability: SuperAdmins, Need: Create, NoOrganisation: true,
+	RecoverSuperAdmin = Policy{Operation: "recoverSuperAdmin", Capability: SuperAdmins, Need: Create, NoOrganisation: true, SingleFactor: true,
 		Note: "Needs two proofs (SEC-35): a recovery code with the other Super admin's confirmation, or the deployment's two-person recovery; " +
-			"and a person signed in to Fyniq. An OAuth client or the AI is refused."}
+			"and a person signed in to Fyniq, who may have lost their second factor: the two proofs stand in for it. An OAuth client or the AI is refused."}
 )
 
 var (
 	ListSignInProviders = Policy{Operation: "listSignInProviders", Capability: Session, Need: View, Public: true}
-	GetSession          = Policy{Operation: "getSession", Capability: Session, Need: View, NoOrganisation: true,
+	GetSession          = Policy{Operation: "getSession", Capability: Session, Need: View, NoOrganisation: true, SingleFactor: true,
 		Note: "Needs a person signed in to Fyniq; an OAuth client or the AI is refused."}
+)
+
+const passkeyNote = "Needs a person signed in to Fyniq in the browser; an OAuth client or the AI is refused (FR-ADM-02, SEC-01)."
+
+var (
+	ListPasskeys             = Policy{Operation: "listPasskeys", Capability: Session, Need: View, NoOrganisation: true, Note: passkeyNote}
+	StartPasskeyRegistration = Policy{Operation: "startPasskeyRegistration", Capability: Session, Need: Create, NoOrganisation: true,
+		Note: passkeyNote + " The session passed a second factor in the last 5 minutes."}
+	RegisterPasskey = Policy{Operation: "registerPasskey", Capability: Session, Need: Create, NoOrganisation: true,
+		Note: passkeyNote + " The session passed a second factor in the last 5 minutes."}
+	RevokePasskey = Policy{Operation: "revokePasskey", Capability: Session, Need: Create, NoOrganisation: true,
+		Note: passkeyNote + " The session passed a second factor in the last 5 minutes."}
+	StartStepUp = Policy{Operation: "startStepUp", Capability: Session, Need: Create, NoOrganisation: true, SingleFactor: true,
+		Note: passkeyNote + " Open to a session that passed no second factor yet: this is how it passes one."}
+	StepUp = Policy{Operation: "stepUp", Capability: Session, Need: Create, NoOrganisation: true, SingleFactor: true,
+		Note: passkeyNote + " Open to a session that passed no second factor yet: this is how it passes one."}
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
@@ -394,7 +413,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
-	GetTeamMode, SwitchTeamMode)
+	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

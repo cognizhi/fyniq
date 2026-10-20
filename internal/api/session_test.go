@@ -34,6 +34,8 @@ import (
 type sessionStack struct {
 	*env
 	migrator string
+	readonly string // the fresh database's read-only role, for the installation's trail
+	api      string // its API role, as the attack tests connect
 	out      outbox.Dispatcher
 }
 
@@ -51,11 +53,11 @@ func startSessions(t *testing.T) *sessionStack {
 	flow.SignIn = dev
 	flow.Register(mux)
 	dev.Register(mux)
-	s := &sessionStack{env: e, migrator: fresh.URL("fyniq_migrator"),
+	s := &sessionStack{env: e, migrator: fresh.URL("fyniq_migrator"), readonly: fresh.URL("fyniq_readonly"), api: fresh.URL("fyniq_api"),
 		out: outbox.Dispatcher{Store: e.store, Queue: local.NewMemory(), Clock: e.clock}}
 	auth := authn.Local{Dev: e.tokens, Sessions: authn.Sessions{Store: e.store, Clock: e.clock, Cookie: authn.SessionCookie(false)}}
 	e.api = New(mux, Deps{Store: e.store, Installation: e.store, Outbox: &s.out, Clock: e.clock, Auth: auth, SignIn: dev,
-		Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test"})
+		Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test", Origin: strings.Replace(srv.URL, "127.0.0.1", "localhost", 1)}) // a relying party ID is a host name
 	e.srv = srv
 	return s
 }
@@ -258,7 +260,7 @@ func TestARecoveryEndsTheSessionsItReplaces(t *testing.T) {
 	s := startSessions(t)
 	laptop, desk := s.browser(), s.browser()
 	laptop.signIn("founder-a", false) // before setup: the session has no user, and is never used again
-	desk.signIn("founder-a", false)
+	desk.signIn("founder-a", true)
 	code, hash := setupcode.New()
 	if err := postgres.SetSetupCode(ctx, s.migrator, hash); err != nil {
 		t.Fatal(err)
@@ -278,7 +280,7 @@ func TestARecoveryEndsTheSessionsItReplaces(t *testing.T) {
 		t.Fatal(err)
 	}
 	phone := s.browser()
-	phone.signIn("founder-a-new-phone", false)
+	phone.signIn("founder-a-new-phone", false) // the lost authenticator is why they recover: the two proofs stand in for it
 	if r := phone.call(http.MethodPost, "/v1/super-admins/recovery", "same-origin", map[string]any{"confirmation_code": confirmation}); r.Status != 200 {
 		t.Fatalf("the recovery: %d %s", r.Status, r.Raw)
 	}

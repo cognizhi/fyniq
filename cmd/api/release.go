@@ -62,6 +62,13 @@ func init() {
 		signin.Flow{SignIn: c.platform, Sessions: sessions, Clock: clock, Origin: c.origin, Base: "/api", Log: log}.Register(s)
 		return c.platform
 	}
+	webOrigin = func() string {
+		c, err := releaseSignIn()
+		if err != nil {
+			return "" // nobody signs in, so nobody registers a passkey
+		}
+		return c.origin
+	}
 	registerOAuth = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions) {
 		admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL")
 		if admin == "" || sessions == nil {

@@ -54,6 +54,11 @@ type Principal struct {
 	// the authenticator: the release build sets it with the SignIn port, the local build from the dev
 	// token.
 	StepUpAt time.Time
+	// StepUpMethod is how the session passed its last second factor: sign_in or passkey; empty when never.
+	StepUpMethod string
+	// SessionHash is the SHA-256 of a first-party session's token: the passkey ceremonies bind their challenges to
+	// it. Set only by the session authenticator; nil for a dev token or an OAuth token.
+	SessionHash []byte
 }
 
 // StepUpWindow is how recent a step-up must be for an operation that needs one.

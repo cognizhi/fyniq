@@ -21,11 +21,13 @@
   version of the record (a setting's next change, a role assignment) voids its pending request by trigger, and voiding
   a request voids its signatures; the unit of work audits the voids. Tests: `TestAttackApprovalsAreSignedEnvelopes`,
   `TestTwoPersonRuleForASetting`. **Left:** keeping a passkey or TOTP assertion for re-verification (G4-056) arrives
-  with `p1-users-roles` 2.2: until then the method is the session's step-up (`session_step_up`).)
+  with `p1-users-roles` 2.2: until then the method is the session's step-up (`session_step_up`). Rev 0.43: passkeys exist
+  and step sessions up; the approval signed with a passkey assertion over the envelope hash is the next change.)
 - [x] 1.3 Step-up for high-risk approvals, and expiry from the app clock with invalidation on any dependency change. Tests `// req: FR-APR-04` and `// req: FR-APR-05` (G4-055)
   (20 Oct 2026: the requester and every signer pass step-up within `authn.StepUpWindow` (API-AUTHZ-05); a request
   expires 7 days after it is made by `ports.Clock` (APR-03), and a void request answers APR-04. **Left:** G4-055's
-  payment batch and bank-change case, with wave 2's payments; passkey and TOTP step-up with `p1-users-roles` 2.2.)
+  payment batch and bank-change case, with wave 2's payments. Rev 0.43: a passkey step-up satisfies FR-APR-04 for the
+  requester and every approver, like the provider's TOTP at sign-in.)
 
 ## 2. Policies
 

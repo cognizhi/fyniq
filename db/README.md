@@ -67,6 +67,12 @@ sessions (000013): `user_session` (each session token as its SHA-256, with the s
 provider and the step-up time), reached only through `start_session`, `session_for`, `end_session` and
 `end_user_sessions` (the API); `session_for` reads the identity's user, organisation and live roles on
 every request, one organisation at a time under its row-level security.
+Passkeys (000045, FR-ADM-02, SEC-01): `webauthn_credential` (a person's WebAuthn credentials: the COSE public key, the
+signature counter, revoked once) and `webauthn_challenge` (32 random bytes bound to a session and a purpose, taken once
+before they expire and answered once), reached only through `webauthn_challenge_issue`, `webauthn_challenge_take`,
+`webauthn_credentials`, `webauthn_credential_register`, `session_step_up`, `webauthn_credential_revoke` and
+`session_step_up_method` (the API); registering and revoking are audited in the installation's trail
+(`require_passkey_audit`), and a counter never goes back (`webauthn_credential_guard`).
 The statutory packs (000033, ENG-30): `statutory_pack_version` (a version's metadata, sources and
 SHA-256 digest) and `statutory_pack_row` (its tables and pinned cases, each row as an object of strings,
 so decimals stay exact), read by every service through `statutory_pack_versions` and

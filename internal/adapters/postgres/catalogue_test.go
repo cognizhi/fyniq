@@ -28,9 +28,10 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // setup (migration 000010), super_admin_grant the Super admins' one-time codes (000012), user_session the
 // web app's first-party sessions (000013): reached only through SECURITY DEFINER functions.
 // statutory_pack_version and statutory_pack_row are the published statutory packs (000033): written only by
-// the migrator at a release, read through views (§11.4, ENG-30).
+// the migrator at a release, read through views (§11.4, ENG-30). webauthn_credential and webauthn_challenge are people's
+// passkeys and their ceremonies' challenges (000045): reached only through SECURITY DEFINER functions.
 var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
-	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row"}
+	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain"}

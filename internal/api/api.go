@@ -28,6 +28,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -47,6 +48,9 @@ type Deps struct {
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
 	Scanner ports.Scanner
+	// Origin is the web app's origin as the browser sees it, such as https://fyniq.example.com: passkeys are registered
+	// and asserted for it and its host (FR-ADM-02). Empty: no passkey ceremony runs.
+	Origin string
 }
 
 // API is the registered API.
@@ -55,6 +59,7 @@ type API struct {
 	deps     Deps
 	policies map[string]authz.Policy
 	journals journal.Service
+	passkeys *passkey.RelyingParty // nil without an origin
 }
 
 func init() {
@@ -141,6 +146,13 @@ func New(mux humago.Mux, d Deps) *API {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}}
+	if d.Origin != "" {
+		rp, err := passkey.New(d.Origin)
+		if err != nil {
+			d.Log.Error("api.passkeys.off", "reason", err.Error())
+		}
+		a.passkeys = rp
+	}
 	a.journals.AfterPosting = a.commitEvidence // a posted journal's files go to the locked store (FR-DOC-13)
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
@@ -162,6 +174,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerApprovalPolicies(a)
 	registerPacks(a)
 	registerTeamMode(a)
+	registerPasskeys(a)
 	registerJournals(a)
 	registerEvidence(a)
 	registerSetup(a)
@@ -174,7 +187,7 @@ func New(mux humago.Mux, d Deps) *API {
 func (a *API) Policies() map[string]authz.Policy { return a.policies }
 
 // The codes every operation can return.
-var commonCodes = []string{CodeUnauthenticated, CodeForbidden, CodeNoOrganisation, CodeNoPolicy, CodeInvalid, CodeFailure}
+var commonCodes = []string{CodeUnauthenticated, CodeForbidden, CodeNoOrganisation, CodeNoPolicy, CodeInvalid, CodeFailure, CodeSecondFactor}
 
 // register adds an operation with its policy: there is no other way to add one, so no operation
 // exists without a policy (SEC-02), its permission and its error codes in the document
@@ -347,6 +360,10 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 	case policy.Public:
 		next(huma.WithContext(ctx, context.WithValue(ctx.Context(), operationKey{}, op.OperationID)))
 		return
+	case p.Via == authn.ViaSession && p.StepUpAt.IsZero() && !policy.SingleFactor:
+		// Every user signs in with a second factor (SEC-01): a session that passed none only reads itself and steps up.
+		refusal = problem(CodeSecondFactor, "Your sign-in passed no second factor, and every Fyniq user signs in with one (SEC-01).",
+			"Sign in again with your authenticator app, or confirm it's you with a passkey.")
 	case p.Organisation == uuid.Nil && !policy.NoOrganisation:
 		refusal = problem(CodeNoOrganisation, "Your session is not in an organisation.", "Choose an organisation and sign in to it.")
 	}

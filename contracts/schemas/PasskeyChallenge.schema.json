@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "challenge_id": {
+      "description": "Send it back with the answer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "Answer it before then: 5 minutes after it was made.",
+      "examples": [
+        "2026-10-20T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "options": {
+      "additionalProperties": true,
+      "description": "Pass it to navigator.credentials.create (registration) or navigator.credentials.get (step-up), after decoding its base64url values, or to PublicKeyCredential.parseCreationOptionsFromJSON / parseRequestOptionsFromJSON.",
+      "examples": [
+        {
+          "publicKey": {
+            "challenge": "c2FtcGxlLWNoYWxsZW5nZS0zMi1ieXRlcy1sb25nLXh4",
+            "rpId": "fyniq.example.com"
+          }
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "challenge_id",
+    "expires_at",
+    "options"
+  ],
+  "title": "PasskeyChallenge",
+  "type": "object"
+}

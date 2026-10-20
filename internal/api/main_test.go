@@ -80,6 +80,9 @@ type env struct {
 
 var orgs int
 
+// testOrigin is the web app's origin in the tests: passkeys are made for its host.
+const testOrigin = "https://fyniq.test"
+
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	store, err := postgres.Open(context.Background(), db.URL("fyniq_api"))
@@ -97,7 +100,7 @@ func newEnv(t *testing.T) *env {
 	mux := http.NewServeMux()
 	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
 		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
-		Staging: e.blobs, Scanner: local.EICARScanner{}})
+		Staging: e.blobs, Scanner: local.EICARScanner{}, Origin: testOrigin})
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e
@@ -108,7 +111,17 @@ func (e *env) as(roles ...authz.Role) string {
 	return e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: e.books.Org, Roles: roles})
 }
 
+// principal returns a token for p. A session's person passed a second factor at sign-in an hour ago, as every user
+// does (SEC-01), unless p says when: they pass the gate, and are not stepped up for the actions that need it.
 func (e *env) principal(p authn.Principal) string {
+	if p.Via == "" && p.StepUpAt.IsZero() {
+		p.StepUpAt = e.clock.Now().Add(-time.Hour)
+	}
+	return e.singleFactor(p)
+}
+
+// singleFactor returns a token for p as it is: a session without StepUpAt passed no second factor.
+func (e *env) singleFactor(p authn.Principal) string {
 	e.tokens.mu.Lock()
 	defer e.tokens.mu.Unlock()
 	tok := uuid.NewString()

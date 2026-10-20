@@ -204,7 +204,7 @@ var page = template.Must(template.New("signin").Parse(`<!doctype html>
   <input id="name" name="name" type="text" maxlength="200" autocomplete="name" placeholder="Mei Ling Tan">
   <label for="email">Email (optional)</label>
   <input id="email" name="email" type="email" maxlength="200" autocomplete="email">
-  <label class="check"><input name="second_factor" type="checkbox" value="yes"> I passed a second factor (an authenticator app or a passkey). Super admin actions need it in the last 5 minutes.</label>
+  <label class="check"><input name="second_factor" type="checkbox" value="yes" checked> I passed a second factor (an authenticator app or a passkey). Every user needs one to use Fyniq; changes that need approval need it in the last 5 minutes.</label>
   <div class="actions"><button type="submit" name="decision" value="sign-in">Sign in</button>
   <button type="submit" name="decision" value="cancel" formnovalidate>Cancel</button></div>
 </form>

@@ -23,6 +23,12 @@ Source: PRD-001 §13.1 · Priority M · Phase P1
 - **THEN** step-up authentication with a passkey or TOTP is required
 - **AND** the passkey is offered as the preferred, phishing-resistant method
 
+#### Scenario: A session without a second factor (rev 0.43)
+- **GIVEN** a session whose sign-in passed no second factor
+- **WHEN** it calls any operation but reading itself and stepping up with a passkey
+- **THEN** it is refused with API-AUTHZ-07
+- **AND** a Super admin's recovery is the one exception, its two proofs standing in for a lost authenticator (SEC-35)
+
 ### Requirement: SEC-02 Authorisation in the API and the database
 The system SHALL authorise every request in the API layer (role and attribute checks) and in the database (row-level security keyed on organisation and, for sensitive tables, on scope).
 
@@ -130,6 +136,11 @@ Source: PRD-001 §13.1 · Priority M · Phase P1
 #### Scenario: Re-authentication for sensitive settings
 - **WHEN** a user changes a sensitive setting
 - **THEN** re-authentication is required
+
+#### Scenario: Re-authentication is a step-up (rev 0.43)
+- **WHEN** a person re-authenticates
+- **THEN** they pass a second factor at sign-in or with a passkey
+- **AND** the session records which, and the step-up counts for 5 minutes
 
 ### Requirement: SEC-06 External users expire and are reviewed
 External users (auditor, accountant) SHALL have expiry dates and SHALL be reviewed quarterly.

@@ -68,6 +68,22 @@ Source: PRD-001 §8.21 · Priority M · Phase P1 (TOTP, passkey step-up) / P3 (S
 - **WHEN** sign-in providers are set up
 - **THEN** they are configurable, including Zoho (FR-ADM-08)
 
+#### Scenario: TOTP with the provider, passkeys with Fyniq (rev 0.43)
+- **WHEN** a person uses an authenticator app
+- **THEN** the sign-in provider checks it at sign-in
+- **AND** a person whose session passed a second factor in the last 5 minutes can register a passkey for the web app, with user verification required and no attestation asked for
+
+#### Scenario: A passkey steps a session up (rev 0.43)
+- **WHEN** a person answers a step-up challenge with one of their live passkeys
+- **THEN** the session is stepped up for 5 minutes and records that a passkey did it
+- **AND** the challenge is 32 random bytes bound to that session and its purpose, used once within 5 minutes
+- **AND** an answer from another origin or site, without user verification, from another person's passkey, or with a signature counter that repeats or goes back is refused
+
+#### Scenario: Passkeys are kept and revoked, never deleted (rev 0.43)
+- **WHEN** a person registers or revokes a passkey
+- **THEN** it is audited in the installation's trail
+- **AND** a revoked passkey steps nobody up
+
 ### Requirement: FR-ADM-03 Session management
 The system SHALL manage sessions with an idle timeout, an absolute timeout, a device list, session revocation and sign-in alerts.
 

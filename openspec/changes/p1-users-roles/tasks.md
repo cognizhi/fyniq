@@ -34,6 +34,21 @@
   invitation emails (`p1-templates-email`), the quarterly review of external users (SEC-06), listing the bootstrap's
   changes in FM-3's weekly review (with `p1-approval-engine` 3.2), the join and members screens (4.1).)
 - [ ] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
+  (20 Oct 2026, provisional (PRD rev 0.43): TOTP stays with the sign-in provider; the local sign-in page's second factor
+  is its fake, ticked by default. Passkeys in the API (`internal/passkey`, go-webauthn v0.18.2; attestation "none", user
+  verification required, relying party = the web app's origin and host): `POST /v1/session/passkeys/challenge` and `POST
+  /v1/session/passkeys` register one from a session stepped up in the last 5 minutes; `POST /v1/session/step-up/challenge`
+  and `POST /v1/session/step-up` step any of the person's sessions up; `GET`/`DELETE /v1/session/passkeys`. Migration
+  000045: `webauthn_credential` and `webauthn_challenge`, global, reached only through functions; a challenge is 32
+  random bytes bound to its session and purpose, taken once within 5 minutes and answered once (FY141); a counter never
+  repeats or goes back, a key never changes, a passkey is revoked once (FY140); registering and revoking are audited in
+  the installation's trail; `user_session.step_up_method` (sign_in or passkey) replaces the "step-up only at sign-in"
+  check. Every session needs a second factor: one that passed none only reads itself, steps up and, as a Super admin,
+  recovers (API-AUTHZ-07, `authz.Policy.SingleFactor`). Tests: `TestPasskeyCeremonies`, `TestPasskeys`,
+  `TestAttackPasskeysAreAnsweredChallenges`, `TestOnlyStepUpAndRecoveryNeedNoSecondFactor`; threat model
+  `docs/security/threat-models/passkeys.md`. **Left:** the browser ceremonies' screens (4.1, with `p1-app-shell`), so
+  founders cannot add a passkey from the web app yet; the sign-in half of NFR-A11Y-05; approvals signed with a passkey
+  assertion over the envelope hash (`p1-approval-engine` 1.2, G4-056).)
 - [ ] 2.3 Sessions: idle and absolute timeouts, the device list, revocation and sign-in alerts through the outbox. Tests `// req: FR-ADM-03`, `// req: SEC-05` and `// req: SEC-08` extend P0's
 - [ ] 2.4 Sign-in providers by configuration, allowed domains and identity linking; the Super admin's scope; Owner succession with dual control. Tests `// req: FR-ADM-07`, `// req: FR-ADM-08` and `// req: FR-ADM-09` extend P0's
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060

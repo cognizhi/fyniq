@@ -25,6 +25,11 @@ func TestConventionExemptions(t *testing.T) {
 		"createMemberInvitation", "createSuperAdminInvitation", "recoverSuperAdmin", "replaceSuperAdminRecoveryCodes"} {
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}
+	for _, op := range []string{"registerPasskey", "startPasskeyRegistration", "startStepUp", "stepUp"} { // a challenge makes them one-time
+		want = append(want, op+" Idempotency-Key", op+" Prefer")
+	}
+	want = append(want, "revokePasskey Prefer")
+	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {
 		ex, _ := op.Extensions["x-fyniq-exempt"].(map[string]string)
