@@ -267,6 +267,14 @@
     "close.reopen": {
       "label": "Ask to reopen",
       "tooltip": "Ask for the month to take postings again, with a reason; another founder approves it."
+    },
+    "reports.general-ledger": {
+      "label": "General ledger",
+      "tooltip": "Every posted line of the accounts you choose over two dates, with a running balance and each line's source."
+    },
+    "ledger.export": {
+      "label": "Export CSV",
+      "tooltip": "Download the lines as CSV: plain decimals with an ASCII minus, ready for a spreadsheet."
     }
   }
 }

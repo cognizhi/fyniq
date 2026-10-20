@@ -103,7 +103,12 @@
   pending request shows with a link to it, and the latest reopening shows its snapshots. **Left:** the checklist template
   and reconciliations, flux (6.3), year end
   (1.4), open items (with `p1-sales`, `p1-purchases`), changes after posting (2.3).)
-- [ ] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
+- [x] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
+  (21 Oct 2026: Accounting › General ledger (`/reports/general-ledger`): accounts chosen one at a time (up to 20), a
+  range of dates from the first of the month to today, each account's opening balance, lines with the running balance
+  and their source as a link (a journal, the opening balances), debits, credits and closing balance, the ledger revision
+  it read; Export CSV with plain decimals, an ASCII minus and inert formulas. Guide `general-ledger.md` → kb
+  `reports.general-ledger`. **Left:** dimensions and saved views, the background export (`p1-reports`).)
 - [ ] 7.4 Build schedules with 6.4
 
 ## 8. The oracle (for the oracle session; never written from the engine)
