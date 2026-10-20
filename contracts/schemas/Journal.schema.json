@@ -10,6 +10,16 @@
       "format": "uuid",
       "type": "string"
     },
+    "checks": {
+      "description": "getJournal and listJournals only: its statuses in the workbook's priority order (ENG-20, ENG-21): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month).",
+      "items": {
+        "$ref": "JournalCheck.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "date": {
       "description": "The date it belongs to.",
       "examples": [

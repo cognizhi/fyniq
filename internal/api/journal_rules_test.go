@@ -203,3 +203,86 @@ func TestAJournalReversesByItselfOnItsDate(t *testing.T) {
 	bad["reverse_on"] = "1 Nov"
 	e.problemIs(e.call(http.MethodPost, "/v1/journals", accountant, bad), "createJournal", 422, CodeInvalid)
 }
+
+// ENG-20, ENG-21 (rev 0.57): every journal carries its statuses as the workbook's Journal sheet showed them, in its
+// priority order: a draft every problem the posting rules find and whether its month is open, or OK; a posted journal
+// OK, or Locked once its month is closed.
+// req: ENG-20
+// req: ENG-21
+// req: ENG-23
+func TestJournalsCarryTheWorkbooksStatuses(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	save := func(body map[string]any) string {
+		t.Helper()
+		r := e.call(http.MethodPost, "/v1/journals", accountant, body)
+		if r.Status != http.StatusCreated {
+			t.Fatalf("saving a draft: %d %s", r.Status, r.Raw)
+		}
+		return r.str("id")
+	}
+	checks := func(id string) []any {
+		t.Helper()
+		r := e.call(http.MethodGet, "/v1/journals/"+id, accountant, nil)
+		c, _ := r.Body["checks"].([]any)
+		return c
+	}
+	first := func(id string) map[string]any {
+		t.Helper()
+		c := checks(id)
+		if len(c) == 0 {
+			t.Fatalf("journal %s has no statuses", id)
+		}
+		return c[0].(map[string]any)
+	}
+
+	unbalanced := e.draft("100.00")
+	unbalanced["lines"].([]map[string]any)[1]["amount"] = map[string]any{"amount": "-90.00", "currency": "SGD"}
+	if c := first(save(unbalanced)); c["severity"] != "error" || c["code"] != "LEDGER-09" || c["title"] != "Entry does not balance" {
+		t.Errorf("an unbalanced draft: %v", c)
+	}
+	undated := e.draft("100.00")
+	delete(undated, "date")
+	if c := first(save(undated)); c["code"] != "LEDGER-01" || c["title"] != "Enter the date" || c["field"] != "date" {
+		t.Errorf("a draft with no date: %v", c)
+	}
+	december := e.draft("100.00")
+	december["date"] = "2026-12-03"
+	if c := first(save(december)); c["code"] != "STORAGE-PERIOD-01" || c["severity"] != "error" {
+		t.Errorf("a draft in a month with no period: %v", c)
+	}
+	ready := save(e.draft("100.00"))
+	if c := first(ready); c["severity"] != "ok" || c["code"] != "JOURNAL-OK" || c["title"] != "OK" {
+		t.Errorf("a draft that can post: %v", c)
+	}
+	posted, _ := e.postedJournal("50.00")
+	if c := first(posted); c["code"] != "JOURNAL-POSTED" {
+		t.Errorf("a posted journal: %v", c)
+	}
+	// The list carries them too.
+	l := e.call(http.MethodGet, "/v1/journals?page_size=100", accountant, nil)
+	for _, it := range l.Body["items"].([]any) {
+		if c, _ := it.(map[string]any)["checks"].([]any); len(c) == 0 {
+			t.Errorf("a listed journal has no statuses: %v", it)
+		}
+	}
+
+	// October closed: the posted journal is locked, and a draft dated in it cannot post.
+	ctx := context.Background()
+	as := func(who string) context.Context {
+		return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: who}})
+	}
+	c, err := e.api.closing.RunChecks(as("status-preparer"), e.books.Org, e.books.Oct.ID)
+	if err == nil {
+		_, _, err = e.api.closing.Close(as("status-attester"), e.books.Org, e.books.Oct.ID, c.ID, "Reviewed.")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := first(posted); c["code"] != "JOURNAL-LOCKED" || c["title"] != "Locked (closed month)" || c["severity"] != "ok" {
+		t.Errorf("a posted journal in a closed month: %v", c)
+	}
+	if c := first(ready); c["code"] != "STORAGE-INV-03" || c["title"] != "The month is closed" {
+		t.Errorf("a draft in a closed month: %v", c)
+	}
+}

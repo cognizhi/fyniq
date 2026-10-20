@@ -265,6 +265,8 @@ type Journal struct {
 	PreparedBy *Person    `json:"prepared_by,omitempty" doc:"Who saved the current version; absent for journals from before it was recorded."`
 	PostedBy   *Person    `json:"posted_by,omitempty" doc:"Who posted it, once posted; absent for journals from before it was recorded."`
 	PostedAt   *time.Time `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
+	// Checks are its statuses as the workbook showed them (ENG-20, ENG-21; rev 0.57); getJournal fills them.
+	Checks []JournalCheck `json:"checks,omitempty" doc:"getJournal and listJournals only: its statuses in the workbook's priority order (ENG-20, ENG-21): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month)."`
 	// ApprovalAsked is the pending request to post or reverse it (rev 0.53); getJournal fills it.
 	ApprovalAsked string `json:"approval_asked,omitempty" format:"uuid" doc:"getJournal only: the pending request to post or to reverse it, while one waits for approval (FM-1, FM-2)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
 }
@@ -274,6 +276,24 @@ type Person struct {
 	Kind string `json:"kind" enum:"user,ai,integration,service" doc:"user is a member; ai the assistant acting for one; integration and service act on their own." example:"user"`
 	ID   string `json:"id" doc:"The member's user ID, or the client's or service's name." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	Name string `json:"name,omitempty" doc:"The member's name, while they are a member." example:"Wei Ling Tan"`
+}
+
+// JournalCheck is one of a journal's statuses, as the workbook's Journal sheet showed it (ENG-20, ENG-21; rev 0.57).
+type JournalCheck struct {
+	Severity string `json:"severity" enum:"error,warning,ok" doc:"error (✖): it cannot post until fixed, so it stays a draft with the problem shown; warning (⚠): it posts but is reviewed; ok (✔): ready to post, or posted." example:"error"`
+	Code     string `json:"code" doc:"The rule's stable code (ENG-23): a posting rule's, a period's, or JOURNAL-OK, JOURNAL-POSTED and JOURNAL-LOCKED for the statuses that are not problems." example:"LEDGER-09"`
+	Field    string `json:"field,omitempty" doc:"The field it is about." example:"lines"`
+	Title    string `json:"title" doc:"The status, in the workbook's words, adapted where the platform removes the cause." example:"Entry does not balance"`
+	Detail   string `json:"detail" doc:"What is wrong, or what it means." example:"the debits and the credits differ by 100.00 SGD"`
+	Fix      string `json:"fix,omitempty" doc:"How to fix it." example:"Make the debits equal the credits"`
+}
+
+func checksOf(st []journal.Status) []JournalCheck {
+	out := make([]JournalCheck, 0, len(st))
+	for _, s := range st {
+		out = append(out, JournalCheck{Severity: s.Severity, Code: s.Code, Field: s.Field, Title: s.Title, Detail: s.Detail, Fix: s.Fix})
+	}
+	return out
 }
 
 // personOf reads an actor recorded as "kind:id".
@@ -312,17 +332,18 @@ func (a *API) name(ctx context.Context, u storage.UnitOfWork, people ...*Person)
 
 // JournalSummary is a journal in a list: what it is, its totals and who prepared and posted it.
 type JournalSummary struct {
-	ID         string     `json:"id" format:"uuid" doc:"The journal's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"`
-	Number     string     `json:"number,omitempty" doc:"Its number, once it has one." example:"JNL-0042"`
-	Status     string     `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed." example:"posted"`
-	Version    int        `json:"version" doc:"The version of its content." example:"2"`
-	Date       string     `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
-	Memo       string     `json:"memo,omitempty" doc:"What it is for." example:"October rent accrual"`
-	Lines      int        `json:"lines" doc:"How many lines it has." example:"2"`
-	Debits     []Money    `json:"debits" nullable:"false" doc:"The total of its debit lines, per currency, as entered."`
-	PreparedBy *Person    `json:"prepared_by,omitempty" doc:"Who saved the current version."`
-	PostedBy   *Person    `json:"posted_by,omitempty" doc:"Who posted it."`
-	PostedAt   *time.Time `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
+	ID         string         `json:"id" format:"uuid" doc:"The journal's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"`
+	Number     string         `json:"number,omitempty" doc:"Its number, once it has one." example:"JNL-0042"`
+	Status     string         `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed." example:"posted"`
+	Version    int            `json:"version" doc:"The version of its content." example:"2"`
+	Date       string         `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
+	Memo       string         `json:"memo,omitempty" doc:"What it is for." example:"October rent accrual"`
+	Lines      int            `json:"lines" doc:"How many lines it has." example:"2"`
+	Debits     []Money        `json:"debits" nullable:"false" doc:"The total of its debit lines, per currency, as entered."`
+	PreparedBy *Person        `json:"prepared_by,omitempty" doc:"Who saved the current version."`
+	PostedBy   *Person        `json:"posted_by,omitempty" doc:"Who posted it."`
+	PostedAt   *time.Time     `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
+	Checks     []JournalCheck `json:"checks" nullable:"false" doc:"Its statuses in the workbook's priority order (ENG-20, ENG-21; rev 0.57): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month); none for a reversed one."`
 }
 
 // JournalPage is a page of journals, newest date first.
@@ -622,7 +643,8 @@ func registerJournals(a *API) {
 		Summary: "List the journals",
 		Description: "The organisation's manual journals at their current version, newest date first (a draft without a date last), " +
 			"a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency " +
-			"and who prepared and posted it (FR-GL-01). Read-only; no side effects.",
+			"and who prepared and posted it (FR-GL-01), and its statuses in the workbook's priority order (checks; ENG-20, ENG-21). " +
+			"Read-only; no side effects.",
 	}, []string{CodeCursor, CodeInvalid}, func(ctx context.Context, in *journalListInput) (*journalListOutput, error) {
 		after, err := decodeCursor(in.Cursor)
 		if err != nil {
@@ -654,12 +676,17 @@ func registerJournals(a *API) {
 				last := docs[len(docs)-1]
 				out.Body.NextCursor = encodeCursor(last.Date + "|" + last.ID.String())
 			}
+			statuses, err := journal.Statuses(ctx, u, docs)
+			if err != nil {
+				return err
+			}
 			var people []*Person
 			for _, d := range docs {
 				j, err := summaryOf(d)
 				if err != nil {
 					return err
 				}
+				j.Checks = checksOf(statuses[d.ID])
 				out.Body.Items = append(out.Body.Items, j)
 			}
 			for i := range out.Body.Items {
@@ -755,8 +782,9 @@ func registerJournals(a *API) {
 	register(a, authz.GetJournal, huma.Operation{
 		OperationID: "getJournal", Method: http.MethodGet, Path: "/v1/journals/{journal_id}", Tags: []string{"Journals"},
 		Summary: "Get a journal",
-		Description: "Returns a manual journal's current version and status, with its ETag, and the pending request to post or " +
-			"reverse it, if one waits (approval_asked). Read-only; no side effects.",
+		Description: "Returns a manual journal's current version and status, with its ETag, the pending request to post or " +
+			"reverse it, if one waits (approval_asked), and its statuses in the workbook's priority order (checks; ENG-20, ENG-21). " +
+			"Read-only; no side effects.",
 	}, []string{CodeNotFound, journal.CodeNotJournal, journal.CodeBadDraft}, func(ctx context.Context, in *JournalPath) (*journalReadOutput, error) {
 		id, err := parseID("journal_id", in.JournalID)
 		if err != nil {
@@ -775,6 +803,11 @@ func registerJournals(a *API) {
 			if j.ApprovalAsked, err = a.journalAsked(ctx, u, doc.ID); err != nil {
 				return err
 			}
+			statuses, err := journal.Statuses(ctx, u, []storage.Document{doc})
+			if err != nil {
+				return err
+			}
+			j.Checks = checksOf(statuses[doc.ID])
 			return a.name(ctx, u, j.PreparedBy, j.PostedBy)
 		})
 		if err != nil {

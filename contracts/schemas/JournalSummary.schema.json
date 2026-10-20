@@ -2,6 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "checks": {
+      "description": "Its statuses in the workbook's priority order (ENG-20, ENG-21; rev 0.57): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month); none for a reversed one.",
+      "items": {
+        "$ref": "JournalCheck.schema.json"
+      },
+      "type": "array"
+    },
     "date": {
       "description": "The date it belongs to.",
       "examples": [
@@ -89,7 +96,8 @@
     "status",
     "version",
     "lines",
-    "debits"
+    "debits",
+    "checks"
   ],
   "title": "JournalSummary",
   "type": "object"

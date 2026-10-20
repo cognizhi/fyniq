@@ -2536,6 +2536,13 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1
           format: uuid
           type: string
+        checks:
+          description: "getJournal and listJournals only: its statuses in the workbook's priority order (ENG-20, ENG-21): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month)."
+          items:
+            $ref: "#/components/schemas/JournalCheck"
+          type:
+            - array
+            - "null"
         date:
           description: The date it belongs to.
           examples:
@@ -2603,6 +2610,49 @@ components:
         - status
         - version
         - lines
+      type: object
+    JournalCheck:
+      additionalProperties: false
+      properties:
+        code:
+          description: "The rule's stable code (ENG-23): a posting rule's, a period's, or JOURNAL-OK, JOURNAL-POSTED and JOURNAL-LOCKED for the statuses that are not problems."
+          examples:
+            - LEDGER-09
+          type: string
+        detail:
+          description: What is wrong, or what it means.
+          examples:
+            - the debits and the credits differ by 100.00 SGD
+          type: string
+        field:
+          description: The field it is about.
+          examples:
+            - lines
+          type: string
+        fix:
+          description: How to fix it.
+          examples:
+            - Make the debits equal the credits
+          type: string
+        severity:
+          description: "error (✖): it cannot post until fixed, so it stays a draft with the problem shown; warning (⚠): it posts but is reviewed; ok (✔): ready to post, or posted."
+          enum:
+            - error
+            - warning
+            - ok
+          examples:
+            - error
+          type: string
+        title:
+          description: The status, in the workbook's words, adapted where the platform removes the cause.
+          examples:
+            - Entry does not balance
+          type: string
+      required:
+        - severity
+        - code
+        - title
+        - detail
       type: object
     JournalDraft:
       additionalProperties: false
@@ -2774,6 +2824,11 @@ components:
     JournalSummary:
       additionalProperties: false
       properties:
+        checks:
+          description: "Its statuses in the workbook's priority order (ENG-20, ENG-21; rev 0.57): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month); none for a reversed one."
+          items:
+            $ref: "#/components/schemas/JournalCheck"
+          type: array
         date:
           description: The date it belongs to.
           examples:
@@ -2840,6 +2895,7 @@ components:
         - version
         - lines
         - debits
+        - checks
       type: object
     LedgerLine:
       additionalProperties: false
@@ -9163,7 +9219,7 @@ paths:
         right: C
   /v1/journals:
     get:
-      description: The organisation's manual journals at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency and who prepared and posted it (FR-GL-01). Read-only; no side effects.
+      description: The organisation's manual journals at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency and who prepared and posted it (FR-GL-01), and its statuses in the workbook's priority order (checks; ENG-20, ENG-21). Read-only; no side effects.
       operationId: listJournals
       parameters:
         - description: How many items per page, up to 500.
@@ -9513,7 +9569,7 @@ paths:
         right: C
   /v1/journals/{journal_id}:
     get:
-      description: Returns a manual journal's current version and status, with its ETag, and the pending request to post or reverse it, if one waits (approval_asked). Read-only; no side effects.
+      description: Returns a manual journal's current version and status, with its ETag, the pending request to post or reverse it, if one waits (approval_asked), and its statuses in the workbook's priority order (checks; ENG-20, ENG-21). Read-only; no side effects.
       operationId: getJournal
       parameters:
         - description: The journal's ID.

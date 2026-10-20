@@ -12,7 +12,7 @@ type Summary = components["schemas"]["JournalSummary"];
 type Period = components["schemas"]["Period"];
 
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
-const sum = (id: string, extra: Partial<Summary>): Summary => ({ id, status: "draft", version: 1, lines: 2, debits: [{ amount: "1200.00", currency: "SGD" }], ...extra });
+const sum = (id: string, extra: Partial<Summary>): Summary => ({ id, status: "draft", version: 1, lines: 2, debits: [{ amount: "1200.00", currency: "SGD" }], checks: [], ...extra });
 
 // req: FR-GL-01
 describe("the journals list", () => {
