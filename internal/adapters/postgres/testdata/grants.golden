@@ -34,6 +34,8 @@ fyniq_api       SELECT    document_sequence
 fyniq_api       UPDATE    document_sequence (digits, gap_free, next_number, prefix, version)
 fyniq_api       INSERT    document_version (document_id, payload, version)
 fyniq_api       SELECT    document_version
+fyniq_api       INSERT    email_message (purpose, recipient, subject)
+fyniq_api       SELECT    email_message
 fyniq_api       EXECUTE   end_session()
 fyniq_api       EXECUTE   end_user_sessions()
 fyniq_api       INSERT    evidence (data_class, document_id, evidence_type, file_name, media_type, note, original_sha256, relates_on, sha256, size_bytes, source, staging_key, uploaded_by)
@@ -152,6 +154,7 @@ fyniq_readonly  SELECT    document
 fyniq_readonly  SELECT    document_number
 fyniq_readonly  SELECT    document_sequence
 fyniq_readonly  SELECT    document_version
+fyniq_readonly  SELECT    email_message
 fyniq_readonly  SELECT    evidence
 fyniq_readonly  SELECT    gst_registration
 fyniq_readonly  SELECT    heartbeats
@@ -191,6 +194,8 @@ fyniq_worker    SELECT    document
 fyniq_worker    SELECT    document_number
 fyniq_worker    SELECT    document_sequence
 fyniq_worker    SELECT    document_version
+fyniq_worker    SELECT    email_message
+fyniq_worker    UPDATE    email_message (accepted_at, attempt_started_at, attempts, last_error, provider, provider_id, status)
 fyniq_worker    SELECT    evidence
 fyniq_worker    UPDATE    evidence (finalised_at, locked_key, retain_until, state, version)
 fyniq_worker    EXECUTE   finish_job_slot()

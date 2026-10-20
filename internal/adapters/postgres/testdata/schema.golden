@@ -129,6 +129,19 @@ document_version | document_id | uuid | not null |
 document_version | version | integer | not null | 
 document_version | payload | jsonb | not null | 
 document_version | created_at | timestamp with time zone | not null | now()
+email_message | organisation_id | uuid | not null | current_org()
+email_message | id | uuid | not null | uuidv7()
+email_message | purpose | text | not null | 
+email_message | recipient | text | not null | 
+email_message | subject | text | not null | 
+email_message | status | text | not null | 'queued'::text
+email_message | provider | text | null | 
+email_message | provider_id | text | null | 
+email_message | attempts | integer | not null | 0
+email_message | attempt_started_at | timestamp with time zone | null | 
+email_message | accepted_at | timestamp with time zone | null | 
+email_message | last_error | text | null | 
+email_message | created_at | timestamp with time zone | not null | now()
 evidence | organisation_id | uuid | not null | current_org()
 evidence | id | uuid | not null | uuidv7()
 evidence | document_id | uuid | not null | 
@@ -620,6 +633,22 @@ document_version | document_version_pkey | PRIMARY KEY (organisation_id, id)
 document_version | document_version_positive | CHECK ((version > 0))
 document_version | document_version_version_not_null | NOT NULL version
 document_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+email_message | email_message_accepted_has_provider | CHECK (((status <> 'accepted'::text) OR ((provider IS NOT NULL) AND (accepted_at IS NOT NULL))))
+email_message | email_message_attempts_not_null | NOT NULL attempts
+email_message | email_message_attempts_range | CHECK (((attempts >= 0) AND (attempts <= 100)))
+email_message | email_message_created_at_not_null | NOT NULL created_at
+email_message | email_message_id_not_null | NOT NULL id
+email_message | email_message_lengths | CHECK ((((length(recipient) >= 3) AND (length(recipient) <= 254)) AND ((length(subject) >= 1) AND (length(subject) <= 200)) AND ((length(provider) >= 1) AND (length(provider) <= 40)) AND ((length(provider_id) >= 1) AND (length(provider_id) <= 500)) AND ((length(last_error) >= 1) AND (length(last_error) <= 500))))
+email_message | email_message_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+email_message | email_message_organisation_id_not_null | NOT NULL organisation_id
+email_message | email_message_pkey | PRIMARY KEY (organisation_id, id)
+email_message | email_message_purpose_known | CHECK ((purpose = 'test'::text))
+email_message | email_message_purpose_not_null | NOT NULL purpose
+email_message | email_message_recipient_not_null | NOT NULL recipient
+email_message | email_message_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'accepted'::text, 'failed'::text, 'unknown'::text])))
+email_message | email_message_status_not_null | NOT NULL status
+email_message | email_message_subject_not_null | NOT NULL subject
+email_message | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 evidence | evidence_data_class_known | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'bank'::text, 'payroll'::text, 'identity'::text])))
 evidence | evidence_data_class_not_null | NOT NULL data_class
 evidence | evidence_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
@@ -1061,6 +1090,7 @@ CREATE UNIQUE INDEX document_sequence_pkey ON fyniq.document_sequence USING btre
 CREATE UNIQUE INDEX document_sequence_type_key ON fyniq.document_sequence USING btree (organisation_id, document_type)
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX email_message_pkey ON fyniq.email_message USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_pkey ON fyniq.evidence USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_staging_key ON fyniq.evidence USING btree (organisation_id, staging_key)
 CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree (organisation_id, id)
@@ -1114,6 +1144,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
@@ -1143,6 +1174,7 @@ CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH S
 CREATE TRIGGER document_sequence_guard BEFORE UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION document_sequence_guard()
 CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER email_message_guard BEFORE UPDATE ON fyniq.email_message FOR EACH ROW EXECUTE FUNCTION email_message_guard()
 CREATE TRIGGER evidence_guard BEFORE UPDATE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_guard()
 CREATE TRIGGER evidence_never_deleted BEFORE DELETE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_never_deleted()
 CREATE TRIGGER evidence_no_truncate BEFORE TRUNCATE ON fyniq.evidence FOR EACH STATEMENT EXECUTE FUNCTION evidence_never_deleted()
@@ -1186,6 +1218,7 @@ document | tenant_isolation | * | (organisation_id = current_org()) | (organisat
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+email_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1226,6 +1259,7 @@ current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db6
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae8d292019dce37ac1cadb594f5dbe0c
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
+email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
 evidence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e9a4de22d514e03c7917f207a26849f9

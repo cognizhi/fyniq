@@ -66,6 +66,7 @@ type UnitOfWork interface {
 	Settings() Settings
 	Approvals() Approvals
 	Packs() Packs
+	EmailMessages() EmailMessages
 	Outbox() Outbox
 	Sweeping() Sweeping
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
