@@ -139,6 +139,14 @@ function today(): string {
 
 function BalanceStatus({ list, base }: { list: Balance[]; base: string }) {
   if (list.length === 0) return <span className="fy-small fy-muted">Enter the lines to see whether they balance.</span>;
+  // A journal in several currencies balances in the base currency, once each line is converted and rounded: only
+  // the server's check can say so, because the page never rounds (RND-FX, FR-UX-22).
+  if (list.length > 1)
+    return (
+      <span className="fy-small fy-muted">
+        In {list.map((b) => b.currency).join(" and ")}: select Check to see whether it balances in {base}.
+      </span>
+    );
   return (
     <span className="fy-row fy-row--wrap gap-2">
       {list.map((b) =>
@@ -154,7 +162,7 @@ function BalanceStatus({ list, base }: { list: Balance[]; base: string }) {
           </span>
         ),
       )}
-      {list.some((b) => b.currency !== base) && <span className="fy-small fy-muted">Check it to see it in {base}: rounding can leave a difference to post to 7030.</span>}
+      {list[0]?.currency !== base && <span className="fy-small fy-muted">Check it to see it in {base}: rounding can leave a difference to post to 7030.</span>}
     </span>
   );
 }
@@ -175,9 +183,7 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
         <thead>
           <tr>
             <th scope="col">Account</th>
-            <th scope="col" className="fy-from-medium">
-              Description
-            </th>
+            <th scope="col">Description</th>
             <th scope="col" className="fy-num">
               Debit
             </th>
@@ -195,13 +201,17 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
           {lines.map((l, i) => (
             <tr key={i}>
               <td data-card="title">{accountLabel(accounts, l.account_id)}</td>
-              <td data-card="meta" className="fy-from-medium">
+              <td data-card="meta">
+                <span className="fy-only-compact">
+                  {sign(l.amount) > 0 ? "Debit" : "Credit"}
+                  {l.description ? " · " : ""}
+                </span>
                 {l.description}
               </td>
-              <td data-card="amount" className="fy-num">
+              <td data-card={sign(l.amount) > 0 ? "amount" : "hide"} className="fy-num">
                 {sign(l.amount) > 0 ? formatAmount(l.amount) : ""}
               </td>
-              <td data-card="amount" className="fy-num">
+              <td data-card={sign(l.amount) < 0 ? "amount" : "hide"} className="fy-num">
                 {sign(l.amount) < 0 ? formatAmount(l.amount.slice(1)) : ""}
               </td>
               {foreign && (
@@ -216,9 +226,11 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
           <tfoot>
             <tr>
               <td>Total</td>
-              <td className="fy-from-medium" />
+              <td data-card="hide" />
               <td className="fy-num">{formatAmount(debit)}</td>
-              <td className="fy-num">{formatAmount(credit)}</td>
+              <td data-card="hide" className="fy-num">
+                {formatAmount(credit)}
+              </td>
             </tr>
           </tfoot>
         )}
@@ -418,7 +430,7 @@ export function JournalPage() {
     setStatus(`Posted as ${out.data.journal.number ?? "a journal"}.`);
   };
 
-  const title = isNew ? "New journal" : j ? `${j.number ?? "Draft journal"}${j.memo ? ` · ${j.memo}` : ""}` : "Journal";
+  const title = isNew ? "New journal" : j ? `${j.number ?? (j.status === "draft" ? "Draft journal" : "Journal")}${j.memo ? ` · ${j.memo}` : ""}` : "Journal";
   const list = f ? balances(f, base) : [];
   const fieldError = (key: string) =>
     errors[key] ? (
@@ -471,10 +483,9 @@ export function JournalPage() {
             <h1 className="fy-h1">{title}</h1>
             {j && <StatusChip status={j.status} />}
           </div>
-          {j && (
+          {j && (j.prepared_by || j.posted_by) && (
             <p className="fy-secondary">
-              Prepared by {who(j.prepared_by)}
-              {j.posted_by && ` · posted by ${who(j.posted_by)}${j.posted_at ? ` on ${dateTime(j.posted_at)}` : ""}`}
+              {[j.prepared_by && `Prepared by ${who(j.prepared_by)}`, j.posted_by && `posted by ${who(j.posted_by)}${j.posted_at ? ` on ${dateTime(j.posted_at)}` : ""}`].filter(Boolean).join(" · ")}
             </p>
           )}
         </div>
@@ -540,9 +551,10 @@ export function JournalPage() {
                 const n = i + 1;
                 return (
                   <li key={l.key} className="grid grid-cols-2 gap-2 border-b border-border pb-3 medium:grid-cols-12 medium:items-start">
-                    <div className="fy-field col-span-2 medium:col-span-4">
+                    <div className="fy-field col-span-2 medium:col-span-6 expanded:col-span-3">
                       <label className="fy-label" htmlFor={`${l.key}-account`}>
-                        Line {n}: account
+                        <span className="fy-sr">Line {n}: </span>
+                        Account
                       </label>
                       <select className="fy-select" id={`${l.key}-account`} value={l.account_id} onChange={(e) => setLine(l.key, "account_id", e.target.value)} aria-invalid={errors[`${l.key}.account`] ? true : undefined} aria-describedby={described(`${l.key}.account`)}>
                         <option value="">Choose an account</option>
@@ -555,42 +567,47 @@ export function JournalPage() {
                       </select>
                       {fieldError(`${l.key}.account`)}
                     </div>
-                    <div className="fy-field col-span-2 medium:col-span-3">
+                    <div className="fy-field col-span-2 medium:col-span-6 expanded:col-span-3">
                       <label className="fy-label" htmlFor={`${l.key}-description`}>
-                        Line {n}: description
+                        <span className="fy-sr">Line {n}: </span>
+                        Description
                       </label>
                       <input className="fy-input" id={`${l.key}-description`} value={l.description} maxLength={500} onChange={(e) => setLine(l.key, "description", e.target.value)} />
                     </div>
-                    <div className="fy-field medium:col-span-2">
+                    <div className="fy-field medium:col-span-4 expanded:col-span-2">
                       <label className="fy-label" htmlFor={`${l.key}-debit`}>
-                        Line {n}: debit
+                        <span className="fy-sr">Line {n}: </span>
+                        Debit
                       </label>
                       <input className="fy-input fy-num" id={`${l.key}-debit`} inputMode="decimal" value={l.debit} onChange={(e) => setLine(l.key, "debit", e.target.value)} aria-invalid={errors[`${l.key}.debit`] ? true : undefined} aria-describedby={described(`${l.key}.debit`)} />
                       {fieldError(`${l.key}.debit`)}
                     </div>
-                    <div className="fy-field medium:col-span-2">
+                    <div className="fy-field medium:col-span-4 expanded:col-span-2">
                       <label className="fy-label" htmlFor={`${l.key}-credit`}>
-                        Line {n}: credit
+                        <span className="fy-sr">Line {n}: </span>
+                        Credit
                       </label>
                       <input className="fy-input fy-num" id={`${l.key}-credit`} inputMode="decimal" value={l.credit} onChange={(e) => setLine(l.key, "credit", e.target.value)} aria-invalid={errors[`${l.key}.credit`] ? true : undefined} aria-describedby={described(`${l.key}.credit`)} />
                       {fieldError(`${l.key}.credit`)}
                     </div>
-                    <div className="col-span-2 flex items-end justify-end medium:col-span-1 medium:self-end">
-                      <Button variant="ghost" size="sm" type="button" aria-label={`Remove line ${n}`} onClick={() => change({ ...f, lines: f.lines.filter((x) => x.key !== l.key) })}>
-                        <Icon of={Trash2} />
-                      </Button>
-                    </div>
-                    <div className="fy-field medium:col-span-2">
+                    <div className="fy-field medium:col-span-3 expanded:col-span-1">
                       <label className="fy-label" htmlFor={`${l.key}-currency`}>
-                        Line {n}: currency
+                        <span className="fy-sr">Line {n}: </span>
+                        Currency
                       </label>
                       <input className="fy-input fy-mono" id={`${l.key}-currency`} value={l.currency} maxLength={3} onChange={(e) => setLine(l.key, "currency", e.target.value.toUpperCase())} aria-invalid={errors[`${l.key}.currency`] ? true : undefined} aria-describedby={described(`${l.key}.currency`)} />
                       {fieldError(`${l.key}.currency`)}
                     </div>
+                    <div className="flex items-end justify-end self-end medium:col-span-1">
+                      <Button variant="ghost" size="sm" type="button" aria-label={`Remove line ${n}`} onClick={() => change({ ...f, lines: f.lines.filter((x) => x.key !== l.key) })}>
+                        <Icon of={Trash2} />
+                      </Button>
+                    </div>
                     {(l.currency.trim() || base).toUpperCase() !== base && (
-                      <div className="fy-field medium:col-span-3">
+                      <div className="fy-field col-span-2 medium:col-span-4 expanded:col-span-3">
                         <label className="fy-label" htmlFor={`${l.key}-rate`}>
-                          Line {n}: rate ({base} for 1 {l.currency.toUpperCase()})
+                          <span className="fy-sr">Line {n}: </span>
+                          Rate ({base} for 1 {l.currency.toUpperCase()})
                         </label>
                         <input className="fy-input fy-num" id={`${l.key}-rate`} inputMode="decimal" value={l.fx_rate} onChange={(e) => setLine(l.key, "fx_rate", e.target.value)} aria-invalid={errors[`${l.key}.fx_rate`] ? true : undefined} aria-describedby={described(`${l.key}.fx_rate`)} />
                         {fieldError(`${l.key}.fx_rate`)}

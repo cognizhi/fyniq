@@ -105,16 +105,16 @@ describe("the journal page", () => {
   it("prepares a new journal, shows whether it balances and saves it as a draft; axe finds nothing", async () => {
     answer({ "GET /v1/accounts": accounts, "POST /v1/journals": { status: 201, body: { ...draft, id: "j-new", version: 1 } } });
     renderPage(page(accountant), { path: "/accounting/journals/new" });
-    const account1 = await screen.findByLabelText("Line 1: account");
+    const account1 = await screen.findByLabelText("Line 1: Account");
     expect(within(account1).queryByText("6100 Premises & office")).toBeNull(); // a group takes no posting
     fireEvent.change(screen.getByLabelText("Description"), { target: { value: "October rent" } });
     fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2026-10-31" } });
     fireEvent.change(account1, { target: { value: "a-rent" } });
-    fireEvent.change(screen.getByLabelText("Line 1: debit"), { target: { value: "1,200.00" } });
-    fireEvent.change(screen.getByLabelText("Line 2: account"), { target: { value: "a-bank" } });
-    fireEvent.change(screen.getByLabelText("Line 2: credit"), { target: { value: "1,000" } });
+    fireEvent.change(screen.getByLabelText("Line 1: Debit"), { target: { value: "1,200.00" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Account"), { target: { value: "a-bank" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Credit"), { target: { value: "1,000" } });
     expect(screen.getByText("Debits exceed credits by 200.00 SGD")).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Line 2: credit"), { target: { value: "1,200" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Credit"), { target: { value: "1,200" } });
     expect(screen.getByText("Balanced in SGD: 1,200.00 each side")).toBeTruthy();
     await noViolations(document.body);
     fireEvent.click(screen.getAllByRole("button", { name: "Save as a draft" })[0]!);
@@ -131,15 +131,26 @@ describe("the journal page", () => {
     });
   });
 
+  // req: RND-DISPLAY
+  it("leaves a journal in several currencies to the server's check, never rounding on the page", async () => {
+    answer({ "GET /v1/accounts": accounts });
+    renderPage(page(accountant), { path: "/accounting/journals/new" });
+    fireEvent.change(await screen.findByLabelText("Line 1: Debit"), { target: { value: "1,000.00" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Credit"), { target: { value: "740" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Currency"), { target: { value: "usd" } });
+    expect(screen.getByText("In SGD and USD: select Check to see whether it balances in SGD.")).toBeTruthy();
+    expect(screen.getByLabelText("Line 2: Rate (SGD for 1 USD)")).toBeTruthy();
+  });
+
   it("refuses to save what does not read as a journal, and sends nothing", async () => {
     answer({ "GET /v1/accounts": accounts });
     renderPage(page(accountant), { path: "/accounting/journals/new" });
-    fireEvent.change(await screen.findByLabelText("Line 1: debit"), { target: { value: "50" } });
-    fireEvent.change(screen.getByLabelText("Line 1: credit"), { target: { value: "50" } });
+    fireEvent.change(await screen.findByLabelText("Line 1: Debit"), { target: { value: "50" } });
+    fireEvent.change(screen.getByLabelText("Line 1: Credit"), { target: { value: "50" } });
     fireEvent.click(screen.getAllByRole("button", { name: "Save as a draft" })[0]!);
     expect(await screen.findByText("Enter a debit or a credit, not both.")).toBeTruthy();
     expect(screen.getByText("Choose the account.")).toBeTruthy();
-    expect(screen.getByLabelText("Line 1: account").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByLabelText("Line 1: Account").getAttribute("aria-invalid")).toBe("true");
     expect(seen.filter((s) => s.method !== "GET")).toEqual([]);
   });
 
@@ -193,7 +204,7 @@ describe("the journal page", () => {
     renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
     const lines = await screen.findByRole("table", { name: "Lines as entered" });
     expect(within(lines).getByText("6110 Rent")).toBeTruthy();
-    expect(screen.queryByLabelText("Line 1: account")).toBeNull(); // posted: never edited
+    expect(screen.queryByLabelText("Line 1: Account")).toBeNull(); // posted: never edited
     fireEvent.click(screen.getAllByRole("button", { name: "Reverse…" })[0]!);
     const dialog = await screen.findByRole("dialog");
     fireEvent.change(within(dialog).getByLabelText("Date of the reversing entry"), { target: { value: "2026-11-01" } });
