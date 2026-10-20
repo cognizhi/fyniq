@@ -25,8 +25,13 @@
 
 ## 6. Screen
 
-- [ ] 6.1 Build the statutory-packs screen as designed: list, version detail with its source and pinned results, and activation. Add help keys, a page in `docs/user-guide/` and a compiled `kb/` page; the page shows the FR-UX-41 banner while the GST review is pending
+- [x] 6.1 Build the statutory-packs screen as designed: list, version detail with its source and pinned results, and activation. Add help keys, a page in `docs/user-guide/` and a compiled `kb/` page; the page shows the FR-UX-41 banner while the GST review is pending
   (20 Oct 2026, rev 0.41: the read endpoints, `GET /v1/statutory-packs` and `GET /v1/statutory-packs/{version_id}` with
   its sources and pinned results, and the guide page `statutory-packs.md` compiled into `settings.statutory-packs`.
   **Left:** the screen and its help keys, with the FR-UX-41 banner.)
+  Later the same day: the screen, Settings › Statutory parameter packs (`apps/web/src/screens/settings/StatutoryPacks.tsx`,
+  Expert mode): each version with its pinned results; its detail with the official sources, each pinned case and the
+  digest; Activate (202, over the version's ETag) while its tests pass and it is not active or waiting; and the FR-UX-41
+  banner from the review register (`components/ReviewBanner.tsx`). Tests `Organisation.test.tsx`,
+  `ReviewBanner.test.tsx`.)
 - [ ] 6.2 Finish with `make check` and `make test`

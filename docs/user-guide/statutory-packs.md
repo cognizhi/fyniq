@@ -16,7 +16,7 @@ by hand from those pages. A new version is used in your books only after your co
 
 ## See the packs
 
-1. Open **Settings → Statutory parameter packs**.
+1. Open **Settings → Statutory parameter packs** (Expert mode).
 2. Choose a version to see when it is in force, its sources, and the result of each pinned test.
 
 A version whose pinned tests do not all pass cannot be activated.
@@ -24,7 +24,7 @@ A version whose pinned tests do not all pass cannot be activated.
 ## Activate a version
 
 1. Open the version and select **Activate**.
-2. Confirm it's you with your passkey or authenticator app.
+2. Confirm it's you with your passkey or authenticator app when Fyniq asks.
 3. Fyniq shows **Waiting for approval**. The version is not active yet.
 
 A Controller, an Accountant or a Tax agent asks. An Owner or a Controller who did not ask approves it,

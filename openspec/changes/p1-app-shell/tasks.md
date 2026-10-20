@@ -74,6 +74,9 @@
   disclosure of hidden fields and the mode-parity test.)
 
 - [ ] 4.2 Tooltips, `/help` built from `docs/user-guide/`, context-aware help, the first-run tour, practice in the sample company, and the FR-UX-41 banner from the review register. Tests `// req: FR-UX-30`, `// req: FR-UX-32`, `// req: FR-UX-33` (guide half), `// req: FR-UX-34`, `// req: FR-UX-36` and `// req: FR-UX-41`
+  (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
+  and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
+  **Left:** the banner on the other screens as they are built, `/help`, context-aware help, the tour and practice.)
 
 ## 5. Devices, accessibility and budgets
 

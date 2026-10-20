@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: The company-wide settings (features, payment terms, settlement tolerances, capitalisation threshold, data region, retention) and the value each ships with
 sources:
-  - docs/user-guide/organisation-settings.md sha256:0463646dacc3573b726c20843b25f57e723488d635fbba060d35e2ed12cbc70b
+  - docs/user-guide/organisation-settings.md sha256:f365f746ae4334d7f47f50cb16cc0010e07c26092c454d86e58c4786fe34134a
 data_class: general
 taint: trusted
 status: draft
@@ -24,7 +24,7 @@ aliases:
 
 ## What they are
 
-- **Settings → Organisation** holds the choices that apply to the whole company.
+- **Settings → Organisation** (Expert mode) holds the profile documents print and the choices that apply to the whole company.
 - Each setting starts at its recommended value, with a reason and a link to the guide.
 - It shows **Recommended** while it holds that value, **Changed from recommended** once it differs.
 - The Owner, the Administrator and the Controller change them; others in the company can see them. How: [[settings.change]].

@@ -513,7 +513,7 @@ export function Members() {
 
   return (
     <SettingsPage
-      title="Members and roles"
+      title="Members and roles" screen="users-roles"
       lead={
         list.data
           ? `${people.length} ${people.length === 1 ? "person" : "people"}. ${alone ? "Until a second person joins, your role changes are made at once and logged for review." : "Role changes wait for another Owner's approval."}`
