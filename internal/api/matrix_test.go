@@ -680,11 +680,41 @@ var matrixCalls = map[string]matrixCall{
 	"getSession": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/session", tok, nil), nil
 	},
-	"reverseJournal": func(e *env, tok string) (response, func() bool) {
+	// Asking for approval to post or to void a journal: an allowed role reaches the request, which the row withdraws.
+	"requestJournalPost": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "journal")
+		id, tag := e.createDraft("2500.00")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/journals/"+id+"/post-approval", person, nil, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "journal") == was }
+	},
+	"requestJournalReversal": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "journal")
 		id, tag := e.postedJournal("10.00")
-		r := e.call(http.MethodPost, "/v1/journals/"+id+"/reverse", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/journals/"+id+"/reverse-approval", person, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "journal") == was }
+	},
+	// A void in Founder mode is asked for (requestJournalReversal), so the row reverses in an organisation in Standard mode.
+	"reverseJournal": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.postedJournal("10.00")
+		r := s.call(http.MethodPost, "/v1/journals/"+id+"/reverse", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
 		return r, func() bool {
-			return e.call(http.MethodGet, "/v1/journals/"+id, e.as(authz.Accountant), nil).str("status") == "posted"
+			return s.call(http.MethodGet, "/v1/journals/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
 }

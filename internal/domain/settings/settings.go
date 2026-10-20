@@ -55,6 +55,9 @@ const guide = "/help/organisation-settings#"
 // Catalogue is every setting, by key. A setting is added here, with its recommended value, reason and guide
 // section, before anything reads it.
 var Catalogue = []Definition{
+	{Key: "approvals.self_approval_threshold", Group: "Approvals", Label: "Self-approval threshold", Kind: AmountSGD, Recommended: "2000.00",
+		Reason: "In Founder mode a founder posts a journal of up to S$2,000 alone, flagged for the weekly review; above it another founder approves",
+		Guide:  guide + "self-approval-threshold", Requirement: "FM-2", DualControl: true, Min: "0.00", Max: "1000000.00"},
 	{Key: "assets.capitalisation_threshold", Group: "Defaults", Label: "Capitalisation threshold", Kind: AmountSGD, Recommended: "1000.00",
 		Reason: "Purchases of S$1,000 or more each are offered as fixed assets; smaller ones are expensed. The accountant confirms it",
 		Guide:  guide + "capitalisation-threshold", Requirement: "FR-ORG-04", DualControl: true, Min: "0.00", Max: "1000000.00"},

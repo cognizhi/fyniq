@@ -18,6 +18,7 @@ import (
 // req: ENG-04
 func TestTheGeneralLedger(t *testing.T) {
 	e := newEnv(t)
+	standardMode(e) // a void in Founder mode needs a second person (FM-1)
 	accountant := e.as(authz.Accountant)
 	post := func(date, amount, memo string) string {
 		t.Helper()

@@ -231,6 +231,7 @@ func TestIdempotencyKeyReplaysAndRefusesReuse(t *testing.T) {
 // req: data/data-model Versioning of records
 func TestETagAndIfMatch(t *testing.T) {
 	e := newEnv(t)
+	standardMode(e) // a void in Founder mode needs a second person (FM-1)
 	accountant := e.as(authz.Accountant)
 	id, tag := e.createDraft("100.00")
 	if tag != `"1-draft"` {
@@ -265,6 +266,7 @@ func TestETagAndIfMatch(t *testing.T) {
 // req: FR-INT-14
 func TestPreviewBeforeCommit(t *testing.T) {
 	e := newEnv(t)
+	standardMode(e) // a void in Founder mode needs a second person (FM-1)
 	accountant := e.as(authz.Accountant)
 	preview := []string{"Prefer", "return=preview", "Idempotency-Key", uuid.NewString()}
 	unchanged := func(r response) {

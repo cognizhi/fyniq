@@ -365,7 +365,7 @@ export interface paths {
         };
         /**
          * Get a journal
-         * @description Returns a manual journal's current version and status, with its ETag. Read-only; no side effects.
+         * @description Returns a manual journal's current version and status, with its ETag, and the pending request to post or reverse it, if one waits (approval_asked). Read-only; no side effects.
          */
         get: operations["getJournal"];
         /**
@@ -439,9 +439,29 @@ export interface paths {
         put?: never;
         /**
          * Post a draft journal
-         * @description Posts a draft: the posting engine turns its current version into a balanced entry, written with the journal's change to posted in one transaction (ENG-02). Side effects: a journal entry, a new ledger revision, balances, audit events. Needs If-Match with the draft's ETag. Approval policy: the Accountant's amount limit and SOD-3 apply from P1. Idempotent with Idempotency-Key; the same version never posts twice.
+         * @description Posts a draft: the posting engine turns its current version into a balanced entry, written with the journal's change to posted in one transaction (ENG-02). Side effects: a journal entry, a new ledger revision, balances, audit events. Needs If-Match with the draft's ETag. Approval (PRD-001 rev 0.53): a journal whose debits in the base currency are above the self-approval threshold (S$2,000 by default) is refused (JOURNAL-07): ask for approval with requestJournalPost; at or below it, a Founder-mode post is logged as self-approved for the weekly review (FM-2, FM-3). Idempotent with Idempotency-Key; the same version never posts twice.
          */
         post: operations["postJournal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/journals/{journal_id}/post-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for approval to post a journal
+         * @description Asks for another person's approval to post a draft journal at the version read (FR-GL-01, FM-2, SOD-3; PRD-001 rev 0.53, provisional): what postJournal asks for when the journal's debits are above the self-approval threshold (JOURNAL-07). The answer is 202 with an approval request, which a person who holds A on Journals (the Controller), did not ask and did not prepare the journal approves, stepped up; on the approval the journal posts, as the approver. The request holds the journal's version and status and its debits, so a change to the draft voids it. Asking needs a person signed in who passed step-up, and If-Match with the journal's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        post: operations["requestJournalPost"];
         delete?: never;
         options?: never;
         head?: never;
@@ -459,9 +479,29 @@ export interface paths {
         put?: never;
         /**
          * Reverse a posted journal
-         * @description Voids a posted journal with a reversing entry on the date given (FR-GL-12); posted history never changes. Side effects: the reversing entry, a new ledger revision, balances, audit events with the reason. Needs If-Match with the journal's ETag. Approval policy: in Founder mode voiding needs a second person (FM-1) from P1. Idempotent with Idempotency-Key.
+         * @description Voids a posted journal with a reversing entry on the date given (FR-GL-12); posted history never changes. Side effects: the reversing entry, a new ledger revision, balances, audit events with the reason. Needs If-Match with the journal's ETag. In Founder mode voiding needs a second person (FM-1): it is refused (JOURNAL-08), and requestJournalReversal asks for the approval. Idempotent with Idempotency-Key.
          */
         post: operations["reverseJournal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/journals/{journal_id}/reverse-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for approval to reverse a journal
+         * @description Asks for another person's approval to void a posted journal with a reversing entry on the date given, with a reason (FR-GL-12, FM-1; PRD-001 rev 0.53, provisional): what reverseJournal asks for in Founder mode (JOURNAL-08). The answer is 202 with an approval request, which a person who holds A on Journals and did not ask approves, stepped up; on the approval the reversal posts. Asking needs a person signed in who passed step-up, and If-Match with the journal's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        post: operations["requestJournalReversal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1810,13 +1850,13 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal";
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
              * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen";
+            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse";
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -1953,7 +1993,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -1995,7 +2035,7 @@ export interface components {
              * @example organisation_setting
              * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period";
+            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal";
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -3296,6 +3336,12 @@ export interface components {
         };
         Journal: {
             /**
+             * Format: uuid
+             * @description getJournal only: the pending request to post or to reverse it, while one waits for approval (FM-1, FM-2).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1
+             */
+            approval_asked?: string;
+            /**
              * Format: date
              * @description The date it belongs to.
              * @example 2026-10-31
@@ -4505,11 +4551,11 @@ export interface components {
              */
             id: string;
             /**
-             * @description approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01).
+             * @description approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2).
              * @example approved_change
              * @enum {string}
              */
-            kind: "approved_change" | "founder_bootstrap";
+            kind: "approved_change" | "founder_bootstrap" | "self_approved";
             /**
              * Format: date-time
              * @description When it executed.
@@ -6492,7 +6538,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else. */
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else; `JOURNAL-09` You prepared it, so another person approves it; `TEAM-04` Your roles conflict for this action. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6501,7 +6547,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -6510,7 +6556,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -6546,7 +6592,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `JOURNAL-04` The saved journal cannot be read; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9062,7 +9108,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `JOURNAL-02` The journal is not a draft; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `JOURNAL-02` The journal is not a draft; `JOURNAL-07` The journal needs another person's approval; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9081,6 +9127,154 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestJournalPost: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The journal's ID. */
+                journal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -9209,7 +9403,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `JOURNAL-03` The journal is not posted; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `JOURNAL-03` The journal is not posted; `JOURNAL-08` Reversing needs a second person; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -9246,6 +9440,185 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestJournalReversal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The journal's ID. */
+                journal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Reversal"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `JOURNAL-02` The journal is not a draft; `JOURNAL-03` The journal is not posted; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency. */
             422: {
                 headers: {
                     [name: string]: unknown;

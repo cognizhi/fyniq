@@ -41,7 +41,14 @@
   next version under If-Match; every journal answer names its preparer and poster. The approver becomes the approval's
   signers with task 2.2. Tests: `TestJournalListDraftVersionsAndWhoPrepared`, `TestAttackDocumentActorsAreRecordedOnce`,
   two authorisation-matrix rows.)
-- [ ] 2.2 Amount conditions on a `journal` approval policy: FM-2's self-approval at or below the threshold, flagged and logged for the FM-3 review; above it, an approval request; SOD-3 in Standard mode; FM-1 for voids. Tests `// req: FR-GL-01`, `// req: FM-2`, `// req: SOD-3` and `// req: FM-1`
+- [x] 2.2 Amount conditions on a `journal` approval policy: FM-2's self-approval at or below the threshold, flagged and logged for the FM-3 review; above it, an approval request; SOD-3 in Standard mode; FM-1 for voids. Tests `// req: FR-GL-01`, `// req: FM-2`, `// req: SOD-3` and `// req: FM-1`
+  (21 Oct 2026, PRD rev 0.53: the threshold is a setting, `approvals.self_approval_threshold` (S$2,000.00, dual
+  control), not a condition on the policy: policy conditions wait for wave 2's documents (FR-APR-01). Migration 000059
+  lets approval requests and policies take `journal` with `journal.post` and `journal.reverse`, and the review log
+  take `self_approved` (000060 validates). `postJournal` refuses above the threshold in every team mode (JOURNAL-07);
+  `requestJournalPost` asks; the approval checks SOD-3 against who saved the version (JOURNAL-09) and posts as the
+  approver. In Founder mode `reverseJournal` refuses a posted journal (JOURNAL-08) and `requestJournalReversal` asks.
+  Tests: `TestJournalApprovals`, `TestJournalThresholdInStandardMode`, the matrix rows. The web screens follow.)
 - [ ] 2.3 Edit a posted journal in an open period: a new version whose post writes the reversal and the replacement in one transaction. Tests `// req: FR-GL-12` and `// req: ledger/posting-rules Edits of posted documents`
 - [ ] 2.4 Auto-reversing journals (the reversal date, by default the first day of the next period) and recurring journal templates. Tests `// req: FR-GL-02`
 

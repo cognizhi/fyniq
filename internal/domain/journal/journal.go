@@ -375,3 +375,44 @@ func fromStorage(e storage.Entry, base money.Currency) (ledger.Entry, error) {
 	}
 	return out, nil
 }
+
+// Debits runs the posting rules over a draft's current version without writing anything, and answers its debits in
+// the base currency: the amount its approval is judged on (FM-2, SOD-3). A draft the rules refuse answers their
+// problems, as posting it would.
+func (s Service) Debits(ctx context.Context, org, id uuid.UUID) (money.Money, error) {
+	var out money.Money
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if err := isJournal(doc); err != nil {
+			return err
+		}
+		if doc.Status != storage.DocumentDraft {
+			return &Error{CodeNotDraft, fmt.Sprintf("the journal is %s, not a draft", doc.Status), "Only a draft is posted"}
+		}
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		j, err := decode(doc, settings.Base)
+		if err != nil {
+			return err
+		}
+		entry, err := ledger.PostJournal(j, settings)
+		if err != nil {
+			return err
+		}
+		out = money.Zero(settings.Base)
+		for _, l := range entry.Lines {
+			if l.Base.Sign() > 0 {
+				if out, err = out.Add(l.Base); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	return out, err
+}

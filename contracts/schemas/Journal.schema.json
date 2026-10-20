@@ -2,6 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "approval_asked": {
+      "description": "getJournal only: the pending request to post or to reverse it, while one waits for approval (FM-1, FM-2).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "date": {
       "description": "The date it belongs to.",
       "examples": [

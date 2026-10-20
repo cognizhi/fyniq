@@ -34,10 +34,11 @@
       "type": "string"
     },
     "kind": {
-      "description": "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01).",
+      "description": "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2).",
       "enum": [
         "approved_change",
-        "founder_bootstrap"
+        "founder_bootstrap",
+        "self_approved"
       ],
       "examples": [
         "approved_change"

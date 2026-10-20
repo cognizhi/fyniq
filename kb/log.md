@@ -73,3 +73,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/periods-and-close.md (reopen a month) → accounting.periods (reopening, p1-general-ledger-close 1.3, 7.2)
 
 ## [2026-10-21] compile | docs/user-guide/general-ledger.md (new) → reports.general-ledger (the general ledger screen, p1-general-ledger-close 4.1, 7.3); journals.md (related link) → accounting.journals
+
+## [2026-10-21] compile | docs/user-guide/organisation-settings.md (self-approval threshold) → settings.organisation, settings.change (journal approvals, p1-general-ledger-close 2.2)

@@ -76,6 +76,8 @@ type env struct {
 	log    *bytes.Buffer
 	blobs  *local.Dir    // the evidence staging store
 	queue  *local.Memory // the outbox's tasks
+	// standard is a second organisation of the same database and server in Standard mode, once inStandardMode made it.
+	standard *env
 }
 
 var orgs int

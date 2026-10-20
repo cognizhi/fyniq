@@ -262,6 +262,8 @@ type Journal struct {
 	PreparedBy *Person    `json:"prepared_by,omitempty" doc:"Who saved the current version; absent for journals from before it was recorded."`
 	PostedBy   *Person    `json:"posted_by,omitempty" doc:"Who posted it, once posted; absent for journals from before it was recorded."`
 	PostedAt   *time.Time `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
+	// ApprovalAsked is the pending request to post or reverse it (rev 0.53); getJournal fills it.
+	ApprovalAsked string `json:"approval_asked,omitempty" format:"uuid" doc:"getJournal only: the pending request to post or to reverse it, while one waits for approval (FM-1, FM-2)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
 }
 
 // Person is who did something: a member, by name, the AI acting for one, an integration or a service.
@@ -742,8 +744,9 @@ func registerJournals(a *API) {
 
 	register(a, authz.GetJournal, huma.Operation{
 		OperationID: "getJournal", Method: http.MethodGet, Path: "/v1/journals/{journal_id}", Tags: []string{"Journals"},
-		Summary:     "Get a journal",
-		Description: "Returns a manual journal's current version and status, with its ETag. Read-only; no side effects.",
+		Summary: "Get a journal",
+		Description: "Returns a manual journal's current version and status, with its ETag, and the pending request to post or " +
+			"reverse it, if one waits (approval_asked). Read-only; no side effects.",
 	}, []string{CodeNotFound, journal.CodeNotJournal, journal.CodeBadDraft}, func(ctx context.Context, in *JournalPath) (*journalReadOutput, error) {
 		id, err := parseID("journal_id", in.JournalID)
 		if err != nil {
@@ -757,6 +760,9 @@ func registerJournals(a *API) {
 				return err
 			}
 			if j, err = journalOf(doc); err != nil {
+				return err
+			}
+			if j.ApprovalAsked, err = a.journalAsked(ctx, u, doc.ID); err != nil {
 				return err
 			}
 			return a.name(ctx, u, j.PreparedBy, j.PostedBy)
@@ -836,11 +842,21 @@ func registerJournals(a *API) {
 		Summary: "Post a draft journal",
 		Description: "Posts a draft: the posting engine turns its current version into a balanced entry, written with the journal's " +
 			"change to posted in one transaction (ENG-02). Side effects: a journal entry, a new ledger revision, balances, audit events. " +
-			"Needs If-Match with the draft's ETag. Approval policy: the Accountant's amount limit and SOD-3 apply from P1. " +
+			"Needs If-Match with the draft's ETag. Approval (PRD-001 rev 0.53): a journal whose debits in the base currency are above " +
+			"the self-approval threshold (S$2,000 by default) is refused (JOURNAL-07): ask for approval with requestJournalPost; at or " +
+			"below it, a Founder-mode post is logged as self-approved for the weekly review (FM-2, FM-3). " +
 			"Idempotent with Idempotency-Key; the same version never posts twice.",
-	}, append([]string{journal.CodeNotDraft}, postingCodes...), func(ctx context.Context, in *postJournalInput) (*postingOutput, error) {
-		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
-			return a.journals.Post(ctx, p.Organisation, id)
+	}, append([]string{journal.CodeNotDraft, CodeNeedsApproval}, postingCodes...), func(ctx context.Context, in *postJournalInput) (*postingOutput, error) {
+		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
+			self, debits, err := a.gatePosting(ctx, u, p, id)
+			if err != nil {
+				return storage.Entry{}, err
+			}
+			e, err := a.journals.Post(ctx, p.Organisation, id)
+			if err == nil && self {
+				err = a.logSelfApproval(ctx, u, p, id, debits)
+			}
+			return e, err
 		})
 	})
 
@@ -849,13 +865,17 @@ func registerJournals(a *API) {
 		Summary: "Reverse a posted journal",
 		Description: "Voids a posted journal with a reversing entry on the date given (FR-GL-12); posted history never changes. " +
 			"Side effects: the reversing entry, a new ledger revision, balances, audit events with the reason. Needs If-Match with the " +
-			"journal's ETag. Approval policy: in Founder mode voiding needs a second person (FM-1) from P1. Idempotent with Idempotency-Key.",
-	}, append([]string{journal.CodeNotPosted, CodeMalformed, CodeTooLarge, CodeMediaType}, postingCodes...), func(ctx context.Context, in *reverseJournalInput) (*postingOutput, error) {
+			"journal's ETag. In Founder mode voiding needs a second person (FM-1): it is refused (JOURNAL-08), and requestJournalReversal " +
+			"asks for the approval. Idempotent with Idempotency-Key.",
+	}, append([]string{journal.CodeNotPosted, CodeMalformed, CodeTooLarge, CodeMediaType, CodeVoidApproval}, postingCodes...), func(ctx context.Context, in *reverseJournalInput) (*postingOutput, error) {
 		date, err := time.Parse(time.DateOnly, in.Body.Date)
 		if err != nil {
 			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.date", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"}})
 		}
-		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
+		return a.posting(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID) (storage.Entry, error) {
+			if err := gateVoid(ctx, u, id); err != nil {
+				return storage.Entry{}, err
+			}
 			return a.journals.Reverse(ctx, p.Organisation, id, date, in.Body.Reason)
 		})
 	})
@@ -873,7 +893,7 @@ func postingCodes() []string {
 // posting runs a command that posts for a journal: If-Match is checked against the journal locked in
 // the same unit of work, so nothing can change it between the check and the command.
 func (a *API) posting(ctx context.Context, rawID, key, ifMatch, prefer string, request any,
-	command func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Entry, error)) (*postingOutput, error) {
+	command func(ctx context.Context, u storage.UnitOfWork, p authn.Principal, id uuid.UUID) (storage.Entry, error)) (*postingOutput, error) {
 	id, err := parseID("journal_id", rawID)
 	if err != nil {
 		return nil, err
@@ -899,7 +919,7 @@ func (a *API) posting(ctx context.Context, rawID, key, ifMatch, prefer string, r
 		if err := checkConflicts(ctx, u, p, "Posting"); err != nil {
 			return JournalPosting{}, err
 		}
-		entry, err := command(ctx, p, id)
+		entry, err := command(ctx, u, p, id)
 		if err != nil {
 			return JournalPosting{}, err
 		}
