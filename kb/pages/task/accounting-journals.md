@@ -4,7 +4,7 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post a journal, ask for approval above the self-approval threshold, and edit or reverse a posted journal with a reason
 sources:
-  - docs/user-guide/journals.md sha256:60b0093e8015e0a0bd04435728b8c117be1acbca63ce75976703b4dae19a6f7d
+  - docs/user-guide/journals.md sha256:56c1ac7d2ed5a9632eb27abc95eec82cf08ca72dd598041facfe2fbd37e5869b
 data_class: general
 taint: trusted
 status: draft
@@ -23,6 +23,8 @@ aliases:
   - draft journal
   - self-approval threshold
   - journal approval
+  - journal status
+  - entry does not balance
   - edit a journal
   - auto-reversing journal
   - accrual reversal
@@ -51,6 +53,7 @@ aliases:
 
 ## Check and post
 
+- A draft says what stops it posting, as the workbook's Journal sheet did: the list shows the first problem beside its status, such as **Entry does not balance**, and the draft lists every one with how to fix it; a draft with nothing to fix shows **Ready to post**, and a posted journal whose month is closed shows **Locked (closed month)**.
 - Open the draft: **Check** runs every posting rule and shows what posting writes in the base currency, saving nothing.
 - **Post**: the journal takes its number and posts on its date; Fyniq records who posted it and when.
 - Once posted, a journal never changes in place: it is edited or reversed, and the ledger keeps every entry.

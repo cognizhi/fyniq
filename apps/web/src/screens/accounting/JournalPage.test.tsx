@@ -372,6 +372,23 @@ describe("the journal page", () => {
     expect(await screen.findByText("Reverses by itself on 1 Nov 2026")).toBeTruthy();
   });
 
+  // req: ENG-20
+  // req: ENG-21
+  it("lists what stops a draft posting, in the workbook's words and order", async () => {
+    const checks = [
+      { severity: "error" as const, code: "LEDGER-01", field: "date", title: "Enter the date", detail: "the journal has no date", fix: "Enter the date the journal belongs to" },
+      { severity: "error" as const, code: "LEDGER-09", field: "lines", title: "Entry does not balance", detail: "the debits and the credits differ by 100.00 SGD", fix: "Make the debits equal the credits" },
+    ];
+    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1": { status: 200, body: { ...draft, checks }, headers: { ETag: `"2-draft"` } } });
+    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    const list = await screen.findByRole("heading", { name: "2 things to fix before it can post" });
+    expect(list).toBeTruthy();
+    const items = screen.getAllByText(/Enter the date|Entry does not balance/);
+    expect(items[0]!.textContent).toContain("Enter the date");
+    expect(screen.getByText(/differ by 100.00 SGD. Make the debits equal the credits./)).toBeTruthy();
+    await noViolations(document.body);
+  });
+
   it("shows an Owner a draft read-only, with nothing to post", async () => {
     answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } } });
     renderPage(page(ownerSession as Session), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { CalendarPlus, CircleCheck, CircleX, Clock, Eye, Pencil, Plus, Save, Send, Trash2, Undo2, UserCheck, X } from "lucide-react";
+import { CalendarPlus, CircleCheck, CircleX, Clock, Eye, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -16,7 +16,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, postable, type Account } from "./data";
-import { preparers, StatusChip, who } from "./Journals";
+import { CheckChip, preparers, StatusChip, who, type Check } from "./Journals";
 
 type Journal = components["schemas"]["Journal"];
 type Posting = components["schemas"]["JournalPosting"];
@@ -255,6 +255,41 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
 
 // Reverse voids a posted journal with a reason. In Founder mode a void needs a second person (FM-1), so it asks for the
 // reversal instead, which another founder approves.
+// Checks lists what stops a draft posting, as the workbook's Journal sheet did, in its order (ENG-20, ENG-21).
+function Checks({ checks }: { checks: Check[] }) {
+  const id = useId();
+  const errors = checks.filter((c) => c.severity !== "ok");
+  if (errors.length === 0) return null;
+  return (
+    <section className="fy-card" aria-labelledby={id}>
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id={id}>
+          {errors.length === 1 ? "1 thing to fix before it can post" : `${errors.length} things to fix before it can post`}
+        </h2>
+      </div>
+      <ul className="fy-list">
+        {errors.map((c, i) => (
+          <li key={`${c.code}-${c.field ?? ""}-${i}`} className="fy-list__item">
+            <span className={`fy-list__icon ${c.severity === "error" ? "fy-list__icon--critical" : "fy-list__icon--warning"}`}>
+              <Icon of={c.severity === "error" ? CircleX : TriangleAlert} size={20} />
+            </span>
+            <span className="fy-list__main">
+              <span className="fy-list__title whitespace-normal">
+                {c.title} <span className="fy-small fy-muted fy-mono">{c.code}</span>
+              </span>
+              <span className="fy-list__meta whitespace-normal">
+                {c.detail}
+                {c.fix ? `. ${c.fix}.` : ""}
+              </span>
+            </span>
+            <span className="fy-sr">{c.severity === "error" ? "Stops it posting" : "Review it"}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function Reverse({ open, journal, etag, ask, onClose, onDone, onAsked }: { open: boolean; journal: Journal; etag: string; ask: boolean; onClose: () => void; onDone: (p: Posting) => void; onAsked: () => void }) {
   const confirm = useConfirm();
   const id = useId();
@@ -651,6 +686,7 @@ export function JournalPage() {
           <div className="fy-row fy-row--wrap gap-2">
             <h1 className="fy-h1">{title}</h1>
             {j && <StatusChip status={j.status} />}
+            {j && j.status !== "draft" && <CheckChip checks={j.checks} />}
           </div>
           {j && (j.prepared_by || j.posted_by) && (
             <p className="fy-secondary">
@@ -715,6 +751,7 @@ export function JournalPage() {
         </>
       )}
       {!isNew && one.isPending && <p className="fy-secondary">Loading the journal…</p>}
+      {j?.status === "draft" && !dirty && j.checks && <Checks checks={j.checks} />}
       {isNew && !mayPrepare && <p className="fy-secondary">An Accountant or a Tax agent prepares journals.</p>}
 
       {f && (editable || editingPosted) && (
