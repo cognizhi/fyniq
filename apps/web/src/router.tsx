@@ -30,6 +30,8 @@ const screens: Record<RouteId, RouteComponent> = {
   settings: lazyRouteComponent(() => import("./screens/settings/Settings"), "Settings"),
   "settings-profile": lazyRouteComponent(() => import("./screens/settings/Profile"), "Profile"),
   "settings-members": lazyRouteComponent(() => import("./screens/settings/Members"), "Members"),
+  "settings-team-mode": lazyRouteComponent(() => import("./screens/settings/TeamMode"), "TeamMode"),
+  "settings-approval-policies": lazyRouteComponent(() => import("./screens/settings/ApprovalPolicies"), "ApprovalPolicies"),
 };
 
 function Root() {

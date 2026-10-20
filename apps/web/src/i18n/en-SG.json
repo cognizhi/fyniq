@@ -127,6 +127,22 @@
     "member.withdraw-invitation": {
       "label": "Withdraw",
       "tooltip": "Stop this invitation's code working."
+    },
+    "settings.team-mode": {
+      "label": "Team mode",
+      "tooltip": "How strictly duties are separated: Founder or Standard mode, and the roles that conflict now."
+    },
+    "settings.approval-policies": {
+      "label": "Approval policies",
+      "tooltip": "Who approves each kind of change, in ordered steps."
+    },
+    "team-mode.switch": {
+      "label": "Ask to switch",
+      "tooltip": "Ask for the new mode; an Owner who did not ask approves it. Needs a reason for each conflict that stays."
+    },
+    "approval-policy.change": {
+      "label": "Change policy",
+      "tooltip": "Ask for new steps; an Owner or Controller who did not ask approves them. Waiting requests of this kind restart."
     }
   }
 }

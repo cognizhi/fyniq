@@ -4,7 +4,7 @@ type: concept
 title: Team mode: how strictly duties are separated
 summary: Founder and Standard mode, which roles conflict, how a switch is asked for and approved, and what Standard mode blocks
 sources:
-  - docs/user-guide/team-mode.md sha256:bf1b189576c83e66b7c8114744d80a29c3f2ee8d961f34513110790508e80a0e
+  - docs/user-guide/team-mode.md sha256:43c4bf55f871b4fdc06e47dc4e0f834fb6e2f1ca39970362133291e304ecb45d
 data_class: general
 taint: trusted
 status: published
@@ -42,8 +42,8 @@ aliases:
 
 ## Switching
 
-- **Settings → Team mode**, choose the mode; for Standard mode end one of each listed member's roles or give the reason they keep both, and withdraw any invitation whose roles conflict.
-- Confirm it's you; Fyniq shows **Waiting for approval** and the mode has not changed yet.
+- **Settings → Team mode** (Expert mode), choose the mode; for Standard mode end one of each listed member's roles or give the reason they keep both, and withdraw any invitation whose roles conflict.
+- **Ask to switch** and confirm it's you if asked; Fyniq shows **Waiting for approval** and the mode has not changed yet.
 - An Administrator asks; an Owner who did not ask approves it.
 
 (src: docs/user-guide/team-mode.md#switch-the-team-mode)
