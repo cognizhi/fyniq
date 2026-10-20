@@ -863,7 +863,7 @@ Manual journals: drafted, posted and reversed; posted history never changes (FR-
 
 **List the journals** (`listJournals`)
 
-The organisation's manual journals at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency and who prepared and posted it (FR-GL-01). Read-only; no side effects.
+The organisation's manual journals at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency and who prepared and posted it (FR-GL-01), and its statuses in the workbook's priority order (checks; ENG-20, ENG-21). Read-only; no side effects.
 
 - **Permission:** View on Journals
 - **Parameters:**
@@ -912,7 +912,7 @@ Saves a manual journal as a draft (✎) at version 1. Side effects: a draft docu
 
 **Get a journal** (`getJournal`)
 
-Returns a manual journal's current version and status, with its ETag, and the pending request to post or reverse it, if one waits (approval_asked). Read-only; no side effects.
+Returns a manual journal's current version and status, with its ETag, the pending request to post or reverse it, if one waits (approval_asked), and its statuses in the workbook's priority order (checks; ENG-20, ENG-21). Read-only; no side effects.
 
 - **Permission:** View on Journals
 - **Parameters:**

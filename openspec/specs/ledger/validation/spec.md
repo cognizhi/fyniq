@@ -26,6 +26,12 @@ Source: PRD-001 §10.5 · Priority M · Phase P1
 - **THEN** it is picked from a list, so the status cannot occur
 - **AND** the ported rule is adapted to that
 
+#### Scenario: The Journal sheet's statuses (rev 0.57)
+- **GIVEN** a draft journal that does not balance, has no date, or is dated where no period is open
+- **WHEN** it is read or listed
+- **THEN** it carries the workbook's statuses in its priority order and words, such as "Enter the date" and "Entry does not balance", each with its code, field and fix
+- **AND** "Dated before books start" is an error here, since no period exists before the books start
+
 ### Requirement: ENG-21 Severity semantics
 The system SHALL carry over the workbook's severity semantics: ✖ the record cannot post, ⚠ it posts but needs review, ⏰ due or overdue, ✎ draft.
 
@@ -48,6 +54,11 @@ Source: PRD-001 §10.5 · Priority M · Phase P1
 #### Scenario: Draft
 - **WHEN** a record is a draft
 - **THEN** it carries the ✎ status
+
+#### Scenario: A journal's severities (rev 0.57)
+- **WHEN** a journal is read or listed
+- **THEN** a draft carries every error (✖) the posting rules find and whether its month is open, or OK (✔)
+- **AND** a posted journal carries OK, or "Locked (closed month)" once its month is closed
 
 ### Requirement: ENG-22 Validation in the domain layer
 Validation SHALL run in the domain layer, shared by the UI, the API, imports and the AI proposal dry run, and the database SHALL enforce the invariants in §10.7 independently.

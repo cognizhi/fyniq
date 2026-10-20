@@ -105,7 +105,10 @@
 
 ## 6. Validation, framework and schedules
 
-- [ ] 6.1 The journal's ported workbook statuses with their severities and messages. Tests `// req: ENG-20`, `// req: ENG-21` and `// req: ENG-23`
+- [x] 6.1 The journal's ported workbook statuses with their severities and messages. Tests `// req: ENG-20`, `// req: ENG-21` and `// req: ENG-23`
+  (21 Oct 2026, PRD rev 0.57: `journal.Statuses` maps the Journal sheet's 13 statuses onto the platform's codes in
+  its priority order and words; `getJournal` and `listJournals` return `checks`. Test:
+  `TestJournalsCarryTheWorkbooksStatuses`. The screens follow.)
 - [ ] 6.2 The accounting framework and edition from a financial year, the accountant's confirmation and the policies with their approver and date. Tests `// req: FR-ORG-10`
 - [ ] 6.3 Month-on-month flux on the close: variances above the threshold need an explanation before the close is signed off. Test `// req: FR-GL-14` (the budget half waits for `p1-planning`)
 - [ ] 6.4 Schedules for prepayments and deferred revenue, with the first source that spreads over months (`p1-purchases` bills). Tests `// req: FR-GL-03`

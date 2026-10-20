@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The rule's stable code (ENG-23): a posting rule's, a period's, or JOURNAL-OK, JOURNAL-POSTED and JOURNAL-LOCKED for the statuses that are not problems.",
+      "examples": [
+        "LEDGER-09"
+      ],
+      "type": "string"
+    },
+    "detail": {
+      "description": "What is wrong, or what it means.",
+      "examples": [
+        "the debits and the credits differ by 100.00 SGD"
+      ],
+      "type": "string"
+    },
+    "field": {
+      "description": "The field it is about.",
+      "examples": [
+        "lines"
+      ],
+      "type": "string"
+    },
+    "fix": {
+      "description": "How to fix it.",
+      "examples": [
+        "Make the debits equal the credits"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "error (✖): it cannot post until fixed, so it stays a draft with the problem shown; warning (⚠): it posts but is reviewed; ok (✔): ready to post, or posted.",
+      "enum": [
+        "error",
+        "warning",
+        "ok"
+      ],
+      "examples": [
+        "error"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "The status, in the workbook's words, adapted where the platform removes the cause.",
+      "examples": [
+        "Entry does not balance"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "severity",
+    "code",
+    "title",
+    "detail"
+  ],
+  "title": "JournalCheck",
+  "type": "object"
+}

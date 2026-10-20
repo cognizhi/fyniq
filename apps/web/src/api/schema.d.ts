@@ -341,7 +341,7 @@ export interface paths {
         };
         /**
          * List the journals
-         * @description The organisation's manual journals at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency and who prepared and posted it (FR-GL-01). Read-only; no side effects.
+         * @description The organisation's manual journals at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency and who prepared and posted it (FR-GL-01), and its statuses in the workbook's priority order (checks; ENG-20, ENG-21). Read-only; no side effects.
          */
         get: operations["listJournals"];
         put?: never;
@@ -365,7 +365,7 @@ export interface paths {
         };
         /**
          * Get a journal
-         * @description Returns a manual journal's current version and status, with its ETag, and the pending request to post or reverse it, if one waits (approval_asked). Read-only; no side effects.
+         * @description Returns a manual journal's current version and status, with its ETag, the pending request to post or reverse it, if one waits (approval_asked), and its statuses in the workbook's priority order (checks; ENG-20, ENG-21). Read-only; no side effects.
          */
         get: operations["getJournal"];
         /**
@@ -3381,6 +3381,8 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1
              */
             approval_asked?: string;
+            /** @description getJournal and listJournals only: its statuses in the workbook's priority order (ENG-20, ENG-21): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month). */
+            checks?: components["schemas"]["JournalCheck"][] | null;
             /**
              * Format: date
              * @description The date it belongs to.
@@ -3433,6 +3435,39 @@ export interface components {
              * @example 1
              */
             version: number;
+        };
+        JournalCheck: {
+            /**
+             * @description The rule's stable code (ENG-23): a posting rule's, a period's, or JOURNAL-OK, JOURNAL-POSTED and JOURNAL-LOCKED for the statuses that are not problems.
+             * @example LEDGER-09
+             */
+            code: string;
+            /**
+             * @description What is wrong, or what it means.
+             * @example the debits and the credits differ by 100.00 SGD
+             */
+            detail: string;
+            /**
+             * @description The field it is about.
+             * @example lines
+             */
+            field?: string;
+            /**
+             * @description How to fix it.
+             * @example Make the debits equal the credits
+             */
+            fix?: string;
+            /**
+             * @description error (✖): it cannot post until fixed, so it stays a draft with the problem shown; warning (⚠): it posts but is reviewed; ok (✔): ready to post, or posted.
+             * @example error
+             * @enum {string}
+             */
+            severity: "error" | "warning" | "ok";
+            /**
+             * @description The status, in the workbook's words, adapted where the platform removes the cause.
+             * @example Entry does not balance
+             */
+            title: string;
         };
         JournalDraft: {
             /**
@@ -3533,6 +3568,8 @@ export interface components {
             journal: components["schemas"]["Journal"];
         };
         JournalSummary: {
+            /** @description Its statuses in the workbook's priority order (ENG-20, ENG-21; rev 0.57): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month); none for a reversed one. */
+            checks: components["schemas"]["JournalCheck"][];
             /**
              * Format: date
              * @description The date it belongs to.
