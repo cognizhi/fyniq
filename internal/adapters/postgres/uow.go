@@ -424,6 +424,43 @@ func (r documents) Revise(ctx context.Context, id uuid.UUID, payload []byte) (st
 		Number: str(cur.Number), SavedBy: by, PostedBy: str(cur.PostedBy), PostedAt: cur.PostedAt}, nil
 }
 
+func (r documents) Edit(ctx context.Context, id uuid.UUID, payload []byte, preparer string) (storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Document{}, err
+	}
+	cur, err := r.u.q.LockDocument(ctx, id)
+	if err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	next, by, at := cur.CurrentVersion+1, r.u.actor(ctx), r.u.store.clock.Now()
+	saver := preparer
+	if saver == "" {
+		saver = by
+	}
+	if err := r.u.q.InsertDocumentVersion(ctx, sqlcdb.InsertDocumentVersionParams{DocumentID: id, Version: next, Payload: payload, CreatedBy: &saver}); err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	if err := r.u.q.EditDocument(ctx, sqlcdb.EditDocumentParams{ID: id, Version: next, PostedBy: by, PostedAt: at}); err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	before, err := jsonValue(cur.Payload)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	after, err := jsonValue(payload)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	v := int(next)
+	if err := r.u.event(ctx, "document.edited", "document", id, &v, map[string][2]any{
+		"version": {cur.CurrentVersion, next}, "payload": {before, after}, "saved_by": {str(cur.CreatedBy), saver},
+		"posted_by": {str(cur.PostedBy), by}}); err != nil {
+		return storage.Document{}, err
+	}
+	return storage.Document{ID: id, Type: storage.DocumentType(cur.Type), Status: storage.DocumentStatus(cur.Status), Version: v, Payload: payload,
+		Number: str(cur.Number), SavedBy: saver, PostedBy: by, PostedAt: &at}, nil
+}
+
 func (r documents) Page(ctx context.Context, f storage.DocumentFilter) ([]storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

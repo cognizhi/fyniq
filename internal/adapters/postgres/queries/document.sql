@@ -8,6 +8,13 @@ INSERT INTO fyniq.document_version (document_id, version, payload, created_by) V
 -- A new version becomes the current one; document_guard refuses going back.
 UPDATE fyniq.document SET current_version = sqlc.arg(version) WHERE id = sqlc.arg(id);
 
+-- name: EditDocument :exec
+-- An edit of a posted document (FR-GL-12): its next version becomes current with who posted the edit and when, in one
+-- statement (document_guard, FY053); document_edit_posted checks the reversal and the new entry at commit (FY055).
+UPDATE fyniq.document
+SET current_version = sqlc.arg(version), posted_by = sqlc.arg(posted_by)::text, posted_at = sqlc.arg(posted_at)::timestamptz
+WHERE id = sqlc.arg(id);
+
 -- name: GetDocument :one
 SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
 FROM fyniq.document d

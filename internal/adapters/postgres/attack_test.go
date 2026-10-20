@@ -787,7 +787,8 @@ func TestAttackDocumentVersionsAndStatusesCannotBeRewound(t *testing.T) {
 		{"fyniq_api", "UPDATE fyniq.document SET status = 'draft'", "FY051"},
 		{"fyniq_api", "UPDATE fyniq.document SET type = 'invoice'", "42501"},
 		{"fyniq_migrator", "UPDATE fyniq.document SET type = 'journal', created_at = now() - interval '1 day'", "FY050"},
-		{"fyniq_api", "UPDATE fyniq.document SET current_version = 2", "23503"},
+		// A posted document's version moves only as an edit, which names who posted it (rev 0.54).
+		{"fyniq_api", "UPDATE fyniq.document SET current_version = 2", "FY053"},
 		{"fyniq_ai", "INSERT INTO fyniq.document (type) VALUES ('journal')", "42501"},
 	} {
 		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
@@ -834,6 +835,57 @@ func TestAttackDocumentActorsAreRecordedOnce(t *testing.T) {
 		{"fyniq_api", "UPDATE fyniq.document SET posted_by = 'user:early', posted_at = now() WHERE id = '" + d + "'", "FY053"},
 		{"fyniq_migrator", "UPDATE fyniq.document SET posted_by = NULL, posted_at = NULL WHERE id = '" + p + "'", "FY053"},
 		{"fyniq_api", "UPDATE fyniq.document_version SET created_by = 'user:x'", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.role+": "+c.stmt, err, c.state)
+	}
+}
+
+// An edit of a posted document moves it to its next version only with who posted the edit, and only with the reversal
+// of the entry it had and the entry of the new version in the same transaction; a reversed document never changes
+// (FR-GL-12, rev 0.54).
+// req: FR-GL-12
+// req: ledger/posting-rules Edits of posted documents
+func TestAttackAnEditReversesAndPostsTogether(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "attacker-test"}})
+	b := books(t, "Attack edits Pte Ltd")
+	st := store(t, "fyniq_api")
+	var posted, reversed storage.Document
+	if err := st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		for _, d := range []*storage.Document{&posted, &reversed} {
+			if *d, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"lines":[]}`)}); err != nil {
+				return err
+			}
+			if err = u.Documents().SetStatus(ctx, d.ID, storage.DocumentPosted); err != nil {
+				return err
+			}
+		}
+		return u.Documents().SetStatus(ctx, reversed.ID, storage.DocumentReversed)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// Through the port: an edit with neither posting is refused at commit.
+	err := st.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Documents().Edit(ctx, posted.ID, []byte(`{"lines":[]}`), "")
+		return err
+	})
+	if storage.CodeOf(err) != storage.CodeDocumentEdit {
+		t.Errorf("an edit without its postings: %v", err)
+	}
+	p, r := posted.ID.String(), reversed.ID.String()
+	version := func(id string) string {
+		return "INSERT INTO fyniq.document_version (document_id, version, payload, created_by) VALUES ('" + id + "', 2, '{}', 'user:x'); "
+	}
+	for _, c := range []struct{ role, stmt, state string }{
+		// The version moves without who posted the edit.
+		{"fyniq_api", version(p) + "UPDATE fyniq.document SET current_version = 2 WHERE id = '" + p + "'", "FY053"},
+		// With who posted it, but with no reversal and no entry of the new version (checked now, before the audit check
+		// at commit).
+		{"fyniq_api", "SET CONSTRAINTS fyniq.document_edit_posted IMMEDIATE; " + version(p) +
+			"UPDATE fyniq.document SET current_version = 2, posted_by = 'user:x', posted_at = now() WHERE id = '" + p + "'", "FY055"},
+		// A reversed document never changes.
+		{"fyniq_api", version(r) + "UPDATE fyniq.document SET current_version = 2 WHERE id = '" + r + "'", "FY055"},
 	} {
 		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
 		wantState(t, c.role+": "+c.stmt, err, c.state)

@@ -39,6 +39,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/journals` (createJournal): Save a draft journal
 - `GET /v1/journals/{journal_id}` (getJournal): Get a journal
 - `PUT /v1/journals/{journal_id}` (replaceJournal): Change a draft journal
+- `POST /v1/journals/{journal_id}/edit` (editJournal): Edit a posted journal
+- `POST /v1/journals/{journal_id}/edit-approval` (requestJournalEdit): Ask for approval to edit a posted journal
 - `GET /v1/journals/{journal_id}/evidence` (listJournalEvidence): List a journal's evidence
 - `POST /v1/journals/{journal_id}/evidence` (addJournalEvidence): Attach evidence to a journal
 - `GET /v1/journals/{journal_id}/evidence/{evidence_id}` (getJournalEvidence): Get a journal's evidence file

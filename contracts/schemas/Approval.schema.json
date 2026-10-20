@@ -101,7 +101,8 @@
         "team_mode.change",
         "period.reopen",
         "journal.post",
-        "journal.reverse"
+        "journal.reverse",
+        "journal.edit"
       ],
       "examples": [
         "organisation_setting.change"
