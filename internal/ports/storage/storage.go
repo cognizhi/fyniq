@@ -49,6 +49,7 @@ type UnitOfWork interface {
 	UpdateOrganisation(ctx context.Context, version int, p OrganisationProfile) (Organisation, error)
 	Accounts() Accounts
 	Periods() Periods
+	Closes() Closes
 	Documents() Documents
 	Ledger() Ledger
 	Balances() Balances
@@ -152,6 +153,9 @@ type Ledger interface {
 	ByIdentity(ctx context.Context, postingIdentity string) (Entry, error)
 	// Revision is the organisation's current ledger revision.
 	Revision(ctx context.Context) (int64, error)
+	// Lock takes the ledger lock (ENG-47 step 2) until commit, and returns the current revision: no entry posts
+	// meanwhile.
+	Lock(ctx context.Context) (int64, error)
 }
 
 // Balances is the materialised balances cache (INV-08).
@@ -444,6 +448,7 @@ const (
 	CodeDocument       = "STORAGE-DOC-01"        // a document's type cannot change, or its version go back
 	CodeDocumentStatus = "STORAGE-DOC-02"        // a document cannot move to that status
 	CodeDocumentActor  = "STORAGE-DOC-03"        // a version or a posting names no actor, or who posted it changed
+	CodeClose          = "STORAGE-CLOSE-01"      // a close is attested by the one who ran its checks, or on checks not clean or of another period; or a close record changed
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

@@ -51,7 +51,7 @@ func (u *unitOfWork) actor(ctx context.Context) string {
 	if from := storage.AuditFrom(ctx); from.Actor != nil {
 		a = *from.Actor
 	}
-	return a.Type + ":" + a.ID
+	return a.String()
 }
 
 // flush writes the queued events, in order, as the last statements before commit.

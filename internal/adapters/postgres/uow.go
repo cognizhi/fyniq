@@ -168,6 +168,7 @@ func dayOf(t *time.Time) string {
 
 func (u *unitOfWork) Accounts() storage.Accounts   { return accounts{u} }
 func (u *unitOfWork) Periods() storage.Periods     { return periods{u} }
+func (u *unitOfWork) Closes() storage.Closes       { return closes{u} }
 func (u *unitOfWork) Documents() storage.Documents { return documents{u} }
 func (u *unitOfWork) Ledger() storage.Ledger       { return ledger{u} }
 func (u *unitOfWork) Balances() storage.Balances   { return balances{u} }
@@ -714,6 +715,14 @@ func (r ledger) ByIdentity(ctx context.Context, postingIdentity string) (storage
 		return storage.Entry{}, mapError(err)
 	}
 	return r.Entry(ctx, id)
+}
+
+func (r ledger) Lock(ctx context.Context) (int64, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	rev, err := r.u.q.LockLedger(ctx)
+	return rev, mapError(err)
 }
 
 func (r ledger) Revision(ctx context.Context) (int64, error) {

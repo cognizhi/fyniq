@@ -44,7 +44,9 @@ func TestJournalListDraftVersionsAndWhoPrepared(t *testing.T) {
 		}
 		return out
 	}
-	list := func(query string) []map[string]any { return items(e.call(http.MethodGet, "/v1/journals"+query, ahkow, nil)) }
+	list := func(query string) []map[string]any {
+		return items(e.call(http.MethodGet, "/v1/journals"+query, ahkow, nil))
+	}
 
 	rent := save(ahkow, draft("2026-10-20", "October rent", "1200.00"))
 	if rent.str("prepared_by", "name") != "Ah Kow" || rent.str("prepared_by", "kind") != "user" || rent.Body["posted_by"] != nil {

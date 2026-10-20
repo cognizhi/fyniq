@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks_id": {
+      "description": "The run of the checks attested: the latest, clean and current, run by someone else.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4da0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "statement": {
+      "description": "What the attester attests, in their words or the page's.",
+      "examples": [
+        "I have reviewed October 2026's close and its checks, and the books for the month are complete as far as I know."
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "checks_id",
+    "statement"
+  ],
+  "title": "CloseRequest",
+  "type": "object"
+}

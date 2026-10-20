@@ -197,6 +197,11 @@ Source: PRD-001 §6.4
 - **WHEN** the founder who prepared the close tries to sign its attestation
 - **THEN** the attestation is refused
 
+#### Scenario: The database refuses it, in every mode (rev 0.50)
+- **WHEN** the one who ran the close checks attests them, in any team mode
+- **THEN** the database refuses the attestation
+- **AND** the attester steps up first
+
 ### Requirement: FM-5 Independent bank reconciliation evidence
 In Founder mode, the statement balances of a bank reconciliation SHALL come from the bank feed or an uploaded statement, never typed.
 

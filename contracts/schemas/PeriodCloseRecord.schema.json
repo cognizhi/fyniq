@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attested_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-03T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "attested_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who attested and closed it: never the one who ran the checks (FM-4)."
+    },
+    "checks_id": {
+      "description": "The run of the checks it rests on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4da0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "closed_revision": {
+      "description": "The ledger revision at the close (AUD-04).",
+      "examples": [
+        412
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The close's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "snapshot_sha256": {
+      "description": "The SHA-256 of the trial balance at the period end, as canonical JSON (AUD-04).",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "statement": {
+      "description": "What they attested.",
+      "examples": [
+        "I have reviewed October 2026's close and its checks."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "checks_id",
+    "attested_at",
+    "statement",
+    "closed_revision",
+    "snapshot_sha256"
+  ],
+  "title": "PeriodCloseRecord",
+  "type": "object"
+}

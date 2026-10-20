@@ -74,6 +74,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PATCH /v1/organisation/settings/{key}` (updateSetting): Change an organisation setting
 - `GET /v1/periods` (listPeriods): List the periods
 - `GET /v1/periods/{period_id}` (getPeriod): Get a period
+- `GET /v1/periods/{period_id}/close` (getPeriodClose): Get a period's close
+- `POST /v1/periods/{period_id}/close` (closePeriod): Attest and close a period
+- `POST /v1/periods/{period_id}/close-checks` (runCloseChecks): Run a period's close checks
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
 - `GET /v1/review-log` (listReviewLog): List the review log
 - `POST /v1/review-log/reviews` (reviewLogEntries): Review high-risk actions

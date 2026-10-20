@@ -545,6 +545,42 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPost, "/v1/opening-balances/post", e.principal(p), nil, "If-Match", "*")
 		return r, func() bool { return matrixOpeningStatus(e, b.Org) == storage.DocumentDraft }
 	},
+	"getPeriodClose": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/periods/"+e.books.Oct.ID.String()+"/close", tok, nil), nil
+	},
+	"runCloseChecks": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/periods/"+e.books.Nov.ID.String()+"/close-checks", tok, nil, "If-Match", "*"), nil
+	},
+	// A close cannot be undone here, so each call closes October of an organisation of its own, on checks another person
+	// ran, as a person stepped up now.
+	"closePeriod": func(e *env, tok string) (response, func() bool) {
+		ctx := context.Background()
+		b := porttest.NewBooks(e.t, e.store, "Matrix close "+uuid.NewString()[:8])
+		c, err := e.api.closing.RunChecks(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "matrix-preparer"}}), b.Org, b.Oct.ID)
+		if err != nil {
+			panic(err)
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation != uuid.Nil {
+			p.Organisation = b.Org
+		}
+		if p.Class == authn.ClassUser {
+			p.UserID, p.StepUpAt = uuid.New(), e.clock.Now()
+		}
+		r := e.call(http.MethodPost, "/v1/periods/"+b.Oct.ID.String()+"/close", e.principal(p), map[string]any{"checks_id": c.ID.String(),
+			"statement": "Reviewed."}, "If-Match", "*")
+		return r, func() bool {
+			var open bool
+			_ = e.store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				x, err := u.Periods().Get(ctx, b.Oct.ID)
+				open = x.Status == storage.PeriodOpen
+				return err
+			})
+			return open
+		}
+	},
 	"listJournals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil
 	},

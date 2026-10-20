@@ -62,6 +62,13 @@ func Trial(ctx context.Context, u storage.UnitOfWork, base money.Currency, perio
 	return tb, nil
 }
 
+// Differences counts the balances that differ from a recomputation from the journal lines (INV-08), in u's
+// organisation: 0 when the cache agrees with the ledger.
+func Differences(ctx context.Context, u storage.UnitOfWork) (int, error) {
+	d, err := u.Balances().Differences(ctx)
+	return len(d), err
+}
+
 // ActionCheckFailed is the audit action of a control check that failed (PRD-001 Appendix F).
 const ActionCheckFailed = "control.check.failed"
 

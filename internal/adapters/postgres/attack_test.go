@@ -383,6 +383,64 @@ func TestAttackOpeningBalancesAreOneAndOnlyTheyReachShareCapital(t *testing.T) {
 	wantState(t, "a second opening balances row", err, "23505")
 }
 
+// The close's records never change, and the database refuses a close attested by the one who ran its checks, on checks
+// that are not clean or not of that period, before them, or with a snapshot whose hash is not its own (FM-4, AUD-04).
+// req: FM-4
+// req: AUD-04
+// req: FR-GL-07
+func TestAttackTheCloseIsAttestedByAnotherOnItsOwnChecks(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack the close Pte Ltd")
+	st := store(t, "fyniq_api")
+	as := func(who string) context.Context {
+		return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: who}})
+	}
+	var clean, dirty storage.CloseCheck
+	if err := st.Do(as("preparer"), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		if clean, err = u.Closes().RecordCheck(ctx, storage.NewCloseCheck{PeriodID: b.Oct.ID, Result: []byte(`[]`), Clean: true}); err != nil {
+			return err
+		}
+		dirty, err = u.Closes().RecordCheck(ctx, storage.NewCloseCheck{PeriodID: b.Oct.ID, Result: []byte(`[]`), Clean: false})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if clean.CheckedBy != "user:preparer" {
+		t.Fatalf("who ran the checks: %q", clean.CheckedBy)
+	}
+	insert := func(period, check uuid.UUID, by, at, snapshot, hash string) string {
+		return fmt.Sprintf(`INSERT INTO fyniq.period_close (period_id, check_id, attested_by, attested_at, statement, closed_revision, snapshot, snapshot_hash)
+VALUES ('%s', '%s', '%s', %s, 'Reviewed.', 0, '%s', %s)`, period, check, by, at, snapshot, hash)
+	}
+	good := "sha256(convert_to('{}', 'UTF8'))"
+	for _, c := range []struct{ role, what, stmt, state string }{
+		{"fyniq_api", "attested by the one who ran the checks", insert(b.Oct.ID, clean.ID, "user:preparer", "now()", "{}", good), "FY153"},
+		{"fyniq_api", "on checks that refused the close", insert(b.Oct.ID, dirty.ID, "user:attester", "now()", "{}", good), "FY153"},
+		{"fyniq_api", "on another period's checks", insert(b.Nov.ID, clean.ID, "user:attester", "now()", "{}", good), "FY153"},
+		{"fyniq_api", "before the checks ran", insert(b.Oct.ID, clean.ID, "user:attester", "now() - interval '1 day'", "{}", good), "FY153"},
+		{"fyniq_api", "a snapshot whose hash is not its own", insert(b.Oct.ID, clean.ID, "user:attester", "now()", "{}", "sha256('other')"), "23514"},
+		{"fyniq_api", "checks that are not a list", "INSERT INTO fyniq.period_close_check (period_id, checked_by, checked_at, ledger_revision, result, clean) VALUES ('" +
+			b.Oct.ID.String() + "', 'user:x', now(), 0, '{}', true)", "23514"},
+		{"fyniq_migrator", "a run of the checks rewritten", "UPDATE fyniq.period_close_check SET clean = true", "FY152"},
+		{"fyniq_migrator", "a run of the checks removed", "DELETE FROM fyniq.period_close_check", "FY152"},
+		{"fyniq_api", "a run of the checks rewritten by the API", "UPDATE fyniq.period_close_check SET clean = true", "42501"},
+		{"fyniq_ai", "checks run by the AI", "INSERT INTO fyniq.period_close_check (period_id, checked_by, checked_at, ledger_revision, result, clean) VALUES ('" +
+			b.Oct.ID.String() + "', 'ai:x', now(), 0, '[]', true)", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.role+": "+c.what, err, c.state)
+	}
+	// Another organisation sees none of it.
+	other := books(t, "Attack the close B Pte Ltd")
+	if err := st.Do(ctx, other.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Closes().Check(ctx, clean.ID)
+		return err
+	}); !errors.Is(err, ports.ErrNotFound) {
+		t.Errorf("another organisation reads the checks: %v", err)
+	}
+}
+
 // nanAttacks try NaN and an out-of-range value in each numeric column; TestEveryNumericColumn…
 // fails when a numeric column has no entry here.
 var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) error{

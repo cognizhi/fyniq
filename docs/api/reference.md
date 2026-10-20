@@ -1149,6 +1149,81 @@ A period with its status and its ETag. Read-only; no side effects.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
 
+### `GET /v1/periods/{period_id}/close`
+
+**Get a period's close** (`getPeriodClose`)
+
+A period's close (FR-GL-07, FM-4): while it is open, the latest run of its close checks, with who ran them, the ledger revision they saw and whether an entry dated in or before the period posted since (stale); once closed, who attested it, the revision at the close and the SHA-256 of its trial-balance snapshot (AUD-04). With the period's ETag. Read-only; no side effects.
+
+- **Permission:** View on Period close / reopen
+- **Parameters:**
+  - `period_id` (path, required): The period's ID.
+- **Responses:**
+  - `200` OK [`PeriodCloseState`](../../contracts/schemas/PeriodCloseState.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/periods/{period_id}/close`
+
+**Attest and close a period** (`closePeriod`)
+
+Attests a period's close on its latest checks and closes it, in one transaction (FR-GL-07, FR-GL-08, FM-4; PRD-001 rev 0.50, provisional). The attester is a person who passed step-up in the last 5 minutes and did not run the checks, in every team mode; the database refuses otherwise (FY153). The checks must be clean and of this period, every earlier period closed, and, under the ledger lock, no entry dated on or before the period end may have posted after the checks ran: a back-dated posting and the close never both win (ENG-47, G4-053). Side effects: the period's hard lock, which the database enforces on every posting (INV-03); the close record with the trial balance at the period end as canonical JSON and its SHA-256 (AUD-04); audit events. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and closes nothing.
+
+- **Permission:** Approve on Period close / reopen. A person stepped up in the last 5 minutes, who did not run the checks (FM-4).
+- **Parameters:**
+  - `period_id` (path, required): The period's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CloseRequest`](../../contracts/schemas/CloseRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PeriodCloseState`](../../contracts/schemas/PeriodCloseState.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `CLOSE-05` Another founder attests the close.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-02` The checks are stale; `CLOSE-03` An earlier period is open; `CLOSE-04` The checks refused the close; `CLOSE-06` Not the checks of this period; `STORAGE-CLOSE-01` The close is not attested that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-03` The period is already closed, or not closed.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLOSE-01`, `CLOSE-02`, `CLOSE-03`, `CLOSE-04`, `CLOSE-05`, `CLOSE-06`, `STORAGE-CLOSE-01`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-03`, `STORAGE-RETRY-01`
+
+### `POST /v1/periods/{period_id}/close-checks`
+
+**Run a period's close checks** (`runCloseChecks`)
+
+Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
+
+- **Permission:** Create on Period close / reopen
+- **Parameters:**
+  - `period_id` (path, required): The period's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PeriodCloseState`](../../contracts/schemas/PeriodCloseState.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLOSE-05` Another founder attests the close.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-02` The checks are stale; `CLOSE-03` An earlier period is open; `CLOSE-04` The checks refused the close; `CLOSE-06` Not the checks of this period; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLOSE-01`, `CLOSE-02`, `CLOSE-03`, `CLOSE-04`, `CLOSE-05`, `CLOSE-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/periods:open-year`
 
 **Open the next financial year** (`openFinancialYear`)
