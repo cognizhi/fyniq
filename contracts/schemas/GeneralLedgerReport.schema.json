@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "items": {
+        "$ref": "AccountLedger.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency the balances are in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision the report reads (ENG-46): the same revision gives the same report.",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "to": {
+      "description": "The last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "currency",
+    "ledger_revision",
+    "accounts"
+  ],
+  "title": "GeneralLedgerReport",
+  "type": "object"
+}

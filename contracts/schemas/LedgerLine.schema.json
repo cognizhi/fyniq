@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "In the line's currency: debit positive, credit negative."
+    },
+    "balance": {
+      "$ref": "Money.schema.json",
+      "description": "The account's running balance in the base currency after this line."
+    },
+    "base": {
+      "$ref": "Money.schema.json",
+      "description": "In the base currency, as posted."
+    },
+    "description": {
+      "description": "The line's description.",
+      "examples": [
+        "October office rent"
+      ],
+      "type": "string"
+    },
+    "entry_id": {
+      "description": "Its entry.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision its entry made (ENG-46).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "memo": {
+      "description": "The entry's memo.",
+      "examples": [
+        "October rent accrual"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "The source document's number, once it has one.",
+      "examples": [
+        "JNL-0042"
+      ],
+      "type": "string"
+    },
+    "posting_date": {
+      "description": "The date it posted on.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reversal": {
+      "description": "true for a line of a reversing entry.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "source_id": {
+      "description": "The source document's ID, to open it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "type": "string"
+    },
+    "source_type": {
+      "description": "Where it comes from: manual_journal or opening_balance today; invoices, bills and the rest as they arrive (ENG-03).",
+      "examples": [
+        "manual_journal"
+      ],
+      "type": "string"
+    },
+    "source_version": {
+      "description": "The version of the source that posted.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "posting_date",
+    "entry_id",
+    "ledger_revision",
+    "source_type",
+    "source_id",
+    "source_version",
+    "reversal",
+    "amount",
+    "base",
+    "balance"
+  ],
+  "title": "LedgerLine",
+  "type": "object"
+}

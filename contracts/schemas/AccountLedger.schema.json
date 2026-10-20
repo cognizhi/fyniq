@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "closing": {
+      "$ref": "Money.schema.json",
+      "description": "Its balance at the end of the range."
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "6110"
+      ],
+      "type": "string"
+    },
+    "credits": {
+      "$ref": "Money.schema.json",
+      "description": "The total of its credit lines in the range, as a positive amount."
+    },
+    "debits": {
+      "$ref": "Money.schema.json",
+      "description": "The total of its debit lines in the range."
+    },
+    "lines": {
+      "description": "Its lines in the range, in posting order: date, then revision, then line.",
+      "items": {
+        "$ref": "LedgerLine.schema.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Rent"
+      ],
+      "type": "string"
+    },
+    "opening": {
+      "$ref": "Money.schema.json",
+      "description": "Its balance before the range, in the base currency: debit positive."
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "opening",
+    "debits",
+    "credits",
+    "closing",
+    "lines"
+  ],
+  "title": "AccountLedger",
+  "type": "object"
+}

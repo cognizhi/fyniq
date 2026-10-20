@@ -717,6 +717,25 @@ func (r ledger) ByIdentity(ctx context.Context, postingIdentity string) (storage
 	return r.Entry(ctx, id)
 }
 
+func (r ledger) AccountLines(ctx context.Context, account uuid.UUID, from, to time.Time, limit int) ([]storage.AccountLine, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AccountLines(ctx, sqlcdb.AccountLinesParams{AccountID: account, DateFrom: dateOf(from), DateTo: dateOf(to),
+		RowLimit: int32(min(max(limit, 1), 100000))}) // 1 to 100,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AccountLine, len(rows))
+	for i, x := range rows {
+		out[i] = storage.AccountLine{EntryID: x.EntryID, LedgerRevision: x.LedgerRevision, PostingDate: x.PostingDate,
+			Source: storage.Source{Type: x.SourceType, ID: x.SourceID, Version: int(x.SourceVersion)}, Memo: str(x.Memo), ReversesEntryID: x.ReversesEntryID,
+			LineNo: int(x.LineNo), Currency: x.Currency, Amount: storage.Decimal(x.Amount), BaseAmount: storage.Decimal(x.BaseAmount),
+			Description: str(x.Description), Number: str(x.Number)}
+	}
+	return out, nil
+}
+
 func (r ledger) Lock(ctx context.Context) (int64, error) {
 	if err := r.u.check(); err != nil {
 		return 0, err

@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -112,4 +113,128 @@ func VerifyAll(ctx context.Context, store storage.Store) ([]Verification, error)
 		return out, fmt.Errorf("%d organisation(s) whose balances differ from their journal lines (INV-08)", failed)
 	}
 	return out, nil
+}
+
+// MaxLedgerLines is how many lines of one account the general ledger report shows at once: beyond it, a narrower range
+// is asked for, until the asynchronous export of p1-reports (PRD-001 rev 0.52, provisional).
+const MaxLedgerLines = 5000
+
+// CodeTooManyLines refuses a general ledger report of more than MaxLedgerLines lines for an account.
+const CodeTooManyLines = "REPORT-01"
+
+// TooMany is the refusal of a range with more lines than one report shows.
+type TooMany struct {
+	AccountID uuid.UUID
+}
+
+func (e *TooMany) Error() string {
+	return fmt.Sprintf("%s: account %s has more than %d lines in the range", CodeTooManyLines, e.AccountID, MaxLedgerLines)
+}
+
+// LedgerLine is one line of the general ledger report: what posted, from where, and the account's balance after it.
+type LedgerLine struct {
+	storage.AccountLine
+	Amount  money.Money // in the line's currency
+	Base    money.Money
+	Balance money.Money // the running balance in the base currency
+}
+
+// AccountLedger is one account's general ledger for a range: its balance before the range, each line with the running
+// balance, the debits and credits, and its balance at the end.
+type AccountLedger struct {
+	AccountID uuid.UUID
+	Opening   money.Money
+	Lines     []LedgerLine
+	Debits    money.Money
+	Credits   money.Money // as a positive amount
+	Closing   money.Money
+}
+
+// GeneralLedger is the general ledger report of an account over from..to, in the base currency (FR-GL-11): the
+// balance before from, then each line dated in the range in posting order with the running balance.
+func GeneralLedger(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, from, to time.Time) (AccountLedger, error) {
+	opening, err := before(ctx, u, base, account, from)
+	if err != nil {
+		return AccountLedger{}, err
+	}
+	lines, err := u.Ledger().AccountLines(ctx, account, from, to, MaxLedgerLines+1)
+	if err != nil {
+		return AccountLedger{}, err
+	}
+	if len(lines) > MaxLedgerLines {
+		return AccountLedger{}, &TooMany{AccountID: account}
+	}
+	out := AccountLedger{AccountID: account, Opening: opening, Debits: money.Zero(base), Credits: money.Zero(base), Closing: opening,
+		Lines: make([]LedgerLine, 0, len(lines))}
+	for _, l := range lines {
+		cur, err := money.Lookup(l.Currency)
+		if err != nil {
+			return AccountLedger{}, err
+		}
+		amount, err := money.ParseStored(string(l.Amount), cur)
+		if err != nil {
+			return AccountLedger{}, err
+		}
+		b, err := money.ParseStored(string(l.BaseAmount), base)
+		if err != nil {
+			return AccountLedger{}, err
+		}
+		if out.Closing, err = out.Closing.Add(b); err != nil {
+			return AccountLedger{}, err
+		}
+		if b.Sign() > 0 {
+			out.Debits, err = out.Debits.Add(b)
+		} else {
+			out.Credits, err = out.Credits.Add(b.Neg())
+		}
+		if err != nil {
+			return AccountLedger{}, err
+		}
+		out.Lines = append(out.Lines, LedgerLine{AccountLine: l, Amount: amount, Base: b, Balance: out.Closing})
+	}
+	return out, nil
+}
+
+// before is an account's base-currency balance before a day: the cached balances of every period that ends before it
+// (INV-08), and the lines of the period that holds it dated before it.
+func before(ctx context.Context, u storage.UnitOfWork, base money.Currency, account uuid.UUID, day time.Time) (money.Money, error) {
+	total := money.Zero(base)
+	periods, err := u.Periods().List(ctx)
+	if err != nil {
+		return total, err
+	}
+	add := func(s storage.Decimal) error {
+		m, err := money.ParseStored(string(s), base)
+		if err == nil {
+			total, err = total.Add(m)
+		}
+		return err
+	}
+	for _, p := range periods {
+		switch {
+		case p.EndsOn.Before(day):
+			rows, err := u.Balances().ForPeriod(ctx, p.ID)
+			if err != nil {
+				return total, err
+			}
+			for _, r := range rows {
+				if r.AccountID == account {
+					if err := add(r.BaseAmount); err != nil {
+						return total, err
+					}
+				}
+			}
+		case p.StartsOn.Before(day): // the period holds the day: its lines before it
+			lines, err := u.Ledger().AccountLines(ctx, account, p.StartsOn, day.AddDate(0, 0, -1), 100000)
+			if err != nil {
+				return total, err
+			}
+			for _, l := range lines {
+				if err := add(l.BaseAmount); err != nil {
+					return total, err
+				}
+			}
+		}
+	}
+	return total, nil
 }

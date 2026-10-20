@@ -1281,6 +1281,31 @@ Creates the periods of the next financial year: the first year runs from the boo
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PERIOD-01`, `PERIOD-02`, `PERIOD-03`, `STORAGE-LOCK-01`, `STORAGE-PERIOD-02`, `STORAGE-RETRY-01`
 
+## Reports
+
+Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive.
+
+### `GET /v1/reports/general-ledger`
+
+**Get the general ledger report** (`getGeneralLedger`)
+
+The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one ledger revision. At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack does not reach every line. Read-only; no side effects.
+
+- **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+- **Parameters:**
+  - `account_id` (query): The accounts, one to 20, each as its own account_id parameter.
+  - `from` (query, required): The first day.
+  - `to` (query, required): The last day.
+- **Responses:**
+  - `200` OK [`GeneralLedgerReport`](../../contracts/schemas/GeneralLedgerReport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `REPORT-01`
+
 ## Contacts
 
 Customers and vendors (FR-CT-01).

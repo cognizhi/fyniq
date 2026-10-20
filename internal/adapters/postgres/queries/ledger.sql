@@ -34,3 +34,15 @@ SELECT revision FROM fyniq.ledger_revision;
 
 -- name: GetEntryIDByIdentity :one
 SELECT id FROM fyniq.journal_entry WHERE posting_identity = $1;
+
+-- name: AccountLines :many
+-- An account's lines dated from..to, in posting order: date, then revision, then line (FR-GL-11), with their entry's
+-- provenance and the source document's number when it has one.
+SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
+       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number
+FROM fyniq.journal_line l
+JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
+LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
+WHERE l.account_id = sqlc.arg(account_id) AND e.posting_date BETWEEN sqlc.arg(date_from) AND sqlc.arg(date_to)
+ORDER BY e.posting_date, e.ledger_revision, l.line_no
+LIMIT sqlc.arg(row_limit);

@@ -156,6 +156,25 @@ type Ledger interface {
 	// Lock takes the ledger lock (ENG-47 step 2) until commit, and returns the current revision: no entry posts
 	// meanwhile.
 	Lock(ctx context.Context) (int64, error)
+	// AccountLines are an account's lines dated from..to, in posting order, at most limit (FR-GL-11). Only the
+	// balance service reads them (ENG-04).
+	AccountLines(ctx context.Context, account uuid.UUID, from, to time.Time, limit int) ([]AccountLine, error)
+}
+
+// AccountLine is one posted line of an account, with its entry's provenance (ENG-03) and its source's number.
+type AccountLine struct {
+	EntryID         uuid.UUID
+	LedgerRevision  int64
+	PostingDate     time.Time
+	Source          Source
+	Memo            string
+	ReversesEntryID *uuid.UUID
+	LineNo          int
+	Currency        string
+	Amount          Decimal
+	BaseAmount      Decimal
+	Description     string
+	Number          string
 }
 
 // Balances is the materialised balances cache (INV-08).

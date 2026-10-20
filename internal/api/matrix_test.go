@@ -616,6 +616,9 @@ var matrixCalls = map[string]matrixCall{
 			return n == 0
 		}
 	},
+	"getGeneralLedger": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/reports/general-ledger?account_id="+e.books.Bank.ID.String()+"&from=2026-10-01&to=2026-11-30", tok, nil), nil
+	},
 	"listJournals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil
 	},
@@ -720,6 +723,9 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		t.Fatalf("Appendix D has no row %q", p.Capability)
 	}
 	allowed, masked = authztest.Allows(authztest.ParseCell(row[col]), p.Need)
+	if allowed && p.Unqualified && authztest.ParseCell(row[col]).Qualifier != "" { // such as Reports' "V sales" (rev 0.52)
+		return false, false
+	}
 	if allowed && p.Parent != "" { // and the record it is under must be visible, unmasked
 		parent, ok := rows[string(p.Parent)]
 		if !ok {
