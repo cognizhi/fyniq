@@ -11,6 +11,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { listAccounts } from "./data";
 
 type Account = components["schemas"]["Account"];
 type AccountType = Account["type"];
@@ -28,18 +29,6 @@ const indent = ["", "ps-4", "ps-8", "ps-12", "ps-16"]; // a group's accounts sit
 // Who adds and changes accounts: C on "Chart of accounts, dimensions" (Appendix D). The API decides;
 // the page offers the buttons to these roles only.
 const creators = ["accountant", "tax_agent"];
-
-async function listAccounts(): Promise<Account[]> {
-  const out: Account[] = [];
-  let cursor: string | undefined;
-  do {
-    const { data, error } = await api.GET("/v1/accounts", { params: { query: { page_size: 500, cursor } } });
-    if (error) throw error;
-    out.push(...(data.items ?? []));
-    cursor = data.next_cursor;
-  } while (cursor);
-  return out;
-}
 
 // ordered puts each account under its group, depth first, by code, and says how deep it sits.
 export function ordered(accounts: Account[]): { a: Account; depth: number }[] {

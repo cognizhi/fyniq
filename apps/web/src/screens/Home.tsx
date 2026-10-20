@@ -32,6 +32,7 @@ function useCounts() {
         return error || !data ? null : data;
       },
     }),
+    periods: useQuery({ ...opts, queryKey: ["periods", "home"], queryFn: () => count(() => api.GET("/v1/periods", { params: { query: { page_size: 1 } } })) }),
     accounts: useQuery({ ...opts, queryKey: ["accounts", "home"], queryFn: () => count(() => api.GET("/v1/accounts", { params: { query: { page_size: 500 } } })) }),
     money: useQuery({ ...opts, queryKey: ["accounts", "home-money"], queryFn: () => count(() => api.GET("/v1/accounts", { params: { query: { page_size: 500 } } }), (a) => a.money_account && a.active) }),
     contacts: useQuery({ ...opts, queryKey: ["contacts", "home"], queryFn: () => count(() => api.GET("/v1/contacts", { params: { query: { page_size: 1 } } })) }),
@@ -157,6 +158,7 @@ export function Home() {
   const p = c.profile.data;
   add("profile", p, Boolean(p?.legal_name && p.uen), "Enter the company's legal name and UEN", "Documents print them; Settings › Organisation", "/settings/organisation");
   add("year", p, Boolean(p?.books_start), "Set when the books start", "The first day Fyniq keeps the books, and the financial year; Settings › Organisation", "/settings/organisation");
+  add("periods", c.periods.data, (c.periods.data ?? 0) > 0, "Open the first financial year", "Its monthly periods: nothing posts on a date until its year is open", "/accounting/close");
   add("chart", c.accounts.data, (c.accounts.data ?? 0) > 0, "Load the chart of accounts", "Start from the standard Singapore start-up chart", "/accounting/chart-of-accounts");
   add("bank", c.money.data, (c.money.data ?? 0) > 0, "Add the bank accounts", "Each bank, card or cash account as a money account in the chart", "/accounting/chart-of-accounts");
   add("contacts", c.contacts.data, (c.contacts.data ?? 0) > 0, "Add customers and vendors", "Who you invoice, and whose bills you pay", "/contacts");

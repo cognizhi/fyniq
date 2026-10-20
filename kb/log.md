@@ -63,3 +63,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | home.md → home.overview (Home's Waiting for you and Set up the company)
 
 ## [2026-10-20] compile | home.md → home.overview (the roles step on Home's checklist)
+
+## [2026-10-21] compile | docs/user-guide/journals.md, periods-and-close.md (new) and organisation-settings.md (the years fixed once a period is open) → accounting.journals, accounting.periods (new), settings.organisation, settings.change (journal screens and periods page, p1-general-ledger-close)

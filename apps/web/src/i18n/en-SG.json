@@ -170,7 +170,7 @@
     },
     "nav.accounting": {
       "label": "Accounting",
-      "tooltip": "The chart of accounts, and later journals, periods and the close."
+      "tooltip": "Journals, the periods they post in, and the chart of accounts."
     },
     "accounting.chart": {
       "label": "Chart of accounts",
@@ -199,6 +199,42 @@
     "item.add": {
       "label": "New item",
       "tooltip": "Add a product or service with its prices; its code never changes."
+    },
+    "accounting.journals": {
+      "label": "Journals",
+      "tooltip": "Manual journals: prepare, check, post, and reverse a posted one with a reason."
+    },
+    "accounting.journal": {
+      "label": "Journal",
+      "tooltip": "One journal: its lines as entered, who prepared and posted it, and what posting writes."
+    },
+    "journal.new": {
+      "label": "New journal",
+      "tooltip": "Prepare a journal: its date, what it is for and its lines, whose debits equal their credits."
+    },
+    "journal.save": {
+      "label": "Save as a draft",
+      "tooltip": "Keep it as a draft (✎); nothing posts until it is posted."
+    },
+    "journal.check": {
+      "label": "Check",
+      "tooltip": "Run the posting rules without saving anything, and see what posting writes in the base currency."
+    },
+    "journal.post": {
+      "label": "Post",
+      "tooltip": "Post it to the ledger on its date. A posted journal is never edited: it is reversed."
+    },
+    "journal.reverse": {
+      "label": "Reverse",
+      "tooltip": "Post a reversing entry with every line the other way round, on a date you choose, with a reason."
+    },
+    "accounting.periods": {
+      "label": "Periods and close",
+      "tooltip": "The monthly periods of each financial year, open or closed, and opening the next year."
+    },
+    "period.open-year": {
+      "label": "Open the year",
+      "tooltip": "Create the monthly periods of the next financial year, so its journals and documents can post."
     }
   }
 }

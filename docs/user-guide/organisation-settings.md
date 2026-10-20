@@ -28,6 +28,9 @@ The **Profile** at the top of the page is what documents print about the company
 UEN, addresses, contact details, and the bank and PayNow details customers pay to. It also says
 when each financial year starts, when the books start and the company's time zone.
 
+Once the first financial year is open in **Accounting → Periods and close**, when the books start,
+the month the year starts in and the end of the first year no longer change.
+
 1. Select **Edit the profile**.
 2. Change the fields. A field left empty is cleared.
 3. Select **Save the profile**. If someone else saved it meanwhile, Fyniq asks you to reload first.
