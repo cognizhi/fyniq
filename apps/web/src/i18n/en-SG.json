@@ -230,7 +230,7 @@
     },
     "accounting.periods": {
       "label": "Periods and close",
-      "tooltip": "The monthly periods of each financial year, open or closed, and opening the next year."
+      "tooltip": "The monthly periods of each financial year, open or closed; opening the next year and closing a month."
     },
     "period.open-year": {
       "label": "Open the year",
@@ -251,6 +251,18 @@
     "opening.post": {
       "label": "Post",
       "tooltip": "Post the balances at the books start, once. Changing them afterwards needs a second founder."
+    },
+    "accounting.period-close": {
+      "label": "Close a month",
+      "tooltip": "Run the close checks, then another founder attests and closes the month, which then refuses every posting."
+    },
+    "close.run-checks": {
+      "label": "Run the checks",
+      "tooltip": "Check the month can close, recording the ledger as the checks find it. Another founder attests them."
+    },
+    "close.attest": {
+      "label": "Attest and close",
+      "tooltip": "Confirm the month's figures and close it: nothing posts in it afterwards. You cannot attest checks you ran."
     }
   }
 }

@@ -76,8 +76,7 @@ function OpenYear({ year, onClose, onOpened }: { year: Year | null; onClose: () 
 
 // Periods is Accounting › Periods and close (docs/design/screens PeriodClose, its periods; FR-ORG-02, FR-GL-08): the
 // accounting periods by financial year, each open or closed, and opening the next financial year. A posting's period
-// is the month of its date, and nothing posts on a date no open period covers. Closing a month, its checks and the
-// attestation arrive with task 1.2.
+// is the month of its date, and nothing posts on a date no open period covers. Each month opens its close page.
 export function Periods() {
   const { session } = useSignedIn();
   const q = useQuery({ queryKey: ["periods"], queryFn: listPeriods });
@@ -164,7 +163,11 @@ export function Periods() {
                 <tbody>
                   {mine.map((p) => (
                     <tr key={p.id}>
-                      <td>{monthOf(p)}</td>
+                      <td>
+                        <Link to="/accounting/close/$periodId" params={{ periodId: p.id }}>
+                          {monthOf(p)}
+                        </Link>
+                      </td>
                       <td className="fy-from-medium fy-secondary">
                         {date(p.starts_on)} to {date(p.ends_on)}
                       </td>
