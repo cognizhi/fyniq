@@ -39,6 +39,7 @@ const (
 	ObjectPolicy     = "approval_policy"      // an object type's approval policy (FR-APR-09, SOD-8); its key is that object type
 	ObjectPack       = "statutory_pack"       // a statutory pack version the organisation activates (ENG-32, SOD-10); its key is the version's id
 	ObjectTeamMode   = "team_mode"            // the organisation's team mode (§6.4, FR-ADM-04); its key is TeamModeKey
+	ObjectPeriod     = "period"               // a closed accounting period to reopen (FR-GL-08, FM-1); its key is the period's id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -53,6 +54,7 @@ const (
 	OpPolicyChange   = "approval_policy.change"
 	OpPackActivate   = "statutory_pack.activate"
 	OpTeamModeChange = "team_mode.change"
+	OpPeriodReopen   = "period.reopen"
 )
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -71,6 +73,8 @@ var Dependencies = map[string][]string{
 	ObjectPack: {"digest", "effective_from", "effective_to", "activated"},
 	// the team mode's version in force, and the conflicts of §6.3 the members' roles and pending invitations hold
 	ObjectTeamMode: {"mode_version", "conflicts"},
+	// the period's version and status, the close the reopening undoes, and whether a later period is closed
+	ObjectPeriod: {"period_version", "status", "close_id", "later_closed"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -82,6 +86,7 @@ var Rows = map[string]string{
 	ObjectPolicy:     "Approval policies, AI catalogue",
 	ObjectPack:       "Statutory parameters",
 	ObjectTeamMode:   "Users, roles, team mode",
+	ObjectPeriod:     "Period close / reopen",
 }
 
 // The limits of a policy.
@@ -122,6 +127,7 @@ var Policies = map[string]Policy{
 	ObjectPolicy:     {ObjectType: ObjectPolicy, Version: "founder/approval_policy@2026-10-20.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
 	ObjectPack:       {ObjectType: ObjectPack, Version: "founder/statutory_pack@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
 	ObjectTeamMode:   {ObjectType: ObjectTeamMode, Version: "founder/team_mode@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPeriod:     {ObjectType: ObjectPeriod, Version: "founder/period@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

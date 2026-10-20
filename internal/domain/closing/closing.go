@@ -30,6 +30,8 @@ const (
 	CodeNotClean   = "CLOSE-04" // the checks refused the close
 	CodeSelfAttest = "CLOSE-05" // the one who ran the checks cannot attest them (FM-4)
 	CodeWrongCheck = "CLOSE-06" // the checks are of another period
+	CodeNotClosed  = "CLOSE-07" // the period is not closed, so it does not reopen
+	CodeLater      = "CLOSE-08" // a later period is closed: only the latest closed period reopens
 )
 
 // Error is a refusal with a stable code.
@@ -339,4 +341,61 @@ func Read(result []byte) ([]Check, error) {
 	var out []Check
 	err := json.Unmarshal(result, &out)
 	return out, err
+}
+
+// Reopenable says whether a period can reopen now (FR-GL-08; rev 0.51): it is closed, no later period is, and it has a
+// close; it answers that close.
+func Reopenable(ctx context.Context, u storage.UnitOfWork, periodID uuid.UUID) (storage.Period, storage.PeriodClose, error) {
+	p, err := u.Periods().Get(ctx, periodID)
+	if err != nil {
+		return p, storage.PeriodClose{}, err
+	}
+	if p.Status != storage.PeriodClosed {
+		return p, storage.PeriodClose{}, &Error{CodeNotClosed, fmt.Sprintf("the period %s to %s is %s", p.StartsOn.Format(time.DateOnly), p.EndsOn.Format(time.DateOnly), p.Status),
+			"Only a closed period reopens"}
+	}
+	all, err := u.Periods().List(ctx)
+	if err != nil {
+		return p, storage.PeriodClose{}, err
+	}
+	for _, x := range all {
+		if x.StartsOn.After(p.EndsOn) && x.Status == storage.PeriodClosed {
+			return p, storage.PeriodClose{}, &Error{CodeLater, fmt.Sprintf("the later period %s to %s is closed", x.StartsOn.Format(time.DateOnly), x.EndsOn.Format(time.DateOnly)),
+				"Reopen the latest closed period first: periods reopen in reverse order"}
+		}
+	}
+	c, err := u.Closes().Latest(ctx, p.ID)
+	if errors.Is(err, ports.ErrNotFound) {
+		return p, c, &Error{CodeNotClosed, "the period has no close to undo", "Only a period closed through its close reopens here"}
+	}
+	return p, c, err
+}
+
+// Reopen reopens a closed period on an approved request, in the approving unit of work (FR-GL-08, FM-1): under the
+// ledger lock (ENG-47) it checks the period still reopens, takes the snapshot after (the trial balance at the period
+// end now), reopens it and records the reopening with the close's snapshot as the one before.
+func Reopen(ctx context.Context, u storage.UnitOfWork, periodID, approvalID uuid.UUID, reason string) (storage.PeriodReopen, storage.Period, error) {
+	rev, err := u.Ledger().Lock(ctx)
+	if err != nil {
+		return storage.PeriodReopen{}, storage.Period{}, err
+	}
+	p, c, err := Reopenable(ctx, u, periodID)
+	if err != nil {
+		return storage.PeriodReopen{}, p, err
+	}
+	all, err := u.Periods().List(ctx)
+	if err != nil {
+		return storage.PeriodReopen{}, p, err
+	}
+	snap, hash, err := snapshot(ctx, u, p, all, rev)
+	if err != nil {
+		return storage.PeriodReopen{}, p, err
+	}
+	opened, err := u.Periods().Reopen(ctx, p.ID)
+	if err != nil {
+		return storage.PeriodReopen{}, p, err
+	}
+	r, err := u.Closes().RecordReopen(ctx, storage.NewReopen{PeriodID: p.ID, CloseID: c.ID, ApprovalID: approvalID, Reason: reason, ReopenedRevision: rev,
+		BeforeHash: c.SnapshotHash, AfterSnapshot: snap, AfterHash: hash})
+	return r, opened, err
 }

@@ -964,6 +964,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/periods/{period_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask to reopen a closed period
+         * @description Asks to reopen the latest closed period, with a reason (FR-GL-08, FM-1; PRD-001 rev 0.51, provisional). It never reopens at once: the answer is 202 with an approval request, which a person who holds A on "Period close / reopen" (the Owner or the Controller) and did not ask approves, stepped up. On the approval, under the ledger lock, the period still has to be the latest closed one; it reopens, and the reopening is recorded with the reason, the approval, and the snapshots before (the close's) and after (the trial balance at the period end), whose SHA-256 the database recomputes. Asking needs a person signed in who passed step-up. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+         */
+        post: operations["requestPeriodReopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/periods:open-year": {
         parameters: {
             query?: never;
@@ -4052,6 +4072,14 @@ export interface components {
             /** @description The latest close; absent while it was never closed. */
             close?: components["schemas"]["PeriodCloseRecord"];
             period: components["schemas"]["Period"];
+            /** @description The latest reopening; absent while it was never reopened. */
+            reopen?: components["schemas"]["PeriodReopenRecord"];
+            /**
+             * Format: uuid
+             * @description The pending request to reopen it, while one waits for approval.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd0
+             */
+            reopen_asked?: string;
             /**
              * @description The latest checks are clean and current and someone else ran them, so the caller may attest, if their role closes periods.
              * @example true
@@ -4067,6 +4095,49 @@ export interface components {
             next_cursor?: string;
             /** @description The financial year that opens next with openFinancialYear; absent until the books start and the first year end are set. */
             next_year?: components["schemas"]["FinancialYear"];
+        };
+        PeriodReopenRecord: {
+            /**
+             * @description The trial balance at the period end when it reopened.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            after_sha256: string;
+            /**
+             * Format: uuid
+             * @description The approved request (FM-1).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd0
+             */
+            approval_id: string;
+            /**
+             * @description The close's snapshot (AUD-04).
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            before_sha256: string;
+            /**
+             * Format: uuid
+             * @description The reopening's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dc0
+             */
+            id: string;
+            /**
+             * @description Why.
+             * @example A supplier's October invoice arrived late
+             */
+            reason: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-05T09:00:00Z
+             */
+            reopened_at: string;
+            /** @description The final approver. */
+            reopened_by?: components["schemas"]["Person"];
+            /**
+             * Format: int64
+             * @description The ledger revision when it reopened.
+             * @example 415
+             */
+            reopened_revision: number;
         };
         Person: {
             /**
@@ -4252,6 +4323,13 @@ export interface components {
         RecoveryCodes: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work. */
             recovery_codes: string[] | null;
+        };
+        ReopenRequest: {
+            /**
+             * @description Why the period reopens: the audit trail and the reopening keep it.
+             * @example A supplier's October invoice arrived late
+             */
+            reason: string;
         };
         Reversal: {
             /**
@@ -12477,7 +12555,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-02` The checks are stale; `CLOSE-03` An earlier period is open; `CLOSE-04` The checks refused the close; `CLOSE-06` Not the checks of this period; `STORAGE-CLOSE-01` The close is not attested that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-03` The period is already closed, or not closed. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-02` The checks are stale; `CLOSE-03` An earlier period is open; `CLOSE-04` The checks refused the close; `CLOSE-06` Not the checks of this period; `CLOSE-07` The period is not closed; `CLOSE-08` A later period is closed; `STORAGE-CLOSE-01` The close is not attested that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-03` The period is already closed, or not closed. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12629,7 +12707,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-02` The checks are stale; `CLOSE-03` An earlier period is open; `CLOSE-04` The checks refused the close; `CLOSE-06` Not the checks of this period; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-02` The checks are stale; `CLOSE-03` An earlier period is open; `CLOSE-04` The checks refused the close; `CLOSE-06` Not the checks of this period; `CLOSE-07` The period is not closed; `CLOSE-08` A later period is closed; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12640,6 +12718,185 @@ export interface operations {
             };
             /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestPeriodReopen: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The period's ID. */
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReopenRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Approval"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `CLOSE-05` Another founder attests the close. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `CLOSE-01` The period is not open; `CLOSE-02` The checks are stale; `CLOSE-03` An earlier period is open; `CLOSE-04` The checks refused the close; `CLOSE-06` Not the checks of this period; `CLOSE-07` The period is not closed; `CLOSE-08` A later period is closed; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
                 headers: {
                     [name: string]: unknown;
                 };

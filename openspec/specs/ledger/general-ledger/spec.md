@@ -210,6 +210,11 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** a closed period is reopened
 - **THEN** the reopening is logged with before and after snapshots
 
+#### Scenario: Only the latest closed period, on an approved request (rev 0.51)
+- **WHEN** a person asks to reopen a closed period, with a reason
+- **THEN** it reopens only when another person approves the request, and only while it is the latest closed period
+- **AND** the database refuses a reopening without that approved, signed request
+
 ### Requirement: FR-GL-09 Lock levels and soft locks
 The system SHALL provide two lock levels, the hard close of FR-GL-08 for all users and a **soft lock** for all users except the accountant/adviser role (§11.4), plus per-module soft locks and an exceptions report.
 

@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -369,6 +370,34 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.ObjectVersion = modeVersion
 		e.Dependencies["mode_version"] = modeVersion
 		e.Dependencies["conflicts"] = conflicts
+	case approval.ObjectPeriod:
+		id, err := uuid.Parse(c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		p, err := u.Periods().Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		closeID := ""
+		if cl, err := u.Closes().Latest(ctx, id); err == nil {
+			closeID = cl.ID.String()
+		} else if !errors.Is(err, ports.ErrNotFound) {
+			return nil, err
+		}
+		all, err := u.Periods().List(ctx)
+		if err != nil {
+			return nil, err
+		}
+		later := false
+		for _, x := range all {
+			later = later || (x.StartsOn.After(p.EndsOn) && x.Status == storage.PeriodClosed)
+		}
+		e.ObjectVersion = p.Version
+		e.Dependencies["period_version"] = p.Version
+		e.Dependencies["status"] = string(p.Status)
+		e.Dependencies["close_id"] = closeID
+		e.Dependencies["later_closed"] = later
 	}
 	return e.Canonical()
 }
@@ -689,6 +718,20 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 	switch r.Operation {
 	case approval.OpPackActivate:
 		return a.packExecutable(ctx, u, r, signer)
+	case approval.OpPeriodReopen:
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		if _, _, err := closing.Reopenable(ctx, u, id); err != nil {
+			var ce *closing.Error
+			if errors.As(err, &ce) {
+				return &blocked{id: r.ID, version: r.Version, status: approval.Void, reason: "the period no longer reopens",
+					problem: problem(ce.Code, "The period no longer reopens: "+ce.Message+", so nothing was changed and the request is void.", sentence(ce.Fix))}
+			}
+			return err
+		}
+		return nil
 	case approval.OpPolicyChange:
 	default:
 		return nil
@@ -775,6 +818,13 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return err
 	case approval.OpTeamModeChange:
 		return a.switchTeamMode(ctx, u, r, x)
+	case approval.OpPeriodReopen:
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		_, _, err = closing.Reopen(storage.WithReason(ctx, text("reason")), u, id, r.ID, text("reason"))
+		return err
 	}
 	return fmt.Errorf("approval: no operation %s", r.Operation)
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -512,5 +513,73 @@ func TestAttackTheReviewLogNeverChanges(t *testing.T) {
 		if n := count(t, b.Org, table); n != 0 {
 			t.Errorf("B sees %d of A's rows in %s", n, table)
 		}
+	}
+}
+
+// A period reopens only on its latest close and an approved request to reopen it, signed by the one who reopens it,
+// with the close's snapshot as the one before and an after snapshot whose hash is its own; a reopening never changes
+// (FR-GL-08, FM-1, rev 0.51).
+// req: FR-GL-08
+// req: FM-1
+// asvs: V8.2.2, V16.3.3
+func TestAttackAReopeningIsTheApprovedRequest(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack reopen Pte Ltd")
+	st := store(t, "fyniq_api")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	requester, approver := founder(t, st, b.Org, 1, now), founder(t, st, b.Org, 2, now)
+	as := func(who string) context.Context {
+		return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: who}})
+	}
+	svc := closing.Service{Store: st}
+	c, err := svc.RunChecks(as("preparer"), b.Org, b.Oct.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closed, _, err := svc.Close(as("attester"), b.Org, b.Oct.ID, c.ID, "Reviewed.")
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := request(t, st, b.Org, requester, "period", b.Oct.ID.String(), "period.reopen", `{"execute":{}}`, []storage.ApprovalStep{{Quorum: 1}}, now)
+	after := `{"after":true}`
+	insert := func(closeID uuid.UUID, by string, before []byte, afterHash string) string {
+		return fmt.Sprintf(`INSERT INTO fyniq.period_reopen (period_id, close_id, approval_id, reason, reopened_by, reopened_at, reopened_revision, before_hash,
+  after_snapshot, after_hash) VALUES ('%s', '%s', '%s', 'Late invoice', '%s', now(), 1, '\x%x', '%s', %s)`, b.Oct.ID, closeID, req.ID, by, before, after, afterHash)
+	}
+	good := "sha256(convert_to('" + after + "', 'UTF8'))"
+	byApprover := "user:" + approver.String()
+	try := func(what, stmt, state string) {
+		t.Helper()
+		err := asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, stmt); return err })
+		wantState(t, what, err, state)
+	}
+	try("a reopening on a pending request", insert(closed.ID, byApprover, closed.SnapshotHash, good), "FY155")
+	if err := signs(st, b.Org, req, 1, approver, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := decides(st, b.Org, req, "approved", now); err != nil {
+		t.Fatal(err)
+	}
+	try("a reopening by someone who did not sign", insert(closed.ID, "user:"+requester.String(), closed.SnapshotHash, good), "FY155")
+	try("a reopening of a close that is not the latest", insert(uuid.Must(uuid.NewV7()), byApprover, closed.SnapshotHash, good), "FY155")
+	try("a reopening whose before is not the close's snapshot", insert(closed.ID, byApprover, make([]byte, 32), good), "FY155")
+	try("an after snapshot whose hash is not its own", insert(closed.ID, byApprover, closed.SnapshotHash, "sha256('other')"), "23514")
+	// Through the unit of work, by the signer: it is recorded, and never changes after.
+	if err := st.Do(as(approver.String()), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, _, err := closing.Reopen(ctx, u, b.Oct.ID, req.ID, "Late invoice")
+		return err
+	}); err != nil {
+		t.Fatalf("the approved reopening: %v", err)
+	}
+	for _, c := range []struct{ role, what, stmt, state string }{
+		{"fyniq_migrator", "the owner rewriting a reopening", "UPDATE fyniq.period_reopen SET reason = 'other'", "FY154"},
+		{"fyniq_migrator", "the owner removing a reopening", "DELETE FROM fyniq.period_reopen", "FY154"},
+		{"fyniq_api", "the API rewriting a reopening", "UPDATE fyniq.period_reopen SET reason = 'other'", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.what, err, c.state)
+	}
+	if n := count(t, b.Org, "fyniq.period_reopen"); n != 1 {
+		t.Errorf("%d reopenings, not 1", n)
 	}
 }

@@ -97,8 +97,8 @@ const (
 
 // ApprovalRows are the Appendix D rows of the objects the approval engine covers: organisation settings under dual
 // control, and members' roles and invitations after the founder bootstrap (rev 0.36); approval policies (rev 0.40);
-// activating statutory pack versions (rev 0.41).
-var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters}
+// activating statutory pack versions (rev 0.41); reopening a closed period (rev 0.51).
+var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -329,6 +329,9 @@ var (
 	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
 	ClosePeriod    = Policy{Operation: "closePeriod", Capability: PeriodClose, Need: Approve,
 		Note: "A person stepped up in the last 5 minutes, who did not run the checks (FM-4)."}
+	// Asking to reopen is preparing it (C); a second person who holds A approves it through the approval engine (FM-1).
+	RequestPeriodReopen = Policy{Operation: "requestPeriodReopen", Capability: PeriodClose, Need: Create,
+		Note: "A person stepped up in the last 5 minutes; the approval engine has another person who holds A approve it (FM-1)."}
 	PostJournal = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
 	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
@@ -443,7 +446,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances,
-	ListPeriods, GetPeriod, OpenFinancialYear, GetPeriodClose, RunCloseChecks, ClosePeriod,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

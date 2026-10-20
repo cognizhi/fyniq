@@ -581,6 +581,41 @@ var matrixCalls = map[string]matrixCall{
 			return open
 		}
 	},
+	// Reopening needs a closed period, and closing one here would stop the other rows posting, so each call asks in an
+	// organisation of its own whose October is closed, as a person with a Fyniq user, stepped up now.
+	"requestPeriodReopen": func(e *env, tok string) (response, func() bool) {
+		ctx := context.Background()
+		b := porttest.NewBooks(e.t, e.store, "Matrix reopen "+uuid.NewString()[:8])
+		as := func(who string) context.Context {
+			return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: who}})
+		}
+		c, err := e.api.closing.RunChecks(as("matrix-preparer"), b.Org, b.Oct.ID)
+		if err == nil {
+			_, _, err = e.api.closing.Close(as("matrix-attester"), b.Org, b.Oct.ID, c.ID, "Reviewed.")
+		}
+		if err != nil {
+			panic(err)
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation != uuid.Nil {
+			p.Organisation = b.Org
+		}
+		if p.Class == authn.ClassUser {
+			p.UserID, p.StepUpAt = uuid.MustParse(matrixApprover(e)), e.clock.Now()
+		}
+		r := e.call(http.MethodPost, "/v1/periods/"+b.Oct.ID.String()+"/reopen", e.principal(p), map[string]any{"reason": "Matrix"}, "If-Match", "*")
+		return r, func() bool {
+			var n int
+			_ = e.store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				rs, err := u.Approvals().List(ctx, "")
+				n = len(rs)
+				return err
+			})
+			return n == 0
+		}
+	},
 	"listJournals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil
 	},

@@ -21,6 +21,11 @@ type Closes interface {
 	Record(ctx context.Context, c NewClose) (PeriodClose, error)
 	// Latest is the period's latest close, or ports.ErrNotFound.
 	Latest(ctx context.Context, period uuid.UUID) (PeriodClose, error)
+	// RecordReopen records a reopening by the unit of work's actor, now: the approved request's, which reopens the
+	// period in the same unit of work, under the ledger lock (FR-GL-08).
+	RecordReopen(ctx context.Context, r NewReopen) (PeriodReopen, error)
+	// LatestReopen is the period's latest reopening, or ports.ErrNotFound.
+	LatestReopen(ctx context.Context, period uuid.UUID) (PeriodReopen, error)
 	// ChangedSince reports whether an entry dated on or before through has a revision later than revision: the checks
 	// that saw revision are then stale (FR-GL-07, G4-053).
 	ChangedSince(ctx context.Context, through time.Time, revision int64) (bool, error)
@@ -58,4 +63,24 @@ type PeriodClose struct {
 	ID         uuid.UUID
 	AttestedBy string
 	AttestedAt time.Time
+}
+
+// NewReopen is a reopening: the close it undoes, the approval, the reason and the snapshots before and after.
+type NewReopen struct {
+	PeriodID         uuid.UUID
+	CloseID          uuid.UUID
+	ApprovalID       uuid.UUID
+	Reason           string
+	ReopenedRevision int64
+	BeforeHash       []byte // the close's snapshot
+	AfterSnapshot    []byte // canonical JSON (RFC 8785)
+	AfterHash        []byte
+}
+
+// PeriodReopen is a recorded reopening.
+type PeriodReopen struct {
+	NewReopen
+	ID         uuid.UUID
+	ReopenedBy string
+	ReopenedAt time.Time
 }
