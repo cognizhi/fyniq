@@ -130,7 +130,12 @@
   accounts under it, with report group, function, GST code and flags, system accounts locked; an empty chart offers
   the standard chart; an Accountant or Tax agent adds an account and changes one (only the fields changed, over its
   ETag), with the guide page `chart-of-accounts.md` compiled into `accounting.chart`. Tests
-  `ChartOfAccounts.test.tsx`. **Left:** contact-record, contacts-list, items and logo-brand; on chart-of-accounts,
-  merge, the Dimensions tab and balances, which have no operations yet; the organisation-settings sections whose operations do not exist
+  `ChartOfAccounts.test.tsx`. Then contacts-list and items (`screens/contacts/Contacts.tsx`, `Items.tsx`): customers and
+  vendors filtered by role and found by name, UEN or email, a possible duplicate flagged (a preview lists them before
+  an add, FR-CT-04), adding and changing a contact over its ETag; items with a unit price per currency as exact
+  decimals; guide page `contacts-and-items.md` compiled into `contacts.manage`. Tests `contacts.test.tsx`. **Left:**
+  contact-record's tabs (documents, ageing, timeline, bank details) and logo-brand; balances and the year's figures on
+  contacts and items, which come with the sales and purchase documents; on chart-of-accounts, merge, the Dimensions
+  tab and balances, which have no operations yet; the organisation-settings sections whose operations do not exist
   yet (brand, numbering, GST status on this page).)
 - [ ] 5.3 Finish with `make check` and `make test`

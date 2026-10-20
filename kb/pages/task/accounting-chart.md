@@ -4,7 +4,7 @@ type: task
 title: Set up and keep the chart of accounts
 summary: Load the standard Singapore start-up chart, add an account, rename, regroup or deactivate one, and what system accounts are
 sources:
-  - docs/user-guide/chart-of-accounts.md sha256:7a954d5927cbc781a07997cbd313070f74880dd12488eb47fb8ae3e13d7a5084
+  - docs/user-guide/chart-of-accounts.md sha256:5c466248d66f66ef508e8118af03f96564f06c74e335f2d315ab5533f003ff2e
 data_class: general
 taint: trusted
 status: draft
@@ -47,9 +47,9 @@ aliases:
 - The pencil next to an account changes its name, group, report group, function, GST code and guidance; **Save the account**.
 - Clearing **Active** stops new postings; its history stays. The control and payroll-cost flags change only with an approval.
 - **System** accounts, such as accounts receivable, accounts payable and GST control, keep their code, type and role, and stay active.
-- Related settings: [[settings.organisation]].
+- Related: organisation settings ([[settings.organisation]]); contacts, items and their revenue accounts ([[contacts.manage]]).
 
-(src: docs/user-guide/chart-of-accounts.md#add-an-account) (src: docs/user-guide/chart-of-accounts.md#change-an-account) (src: docs/user-guide/chart-of-accounts.md#system-accounts)
+(src: docs/user-guide/chart-of-accounts.md#add-an-account) (src: docs/user-guide/chart-of-accounts.md#change-an-account) (src: docs/user-guide/chart-of-accounts.md#system-accounts) (src: docs/user-guide/chart-of-accounts.md#related)
 
 ## Common problems
 

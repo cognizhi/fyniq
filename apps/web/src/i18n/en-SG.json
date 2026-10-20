@@ -183,6 +183,22 @@
     "chart.load-standard": {
       "label": "Load the standard chart",
       "tooltip": "The Singapore start-up chart of 86 accounts, for a chart with no accounts yet."
+    },
+    "contacts.overview": {
+      "label": "Contacts",
+      "tooltip": "The customers and vendors the company deals with."
+    },
+    "items.overview": {
+      "label": "Items and prices",
+      "tooltip": "The products and services the company sells, with a unit price per currency."
+    },
+    "contact.add": {
+      "label": "New contact",
+      "tooltip": "Add a customer, a vendor or both; Fyniq checks for a possible duplicate first."
+    },
+    "item.add": {
+      "label": "New item",
+      "tooltip": "Add a product or service with its prices; its code never changes."
     }
   }
 }
