@@ -176,7 +176,7 @@ export function Journals() {
                 <tr key={j.id}>
                   <td data-card="meta">
                     <Link className="fy-mono" to="/accounting/journals/$journalId" params={{ journalId: j.id }}>
-                      {j.number || "Draft"}
+                      {j.number || (j.status === "draft" ? "Draft" : "No number")}
                     </Link>
                   </td>
                   <td data-card="meta">{j.date ? date(j.date) : "No date"}</td>
