@@ -42,6 +42,22 @@
       ],
       "type": "string"
     },
+    "posted_at": {
+      "description": "When it was posted.",
+      "examples": [
+        "2026-10-31T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "posted_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who posted it, once posted; absent for journals from before it was recorded."
+    },
+    "prepared_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who saved the current version; absent for journals from before it was recorded."
+    },
     "status": {
       "description": "Draft (✎), posted, or reversed by a reversing entry.",
       "enum": [

@@ -7,12 +7,13 @@ package sqlcdb
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 const getDocument = `-- name: GetDocument :one
-SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
 FROM fyniq.document d
 JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
 LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
@@ -26,6 +27,9 @@ type GetDocumentRow struct {
 	CurrentVersion int32
 	Payload        []byte
 	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
 }
 
 func (q *Queries) GetDocument(ctx context.Context, id uuid.UUID) (GetDocumentRow, error) {
@@ -38,6 +42,9 @@ func (q *Queries) GetDocument(ctx context.Context, id uuid.UUID) (GetDocumentRow
 		&i.CurrentVersion,
 		&i.Payload,
 		&i.Number,
+		&i.CreatedBy,
+		&i.PostedBy,
+		&i.PostedAt,
 	)
 	return i, err
 }
@@ -77,22 +84,113 @@ func (q *Queries) InsertDocument(ctx context.Context, type_ string) (InsertDocum
 }
 
 const insertDocumentVersion = `-- name: InsertDocumentVersion :exec
-INSERT INTO fyniq.document_version (document_id, version, payload) VALUES ($1, $2, $3)
+INSERT INTO fyniq.document_version (document_id, version, payload, created_by) VALUES ($1, $2, $3, $4)
 `
 
 type InsertDocumentVersionParams struct {
 	DocumentID uuid.UUID
 	Version    int32
 	Payload    []byte
+	CreatedBy  *string
 }
 
 func (q *Queries) InsertDocumentVersion(ctx context.Context, arg InsertDocumentVersionParams) error {
-	_, err := q.db.Exec(ctx, insertDocumentVersion, arg.DocumentID, arg.Version, arg.Payload)
+	_, err := q.db.Exec(ctx, insertDocumentVersion,
+		arg.DocumentID,
+		arg.Version,
+		arg.Payload,
+		arg.CreatedBy,
+	)
 	return err
 }
 
+const listDocuments = `-- name: ListDocuments :many
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.type = $1
+  AND ($2::text IS NULL OR d.status = $2::text)
+  AND ($3::text IS NULL OR coalesce(v.payload->>'date', '') >= $3::text)
+  AND ($4::text IS NULL OR (v.payload->>'date' IS NOT NULL AND v.payload->>'date' <= $4::text))
+  AND ($5::text IS NULL
+       OR strpos(lower(coalesce(v.payload->>'memo', '')), lower($5::text)) > 0
+       OR strpos(lower(coalesce(n.number, '')), lower($5::text)) > 0)
+  AND ($6::uuid IS NULL
+       OR (coalesce(v.payload->>'date', ''), d.id) < ($7::text, $6::uuid))
+ORDER BY coalesce(v.payload->>'date', '') DESC, d.id DESC
+LIMIT $8
+`
+
+type ListDocumentsParams struct {
+	Type      string
+	Status    *string
+	DateFrom  *string
+	DateTo    *string
+	Search    *string
+	AfterID   *uuid.UUID
+	AfterDate string
+	PageSize  int32
+}
+
+type ListDocumentsRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+	Date           string
+}
+
+// Documents of a type at their current version, newest date first (a draft without a date last), then newest ID,
+// after the cursor's (date, id). The text matches the memo or the number, as typed: no wildcards.
+func (q *Queries) ListDocuments(ctx context.Context, arg ListDocumentsParams) ([]ListDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, listDocuments,
+		arg.Type,
+		arg.Status,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.Search,
+		arg.AfterID,
+		arg.AfterDate,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDocumentsRow
+	for rows.Next() {
+		var i ListDocumentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Status,
+			&i.CurrentVersion,
+			&i.Payload,
+			&i.Number,
+			&i.CreatedBy,
+			&i.PostedBy,
+			&i.PostedAt,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockDocument = `-- name: LockDocument :one
-SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
 FROM fyniq.document d
 JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
 LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
@@ -107,6 +205,9 @@ type LockDocumentRow struct {
 	CurrentVersion int32
 	Payload        []byte
 	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
 }
 
 // ENG-47 step 1: the source document a command changes, before the ledger lock.
@@ -120,20 +221,50 @@ func (q *Queries) LockDocument(ctx context.Context, id uuid.UUID) (LockDocumentR
 		&i.CurrentVersion,
 		&i.Payload,
 		&i.Number,
+		&i.CreatedBy,
+		&i.PostedBy,
+		&i.PostedAt,
 	)
 	return i, err
 }
 
 const setDocumentStatus = `-- name: SetDocumentStatus :exec
-UPDATE fyniq.document SET status = $1 WHERE id = $2
+UPDATE fyniq.document
+SET status = $1,
+    posted_by = coalesce($2::text, posted_by),
+    posted_at = coalesce($3::timestamptz, posted_at)
+WHERE id = $4
 `
 
 type SetDocumentStatusParams struct {
-	Status string
-	ID     uuid.UUID
+	Status   string
+	PostedBy *string
+	PostedAt *time.Time
+	ID       uuid.UUID
 }
 
+// Posting records who posted and when (FY053); reversing leaves them as they are.
 func (q *Queries) SetDocumentStatus(ctx context.Context, arg SetDocumentStatusParams) error {
-	_, err := q.db.Exec(ctx, setDocumentStatus, arg.Status, arg.ID)
+	_, err := q.db.Exec(ctx, setDocumentStatus,
+		arg.Status,
+		arg.PostedBy,
+		arg.PostedAt,
+		arg.ID,
+	)
+	return err
+}
+
+const setDocumentVersion = `-- name: SetDocumentVersion :exec
+UPDATE fyniq.document SET current_version = $1 WHERE id = $2
+`
+
+type SetDocumentVersionParams struct {
+	Version int32
+	ID      uuid.UUID
+}
+
+// A new version becomes the current one; document_guard refuses going back.
+func (q *Queries) SetDocumentVersion(ctx context.Context, arg SetDocumentVersionParams) error {
+	_, err := q.db.Exec(ctx, setDocumentVersion, arg.Version, arg.ID)
 	return err
 }

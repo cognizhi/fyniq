@@ -33,6 +33,16 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** a manual journal is posted
 - **THEN** its preparer and its approver are recorded on it
 
+#### Scenario: Who prepared and who posted, kept by the database (rev 0.48)
+- **WHEN** a version of a journal is saved, or the journal is posted
+- **THEN** the version records who saved it, and the posting who posted it and when
+- **AND** the database refuses either without them, and any later change to them
+
+#### Scenario: A draft changes as a new version (rev 0.48)
+- **WHEN** a draft journal is changed at the version its author read
+- **THEN** the change is saved as its next version and the earlier versions are kept
+- **AND** a posted journal changes only by reversal
+
 ### Requirement: FR-GL-02 Recurring and auto-reversing journals
 The system SHALL support recurring journals and **auto-reversing** journals.
 

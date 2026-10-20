@@ -44,6 +44,16 @@ func (u *unitOfWork) event(ctx context.Context, action, objectType string, objec
 	return nil
 }
 
+// actor is who acts in this unit of work, as "type:id": the request's actor, or the store's service identity. A
+// document version and a posting record it (FY053), as the audit event does.
+func (u *unitOfWork) actor(ctx context.Context) string {
+	a := u.store.actor
+	if from := storage.AuditFrom(ctx); from.Actor != nil {
+		a = *from.Actor
+	}
+	return a.Type + ":" + a.ID
+}
+
 // flush writes the queued events, in order, as the last statements before commit.
 func (u *unitOfWork) flush(ctx context.Context) error {
 	for _, e := range u.pending {

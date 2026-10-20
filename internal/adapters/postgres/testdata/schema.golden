@@ -124,6 +124,8 @@ document | type | text | not null |
 document | status | text | not null | 'draft'::text
 document | current_version | integer | not null | 1
 document | created_at | timestamp with time zone | not null | now()
+document | posted_by | text | null | 
+document | posted_at | timestamp with time zone | null | 
 document_number | organisation_id | uuid | not null | current_org()
 document_number | id | uuid | not null | 
 document_number | document_type | text | not null | 
@@ -143,6 +145,7 @@ document_version | document_id | uuid | not null |
 document_version | version | integer | not null | 
 document_version | payload | jsonb | not null | 
 document_version | created_at | timestamp with time zone | not null | now()
+document_version | created_by | text | null | 
 email_message | organisation_id | uuid | not null | current_org()
 email_message | id | uuid | not null | uuidv7()
 email_message | purpose | text | not null | 
@@ -681,6 +684,8 @@ document | document_id_not_null | NOT NULL id
 document | document_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 document | document_organisation_id_not_null | NOT NULL organisation_id
 document | document_pkey | PRIMARY KEY (organisation_id, id)
+document | document_posted_by_format | CHECK ((posted_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at IS NULL)))
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
 document | document_type_known | CHECK ((type = 'journal'::text))
@@ -714,6 +719,7 @@ document_sequence | document_sequence_version_not_null | NOT NULL version
 document_sequence | document_sequence_version_positive | CHECK ((version > 0))
 document_sequence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_version | document_version_created_at_not_null | NOT NULL created_at
+document_version | document_version_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 document_version | document_version_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
 document_version | document_version_document_id_not_null | NOT NULL document_id
 document_version | document_version_id_not_null | NOT NULL id
@@ -1398,6 +1404,7 @@ CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR 
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_sequence_guard BEFORE UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION document_sequence_guard()
+CREATE TRIGGER document_version_created_by BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_created_by()
 CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER email_message_guard BEFORE UPDATE ON fyniq.email_message FOR EACH ROW EXECUTE FUNCTION email_message_guard()
@@ -1501,8 +1508,9 @@ claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) �
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
-document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ae8d292019dce37ac1cadb594f5dbe0c
+document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f3a8d9dc84e75cc2501a63166e8da5d
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
+document_version_created_by() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b35b5285220973313c6224ad1d90dd81
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a

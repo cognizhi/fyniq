@@ -309,7 +309,10 @@ var (
 		Note: "The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1)."}
 	UpdateGSTRegistration = Policy{Operation: "updateGSTRegistration", Capability: OrganisationProfile, Need: Create,
 		Note: "The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1)."}
-	GetJournal = Policy{Operation: "getJournal", Capability: Journals, Need: View}
+	GetJournal   = Policy{Operation: "getJournal", Capability: Journals, Need: View}
+	ListJournals = Policy{Operation: "listJournals", Capability: Journals, Need: View}
+	// Changing a draft is preparing it, as saving one is (FR-GL-01).
+	ReplaceJournal = Policy{Operation: "replaceJournal", Capability: Journals, Need: Create}
 	// Periods are read by whoever holds a right on the close (FR-ORG-02, FR-GL-08); opening a year is preparing the
 	// close's calendar, so it needs C (the Accountant and the Controller; PRD-001 rev 0.47, provisional).
 	ListPeriods       = Policy{Operation: "listPeriods", Capability: PeriodClose, Need: View}
@@ -427,7 +430,7 @@ var (
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, PostJournal, ReverseJournal,
+	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal,
 	ListPeriods, GetPeriod, OpenFinancialYear,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,

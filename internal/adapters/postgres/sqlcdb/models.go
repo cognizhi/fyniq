@@ -168,6 +168,8 @@ type FyniqDocument struct {
 	Status         string
 	CurrentVersion int32
 	CreatedAt      time.Time
+	PostedBy       *string
+	PostedAt       *time.Time
 }
 
 type FyniqDocumentNumber struct {
@@ -196,6 +198,7 @@ type FyniqDocumentVersion struct {
 	Version        int32
 	Payload        []byte
 	CreatedAt      time.Time
+	CreatedBy      *string
 }
 
 type FyniqEmailMessage struct {

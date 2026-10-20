@@ -477,6 +477,16 @@ var matrixCalls = map[string]matrixCall{
 			return n == 0
 		}
 	},
+	"listJournals": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil
+	},
+	"replaceJournal": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createDraft("10.00")
+		r := e.call(http.MethodPut, "/v1/journals/"+id, tok, e.draft("11.00"), "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/journals/"+id, e.as(authz.Accountant), nil).Body["version"] == float64(1)
+		}
+	},
 	"getJournal": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createDraft("10.00")
 		return e.call(http.MethodGet, "/v1/journals/"+id, tok, nil), nil
