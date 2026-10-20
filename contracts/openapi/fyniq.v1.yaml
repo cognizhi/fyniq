@@ -356,7 +356,7 @@ components:
             - ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z
           type: string
         object_key:
-          description: "Which one: the setting's key, the membership's ID, the invitation's code hash, or the object type whose approval policy changes."
+          description: "Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode."
           examples:
             - bank.tolerance_base
           type: string
@@ -367,6 +367,8 @@ components:
             - membership
             - member_invitation
             - approval_policy
+            - statutory_pack
+            - team_mode
           examples:
             - organisation_setting
           type: string
@@ -378,6 +380,8 @@ components:
             - role.revoke
             - member_invitation.create
             - approval_policy.change
+            - statutory_pack.activate
+            - team_mode.change
           examples:
             - organisation_setting.change
           type: string
@@ -411,7 +415,7 @@ components:
             - array
             - "null"
         status:
-          description: pending waits for approval; approved executed it; void means its record, a dependency or its approval policy changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days.
+          description: pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days.
           enum:
             - pending
             - approved
@@ -557,6 +561,8 @@ components:
             - membership
             - member_invitation
             - approval_policy
+            - statutory_pack
+            - team_mode
           examples:
             - organisation_setting
           type: string
@@ -634,6 +640,8 @@ components:
             - membership
             - member_invitation
             - approval_policy
+            - statutory_pack
+            - team_mode
           examples:
             - organisation_setting
           type: string
@@ -2704,6 +2712,15 @@ components:
           examples:
             - Northwind Analytics Pte. Ltd.
           type: string
+        team_mode:
+          description: "The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42)."
+          enum:
+            - founder
+            - standard
+            - enterprise
+          examples:
+            - founder
+          type: string
         version:
           description: The record's version; it also makes the ETag.
           examples:
@@ -2715,6 +2732,7 @@ components:
         - name
         - base_currency
         - base_minor_units
+        - team_mode
         - version
       type: object
     OrganisationProfile:
@@ -3199,6 +3217,12 @@ components:
           examples:
             - owner
           type: string
+        sod_override_reason:
+          description: "In a team mode that blocks conflicts (Standard): why the member keeps the conflict of §6.3 this role makes. The role change's approver accepts the override, which is reported with the team mode (TEAM-02, rev 0.42)."
+          examples:
+            - Founder who also keeps the books until we hire
+          maxLength: 500
+          type: string
       required:
         - role
       type: object
@@ -3666,6 +3690,57 @@ components:
       required:
         - items
       type: object
+    SoDOverride:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: The approved request that holds it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+          format: uuid
+          type: string
+        conflict:
+          description: The conflict (PRD-001 §6.3).
+          examples:
+            - SOD-6
+          type: string
+        created_at:
+          description: When it was recorded.
+          examples:
+            - "2026-10-20T09:30:00Z"
+          format: date-time
+          type: string
+        display_name:
+          description: Their name.
+          examples:
+            - Wei Ling Tan
+          type: string
+        reason:
+          description: Why they keep it.
+          examples:
+            - Founder who also keeps the books until we hire
+          type: string
+        team_mode_version:
+          description: "The version of the team mode it is for: a later switch lists the conflict again."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        user_id:
+          description: The member's user.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - user_id
+        - display_name
+        - conflict
+        - reason
+        - team_mode_version
+        - approval_id
+        - created_at
+      type: object
     StatutoryPack:
       additionalProperties: false
       properties:
@@ -3896,6 +3971,202 @@ components:
           type: string
       required:
         - confirmation_code
+      type: object
+    TeamMode:
+      additionalProperties: false
+      properties:
+        blocks_conflicts:
+          description: true in a mode that blocks conflicts unless they are overridden.
+          examples:
+            - false
+          type: boolean
+        conflicts:
+          description: The conflicts the members' roles and the pending invitations' roles hold now. A switch to a mode that blocks conflicts waits until each is resolved, or overridden with a reason.
+          items:
+            $ref: "#/components/schemas/TeamModeConflict"
+          type:
+            - array
+            - "null"
+        history:
+          description: Every version, oldest first; empty until the first switch.
+          items:
+            $ref: "#/components/schemas/TeamModeVersion"
+          type:
+            - array
+            - "null"
+        mode:
+          description: Founder mode allows the conflicts of §6.3 with the compensating controls FM-1 to FM-9; Standard and Enterprise mode block them (PRD-001 §6.4).
+          enum:
+            - founder
+            - standard
+            - enterprise
+          examples:
+            - founder
+          type: string
+        overrides:
+          description: "The overrides for the version in force: who keeps a conflict, and why (reported, §6.4)."
+          items:
+            $ref: "#/components/schemas/SoDOverride"
+          type:
+            - array
+            - "null"
+        version:
+          description: "The team mode's version: 0 until the first switch; it also makes the ETag."
+          examples:
+            - 0
+          format: int64
+          type: integer
+      required:
+        - mode
+        - version
+        - blocks_conflicts
+        - conflicts
+        - overrides
+        - history
+      type: object
+    TeamModeConflict:
+      additionalProperties: false
+      properties:
+        conflict:
+          description: "The conflict (PRD-001 §6.3): SOD-6, administering users or roles and posting or approving transactions, is the one a combination of roles makes; the others are checked on each item."
+          examples:
+            - SOD-6
+          type: string
+        display_name:
+          description: The member's or the invitee's name.
+          examples:
+            - Wei Ling Tan
+          type: string
+        invitation_id:
+          description: The pending invitation, for an invitation.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20
+          format: uuid
+          type: string
+        member_id:
+          description: The member's membership, for a member.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+          format: uuid
+          type: string
+        overridden:
+          description: true when an override for the team mode in force lets the member keep it.
+          examples:
+            - false
+          type: boolean
+        roles:
+          description: The roles that make it.
+          items:
+            description: A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.
+            examples:
+              - owner
+            type: string
+          type:
+            - array
+            - "null"
+        user_id:
+          description: The member's user, for a member.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - conflict
+        - display_name
+        - roles
+        - overridden
+      type: object
+    TeamModeOverride:
+      additionalProperties: false
+      properties:
+        conflict:
+          description: The conflict, as the team mode lists it.
+          examples:
+            - SOD-6
+          pattern: ^SOD-([1-9]|10)$
+          type: string
+        member_id:
+          description: The member's membership.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f01
+          format: uuid
+          type: string
+        reason:
+          description: Why they keep both sides of it.
+          examples:
+            - Founder who also keeps the books until we hire
+          maxLength: 500
+          type: string
+      required:
+        - member_id
+        - conflict
+        - reason
+      type: object
+    TeamModeSwitch:
+      additionalProperties: false
+      properties:
+        mode:
+          description: The team mode to switch to. Enterprise mode is not available yet (TEAM-03).
+          enum:
+            - founder
+            - standard
+            - enterprise
+          examples:
+            - standard
+          type: string
+        overrides:
+          description: "For a mode that blocks conflicts: an override with a reason for each member's conflict that stays."
+          items:
+            $ref: "#/components/schemas/TeamModeOverride"
+          maxItems: 100
+          type:
+            - array
+            - "null"
+      required:
+        - mode
+      type: object
+    TeamModeVersion:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: The approved request that made it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+          format: uuid
+          type: string
+        created_at:
+          description: When it took effect.
+          examples:
+            - "2026-10-20T09:30:00Z"
+          format: date-time
+          type: string
+        mode:
+          description: The team mode from then on.
+          enum:
+            - founder
+            - standard
+            - enterprise
+          examples:
+            - standard
+          type: string
+        requested_by:
+          description: The user who asked for it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+        version:
+          description: The version, from 1.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - version
+        - mode
+        - approval_id
+        - requested_by
+        - created_at
       type: object
   securitySchemes:
     bearer:
@@ -8443,7 +8714,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `TEAM-04` Your roles conflict for this action."
         "404":
           content:
             application/problem+json:
@@ -8558,6 +8829,7 @@ paths:
         - STORAGE-INV-13
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
+        - TEAM-04
       x-fyniq-permission:
         capability: Journals
         note: The Accountant's amount limit and SOD-3 arrive with the approval engine (P1).
@@ -8661,7 +8933,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `TEAM-04` Your roles conflict for this action."
         "404":
           content:
             application/problem+json:
@@ -8791,6 +9063,7 @@ paths:
         - STORAGE-INV-13
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
+        - TEAM-04
       x-fyniq-permission:
         capability: Journals
         note: A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1).
@@ -9390,7 +9663,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way."
+          description: "Conflict: `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `TEAM-02` The roles would conflict."
         "413":
           content:
             application/problem+json:
@@ -9474,6 +9747,7 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-MEMBER-01
         - STORAGE-RETRY-01
+        - TEAM-02
       x-fyniq-exempt:
         Idempotency-Key: Its response carries a one-time secret, which a stored response would keep at rest; the code already makes the command one-time (FR-INT-08, rev 0.27).
         Prefer: A preview would confirm a one-time code without spending it (FR-INT-14, rev 0.28).
@@ -9758,7 +10032,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `TEAM-02` The roles would conflict."
         "413":
           content:
             application/problem+json:
@@ -9776,7 +10050,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `TEAM-06` The override is not valid."
         "429":
           content:
             application/problem+json:
@@ -9846,6 +10120,8 @@ paths:
         - STORAGE-LOCK-01
         - STORAGE-MEMBER-01
         - STORAGE-RETRY-01
+        - TEAM-02
+        - TEAM-06
       x-fyniq-permission:
         capability: Users, roles, team mode
         note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they wait for another Owner to approve them, and the request needs step-up (rev 0.36)."
@@ -10037,7 +10313,7 @@ paths:
         right: C
   /v1/organisation:
     get:
-      description: "Returns the organisation your session is in: its name and base currency, which every screen shows. Read-only; no side effects. Every member of the organisation may call it."
+      description: "Returns the organisation your session is in: its name, base currency and team mode, which every screen shows. Read-only; no side effects. Every member of the organisation may call it."
       operationId: getOrganisation
       responses:
         "200":
@@ -13636,6 +13912,316 @@ paths:
         capability: (Super admins)
         note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). The other Super admin confirms; nobody confirms their own recovery.
         right: A
+  /v1/team-mode:
+    get:
+      description: The organisation's team mode (PRD-001 §6.4), the conflicts of §6.3 its members' roles and pending invitations hold now, the overrides that let members keep them in a mode that blocks conflicts, and every version. Founder mode until the first switch. Its ETag is the version. Read-only; no side effects.
+      operationId: getTeamMode
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMode"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: "The team mode's version, for If-Match: \"0\" until the first switch."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get the team mode
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        right: V
+    patch:
+      description: "Asks for a switch of the team mode (PRD-001 §6.4, FR-ADM-04). The switch is never made at once: the answer is 202 with an approval request, which a member who holds A on \"Users, roles, team mode\" (an Owner) and is not the requester approves (dual control). A switch to a mode that blocks conflicts (Standard) lists every member whose roles conflict and waits until each is resolved or overridden: send an override with a reason for each conflict that stays (TEAM-01); a pending invitation whose roles conflict is withdrawn first. Enterprise mode is not available yet (TEAM-03). The approval records the overrides, which are reported with the team mode, and every pending approval request of the organisation becomes void, since each was asked for under the old mode. Asking needs a person signed in who passed step-up in the last 5 minutes and If-Match with the team mode's ETag. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: switchTeamMode
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamModeSwitch"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `TEAM-01` Conflicts of duties block the switch; `TEAM-02` The roles would conflict; `TEAM-05` The organisation is in that mode already."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TEAM-03` That team mode is not available; `TEAM-06` The override is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask to switch the team mode
+      tags:
+        - Members
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - APR-06
+        - STORAGE-APPROVAL-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+        - TEAM-01
+        - TEAM-02
+        - TEAM-03
+        - TEAM-05
+        - TEAM-06
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        note: Always waits for approval by a member who holds A on the row (an Owner), never the requester (§6.4, FR-ADM-04); needs a person signed in who passed step-up in the last 5 minutes.
+        right: C
 security:
   - bearer: []
   - session: []

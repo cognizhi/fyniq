@@ -66,6 +66,7 @@ type UnitOfWork interface {
 	Settings() Settings
 	Approvals() Approvals
 	ApprovalPolicies() ApprovalPolicies
+	TeamModes() TeamModes
 	Packs() Packs
 	EmailMessages() EmailMessages
 	Outbox() Outbox

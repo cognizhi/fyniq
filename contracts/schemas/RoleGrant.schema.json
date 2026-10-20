@@ -16,6 +16,14 @@
         "owner"
       ],
       "type": "string"
+    },
+    "sod_override_reason": {
+      "description": "In a team mode that blocks conflicts (Standard): why the member keeps the conflict of §6.3 this role makes. The role change's approver accepts the override, which is reported with the team mode (TEAM-02, rev 0.42).",
+      "examples": [
+        "Founder who also keeps the books until we hire"
+      ],
+      "maxLength": 500,
+      "type": "string"
     }
   },
   "required": [

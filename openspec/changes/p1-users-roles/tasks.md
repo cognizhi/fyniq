@@ -2,9 +2,22 @@
 
 ## 1. Roles and the matrix
 
-- [ ] 1.1 Transcribe Appendix D into `internal/authz/matrix.csv` and generate the policy table from it. A test compares the table with the PRD's rows and fails on drift; an unknown area denies. Tag each area's test `// req: access/roles-and-segregation Permission matrix: <area>`
+- [x] 1.1 Transcribe Appendix D into `internal/authz/matrix.csv` and generate the policy table from it. A test compares the table with the PRD's rows and fails on drift; an unknown area denies. Tag each area's test `// req: access/roles-and-segregation Permission matrix: <area>`
+  (20 Oct 2026: the transcription is the Go table itself, not a CSV, so one file holds the fact: `authz.Rows` and
+  `authz.Grants` carry all 39 rows of Appendix D in its order, and `TestTheGrantsAreAppendixD` fails when a cell, a row
+  or the order differs from the PRD; `TestAnUnknownAreaDenies` refuses every principal on an area Appendix D does not
+  name. The per-area matrix tests run each operation's area in `TestAuthorisationMatrix`.)
 - [ ] 1.2 The roles of §6 and their combinations, attribute conditions and field masking, checked in the API and by row-level security scope predicates on sensitive tables. Tests on every role's rights and limits, `// req: access/roles-and-segregation <role> role`, and the permission model test
 - [ ] 1.3 SOD-1…10, evaluated at action time from the record's history. Tests `// req: SOD-1` through `// req: SOD-10`, one conflict each, blocked in Standard mode
+  (20 Oct 2026, provisional (PRD rev 0.42): SOD-6 is the conflict a combination of roles makes, derived from Appendix D
+  (`authz.RoleConflicts`: the Administrator with any role holding P, A or R on a transaction row; the Owner role alone
+  exempt). In a mode that blocks conflicts a role change that makes it needs `sod_override_reason`, approved with the
+  change (TEAM-02); an invitation with conflicting roles is refused; posting or reversing a journal is refused to a
+  person who holds it without an override (TEAM-04). SOD-8 and SOD-10 are the approval engine's requester-never-signs
+  rule. Tests: `TestRoleCombinationsThatConflict`, `TestTeamModeSwitchesAreDualControlled`. **Left:** SOD-1 to SOD-5,
+  SOD-7 and SOD-9 per item, with their objects (payments, journals above the threshold, pay runs, reconciliations,
+  close, write-offs); and SOD-6 when approving: once a transaction row's changes go through the approval engine (bills,
+  payment batches, period close), `checkConflicts` belongs in `sign()` for those rows too, as it is in `posting` now.)
 - [ ] 1.4 The AI and integration principals: reads within the delegating user's rights minus the AI exclusions, and narrow scopes. Tests `// req: access/roles-and-segregation AI assistant principal` and `… Integration principal`
 
 ## 2. People and sign-in

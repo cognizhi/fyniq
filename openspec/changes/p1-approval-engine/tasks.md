@@ -60,7 +60,17 @@
 ## 3. Team modes and Founder mode
 
 - [ ] 3.1 Founder, Standard and Enterprise modes, with dual-controlled switching. Tests `// req: access/team-modes <mode> mode` and `… Mode switching`
-  **Left:** the team mode is Founder mode, recorded in each envelope; the mode setting and switching are not built.
+  (20 Oct 2026, provisional (PRD rev 0.42): migration 000043: `team_mode`, versioned and added only as the next version
+  with the approved `team_mode.change` request that holds it, never changed (FY108); a new version voids every pending
+  request of the organisation (`approval_void_pending_all`); `sod_override`, one member's conflict kept for one version,
+  only with the approved switch or role change that holds it (FY109). Founder mode until the first switch; every
+  envelope records the mode in force. `GET /v1/team-mode` (mode, conflicts, overrides, history) and `PATCH
+  /v1/team-mode` (always 202: the Administrator asks, an Owner approves); a switch to Standard mode lists the members
+  whose roles conflict (SOD-6, `authz.RoleConflicts`) and pending invitations whose roles would, and waits until each
+  member's is resolved or overridden with a reason (TEAM-01, TEAM-06); `GET /v1/organisation` shows the mode. Tests:
+  `TestTeamModeSwitchesAreDualControlled`, `TestASwitchBlocksWhenTheConflictsChange`, `TestAttackTeamModesAreApprovedSwitches`,
+  `TestModes`, `TestASwitchWaitsForEveryConflict`. **Left:** Enterprise mode (TEAM-03 until its per-entity approval
+  matrices, SSO, SCIM and quarterly access reviews exist); the team-mode screen (5.1).)
 - [ ] 3.2 FM-1 (two-person rule with step-up for both), FM-2 (self-approval at or below the threshold, flagged) and FM-3 (the weekly review task, escalating after 14 days). Tests `// req: FM-1`, `// req: FM-2` and `// req: FM-3`
   (20 Oct 2026: FM-1 for the objects built: `POST /v1/approvals/{id}/approve` and `/reject` sign the envelope whose
   hash the approver sends; the requester never signs (APR-01, and FY101 in the database); the signer holds A on the

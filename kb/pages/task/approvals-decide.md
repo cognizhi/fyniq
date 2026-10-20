@@ -4,7 +4,7 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving or rejecting in steps from the Inbox, withdrawing your request, and why one becomes void or expires
 sources:
-  - docs/user-guide/approvals.md sha256:e526c1dc1b0b646631e342c8fe51e494a8b50135f2ff0bc19d97a23a78b5f7e6
+  - docs/user-guide/approvals.md sha256:d20685276d1c4b14aec1714c96b13d91b70c49834f1b5c7583f612bb5d8861f1
 data_class: general
 taint: trusted
 status: published
@@ -60,7 +60,7 @@ aliases:
 
 ## When it can no longer be approved
 
-- **Changed**: the setting, the person's roles or the approval policy changed after the request, so it is void and nothing changes; ask again.
+- **Changed**: the setting, the person's roles, the approval policy or the team mode changed after the request, so it is void and nothing changes; ask again ([[settings.team-mode]]).
 - **An approver lost their right**: someone who approved an earlier step no longer has the role their step needed when the last approval comes, so nothing changes and the request is void.
 - **Expired**: a request waits 7 days; then ask again.
 - **Rejected**: the change is not made, and the reason is shown.

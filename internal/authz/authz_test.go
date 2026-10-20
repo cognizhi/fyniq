@@ -34,6 +34,34 @@ func TestTheGrantsAreAppendixD(t *testing.T) {
 			}
 		}
 	}
+	// Every row of Appendix D is in the table, in the PRD's order (users-roles 1.1).
+	order := authztest.AppendixDRows(t)
+	if len(order) != len(authz.Rows) || len(authz.Grants) != len(authz.Rows) {
+		t.Errorf("Appendix D has %d rows; the policy table %d rows and %d grants", len(order), len(authz.Rows), len(authz.Grants))
+	}
+	for i, row := range order {
+		if i < len(authz.Rows) && string(authz.Rows[i]) != row {
+			t.Errorf("row %d: Appendix D says %q, the policy table %q", i+1, row, authz.Rows[i])
+		}
+		if _, ok := authz.Grants[authz.Capability(row)]; !ok {
+			t.Errorf("the policy table has no grants for Appendix D's row %q", row)
+		}
+	}
+}
+
+// An area Appendix D does not name grants nothing, to any role, the AI included.
+// req: access/roles-and-segregation Permission model
+// asvs: V8.2.1
+func TestAnUnknownAreaDenies(t *testing.T) {
+	p := authz.Policy{Operation: "planted", Capability: "Planted area (not in Appendix D)", Need: authz.View}
+	for _, r := range authz.Principals() {
+		if d := authz.Decide(p, []authz.Role{r}, false); d.Allowed {
+			t.Errorf("%s may view an unknown area: %+v", r, d)
+		}
+	}
+	if d := authz.Decide(p, []authz.Role{authz.Owner}, true); d.Allowed {
+		t.Errorf("the AI may view an unknown area: %+v", d)
+	}
 }
 
 // req: QA-SEC-03

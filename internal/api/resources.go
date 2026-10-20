@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -85,6 +86,7 @@ type Organisation struct {
 	Name           string `json:"name" doc:"Its name." example:"Northwind Analytics Pte. Ltd."`
 	BaseCurrency   string `json:"base_currency" doc:"The currency the books are kept in." example:"SGD"`
 	BaseMinorUnits int    `json:"base_minor_units" doc:"How many decimals the base currency has." example:"2"`
+	TeamMode       string `json:"team_mode" enum:"founder,standard,enterprise" doc:"The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42)." example:"founder"`
 	Version        int    `json:"version" doc:"The record's version; it also makes the ETag." example:"1"`
 }
 
@@ -97,14 +99,18 @@ func registerOrganisation(a *API) {
 	register(a, authz.GetOrganisation, huma.Operation{
 		OperationID: "getOrganisation", Method: http.MethodGet, Path: "/v1/organisation", Tags: []string{"Organisation"},
 		Summary: "Get your organisation",
-		Description: "Returns the organisation your session is in: its name and base currency, which every screen shows. " +
+		Description: "Returns the organisation your session is in: its name, base currency and team mode, which every screen shows. " +
 			"Read-only; no side effects. Every member of the organisation may call it.",
 	}, nil, func(ctx context.Context, _ *struct{}) (*organisationOutput, error) {
 		p, _ := authn.From(ctx)
 		var out organisationOutput
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			o, err := u.Organisation(ctx)
-			out.Body = Organisation{ID: o.ID.String(), Name: o.Name, BaseCurrency: o.BaseCurrency, BaseMinorUnits: o.BaseMinorUnits, Version: o.Version}
+			if err != nil {
+				return err
+			}
+			mode, _, _, err := teamModeOf(ctx, u)
+			out.Body = Organisation{ID: o.ID.String(), Name: o.Name, BaseCurrency: o.BaseCurrency, BaseMinorUnits: o.BaseMinorUnits, TeamMode: mode, Version: o.Version}
 			out.ETag = etag(o.Version)
 			return err
 		})
@@ -573,7 +579,7 @@ func registerJournals(a *API) {
 	postingCodes := []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
 		journal.CodeNotJournal, journal.CodeBadDraft, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed,
 		storage.CodeAccountNotPost, storage.CodeAmount, storage.CodeDocumentStatus, storage.CodeDuplicate, storage.CodeRetry, storage.CodeLockTimeout,
-		storage.CodeShareCapital}
+		storage.CodeShareCapital, team.CodeAction}
 	postingCodes = append(postingCodes, LedgerCodes...)
 
 	register(a, authz.PostJournal, huma.Operation{
@@ -628,6 +634,11 @@ func (a *API) posting(ctx context.Context, rawID, key, ifMatch, prefer string, r
 			return JournalPosting{}, err
 		}
 		if err := checkIfMatch(ifMatch, journalETag(before)); err != nil {
+			return JournalPosting{}, err
+		}
+		// SOD-6 at the moment of posting: in a mode that blocks conflicts, a person whose roles administer users and post
+		// does not post, unless an override lets them (rev 0.42).
+		if err := checkConflicts(ctx, u, p, "Posting"); err != nil {
 			return JournalPosting{}, err
 		}
 		entry, err := command(ctx, p, id)

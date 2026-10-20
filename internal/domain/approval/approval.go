@@ -12,7 +12,8 @@
 // (A) on the object's Appendix D row (Rows), narrowed to some roles or to named members; a policy never adds anyone
 // Appendix D does not. Each object type has a built-in policy (Policies) until its organisation changes it; a
 // change is itself an approval request under the policy for approval policies, which is fixed (FR-APR-09, SOD-8).
-// The team mode is Founder mode, the default at go-live.
+// The envelope records the organisation's team mode (§6.4), so a switch changes every envelope; a switch is itself an
+// approval request (rev 0.42).
 package approval
 
 import (
@@ -37,16 +38,21 @@ const (
 	ObjectInvitation = "member_invitation"    // an invitation with roles after the founder bootstrap (FR-ADM-01, FM-1)
 	ObjectPolicy     = "approval_policy"      // an object type's approval policy (FR-APR-09, SOD-8); its key is that object type
 	ObjectPack       = "statutory_pack"       // a statutory pack version the organisation activates (ENG-32, SOD-10); its key is the version's id
+	ObjectTeamMode   = "team_mode"            // the organisation's team mode (§6.4, FR-ADM-04); its key is TeamModeKey
 )
+
+// TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
+const TeamModeKey = "organisation"
 
 // The operations: what executes on the final approval.
 const (
-	OpSettingChange = "organisation_setting.change"
-	OpRoleAssign    = "role.assign"
-	OpRoleRevoke    = "role.revoke"
-	OpInvite        = "member_invitation.create"
-	OpPolicyChange  = "approval_policy.change"
-	OpPackActivate  = "statutory_pack.activate"
+	OpSettingChange  = "organisation_setting.change"
+	OpRoleAssign     = "role.assign"
+	OpRoleRevoke     = "role.revoke"
+	OpInvite         = "member_invitation.create"
+	OpPolicyChange   = "approval_policy.change"
+	OpPackActivate   = "statutory_pack.activate"
+	OpTeamModeChange = "team_mode.change"
 )
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -63,6 +69,8 @@ var Dependencies = map[string][]string{
 	ObjectPolicy: {"policy_version"},
 	// the loaded version's digest and dates, and whether the organisation has activated it already
 	ObjectPack: {"digest", "effective_from", "effective_to", "activated"},
+	// the team mode's version in force, and the conflicts of §6.3 the members' roles and pending invitations hold
+	ObjectTeamMode: {"mode_version", "conflicts"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -73,6 +81,7 @@ var Rows = map[string]string{
 	ObjectInvitation: "Users, roles, team mode",
 	ObjectPolicy:     "Approval policies, AI catalogue",
 	ObjectPack:       "Statutory parameters",
+	ObjectTeamMode:   "Users, roles, team mode",
 }
 
 // The limits of a policy.
@@ -102,9 +111,6 @@ type Policy struct {
 // Label is the version string of an organisation's version n of an object type's policy.
 func Label(objectType string, n int) string { return fmt.Sprintf("%s/v%d", objectType, n) }
 
-// TeamModeFounder is Founder mode (§6.4), the default team mode at go-live.
-const TeamModeFounder = "founder"
-
 // Policies are the built-in policies of the object types, which apply until an organisation changes one: one step,
 // with a quorum of one, of anyone who holds A on the object's row (the Owner for settings and roles; the Owner and
 // the Controller for policies and statutory packs, Appendix D). The policy for approval policies is fixed, so no change can lock an
@@ -115,6 +121,7 @@ var Policies = map[string]Policy{
 	ObjectInvitation: {ObjectType: ObjectInvitation, Version: "founder/member_invitation@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPolicy:     {ObjectType: ObjectPolicy, Version: "founder/approval_policy@2026-10-20.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
 	ObjectPack:       {ObjectType: ObjectPack, Version: "founder/statutory_pack@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectTeamMode:   {ObjectType: ObjectTeamMode, Version: "founder/team_mode@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

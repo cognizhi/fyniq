@@ -54,3 +54,5 @@ A wrong, used, withdrawn or expired code is refused, and nothing changes. Ask fo
 - Once the company has a second member, adding or ending a role, or inviting someone, waits for
   another Owner's approval. An invitation's code is shown to you at once, and works once the
   invitation is approved.
+- In Standard mode, a role that conflicts with the person's other roles needs a reason, and an
+  invitation cannot give roles that conflict ([Choose how strictly duties are separated](team-mode.md)).

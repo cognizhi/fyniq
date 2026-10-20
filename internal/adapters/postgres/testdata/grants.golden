@@ -16,6 +16,7 @@ fyniq_api       SELECT    approval_signature
 fyniq_api       EXECUTE   approval_steps_met()
 fyniq_api       EXECUTE   approval_steps_valid()
 fyniq_api       EXECUTE   approval_void_pending()
+fyniq_api       EXECUTE   approval_void_pending_all()
 fyniq_api       EXECUTE   approval_void_pending_type()
 fyniq_api       INSERT    audit_event (body, id)
 fyniq_api       SELECT    balance
@@ -97,6 +98,8 @@ fyniq_api       EXECUTE   session_for()
 fyniq_api       EXECUTE   set_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()
+fyniq_api       INSERT    sod_override (conflict, created_at, created_by, reason, request_id, team_mode_version, user_id)
+fyniq_api       SELECT    sod_override
 fyniq_api       EXECUTE   start_session()
 fyniq_api       EXECUTE   started_job_slot()
 fyniq_api       INSERT    statutory_pack_activation (activated_at, approval_id, approved_by, proposed_by, version_id)
@@ -104,6 +107,8 @@ fyniq_api       SELECT    statutory_pack_activation
 fyniq_api       SELECT    statutory_pack_rows
 fyniq_api       SELECT    statutory_pack_versions
 fyniq_api       EXECUTE   super_admin_for_identity()
+fyniq_api       INSERT    team_mode (created_at, created_by, mode, request_id, version)
+fyniq_api       SELECT    team_mode
 fyniq_api       SELECT    tenants
 fyniq_api       EXECUTE   user_for_identity()
 fyniq_api       INSERT    user_membership (user_id)
@@ -144,9 +149,11 @@ fyniq_executor  SELECT    outbox
 fyniq_executor  UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_executor  SELECT    period
 fyniq_executor  USAGE     schema fyniq
+fyniq_executor  SELECT    sod_override
 fyniq_executor  SELECT    statutory_pack_activation
 fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
+fyniq_executor  SELECT    team_mode
 fyniq_readonly  SELECT    account
 fyniq_readonly  SELECT    approval_policy
 fyniq_readonly  SELECT    approval_request
@@ -181,9 +188,11 @@ fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    role_assignment
 fyniq_readonly  USAGE     schema fyniq
+fyniq_readonly  SELECT    sod_override
 fyniq_readonly  SELECT    statutory_pack_activation
 fyniq_readonly  SELECT    statutory_pack_rows
 fyniq_readonly  SELECT    statutory_pack_versions
+fyniq_readonly  SELECT    team_mode
 fyniq_readonly  SELECT    user_membership
 fyniq_worker    SELECT    account
 fyniq_worker    SELECT    approval_policy
@@ -234,8 +243,10 @@ fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()
 fyniq_worker    SELECT    role_assignment
 fyniq_worker    USAGE     schema fyniq
+fyniq_worker    SELECT    sod_override
 fyniq_worker    SELECT    statutory_pack_activation
 fyniq_worker    SELECT    statutory_pack_rows
 fyniq_worker    SELECT    statutory_pack_versions
+fyniq_worker    SELECT    team_mode
 fyniq_worker    SELECT    tenants
 fyniq_worker    SELECT    user_membership

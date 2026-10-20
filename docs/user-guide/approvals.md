@@ -48,8 +48,8 @@ can withdraw a request; anyone else who disagrees rejects it with a reason.
 
 ## When a request can no longer be approved
 
-- **Changed**: if the setting, the person's roles or the approval policy changed after the
-  request, the request is void and nothing changes. Ask for the change again.
+- **Changed**: if the setting, the person's roles, the approval policy or the team mode changed
+  after the request, the request is void and nothing changes. Ask for the change again.
 - **An approver lost their right**: if someone who approved an earlier step no longer has the
   role their step needed when the last approval comes, nothing changes and the request is void.
 - **Expired**: a request waits 7 days. After that, ask for the change again.

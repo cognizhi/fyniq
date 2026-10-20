@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The approved request that made it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "created_at": {
+      "description": "When it took effect.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "mode": {
+      "description": "The team mode from then on.",
+      "enum": [
+        "founder",
+        "standard",
+        "enterprise"
+      ],
+      "examples": [
+        "standard"
+      ],
+      "type": "string"
+    },
+    "requested_by": {
+      "description": "The user who asked for it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "version": {
+      "description": "The version, from 1.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "mode",
+    "approval_id",
+    "requested_by",
+    "created_at"
+  ],
+  "title": "TeamModeVersion",
+  "type": "object"
+}

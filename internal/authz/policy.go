@@ -23,17 +23,54 @@ const (
 // Capability is a row of Appendix D, named exactly as the PRD names it.
 type Capability string
 
-// The capabilities the P0 endpoints use.
+// The capabilities: every row of Appendix D, in its order, named exactly as the PRD names it (users-roles 1.1).
 const (
-	ChartOfAccounts     Capability = "Chart of accounts, dimensions"
-	Journals            Capability = "Journals"
-	OrganisationProfile Capability = "Organisation profile, financial year, defaults (rev 0.29)"
-	ContactsAndItems    Capability = "Contacts and items (rev 0.33)"
 	UsersAndRoles       Capability = "Users, roles, team mode"
-	Evidence            Capability = "Evidence: add, supersede (rev 0.3)"
-	Integrations        Capability = "Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)"
 	ApprovalPolicies    Capability = "Approval policies, AI catalogue"
+	OrganisationProfile Capability = "Organisation profile, financial year, defaults (rev 0.29)"
 	StatutoryParameters Capability = "Statutory parameters"
+	ChartOfAccounts     Capability = "Chart of accounts, dimensions"
+	ContactsAndItems    Capability = "Contacts and items (rev 0.33)"
+	BankTransactions    Capability = "Bank transactions, categorise"
+	BankReconciliation  Capability = "Bank reconciliation sign-off"
+	Invoices            Capability = "Invoices, credit notes"
+	Bills               Capability = "Bills, vendor credits"
+	VendorBankDetails   Capability = "Vendor bank details"
+	PaymentBatches      Capability = "Payment batches"
+	ExpenseClaims       Capability = "Expense claims"
+	DirectorAccounts    Capability = "Director accounts, settlements, share issues (rev 0.3)"
+	CapTable            Capability = "Cap table, holders, investors, equity transactions (rev 0.3)"
+	Evidence            Capability = "Evidence: add, supersede (rev 0.3)"
+	KnowledgeBase       Capability = "Knowledge base: compiled pages and index (rev 0.4)"
+	AICompanySecretary  Capability = "AI company secretary: enable, schedule, runs and drafts (rev 0.6)" // #nosec G101 -- a permission row's name, not a credential
+	Integrations        Capability = "Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)"
+	Announcements       Capability = "Announcements to the organisation (rev 0.6)"
+	OwnNotifications    Capability = "Own notifications and preferences (rev 0.6)"
+	DocumentTemplates   Capability = "Document templates: edit, publish (rev 0.7)"
+	Timesheets          Capability = "Timesheets and project time (rev 0.7)"
+	ProjectReports      Capability = "Project reports and cost rates (rev 0.8)"
+	BankConnections     Capability = "Bank data, payment-provider and ticketing connections (rev 0.7)"
+	Journals            Capability = "Journals"
+	PayRuns             Capability = "Pay runs, employee data"
+	FixedAssets         Capability = "Fixed assets"
+	PeriodClose         Capability = "Period close / reopen"
+	GSTReturns          Capability = "GST return, filing"
+	Reports             Capability = "Reports, dashboards"
+	Budgets             Capability = "Budgets, forecasts"
+	AuditTrail          Capability = "Audit trail"
+	ComplianceCenter    Capability = "Compliance Center"
+	TenantExport        Capability = "Tenant export"
+	AIProviders         Capability = "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+	PeopleAndHR         Capability = "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
+	ConnectedApps       Capability = "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+	OwnMCPConnection    Capability = "Own MCP connection (opt in, consent, revoke) (rev 0.2)"
+)
+
+// Rows are Appendix D's rows in its order.
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, StatutoryParameters, ChartOfAccounts, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+
+// The capabilities outside Appendix D.
+const (
 	// Membership is not an Appendix D row: the caller's organisation (its name and base currency),
 	// which every screen shows, is readable by every member of it. AI acts for a member; the Super
 	// admin and the HR officer (Nemura only) are not members through those roles.
@@ -69,54 +106,126 @@ type Cell struct {
 	Qualifier string // the words after the letters, e.g. "limit"; or the whole cell when it has no letters
 }
 
-// Grants are the Appendix D cells of the capabilities the API uses, by column, copied from the PRD.
-// The matrix test parses Appendix D and fails when a cell here differs from it.
+// Grants are Appendix D's cells, by row and column, copied from the PRD: a cell's leading letters are its rights and the
+// rest its qualifier. The matrix test parses Appendix D and fails when a cell here differs from it, or a row is missing or
+// extra. A capability without a row grants nothing to anyone.
 var Grants = map[Capability]map[string]Cell{
-	ChartOfAccounts: {
-		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"V", ""},
-		"AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""},
-		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
-	},
-	OrganisationProfile: {
-		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""},
-		"AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""},
-		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"V", ""}, "AI": {"V", ""},
-	},
-	Integrations: {
-		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {},
-		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
-		"Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
-	},
 	UsersAndRoles: {
-		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {},
-		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
-		"Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
 	},
 	ApprovalPolicies: {
-		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"A", ""}, "Accountant": {"V", ""}, "Bookkeeper": {},
-		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
-		"Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"A", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	OrganisationProfile: {
+		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"V", ""}, "AI": {"V", ""},
 	},
 	StatutoryParameters: {
-		"Owner": {"A", ""}, "Admin": {}, "Controller": {"CA", ""}, "Accountant": {"C", ""}, "Bookkeeper": {},
-		"AR": {}, "AP": {}, "Payroll": {"V", ""}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
-		"Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"CA", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {"V", ""}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
+	},
+	ChartOfAccounts: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
 	},
 	ContactsAndItems: {
-		"Owner": {"V", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""},
-		"AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {}, "Releaser": {"V", ""}, "Approver": {"V", ""},
-		"Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"V", ""},
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"V", ""},
 	},
-	Journals: {
-		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", "limit"}, "Bookkeeper": {},
-		"AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""},
-		"Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal"},
+	BankTransactions: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", ""}, "Bookkeeper": {"CP", ""}, "AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {}, "Releaser": {"V", ""}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal"},
+	},
+	BankReconciliation: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	Invoices: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", ""}, "Bookkeeper": {"C", ""}, "AR": {"CP", ""}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {"A", "limit"}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal"},
+	},
+	Bills: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", ""}, "Bookkeeper": {"C", ""}, "AR": {}, "AP": {"C", ""}, "Payroll": {}, "Releaser": {}, "Approver": {"A", "limit"}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal"},
+	},
+	VendorBankDetails: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {"C", ""}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"M", ""}, "Tax agent": {"M", ""}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	PaymentBatches: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {"C", ""}, "Payroll": {"C", "salaries"}, "Releaser": {"R", ""}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	ExpenseClaims: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""}, "AR": {}, "AP": {"V", ""}, "Payroll": {}, "Releaser": {}, "Approver": {"A", ""}, "Employee": {"C", "own"}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal (draft)"},
+	},
+	DirectorAccounts: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", ""}, "Bookkeeper": {"V", ""}, "AR": {}, "AP": {}, "Payroll": {"V", "deferred pay"}, "Releaser": {"R", "repayments"}, "Approver": {}, "Employee": {"V", "own"}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", "share issues"}, "DPO": {}, "AI": {"", "Ask only"},
+	},
+	CapTable: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {"V", "own grants"}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", "own holding; all if granted"}, "DPO": {"M", ""}, "AI": {"", "Scenarios only, if `fyniq.read.equity` granted"},
 	},
 	Evidence: {
-		"Owner": {"C", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""},
-		"AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", "payroll"}, "Releaser": {"C", ""}, "Approver": {"C", ""},
-		"Employee": {"C", "own"}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"V", ""},
-		"AI": {"", "Proposal (`doc.attach`)"},
+		"Owner": {"C", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", "payroll"}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {"C", "own"}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"", "Proposal (`doc.attach`)"},
+	},
+	KnowledgeBase: {
+		"Owner": {"VC", "edit, publish"}, "Admin": {"VC", "edit, publish"}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {"", "Reads, filtered to the user (AI-54)"},
+	},
+	AICompanySecretary: {
+		"Owner": {"A", "+ second approver (enable); C (schedule)"}, "Admin": {"C", "schedule"}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", "summaries"}, "DPO": {}, "AI": {"", "Runs as the agent principal (AI-63)"},
+	},
+	Integrations: {
+		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	Announcements: {
+		"Owner": {"CA", ""}, "Admin": {"C", ""}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	OwnNotifications: {
+		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", ""}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {"C", ""}, "Auditor": {"C", ""}, "Tax agent": {"C", ""}, "Board": {"C", ""}, "DPO": {"C", ""}, "AI": {},
+	},
+	DocumentTemplates: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	Timesheets: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {"V", ""}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {"A", "project manager"}, "Employee": {"C", "own"}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal (draft invoice)"},
+	},
+	ProjectReports: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"V", "role-average rates"}, "Accountant": {"V", "role-average rates"}, "Bookkeeper": {}, "AR": {"V", "revenue, hours"}, "AP": {}, "Payroll": {"V", ""}, "Releaser": {}, "Approver": {"V", "own projects; role-average rates"}, "Employee": {}, "Auditor": {"V", "role-average rates"}, "Tax agent": {"V", "role-average rates"}, "Board": {}, "DPO": {}, "AI": {"", "Same as the user; person-level rates only with payroll access (FR-PAY-13, AI-02)"},
+	},
+	BankConnections: {
+		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	Journals: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", "limit"}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"", "Proposal"},
+	},
+	PayRuns: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"M", "(rev 0.8) V if granted, FR-PAY-13"}, "Accountant": {"M", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {"C", ""}, "Releaser": {"R", "salaries"}, "Approver": {}, "Employee": {"V", "own"}, "Auditor": {"M", ""}, "Tax agent": {"M", ""}, "Board": {}, "DPO": {"M", ""}, "AI": {"", "Only if enabled (AI-02)"},
+	},
+	FixedAssets: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", ""}, "Bookkeeper": {"V", ""}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	PeriodClose: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"CA", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	GSTReturns: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"", "Ask only"},
+	},
+	Reports: {
+		"Owner": {"V", ""}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", "sales"}, "AP": {"V", "purchases"}, "Payroll": {"V", "payroll"}, "Releaser": {"V", ""}, "Approver": {"V", "dept"}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", "board pack"}, "DPO": {"V", ""}, "AI": {"V", ""},
+	},
+	Budgets: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {"C", "dept"}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {}, "AI": {"", "Proposal (scenario)"},
+	},
+	AuditTrail: {
+		"Owner": {"V", ""}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	ComplianceCenter: {
+		"Owner": {"V", ""}, "Admin": {"V", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"CA", ""}, "AI": {},
+	},
+	TenantExport: {
+		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	AIProviders: {
+		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	PeopleAndHR: {
+		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {"V", ""}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	ConnectedApps: {
+		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	OwnMCPConnection: {
+		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", ""}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {}, "Auditor": {}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"C", ""}, "AI": {},
 	},
 }
 
@@ -238,6 +347,10 @@ var (
 	ActivateStatutoryPack = Policy{Operation: "activateStatutoryPack", Capability: StatutoryParameters, Need: Create,
 		Note: "Always waits for approval by a member who holds A on the row (the Owner or the Controller), never the proposer (ENG-32, SOD-10); " +
 			"needs a person signed in who passed step-up in the last 5 minutes."}
+	GetTeamMode    = Policy{Operation: "getTeamMode", Capability: UsersAndRoles, Need: View}
+	SwitchTeamMode = Policy{Operation: "switchTeamMode", Capability: UsersAndRoles, Need: Create,
+		Note: "Always waits for approval by a member who holds A on the row (an Owner), never the requester (§6.4, FR-ADM-04); " +
+			"needs a person signed in who passed step-up in the last 5 minutes."}
 	ChangeApprovalPolicy = Policy{Operation: "changeApprovalPolicy", Capability: ApprovalPolicies, Need: Create,
 		Note: "Always waits for approval by a member who holds A on the row (the Owner or the Controller), never the requester (FR-APR-09, SOD-8); " +
 			"needs a person signed in who passed step-up in the last 5 minutes."}
@@ -280,7 +393,8 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
-	WithdrawApproval, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack)
+	WithdrawApproval, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
+	GetTeamMode, SwitchTeamMode)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
