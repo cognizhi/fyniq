@@ -4,7 +4,7 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare a manual journal and save it as a draft, check what posting writes, post it, and reverse a posted journal with a reason
 sources:
-  - docs/user-guide/journals.md sha256:bad236cce2d22b2bbfee6e909317d58fa7a48f9fdedac5dd84a7c9d97b51960d
+  - docs/user-guide/journals.md sha256:f3e44d7eb31d58fc7d425841796415d5657d2fc0ed028f09626a650200f0ec98
 data_class: general
 taint: trusted
 status: draft
@@ -55,7 +55,7 @@ aliases:
 
 - Open it, select **Reverse**, choose the date of the reversing entry (on or after the journal's date) and say why, then **Reverse**.
 - A reversing entry with every line the other way round posts on that date; the journal stays in the books, marked **Reversed**, and the audit trail keeps the reason. A journal is reversed once.
-- Related: opening the financial year so journals can post ([[accounting.periods]]); the accounts journals post to ([[accounting.chart]]).
+- Related: opening the financial year so journals can post ([[accounting.periods]]); the accounts journals post to ([[accounting.chart]]); the lines they post, in the general ledger ([[reports.general-ledger]]).
 
 (src: docs/user-guide/journals.md#reverse-a-posted-journal) (src: docs/user-guide/journals.md#related)
 

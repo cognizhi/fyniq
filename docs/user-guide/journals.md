@@ -74,3 +74,4 @@ books, marked **Reversed**, and the audit trail keeps your reason. A journal is 
 
 - [Open the financial year and close the periods](periods-and-close.md)
 - [Set up and keep the chart of accounts](chart-of-accounts.md)
+- [Read the general ledger](general-ledger.md)

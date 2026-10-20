@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarRange, ChevronRight, NotebookPen, Scale, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarRange, ChevronRight, NotebookPen, Scale, ScrollText, type LucideIcon } from "lucide-react";
 import { helpText } from "../../i18n";
 import { Icon } from "../../ui";
 
@@ -7,11 +7,12 @@ const pages: { to: string; help: string; icon: LucideIcon }[] = [
   { to: "/accounting/journals", help: "accounting.journals", icon: NotebookPen },
   { to: "/accounting/close", help: "accounting.periods", icon: CalendarRange },
   { to: "/accounting/opening-balances", help: "accounting.opening-balances", icon: Scale },
+  { to: "/reports/general-ledger", help: "reports.general-ledger", icon: ScrollText },
   { to: "/accounting/chart-of-accounts", help: "accounting.chart", icon: BookOpen },
 ];
 
 // Accounting is the Accounting workspace's first page (docs/design/screens: the breadcrumb's "Accounting"): its
-// pages, each with what it is for. The general ledger and schedules join with their tasks.
+// pages, each with what it is for. Schedules join with their task.
 export function Accounting() {
   return (
     <div className="fy-page fy-page--narrow fy-enter">
