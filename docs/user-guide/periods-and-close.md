@@ -51,4 +51,5 @@ closed period refuses every posting dated in it.
 ## Related
 
 - [Prepare, post and reverse journals](journals.md)
+- [Enter the opening balances](opening-balances.md)
 - [Organisation settings](organisation-settings.md)

@@ -72,7 +72,11 @@
 - [ ] 7.2 Build opening-balances and period-close as designed, with the periods of the year on the close page
   (21 Oct 2026, part: Accounting › Periods and close lists the periods by financial year, open or closed, and opens the
   next year; Home's set-up checklist gains "Open the first financial year". Guide `periods-and-close.md` → kb
-  `accounting.periods`. **Left:** the close itself (1.2, 1.3) and opening balances (3.1).)
+  `accounting.periods`. Accounting › Opening balances lists every balance-sheet account (revenue and expenses on request)
+  with a debit and a credit, the total adding up exactly as typed; it saves a draft at the version read, checks and posts
+  once; Home's checklist gains "Enter the opening balances". Guide `opening-balances.md` → kb
+  `accounting.opening-balances`. **Left:** the close itself (1.2, 1.3), open items (with `p1-sales`, `p1-purchases`),
+  changes after posting (2.3).)
 - [ ] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
 - [ ] 7.4 Build schedules with 6.4
 

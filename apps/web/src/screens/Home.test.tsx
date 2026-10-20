@@ -26,6 +26,7 @@ describe("Home", () => {
       "GET /v1/review-log": { status: 200, body: { items: [{ id: "e1", you_may_review: true }], unreviewed: 1, overdue: 1 } },
       "GET /v1/organisation/profile": { status: 200, body: { legal_name: "Cognizhi Pte Ltd", uen: "202612345K", fy_start_month: 1, time_zone: "Asia/Singapore", version: 1 } },
       "GET /v1/periods": { status: 200, body: { items: [] } },
+      "GET /v1/opening-balances": { status: 200, body: { status: "posted", version: 1, lines: [] } },
       "GET /v1/accounts": { status: 200, body: { items: [{ id: "x", money_account: true, active: true }] } },
       "GET /v1/contacts": { status: 200, body: { items: [] } },
       "GET /v1/members": { status: 200, body: { items: [{ id: "m1" }] } },
@@ -38,9 +39,9 @@ describe("Home", () => {
     const setup = await screen.findByRole("list", { name: "Set up the company" });
     await screen.findByText("Add customers and vendors");
     const steps = within(setup).getAllByRole("listitem");
-    expect(steps.map((s) => s.textContent?.includes("Done"))).toEqual([true, true, false, false, true, true, false, false]); // the owner session also holds Controller
+    expect(steps.map((s) => s.textContent?.includes("Done"))).toEqual([true, true, false, false, true, true, true, false, false]); // the owner session also holds Controller
     expect(within(setup).queryByText("Add a passkey")).toBeNull(); // a read refused leaves its step out
-    expect(screen.getByRole("progressbar", { name: "Set-up progress" }).getAttribute("aria-valuenow")).toBe("4");
+    expect(screen.getByRole("progressbar", { name: "Set-up progress" }).getAttribute("aria-valuenow")).toBe("5");
     await noViolations(document.body);
   });
 
@@ -51,6 +52,7 @@ describe("Home", () => {
       "GET /v1/review-log": { status: 200, body: { items: [], unreviewed: 0, overdue: 0 } },
       "GET /v1/organisation/profile": { status: 200, body: { fy_start_month: 1, time_zone: "Asia/Singapore", version: 1 } },
       "GET /v1/periods": { status: 200, body: { items: [] } },
+      "GET /v1/opening-balances": { status: 200, body: { status: "none", version: 0, lines: [] } },
       "GET /v1/accounts": { status: 200, body: { items: [] } },
       "GET /v1/contacts": { status: 200, body: { items: [] } },
       "GET /v1/members": { status: 200, body: { items: [{ id: "m1" }] } },

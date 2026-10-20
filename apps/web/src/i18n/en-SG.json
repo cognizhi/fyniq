@@ -235,6 +235,22 @@
     "period.open-year": {
       "label": "Open the year",
       "tooltip": "Create the monthly periods of the next financial year, so its journals and documents can post."
+    },
+    "accounting.opening-balances": {
+      "label": "Opening balances",
+      "tooltip": "Each account's balance on the day the books start, as a debit or a credit, adding up to zero."
+    },
+    "opening.save": {
+      "label": "Save as a draft",
+      "tooltip": "Keep the balances as a draft (✎); nothing posts until they are posted."
+    },
+    "opening.check": {
+      "label": "Check",
+      "tooltip": "Run the posting rules without saving anything: the balances must net to zero, in the base currency."
+    },
+    "opening.post": {
+      "label": "Post",
+      "tooltip": "Post the balances at the books start, once. Changing them afterwards needs a second founder."
     }
   }
 }

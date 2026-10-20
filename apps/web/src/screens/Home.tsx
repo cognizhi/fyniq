@@ -32,6 +32,14 @@ function useCounts() {
         return error || !data ? null : data;
       },
     }),
+    opening: useQuery({
+      ...opts,
+      queryKey: ["opening-balances", "home"],
+      queryFn: async () => {
+        const { data, error } = await api.GET("/v1/opening-balances");
+        return error || !data ? null : data.status;
+      },
+    }),
     periods: useQuery({ ...opts, queryKey: ["periods", "home"], queryFn: () => count(() => api.GET("/v1/periods", { params: { query: { page_size: 1 } } })) }),
     accounts: useQuery({ ...opts, queryKey: ["accounts", "home"], queryFn: () => count(() => api.GET("/v1/accounts", { params: { query: { page_size: 500 } } })) }),
     money: useQuery({ ...opts, queryKey: ["accounts", "home-money"], queryFn: () => count(() => api.GET("/v1/accounts", { params: { query: { page_size: 500 } } }), (a) => a.money_account && a.active) }),
@@ -161,6 +169,7 @@ export function Home() {
   add("periods", c.periods.data, (c.periods.data ?? 0) > 0, "Open the first financial year", "Its monthly periods: nothing posts on a date until its year is open", "/accounting/close");
   add("chart", c.accounts.data, (c.accounts.data ?? 0) > 0, "Load the chart of accounts", "Start from the standard Singapore start-up chart", "/accounting/chart-of-accounts");
   add("bank", c.money.data, (c.money.data ?? 0) > 0, "Add the bank accounts", "Each bank, card or cash account as a money account in the chart", "/accounting/chart-of-accounts");
+  add("opening", c.opening.data, c.opening.data === "posted" || c.opening.data === "reversed", "Enter the opening balances", "Each account's balance on the day the books start", "/accounting/opening-balances");
   add("contacts", c.contacts.data, (c.contacts.data ?? 0) > 0, "Add customers and vendors", "Who you invoice, and whose bills you pay", "/contacts");
   add("founders", c.members.data, (c.members.data ?? 0) > 1 || (c.invites.data ?? 0) > 0, "Invite the other founders", "Before the second one joins, your role changes are made at once", "/settings/members");
   add("passkey", c.passkeys.data, (c.passkeys.data ?? 0) > 0, "Add a passkey", "Confirming it's you, and signing approvals, then takes a touch", "/settings/profile");

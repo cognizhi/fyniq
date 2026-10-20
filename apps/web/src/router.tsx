@@ -34,6 +34,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "journal-new": lazyRouteComponent(() => import("./screens/accounting/JournalPage"), "JournalPage"),
   journal: lazyRouteComponent(() => import("./screens/accounting/JournalPage"), "JournalPage"),
   periods: lazyRouteComponent(() => import("./screens/accounting/Periods"), "Periods"),
+  "opening-balances": lazyRouteComponent(() => import("./screens/accounting/OpeningBalances"), "OpeningBalances"),
   "chart-of-accounts": lazyRouteComponent(() => import("./screens/accounting/ChartOfAccounts"), "ChartOfAccounts"),
   settings: lazyRouteComponent(() => import("./screens/settings/Settings"), "Settings"),
   "settings-profile": lazyRouteComponent(() => import("./screens/settings/Profile"), "Profile"),
