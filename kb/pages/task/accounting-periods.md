@@ -4,7 +4,7 @@ type: task
 title: Open the financial year and close the periods
 summary: What accounting periods are, how the financial years run from the books start, and how to open the next financial year so journals can post
 sources:
-  - docs/user-guide/periods-and-close.md sha256:d84de355f861269b78ca9c394bec9e46259a57786ca63bd4255d5058ca75c20b
+  - docs/user-guide/periods-and-close.md sha256:d556da37a5cdcdd61ec277cd4c4dfad90c89183077c123a9a33814be43162f70
 data_class: general
 taint: trusted
 status: draft
@@ -45,7 +45,7 @@ aliases:
 ## Closing a period
 
 - Closing a month, with its checks and a second founder's attestation, joins this page soon; a closed period refuses every posting dated in it.
-- Related: preparing and posting journals ([[accounting.journals]]).
+- Related: preparing and posting journals ([[accounting.journals]]); entering the opening balances ([[accounting.opening-balances]]).
 
 (src: docs/user-guide/periods-and-close.md#closing-a-period) (src: docs/user-guide/periods-and-close.md#related)
 
