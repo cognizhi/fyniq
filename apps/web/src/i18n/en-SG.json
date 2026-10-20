@@ -232,6 +232,10 @@
       "label": "Ask for approval",
       "tooltip": "Its debits are above the self-approval threshold: another person, who did not prepare it, approves it and it posts then."
     },
+    "journal.reverse-on": {
+      "label": "Reverses by itself",
+      "tooltip": "For an accrual: Fyniq posts the reversal on the date you choose, usually the first of the next month, once the journal is posted."
+    },
     "journal.edit": {
       "label": "Edit",
       "tooltip": "Correct a posted journal: the entry it has is reversed on its date and the new version posts, in one step, with a reason."

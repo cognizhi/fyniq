@@ -4,7 +4,7 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post a journal, ask for approval above the self-approval threshold, and edit or reverse a posted journal with a reason
 sources:
-  - docs/user-guide/journals.md sha256:673ca0ed2ee4cc2b8c7204f01f545f65a7ff8d47eed3749576379ad6ab7eb761
+  - docs/user-guide/journals.md sha256:60b0093e8015e0a0bd04435728b8c117be1acbca63ce75976703b4dae19a6f7d
 data_class: general
 taint: trusted
 status: draft
@@ -24,6 +24,8 @@ aliases:
   - self-approval threshold
   - journal approval
   - edit a journal
+  - auto-reversing journal
+  - accrual reversal
   - correct a posted journal
 ---
 
@@ -54,6 +56,14 @@ aliases:
 - Once posted, a journal never changes in place: it is edited or reversed, and the ledger keeps every entry.
 
 (src: docs/user-guide/journals.md#check-and-post-a-journal)
+
+## Journals that reverse by themselves
+
+- For an accrual: while preparing the journal, tick **Reverses by itself**; Fyniq suggests the first day of the month after the journal's date, and any other date after the journal's will do; then post as usual.
+- On that date Fyniq reverses the journal by itself, with the reason "Automatic reversal", and the journal shows **Reversed**; the reversal belongs to the journal as posted, so it needs no approval of its own.
+- If the reversal's month is closed or not open yet, it waits and Fyniq tries again every hour; the journal page shows the date until it reverses.
+
+(src: docs/user-guide/journals.md#journals-that-reverse-by-themselves)
 
 ## Journals above the self-approval threshold
 
@@ -93,6 +103,7 @@ aliases:
 - LEDGER-05 or LEDGER-06: choose an active account that is not a group.
 - LEDGER-07 or LEDGER-13: a rate only on a line in another currency.
 - LEDGER-16: date a reversal on or after the journal's date.
+- JOURNAL-11, the automatic reversal is not after the journal: date it after the journal's date, such as the first of the next month.
 - JOURNAL-02, not a draft: a posted journal is reversed, not changed.
 - JOURNAL-07, its debits are above the self-approval threshold: select **Ask for approval**.
 - JOURNAL-08, in Founder mode a reversal needs a second person: select **Ask to reverse**.
