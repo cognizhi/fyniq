@@ -55,3 +55,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | chart-of-accounts.md → accounting.chart (new guide for Accounting › Chart of accounts in the web app)
 
 ## [2026-10-20] compile | organisation-settings.md → settings.organisation, settings.change (related pages)
+
+## [2026-10-20] compile | contacts-and-items.md → contacts.manage (new guide for Contacts and Items and prices in the web app)
+
+## [2026-10-20] compile | chart-of-accounts.md → accounting.chart (related pages)

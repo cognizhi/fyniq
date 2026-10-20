@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { BookOpen, Building, House, Inbox, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { BookOpen, Building, Contact, House, Inbox, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -58,6 +58,8 @@ export const routes = [
   { kind: "route", id: "inbox", path: "/inbox", mode: "basic", signedIn: true, help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "approval", path: "/approvals/$approvalId", mode: "basic", signedIn: true, help: "approvals.request", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
+  { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
+  { kind: "route", id: "items", path: "/items", mode: "basic", signedIn: true, help: "items.overview", guide: "contacts.manage#items-and-prices" },
   { kind: "route", id: "chart-of-accounts", path: "/accounting/chart-of-accounts", mode: "expert", signedIn: true, help: "accounting.chart", guide: "accounting.chart" },
   { kind: "route", id: "settings", path: "/settings", mode: "basic", signedIn: true, help: "settings.overview", guide: "home.overview#settings" },
   { kind: "route", id: "settings-profile", path: "/settings/profile", mode: "basic", signedIn: true, help: "settings.profile", guide: "preferences.security" },
@@ -92,6 +94,8 @@ export const actions = [
   { kind: "action", id: "setting.reset", mode: "expert", help: "setting.reset", guide: "settings.organisation#change-a-setting" },
   { kind: "action", id: "pack.activate", mode: "expert", help: "pack.activate", guide: "settings.statutory-packs#activate-a-version" },
   { kind: "action", id: "review-banner", mode: "basic", help: "review.awaiting-verification", guide: "review.awaiting-verification" },
+  { kind: "action", id: "contact.add", mode: "basic", help: "contact.add", guide: "contacts.manage#add-a-contact" },
+  { kind: "action", id: "item.add", mode: "basic", help: "item.add", guide: "contacts.manage#items-and-prices" },
   { kind: "action", id: "chart.add", mode: "expert", help: "chart.add", guide: "accounting.chart#add-an-account" },
   { kind: "action", id: "chart.load-standard", mode: "expert", help: "chart.load-standard", guide: "accounting.chart#start-from-the-standard-chart" },
   { kind: "action", id: "mode", mode: "basic", help: "shell.mode", guide: "preferences.security#basic-and-expert-mode" },
@@ -108,6 +112,7 @@ export const actions = [
 export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
+  { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "auditor", "tax_agent", "dpo"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
   { kind: "nav", id: "nav.accounting", route: "/accounting/chart-of-accounts", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.chart" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },

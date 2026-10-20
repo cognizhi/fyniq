@@ -66,3 +66,4 @@ role the books rely on. Their code, type and role never change, and they stay ac
 ## Related
 
 - [Organisation settings](organisation-settings.md)
+- [Keep your contacts, items and prices](contacts-and-items.md)
