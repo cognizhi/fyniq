@@ -83,8 +83,11 @@
   `accounting.periods`. Accounting › Opening balances lists every balance-sheet account (revenue and expenses on request)
   with a debit and a credit, the total adding up exactly as typed; it saves a draft at the version read, checks and posts
   once; Home's checklist gains "Enter the opening balances". Guide `opening-balances.md` → kb
-  `accounting.opening-balances`. **Left:** the close itself (1.2, 1.3), open items (with `p1-sales`, `p1-purchases`),
-  changes after posting (2.3).)
+  `accounting.opening-balances`. Each month opens its close page: an Accountant or a Controller runs the checks, which
+  show what they found and when they go stale; another founder, an Owner or a Controller who did not run them, attests
+  with a statement and closes (step-up through "Confirm it's you"); a closed month shows who attested it, the revision
+  and the snapshot's hash. **Left:** reopening (1.3), the checklist template and reconciliations, flux (6.3), year end
+  (1.4), open items (with `p1-sales`, `p1-purchases`), changes after posting (2.3).)
 - [ ] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
 - [ ] 7.4 Build schedules with 6.4
 
