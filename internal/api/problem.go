@@ -13,6 +13,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
+	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
@@ -153,10 +154,18 @@ var codeFacts = map[string]struct {
 	storage.CodeSequence:       {409, "The number sequence cannot be set that way"},
 	CodeChartLoaded:            {409, "The organisation has accounts already"},
 	storage.CodePeriodDates:    {409, "A period overlaps another"},
+	storage.CodePeriodState:    {409, "The period is already closed, or not closed"},
 	period.CodeNoYear:          {409, "The financial years are not set"},
 	period.CodeTooFar:          {409, "The year starts too far ahead"},
 	period.CodeNotNext:         {409, "Not the next year to open"},
 	period.CodeYearsOpen:       {409, "The financial years are fixed"},
+	closing.CodeNotOpen:        {409, "The period is not open"},
+	closing.CodeStale:          {409, "The checks are stale"},
+	closing.CodeOrder:          {409, "An earlier period is open"},
+	closing.CodeNotClean:       {409, "The checks refused the close"},
+	closing.CodeSelfAttest:     {403, "Another founder attests the close"},
+	closing.CodeWrongCheck:     {409, "Not the checks of this period"},
+	storage.CodeClose:          {409, "The close is not attested that way"},
 	contact.CodeName:           {422, "The legal name is not valid"},
 	contact.CodeRole:           {422, "Neither a customer nor a vendor"},
 	contact.CodeEmail:          {422, "Not an email address"},
@@ -406,6 +415,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		lp  ledger.Problems
 		je  *journal.Error
 		pe  *period.Error
+		ce  *closing.Error
 		me  *money.Error
 		ste *storage.Error
 	)
@@ -423,6 +433,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(je.Code, sentence(je.Message), sentence(je.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
+	case errors.As(err, &ce):
+		return problem(ce.Code, sentence(ce.Message), sentence(ce.Fix))
 	case errors.As(err, &me):
 		return problem(me.Code, sentence(me.Message), sentence(me.Fix),
 			FieldProblem{Code: me.Code, Field: me.Field, Message: me.Message, Fix: me.Fix})

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checked_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-03T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "checked_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who ran them: the close's preparer."
+    },
+    "checks": {
+      "items": {
+        "$ref": "CloseCheckItem.schema.json"
+      },
+      "type": "array"
+    },
+    "clean": {
+      "description": "No check refused the close.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The run's ID, which the close names.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4da0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision they saw (ENG-46).",
+      "examples": [
+        412
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "stale": {
+      "description": "An entry dated in or before the period posted after they ran: run them again before the close (FR-GL-07).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "checked_at",
+    "ledger_revision",
+    "clean",
+    "stale",
+    "checks"
+  ],
+  "title": "CloseChecks",
+  "type": "object"
+}

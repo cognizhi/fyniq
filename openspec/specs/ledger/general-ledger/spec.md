@@ -183,6 +183,15 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **AND** there is never an entry in a closed June
 - **AND** the close snapshot's revision matches its trial balance
 
+#### Scenario: Two people close a period (rev 0.50)
+- **WHEN** a period is closed
+- **THEN** one person ran its close checks and another, stepped up, attested them, in every team mode
+- **AND** periods close in order
+
+#### Scenario: The snapshot is hashed (rev 0.50)
+- **WHEN** a period closes
+- **THEN** the trial balance at the period end is recorded as canonical JSON with its SHA-256, which the database recomputes
+
 ### Requirement: FR-GL-08 Period lock
 The database SHALL enforce the **period lock**: no posting with a date in a **closed** period (the hard lock), by anyone; the soft locks of FR-GL-09 are weaker states.
 

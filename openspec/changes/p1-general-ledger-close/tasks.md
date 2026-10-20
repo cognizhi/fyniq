@@ -12,7 +12,15 @@
   close / reopen" to read, C to open. Tests: `TestYearsAreCalendarMonthsCutAtTheBooksStartAndTheYearEnds`,
   `TestTheNextYearToOpen`, `TestAYearOpensAtMostOneYearAhead`, `TestTheYearsAreFixedOnceAPeriodExists`,
   `TestPeriodsAndFinancialYears`, three authorisation-matrix rows.)
-- [ ] 1.2 The close checks with their result and the ledger revision they saw; the attestation and close by a second person; the revision check; the close snapshot. Tests `// req: FR-GL-07` (including G4-053 on two connections), `// req: FM-4` and `// req: AUD-04`
+- [x] 1.2 The close checks with their result and the ledger revision they saw; the attestation and close by a second person; the revision check; the close snapshot. Tests `// req: FR-GL-07` (including G4-053 on two connections), `// req: FM-4` and `// req: AUD-04`
+  (21 Oct 2026, PRD rev 0.50: migration 000056 adds `period_close_check` and `period_close`, never changed (FY152); the
+  database refuses an attestation by the one who ran the checks, on unclean checks or another period's, or before them
+  (FY153), and recomputes the snapshot's SHA-256; the API's role may run `balance_differences()`. `internal/domain/closing`
+  runs the checks and closes under the ledger lock (`Ledger().Lock`), refusing stale checks (CLOSE-02), unclean ones
+  (CLOSE-04), the preparer (CLOSE-05) and an earlier open period (CLOSE-03), and asserts the revision at the close is the
+  one the snapshot read. `GET /v1/periods/{id}/close`, `POST …/close-checks` and `POST …/close` (stepped up). Tests:
+  `TestThePeriodClose`, `TestAttackTheCloseIsAttestedByAnotherOnItsOwnChecks`, `TestRaceBackDatedPostingAgainstTheAttestedClose`
+  (G4-053 both ways), three authorisation-matrix rows.)
 - [ ] 1.3 Reopening the latest closed period through the approval engine (object type `period`), with a reason and before and after snapshots; posting into a closed period refused by the database. Tests `// req: FR-GL-08`
 - [ ] 1.4 Year-end: retained earnings as the profit and loss of every earlier year, without closing entries; open items carried forward. Test `// req: FR-GL-10` (the optional closing entry waits for question 31)
 

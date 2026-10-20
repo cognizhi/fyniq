@@ -33,7 +33,9 @@ func TestOpeningBalances(t *testing.T) {
 		return map[string]any{"account_id": account, "amount": map[string]any{"amount": amount, "currency": currency}}
 	}
 	bank, sales, shares := e.books.Bank.ID.String(), e.books.Sales.ID.String(), capital.ID.String()
-	draft := func(lines ...map[string]any) map[string]any { return map[string]any{"memo": "From the 30 September trial balance", "lines": lines} }
+	draft := func(lines ...map[string]any) map[string]any {
+		return map[string]any{"memo": "From the 30 September trial balance", "lines": lines}
+	}
 	save := func(tag string, body map[string]any) response {
 		return e.call(http.MethodPut, "/v1/opening-balances", accountant, body, "If-Match", tag)
 	}

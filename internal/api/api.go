@@ -26,6 +26,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/passkey"
@@ -59,6 +60,7 @@ type API struct {
 	deps     Deps
 	policies map[string]authz.Policy
 	journals journal.Service
+	closing  closing.Service
 	passkeys *passkey.RelyingParty // nil without an origin
 }
 
@@ -146,7 +148,7 @@ func New(mux humago.Mux, d Deps) *API {
 	if d.Store == nil {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
-	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}}
+	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, closing: closing.Service{Store: d.Store}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -167,6 +169,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerChart(a)
 	registerPeriods(a)
 	registerOpening(a)
+	registerClose(a)
 	registerAccountEditing(a)
 	registerContacts(a)
 	registerItems(a)

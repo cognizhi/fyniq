@@ -346,6 +346,24 @@ period | status | text | not null | 'open'::text
 period | closed_revision | bigint | null | 
 period | version | integer | not null | 1
 period | created_at | timestamp with time zone | not null | now()
+period_close | organisation_id | uuid | not null | current_org()
+period_close | id | uuid | not null | uuidv7()
+period_close | period_id | uuid | not null | 
+period_close | check_id | uuid | not null | 
+period_close | attested_by | text | not null | 
+period_close | attested_at | timestamp with time zone | not null | 
+period_close | statement | text | not null | 
+period_close | closed_revision | bigint | not null | 
+period_close | snapshot | text | not null | 
+period_close | snapshot_hash | bytea | not null | 
+period_close_check | organisation_id | uuid | not null | current_org()
+period_close_check | id | uuid | not null | uuidv7()
+period_close_check | period_id | uuid | not null | 
+period_close_check | checked_by | text | not null | 
+period_close_check | checked_at | timestamp with time zone | not null | 
+period_close_check | ledger_revision | bigint | not null | 
+period_close_check | result | jsonb | not null | 
+period_close_check | clean | boolean | not null | 
 rate_limit_window | organisation_id | uuid | not null | current_org()
 rate_limit_window | id | uuid | not null | uuidv7()
 rate_limit_window | client_id | text | not null | 
@@ -1025,6 +1043,38 @@ period | period_status_not_null | NOT NULL status
 period | period_version_not_null | NOT NULL version
 period | period_version_positive | CHECK ((version > 0))
 period | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+period_close | period_close_actor_format | CHECK ((attested_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+period_close | period_close_attested_at_not_null | NOT NULL attested_at
+period_close | period_close_attested_by_not_null | NOT NULL attested_by
+period_close | period_close_check_fkey | FOREIGN KEY (organisation_id, check_id) REFERENCES period_close_check(organisation_id, id)
+period_close | period_close_check_id_not_null1 | NOT NULL check_id
+period_close | period_close_closed_revision_not_null | NOT NULL closed_revision
+period_close | period_close_id_not_null | NOT NULL id
+period_close | period_close_organisation_id_not_null | NOT NULL organisation_id
+period_close | period_close_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+period_close | period_close_period_id_not_null | NOT NULL period_id
+period_close | period_close_pkey | PRIMARY KEY (organisation_id, id)
+period_close | period_close_revision | CHECK ((closed_revision >= 0))
+period_close | period_close_snapshot_hash | CHECK ((snapshot_hash = sha256(convert_to(snapshot, 'UTF8'::name))))
+period_close | period_close_snapshot_hash_not_null | NOT NULL snapshot_hash
+period_close | period_close_snapshot_not_null | NOT NULL snapshot
+period_close | period_close_statement_length | CHECK (((length(btrim(statement)) >= 1) AND (length(btrim(statement)) <= 1000)))
+period_close | period_close_statement_not_null | NOT NULL statement
+period_close | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+period_close_check | period_close_check_actor_format | CHECK ((checked_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+period_close_check | period_close_check_checked_at_not_null | NOT NULL checked_at
+period_close_check | period_close_check_checked_by_not_null | NOT NULL checked_by
+period_close_check | period_close_check_clean_not_null | NOT NULL clean
+period_close_check | period_close_check_id_not_null | NOT NULL id
+period_close_check | period_close_check_ledger_revision_not_null | NOT NULL ledger_revision
+period_close_check | period_close_check_organisation_id_not_null | NOT NULL organisation_id
+period_close_check | period_close_check_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+period_close_check | period_close_check_period_id_not_null | NOT NULL period_id
+period_close_check | period_close_check_pkey | PRIMARY KEY (organisation_id, id)
+period_close_check | period_close_check_result_array | CHECK (((jsonb_typeof(result) = 'array'::text) AND (octet_length((result)::text) <= 65536)))
+period_close_check | period_close_check_result_not_null | NOT NULL result
+period_close_check | period_close_check_revision | CHECK ((ledger_revision >= 0))
+period_close_check | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 rate_limit_window | rate_limit_window_client_id_not_null | NOT NULL client_id
 rate_limit_window | rate_limit_window_client_key | UNIQUE (organisation_id, client_id, kind, window_start)
 rate_limit_window | rate_limit_window_client_length | CHECK (((length(client_id) >= 1) AND (length(client_id) <= 200)))
@@ -1271,6 +1321,8 @@ CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organi
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
+CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
+CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
@@ -1336,6 +1388,8 @@ CREATE UNIQUE INDEX organisation_setting_pkey ON fyniq.organisation_setting USIN
 CREATE UNIQUE INDEX organisation_setting_version_key ON fyniq.organisation_setting USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX outbox_business_key ON fyniq.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON fyniq.outbox USING btree (organisation_id, id)
+CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
+CREATE UNIQUE INDEX period_close_pkey ON fyniq.period_close USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
@@ -1376,6 +1430,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.opening_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
@@ -1442,6 +1498,10 @@ CREATE TRIGGER organisation_setting_voids AFTER INSERT ON fyniq.organisation_set
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_guard()
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON fyniq.outbox FOR EACH ROW EXECUTE FUNCTION outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON fyniq.outbox FOR EACH STATEMENT EXECUTE FUNCTION outbox_no_delete()
+CREATE TRIGGER period_close_check_no_truncate BEFORE TRUNCATE ON fyniq.period_close_check FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close FOR EACH ROW EXECUTE FUNCTION period_close_guard()
+CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close_check FOR EACH ROW EXECUTE FUNCTION period_close_guard()
+CREATE TRIGGER period_close_no_truncate BEFORE TRUNCATE ON fyniq.period_close FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_guard BEFORE UPDATE ON fyniq.period FOR EACH ROW EXECUTE FUNCTION period_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
@@ -1486,6 +1546,8 @@ organisation | tenant_isolation | * | (organisation_id = current_org()) | (organ
 organisation_setting | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1555,6 +1617,7 @@ organisation_setting_guard() → trigger | security invoker | v | search_path=pg
 organisation_setting_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0ab583b33ece447fa48c299fcc23d967
 outbox_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 58b04bc5d8e9853cd11acce22f3b6723
 outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1366cfa8290e64e2804d4cb992c01d1f
+period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a

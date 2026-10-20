@@ -4,6 +4,7 @@ package postgres_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"sync"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -411,4 +413,79 @@ func TestRandomPostingsKeepTheCacheAndTrialBalanceExact(t *testing.T) {
 		t.Fatalf("the rebuilt cache differs from the lines: %+v", d)
 	}
 	trialBalance("after the rebuild")
+}
+
+// G4-053: a back-dated posting and the close of its period on two connections. Either the posting commits first and
+// the close fails "checks are stale", or the close commits first and the posting is refused; never an entry in a
+// closed period, and the close's snapshot is of its own revision.
+// req: FR-GL-07
+// req: ENG-47
+// req: QA-ENG-05
+// asvs: V15.4.2
+func TestRaceBackDatedPostingAgainstTheAttestedClose(t *testing.T) {
+	s := store(t, "fyniq_api")
+	svc := closing.Service{Store: s}
+	as := func(ctx context.Context, who string) context.Context {
+		return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: who}})
+	}
+	checked := func(b porttest.Books) storage.CloseCheck {
+		t.Helper()
+		c, err := svc.RunChecks(as(context.Background(), "preparer"), b.Org, b.Oct.ID)
+		if err != nil || !c.Clean {
+			t.Fatalf("the checks: %v %+v", err, c)
+		}
+		return c
+	}
+
+	t.Run("the posting holds the lock first: it commits, and the close finds the checks stale", func(t *testing.T) {
+		b := books(t, "Race G4-053 post-first Pte Ltd")
+		c := checked(b)
+		started, release, posted := held(s, b.Org, appendSale("back-dated", b, porttest.Day(10, 15)))
+		if err := <-started; err != nil {
+			t.Fatal(err)
+		}
+		closed := make(chan error, 1)
+		go func() {
+			_, _, err := svc.Close(as(context.Background(), "attester"), b.Org, b.Oct.ID, c.ID, "Reviewed.")
+			closed <- err
+		}()
+		stillBlocked(t, "the close", closed)
+		close(release)
+		if err := <-posted; err != nil {
+			t.Fatalf("posting: %v", err)
+		}
+		var ce *closing.Error
+		if err := <-closed; !errors.As(err, &ce) || ce.Code != closing.CodeStale {
+			t.Fatalf("close: want %s, got %v", closing.CodeStale, err)
+		}
+		if p := period(t, s, b.Org, b.Oct.ID); p.Status != storage.PeriodOpen {
+			t.Fatalf("October is %s after a stale close", p.Status)
+		}
+	})
+
+	t.Run("the close holds the lock first: it commits, and the posting is refused", func(t *testing.T) {
+		b := books(t, "Race G4-053 close-first Pte Ltd")
+		c := checked(b)
+		var rec storage.PeriodClose
+		started, release, closed := held(s, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			rec, _, err = svc.Close(as(ctx, "attester"), b.Org, b.Oct.ID, c.ID, "Reviewed.")
+			return err
+		})
+		if err := <-started; err != nil {
+			t.Fatal(err)
+		}
+		posted := async(s, b.Org, appendSale("too late", b, porttest.Day(10, 15)))
+		stillBlocked(t, "the posting", posted)
+		close(release)
+		if err := <-closed; err != nil {
+			t.Fatalf("close: %v", err)
+		}
+		if err := <-posted; storage.CodeOf(err) != storage.CodePeriodClosed {
+			t.Fatalf("posting: want %s, got %v", storage.CodePeriodClosed, err)
+		}
+		if p := period(t, s, b.Org, b.Oct.ID); p.ClosedRevision == nil || *p.ClosedRevision != rec.ClosedRevision {
+			t.Fatalf("the period closed at %v, the close records %d", p.ClosedRevision, rec.ClosedRevision)
+		}
+	})
 }

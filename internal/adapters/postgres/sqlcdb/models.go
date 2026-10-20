@@ -461,6 +461,30 @@ type FyniqPeriod struct {
 	CreatedAt      time.Time
 }
 
+type FyniqPeriodClose struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodID       uuid.UUID
+	CheckID        uuid.UUID
+	AttestedBy     string
+	AttestedAt     time.Time
+	Statement      string
+	ClosedRevision int64
+	Snapshot       string
+	SnapshotHash   []byte
+}
+
+type FyniqPeriodCloseCheck struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodID       uuid.UUID
+	CheckedBy      string
+	CheckedAt      time.Time
+	LedgerRevision int64
+	Result         []byte
+	Clean          bool
+}
+
 type FyniqRateLimitWindow struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -323,7 +323,13 @@ var (
 	ListPeriods       = Policy{Operation: "listPeriods", Capability: PeriodClose, Need: View}
 	GetPeriod         = Policy{Operation: "getPeriod", Capability: PeriodClose, Need: View}
 	OpenFinancialYear = Policy{Operation: "openFinancialYear", Capability: PeriodClose, Need: Create}
-	PostJournal       = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
+	// The close is two acts by two people (FR-GL-07, FM-4; rev 0.50): the preparer runs the checks under C, another
+	// person attests and closes under A, never the AI.
+	GetPeriodClose = Policy{Operation: "getPeriodClose", Capability: PeriodClose, Need: View}
+	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
+	ClosePeriod    = Policy{Operation: "closePeriod", Capability: PeriodClose, Need: Approve,
+		Note: "A person stepped up in the last 5 minutes, who did not run the checks (FM-4)."}
+	PostJournal = Policy{Operation: "postJournal", Capability: Journals, Need: Post,
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
 	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
 		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
@@ -437,7 +443,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances,
-	ListPeriods, GetPeriod, OpenFinancialYear,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetPeriodClose, RunCloseChecks, ClosePeriod,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "More about it, and what to do.",
+      "examples": [
+        "2 draft journal(s): once the period closes they cannot post on those dates"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "Which check: earlier, balances, trial-balance, drafts or opening; more join as their modules arrive.",
+      "examples": [
+        "drafts"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "ok; warning (⚠) lets the close go on; error (✖) refuses it.",
+      "enum": [
+        "ok",
+        "warning",
+        "error"
+      ],
+      "examples": [
+        "warning"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What the check found.",
+      "examples": [
+        "Draft journals are dated in the period"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "severity",
+    "title"
+  ],
+  "title": "CloseCheckItem",
+  "type": "object"
+}

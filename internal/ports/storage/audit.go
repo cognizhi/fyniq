@@ -16,6 +16,9 @@ type Actor struct {
 	ID   string
 }
 
+// String is the actor as records name it: "type:id", such as "user:0192…" (FR-GL-01, FM-4).
+func (a Actor) String() string { return a.Type + ":" + a.ID }
+
 // Request is where a change came from.
 type Request struct {
 	ID, IP, UserAgent, Session string
