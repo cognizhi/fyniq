@@ -112,6 +112,9 @@ type Documents interface {
 	Revise(ctx context.Context, id uuid.UUID, payload []byte) (Document, error)
 	// Page lists documents of a type at their current version, newest date first, after a cursor.
 	Page(ctx context.Context, f DocumentFilter) ([]Document, error)
+	// OpeningBalance is the organisation's opening balances document at its current version, or ports.ErrNotFound.
+	// Create makes it, one at most: a second is refused (CodeDuplicate).
+	OpeningBalance(ctx context.Context) (Document, error)
 }
 
 // DocumentFilter narrows a list of documents. Empty fields do not narrow it.
@@ -303,7 +306,11 @@ type Period struct {
 type DocumentType string
 
 // The document types.
-const DocumentJournal DocumentType = "journal"
+const (
+	DocumentJournal DocumentType = "journal"
+	// DocumentOpeningBalance is the organisation's opening balances, one at most (FR-GL-06).
+	DocumentOpeningBalance DocumentType = "opening_balance"
+)
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
 type DocumentStatus string

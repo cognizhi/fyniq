@@ -388,6 +388,11 @@ type FyniqMemberInvitation struct {
 	WithdrawnAt    *time.Time
 }
 
+type FyniqOpeningBalance struct {
+	OrganisationID uuid.UUID
+	DocumentID     uuid.UUID
+}
+
 type FyniqOrganisation struct {
 	OrganisationID    uuid.UUID
 	Name              string

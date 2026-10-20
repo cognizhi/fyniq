@@ -279,6 +279,18 @@ func ReadSaved(doc storage.Document) (Saved, error) {
 	if err := isJournal(doc); err != nil {
 		return Saved{}, err
 	}
+	return readSaved(doc)
+}
+
+// ReadOpening reads a version of the opening balances, which are saved as a journal is.
+func ReadOpening(doc storage.Document) (Saved, error) {
+	if err := isOpening(doc); err != nil {
+		return Saved{}, err
+	}
+	return readSaved(doc)
+}
+
+func readSaved(doc storage.Document) (Saved, error) {
 	var p payload
 	if err := json.Unmarshal(doc.Payload, &p); err != nil {
 		return Saved{}, &Error{CodeBadDraft, fmt.Sprintf("the saved journal cannot be read: %v", err), "Save the draft again"}

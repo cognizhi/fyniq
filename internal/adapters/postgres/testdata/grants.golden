@@ -76,6 +76,8 @@ fyniq_api       INSERT    member_invitation (code_hash, display_name, expires_at
 fyniq_api       SELECT    member_invitation
 fyniq_api       UPDATE    member_invitation (withdrawn_at)
 fyniq_api       EXECUTE   member_names()
+fyniq_api       INSERT    opening_balance (document_id)
+fyniq_api       SELECT    opening_balance
 fyniq_api       INSERT    organisation (base_currency, base_minor_units, kind, name)
 fyniq_api       SELECT    organisation
 fyniq_api       UPDATE    organisation (bank_account_name, bank_account_number, bank_name, books_start, document_footer, email, first_year_end, fy_start_month, legal_name, mailing_address, name, paynow_uen, phone, registered_address, time_zone, uen, version, website)
@@ -159,6 +161,7 @@ fyniq_executor  SELECT    journal_entry
 fyniq_executor  INSERT    journal_line (account_id, amount, base_amount, currency, description, entry_id, fx_rate, fx_rate_source, line_no)
 fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_revision
+fyniq_executor  SELECT    opening_balance
 fyniq_executor  SELECT    organisation
 fyniq_executor  SELECT    organisation_setting
 fyniq_executor  INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
@@ -200,6 +203,7 @@ fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    member_invitation
+fyniq_readonly  SELECT    opening_balance
 fyniq_readonly  SELECT    organisation
 fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
@@ -253,6 +257,7 @@ fyniq_worker    SELECT    journal_line
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    SELECT    member_invitation
+fyniq_worker    SELECT    opening_balance
 fyniq_worker    SELECT    organisation
 fyniq_worker    SELECT    organisation_setting
 fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)

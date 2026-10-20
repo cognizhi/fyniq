@@ -17,6 +17,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/authz/authztest"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -36,6 +39,55 @@ func matrixGST(e *env) string {
 	r := e.call(http.MethodPost, "/v1/organisation/gst-registrations", e.as(authz.Controller),
 		map[string]any{"registered_from": "2090-01-01", "deregistered_from": "2090-12-31", "gst_number": "202312345K"})
 	return r.str("id")
+}
+
+// matrixOpening makes an organisation of its own for tok's principal, with books from 1 October 2026 and, when draft is
+// true, balanced opening balances saved as a draft.
+func matrixOpening(e *env, tok string, draft bool) (porttest.Books, authn.Principal) {
+	ctx := context.Background()
+	b := porttest.NewBooks(e.t, e.store, "Matrix opening "+uuid.NewString()[:8])
+	start, end := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+	if err := e.store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		pr := o.Profile
+		pr.FYStartMonth, pr.BooksStart, pr.FirstYearEnd = 1, &start, &end
+		_, err = u.UpdateOrganisation(ctx, o.Version, pr)
+		return err
+	}); err != nil {
+		panic(err)
+	}
+	if draft {
+		sgd := money.MustLookup("SGD")
+		ten, err := money.Parse("10.00", sgd)
+		if err != nil {
+			panic(err)
+		}
+		minus := ten.Neg()
+		if _, err := e.api.journals.SaveOpening(ctx, b.Org, "", []ledger.JournalLine{{AccountID: b.Bank.ID, Amount: ten}, {AccountID: b.Sales.ID, Amount: minus}}); err != nil {
+			panic(err)
+		}
+	}
+	e.tokens.mu.Lock()
+	p := e.tokens.m[tok]
+	e.tokens.mu.Unlock()
+	if p.Organisation != uuid.Nil {
+		p.Organisation = b.Org
+	}
+	return b, p
+}
+
+// matrixOpeningStatus is the status of an organisation's opening balances, "" when there are none.
+func matrixOpeningStatus(e *env, org uuid.UUID) storage.DocumentStatus {
+	var status storage.DocumentStatus
+	_ = e.store.Do(context.Background(), org, func(ctx context.Context, u storage.UnitOfWork) error {
+		d, err := u.Documents().OpeningBalance(ctx)
+		status = d.Status
+		return err
+	})
+	return status
 }
 
 // matrixContact returns the ID of a contact of e's organisation, adding one first if needed.
@@ -476,6 +528,22 @@ var matrixCalls = map[string]matrixCall{
 			})
 			return n == 0
 		}
+	},
+	"getOpeningBalances": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/opening-balances", tok, nil), nil
+	},
+	// The opening balances are one per organisation and post once, so each call is made, with the same principal, in an
+	// organisation of its own, whose books start on 1 October 2026.
+	"replaceOpeningBalances": func(e *env, tok string) (response, func() bool) {
+		b, p := matrixOpening(e, tok, false)
+		r := e.call(http.MethodPut, "/v1/opening-balances", e.principal(p), map[string]any{"lines": []any{
+			map[string]any{"account_id": b.Bank.ID.String(), "amount": map[string]any{"amount": "10.00", "currency": "SGD"}}}}, "If-Match", "*")
+		return r, func() bool { return matrixOpeningStatus(e, b.Org) == "" }
+	},
+	"postOpeningBalances": func(e *env, tok string) (response, func() bool) {
+		b, p := matrixOpening(e, tok, true)
+		r := e.call(http.MethodPost, "/v1/opening-balances/post", e.principal(p), nil, "If-Match", "*")
+		return r, func() bool { return matrixOpeningStatus(e, b.Org) == storage.DocumentDraft }
 	},
 	"listJournals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil

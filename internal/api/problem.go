@@ -69,7 +69,7 @@ func problemContentType(ct string) string {
 var LedgerCodes = []string{ledger.CodeNoDate, ledger.CodeTooFewLines, ledger.CodeZeroLine, ledger.CodeUnknownAccount,
 	ledger.CodeGroupAccount, ledger.CodeInactiveAccount, ledger.CodeMissingRate, ledger.CodeWrongRate, ledger.CodeUnbalancedBase,
 	ledger.CodeUnbalancedCur, ledger.CodeTooLong, ledger.CodeNotPosted, ledger.CodeRateOnBase, ledger.CodeBaseRange,
-	ledger.CodeShareCapital, ledger.CodeReversalDate}
+	ledger.CodeShareCapital, ledger.CodeReversalDate, ledger.CodeForeignOpening}
 
 // The API's own codes. The domain's codes (JOURNAL-*, LEDGER-*, MONEY-*, STORAGE-*) pass through.
 const (
@@ -236,6 +236,8 @@ var codeFacts = map[string]struct {
 	journal.CodeNotDraft:       {409, "The journal is not a draft"},
 	journal.CodeNotPosted:      {409, "The journal is not posted"},
 	journal.CodeBadDraft:       {422, "The saved journal cannot be read"},
+	journal.CodeNotOpening:     {404, "Not the opening balances"},
+	journal.CodeNoBooksStart:   {409, "The books start is not set"},
 	ledger.CodeNoDate:          {422, "The journal has no date"},
 	ledger.CodeTooFewLines:     {422, "The journal has too few lines"},
 	ledger.CodeZeroLine:        {422, "A line is zero"},
@@ -252,6 +254,7 @@ var codeFacts = map[string]struct {
 	ledger.CodeBaseRange:       {422, "A base amount is too large"},
 	ledger.CodeShareCapital:    {422, "A line posts to share capital"},
 	ledger.CodeReversalDate:    {422, "The reversal is dated before its entry"},
+	ledger.CodeForeignOpening:  {422, "An opening balance not in the base currency"},
 	money.CodeNotDecimal:       {422, "An amount is not a plain decimal"},
 	money.CodePrecision:        {422, "An amount has too many decimals"},
 	money.CodeRange:            {422, "An amount is too large"},

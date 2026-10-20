@@ -829,11 +829,7 @@ func registerJournals(a *API) {
 			return &replaceJournalOutput{ETag: journalETag(w.Body), Body: w.Body}, nil
 		})
 
-	postingCodes := []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
-		journal.CodeNotJournal, journal.CodeBadDraft, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed,
-		storage.CodeAccountNotPost, storage.CodeAmount, storage.CodeDocumentStatus, storage.CodeDuplicate, storage.CodeRetry, storage.CodeLockTimeout,
-		storage.CodeShareCapital, team.CodeAction}
-	postingCodes = append(postingCodes, LedgerCodes...)
+	postingCodes := postingCodes()
 
 	register(a, authz.PostJournal, huma.Operation{
 		OperationID: "postJournal", Method: http.MethodPost, Path: "/v1/journals/{journal_id}/post", Tags: []string{"Journals"},
@@ -863,6 +859,15 @@ func registerJournals(a *API) {
 			return a.journals.Reverse(ctx, p.Organisation, id, date, in.Body.Reason)
 		})
 	})
+}
+
+// postingCodes are the codes an operation that posts may answer.
+func postingCodes() []string {
+	codes := []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+		journal.CodeNotJournal, journal.CodeBadDraft, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed,
+		storage.CodeAccountNotPost, storage.CodeAmount, storage.CodeDocumentStatus, storage.CodeDuplicate, storage.CodeRetry, storage.CodeLockTimeout,
+		storage.CodeShareCapital, team.CodeAction}
+	return append(codes, LedgerCodes...)
 }
 
 // posting runs a command that posts for a journal: If-Match is checked against the journal locked in

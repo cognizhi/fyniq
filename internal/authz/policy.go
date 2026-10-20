@@ -311,6 +311,11 @@ var (
 		Note: "The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1)."}
 	GetJournal   = Policy{Operation: "getJournal", Capability: Journals, Need: View}
 	ListJournals = Policy{Operation: "listJournals", Capability: Journals, Need: View}
+	// The opening balances are kept as a journal is: prepared under C on Journals and posted under P (FR-GL-06; PRD-001 rev
+	// 0.49, provisional). Changing them once posted is high-risk (FM-1) and arrives with a second person's approval.
+	GetOpeningBalances     = Policy{Operation: "getOpeningBalances", Capability: Journals, Need: View}
+	ReplaceOpeningBalances = Policy{Operation: "replaceOpeningBalances", Capability: Journals, Need: Create}
+	PostOpeningBalances    = Policy{Operation: "postOpeningBalances", Capability: Journals, Need: Post}
 	// Changing a draft is preparing it, as saving one is (FR-GL-01).
 	ReplaceJournal = Policy{Operation: "replaceJournal", Capability: Journals, Need: Create}
 	// Periods are read by whoever holds a right on the close (FR-ORG-02, FR-GL-08); opening a year is preparing the
@@ -431,6 +436,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal,
+	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances,
 	ListPeriods, GetPeriod, OpenFinancialYear,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
