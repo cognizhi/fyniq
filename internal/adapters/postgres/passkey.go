@@ -57,7 +57,7 @@ func (r passkeys) Challenge(ctx context.Context, n storage.NewPasskeyChallenge) 
 }
 
 func (r passkeys) Take(ctx context.Context, id uuid.UUID, sessionHash []byte, purpose string, now time.Time) (storage.PasskeyChallenge, error) {
-	if err := r.installation(ctx); err != nil {
+	if err := r.u.check(); err != nil { // any unit of work: the function binds the challenge to its session
 		return storage.PasskeyChallenge{}, err
 	}
 	row, err := r.u.q.TakePasskeyChallenge(ctx, sqlcdb.TakePasskeyChallengeParams{ID: id, SessionHash: sessionHash, Purpose: purpose, Now: now})
@@ -71,7 +71,7 @@ func (r passkeys) Take(ctx context.Context, id uuid.UUID, sessionHash []byte, pu
 }
 
 func (r passkeys) List(ctx context.Context, userID uuid.UUID, all bool) ([]storage.Passkey, error) {
-	if err := r.installation(ctx); err != nil {
+	if err := r.u.check(); err != nil { // any unit of work: a read
 		return nil, err
 	}
 	rows, err := r.u.q.ListPasskeys(ctx, sqlcdb.ListPasskeysParams{UserID: userID, IncludeRevoked: all})
@@ -147,4 +147,21 @@ func uuidOf(b []byte) string {
 		return id.String()
 	}
 	return fmt.Sprintf("%x", b)
+}
+
+func (r passkeys) ApprovalChallenge(ctx context.Context, n storage.NewApprovalChallenge) (uuid.UUID, error) {
+	if err := r.u.check(); err != nil {
+		return uuid.Nil, err
+	}
+	id, err := r.u.q.IssueApprovalChallenge(ctx, sqlcdb.IssueApprovalChallengeParams{SessionHash: n.SessionHash, RequestID: n.RequestID,
+		EnvelopeHash: n.EnvelopeHash, Nonce: n.Nonce, Now: n.Now, ExpiresAt: n.Expires})
+	return id, mapError(err)
+}
+
+func (r passkeys) AnswerApproval(ctx context.Context, a storage.PasskeyAnswer) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	return mapError(r.u.q.AnswerApprovalChallenge(ctx, sqlcdb.AnswerApprovalChallengeParams{ChallengeID: a.ChallengeID, SessionHash: a.SessionHash,
+		PasskeyID: a.PasskeyID, SignCount: int64(a.SignCount), BackupState: a.BackupState, Now: a.Now}))
 }

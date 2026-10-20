@@ -115,3 +115,42 @@ func TestPasskeyCeremonies(t *testing.T) {
 		t.Error("a relying party without an origin")
 	}
 }
+
+// A kept assertion verifies again with the passkey's key, for its own challenge, origin and site; a changed byte fails.
+// req: FR-APR-03
+// asvs: V6.7.2
+func TestAKeptAssertionVerifiesAgain(t *testing.T) {
+	rp, err := passkey.New(origin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := passkey.User{ID: uuid.New(), Name: "Ann"}
+	a := passkeytest.New(t, rp.ID(), origin)
+	u.Passkeys = []storage.Passkey{register(t, rp, u, a)}
+	challenge := append([]byte("0123456789abcdef"), make([]byte, 32)...) // a nonce and an envelope hash
+	got, err := rp.Verify(u, challenge, a.Get(challenge))
+	if err != nil {
+		t.Fatal(err)
+	}
+	kept := storage.PasskeyAssertion{AuthenticatorData: got.AuthenticatorData, ClientData: got.ClientData, Signature: got.Signature}
+	if err := rp.Reverify(u.Passkeys[0], challenge, kept); err != nil {
+		t.Fatalf("the kept assertion: %v", err)
+	}
+	flip := func(b []byte) []byte { c := append([]byte{}, b...); c[len(c)-1] ^= 1; return c }
+	for name, bad := range map[string]storage.PasskeyAssertion{
+		"another signature":        {AuthenticatorData: kept.AuthenticatorData, ClientData: kept.ClientData, Signature: flip(kept.Signature)},
+		"other authenticator data": {AuthenticatorData: flip(kept.AuthenticatorData), ClientData: kept.ClientData, Signature: kept.Signature},
+		"other client data":        {AuthenticatorData: kept.AuthenticatorData, ClientData: append(append([]byte{}, kept.ClientData[:len(kept.ClientData)-1]...), ' ', '}'), Signature: kept.Signature},
+	} {
+		if err := rp.Reverify(u.Passkeys[0], challenge, bad); !errors.Is(err, passkey.ErrRefused) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if err := rp.Reverify(u.Passkeys[0], flip(challenge), kept); !errors.Is(err, passkey.ErrRefused) {
+		t.Errorf("another challenge: %v", err)
+	}
+	other := register(t, rp, u, passkeytest.New(t, rp.ID(), origin))
+	if err := rp.Reverify(other, challenge, kept); !errors.Is(err, passkey.ErrRefused) {
+		t.Errorf("another passkey's key: %v", err)
+	}
+}

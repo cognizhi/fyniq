@@ -338,6 +338,8 @@ var (
 		Note: approvalNote + " Needs A on the object's row, a person signed in who passed step-up in the last 5 minutes, and someone other than the requester (FM-1)."}
 	RejectApproval = Policy{Operation: "rejectApproval", Capability: Approvals, Need: Approve,
 		Note: approvalNote + " Needs A on the object's row, a person signed in who passed step-up in the last 5 minutes, and someone other than the requester."}
+	ChallengeApproval = Policy{Operation: "challengeApproval", Capability: Approvals, Need: Approve,
+		Note: approvalNote + " A challenge for signing the request with a passkey: needs A on the object's row and a person signed in to Fyniq in the browser (FR-APR-03)."}
 	WithdrawApproval = Policy{Operation: "withdrawApproval", Capability: Approvals, Need: View,
 		Note: approvalNote + " Only the person who asked for the change withdraws it, signed in to Fyniq (rev 0.40)."}
 )
@@ -412,7 +414,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
-	WithdrawApproval, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
+	WithdrawApproval, ChallengeApproval, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp)
 
 func index(ps ...Policy) map[string]Policy {

@@ -77,18 +77,23 @@ type FyniqApprovalRequest struct {
 }
 
 type FyniqApprovalSignature struct {
-	OrganisationID uuid.UUID
-	ID             uuid.UUID
-	RequestID      uuid.UUID
-	Step           int32
-	Signer         uuid.UUID
-	Decision       string
-	EnvelopeHash   []byte
-	MfaMethod      string
-	MfaAt          time.Time
-	SignedAt       time.Time
-	Reason         *string
-	VoidedAt       *time.Time
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	RequestID          uuid.UUID
+	Step               int32
+	Signer             uuid.UUID
+	Decision           string
+	EnvelopeHash       []byte
+	MfaMethod          string
+	MfaAt              time.Time
+	SignedAt           time.Time
+	Reason             *string
+	VoidedAt           *time.Time
+	PasskeyChallengeID *uuid.UUID
+	PasskeyID          *uuid.UUID
+	AuthenticatorData  []byte
+	ClientData         []byte
+	AssertionSignature []byte
 }
 
 type FyniqAuditChain struct {
@@ -607,15 +612,18 @@ type FyniqUserSession struct {
 }
 
 type FyniqWebauthnChallenge struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	Purpose     string
-	Challenge   []byte
-	SessionHash []byte
-	CreatedAt   time.Time
-	ExpiresAt   time.Time
-	TakenAt     *time.Time
-	AnsweredBy  *uuid.UUID
+	ID                    uuid.UUID
+	UserID                uuid.UUID
+	Purpose               string
+	Challenge             []byte
+	SessionHash           []byte
+	CreatedAt             time.Time
+	ExpiresAt             time.Time
+	TakenAt               *time.Time
+	AnsweredBy            *uuid.UUID
+	RequestOrganisationID *uuid.UUID
+	RequestID             *uuid.UUID
+	EnvelopeHash          []byte
 }
 
 type FyniqWebauthnCredential struct {

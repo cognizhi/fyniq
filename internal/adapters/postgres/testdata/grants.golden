@@ -11,7 +11,7 @@ fyniq_api       SELECT    approval_policy
 fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_steps, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
 fyniq_api       SELECT    approval_request
 fyniq_api       UPDATE    approval_request (decided_at, status, status_reason, version)
-fyniq_api       INSERT    approval_signature (decision, envelope_hash, mfa_at, mfa_method, reason, request_id, signed_at, signer, step)
+fyniq_api       INSERT    approval_signature (assertion_signature, authenticator_data, client_data, decision, envelope_hash, mfa_at, mfa_method, passkey_challenge_id, passkey_id, reason, request_id, signed_at, signer, step)
 fyniq_api       SELECT    approval_signature
 fyniq_api       EXECUTE   approval_steps_met()
 fyniq_api       EXECUTE   approval_steps_valid()
@@ -116,6 +116,9 @@ fyniq_api       EXECUTE   user_for_identity()
 fyniq_api       INSERT    user_membership (user_id)
 fyniq_api       SELECT    user_membership
 fyniq_api       UPDATE    user_membership (status, version)
+fyniq_api       EXECUTE   webauthn_approval_answer()
+fyniq_api       EXECUTE   webauthn_approval_challenge_issue()
+fyniq_api       EXECUTE   webauthn_approval_proof()
 fyniq_api       EXECUTE   webauthn_challenge_issue()
 fyniq_api       EXECUTE   webauthn_challenge_take()
 fyniq_api       EXECUTE   webauthn_credential_register()

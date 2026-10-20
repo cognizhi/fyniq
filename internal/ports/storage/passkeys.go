@@ -11,6 +11,7 @@ import (
 const (
 	PurposeRegister = "register" // registering a new passkey
 	PurposeStepUp   = "step_up"  // stepping a session up
+	PurposeApproval = "approval" // signing an approval request (FR-APR-03)
 )
 
 // Passkey is a person's WebAuthn credential (FR-ADM-02, SEC-01): the public key an authenticator made for Fyniq.
@@ -72,9 +73,30 @@ type PasskeyStepUp struct {
 	Now         time.Time
 }
 
+// NewApprovalChallenge is a challenge for signing a pending request of the unit of work's organisation: Nonce (16 random
+// bytes) followed by the request's envelope hash.
+type NewApprovalChallenge struct {
+	SessionHash  []byte
+	RequestID    uuid.UUID
+	EnvelopeHash []byte
+	Nonce        []byte
+	Now          time.Time
+	Expires      time.Time
+}
+
+// PasskeyAnswer is a passkey's answer to an approval challenge.
+type PasskeyAnswer struct {
+	ChallengeID uuid.UUID
+	SessionHash []byte
+	PasskeyID   uuid.UUID
+	SignCount   uint32
+	BackupState bool
+	Now         time.Time
+}
+
 // Passkeys are people's passkeys and the challenges their ceremonies answer. They are the installation's, outside any
-// organisation, and run in a unit of work of the installation organisation, whose trail records every passkey
-// registered or revoked. The database issues a registration challenge only to a session that passed a second factor in
+// organisation: registering and revoking run in a unit of work of the installation organisation, whose trail records
+// them; an approval's challenge and answer run in the unit of work of the request's organisation. The database issues a registration challenge only to a session that passed a second factor in
 // the last 5 minutes, lets each challenge be taken once by its own session before it expires and answered once, never
 // lets a passkey's counter go back or its key change, and steps a session up only as the answer to its own challenge
 // by a live passkey of its user (CodePasskey).
@@ -92,4 +114,9 @@ type Passkeys interface {
 	StepUp(ctx context.Context, s PasskeyStepUp) error
 	// Revoke revokes one of a user's live passkeys with its audit event, or returns ports.ErrNotFound.
 	Revoke(ctx context.Context, userID, id uuid.UUID, now time.Time) error
+	// ApprovalChallenge issues a challenge for signing a pending request of the unit of work's organisation, over its
+	// envelope hash; it runs in that organisation's unit of work.
+	ApprovalChallenge(ctx context.Context, n NewApprovalChallenge) (uuid.UUID, error)
+	// AnswerApproval records a passkey's answer to an approval challenge, in the unit of work that records the signature.
+	AnswerApproval(ctx context.Context, a PasskeyAnswer) error
 }

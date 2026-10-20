@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "challenge_id": {
+      "description": "The request's challenge it answers.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "credential": {
+      "additionalProperties": true,
+      "description": "The PublicKeyCredential navigator.credentials.get returned, as its toJSON() writes it.",
+      "examples": [
+        {
+          "publicKey": {
+            "challenge": "c2FtcGxlLWNoYWxsZW5nZS0zMi1ieXRlcy1sb25nLXh4",
+            "rpId": "fyniq.example.com"
+          }
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "challenge_id",
+    "credential"
+  ],
+  "title": "ApprovalPasskey",
+  "type": "object"
+}

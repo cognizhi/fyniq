@@ -68,6 +68,17 @@ type ApprovalSignature struct {
 	SignedAt     time.Time
 	Reason       string // a rejection's
 	VoidedAt     *time.Time
+	Passkey      *PasskeyAssertion // a passkey-signed approval's assertion; nil for any other
+}
+
+// PasskeyAssertion is what a passkey signed for an approval (FR-APR-03): kept with the signature so it can be verified
+// again later against the passkey's public key.
+type PasskeyAssertion struct {
+	ChallengeID       uuid.UUID // the approval challenge it answered: 16 random bytes and the envelope's SHA-256
+	PasskeyID         uuid.UUID
+	AuthenticatorData []byte
+	ClientData        []byte // the clientDataJSON
+	Signature         []byte
 }
 
 // NewApprovalSignature is what Approvals.Sign needs.
@@ -81,6 +92,7 @@ type NewApprovalSignature struct {
 	MFAAt        time.Time
 	SignedAt     time.Time
 	Reason       string
+	Passkey      *PasskeyAssertion // with MFAMethod passkey
 }
 
 // Approvals are the organisation's approval requests and their signatures. Every change is audited. The

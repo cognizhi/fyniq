@@ -66,6 +66,11 @@ approval_signature | mfa_at | timestamp with time zone | not null |
 approval_signature | signed_at | timestamp with time zone | not null | 
 approval_signature | reason | text | null | 
 approval_signature | voided_at | timestamp with time zone | null | 
+approval_signature | passkey_challenge_id | uuid | null | 
+approval_signature | passkey_id | uuid | null | 
+approval_signature | authenticator_data | bytea | null | 
+approval_signature | client_data | bytea | null | 
+approval_signature | assertion_signature | bytea | null | 
 audit_chain | organisation_id | uuid | not null | current_org()
 audit_chain | seq | bigint | not null | 0
 audit_chain | head_hash | bytea | not null | '\x0000000000000000000000000000000000000000000000000000000000000000'::bytea
@@ -455,6 +460,9 @@ webauthn_challenge | created_at | timestamp with time zone | not null |
 webauthn_challenge | expires_at | timestamp with time zone | not null | 
 webauthn_challenge | taken_at | timestamp with time zone | null | 
 webauthn_challenge | answered_by | uuid | null | 
+webauthn_challenge | request_organisation_id | uuid | null | 
+webauthn_challenge | request_id | uuid | null | 
+webauthn_challenge | envelope_hash | bytea | null | 
 webauthn_credential | id | uuid | not null | uuidv7()
 webauthn_credential | user_id | uuid | not null | 
 webauthn_credential | credential_id | bytea | not null | 
@@ -570,6 +578,7 @@ approval_signature | approval_signature_mfa_known | CHECK ((mfa_method = ANY (AR
 approval_signature | approval_signature_mfa_method_not_null | NOT NULL mfa_method
 approval_signature | approval_signature_once | UNIQUE (organisation_id, request_id, signer)
 approval_signature | approval_signature_organisation_id_not_null | NOT NULL organisation_id
+approval_signature | approval_signature_passkey_shape | CHECK ((((mfa_method = 'passkey'::text) AND (passkey_challenge_id IS NOT NULL) AND (passkey_id IS NOT NULL) AND ((length(authenticator_data) >= 37) AND (length(authenticator_data) <= 2048)) AND ((length(client_data) >= 1) AND (length(client_data) <= 4096)) AND ((length(assertion_signature) >= 8) AND (length(assertion_signature) <= 2048))) OR ((mfa_method <> 'passkey'::text) AND (passkey_challenge_id IS NULL) AND (passkey_id IS NULL) AND (authenticator_data IS NULL) AND (client_data IS NULL) AND (assertion_signature IS NULL))))
 approval_signature | approval_signature_pkey | PRIMARY KEY (organisation_id, id)
 approval_signature | approval_signature_reason | CHECK ((((decision = 'reject'::text) = (reason IS NOT NULL)) AND ((reason IS NULL) OR ((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 500)))))
 approval_signature | approval_signature_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES approval_request(organisation_id, id)
@@ -1159,11 +1168,11 @@ webauthn_challenge | webauthn_challenge_id_not_null | NOT NULL id
 webauthn_challenge | webauthn_challenge_lifetime | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:05:00'::interval))))
 webauthn_challenge | webauthn_challenge_once | UNIQUE (challenge)
 webauthn_challenge | webauthn_challenge_pkey | PRIMARY KEY (id)
-webauthn_challenge | webauthn_challenge_purpose_known | CHECK ((purpose = ANY (ARRAY['register'::text, 'step_up'::text])))
+webauthn_challenge | webauthn_challenge_purpose_known | CHECK ((purpose = ANY (ARRAY['register'::text, 'step_up'::text, 'approval'::text])))
 webauthn_challenge | webauthn_challenge_purpose_not_null | NOT NULL purpose
-webauthn_challenge | webauthn_challenge_random | CHECK ((length(challenge) = 32))
 webauthn_challenge | webauthn_challenge_session_fkey | FOREIGN KEY (session_hash) REFERENCES user_session(token_hash)
 webauthn_challenge | webauthn_challenge_session_hash_not_null | NOT NULL session_hash
+webauthn_challenge | webauthn_challenge_shape | CHECK ((((purpose <> 'approval'::text) AND (length(challenge) = 32) AND (request_organisation_id IS NULL) AND (request_id IS NULL) AND (envelope_hash IS NULL)) OR ((purpose = 'approval'::text) AND (length(challenge) = 48) AND (octet_length(envelope_hash) = 32) AND (SUBSTRING(challenge FROM 17) = envelope_hash) AND (request_organisation_id IS NOT NULL) AND (request_id IS NOT NULL))))
 webauthn_challenge | webauthn_challenge_taken_in_time | CHECK (((taken_at >= created_at) AND (taken_at < expires_at)))
 webauthn_challenge | webauthn_challenge_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 webauthn_challenge | webauthn_challenge_user_id_not_null | NOT NULL user_id
@@ -1420,7 +1429,7 @@ approval_policy_guard() → trigger | security invoker | v | search_path=pg_cata
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
 approval_request_voided() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8a52518e632c789b205db97d82662924
-approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 620103136b9caf9290045ca9e732178b
+approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3066369c1ca0874532b08f05dd6e258
 approval_steps_met(p_org uuid, p_request uuid, p_hash bytea, p_steps jsonb, p_upto integer) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 87283a918dece8cd6ce8b836a822f76d
 approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_path=pg_catalog, pg_temp | d50ae4849ebdf5e7511ee70dc98ccfd3
 approval_void_pending(p_type text, p_key text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d881befb6ede26f4ea128fc16cd228d
@@ -1497,7 +1506,10 @@ super_admin_no_delete() → trigger | security invoker | v | search_path=pg_cata
 team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9
 team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1e8ab28fa03705e0a02ec3819d22d067
 user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb
-webauthn_challenge_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 09b040e12226a3373493fdd3af45f5b9
+webauthn_approval_answer(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f481503b48994d66ccc92191380d8e36
+webauthn_approval_challenge_issue(p_session bytea, p_request uuid, p_envelope_hash bytea, p_nonce bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e140920fc5b676db4cb8e722e83c934a
+webauthn_approval_proof(p_challenge uuid, OUT organisation_id uuid, OUT request_id uuid, OUT envelope_hash bytea, OUT user_id uuid, OUT answered_by uuid, OUT taken_at timestamp with time zone) → record | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2f7c40781b20001dbfbd10008d0a0154
+webauthn_challenge_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | da26c86f05a4f167b0bfbe17363fa4bb
 webauthn_challenge_issue(p_session bytea, p_purpose text, p_challenge bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b238d1749b30f0515301c24357cc017a
 webauthn_challenge_take(p_id uuid, p_session bytea, p_purpose text, p_now timestamp with time zone, OUT challenge bytea, OUT user_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 01e0de215e07090f2e6ae0ea134e6d42
 webauthn_credential_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d545f5515df2b1d1c145ccbe12638b4

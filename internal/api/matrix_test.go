@@ -372,6 +372,11 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return requestsOf(e, "team_mode") == was }
 	},
+	// A passkey challenge needs a browser session, which the matrix's principals lack: an allowed role is refused past its
+	// policy (API-AUTHZ-04). TestPasskeySignedApprovals runs it with real sessions.
+	"challengeApproval": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/approvals/"+uuid.NewString()+"/challenge", steppedUp(e, tok), nil, "If-Match", `"1"`), nil
+	},
 	"listApprovals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/approvals", tok, nil), nil
 	},

@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -38,10 +39,11 @@ type ApprovalSignature struct {
 	Signer     string    `json:"signer" format:"uuid" doc:"The user who signed." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	SignerName string    `json:"signer_name" doc:"Their name." example:"Wei Ling Tan"`
 	Decision   string    `json:"decision" enum:"approve,reject" doc:"What they decided." example:"approve"`
-	Method     string    `json:"method" enum:"session_step_up,passkey,totp" doc:"The second factor that proved it was them: session_step_up is the step-up of their session; passkey and TOTP approvals arrive with p1-users-roles." example:"session_step_up"`
+	Method     string    `json:"method" enum:"session_step_up,passkey,totp" doc:"The second factor that proved it was them: session_step_up is the step-up of their session (at sign-in or with a passkey); passkey is a passkey that signed this request's envelope hash itself (FR-APR-03, rev 0.44)." example:"session_step_up"`
 	SignedAt   time.Time `json:"signed_at" doc:"When." example:"2026-10-20T09:30:00Z"`
 	Reason     string    `json:"reason,omitempty" doc:"A rejection's reason." example:"Not this month"`
 	Voided     bool      `json:"voided" doc:"true once the request was voided because its record changed." example:"false"`
+	PasskeyID  string    `json:"passkey_id,omitempty" format:"uuid" doc:"For a passkey signature: the passkey that signed the envelope's hash; its assertion is kept so it can be verified again (FR-APR-03)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"`
 }
 
 // Approval is a change waiting for, or decided by, a second approver (FM-1): what it changes, the envelope signed
@@ -88,8 +90,15 @@ type ApprovalPage struct {
 
 // ApprovalDecision approves or rejects exactly the envelope you were shown.
 type ApprovalDecision struct {
-	EnvelopeHash string `json:"envelope_hash" minLength:"64" maxLength:"64" pattern:"^[0-9a-f]{64}$" doc:"The envelope_hash of the request you were shown: a request whose envelope differs is not signed (FR-APR-03)." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
-	Reason       string `json:"reason,omitempty" maxLength:"500" doc:"Why you reject it: needed to reject." example:"Not this month"`
+	EnvelopeHash string           `json:"envelope_hash" minLength:"64" maxLength:"64" pattern:"^[0-9a-f]{64}$" doc:"The envelope_hash of the request you were shown: a request whose envelope differs is not signed (FR-APR-03)." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+	Reason       string           `json:"reason,omitempty" maxLength:"500" doc:"Why you reject it: needed to reject." example:"Not this month"`
+	Passkey      *ApprovalPasskey `json:"passkey,omitempty" doc:"Sign with a passkey: your authenticator's answer to this request's challenge (POST /v1/approvals/{approval_id}/challenge). Without it, your session's step-up in the last 5 minutes signs (rev 0.44)."`
+}
+
+// ApprovalPasskey is your authenticator's answer to a request's challenge: it signs the request's envelope hash.
+type ApprovalPasskey struct {
+	ChallengeID string       `json:"challenge_id" format:"uuid" doc:"The request's challenge it answers." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f41"`
+	Credential  WebAuthnJSON `json:"credential" doc:"The PublicKeyCredential navigator.credentials.get returned, as its toJSON() writes it."`
 }
 
 // ApprovalPath names a request.
@@ -103,6 +112,11 @@ type approvalListInput struct {
 }
 
 type approvalGetInput struct{ ApprovalPath }
+
+type approvalChallengeInput struct {
+	ApprovalPath
+	IfMatchHeader
+}
 
 type approvalWithdrawInput struct {
 	ApprovalPath
@@ -157,6 +171,61 @@ func (a *API) steppedUpPerson(ctx context.Context, what string) (authn.Principal
 			"Sign in to Fyniq in the browser with your own sign-in and do it there.")
 	}
 	return p, nil
+}
+
+// signer returns the person who signs a decision: with a passkey answer, a person in a browser session, whose passkey
+// signs the envelope's hash itself, and their name for their authenticator; without one, a person who passed step-up in
+// the last 5 minutes (FR-APR-03, FR-APR-04).
+func (a *API) signer(ctx context.Context, what string, pk *ApprovalPasskey) (authn.Principal, string, error) {
+	if pk == nil {
+		p, err := a.steppedUpPerson(ctx, what)
+		return p, "", err
+	}
+	p, _, name, err := a.passkeyPerson(ctx, what)
+	return p, name, err
+}
+
+// withPasskey makes a decision a passkey's: it takes the request's challenge, which must be over this request's envelope
+// hash, checks the authenticator's answer, records it and keeps the assertion with the signature (FR-APR-03, G4-056).
+// It runs in the deciding unit of work, so a decision that fails leaves the challenge unused.
+func (a *API) withPasskey(ctx context.Context, u storage.UnitOfWork, p authn.Principal, name string, r storage.ApprovalRequest,
+	pk *ApprovalPasskey, sig *storage.NewApprovalSignature) error {
+	if pk == nil {
+		return nil
+	}
+	id, err := parseID("passkey.challenge_id", pk.ChallengeID)
+	if err != nil {
+		return err
+	}
+	response, err := credentialBytes(pk.Credential)
+	if err != nil {
+		return err
+	}
+	now := a.deps.Clock.Now()
+	c, err := u.Passkeys().Take(ctx, id, p.SessionHash, storage.PurposeApproval, now)
+	if errors.Is(err, ports.ErrNotFound) || (err == nil && (c.UserID != p.UserID || len(c.Challenge) != 48 || !bytes.Equal(c.Challenge[16:], r.EnvelopeHash))) {
+		return problem(CodeChallenge, "That challenge is unknown, another session's, for another request or envelope, used already or expired.",
+			"Ask for a new challenge for this request and answer it within 5 minutes.")
+	}
+	if err != nil {
+		return err
+	}
+	user, err := passkeyUser(ctx, u, p, name)
+	if err != nil {
+		return err
+	}
+	got, err := a.passkeys.Verify(user, c.Challenge, response)
+	if err != nil {
+		return a.passkeyRefused(ctx, "decideApproval", err)
+	}
+	if err := u.Passkeys().AnswerApproval(ctx, storage.PasskeyAnswer{ChallengeID: id, SessionHash: p.SessionHash, PasskeyID: got.Passkey.ID,
+		SignCount: got.SignCount, BackupState: got.BackupState, Now: now}); err != nil {
+		return err
+	}
+	sig.MFAMethod, sig.MFAAt = "passkey", now
+	sig.Passkey = &storage.PasskeyAssertion{ChallengeID: id, PasskeyID: got.Passkey.ID, AuthenticatorData: got.AuthenticatorData,
+		ClientData: got.ClientData, Signature: got.Signature}
+	return nil
 }
 
 // pendsApproval documents an operation that answers 202 Accepted with an approval request when its change needs a
@@ -445,8 +514,12 @@ func (a *API) approvalOf(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		out.Steps = append(out.Steps, ApprovalProgress{ApprovalStep: apiStep(st), Approvals: n})
 	}
 	for _, sg := range sigs {
-		out.Signatures = append(out.Signatures, ApprovalSignature{Signer: sg.Signer.String(), SignerName: names[sg.Signer], Decision: sg.Decision,
-			Method: sg.MFAMethod, SignedAt: sg.SignedAt.UTC(), Reason: sg.Reason, Voided: sg.VoidedAt != nil})
+		v := ApprovalSignature{Signer: sg.Signer.String(), SignerName: names[sg.Signer], Decision: sg.Decision,
+			Method: sg.MFAMethod, SignedAt: sg.SignedAt.UTC(), Reason: sg.Reason, Voided: sg.VoidedAt != nil}
+		if sg.Passkey != nil {
+			v.PasskeyID = sg.Passkey.PasskeyID.String()
+		}
+		out.Signatures = append(out.Signatures, v)
 	}
 	return out, nil
 }
@@ -782,20 +855,21 @@ func registerApprovals(a *API) {
 		Description: "Signs the request's current step and, once every step of its policy has its quorum, carries out its change in the same " +
 			"transaction (FR-APR-01, FR-APR-03, FR-APR-10, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the " +
 			"approval right (A) on the object's Appendix D row, is one the current step names (APR-11), did not ask for it and has not signed " +
-			"it; and envelope_hash must be the request's, and If-Match its ETag. The envelope is rebuilt from current data with its rows locked: " +
+			"it; and envelope_hash must be the request's, and If-Match its ETag. With passkey, your passkey's answer to the request's " +
+			"challenge signs the envelope's hash itself instead of your session's step-up, and the signature keeps the assertion (FR-APR-03, rev 0.44). The envelope is rebuilt from current data with its rows locked: " +
 			"if the record, any dependency or the approval policy changed since the request, nothing executes, the request becomes void and " +
 			"APR-04 says so (FR-APR-05); if an earlier approver no longer holds the right their step needs, APR-10 does. Side effects: the signed " +
 			"approval and its audit event; on the last step, the request approved, the change itself and their audit events, which name the " +
 			"approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership},
-		append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...)...),
+		append(append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...), PasskeyCodes...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
 			id, err := parseID("approval_id", in.ApprovalID)
 			if err != nil {
 				return nil, err
 			}
-			p, err := a.steppedUpPerson(ctx, "Approving")
+			p, name, err := a.signer(ctx, "Approving", in.Body.Passkey)
 			if err != nil {
 				return nil, err
 			}
@@ -832,8 +906,12 @@ func registerApprovals(a *API) {
 							"Read the record again and ask for the change again if it is still needed")}
 				}
 				now := a.deps.Clock.Now()
-				if _, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "approve",
-					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now}); err != nil {
+				signature := storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "approve",
+					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now}
+				if err := a.withPasskey(ctx, u, p, name, r, in.Body.Passkey, &signature); err != nil {
+					return decided{}, err
+				}
+				if _, err := u.Approvals().Sign(ctx, signature); err != nil {
 					return decided{}, err
 				}
 				sigs, err := u.Approvals().Signatures(ctx, r.ID)
@@ -876,16 +954,16 @@ func registerApprovals(a *API) {
 		Description: "Signs a rejection of the request's envelope at its current step, with your reason; the change never executes " +
 			"(FR-APR-03, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's " +
 			"Appendix D row, is one the current step names, did not ask for it and has not signed it; and envelope_hash must be the request's, " +
-			"and If-Match its ETag. Side effects: the signed rejection, the request rejected and their audit events. Idempotent with " +
+			"and If-Match its ETag. With passkey, your passkey signs the envelope's hash itself (FR-APR-03, rev 0.44). Side effects: the signed rejection, the request rejected and their audit events. Idempotent with " +
 			"Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
-		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion}, append(locks, ApprovalCodes...)...),
+		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion}, append(append(locks, ApprovalCodes...), PasskeyCodes...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
 			id, err := parseID("approval_id", in.ApprovalID)
 			if err != nil {
 				return nil, err
 			}
-			p, err := a.steppedUpPerson(ctx, "Rejecting")
+			p, name, err := a.signer(ctx, "Rejecting", in.Body.Passkey)
 			if err != nil {
 				return nil, err
 			}
@@ -900,8 +978,12 @@ func registerApprovals(a *API) {
 					return decided{}, err
 				}
 				now := a.deps.Clock.Now()
-				if _, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "reject",
-					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now, Reason: reason}); err != nil {
+				signature := storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "reject",
+					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now, Reason: reason}
+				if err := a.withPasskey(ctx, u, p, name, r, in.Body.Passkey, &signature); err != nil {
+					return decided{}, err
+				}
+				if _, err := u.Approvals().Sign(ctx, signature); err != nil {
 					return decided{}, err
 				}
 				if r, err = u.Approvals().Decide(ctx, r.ID, r.Version, string(approval.Rejected), reason, now); err != nil {
@@ -921,6 +1003,82 @@ func registerApprovals(a *API) {
 				return nil, err
 			}
 			return &approvalWriteOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body.Approval}, nil
+		})
+
+	register(a, authz.ChallengeApproval, ceremony(huma.Operation{
+		OperationID: "challengeApproval", Method: http.MethodPost, Path: "/v1/approvals/{approval_id}/challenge", Tags: []string{"Approvals"},
+		Summary: "Start signing a request with a passkey",
+		Description: "A challenge for signing the request with your passkey: 16 random bytes followed by the SHA-256 of the request's " +
+			"envelope, so your authenticator signs exactly what you approve or reject (FR-APR-03). Pass the options to " +
+			"navigator.credentials.get, then send the answer with approve or reject, within 5 minutes; it works once, for this request, " +
+			"organisation and envelope only (G4-056). Needs a person signed in to Fyniq in the browser who may decide the request now, and " +
+			"If-Match with the request's ETag, so the challenge is over the version you were shown. " +
+			"Side effects: the challenge, kept for the answer; nothing else.",
+	}), append([]string{CodeNotFound, CodeNoPasskey, CodeStale, CodeIfMatchRequired, storage.CodeApproval}, append(append([]string{}, PasskeyCodes...), ApprovalCodes...)...),
+		func(ctx context.Context, in *approvalChallengeInput) (*passkeyChallengeOutput, error) {
+			id, err := parseID("approval_id", in.ApprovalID)
+			if err != nil {
+				return nil, err
+			}
+			p, _, name, err := a.passkeyPerson(ctx, "Signing a request with a passkey")
+			if err != nil {
+				return nil, err
+			}
+			out := passkeyChallengeOutput{CacheControl: "no-store"}
+			err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+				r, err := u.Approvals().Get(ctx, id)
+				if errors.Is(err, ports.ErrNotFound) || (err == nil && !maySee(p, r)) {
+					return problem(CodeNotFound, "No approval request with that ID exists in this organisation.", "List the approvals to find their IDs")
+				}
+				if err != nil {
+					return err
+				}
+				if !mayApprove(p, r.ObjectType) {
+					return problem(approval.CodeNotApprover, "You hold no approval right on "+string(approvalRow(r.ObjectType))+" (Appendix D).",
+						"Ask a member who holds it, such as an Owner, to decide it")
+				}
+				if x := approval.CheckSigner(requestOf(r), p.UserID, a.deps.Clock.Now()); x != nil {
+					return problem(x.Code, strings.ToUpper(x.Message[:1])+x.Message[1:]+".", x.Fix)
+				}
+				if err := checkIfMatch(in.IfMatch, etag(r.Version)); err != nil { // the version you were shown is the one you sign
+					return err
+				}
+				user, err := passkeyUser(ctx, u, p, name)
+				if err != nil {
+					return err
+				}
+				if len(user.Passkeys) == 0 {
+					return problem(CodeNoPasskey, "You have no passkey to sign with.",
+						"Register a passkey first, or approve with your session's step-up")
+				}
+				nonce := make([]byte, 16)
+				_, _ = rand.Read(nonce)
+				challenge := append(nonce, r.EnvelopeHash...)
+				options, err := a.passkeys.Assertion(user, challenge)
+				if err != nil {
+					return err
+				}
+				now := a.deps.Clock.Now()
+				cid, err := u.Passkeys().ApprovalChallenge(ctx, storage.NewApprovalChallenge{SessionHash: p.SessionHash, RequestID: r.ID,
+					EnvelopeHash: r.EnvelopeHash, Nonce: nonce, Now: now, Expires: now.Add(ChallengeTTL)})
+				if err != nil {
+					return err
+				}
+				b, err := json.Marshal(options)
+				if err != nil {
+					return err
+				}
+				var doc WebAuthnJSON
+				if err := json.Unmarshal(b, &doc); err != nil {
+					return err
+				}
+				out.Body = PasskeyChallenge{ChallengeID: cid.String(), ExpiresAt: now.Add(ChallengeTTL).UTC(), Options: doc}
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &out, nil
 		})
 
 	register(a, authz.WithdrawApproval, huma.Operation{

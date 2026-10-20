@@ -12,6 +12,60 @@ import (
 	"github.com/google/uuid"
 )
 
+const answerApprovalChallenge = `-- name: AnswerApprovalChallenge :exec
+SELECT fyniq.webauthn_approval_answer($1::uuid, $2::bytea, $3::uuid,
+  $4::bigint, $5::boolean, $6::timestamptz)
+`
+
+type AnswerApprovalChallengeParams struct {
+	ChallengeID uuid.UUID
+	SessionHash []byte
+	PasskeyID   uuid.UUID
+	SignCount   int64
+	BackupState bool
+	Now         time.Time
+}
+
+func (q *Queries) AnswerApprovalChallenge(ctx context.Context, arg AnswerApprovalChallengeParams) error {
+	_, err := q.db.Exec(ctx, answerApprovalChallenge,
+		arg.ChallengeID,
+		arg.SessionHash,
+		arg.PasskeyID,
+		arg.SignCount,
+		arg.BackupState,
+		arg.Now,
+	)
+	return err
+}
+
+const issueApprovalChallenge = `-- name: IssueApprovalChallenge :one
+SELECT fyniq.webauthn_approval_challenge_issue($1::bytea, $2::uuid, $3::bytea,
+  $4::bytea, $5::timestamptz, $6::timestamptz)::uuid AS id
+`
+
+type IssueApprovalChallengeParams struct {
+	SessionHash  []byte
+	RequestID    uuid.UUID
+	EnvelopeHash []byte
+	Nonce        []byte
+	Now          time.Time
+	ExpiresAt    time.Time
+}
+
+func (q *Queries) IssueApprovalChallenge(ctx context.Context, arg IssueApprovalChallengeParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, issueApprovalChallenge,
+		arg.SessionHash,
+		arg.RequestID,
+		arg.EnvelopeHash,
+		arg.Nonce,
+		arg.Now,
+		arg.ExpiresAt,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const issuePasskeyChallenge = `-- name: IssuePasskeyChallenge :one
 SELECT fyniq.webauthn_challenge_issue($1::bytea, $2::text, $3::bytea,
   $4::timestamptz, $5::timestamptz)::uuid AS id

@@ -7,7 +7,10 @@
 package passkey
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -32,8 +35,9 @@ var algorithms = []protocol.CredentialParameter{
 
 // RelyingParty is Fyniq to a person's authenticator.
 type RelyingParty struct {
-	w  *webauthn.WebAuthn
-	id string
+	w      *webauthn.WebAuthn
+	id     string
+	origin string
 }
 
 // New returns the relying party of the web app at origin: its ID is the origin's host.
@@ -49,7 +53,7 @@ func New(origin string) (*RelyingParty, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &RelyingParty{w: w, id: u.Hostname()}, nil
+	return &RelyingParty{w: w, id: u.Hostname(), origin: u.Scheme + "://" + u.Host}, nil
 }
 
 // ID is the relying party ID: the web app's host.
@@ -145,11 +149,15 @@ func (rp *RelyingParty) Assertion(u User, challenge []byte) (*protocol.Credentia
 	return a, err
 }
 
-// Asserted is the passkey that answered an assertion, with what the answer carried.
+// Asserted is the passkey that answered an assertion, with what the answer carried: the authenticator data, the client
+// data and the signature are kept with an approval so it can be verified again (FR-APR-03).
 type Asserted struct {
-	Passkey     storage.Passkey
-	SignCount   uint32
-	BackupState bool
+	Passkey           storage.Passkey
+	SignCount         uint32
+	BackupState       bool
+	AuthenticatorData []byte
+	ClientData        []byte
+	Signature         []byte
 }
 
 // Verify checks the browser's answer to an assertion challenge for u: one of u's live passkeys signed exactly that
@@ -168,8 +176,50 @@ func (rp *RelyingParty) Verify(u User, challenge, response []byte) (Asserted, er
 	}
 	for _, k := range u.Passkeys {
 		if k.RevokedAt == nil && string(k.CredentialID) == string(c.ID) {
-			return Asserted{Passkey: k, SignCount: c.Authenticator.SignCount, BackupState: c.Flags.BackupState}, nil
+			raw := parsed.Raw.AssertionResponse
+			return Asserted{Passkey: k, SignCount: c.Authenticator.SignCount, BackupState: c.Flags.BackupState,
+				AuthenticatorData: raw.AuthenticatorData, ClientData: raw.ClientDataJSON, Signature: raw.Signature}, nil
 		}
 	}
 	return Asserted{}, errors.Join(ErrRefused, errors.New("no live passkey of the user answered"))
+}
+
+// Reverify checks a kept assertion again, as an auditor would (FR-APR-03): its client data says webauthn.get, with
+// exactly challenge and this origin; its authenticator data is for this relying party, with the person present and
+// verified; and the passkey's public key verifies its signature over the authenticator data and the client data's hash.
+func (rp *RelyingParty) Reverify(k storage.Passkey, challenge []byte, a storage.PasskeyAssertion) error {
+	var cd struct {
+		Type      string `json:"type"`
+		Challenge string `json:"challenge"`
+		Origin    string `json:"origin"`
+	}
+	if err := json.Unmarshal(a.ClientData, &cd); err != nil {
+		return errors.Join(ErrRefused, err)
+	}
+	switch {
+	case cd.Type != "webauthn.get":
+		return errors.Join(ErrRefused, fmt.Errorf("the client data is a %q, not an assertion", cd.Type))
+	case cd.Challenge != base64.RawURLEncoding.EncodeToString(challenge):
+		return errors.Join(ErrRefused, errors.New("the client data signs another challenge"))
+	case cd.Origin != rp.origin:
+		return errors.Join(ErrRefused, fmt.Errorf("the client data comes from %q", cd.Origin))
+	}
+	var ad protocol.AuthenticatorData
+	if err := ad.Unmarshal(a.AuthenticatorData); err != nil {
+		return errors.Join(ErrRefused, err)
+	}
+	rpHash := sha256.Sum256([]byte(rp.id))
+	if !bytes.Equal(ad.RPIDHash, rpHash[:]) || !ad.Flags.HasUserPresent() || !ad.Flags.HasUserVerified() {
+		return errors.Join(ErrRefused, errors.New("the authenticator data is for another site, or the person was not verified"))
+	}
+	key, err := webauthncose.ParsePublicKey(k.PublicKey)
+	if err != nil {
+		return errors.Join(ErrRefused, err)
+	}
+	h := sha256.Sum256(a.ClientData)
+	ok, err := webauthncose.VerifySignature(key, append(append([]byte{}, a.AuthenticatorData...), h[:]...), a.Signature)
+	if err != nil || !ok {
+		return errors.Join(ErrRefused, errors.New("the signature does not verify with the passkey's key"), err)
+	}
+	return nil
 }

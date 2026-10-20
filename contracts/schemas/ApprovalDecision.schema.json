@@ -12,6 +12,10 @@
       "pattern": "^[0-9a-f]{64}$",
       "type": "string"
     },
+    "passkey": {
+      "$ref": "ApprovalPasskey.schema.json",
+      "description": "Sign with a passkey: your authenticator's answer to this request's challenge (POST /v1/approvals/{approval_id}/challenge). Without it, your session's step-up in the last 5 minutes signs (rev 0.44)."
+    },
     "reason": {
       "description": "Why you reject it: needed to reject.",
       "examples": [
