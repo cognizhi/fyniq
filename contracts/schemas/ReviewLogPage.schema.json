@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The entries on this page.",
+      "items": {
+        "$ref": "ReviewLogItem.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjAxOTI4ZjZlIn0"
+      ],
+      "type": "string"
+    },
+    "overdue": {
+      "description": "How many of them are overdue (FM-3).",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "unreviewed": {
+      "description": "How many entries you may see are unreviewed.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "items",
+    "unreviewed",
+    "overdue"
+  ],
+  "title": "ReviewLogPage",
+  "type": "object"
+}

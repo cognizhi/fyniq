@@ -91,6 +91,10 @@ fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
 fyniq_api       EXECUTE   recover_super_admin()
+fyniq_api       INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
+fyniq_api       SELECT    review_log_entry
+fyniq_api       INSERT    review_log_review (entry_id, note, reviewed_at, reviewed_by)
+fyniq_api       SELECT    review_log_review
 fyniq_api       INSERT    role_assignment (expires_at, membership_id, role)
 fyniq_api       SELECT    role_assignment
 fyniq_api       UPDATE    role_assignment (revoked_at)
@@ -161,6 +165,8 @@ fyniq_executor  INSERT    outbox (business_key, kind, max_attempts, payload, wor
 fyniq_executor  SELECT    outbox
 fyniq_executor  UPDATE    outbox (attempts, deadline_at, dispatches, job_execution, last_error, lease_expires_at, lease_holder, state, task_name)
 fyniq_executor  SELECT    period
+fyniq_executor  SELECT    review_log_entry
+fyniq_executor  SELECT    review_log_review
 fyniq_executor  USAGE     schema fyniq
 fyniq_executor  SELECT    sod_override
 fyniq_executor  SELECT    statutory_pack_activation
@@ -199,6 +205,8 @@ fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    rate_limit_window
+fyniq_readonly  SELECT    review_log_entry
+fyniq_readonly  SELECT    review_log_review
 fyniq_readonly  SELECT    role_assignment
 fyniq_readonly  USAGE     schema fyniq
 fyniq_readonly  SELECT    sod_override
@@ -254,6 +262,8 @@ fyniq_worker    SELECT    period
 fyniq_worker    DELETE    rate_limit_window
 fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()
+fyniq_worker    SELECT    review_log_entry
+fyniq_worker    SELECT    review_log_review
 fyniq_worker    SELECT    role_assignment
 fyniq_worker    USAGE     schema fyniq
 fyniq_worker    SELECT    sod_override

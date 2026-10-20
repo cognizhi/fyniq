@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actor": {
+      "description": "Who acted: the requester, or the Owner in the bootstrap.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "actor_name": {
+      "description": "Their name.",
+      "examples": [
+        "Mei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "approval_id": {
+      "description": "The approved request, for an approved change.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The entry's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01).",
+      "enum": [
+        "approved_change",
+        "founder_bootstrap"
+      ],
+      "examples": [
+        "approved_change"
+      ],
+      "type": "string"
+    },
+    "logged_at": {
+      "description": "When it executed.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "note": {
+      "description": "What the reviewer noted.",
+      "examples": [
+        "Agreed at Monday's meeting"
+      ],
+      "type": "string"
+    },
+    "object_key": {
+      "description": "Which one.",
+      "examples": [
+        "bank.tolerance_base"
+      ],
+      "type": "string"
+    },
+    "object_type": {
+      "description": "What it changed.",
+      "examples": [
+        "organisation_setting"
+      ],
+      "type": "string"
+    },
+    "overdue": {
+      "description": "true when it is still unreviewed 14 days after it executed, in Founder mode: Checks shows it as a warning (FM-3).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "reviewed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-24T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reviewed_by": {
+      "description": "Who reviewed it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reviewed_by_name": {
+      "description": "Their name.",
+      "examples": [
+        "Wei Jie Lim"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "description": "What it did, in a sentence.",
+      "examples": [
+        "Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"
+      ],
+      "type": "string"
+    },
+    "you_may_review": {
+      "description": "true when you may review it now: it is unreviewed, you did not act on it and you hold the approval right on what it changed.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "object_type",
+    "object_key",
+    "summary",
+    "logged_at",
+    "overdue",
+    "you_may_review"
+  ],
+  "title": "ReviewLogItem",
+  "type": "object"
+}

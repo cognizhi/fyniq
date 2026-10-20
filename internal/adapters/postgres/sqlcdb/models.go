@@ -462,6 +462,27 @@ type FyniqRateLimitWindow struct {
 	Used           int32
 }
 
+type FyniqReviewLogEntry struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	ObjectType     string
+	ObjectKey      string
+	Summary        string
+	Actor          *uuid.UUID
+	ApprovalID     *uuid.UUID
+	LoggedAt       time.Time
+}
+
+type FyniqReviewLogReview struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EntryID        uuid.UUID
+	ReviewedBy     uuid.UUID
+	ReviewedAt     time.Time
+	Note           *string
+}
+
 type FyniqRoleAssignment struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

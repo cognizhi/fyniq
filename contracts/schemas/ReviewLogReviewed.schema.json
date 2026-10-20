@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reviewed": {
+      "description": "The entries, now reviewed.",
+      "items": {
+        "$ref": "ReviewLogItem.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "reviewed"
+  ],
+  "title": "ReviewLogReviewed",
+  "type": "object"
+}

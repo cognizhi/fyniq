@@ -229,6 +229,19 @@ func liveRoles(m storage.Member) string {
 	return strings.Join(out, ", ")
 }
 
+// logBootstrap logs a change the Owner made alone during the founder bootstrap, for the weekly review once another
+// founder joins (FR-ADM-01, FM-3).
+func (a *API) logBootstrap(ctx context.Context, u storage.UnitOfWork, objectType, objectKey, summary string) error {
+	p, _ := authn.From(ctx)
+	var actor *uuid.UUID
+	if p.UserID != uuid.Nil {
+		actor = &p.UserID
+	}
+	_, err := u.ReviewLog().Log(ctx, storage.NewReviewLogEntry{Kind: storage.ReviewFounderBootstrap, ObjectType: objectType, ObjectKey: objectKey,
+		Summary: summary, Actor: actor, LoggedAt: a.deps.Clock.Now()})
+	return err
+}
+
 // assignRoleNow gives member id role until expires (nil: no expiry), and revokes their OAuth tokens.
 func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, role string, expires *time.Time) (Member, error) {
 	now := a.deps.Clock.Now()
@@ -397,8 +410,11 @@ func registerMembers(a *API) {
 				}
 				inv, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: name, Roles: roles,
 					RolesExpireAt: b.RolesExpireAt, ExpiresAt: now.Add(InvitationTTL)})
+				if err != nil {
+					return err
+				}
 				out.Body = MemberInvitationCode{MemberInvitation: invitationOf(inv), Code: code}
-				return err
+				return a.logBootstrap(ctx, u, approval.ObjectInvitation, inv.ID.String(), "Invite "+name+" as "+strings.Join(roles, ", "))
 			})
 			if err != nil {
 				return nil, err
@@ -477,7 +493,11 @@ func registerMembers(a *API) {
 						return nil, problem(team.CodeConflict, "An override needs a second approver, and the organisation has one active member.",
 							"Choose a role that does not conflict, or invite another member first")
 					}
-					return a.assignRoleNow(ctx, u, id, role, in.Body.ExpiresAt)
+					mm, err := a.assignRoleNow(ctx, u, id, role, in.Body.ExpiresAt)
+					if err != nil {
+						return nil, err
+					}
+					return mm, a.logBootstrap(ctx, u, approval.ObjectMembership, id.String(), "Give "+m.DisplayName+" the role "+role)
 				}
 				if slices.ContainsFunc(m.Roles, func(r storage.RoleAssignment) bool { return r.Role == role }) {
 					return nil, problem(member.CodeHeld, m.DisplayName+" holds the role "+role+" already.", "Nothing to do; revoke it first to change its expiry")
@@ -525,7 +545,11 @@ func registerMembers(a *API) {
 					return nil, err
 				}
 				if !wait {
-					return a.revokeRoleNow(ctx, u, id, in.Role)
+					mm, err := a.revokeRoleNow(ctx, u, id, in.Role)
+					if err != nil {
+						return nil, err
+					}
+					return mm, a.logBootstrap(ctx, u, approval.ObjectMembership, id.String(), "End "+mm.DisplayName+"'s role "+in.Role)
 				}
 				m, err := findMember(ctx, u, id, a.deps.Clock.Now())
 				if err != nil {

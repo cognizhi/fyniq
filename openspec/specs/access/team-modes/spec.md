@@ -174,6 +174,16 @@ Source: PRD-001 §6.4
 - **WHEN** an item in the log is still unreviewed 14 days after it was logged
 - **THEN** it shows on Checks as "included, please review" (⚠)
 
+#### Scenario: What the log holds (rev 0.46)
+- **WHEN** an approved change executes, or the Owner changes roles or invites someone alone during the founder bootstrap
+- **THEN** it is logged with what it changed and who acted
+- **AND** the log never changes
+
+#### Scenario: Who reviews (rev 0.46)
+- **WHEN** a member reviews entries of the log
+- **THEN** each is one they did not act on, on whose object they hold the approval right, reviewed once, with an optional note
+- **AND** the database refuses a review by the one who acted
+
 ### Requirement: FM-4 Monthly close attestation
 In Founder mode, each monthly close SHALL be attested by a founder who did not prepare the close, as part of the close checklist.
 

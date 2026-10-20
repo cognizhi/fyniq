@@ -4,7 +4,7 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving or rejecting in steps from the Inbox, withdrawing your request, and why one becomes void or expires
 sources:
-  - docs/user-guide/approvals.md sha256:72098c786264e44b344d1d2f2fcb8960c6cba43ca3c5b763b10761321f9f533d
+  - docs/user-guide/approvals.md sha256:6e64d0185037cd0091acb7b72b2f6c7b863e56e65d68284e21c59af54522cdfa
 data_class: general
 taint: trusted
 status: published
@@ -13,6 +13,8 @@ compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
 compiled_at: 2026-10-20
 aliases:
+  - review log
+  - weekly review
   - two-person rule
   - second approver
   - waiting for approval
@@ -58,6 +60,14 @@ aliases:
 - Only the person who asked can withdraw it; anyone else who disagrees rejects it with a reason.
 
 (src: docs/user-guide/approvals.md#withdraw-your-request)
+
+## Review high-risk actions
+
+- Every high-risk change is logged when it is made: each change another person approved, and each role or invitation the Owner set up alone before a second person joined; another founder reviews the log weekly.
+- **Review log** lists the unreviewed actions and who did each; choose the ones checked, add a note if wanted, and select **Mark as reviewed**.
+- Nobody reviews their own action; each is reviewed once; one still unreviewed 14 days after it was made shows as overdue on **Checks**.
+
+(src: docs/user-guide/approvals.md#review-high-risk-actions)
 
 ## When it can no longer be approved
 

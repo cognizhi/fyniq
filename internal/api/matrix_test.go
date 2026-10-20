@@ -388,6 +388,13 @@ var matrixCalls = map[string]matrixCall{
 	"challengeApproval": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/approvals/"+uuid.NewString()+"/challenge", steppedUp(e, tok), nil, "If-Match", `"1"`), nil
 	},
+	"listReviewLog": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/review-log", tok, nil), nil
+	},
+	// Reviewing needs entries the caller did not act on; an unknown one is refused past the policy (404).
+	"reviewLogEntries": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/review-log/reviews", steppedUp(e, tok), map[string]any{"entry_ids": []string{uuid.NewString()}}), nil
+	},
 	"listApprovals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/approvals", tok, nil), nil
 	},
