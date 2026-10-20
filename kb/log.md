@@ -75,3 +75,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/general-ledger.md (new) → reports.general-ledger (the general ledger screen, p1-general-ledger-close 4.1, 7.3); journals.md (related link) → accounting.journals
 
 ## [2026-10-21] compile | docs/user-guide/organisation-settings.md (self-approval threshold) → settings.organisation, settings.change (journal approvals, p1-general-ledger-close 2.2)
+
+## [2026-10-21] compile | docs/user-guide/journals.md (journals above the self-approval threshold, ask to reverse), approvals.md (journal approvals, self-approved log) → accounting.journals, approvals.decide (p1-general-ledger-close 2.2)

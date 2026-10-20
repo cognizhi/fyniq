@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { CalendarPlus, CircleCheck, CircleX, Eye, Plus, Save, Send, Trash2, Undo2 } from "lucide-react";
+import { CalendarPlus, CircleCheck, CircleX, Clock, Eye, Plus, Save, Send, Trash2, Undo2, UserCheck } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -26,6 +26,8 @@ type Draft = components["schemas"]["JournalDraft"];
 const posters = ["accountant"];
 // The code the API answers when no period covers the date (FY030): the year is not open yet.
 const noPeriod = "STORAGE-PERIOD-01";
+// The code the API answers when a journal's debits are above the self-approval threshold (FM-2): ask for approval.
+const overThreshold = "JOURNAL-07";
 
 export interface Line {
   key: string;
@@ -239,7 +241,9 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
   );
 }
 
-function Reverse({ open, journal, etag, onClose, onDone }: { open: boolean; journal: Journal; etag: string; onClose: () => void; onDone: (p: Posting) => void }) {
+// Reverse voids a posted journal with a reason. In Founder mode a void needs a second person (FM-1), so it asks for the
+// reversal instead, which another founder approves.
+function Reverse({ open, journal, etag, ask, onClose, onDone, onAsked }: { open: boolean; journal: Journal; etag: string; ask: boolean; onClose: () => void; onDone: (p: Posting) => void; onAsked: () => void }) {
   const confirm = useConfirm();
   const id = useId();
   const [on, setOn] = useState(today);
@@ -247,16 +251,22 @@ function Reverse({ open, journal, etag, onClose, onDone }: { open: boolean; jour
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [missing, setMissing] = useState(false);
-  const h = helpText("journal.reverse");
+  const h = helpText(ask ? "journal.ask-reverse" : "journal.reverse");
   const run = async (e: FormEvent) => {
     e.preventDefault();
     if (!reason.trim()) return setMissing(true);
     setBusy(true);
     setProblem(null);
     const key = newKey();
-    const out = await guarded(confirm, () =>
-      api.POST("/v1/journals/{journal_id}/reverse", { params: { path: { journal_id: journal.id }, header: { "If-Match": etag, "Idempotency-Key": key } }, body: { date: on, reason: reason.trim() } }),
-    );
+    const params = { path: { journal_id: journal.id }, header: { "If-Match": etag, "Idempotency-Key": key } };
+    const body = { date: on, reason: reason.trim() };
+    if (ask) {
+      const out = await guarded(confirm, () => api.POST("/v1/journals/{journal_id}/reverse-approval", { params, body }));
+      setBusy(false);
+      if (!out.data) return setProblem(problemOf(out.error));
+      return onAsked();
+    }
+    const out = await guarded(confirm, () => api.POST("/v1/journals/{journal_id}/reverse", { params, body }));
     setBusy(false);
     if (!out.data) return setProblem(problemOf(out.error));
     onDone(out.data);
@@ -267,10 +277,14 @@ function Reverse({ open, journal, etag, onClose, onDone }: { open: boolean; jour
       onOpenChange={(o) => !o && onClose()}
       dismissible={!busy}
       eyebrow={journal.number}
-      title="Reverse this journal?"
-      description="A reversing entry with every line the other way round posts on the date you choose. The journal stays in the books, marked reversed; nothing is deleted."
+      title={ask ? "Ask to reverse this journal?" : "Reverse this journal?"}
+      description={
+        ask
+          ? "In Founder mode another founder approves a reversal first. Then a reversing entry with every line the other way round posts on the date you choose; the journal stays in the books, marked reversed."
+          : "A reversing entry with every line the other way round posts on the date you choose. The journal stays in the books, marked reversed; nothing is deleted."
+      }
     >
-      {problem && <Refusal problem={problem} title="The journal was not reversed" />}
+      {problem && <Refusal problem={problem} title={ask ? "The request was not made" : "The journal was not reversed"} />}
       <form className="fy-stack fy-stack--3" onSubmit={run} noValidate>
         <div className="fy-field">
           <label className="fy-label" htmlFor={`${id}-date`}>
@@ -308,7 +322,7 @@ function Reverse({ open, journal, etag, onClose, onDone }: { open: boolean; jour
             Cancel
           </Button>
           <Button variant="primary" type="submit" disabled={busy} title={h.tooltip}>
-            <Icon of={Undo2} />
+            <Icon of={ask ? UserCheck : Undo2} />
             {h.label}
           </Button>
         </div>
@@ -320,8 +334,9 @@ function Reverse({ open, journal, etag, onClose, onDone }: { open: boolean; jour
 // JournalPage is a journal (docs/design/screens JournalEditor; FR-GL-01, FR-GL-12, FR-INT-14): a new one, a draft
 // its preparer changes, checks and posts, or a posted journal, read-only, which an Accountant reverses with a
 // reason. What was typed is added up exactly as it is entered; the server's check gives the base-currency entry
-// before anything posts. Evidence, approvals above the threshold, automatic reversal and recurring journals
-// arrive with their tasks.
+// before anything posts. A journal above the self-approval threshold, and in Founder mode a reversal, is asked for and
+// approved by another person (FM-1, FM-2, SOD-3). Evidence, automatic reversal and recurring journals arrive with their
+// tasks.
 export function JournalPage() {
   const { journalId } = useParams({ strict: false }) as { journalId?: string };
   const isNew = !journalId;
@@ -364,6 +379,11 @@ export function JournalPage() {
   const checkHelp = helpText("journal.check");
   const post = helpText("journal.post");
   const reverse = helpText("journal.reverse");
+  const askHelp = helpText("journal.ask-approval");
+  const askReverse = helpText("journal.ask-reverse");
+  // In Founder mode a void needs a second person (FM-1): the API refuses a reversal and takes a request instead.
+  const founder = organisation?.team_mode === "founder";
+  const asked = j?.approval_asked;
 
   const change = (next: Form) => {
     setForm(next);
@@ -430,6 +450,23 @@ export function JournalPage() {
     setStatus(`Posted as ${out.data.journal.number ?? "a journal"}.`);
   };
 
+  // askPost asks another person to approve posting the draft at the version read (FM-2, SOD-3).
+  const askPost = async () => {
+    if (!one.data) return;
+    setBusy(true);
+    setProblem(null);
+    const etag = one.data.etag;
+    const key = newKey();
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/journals/{journal_id}/post-approval", { params: { path: { journal_id: one.data.journal.id }, header: { "If-Match": etag, "Idempotency-Key": key } } }),
+    );
+    setBusy(false);
+    setFailed("The request was not made");
+    if (!out.data) return setProblem(problemOf(out.error));
+    await refresh();
+    setStatus("Asked for approval: the journal posts when another person approves it.");
+  };
+
   const title = isNew ? "New journal" : j ? `${j.number ?? (j.status === "draft" ? "Draft journal" : "Journal")}${j.memo ? ` · ${j.memo}` : ""}` : "Journal";
   const list = f ? balances(f, base) : [];
   const fieldError = (key: string) =>
@@ -454,7 +491,7 @@ export function JournalPage() {
           {checkHelp.label}
         </Button>
       )}
-      {!isNew && !dirty && mayPost && (
+      {!isNew && !dirty && mayPost && !asked && (
         <Button variant="primary" type="button" onClick={() => void send(false)} disabled={busy} title={post.tooltip}>
           <Icon of={Send} />
           {post.label}
@@ -463,10 +500,10 @@ export function JournalPage() {
     </>
   );
 
-  const reverseButton = j?.status === "posted" && mayPost && (
-    <Button type="button" onClick={() => setReversing(true)} title={reverse.tooltip}>
-      <Icon of={Undo2} />
-      {reverse.label}…
+  const reverseButton = j?.status === "posted" && mayPost && !asked && (
+    <Button type="button" onClick={() => setReversing(true)} title={founder ? askReverse.tooltip : reverse.tooltip}>
+      <Icon of={founder ? UserCheck : Undo2} />
+      {founder ? askReverse.label : reverse.label}…
     </Button>
   );
 
@@ -499,7 +536,40 @@ export function JournalPage() {
         {status}
       </p>
       {one.isError && <Refusal problem={problemOf(one.error)} title="The journal could not be shown" />}
-      {problem && (
+      {asked && (
+        <div className="fy-banner fy-banner--info" role="note">
+          <Icon of={Clock} size={20} />
+          <div className="fy-banner__text">
+            <strong>{j?.status === "draft" ? "A request to post this journal waits for approval" : "A request to reverse this journal waits for approval"}</strong>
+            <span className="fy-small">
+              {j?.status === "draft" ? "Another person approves it, and it posts then. Changing the draft cancels the request." : "Another founder approves it, and the reversal posts then."}
+            </span>
+          </div>
+          <div className="fy-banner__action">
+            <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/approvals/$approvalId" params={{ approvalId: asked }}>
+              See the request
+            </Link>
+          </div>
+        </div>
+      )}
+      {problem?.code === overThreshold && (
+        <div className="fy-banner fy-banner--info" role="note">
+          <Icon of={UserCheck} size={20} />
+          <div className="fy-banner__text">
+            <strong>Another person approves this journal</strong>
+            <span className="fy-small">{problem.detail} The one who prepared it never approves it.</span>
+          </div>
+          {mayPost && (
+            <div className="fy-banner__action">
+              <Button size="sm" variant="primary" onClick={() => void askPost()} disabled={busy} title={askHelp.tooltip}>
+                <Icon of={UserCheck} />
+                {askHelp.label}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {problem && problem.code !== overThreshold && (
         <>
           <Refusal problem={problem} title={failed} />
           {problem.code === noPeriod && (
@@ -668,11 +738,25 @@ export function JournalPage() {
           {reverseButton}
         </div>
       )}
-      {j && one.data && <Reverse open={reversing} journal={j} etag={one.data.etag} onClose={() => setReversing(false)} onDone={async (p) => {
-        setReversing(false);
-        await refresh();
-        setStatus(`Reversed. The reversing entry is dated ${date(p.entry.posting_date)}.`);
-      }} />}
+      {j && one.data && (
+        <Reverse
+          open={reversing}
+          journal={j}
+          etag={one.data.etag}
+          ask={founder}
+          onClose={() => setReversing(false)}
+          onDone={async (p) => {
+            setReversing(false);
+            await refresh();
+            setStatus(`Reversed. The reversing entry is dated ${date(p.entry.posting_date)}.`);
+          }}
+          onAsked={async () => {
+            setReversing(false);
+            await refresh();
+            setStatus("Asked for approval: the reversal posts when another founder approves it.");
+          }}
+        />
+      )}
     </div>
   );
 }

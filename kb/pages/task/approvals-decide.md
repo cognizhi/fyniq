@@ -4,17 +4,18 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving or rejecting in steps from the Inbox, withdrawing your request, and why one becomes void or expires
 sources:
-  - docs/user-guide/approvals.md sha256:988f4b7e3988ff6bcb44e0e4e34577958d4bbf05b8dd15c9acf7463d1c8d223b
+  - docs/user-guide/approvals.md sha256:b65f7a53303c3c41ec1150b8ddb8a2d26269329834f7ea43dfe5094734aad316
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-20
+compiled_at: 2026-10-21
 aliases:
   - review log
   - weekly review
+  - self-approved
   - two-person rule
   - second approver
   - waiting for approval
@@ -32,6 +33,7 @@ aliases:
 
 - Settings such as thresholds, retention and the AI assistant ([[settings.change]]).
 - Activating a statutory pack version ([[settings.statutory-packs]]).
+- Posting a journal above the self-approval threshold, and reversing a journal in Founder mode ([[accounting.journals]]).
 - Once the company has a second member: adding or ending a role, and inviting someone ([[members.roles]], [[members.invite]]).
 - Fyniq asks for approval instead of making the change; another person who approves that kind of change, such as an Owner, decides. Nobody approves their own request.
 
@@ -68,7 +70,7 @@ aliases:
 
 ## Review high-risk actions
 
-- Every high-risk change is logged when it is made: each change another person approved, and each role or invitation the Owner set up alone before a second person joined; another founder reviews the log weekly.
+- Every high-risk change is logged when it is made: each change another person approved, each role or invitation the Owner set up alone before a second person joined, and, in Founder mode, each journal a founder posted alone at or below the self-approval threshold; another founder reviews the log weekly.
 - **Inbox → Weekly review** opens the **Review log** of unreviewed actions and who did each; tick the ones checked, select **Mark as reviewed**, add a note if wanted, and confirm.
 - Nobody reviews their own action; each is reviewed once; one still unreviewed 14 days after it was made shows as overdue in the Inbox and the review log.
 

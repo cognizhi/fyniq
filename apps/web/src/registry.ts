@@ -110,6 +110,8 @@ export const actions = [
   { kind: "action", id: "journal.check", mode: "expert", help: "journal.check", guide: "accounting.journals#check-and-post-a-journal" },
   { kind: "action", id: "journal.post", mode: "expert", help: "journal.post", guide: "accounting.journals#check-and-post-a-journal" },
   { kind: "action", id: "journal.reverse", mode: "expert", help: "journal.reverse", guide: "accounting.journals#reverse-a-posted-journal" },
+  { kind: "action", id: "journal.ask-approval", mode: "expert", help: "journal.ask-approval", guide: "accounting.journals#journals-above-the-self-approval-threshold" },
+  { kind: "action", id: "journal.ask-reverse", mode: "expert", help: "journal.ask-reverse", guide: "accounting.journals#reverse-a-posted-journal" },
   { kind: "action", id: "period.open-year", mode: "expert", help: "period.open-year", guide: "accounting.periods#open-a-financial-year" },
   { kind: "action", id: "opening.save", mode: "expert", help: "opening.save", guide: "accounting.opening-balances#enter-the-opening-balances" },
   { kind: "action", id: "opening.check", mode: "expert", help: "opening.check", guide: "accounting.opening-balances#check-and-post-them" },

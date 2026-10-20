@@ -130,6 +130,7 @@ function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to:
                 <tr key={`${l.entry_id}-${l.ledger_revision}-${l.posting_date}-${l.description ?? ""}-${l.base.amount}`}>
                   <td data-card="meta" className="whitespace-nowrap">
                     {date(l.posting_date)} · <Source l={l} />
+                    <span className="fy-only-compact"> · {s > 0 ? "Debit" : "Credit"}</span>
                   </td>
                   <td data-card="title">
                     {l.memo}
@@ -148,7 +149,8 @@ function Ledger({ a, from, to, currency }: { a: AccountLedger; from: string; to:
                     {s < 0 ? formatAmount(l.base.amount.slice(1)) : ""}
                   </td>
                   <td className="fy-num" data-card="status">
-                    {formatAmount(l.balance.amount)}
+                    <span className="fy-only-compact fy-muted">Balance </span>
+                    <span>{formatAmount(l.balance.amount)}</span>
                   </td>
                 </tr>
               );

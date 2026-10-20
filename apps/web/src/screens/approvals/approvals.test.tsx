@@ -65,6 +65,17 @@ describe("an approval request", () => {
     await noViolations(document.body);
   });
 
+  // req: FR-APR-02
+  // req: FM-2
+  it("opens the journal a request posts, so the approver sees its lines", async () => {
+    const journal: Approval = { ...request, object_type: "journal", object_key: "j-7", operation: "journal.post", summary: "Post the draft journal (Accrued audit fee), debits 2500.00",
+      diff: [{ field: "status", before: "draft", after: "posted" }, { field: "debits", before: "", after: "2500.00" }] };
+    detail({}, journal);
+    renderPage(ApprovalPage, { path: "/approvals/a-1", route: "/approvals/$approvalId" });
+    expect(await screen.findByText(/Journal · Post a journal/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open the journal and its lines" }).getAttribute("href")).toBe("/accounting/journals/j-7");
+  });
+
   // req: FR-UX-03
   it("approves only through the confirmation, signing with a passkey over the version shown", async () => {
     const credentials = authenticator();
