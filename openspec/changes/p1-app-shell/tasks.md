@@ -60,6 +60,12 @@
 
 - [ ] 3.1 The grid (Community edition until the licence arrives) virtualised to 100,000 rows, and statement tables with TanStack. Tests `// req: FR-UX-07` and `// req: NFR-PERF-UI-02` (≥ 50 fps in Playwright tracing)
 - [ ] 3.2 Plain and Accountant views, status chips, guided set-up with the sample company, and teaching empty states. Tests `// req: FR-UX-08`, `// req: FR-UX-09`, `// req: FR-UX-10` and `// req: FR-UX-11`
+  (20 Oct 2026, in part: Home's "Set up the company" checklist with progress, from what the API can tell (the profile's
+  name, UEN and books' start, the chart, money accounts, contacts, a second member or an invitation, a passkey; a read
+  the person's roles cannot make leaves its step out), and "Waiting for you" (approvals and the weekly review).
+  Teaching empty states on the chart, contacts, items and review log. Test `Home.test.tsx`. **Left:** the sample
+  company to explore, the checklist's later steps (opening balances, bank feeds, employees, the workbook import), the
+  Plain and Accountant views.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
 
