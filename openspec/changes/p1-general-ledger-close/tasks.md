@@ -107,7 +107,9 @@
   Approvals (2.2, rev 0.53): a post refused above the self-approval threshold offers **Ask for approval**; in Founder
   mode **Ask to reverse** asks for the reversal with its date and reason; a journal with a request waiting says so and
   links to it, and the approval page links back to the journal. Guide `journals.md` and `approvals.md` → kb
-  `accounting.journals` and `approvals.decide`.
+  `accounting.journals` and `approvals.decide`. Edits (2.3, rev 0.54): a posted journal gains **Edit**, which opens the
+  editor prefilled with a reason; **Check the edit** shows the reversal and the new entry, **Post the edit** posts
+  both, and in Founder mode **Ask to post the edit** asks. Guide `journals.md` "Edit a posted journal".
   **Left:** the Recurring tab and auto-reversal (2.4), evidence on the editor, dimensions (`p1-organisation-chart`
   3.3), the locked-period banner (1.2).)
 - [ ] 7.2 Build opening-balances and period-close as designed, with the periods of the year on the close page

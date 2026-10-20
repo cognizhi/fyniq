@@ -2,9 +2,9 @@
 key: accounting.journals
 type: task
 title: Prepare, post and reverse journals
-summary: Prepare a journal as a draft, check and post it, ask for approval above the self-approval threshold, and reverse a posted journal with a reason
+summary: Prepare, check and post a journal, ask for approval above the self-approval threshold, and edit or reverse a posted journal with a reason
 sources:
-  - docs/user-guide/journals.md sha256:ebc3416b699bb0b14fbc9ddb37800e506adf927c482579378d8fdf7013259eb7
+  - docs/user-guide/journals.md sha256:673ca0ed2ee4cc2b8c7204f01f545f65a7ff8d47eed3749576379ad6ab7eb761
 data_class: general
 taint: trusted
 status: draft
@@ -23,6 +23,8 @@ aliases:
   - draft journal
   - self-approval threshold
   - journal approval
+  - edit a journal
+  - correct a posted journal
 ---
 
 # Prepare, post and reverse journals
@@ -49,7 +51,7 @@ aliases:
 
 - Open the draft: **Check** runs every posting rule and shows what posting writes in the base currency, saving nothing.
 - **Post**: the journal takes its number and posts on its date; Fyniq records who posted it and when.
-- A posted journal is never edited.
+- Once posted, a journal never changes in place: it is edited or reversed, and the ledger keeps every entry.
 
 (src: docs/user-guide/journals.md#check-and-post-a-journal)
 
@@ -72,6 +74,16 @@ aliases:
 
 (src: docs/user-guide/journals.md#reverse-a-posted-journal) (src: docs/user-guide/journals.md#related)
 
+## Edit a posted journal
+
+- A posted journal in a month that is still open is corrected instead of reversed and entered again: open it, select **Edit**, change the date, the description or the lines, and say why.
+- **Check the edit** shows what it posts, saving nothing; **Post the edit** posts it.
+- The entry the journal had is reversed on its own date and the new version posts on its date, both at once; both months must be open.
+- The journal keeps its number and stays **Posted**; Fyniq records who prepared the new version and who posted the edit; the ledger keeps the first entry, its reversal and the new one ([[reports.general-ledger]]).
+- In Founder mode an edit needs a second person: **Ask to post the edit**, and another founder approves it in **Inbox → To approve**, where each changed line is listed. An edit whose new debits are above the self-approval threshold needs another person's approval in any mode.
+
+(src: docs/user-guide/journals.md#edit-a-posted-journal)
+
 ## Common problems
 
 - STORAGE-PERIOD-01, no period covers the posting date: open the financial year in **Accounting → Periods and close**, then post again.
@@ -85,5 +97,6 @@ aliases:
 - JOURNAL-07, its debits are above the self-approval threshold: select **Ask for approval**.
 - JOURNAL-08, in Founder mode a reversal needs a second person: select **Ask to reverse**.
 - JOURNAL-09, you prepared this journal: another person who did not prepare it approves it.
+- JOURNAL-10, in Founder mode an edit needs a second person: select **Ask to post the edit**.
 
 (src: docs/user-guide/journals.md#common-problems)

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { CalendarPlus, CircleCheck, CircleX, Clock, Eye, Plus, Save, Send, Trash2, Undo2, UserCheck } from "lucide-react";
+import { CalendarPlus, CircleCheck, CircleX, Clock, Eye, Pencil, Plus, Save, Send, Trash2, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -21,8 +21,10 @@ import { preparers, StatusChip, who } from "./Journals";
 type Journal = components["schemas"]["Journal"];
 type Posting = components["schemas"]["JournalPosting"];
 type Draft = components["schemas"]["JournalDraft"];
+type Edited = components["schemas"]["JournalEdited"];
+type Edit = components["schemas"]["JournalEdit"];
 
-// Who posts and reverses journals: P on "Journals" (Appendix D), the Accountant. The API decides.
+// Who posts, reverses and edits journals: P on "Journals" (Appendix D), the Accountant. The API decides.
 const posters = ["accountant"];
 // The code the API answers when no period covers the date (FY030): the year is not open yet.
 const noPeriod = "STORAGE-PERIOD-01";
@@ -373,6 +375,11 @@ export function JournalPage() {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [reversing, setReversing] = useState(false);
+  // An edit of a posted journal (FR-GL-12): the form prefilled with it, and why.
+  const [editing, setEditing] = useState(false);
+  const [reason, setReason] = useState("");
+  const [reasonMissing, setReasonMissing] = useState(false);
+  const [edited, setEdited] = useState<Edited | null>(null);
   const byId = new Map((accounts.data ?? []).map((a) => [a.id, a]));
   const choices = postable(accounts.data ?? []);
   const save = helpText("journal.save");
@@ -384,10 +391,14 @@ export function JournalPage() {
   // In Founder mode a void needs a second person (FM-1): the API refuses a reversal and takes a request instead.
   const founder = organisation?.team_mode === "founder";
   const asked = j?.approval_asked;
+  const editHelp = helpText("journal.edit");
+  const postEditHelp = helpText(founder ? "journal.ask-edit" : "journal.post-edit");
+  const editingPosted = editing && j?.status === "posted" && mayPost;
 
   const change = (next: Form) => {
     setForm(next);
     setPreview(null);
+    setEdited(null);
   };
   const setLine = (key: string, field: keyof Line, value: string) => f && change({ ...f, lines: f.lines.map((l) => (l.key === key ? { ...l, [field]: value } : l)) });
 
@@ -467,7 +478,83 @@ export function JournalPage() {
     setStatus("Asked for approval: the journal posts when another person approves it.");
   };
 
-  const title = isNew ? "New journal" : j ? `${j.number ?? (j.status === "draft" ? "Draft journal" : "Journal")}${j.memo ? ` · ${j.memo}` : ""}` : "Journal";
+  // editBody is the edit to send, or nothing when a field needs fixing: the content as typed, and why.
+  const editBody = (): Edit | null => {
+    if (!f) return null;
+    const { draft, errors: errs } = check(f, base);
+    const why = reason.trim();
+    setErrors(errs);
+    setReasonMissing(!why);
+    if (!draft || !why) {
+      setStatus("Fix the fields marked, then try again.");
+      return null;
+    }
+    return { date: draft.date ?? f.date, memo: draft.memo, lines: draft.lines, reason: why };
+  };
+
+  const stopEditing = () => {
+    setEditing(false);
+    setForm(null);
+    setReason("");
+    setReasonMissing(false);
+    setEdited(null);
+    setErrors({});
+  };
+
+  // sendEdit checks the edit (a dry run that shows both entries) or posts it: the reversal of the entry the journal
+  // had, on its date, and the new version's entry (FR-GL-12).
+  const sendEdit = async (dryRun: boolean) => {
+    const body = editBody();
+    if (!body || !one.data) return;
+    setBusy(true);
+    setProblem(null);
+    const etag = one.data.etag;
+    const key = newKey();
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/journals/{journal_id}/edit", {
+        params: { path: { journal_id: one.data.journal.id }, header: dryRun ? { "If-Match": etag, Prefer: "return=preview" } : { "If-Match": etag, "Idempotency-Key": key } },
+        body,
+      }),
+    );
+    setBusy(false);
+    setFailed(dryRun ? "The edit cannot post yet" : "The edit was not posted");
+    if (!out.data) {
+      setEdited(null);
+      return setProblem(problemOf(out.error));
+    }
+    if (dryRun) {
+      setEdited(out.data);
+      return setStatus("The edit balances and can post. Nothing was saved.");
+    }
+    stopEditing();
+    await refresh();
+    setStatus(`Edited. The entry it had is reversed on ${date(out.data.reversal.posting_date)}, and the new version posts on ${date(out.data.entry.posting_date)}.`);
+  };
+
+  // askEdit asks another person to approve the edit (FM-1 in Founder mode; FM-2 above the threshold).
+  const askEdit = async () => {
+    const body = editBody();
+    if (!body || !one.data) return;
+    setBusy(true);
+    setProblem(null);
+    const etag = one.data.etag;
+    const key = newKey();
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/journals/{journal_id}/edit-approval", { params: { path: { journal_id: one.data.journal.id }, header: { "If-Match": etag, "Idempotency-Key": key } }, body }),
+    );
+    setBusy(false);
+    setFailed("The request was not made");
+    if (!out.data) return setProblem(problemOf(out.error));
+    stopEditing();
+    await refresh();
+    setStatus("Asked for approval: the edit posts when another person approves it.");
+  };
+
+  const title = isNew
+    ? "New journal"
+    : j
+      ? `${editingPosted ? "Edit " : ""}${j.number ?? (j.status === "draft" ? "Draft journal" : "Journal")}${j.memo ? ` · ${j.memo}` : ""}`
+      : "Journal";
   const list = f ? balances(f, base) : [];
   const fieldError = (key: string) =>
     errors[key] ? (
@@ -500,11 +587,45 @@ export function JournalPage() {
     </>
   );
 
-  const reverseButton = j?.status === "posted" && mayPost && !asked && (
-    <Button type="button" onClick={() => setReversing(true)} title={founder ? askReverse.tooltip : reverse.tooltip}>
-      <Icon of={founder ? UserCheck : Undo2} />
-      {founder ? askReverse.label : reverse.label}…
-    </Button>
+  const reverseButton = j?.status === "posted" && mayPost && !asked && !editing && (
+    <>
+      <Button
+        type="button"
+        onClick={() => {
+          setEditing(true);
+          setForm(null);
+          setProblem(null);
+          setStatus("");
+        }}
+        title={editHelp.tooltip}
+      >
+        <Icon of={Pencil} />
+        {editHelp.label}…
+      </Button>
+      <Button type="button" onClick={() => setReversing(true)} title={founder ? askReverse.tooltip : reverse.tooltip}>
+        <Icon of={founder ? UserCheck : Undo2} />
+        {founder ? askReverse.label : reverse.label}…
+      </Button>
+    </>
+  );
+
+  const editActions = editingPosted && f && (
+    <>
+      <Button variant="ghost" type="button" onClick={stopEditing} disabled={busy}>
+        <Icon of={X} />
+        Cancel
+      </Button>
+      {!founder && (
+        <Button type="button" onClick={() => void sendEdit(true)} disabled={busy} title={checkHelp.tooltip}>
+          <Icon of={Eye} />
+          Check the edit
+        </Button>
+      )}
+      <Button variant="primary" type="button" onClick={() => void (founder ? askEdit() : sendEdit(false))} disabled={busy} title={postEditHelp.tooltip}>
+        <Icon of={founder ? UserCheck : Send} />
+        {postEditHelp.label}
+      </Button>
+    </>
   );
 
   return (
@@ -528,6 +649,7 @@ export function JournalPage() {
         </div>
         <div className="fy-pagehead__actions fy-from-medium">
           {actions}
+          {editActions}
           {reverseButton}
         </div>
       </div>
@@ -540,9 +662,9 @@ export function JournalPage() {
         <div className="fy-banner fy-banner--info" role="note">
           <Icon of={Clock} size={20} />
           <div className="fy-banner__text">
-            <strong>{j?.status === "draft" ? "A request to post this journal waits for approval" : "A request to reverse this journal waits for approval"}</strong>
+            <strong>{j?.status === "draft" ? "A request to post this journal waits for approval" : "A request to change this journal waits for approval"}</strong>
             <span className="fy-small">
-              {j?.status === "draft" ? "Another person approves it, and it posts then. Changing the draft cancels the request." : "Another founder approves it, and the reversal posts then."}
+              {j?.status === "draft" ? "Another person approves it, and it posts then. Changing the draft cancels the request." : "Another person approves the edit or the reversal, and it posts then."}
             </span>
           </div>
           <div className="fy-banner__action">
@@ -561,7 +683,7 @@ export function JournalPage() {
           </div>
           {mayPost && (
             <div className="fy-banner__action">
-              <Button size="sm" variant="primary" onClick={() => void askPost()} disabled={busy} title={askHelp.tooltip}>
+              <Button size="sm" variant="primary" onClick={() => void (editingPosted ? askEdit() : askPost())} disabled={busy} title={askHelp.tooltip}>
                 <Icon of={UserCheck} />
                 {askHelp.label}
               </Button>
@@ -584,8 +706,41 @@ export function JournalPage() {
       {!isNew && one.isPending && <p className="fy-secondary">Loading the journal…</p>}
       {isNew && !mayPrepare && <p className="fy-secondary">An Accountant or a Tax agent prepares journals.</p>}
 
-      {f && editable && (
-        <form id={`${id}-form`} className="fy-stack fy-stack--6" onSubmit={onSave} noValidate>
+      {f && (editable || editingPosted) && (
+        <form id={`${id}-form`} className="fy-stack fy-stack--6" onSubmit={editingPosted ? (e) => e.preventDefault() : onSave} noValidate>
+          {editingPosted && (
+            <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-why`}>
+              <h2 className="fy-h3" id={`${id}-why`}>
+                Edit the posted journal
+              </h2>
+              <p className="fy-small fy-secondary">
+                The entry it has is reversed on its own date, {j?.date ? date(j.date) : "the journal's date"}, and the new version posts on the date below, both at once. Both
+                months must be open. {founder ? "In Founder mode another founder approves the edit first." : ""}
+              </p>
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-reason`}>
+                  Why it is edited
+                </label>
+                <textarea
+                  className="fy-textarea"
+                  id={`${id}-reason`}
+                  value={reason}
+                  maxLength={500}
+                  onChange={(e) => {
+                    setReason(e.target.value);
+                    setReasonMissing(false);
+                  }}
+                  aria-invalid={reasonMissing || undefined}
+                  aria-describedby={reasonMissing ? `${id}-reason-error` : undefined}
+                />
+                {reasonMissing && (
+                  <span className="fy-error" id={`${id}-reason-error`}>
+                    Say why: the audit trail and the reversal keep the reason.
+                  </span>
+                )}
+              </div>
+            </section>
+          )}
           <section className="fy-card" aria-labelledby={`${id}-head`}>
             <div className="fy-card__head">
               <h2 className="fy-h3" id={`${id}-head`}>
@@ -699,7 +854,7 @@ export function JournalPage() {
         </form>
       )}
 
-      {j && !editable && f && (
+      {j && !editable && !editingPosted && f && (
         <section className="fy-card" aria-labelledby={`${id}-read`}>
           <div className="fy-card__head">
             <h2 className="fy-h3" id={`${id}-read`}>
@@ -732,9 +887,29 @@ export function JournalPage() {
         </section>
       )}
 
-      {((editable && f) || reverseButton) && (
+      {edited && (
+        <section className="fy-card" aria-labelledby={`${id}-edited`}>
+          <div className="fy-card__head">
+            <h2 className="fy-h3" id={`${id}-edited`}>
+              What the edit posts, in {base}
+            </h2>
+            <span className="fy-chip fy-chip--good">
+              <Icon of={CircleCheck} />
+              Ready to post
+            </span>
+          </div>
+          <p className="fy-small fy-strong px-4 pt-3 pb-2">1. The reversal of the entry it had, on {date(edited.reversal.posting_date)}</p>
+          <Lines caption="What the edit reverses" accounts={byId} base={base} lines={(edited.reversal.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base }))} />
+          <p className="fy-small fy-strong px-4 pt-4 pb-2">2. The new version, on {date(edited.entry.posting_date)}</p>
+          <Lines caption="What the new version posts" accounts={byId} base={base} lines={(edited.entry.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.base_amount.amount, currency: base }))} />
+          <p className="fy-small fy-muted px-4 py-3">A check saves nothing: both post together when you select Post the edit.</p>
+        </section>
+      )}
+
+      {((editable && f) || editActions || reverseButton) && (
         <div className="fy-actionbar fy-only-compact">
           {actions}
+          {editActions}
           {reverseButton}
         </div>
       )}

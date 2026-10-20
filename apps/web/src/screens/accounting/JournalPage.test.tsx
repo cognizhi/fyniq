@@ -245,6 +245,73 @@ describe("the journal page", () => {
     expect(sent.headers.get("If-Match")).toBe(`"2-posted"`);
   });
 
+  // req: FR-GL-12
+  // req: FR-INT-14
+  it("edits a posted journal in Standard mode: checks both entries, then posts the edit with a reason", async () => {
+    let edits = 0;
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": () => ({ status: 200, body: edits ? { ...posted, version: 3, date: "2026-11-02" } : posted, headers: { ETag: edits ? `"3-posted"` : `"2-posted"` } }),
+      "POST /v1/journals/j1/edit": (_b, req) => {
+        const reversal = { ...entry, id: "e2", posting_date: "2026-10-31", reverses_entry_id: "e1" };
+        const next = { ...entry, id: "e3", posting_date: "2026-11-02" };
+        if (req.headers.get("Prefer") === "return=preview") return { status: 200, body: { journal: posted, reversal, entry: next }, headers: { "Preference-Applied": "return=preview" } };
+        edits++;
+        return { status: 200, body: { journal: { ...posted, version: 3 }, reversal, entry: next } };
+      },
+    });
+    renderPage(page(accountant, { ...organisation, team_mode: "standard" }), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    await screen.findByRole("table", { name: "Lines as entered" });
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit…" })[0]!);
+    expect(await screen.findByRole("heading", { name: "Edit the posted journal" })).toBeTruthy();
+    expect((screen.getByLabelText("Line 1: Debit") as HTMLInputElement).value).toBe("1200.00");
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2026-11-02" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Post the edit" })[0]!);
+    expect(await screen.findByText(/Say why/)).toBeTruthy();
+    expect(seen.filter((s) => s.method === "POST")).toEqual([]);
+    fireEvent.change(screen.getByLabelText("Why it is edited"), { target: { value: "Rent is due in November" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Check the edit" })[0]!);
+    expect(await screen.findByRole("table", { name: "What the edit reverses" })).toBeTruthy();
+    expect(screen.getByRole("table", { name: "What the new version posts" })).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.click(screen.getAllByRole("button", { name: "Post the edit" })[0]!);
+    expect(await screen.findByText("Edited. The entry it had is reversed on 31 Oct 2026, and the new version posts on 2 Nov 2026.")).toBeTruthy();
+    const sent = seen.filter((s) => s.path === "/v1/journals/j1/edit")[1]!;
+    expect(sent.body).toEqual({
+      date: "2026-11-02",
+      memo: "October rent",
+      lines: [
+        { account_id: "a-rent", amount: { amount: "1200.00", currency: "SGD" }, description: "Rent" },
+        { account_id: "a-bank", amount: { amount: "-1200.00", currency: "SGD" } },
+      ],
+      reason: "Rent is due in November",
+    });
+    expect(sent.headers.get("If-Match")).toBe(`"2-posted"`);
+    expect(sent.headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
+  // req: FM-1
+  it("asks to post an edit in Founder mode", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: posted, headers: { ETag: `"2-posted"` } },
+      "POST /v1/journals/j1/edit-approval": { status: 202, body: { id: "a-3", object_type: "journal", operation: "journal.edit", status: "pending" } },
+    });
+    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    await screen.findByRole("table", { name: "Lines as entered" });
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit…" })[0]!);
+    await screen.findByRole("heading", { name: "Edit the posted journal" });
+    expect(screen.queryByRole("button", { name: "Check the edit" })).toBeNull();
+    fireEvent.change(screen.getByLabelText("Line 1: Debit"), { target: { value: "1,250.00" } });
+    fireEvent.change(screen.getByLabelText("Line 2: Credit"), { target: { value: "1,250.00" } });
+    fireEvent.change(screen.getByLabelText("Why it is edited"), { target: { value: "Rent rose" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask to post the edit" })[0]!);
+    expect(await screen.findByText("Asked for approval: the edit posts when another person approves it.")).toBeTruthy();
+    const sent = seen.find((s) => s.method === "POST")!;
+    expect(sent.path).toBe("/v1/journals/j1/edit-approval");
+    expect((sent.body as { lines: { amount: { amount: string } }[] }).lines[0]!.amount.amount).toBe("1250.00");
+  });
+
   it("reverses a posted journal on a date, with a reason, in Standard mode", async () => {
     answer({
       "GET /v1/accounts": accounts,
