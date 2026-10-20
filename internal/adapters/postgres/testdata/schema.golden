@@ -364,6 +364,18 @@ period_close_check | checked_at | timestamp with time zone | not null |
 period_close_check | ledger_revision | bigint | not null | 
 period_close_check | result | jsonb | not null | 
 period_close_check | clean | boolean | not null | 
+period_reopen | organisation_id | uuid | not null | current_org()
+period_reopen | id | uuid | not null | uuidv7()
+period_reopen | period_id | uuid | not null | 
+period_reopen | close_id | uuid | not null | 
+period_reopen | approval_id | uuid | not null | 
+period_reopen | reason | text | not null | 
+period_reopen | reopened_by | text | not null | 
+period_reopen | reopened_at | timestamp with time zone | not null | 
+period_reopen | reopened_revision | bigint | not null | 
+period_reopen | before_hash | bytea | not null | 
+period_reopen | after_snapshot | text | not null | 
+period_reopen | after_hash | bytea | not null | 
 rate_limit_window | organisation_id | uuid | not null | current_org()
 rate_limit_window | id | uuid | not null | uuidv7()
 rate_limit_window | client_id | text | not null | 
@@ -555,7 +567,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -583,7 +595,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK (((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))))
+approval_request | approval_request_object_known | CHECK ((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -1075,6 +1087,29 @@ period_close_check | period_close_check_result_array | CHECK (((jsonb_typeof(res
 period_close_check | period_close_check_result_not_null | NOT NULL result
 period_close_check | period_close_check_revision | CHECK ((ledger_revision >= 0))
 period_close_check | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+period_reopen | period_reopen_actor_format | CHECK ((reopened_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+period_reopen | period_reopen_after_hash | CHECK ((after_hash = sha256(convert_to(after_snapshot, 'UTF8'::name))))
+period_reopen | period_reopen_after_hash_not_null | NOT NULL after_hash
+period_reopen | period_reopen_after_snapshot_not_null | NOT NULL after_snapshot
+period_reopen | period_reopen_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
+period_reopen | period_reopen_approval_id_not_null | NOT NULL approval_id
+period_reopen | period_reopen_before_hash | CHECK ((octet_length(before_hash) = 32))
+period_reopen | period_reopen_before_hash_not_null | NOT NULL before_hash
+period_reopen | period_reopen_close_fkey | FOREIGN KEY (organisation_id, close_id) REFERENCES period_close(organisation_id, id)
+period_reopen | period_reopen_close_id_not_null | NOT NULL close_id
+period_reopen | period_reopen_close_key | UNIQUE (organisation_id, close_id)
+period_reopen | period_reopen_id_not_null | NOT NULL id
+period_reopen | period_reopen_organisation_id_not_null | NOT NULL organisation_id
+period_reopen | period_reopen_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+period_reopen | period_reopen_period_id_not_null | NOT NULL period_id
+period_reopen | period_reopen_pkey | PRIMARY KEY (organisation_id, id)
+period_reopen | period_reopen_reason_length | CHECK (((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 500)))
+period_reopen | period_reopen_reason_not_null | NOT NULL reason
+period_reopen | period_reopen_reopened_at_not_null | NOT NULL reopened_at
+period_reopen | period_reopen_reopened_by_not_null | NOT NULL reopened_by
+period_reopen | period_reopen_reopened_revision_not_null | NOT NULL reopened_revision
+period_reopen | period_reopen_revision | CHECK ((reopened_revision >= 0))
+period_reopen | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 rate_limit_window | rate_limit_window_client_id_not_null | NOT NULL client_id
 rate_limit_window | rate_limit_window_client_key | UNIQUE (organisation_id, client_id, kind, window_start)
 rate_limit_window | rate_limit_window_client_length | CHECK (((length(client_id) >= 1) AND (length(client_id) <= 200)))
@@ -1324,6 +1359,7 @@ CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, stat
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
+CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
@@ -1391,6 +1427,8 @@ CREATE UNIQUE INDEX outbox_pkey ON fyniq.outbox USING btree (organisation_id, id
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_pkey ON fyniq.period_close USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
+CREATE UNIQUE INDEX period_reopen_close_key ON fyniq.period_reopen USING btree (organisation_id, close_id)
+CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
 CREATE UNIQUE INDEX review_log_entry_approval_once ON fyniq.review_log_entry USING btree (organisation_id, approval_id)
@@ -1432,6 +1470,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.opening_balance DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sod_override', 'id')
@@ -1503,6 +1542,8 @@ CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.per
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close_check FOR EACH ROW EXECUTE FUNCTION period_close_guard()
 CREATE TRIGGER period_close_no_truncate BEFORE TRUNCATE ON fyniq.period_close FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_guard BEFORE UPDATE ON fyniq.period FOR EACH ROW EXECUTE FUNCTION period_guard()
+CREATE TRIGGER period_reopen_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_reopen FOR EACH ROW EXECUTE FUNCTION period_reopen_guard()
+CREATE TRIGGER period_reopen_no_truncate BEFORE TRUNCATE ON fyniq.period_reopen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER role_assignment_guard BEFORE UPDATE ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION membership_guard()
@@ -1548,6 +1589,7 @@ outbox | tenant_isolation | * | (organisation_id = current_org()) | (organisatio
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1619,6 +1661,7 @@ outbox_guard() → trigger | security invoker | v | search_path=pg_catalog, fyni
 outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1366cfa8290e64e2804d4cb992c01d1f
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
+period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d

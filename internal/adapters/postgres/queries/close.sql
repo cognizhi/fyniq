@@ -22,3 +22,13 @@ WHERE period_id = $1 ORDER BY attested_at DESC, id DESC LIMIT 1;
 -- name: EntriesChangedSince :one
 -- Whether an entry dated on or before a day has a revision later than one (FR-GL-07: checks are stale).
 SELECT EXISTS (SELECT 1 FROM fyniq.journal_entry WHERE posting_date <= sqlc.arg(through) AND ledger_revision > sqlc.arg(revision))::boolean AS changed;
+
+-- name: InsertPeriodReopen :one
+INSERT INTO fyniq.period_reopen (period_id, close_id, approval_id, reason, reopened_by, reopened_at, reopened_revision, before_hash,
+                                 after_snapshot, after_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, reopened_by, reopened_at;
+
+-- name: LatestPeriodReopen :one
+SELECT id, period_id, close_id, approval_id, reason, reopened_by, reopened_at, reopened_revision, before_hash, after_hash
+FROM fyniq.period_reopen WHERE period_id = $1 ORDER BY reopened_at DESC, id DESC LIMIT 1;

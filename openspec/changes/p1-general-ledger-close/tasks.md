@@ -21,7 +21,14 @@
   one the snapshot read. `GET /v1/periods/{id}/close`, `POST …/close-checks` and `POST …/close` (stepped up). Tests:
   `TestThePeriodClose`, `TestAttackTheCloseIsAttestedByAnotherOnItsOwnChecks`, `TestRaceBackDatedPostingAgainstTheAttestedClose`
   (G4-053 both ways), three authorisation-matrix rows.)
-- [ ] 1.3 Reopening the latest closed period through the approval engine (object type `period`), with a reason and before and after snapshots; posting into a closed period refused by the database. Tests `// req: FR-GL-08`
+- [x] 1.3 Reopening the latest closed period through the approval engine (object type `period`), with a reason and before and after snapshots; posting into a closed period refused by the database. Tests `// req: FR-GL-08`
+  (21 Oct 2026, PRD rev 0.51: migration 000057 adds `period_reopen`, never changed (FY154), tied to the period's latest
+  close and an approved request to reopen it signed by the one who reopens it (FY155), its after snapshot's SHA-256
+  recomputed; the approval engine's request and policy checks take `period` (000058 validates). `closing.Reopenable` and
+  `closing.Reopen` (ledger lock first); `POST /v1/periods/{id}/reopen` asks (202 with the request); the envelope holds the
+  period's version and status, the close and whether a later period is closed; `getPeriodClose` shows the latest
+  reopening and a pending request. Tests: `TestReopeningAClosedPeriod` (own request refused, approval, snapshots, reverse
+  order, a request voided by a later close), `TestAttackAReopeningIsTheApprovedRequest`, an authorisation-matrix row.)
 - [ ] 1.4 Year-end: retained earnings as the profit and loss of every earlier year, without closing entries; open items carried forward. Test `// req: FR-GL-10` (the optional closing entry waits for question 31)
 
 ## 2. Journals

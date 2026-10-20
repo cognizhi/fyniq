@@ -160,6 +160,50 @@ func (q *Queries) InsertPeriodClose(ctx context.Context, arg InsertPeriodClosePa
 	return i, err
 }
 
+const insertPeriodReopen = `-- name: InsertPeriodReopen :one
+INSERT INTO fyniq.period_reopen (period_id, close_id, approval_id, reason, reopened_by, reopened_at, reopened_revision, before_hash,
+                                 after_snapshot, after_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, reopened_by, reopened_at
+`
+
+type InsertPeriodReopenParams struct {
+	PeriodID         uuid.UUID
+	CloseID          uuid.UUID
+	ApprovalID       uuid.UUID
+	Reason           string
+	ReopenedBy       string
+	ReopenedAt       time.Time
+	ReopenedRevision int64
+	BeforeHash       []byte
+	AfterSnapshot    string
+	AfterHash        []byte
+}
+
+type InsertPeriodReopenRow struct {
+	ID         uuid.UUID
+	ReopenedBy string
+	ReopenedAt time.Time
+}
+
+func (q *Queries) InsertPeriodReopen(ctx context.Context, arg InsertPeriodReopenParams) (InsertPeriodReopenRow, error) {
+	row := q.db.QueryRow(ctx, insertPeriodReopen,
+		arg.PeriodID,
+		arg.CloseID,
+		arg.ApprovalID,
+		arg.Reason,
+		arg.ReopenedBy,
+		arg.ReopenedAt,
+		arg.ReopenedRevision,
+		arg.BeforeHash,
+		arg.AfterSnapshot,
+		arg.AfterHash,
+	)
+	var i InsertPeriodReopenRow
+	err := row.Scan(&i.ID, &i.ReopenedBy, &i.ReopenedAt)
+	return i, err
+}
+
 const latestCloseCheck = `-- name: LatestCloseCheck :one
 SELECT id, period_id, checked_by, checked_at, ledger_revision, result, clean FROM fyniq.period_close_check
 WHERE period_id = $1 ORDER BY checked_at DESC, id DESC LIMIT 1
@@ -220,6 +264,42 @@ func (q *Queries) LatestPeriodClose(ctx context.Context, periodID uuid.UUID) (La
 		&i.ClosedRevision,
 		&i.Snapshot,
 		&i.SnapshotHash,
+	)
+	return i, err
+}
+
+const latestPeriodReopen = `-- name: LatestPeriodReopen :one
+SELECT id, period_id, close_id, approval_id, reason, reopened_by, reopened_at, reopened_revision, before_hash, after_hash
+FROM fyniq.period_reopen WHERE period_id = $1 ORDER BY reopened_at DESC, id DESC LIMIT 1
+`
+
+type LatestPeriodReopenRow struct {
+	ID               uuid.UUID
+	PeriodID         uuid.UUID
+	CloseID          uuid.UUID
+	ApprovalID       uuid.UUID
+	Reason           string
+	ReopenedBy       string
+	ReopenedAt       time.Time
+	ReopenedRevision int64
+	BeforeHash       []byte
+	AfterHash        []byte
+}
+
+func (q *Queries) LatestPeriodReopen(ctx context.Context, periodID uuid.UUID) (LatestPeriodReopenRow, error) {
+	row := q.db.QueryRow(ctx, latestPeriodReopen, periodID)
+	var i LatestPeriodReopenRow
+	err := row.Scan(
+		&i.ID,
+		&i.PeriodID,
+		&i.CloseID,
+		&i.ApprovalID,
+		&i.Reason,
+		&i.ReopenedBy,
+		&i.ReopenedAt,
+		&i.ReopenedRevision,
+		&i.BeforeHash,
+		&i.AfterHash,
 	)
 	return i, err
 }

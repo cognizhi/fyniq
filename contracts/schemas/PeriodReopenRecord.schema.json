@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "after_sha256": {
+      "description": "The trial balance at the period end when it reopened.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "approval_id": {
+      "description": "The approved request (FM-1).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "before_sha256": {
+      "description": "The close's snapshot (AUD-04).",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The reopening's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dc0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why.",
+      "examples": [
+        "A supplier's October invoice arrived late"
+      ],
+      "type": "string"
+    },
+    "reopened_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-05T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reopened_by": {
+      "$ref": "Person.schema.json",
+      "description": "The final approver."
+    },
+    "reopened_revision": {
+      "description": "The ledger revision when it reopened.",
+      "examples": [
+        415
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "approval_id",
+    "reopened_at",
+    "reason",
+    "reopened_revision",
+    "before_sha256",
+    "after_sha256"
+  ],
+  "title": "PeriodReopenRecord",
+  "type": "object"
+}

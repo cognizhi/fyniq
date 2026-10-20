@@ -485,6 +485,21 @@ type FyniqPeriodCloseCheck struct {
 	Clean          bool
 }
 
+type FyniqPeriodReopen struct {
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	PeriodID         uuid.UUID
+	CloseID          uuid.UUID
+	ApprovalID       uuid.UUID
+	Reason           string
+	ReopenedBy       string
+	ReopenedAt       time.Time
+	ReopenedRevision int64
+	BeforeHash       []byte
+	AfterSnapshot    string
+	AfterHash        []byte
+}
+
 type FyniqRateLimitWindow struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

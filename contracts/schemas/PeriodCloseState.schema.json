@@ -13,6 +13,18 @@
     "period": {
       "$ref": "Period.schema.json"
     },
+    "reopen": {
+      "$ref": "PeriodReopenRecord.schema.json",
+      "description": "The latest reopening; absent while it was never reopened."
+    },
+    "reopen_asked": {
+      "description": "The pending request to reopen it, while one waits for approval.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "you_may_attest": {
       "description": "The latest checks are clean and current and someone else ran them, so the caller may attest, if their role closes periods.",
       "examples": [

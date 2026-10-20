@@ -98,3 +98,36 @@ func (r closes) ChangedSince(ctx context.Context, through time.Time, revision in
 	changed, err := r.u.q.EntriesChangedSince(ctx, sqlcdb.EntriesChangedSinceParams{Through: dateOf(through), Revision: revision})
 	return changed, mapError(err)
 }
+
+func (r closes) RecordReopen(ctx context.Context, n storage.NewReopen) (storage.PeriodReopen, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PeriodReopen{}, err
+	}
+	row, err := r.u.q.InsertPeriodReopen(ctx, sqlcdb.InsertPeriodReopenParams{PeriodID: n.PeriodID, CloseID: n.CloseID, ApprovalID: n.ApprovalID,
+		Reason: n.Reason, ReopenedBy: r.u.actor(ctx), ReopenedAt: r.u.store.clock.Now(), ReopenedRevision: n.ReopenedRevision, BeforeHash: n.BeforeHash,
+		AfterSnapshot: string(n.AfterSnapshot), AfterHash: n.AfterHash})
+	if err != nil {
+		return storage.PeriodReopen{}, mapError(err)
+	}
+	out := storage.PeriodReopen{NewReopen: n, ID: row.ID, ReopenedBy: row.ReopenedBy, ReopenedAt: row.ReopenedAt}
+	if err := r.u.event(ctx, "period.reopen_recorded", "period_reopen", out.ID, nil, map[string][2]any{
+		"period_id": {nil, n.PeriodID}, "close_id": {nil, n.CloseID}, "approval_id": {nil, n.ApprovalID}, "reason": {nil, n.Reason},
+		"reopened_revision": {nil, n.ReopenedRevision}, "before_sha256": {nil, hex.EncodeToString(n.BeforeHash)},
+		"after_sha256": {nil, hex.EncodeToString(n.AfterHash)}}); err != nil {
+		return storage.PeriodReopen{}, err
+	}
+	return out, nil
+}
+
+func (r closes) LatestReopen(ctx context.Context, period uuid.UUID) (storage.PeriodReopen, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PeriodReopen{}, err
+	}
+	row, err := r.u.q.LatestPeriodReopen(ctx, period)
+	if err != nil {
+		return storage.PeriodReopen{}, mapError(err)
+	}
+	return storage.PeriodReopen{ID: row.ID, ReopenedBy: row.ReopenedBy, ReopenedAt: row.ReopenedAt,
+		NewReopen: storage.NewReopen{PeriodID: row.PeriodID, CloseID: row.CloseID, ApprovalID: row.ApprovalID, Reason: row.Reason,
+			ReopenedRevision: row.ReopenedRevision, BeforeHash: row.BeforeHash, AfterHash: row.AfterHash}}, nil
+}

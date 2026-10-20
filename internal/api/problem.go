@@ -165,6 +165,8 @@ var codeFacts = map[string]struct {
 	closing.CodeNotClean:       {409, "The checks refused the close"},
 	closing.CodeSelfAttest:     {403, "Another founder attests the close"},
 	closing.CodeWrongCheck:     {409, "Not the checks of this period"},
+	closing.CodeNotClosed:      {409, "The period is not closed"},
+	closing.CodeLater:          {409, "A later period is closed"},
 	storage.CodeClose:          {409, "The close is not attested that way"},
 	contact.CodeName:           {422, "The legal name is not valid"},
 	contact.CodeRole:           {422, "Neither a customer nor a vendor"},

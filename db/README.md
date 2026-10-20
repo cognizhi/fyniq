@@ -122,6 +122,7 @@ Add one only with its access model here and in the test's list.
 | Documents (§11.4, FR-GL-12) | `document_version` rows immutable; `document_guard`: draft → posted → reversed only, type fixed, version only forward; the current version must exist (deferred FK) | `TestAttackDocumentVersionsAndStatusesCannotBeRewound` |
 | Preparer and approver (FR-GL-01, rev 0.48) | `document_version.created_by` required on every new version (`document_version_created_by`, `FY053`); `document.posted_by` and `posted_at` set with the move from draft to posted and never changed (`document_guard`, `FY053`) | `TestAttackDocumentActorsAreRecordedOnce` |
 | The close (FR-GL-07, FM-4, AUD-04; rev 0.50) | `period_close_check` and `period_close` never change (`FY152`); `period_close_guard` refuses an attestation by the one who ran the checks, on unclean checks or another period's, or before them (`FY153`); `period_close_snapshot_hash` recomputes the snapshot's SHA-256; the stale-check refusal (G4-053) runs in the API under the ledger lock | `TestAttackTheCloseIsAttestedByAnotherOnItsOwnChecks`, `TestRaceBackDatedPostingAgainstTheAttestedClose` |
+| Reopening (FR-GL-08, FM-1; rev 0.51) | `period_reopen` never changes (`FY154`); `period_reopen_guard` ties it to the period's latest close and an approved request to reopen that period, signed by the one who reopens it (`FY155`); `period_reopen_after_hash` recomputes the after snapshot's SHA-256 | `TestAttackAReopeningIsTheApprovedRequest` |
 
 INV-07, INV-10 and INV-11 arrive with their modules in P1, as do INV-13's per-person sub-ledgers and its
 nightly reconciliation; INV-12 with p0-audit-chain.
@@ -152,6 +153,8 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY054 | STORAGE-DOC-01 | The opening balances document is one per organisation, of its own type, and never changes or goes |
 | FY152 | STORAGE-CLOSE-01 | A record of the close (a run of the checks, a close) never changes or goes |
 | FY153 | STORAGE-CLOSE-01 | A close is attested by someone other than the one who ran its checks, on clean checks of the same period, after them |
+| FY154 | STORAGE-CLOSE-01 | A reopening never changes or goes |
+| FY155 | STORAGE-CLOSE-01 | A period reopens on its latest close, by an approved request to reopen it, signed by the one who reopens it |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

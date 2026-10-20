@@ -94,6 +94,8 @@ fyniq_api       INSERT    period_close (attested_at, attested_by, check_id, clos
 fyniq_api       SELECT    period_close
 fyniq_api       INSERT    period_close_check (checked_at, checked_by, clean, ledger_revision, period_id, result)
 fyniq_api       SELECT    period_close_check
+fyniq_api       INSERT    period_reopen (after_hash, after_snapshot, approval_id, before_hash, close_id, period_id, reason, reopened_at, reopened_by, reopened_revision)
+fyniq_api       SELECT    period_reopen
 fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
@@ -175,6 +177,7 @@ fyniq_executor  UPDATE    outbox (attempts, deadline_at, dispatches, job_executi
 fyniq_executor  SELECT    period
 fyniq_executor  SELECT    period_close
 fyniq_executor  SELECT    period_close_check
+fyniq_executor  SELECT    period_reopen
 fyniq_executor  SELECT    review_log_entry
 fyniq_executor  SELECT    review_log_review
 fyniq_executor  USAGE     schema fyniq
@@ -217,6 +220,7 @@ fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    period_close
 fyniq_readonly  SELECT    period_close_check
+fyniq_readonly  SELECT    period_reopen
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    review_log_entry
 fyniq_readonly  SELECT    review_log_review
@@ -275,6 +279,7 @@ fyniq_worker    UPDATE    outbox (attempts, deadline_at, dispatches, job_executi
 fyniq_worker    SELECT    period
 fyniq_worker    SELECT    period_close
 fyniq_worker    SELECT    period_close_check
+fyniq_worker    SELECT    period_reopen
 fyniq_worker    DELETE    rate_limit_window
 fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()

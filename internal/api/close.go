@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -21,7 +23,8 @@ import (
 // ------------------------------------------------------------------ the period close (FR-GL-07, FR-GL-08, FM-4, AUD-04)
 
 // CloseCodes are the codes of the close.
-var CloseCodes = []string{closing.CodeNotOpen, closing.CodeStale, closing.CodeOrder, closing.CodeNotClean, closing.CodeSelfAttest, closing.CodeWrongCheck}
+var CloseCodes = []string{closing.CodeNotOpen, closing.CodeStale, closing.CodeOrder, closing.CodeNotClean, closing.CodeSelfAttest, closing.CodeWrongCheck,
+	closing.CodeNotClosed, closing.CodeLater}
 
 // CloseCheckItem is one close check's outcome.
 type CloseCheckItem struct {
@@ -53,12 +56,26 @@ type PeriodCloseRecord struct {
 	SnapshotSHA256 string    `json:"snapshot_sha256" doc:"The SHA-256 of the trial balance at the period end, as canonical JSON (AUD-04)." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
 }
 
+// PeriodReopenRecord is a reopening: who approved it, when, why, and the snapshots before and after (FR-GL-08).
+type PeriodReopenRecord struct {
+	ID               string    `json:"id" format:"uuid" doc:"The reopening's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dc0"`
+	ApprovalID       string    `json:"approval_id" format:"uuid" doc:"The approved request (FM-1)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd0"`
+	ReopenedBy       *Person   `json:"reopened_by,omitempty" doc:"The final approver."`
+	ReopenedAt       time.Time `json:"reopened_at" doc:"When." example:"2026-11-05T09:00:00Z"`
+	Reason           string    `json:"reason" doc:"Why." example:"A supplier's October invoice arrived late"`
+	ReopenedRevision int64     `json:"reopened_revision" doc:"The ledger revision when it reopened." example:"415"`
+	BeforeSHA256     string    `json:"before_sha256" doc:"The close's snapshot (AUD-04)." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	AfterSHA256      string    `json:"after_sha256" doc:"The trial balance at the period end when it reopened." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+}
+
 // PeriodCloseState is a period's close: the period, its latest checks and its latest close.
 type PeriodCloseState struct {
-	Period       Period             `json:"period"`
-	Checks       *CloseChecks       `json:"checks,omitempty" doc:"The latest run of the checks, while the period is open; absent before the first."`
-	Close        *PeriodCloseRecord `json:"close,omitempty" doc:"The latest close; absent while it was never closed."`
-	YouMayAttest bool               `json:"you_may_attest" doc:"The latest checks are clean and current and someone else ran them, so the caller may attest, if their role closes periods." example:"true"`
+	Period       Period              `json:"period"`
+	Checks       *CloseChecks        `json:"checks,omitempty" doc:"The latest run of the checks, while the period is open; absent before the first."`
+	Close        *PeriodCloseRecord  `json:"close,omitempty" doc:"The latest close; absent while it was never closed."`
+	YouMayAttest bool                `json:"you_may_attest" doc:"The latest checks are clean and current and someone else ran them, so the caller may attest, if their role closes periods." example:"true"`
+	Reopen       *PeriodReopenRecord `json:"reopen,omitempty" doc:"The latest reopening; absent while it was never reopened."`
+	ReopenAsked  string              `json:"reopen_asked,omitempty" format:"uuid" doc:"The pending request to reopen it, while one waits for approval." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd0"`
 }
 
 type closeStateOutput struct {
@@ -141,7 +158,49 @@ func (a *API) closeState(ctx context.Context, u storage.UnitOfWork, id uuid.UUID
 			Statement: cl.Statement, ClosedRevision: cl.ClosedRevision, SnapshotSHA256: hex.EncodeToString(cl.SnapshotHash)}
 		people = append(people, out.Close.AttestedBy)
 	}
+	ro, err := u.Closes().LatestReopen(ctx, p.ID)
+	switch {
+	case errors.Is(err, ports.ErrNotFound):
+	case err != nil:
+		return PeriodCloseState{}, err
+	default:
+		out.Reopen = &PeriodReopenRecord{ID: ro.ID.String(), ApprovalID: ro.ApprovalID.String(), ReopenedBy: personOf(ro.ReopenedBy), ReopenedAt: ro.ReopenedAt.UTC(),
+			Reason: ro.Reason, ReopenedRevision: ro.ReopenedRevision, BeforeSHA256: hex.EncodeToString(ro.BeforeHash), AfterSHA256: hex.EncodeToString(ro.AfterHash)}
+		people = append(people, out.Reopen.ReopenedBy)
+	}
+	if p.Status == storage.PeriodClosed {
+		pending, err := u.Approvals().List(ctx, string(approval.Pending))
+		if err != nil {
+			return PeriodCloseState{}, err
+		}
+		now := a.deps.Clock.Now()
+		for _, r := range pending {
+			if r.ObjectType == approval.ObjectPeriod && r.ObjectKey == p.ID.String() && approval.StatusAt(requestOf(r), now) == approval.Pending {
+				out.ReopenAsked = r.ID.String()
+			}
+		}
+	}
 	return out, a.name(ctx, u, people...)
+}
+
+// ReopenRequest asks to reopen a closed period.
+type ReopenRequest struct {
+	Reason string `json:"reason" minLength:"1" maxLength:"500" doc:"Why the period reopens: the audit trail and the reopening keep it." example:"A supplier's October invoice arrived late"`
+}
+
+type reopenInput struct {
+	PeriodPath
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+	Body ReopenRequest
+}
+
+type reopenOutput struct {
+	Status   int
+	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+	Body     Approval
 }
 
 func registerClose(a *API) {
@@ -269,5 +328,55 @@ func registerClose(a *API) {
 				out.ETag, out.Replayed = periodETag(w.Body.Period), replayedHeader(w.Replayed)
 			}
 			return out, nil
+		})
+
+	register(a, authz.RequestPeriodReopen, huma.Operation{
+		OperationID: "requestPeriodReopen", Method: http.MethodPost, Path: "/v1/periods/{period_id}/reopen", Tags: []string{"Periods"},
+		Summary: "Ask to reopen a closed period", DefaultStatus: http.StatusAccepted,
+		Description: "Asks to reopen the latest closed period, with a reason (FR-GL-08, FM-1; PRD-001 rev 0.51, provisional). It never " +
+			"reopens at once: the answer is 202 with an approval request, which a person who holds A on \"Period close / reopen\" (the " +
+			"Owner or the Controller) and did not ask approves, stepped up. On the approval, under the ledger lock, the period still " +
+			"has to be the latest closed one; it reopens, and the reopening is recorded with the reason, the approval, and the " +
+			"snapshots before (the close's) and after (the trial balance at the period end), whose SHA-256 the database recomputes. " +
+			"Asking needs a person signed in who passed step-up. Needs If-Match with the period's ETag. Idempotent with " +
+			"Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeIdempotencyReused,
+		CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval, storage.CodeRetry,
+		storage.CodeLockTimeout},
+		CloseCodes...),
+		func(ctx context.Context, in *reopenInput) (*reopenOutput, error) {
+			id, err := parseID("period_id", in.PeriodID)
+			if err != nil {
+				return nil, err
+			}
+			reason := strings.TrimSpace(in.Body.Reason)
+			if reason == "" {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.reason", Message: "is empty", Fix: "Say why the period reopens"}})
+			}
+			if strings.TrimSpace(in.IfMatch) == "" {
+				return nil, checkIfMatch(in.IfMatch, "")
+			}
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+				p, c, err := closing.Reopenable(ctx, u, id)
+				if err != nil {
+					return Approval{}, err
+				}
+				cal, err := calendar(ctx, u)
+				if err != nil {
+					return Approval{}, err
+				}
+				if err := checkIfMatch(in.IfMatch, periodETag(periodOf(p, cal))); err != nil {
+					return Approval{}, err
+				}
+				month := p.StartsOn.Format("January 2006")
+				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectPeriod, ObjectKey: p.ID.String(), Operation: approval.OpPeriodReopen,
+					Summary: fmt.Sprintf("Reopen %s: %s", month, reason),
+					Execute: map[string]any{"period_id": p.ID.String(), "close_id": c.ID.String(), "reason": reason},
+					Diff:    []ApprovalDiff{{Field: "status", Before: "closed", After: "open"}}})
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &reopenOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 		})
 }
