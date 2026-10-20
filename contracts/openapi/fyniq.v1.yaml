@@ -369,6 +369,7 @@ components:
             - approval_policy
             - statutory_pack
             - team_mode
+            - period
           examples:
             - organisation_setting
           type: string
@@ -382,6 +383,7 @@ components:
             - approval_policy.change
             - statutory_pack.activate
             - team_mode.change
+            - period.reopen
           examples:
             - organisation_setting.change
           type: string
@@ -587,6 +589,7 @@ components:
             - approval_policy
             - statutory_pack
             - team_mode
+            - period
           examples:
             - organisation_setting
           type: string
@@ -666,6 +669,7 @@ components:
             - approval_policy
             - statutory_pack
             - team_mode
+            - period
           examples:
             - organisation_setting
           type: string

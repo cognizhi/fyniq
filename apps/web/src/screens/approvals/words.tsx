@@ -15,6 +15,7 @@ const operations: Record<Approval["operation"], string> = {
   "approval_policy.change": "Change an approval policy",
   "statutory_pack.activate": "Activate a statutory pack version",
   "team_mode.change": "Switch the team mode",
+  "period.reopen": "Reopen a closed period",
 };
 
 export function operationLabel(op: string): string {
@@ -28,6 +29,7 @@ const objects: Record<string, string> = {
   approval_policy: "Approval policy",
   statutory_pack: "Statutory pack",
   team_mode: "Team mode",
+  period: "Accounting period",
 };
 
 export function objectLabel(t: string): string {

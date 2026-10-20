@@ -1,12 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { CircleCheck, CircleX, Lock, RefreshCw, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleX, Clock, Lock, LockOpen, RefreshCw, TriangleAlert } from "lucide-react";
 import { useId, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
+import { Dialog } from "../../components/ui/dialog";
 import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
@@ -22,6 +23,73 @@ type Item = components["schemas"]["CloseCheckItem"];
 // (A: the Owner, the Controller). The API decides, and refuses the one who ran the checks (FM-4).
 const preparers = ["accountant", "controller"];
 const attesters = ["owner", "controller"];
+
+// Reopen asks a closed period back open, with a reason: another founder approves the request (FR-GL-08, FM-1).
+function Reopen({ open, month, periodId, etag, onClose, onAsked }: { open: boolean; month: string; periodId: string; etag: string; onClose: () => void; onAsked: (approvalId: string) => void }) {
+  const confirm = useConfirm();
+  const id = useId();
+  const [reason, setReason] = useState("");
+  const [missing, setMissing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const h = helpText("close.reopen");
+  const ask = async () => {
+    if (!reason.trim()) return setMissing(true);
+    setBusy(true);
+    setProblem(null);
+    const key = newKey();
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/periods/{period_id}/reopen", { params: { path: { period_id: periodId }, header: { "If-Match": etag, "Idempotency-Key": key } }, body: { reason: reason.trim() } }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    onAsked(out.data.id);
+  };
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      dismissible={!busy}
+      title={`Ask to reopen ${month}?`}
+      description="Another founder approves it first. Once reopened, the month takes postings again until it is closed again; the close's snapshot is kept beside the one taken when it reopens."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={() => void ask()} disabled={busy} title={h.tooltip}>
+            <Icon of={LockOpen} />
+            {h.label}
+          </Button>
+        </>
+      }
+    >
+      {problem && <Refusal problem={problem} title="The request was not made" />}
+      <div className="fy-field">
+        <label className="fy-label" htmlFor={`${id}-reason`}>
+          Why it reopens
+        </label>
+        <textarea
+          className="fy-textarea"
+          id={`${id}-reason`}
+          value={reason}
+          maxLength={500}
+          onChange={(e) => {
+            setReason(e.target.value);
+            setMissing(false);
+          }}
+          aria-invalid={missing || undefined}
+          aria-describedby={missing ? `${id}-reason-error` : undefined}
+        />
+        {missing && (
+          <span className="fy-error" id={`${id}-reason-error`}>
+            Say why: the approver reads it, and the reopening keeps it.
+          </span>
+        )}
+      </div>
+    </Dialog>
+  );
+}
 
 function CheckRow({ c }: { c: Item }) {
   const icon = c.severity === "error" ? CircleX : c.severity === "warning" ? TriangleAlert : CircleCheck;
@@ -53,6 +121,7 @@ export function PeriodClose() {
   const roles = session.roles ?? [];
   const mayCheck = roles.some((r) => preparers.includes(r));
   const mayAttest = roles.some((r) => attesters.includes(r));
+  const mayAsk = roles.some((r) => preparers.includes(r));
   const q = useQuery({
     queryKey: ["period-close", periodId],
     queryFn: async () => {
@@ -69,6 +138,8 @@ export function PeriodClose() {
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [failed, setFailed] = useState("");
   const [status, setStatus] = useState("");
+  const [reopening, setReopening] = useState(false);
+  const reopen = helpText("close.reopen");
   const run = helpText("close.run-checks");
   const attest = helpText("close.attest");
   const open = s?.period.status === "open";
@@ -162,6 +233,20 @@ export function PeriodClose() {
           </div>
         </div>
       )}
+      {s?.reopen_asked && (
+        <div className="fy-banner fy-banner--info" role="note">
+          <Icon of={Clock} size={20} />
+          <div className="fy-banner__text">
+            <strong>A request to reopen {month} waits for approval</strong>
+            <span className="fy-small">Another founder approves it; until then, the month stays closed.</span>
+          </div>
+          <div className="fy-banner__action">
+            <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/approvals/$approvalId" params={{ approvalId: s.reopen_asked }}>
+              See the request
+            </Link>
+          </div>
+        </div>
+      )}
       {s && (
         <div className="fy-split">
           <section className="fy-card" aria-labelledby={`${id}-checks`}>
@@ -221,6 +306,26 @@ export function PeriodClose() {
                 )}
               </section>
             )}
+            {s.reopen && (
+              <section className="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby={`${id}-reopened`}>
+                <h2 className="fy-h3" id={`${id}-reopened`}>
+                  Reopened
+                </h2>
+                <p className="fy-small">
+                  Approved by {who(s.reopen.reopened_by)} on {dateTime(s.reopen.reopened_at)}: “{s.reopen.reason}”
+                </p>
+                <dl className="fy-dl">
+                  <div>
+                    <dt>Before</dt>
+                    <dd className="fy-mono">sha256 {s.reopen.before_sha256.slice(0, 4)}…{s.reopen.before_sha256.slice(-4)}</dd>
+                  </div>
+                  <div>
+                    <dt>After</dt>
+                    <dd className="fy-mono">sha256 {s.reopen.after_sha256.slice(0, 4)}…{s.reopen.after_sha256.slice(-4)}</dd>
+                  </div>
+                </dl>
+              </section>
+            )}
             {s.close && (
               <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-closed`}>
                 <div className="fy-row gap-2">
@@ -245,11 +350,33 @@ export function PeriodClose() {
                     </dd>
                   </div>
                 </dl>
-                {!open && <p className="fy-small fy-muted">Reopening needs a second founder's approval and a reason, and keeps snapshots before and after. It arrives soon.</p>}
+                {!open && !s.reopen_asked && mayAsk && (
+                  <>
+                    <Button className="self-start" variant="ghost" size="sm" onClick={() => setReopening(true)} title={reopen.tooltip}>
+                      <Icon of={LockOpen} />
+                      {reopen.label}…
+                    </Button>
+                    <p className="fy-small fy-muted">Reopening needs another founder's approval and a reason, and keeps snapshots before and after.</p>
+                  </>
+                )}
               </section>
             )}
           </aside>
         </div>
+      )}
+      {s && q.data && (
+        <Reopen
+          open={reopening}
+          month={month}
+          periodId={periodId}
+          etag={q.data.etag}
+          onClose={() => setReopening(false)}
+          onAsked={async () => {
+            setReopening(false);
+            await refresh();
+            setStatus(`Asked to reopen ${month}: another founder approves it.`);
+          }}
+        />
       )}
     </div>
   );

@@ -69,3 +69,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/opening-balances.md (new), periods-and-close.md (related link) → accounting.opening-balances (new), accounting.periods (opening balances screen, p1-general-ledger-close 3.1, 7.2)
 
 ## [2026-10-21] compile | docs/user-guide/periods-and-close.md (close a month) → accounting.periods (the close page, p1-general-ledger-close 1.2, 7.2)
+
+## [2026-10-21] compile | docs/user-guide/periods-and-close.md (reopen a month) → accounting.periods (reopening, p1-general-ledger-close 1.3, 7.2)
