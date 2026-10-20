@@ -16,7 +16,8 @@
   person who holds it without an override (TEAM-04). SOD-8 and SOD-10 are the approval engine's requester-never-signs
   rule. Tests: `TestRoleCombinationsThatConflict`, `TestTeamModeSwitchesAreDualControlled`. **Left:** SOD-1 to SOD-5,
   SOD-7 and SOD-9 per item, with their objects (payments, journals above the threshold, pay runs, reconciliations,
-  close, write-offs).)
+  close, write-offs); and SOD-6 when approving: once a transaction row's changes go through the approval engine (bills,
+  payment batches, period close), `checkConflicts` belongs in `sign()` for those rows too, as it is in `posting` now.)
 - [ ] 1.4 The AI and integration principals: reads within the delegating user's rights minus the AI exclusions, and narrow scopes. Tests `// req: access/roles-and-segregation AI assistant principal` and `… Integration principal`
 
 ## 2. People and sign-in

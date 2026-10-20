@@ -1394,7 +1394,7 @@ export interface components {
             /** @description Its signed approvals and rejections, in order (FR-APR-03). */
             signatures: components["schemas"]["ApprovalSignature"][] | null;
             /**
-             * @description pending waits for approval; approved executed it; void means its record, a dependency or its approval policy changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days.
+             * @description pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days.
              * @example pending
              * @enum {string}
              */

@@ -29,3 +29,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | docs/user-guide/approvals.md → approvals.decide (activating a statutory pack waits for approval; links settings.statutory-packs)
 
 ## [2026-10-20] compile | docs/user-guide/team-mode.md (new), docs/user-guide/members-and-roles.md → settings.team-mode (new), members.roles, members.invite (team modes and SOD-6, PRD rev 0.42)
+
+## [2026-10-20] compile | docs/user-guide/approvals.md → approvals.decide (a team mode switch voids waiting requests, rev 0.42)
