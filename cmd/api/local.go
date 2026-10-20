@@ -67,6 +67,7 @@ func init() {
 			MCPAudience: cmp.Or(os.Getenv("FYNIQ_MCP_AUDIENCE"), "http://localhost:8080/mcp"),
 			Log:         logging.New(os.Stderr, slog.LevelInfo), SignInPage: "/", Base: base}.Register(s)
 	}
+	webOrigin = origin
 	startLocalTick = func(t outbox.Ticker) {
 		setting := os.Getenv("FYNIQ_TICK_INTERVAL")
 		if setting == "off" {

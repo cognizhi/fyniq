@@ -96,6 +96,7 @@ fyniq_api       UPDATE    role_assignment (revoked_at)
 fyniq_api       USAGE     schema fyniq
 fyniq_api       EXECUTE   session_for()
 fyniq_api       EXECUTE   session_step_up()
+fyniq_api       EXECUTE   session_step_up_method()
 fyniq_api       EXECUTE   set_recovery_codes()
 fyniq_api       EXECUTE   setup_done()
 fyniq_api       EXECUTE   skip_job_slots()

@@ -17,6 +17,9 @@
 -- before) or by a passkey (no earlier than its start). The check that encoded "step-up only at sign-in" is replaced by
 -- that pair NOT VALID, and 000046 validates it (squawk: constraint-missing-not-valid).
 --
+-- A challenge keeps its session's row (a foreign key, never deleted): sessions are never deleted either, and a purge of
+-- old sessions, when it arrives with the session management of FR-ADM-03, takes their challenges with them.
+--
 -- Global tables with no grant, reached only through the functions below (db/README.md).
 
 -- +goose Up
@@ -216,8 +219,8 @@ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = pg_catalog, fyniq, pg_temp
 AS $$
 DECLARE
-  who uuid := fyniq.live_session_user(p_session, p_now);
-  id  uuid;
+  who    uuid := fyniq.live_session_user(p_session, p_now);
+  issued uuid;
 BEGIN
   IF who IS NULL THEN
     RAISE EXCEPTION 'No live session of a Fyniq user asked for the challenge' USING ERRCODE = 'FY141',
@@ -230,8 +233,8 @@ BEGIN
   END IF;
   INSERT INTO fyniq.webauthn_challenge (user_id, purpose, challenge, session_hash, created_at, expires_at)
   VALUES (who, p_purpose, p_challenge, p_session, p_now, p_expires)
-  RETURNING webauthn_challenge.id INTO id;
-  RETURN id;
+  RETURNING webauthn_challenge.id INTO issued;
+  RETURN issued;
 END
 $$;
 -- +goose StatementEnd
@@ -273,8 +276,8 @@ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = pg_catalog, fyniq, pg_temp
 AS $$
 DECLARE
-  c  fyniq.webauthn_challenge;
-  id uuid;
+  c     fyniq.webauthn_challenge;
+  added uuid;
 BEGIN
   SELECT * INTO c FROM fyniq.webauthn_challenge w WHERE w.id = p_challenge FOR UPDATE;
   IF NOT FOUND OR c.purpose <> 'register' OR c.session_hash <> p_session OR c.taken_at IS NULL OR c.answered_by IS NOT NULL
@@ -287,9 +290,9 @@ BEGIN
                                          name, created_at)
   VALUES (c.user_id, p_credential_id, p_public_key, p_sign_count, p_aaguid, p_transports, p_backup_eligible, p_backup_state,
           btrim(p_name), p_now)
-  RETURNING webauthn_credential.id INTO id;
-  UPDATE fyniq.webauthn_challenge w SET answered_by = id WHERE w.id = p_challenge;
-  RETURN id;
+  RETURNING webauthn_credential.id INTO added;
+  UPDATE fyniq.webauthn_challenge w SET answered_by = added WHERE w.id = p_challenge;
+  RETURN added;
 END
 $$;
 -- +goose StatementEnd
@@ -314,7 +317,11 @@ BEGIN
     RAISE EXCEPTION 'A session is stepped up by a passkey only as the answer to its own step-up challenge, by a live passkey of its user'
       USING ERRCODE = 'FY141', HINT = 'Ask for a new challenge and confirm it''s you again.';
   END IF;
-  IF p_sign_count <> 0 OR k.sign_count <> 0 THEN
+  IF (p_sign_count <> 0 OR k.sign_count <> 0) AND p_sign_count <= k.sign_count THEN
+    RAISE EXCEPTION 'A passkey''s signature counter went from % to %: the answer is replayed or the authenticator cloned', k.sign_count, p_sign_count
+      USING ERRCODE = 'FY140', HINT = 'Revoke the passkey and register a new one (WebAuthn §6.1.1).';
+  END IF;
+  IF p_sign_count <> k.sign_count THEN
     UPDATE fyniq.webauthn_credential w SET sign_count = p_sign_count WHERE w.id = p_credential;
   END IF;
   UPDATE fyniq.webauthn_credential w SET last_used_at = greatest(p_now, w.created_at), backup_state = p_backup_state AND w.backup_eligible

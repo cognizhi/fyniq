@@ -252,3 +252,21 @@ func TestEvidenceNeedsTheRecordToo(t *testing.T) {
 		t.Errorf("an Auditor views a journal's evidence: %+v", d)
 	}
 }
+
+// Every user signs in with a second factor (SEC-01): a session that passed none reads itself, steps up with a passkey,
+// and, as a Super admin who lost theirs, recovers with two proofs (SEC-35); nothing else.
+// req: SEC-01
+// req: FR-ADM-02
+// asvs: V6.3.3
+func TestOnlyStepUpAndRecoveryNeedNoSecondFactor(t *testing.T) {
+	var got []string
+	for op, p := range authz.Policies {
+		if p.SingleFactor {
+			got = append(got, op)
+		}
+	}
+	slices.Sort(got)
+	if want := []string{"getSession", "recoverSuperAdmin", "startStepUp", "stepUp"}; !slices.Equal(got, want) {
+		t.Errorf("operations open to a session without a second factor: %v, want %v", got, want)
+	}
+}

@@ -67,6 +67,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/organisation/settings/{key}` (getSetting): Get an organisation setting
 - `PATCH /v1/organisation/settings/{key}` (updateSetting): Change an organisation setting
 - `GET /v1/session` (getSession): Get your session
+- `GET /v1/session/passkeys` (listPasskeys): List your passkeys
+- `POST /v1/session/passkeys` (registerPasskey): Register a passkey
+- `POST /v1/session/passkeys/challenge` (startPasskeyRegistration): Start registering a passkey
+- `DELETE /v1/session/passkeys/{passkey_id}` (revokePasskey): Revoke a passkey
+- `POST /v1/session/step-up` (stepUp): Confirm it's you with a passkey
+- `POST /v1/session/step-up/challenge` (startStepUp): Start confirming it's you with a passkey
 - `GET /v1/setup` (getSetupStatus): Get the setup status
 - `POST /v1/setup` (completeSetup): Complete first-run setup
 - `GET /v1/sign-in-providers` (listSignInProviders): List the sign-in providers

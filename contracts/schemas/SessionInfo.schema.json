@@ -35,8 +35,19 @@
         "null"
       ]
     },
+    "step_up_method": {
+      "description": "How your session last passed a second factor: at sign-in (your authenticator app) or with a passkey; absent when it passed none, which leaves it only reading itself and stepping up (SEC-01, rev 0.43).",
+      "enum": [
+        "sign_in",
+        "passkey"
+      ],
+      "examples": [
+        "sign_in"
+      ],
+      "type": "string"
+    },
     "stepped_up_until": {
-      "description": "Until when your last step-up (a second factor at sign-in) counts for the actions that need one; absent when it does not.",
+      "description": "Until when your last step-up (a second factor at sign-in, or a passkey) counts for the actions that need one; absent when it does not.",
       "examples": [
         "2026-10-15T09:05:00Z"
       ],

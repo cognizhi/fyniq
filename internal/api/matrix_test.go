@@ -336,6 +336,28 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return packRequests(e) == was }
 	},
+	// The passkey ceremonies are a person's own, in a browser session: the matrix's principals have none, so an allowed
+	// role is refused past its policy (API-AUTHZ-04) and the AI by it. TestPasskeys runs them with a real session.
+	"listPasskeys": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/session/passkeys", tok, nil), nil
+	},
+	"startPasskeyRegistration": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/session/passkeys/challenge", tok, nil), nil
+	},
+	"registerPasskey": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/session/passkeys", tok, map[string]any{"challenge_id": uuid.NewString(), "name": "Laptop",
+			"credential": map[string]any{"id": "AAAA"}}), nil
+	},
+	"revokePasskey": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodDelete, "/v1/session/passkeys/"+uuid.NewString(), tok, nil), nil
+	},
+	"startStepUp": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/session/step-up/challenge", tok, nil), nil
+	},
+	"stepUp": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/session/step-up", tok, map[string]any{"challenge_id": uuid.NewString(),
+			"credential": map[string]any{"id": "AAAA"}}), nil
+	},
 	"getTeamMode": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/team-mode", tok, nil), nil
 	},
@@ -526,7 +548,8 @@ func TestAuthorisationMatrix(t *testing.T) {
 		for _, op := range slices.Sorted(maps.Keys(policies)) {
 			want, _ := expected(t, rows, role, policies[op])
 			r, unchanged := matrixCalls[op](e, tok)
-			beyondPolicy := r.Status == http.StatusForbidden && (r.problemCode() == CodeNotSuperAdmin || r.problemCode() == CodeStepUpRequired)
+			beyondPolicy := r.Status == http.StatusForbidden && (r.problemCode() == CodeNotSuperAdmin || r.problemCode() == CodeStepUpRequired ||
+				r.problemCode() == CodeSessionRequired)
 			// The installation's operations and the approvals decide past their policy: by a code, or by the request's own policy.
 			lenient := policies[op].NoOrganisation || policies[op].Capability == authz.Approvals
 			switch {

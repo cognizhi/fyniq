@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "challenge_id": {
+      "description": "The registration challenge it answers.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "credential": {
+      "additionalProperties": true,
+      "description": "The PublicKeyCredential navigator.credentials.create returned, as its toJSON() writes it.",
+      "examples": [
+        {
+          "publicKey": {
+            "challenge": "c2FtcGxlLWNoYWxsZW5nZS0zMi1ieXRlcy1sb25nLXh4",
+            "rpId": "fyniq.example.com"
+          }
+        }
+      ],
+      "type": "object"
+    },
+    "name": {
+      "description": "A name to know it by.",
+      "examples": [
+        "Work laptop"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "challenge_id",
+    "name",
+    "credential"
+  ],
+  "title": "NewPasskey",
+  "type": "object"
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "passkey_id": {
+      "description": "The passkey you used.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "step_up_method": {
+      "description": "How you passed it.",
+      "enum": [
+        "passkey"
+      ],
+      "examples": [
+        "passkey"
+      ],
+      "type": "string"
+    },
+    "stepped_up_until": {
+      "description": "Until when the step-up counts for the actions that need one: 5 minutes.",
+      "examples": [
+        "2026-10-20T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "stepped_up_until",
+    "step_up_method",
+    "passkey_id"
+  ],
+  "title": "SteppedUp",
+  "type": "object"
+}

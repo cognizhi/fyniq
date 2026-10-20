@@ -56,7 +56,8 @@ func (s Sessions) Authenticate(ctx context.Context, c Credentials) (Principal, e
 	if token == "" {
 		return Principal{}, ErrUnauthenticated
 	}
-	sess, err := s.Store.Session(ctx, HashToken(token), s.Clock.Now(), SessionIdle)
+	hash := HashToken(token)
+	sess, err := s.Store.Session(ctx, hash, s.Clock.Now(), SessionIdle)
 	if errors.Is(err, ports.ErrNotFound) {
 		return Principal{}, ErrUnauthenticated
 	}
@@ -64,7 +65,7 @@ func (s Sessions) Authenticate(ctx context.Context, c Credentials) (Principal, e
 		return Principal{}, err
 	}
 	p := Principal{Via: ViaSession, Issuer: sess.Issuer, Subject: sess.Subject, UserID: sess.UserID, Provider: sess.Provider, Client: WebClient,
-		Class: ClassUser, Organisation: sess.Organisation, StepUpAt: sess.StepUpAt}
+		Class: ClassUser, Organisation: sess.Organisation, StepUpAt: sess.StepUpAt, StepUpMethod: sess.StepUpMethod, SessionHash: hash}
 	for _, r := range sess.Roles {
 		if _, known := authz.Roles[authz.Role(r)]; known {
 			p.Roles = append(p.Roles, authz.Role(r))

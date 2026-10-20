@@ -31,7 +31,10 @@ var (
 	startLocalTick   func(t outbox.Ticker)
 	newAuthenticator func(clock ports.Clock, sessions storage.Sessions) authn.Authenticator
 	registerSignIn   func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions) ports.SignIn
-	registerOAuth    func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions)
+	// webOrigin is the web app's origin as the browser sees it, "" when the flavour has none configured: the passkey
+	// ceremonies are bound to it (FR-ADM-02).
+	webOrigin     func() string
+	registerOAuth func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions)
 )
 
 func main() {
@@ -54,6 +57,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	}
 	if registerOAuth != nil {
 		registerOAuth(s, deps.Clock, sessions)
+	}
+	if webOrigin != nil {
+		d.Origin = webOrigin()
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "api: serving without a database or background work:", err)

@@ -97,6 +97,10 @@ const (
 	CodeCodeRefused       = "API-SUPERADMIN-01"  // an invitation, recovery or confirmation code is not valid, used or expired
 	CodeSuperAdminRefused = "API-SUPERADMIN-02"  // at most two Super admins, never none; nobody confirms their own recovery
 	CodeRateLimited       = "API-RATE-01"        // the client's requests this minute reached its limit (429)
+	CodeSecondFactor      = "API-AUTHZ-07"       // the session passed no second factor (SEC-01)
+	CodePasskeyRefused    = "API-PASSKEY-01"     // the passkey's answer failed a check: nothing changed
+	CodeNoPasskey         = "API-PASSKEY-02"     // the person has no passkey to step up with
+	CodeChallenge         = "API-PASSKEY-03"     // the challenge is unknown, another session's, used or expired
 )
 
 // codeFacts are the status and title of every code the API returns, the catalogue the OpenAPI
@@ -130,6 +134,11 @@ var codeFacts = map[string]struct {
 	CodeCodeRefused:            {409, "Code refused"},
 	CodeSuperAdminRefused:      {409, "Super admin change refused"},
 	CodeRateLimited:            {429, "Too many requests"},
+	CodeSecondFactor:           {403, "A second factor is required"},
+	CodePasskeyRefused:         {422, "The passkey's answer was refused"},
+	CodeNoPasskey:              {409, "You have no passkey"},
+	CodeChallenge:              {409, "The challenge cannot be used"},
+	storage.CodePasskey:        {409, "The passkey or its challenge cannot be used that way"},
 	organisation.CodeText:      {422, "A text is blank or too long"},
 	organisation.CodeUEN:       {422, "Not a UEN"},
 	organisation.CodeEmail:     {422, "Not an email address"},
