@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/passkey/passkeytest"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -401,5 +403,245 @@ func TestAttackPasskeysAreAnsweredChallenges(t *testing.T) {
 		if _, err := c.conn.Exec(ctx, c.sql); sqlstate(err) != c.want {
 			t.Errorf("%s: want %s, got %v", c.what, c.want, err)
 		}
+	}
+}
+
+// founders sets up an installation whose organisation has two founders, both signed in with a second factor: desk is
+// the first, Owner and Controller, phone the second, Owner.
+func (s *sessionStack) founders(t *testing.T) (desk, phone *browser, org string) {
+	t.Helper()
+	ctx := context.Background()
+	desk, phone = s.browser(), s.browser()
+	desk.signIn("founder-a", true)
+	code, hash := setupcode.New()
+	if err := postgres.SetSetupCode(ctx, s.migrator, hash); err != nil {
+		t.Fatal(err)
+	}
+	r := desk.call(http.MethodPost, "/v1/setup", "same-origin", map[string]any{"setup_code": code, "display_name": "Mei Ling Tan",
+		"organisation": map[string]any{"name": "Cognizhi Pte. Ltd.", "base_currency": "SGD"}})
+	if r.Status != http.StatusCreated {
+		t.Fatalf("setup: %d %s", r.Status, r.Raw)
+	}
+	// During the founder bootstrap the first founder also takes the Controller role, which asks for settings changes.
+	me := desk.call(http.MethodGet, "/v1/members", "same-origin", nil).Body["items"].([]any)[0].(map[string]any)["id"].(string)
+	if g := desk.call(http.MethodPost, "/v1/members/"+me+"/roles", "same-origin", map[string]any{"role": "controller"}); g.Status != http.StatusCreated {
+		t.Fatalf("taking the Controller role: %d %s", g.Status, g.Raw)
+	}
+	inv := desk.call(http.MethodPost, "/v1/members/invitations", "same-origin", map[string]any{"display_name": "Wei Jie Lim", "roles": []string{"owner"}})
+	if inv.Status != http.StatusCreated {
+		t.Fatalf("inviting: %d %s", inv.Status, inv.Raw)
+	}
+	phone.signIn("founder-b", true)
+	if j := phone.call(http.MethodPost, "/v1/members", "same-origin", map[string]any{"invitation_code": inv.str("code"), "display_name": "Wei Jie Lim"}); j.Status != http.StatusCreated {
+		t.Fatalf("joining: %d %s", j.Status, j.Raw)
+	}
+	return desk, phone, r.str("organisation_id")
+}
+
+// An approval signed with a passkey signs the request's envelope hash itself: the challenge is 16 random bytes and the
+// hash, for that request, organisation and session, used once within 5 minutes; the signature keeps the assertion, which
+// verifies again with the passkey's key. A challenge for another request, a replayed answer and a late one sign
+// nothing (G4-056).
+// req: FR-APR-03
+// req: FR-APR-04
+// req: FM-1
+// asvs: V6.5.1, V6.7.2
+func TestPasskeySignedApprovals(t *testing.T) {
+	ctx := context.Background()
+	s := startSessions(t)
+	desk, phone, orgID := s.founders(t)
+	origin := strings.Replace(s.srv.URL, "127.0.0.1", "localhost", 1)
+	host, _ := url.Parse(origin)
+	a := passkeytest.New(t, host.Hostname(), origin)
+
+	// Wei Jie registers a passkey; Mei Ling asks for two changes.
+	r := phone.call(http.MethodPost, "/v1/session/passkeys/challenge", "same-origin", nil)
+	if reg := phone.call(http.MethodPost, "/v1/session/passkeys", "same-origin", map[string]any{"challenge_id": r.str("challenge_id"),
+		"name": "Phone", "credential": credential(t, a.Create(passkeytest.Challenge(t, options(t, r))))}); reg.Status != http.StatusCreated {
+		t.Fatalf("registering: %d %s", reg.Status, reg.Raw)
+	}
+	ask := func(key, value string) response {
+		r := desk.call(http.MethodPatch, "/v1/organisation/settings/"+key, "same-origin", map[string]any{"value": value}, "If-Match", `"0"`)
+		if r.Status != http.StatusAccepted {
+			t.Fatalf("asking: %d %s", r.Status, r.Raw)
+		}
+		return r
+	}
+	first, second := ask("bank.tolerance_base", "5.00"), ask("bank.tolerance_cap_document", "60.00")
+	challengeFor := func(b *browser, req response) (string, []byte) {
+		r := b.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/challenge", "same-origin", nil, "If-Match", `"1"`)
+		c := passkeytest.Challenge(t, options(t, r))
+		if len(c) != 48 || hex.EncodeToString(c[16:]) != req.str("envelope_hash") {
+			t.Fatalf("the challenge is not a nonce and the envelope's hash: %x", c)
+		}
+		return r.str("challenge_id"), c
+	}
+	decide := func(b *browser, req response, how, id string, answer []byte) response {
+		body := map[string]any{"envelope_hash": req.str("envelope_hash"), "passkey": map[string]any{"challenge_id": id, "credential": credential(t, answer)}}
+		if how == "reject" {
+			body["reason"] = "Not this month"
+		}
+		return b.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/"+how, "same-origin", body, "If-Match", `"1"`)
+	}
+	s.problemIs(desk.call(http.MethodPost, "/v1/approvals/"+first.str("id")+"/challenge", "same-origin", nil, "If-Match", `"1"`), "challengeApproval", 403, "APR-01")
+	s.problemIs(phone.call(http.MethodPost, "/v1/approvals/"+first.str("id")+"/challenge", "same-origin", nil, "If-Match", `"7"`), "challengeApproval", 412, CodeStale)
+
+	// A challenge for the second request signs nothing on the first.
+	id2, c2 := challengeFor(phone, second)
+	s.problemIs(decide(phone, first, "approve", id2, a.Get(c2)), "approveApproval", 409, CodeChallenge)
+	if g := phone.call(http.MethodGet, "/v1/approvals/"+first.str("id"), "same-origin", nil); g.str("status") != "pending" {
+		t.Fatalf("the first request after a wrong challenge: %s", g.Raw)
+	}
+
+	// Wei Jie approves the first with his passkey.
+	id1, c1 := challengeFor(phone, first)
+	answer := a.Get(c1)
+	ok := decide(phone, first, "approve", id1, answer)
+	if ok.Status != 200 || ok.str("status") != "approved" || !strings.Contains(ok.Raw, `"method":"passkey"`) || !strings.Contains(ok.Raw, `"passkey_id":"`) {
+		t.Fatalf("approving with a passkey: %d %s", ok.Status, ok.Raw)
+	}
+	s.problemIs(decide(phone, second, "approve", id1, answer), "approveApproval", 409, CodeChallenge) // replayed on another request
+
+	// The signature kept the assertion, which verifies again with the passkey's key.
+	rp, err := passkey.New(origin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user := uuid.MustParse(phone.session().str("user_id"))
+	inst, _ := s.store.InstallationOrganisation(ctx)
+	var keys []storage.Passkey
+	if err := s.store.Do(ctx, inst, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		keys, err = u.Passkeys().List(ctx, user, true)
+		return err
+	}); err != nil || len(keys) != 1 {
+		t.Fatalf("the passkeys: %v %v", keys, err)
+	}
+	if err := s.store.Do(ctx, uuid.MustParse(orgID), func(ctx context.Context, u storage.UnitOfWork) error {
+		sigs, err := u.Approvals().Signatures(ctx, uuid.MustParse(first.str("id")))
+		if err != nil || len(sigs) != 1 || sigs[0].Passkey == nil || sigs[0].MFAMethod != "passkey" {
+			t.Fatalf("the signature: %+v %v", sigs, err)
+		}
+		return rp.Reverify(keys[0], c1, *sigs[0].Passkey)
+	}); err != nil {
+		t.Errorf("the kept assertion does not verify again: %v", err)
+	}
+
+	// A late answer signs nothing, and the request stays pending; a fresh one rejects it.
+	id2, c2 = challengeFor(phone, second)
+	s.clock.Advance(ChallengeTTL + time.Second)
+	s.problemIs(decide(phone, second, "reject", id2, a.Get(c2)), "rejectApproval", 409, CodeChallenge)
+	id2, c2 = challengeFor(phone, second)
+	if r := decide(phone, second, "reject", id2, a.Get(c2)); r.Status != 200 || r.str("status") != "rejected" || !strings.Contains(r.Raw, `"method":"passkey"`) {
+		t.Fatalf("rejecting with a passkey: %d %s", r.Status, r.Raw)
+	}
+}
+
+// The database records a passkey-signed approval only as the signer's answer to a challenge over that organisation's,
+// request's and envelope's hash, answered by the signer's live passkey within 5 minutes; an approval challenge is issued
+// only for a pending request's own envelope; and a signature keeps all of its assertion or none (G4-056).
+// req: FR-APR-03
+// asvs: V6.5.1, V8.2.2
+func TestAttackPasskeySignaturesAnswerTheirChallenge(t *testing.T) {
+	ctx := context.Background()
+	s := startSessions(t)
+	desk, phone, orgID := s.founders(t)
+	org := uuid.MustParse(orgID)
+	origin := strings.Replace(s.srv.URL, "127.0.0.1", "localhost", 1)
+	host, _ := url.Parse(origin)
+	a := passkeytest.New(t, host.Hostname(), origin)
+	r := phone.call(http.MethodPost, "/v1/session/passkeys/challenge", "same-origin", nil)
+	reg := phone.call(http.MethodPost, "/v1/session/passkeys", "same-origin", map[string]any{"challenge_id": r.str("challenge_id"), "name": "Phone",
+		"credential": credential(t, a.Create(passkeytest.Challenge(t, options(t, r))))})
+	if reg.Status != http.StatusCreated {
+		t.Fatalf("registering: %d %s", reg.Status, reg.Raw)
+	}
+	key := uuid.MustParse(reg.str("id"))
+	ask := func(k, v string) storage.ApprovalRequest {
+		r := desk.call(http.MethodPatch, "/v1/organisation/settings/"+k, "same-origin", map[string]any{"value": v}, "If-Match", `"0"`)
+		var out storage.ApprovalRequest
+		if err := s.store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = u.Approvals().Get(ctx, uuid.MustParse(r.str("id")))
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	first, second := ask("bank.tolerance_base", "5.00"), ask("bank.tolerance_cap_document", "60.00")
+	signer := uuid.MustParse(phone.session().str("user_id"))
+	session := s.sessionHash(phone)
+	now := s.clock.Now()
+	in := func(o uuid.UUID, f func(ctx context.Context, u storage.UnitOfWork) error) error {
+		return s.store.Do(ctx, o, f)
+	}
+	challenge := func(req storage.ApprovalRequest, hash []byte) (uuid.UUID, error) {
+		var id uuid.UUID
+		err := in(org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			id, err = u.Passkeys().ApprovalChallenge(ctx, storage.NewApprovalChallenge{SessionHash: session, RequestID: req.ID, EnvelopeHash: hash,
+				Nonce: []byte("0123456789abcdef"), Now: now, Expires: now.Add(ChallengeTTL)})
+			return err
+		})
+		return id, err
+	}
+	answered := func(id uuid.UUID, count uint32) error {
+		return in(org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if _, err := u.Passkeys().Take(ctx, id, session, storage.PurposeApproval, now); err != nil {
+				return err
+			}
+			return u.Passkeys().AnswerApproval(ctx, storage.PasskeyAnswer{ChallengeID: id, SessionHash: session, PasskeyID: key, SignCount: count, Now: now})
+		})
+	}
+	sign := func(req storage.ApprovalRequest, id uuid.UUID, method string) error {
+		return in(org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: req.ID, Step: 1, Signer: signer, Decision: "approve",
+				EnvelopeHash: req.EnvelopeHash, MFAMethod: method, MFAAt: now, SignedAt: now,
+				Passkey: &storage.PasskeyAssertion{ChallengeID: id, PasskeyID: key, AuthenticatorData: make([]byte, 37), ClientData: []byte("{}"),
+					Signature: make([]byte, 70)}})
+			return err
+		})
+	}
+	refused := func(what string, err error, code string) {
+		t.Helper()
+		if storage.CodeOf(err) != code {
+			t.Errorf("%s: want %s, got %v", what, code, err)
+		}
+	}
+
+	_, err := challenge(first, second.EnvelopeHash)
+	refused("a challenge over another request's envelope", err, storage.CodeApproval)
+	c1, err := challenge(first, first.EnvelopeHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	refused("signing with a challenge nobody answered", sign(first, c1, "passkey"), storage.CodeApproval)
+	inst, _ := s.store.InstallationOrganisation(ctx)
+	refused("answering it in another organisation", in(inst, func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.Passkeys().Take(ctx, c1, session, storage.PurposeApproval, now); err != nil {
+			return err
+		}
+		return u.Passkeys().AnswerApproval(ctx, storage.PasskeyAnswer{ChallengeID: c1, SessionHash: session, PasskeyID: key, SignCount: 1, Now: now})
+	}), storage.CodeApproval)
+	if err := answered(c1, 1); err != nil {
+		t.Fatal(err)
+	}
+	refused("signing another request with it", sign(second, c1, "passkey"), storage.CodeApproval)
+	refused("keeping an assertion without the passkey method", sign(first, c1, "session_step_up"), storage.CodeApproval)
+	if err := sign(first, c1, "passkey"); err != nil {
+		t.Fatalf("the answered challenge: %v", err)
+	}
+	c2, _ := challenge(second, second.EnvelopeHash)
+	refused("an answer whose counter did not move", answered(c2, 1), storage.CodePasskey)
+
+	owner, err := pgx.Connect(ctx, s.migrator)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer owner.Close(ctx)
+	if _, err := owner.Exec(ctx, "SELECT set_config('app.org_id', $1, false)", orgID); err != nil {
+		t.Fatal(err)
+	}
+	_, err = owner.Exec(ctx, "UPDATE fyniq.approval_signature SET assertion_signature = '\\x00' WHERE passkey_id IS NOT NULL")
+	if pg := (*pgconn.PgError)(nil); !errors.As(err, &pg) || pg.Code != "FY102" {
+		t.Errorf("the owner changing a kept assertion: %v", err)
 	}
 }

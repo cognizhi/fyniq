@@ -14,7 +14,7 @@
       "type": "string"
     },
     "method": {
-      "description": "The second factor that proved it was them: session_step_up is the step-up of their session; passkey and TOTP approvals arrive with p1-users-roles.",
+      "description": "The second factor that proved it was them: session_step_up is the step-up of their session (at sign-in or with a passkey); passkey is a passkey that signed this request's envelope hash itself (FR-APR-03, rev 0.44).",
       "enum": [
         "session_step_up",
         "passkey",
@@ -23,6 +23,14 @@
       "examples": [
         "session_step_up"
       ],
+      "type": "string"
+    },
+    "passkey_id": {
+      "description": "For a passkey signature: the passkey that signed the envelope's hash; its assertion is kept so it can be verified again (FR-APR-03).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"
+      ],
+      "format": "uuid",
       "type": "string"
     },
     "reason": {

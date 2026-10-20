@@ -13,23 +13,29 @@ import (
 )
 
 const approvalSignatures = `-- name: ApprovalSignatures :many
-SELECT id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at
+SELECT id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at,
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature
   FROM fyniq.approval_signature WHERE request_id = $1
  ORDER BY signed_at, id
 `
 
 type ApprovalSignaturesRow struct {
-	ID           uuid.UUID
-	RequestID    uuid.UUID
-	Step         int32
-	Signer       uuid.UUID
-	Decision     string
-	EnvelopeHash []byte
-	MfaMethod    string
-	MfaAt        time.Time
-	SignedAt     time.Time
-	Reason       *string
-	VoidedAt     *time.Time
+	ID                 uuid.UUID
+	RequestID          uuid.UUID
+	Step               int32
+	Signer             uuid.UUID
+	Decision           string
+	EnvelopeHash       []byte
+	MfaMethod          string
+	MfaAt              time.Time
+	SignedAt           time.Time
+	Reason             *string
+	VoidedAt           *time.Time
+	PasskeyChallengeID *uuid.UUID
+	PasskeyID          *uuid.UUID
+	AuthenticatorData  []byte
+	ClientData         []byte
+	AssertionSignature []byte
 }
 
 func (q *Queries) ApprovalSignatures(ctx context.Context, requestID uuid.UUID) ([]ApprovalSignaturesRow, error) {
@@ -53,6 +59,11 @@ func (q *Queries) ApprovalSignatures(ctx context.Context, requestID uuid.UUID) (
 			&i.SignedAt,
 			&i.Reason,
 			&i.VoidedAt,
+			&i.PasskeyChallengeID,
+			&i.PasskeyID,
+			&i.AuthenticatorData,
+			&i.ClientData,
+			&i.AssertionSignature,
 		); err != nil {
 			return nil, err
 		}
@@ -329,36 +340,49 @@ func (q *Queries) InsertApprovalRequest(ctx context.Context, arg InsertApprovalR
 }
 
 const insertApprovalSignature = `-- name: InsertApprovalSignature :one
-INSERT INTO fyniq.approval_signature (request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason)
+INSERT INTO fyniq.approval_signature (request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason,
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature)
 VALUES ($1, $2, $3, $4, $5, $6,
-  $7, $8, $9)
-RETURNING id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at
+  $7, $8, $9, $10, $11,
+  $12, $13, $14)
+RETURNING id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at,
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature
 `
 
 type InsertApprovalSignatureParams struct {
-	RequestID    uuid.UUID
-	Step         int32
-	Signer       uuid.UUID
-	Decision     string
-	EnvelopeHash []byte
-	MfaMethod    string
-	MfaAt        time.Time
-	SignedAt     time.Time
-	Reason       *string
+	RequestID          uuid.UUID
+	Step               int32
+	Signer             uuid.UUID
+	Decision           string
+	EnvelopeHash       []byte
+	MfaMethod          string
+	MfaAt              time.Time
+	SignedAt           time.Time
+	Reason             *string
+	PasskeyChallengeID *uuid.UUID
+	PasskeyID          *uuid.UUID
+	AuthenticatorData  []byte
+	ClientData         []byte
+	AssertionSignature []byte
 }
 
 type InsertApprovalSignatureRow struct {
-	ID           uuid.UUID
-	RequestID    uuid.UUID
-	Step         int32
-	Signer       uuid.UUID
-	Decision     string
-	EnvelopeHash []byte
-	MfaMethod    string
-	MfaAt        time.Time
-	SignedAt     time.Time
-	Reason       *string
-	VoidedAt     *time.Time
+	ID                 uuid.UUID
+	RequestID          uuid.UUID
+	Step               int32
+	Signer             uuid.UUID
+	Decision           string
+	EnvelopeHash       []byte
+	MfaMethod          string
+	MfaAt              time.Time
+	SignedAt           time.Time
+	Reason             *string
+	VoidedAt           *time.Time
+	PasskeyChallengeID *uuid.UUID
+	PasskeyID          *uuid.UUID
+	AuthenticatorData  []byte
+	ClientData         []byte
+	AssertionSignature []byte
 }
 
 func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprovalSignatureParams) (InsertApprovalSignatureRow, error) {
@@ -372,6 +396,11 @@ func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprova
 		arg.MfaAt,
 		arg.SignedAt,
 		arg.Reason,
+		arg.PasskeyChallengeID,
+		arg.PasskeyID,
+		arg.AuthenticatorData,
+		arg.ClientData,
+		arg.AssertionSignature,
 	)
 	var i InsertApprovalSignatureRow
 	err := row.Scan(
@@ -386,6 +415,11 @@ func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprova
 		&i.SignedAt,
 		&i.Reason,
 		&i.VoidedAt,
+		&i.PasskeyChallengeID,
+		&i.PasskeyID,
+		&i.AuthenticatorData,
+		&i.ClientData,
+		&i.AssertionSignature,
 	)
 	return i, err
 }

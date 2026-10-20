@@ -4,7 +4,7 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving or rejecting in steps from the Inbox, withdrawing your request, and why one becomes void or expires
 sources:
-  - docs/user-guide/approvals.md sha256:d20685276d1c4b14aec1714c96b13d91b70c49834f1b5c7583f612bb5d8861f1
+  - docs/user-guide/approvals.md sha256:72098c786264e44b344d1d2f2fcb8960c6cba43ca3c5b763b10761321f9f533d
 data_class: general
 taint: trusted
 status: published
@@ -45,6 +45,7 @@ aliases:
 - **Inbox → To approve**, choose the request and check each value before and after.
 - Confirm it's you, then **Approve** to make the change now, or **Reject** and say why.
 - An approval signs exactly what was shown; who approved, when and how they confirmed it is in the audit trail.
+- With a passkey the device signs the request itself: the confirmation carries a fingerprint of exactly what is approved or rejected, works once for that request within 5 minutes, and the device's signature is kept with the approval so it can be verified later ([[auth.sign-in]]).
 - Some changes need more than one approval, in steps set by the approval policy ([[approvals.policies]]); the request shows each step and its approvals, and the change is made with the last approval.
 - You approve a request once, and only at a step that names you or one of your roles.
 

@@ -106,6 +106,17 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **THEN** it is rejected with a stable error code
 - **AND** nothing executes
 
+#### Scenario: The challenge is bound to the request as shown (rev 0.44)
+- **WHEN** a signer asks for a passkey challenge for a request
+- **THEN** it is 16 random bytes followed by the envelope's SHA-256, for the version of the request they were shown (If-Match)
+- **AND** it is bound to their session, the organisation and the request, and answered once within 5 minutes
+- **AND** an approval or rejection that fails leaves it unused, since the answer is recorded with the signature
+
+#### Scenario: The database keeps the passkey's answer (rev 0.44)
+- **WHEN** a passkey-signed approval is recorded
+- **THEN** it is the signer's answer, by their own live passkey, to a challenge over that organisation's, request's and envelope's hash
+- **AND** the signature keeps the passkey and the assertion, which never change
+
 ### Requirement: FR-APR-04 Step-up for high-risk approvals
 The system SHALL require step-up authentication (passkey or TOTP) for high-risk approvals.
 

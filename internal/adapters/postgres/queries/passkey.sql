@@ -25,3 +25,11 @@ SELECT fyniq.session_step_up(sqlc.arg(challenge_id)::uuid, sqlc.arg(session_hash
 
 -- name: RevokePasskey :one
 SELECT fyniq.webauthn_credential_revoke(sqlc.arg(user_id)::uuid, sqlc.arg(id)::uuid, sqlc.arg(now)::timestamptz)::boolean AS revoked;
+
+-- name: IssueApprovalChallenge :one
+SELECT fyniq.webauthn_approval_challenge_issue(sqlc.arg(session_hash)::bytea, sqlc.arg(request_id)::uuid, sqlc.arg(envelope_hash)::bytea,
+  sqlc.arg(nonce)::bytea, sqlc.arg(now)::timestamptz, sqlc.arg(expires_at)::timestamptz)::uuid AS id;
+
+-- name: AnswerApprovalChallenge :exec
+SELECT fyniq.webauthn_approval_answer(sqlc.arg(challenge_id)::uuid, sqlc.arg(session_hash)::bytea, sqlc.arg(passkey_id)::uuid,
+  sqlc.arg(sign_count)::bigint, sqlc.arg(backup_state)::boolean, sqlc.arg(now)::timestamptz);

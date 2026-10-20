@@ -37,13 +37,17 @@ SELECT id, version, status_reason FROM fyniq.approval_request
  ORDER BY id;
 
 -- name: InsertApprovalSignature :one
-INSERT INTO fyniq.approval_signature (request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason)
+INSERT INTO fyniq.approval_signature (request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason,
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature)
 VALUES (sqlc.arg(request_id), sqlc.arg(step), sqlc.arg(signer), sqlc.arg(decision), sqlc.arg(envelope_hash), sqlc.arg(mfa_method),
-  sqlc.arg(mfa_at), sqlc.arg(signed_at), sqlc.narg(reason))
-RETURNING id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at;
+  sqlc.arg(mfa_at), sqlc.arg(signed_at), sqlc.narg(reason), sqlc.narg(passkey_challenge_id), sqlc.narg(passkey_id),
+  sqlc.narg(authenticator_data), sqlc.narg(client_data), sqlc.narg(assertion_signature))
+RETURNING id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at,
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature;
 
 -- name: ApprovalSignatures :many
-SELECT id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at
+SELECT id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at,
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature
   FROM fyniq.approval_signature WHERE request_id = sqlc.arg(request_id)
  ORDER BY signed_at, id;
 

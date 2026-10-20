@@ -167,9 +167,29 @@ export interface paths {
         put?: never;
         /**
          * Approve a request
-         * @description Signs the request's current step and, once every step of its policy has its quorum, carries out its change in the same transaction (FR-APR-01, FR-APR-03, FR-APR-10, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, is one the current step names (APR-11), did not ask for it and has not signed it; and envelope_hash must be the request's, and If-Match its ETag. The envelope is rebuilt from current data with its rows locked: if the record, any dependency or the approval policy changed since the request, nothing executes, the request becomes void and APR-04 says so (FR-APR-05); if an earlier approver no longer holds the right their step needs, APR-10 does. Side effects: the signed approval and its audit event; on the last step, the request approved, the change itself and their audit events, which name the approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Signs the request's current step and, once every step of its policy has its quorum, carries out its change in the same transaction (FR-APR-01, FR-APR-03, FR-APR-10, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, is one the current step names (APR-11), did not ask for it and has not signed it; and envelope_hash must be the request's, and If-Match its ETag. With passkey, your passkey's answer to the request's challenge signs the envelope's hash itself instead of your session's step-up, and the signature keeps the assertion (FR-APR-03, rev 0.44). The envelope is rebuilt from current data with its rows locked: if the record, any dependency or the approval policy changed since the request, nothing executes, the request becomes void and APR-04 says so (FR-APR-05); if an earlier approver no longer holds the right their step needs, APR-10 does. Side effects: the signed approval and its audit event; on the last step, the request approved, the change itself and their audit events, which name the approval. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["approveApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/approvals/{approval_id}/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start signing a request with a passkey
+         * @description A challenge for signing the request with your passkey: 16 random bytes followed by the SHA-256 of the request's envelope, so your authenticator signs exactly what you approve or reject (FR-APR-03). Pass the options to navigator.credentials.get, then send the answer with approve or reject, within 5 minutes; it works once, for this request, organisation and envelope only (G4-056). Needs a person signed in to Fyniq in the browser who may decide the request now, and If-Match with the request's ETag, so the challenge is over the version you were shown. Side effects: the challenge, kept for the answer; nothing else.
+         */
+        post: operations["challengeApproval"];
         delete?: never;
         options?: never;
         head?: never;
@@ -187,7 +207,7 @@ export interface paths {
         put?: never;
         /**
          * Reject a request
-         * @description Signs a rejection of the request's envelope at its current step, with your reason; the change never executes (FR-APR-03, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, is one the current step names, did not ask for it and has not signed it; and envelope_hash must be the request's, and If-Match its ETag. Side effects: the signed rejection, the request rejected and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Signs a rejection of the request's envelope at its current step, with your reason; the change never executes (FR-APR-03, FM-1). Needs a person signed in who passed step-up in the last 5 minutes, holds the approval right (A) on the object's Appendix D row, is one the current step names, did not ask for it and has not signed it; and envelope_hash must be the request's, and If-Match its ETag. With passkey, your passkey signs the envelope's hash itself (FR-APR-03, rev 0.44). Side effects: the signed rejection, the request rejected and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["rejectApproval"];
         delete?: never;
@@ -1533,6 +1553,8 @@ export interface components {
              * @example 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
              */
             envelope_hash: string;
+            /** @description Sign with a passkey: your authenticator's answer to this request's challenge (POST /v1/approvals/{approval_id}/challenge). Without it, your session's step-up in the last 5 minutes signs (rev 0.44). */
+            passkey?: components["schemas"]["ApprovalPasskey"];
             /**
              * @description Why you reject it: needed to reject.
              * @example Not this month
@@ -1564,6 +1586,26 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
              */
             next_cursor?: string;
+        };
+        ApprovalPasskey: {
+            /**
+             * Format: uuid
+             * @description The request's challenge it answers.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f41
+             */
+            challenge_id: string;
+            /**
+             * @description The PublicKeyCredential navigator.credentials.get returned, as its toJSON() writes it.
+             * @example {
+             *       "publicKey": {
+             *         "challenge": "c2FtcGxlLWNoYWxsZW5nZS0zMi1ieXRlcy1sb25nLXh4",
+             *         "rpId": "fyniq.example.com"
+             *       }
+             *     }
+             */
+            credential: {
+                [key: string]: unknown;
+            };
         };
         ApprovalPolicy: {
             /**
@@ -1711,11 +1753,17 @@ export interface components {
              */
             decision: "approve" | "reject";
             /**
-             * @description The second factor that proved it was them: session_step_up is the step-up of their session; passkey and TOTP approvals arrive with p1-users-roles.
+             * @description The second factor that proved it was them: session_step_up is the step-up of their session (at sign-in or with a passkey); passkey is a passkey that signed this request's envelope hash itself (FR-APR-03, rev 0.44).
              * @example session_step_up
              * @enum {string}
              */
             method: "session_step_up" | "passkey" | "totp";
+            /**
+             * Format: uuid
+             * @description For a passkey signature: the passkey that signed the envelope's hash; its assertion is kept so it can be verified again (FR-APR-03).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40
+             */
+            passkey_id?: string;
             /**
              * @description A rejection's reason.
              * @example Not this month
@@ -5435,7 +5483,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-09` This approval policy is fixed; `APR-10` An earlier approver no longer holds the right: nothing was changed; `MEM-06` The last Owner keeps the role; `MEM-07` The member holds that role already, or does not hold it; `PACK-07` This release cannot read that pack version; `PACK-09` A pinned statutory test fails; `PACK-10` Activating it needs a second approver; `PACK-13` That pack version is activated already; `SET-04` Set by the platform; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-MEMBER-01` The membership or role cannot change that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5471,7 +5519,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5513,7 +5561,134 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    challengeApproval: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+            };
+            path: {
+                /** @description The request's ID. */
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyChallenge"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `APR-01` You asked for it, so another person approves it; `APR-05` You hold no approval right on it; `APR-11` The request's current step needs someone else. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-PASSKEY-02` You have no passkey; `API-PASSKEY-03` The challenge cannot be used; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-10` An earlier approver no longer holds the right: nothing was changed; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -5599,7 +5774,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-10` An earlier approver no longer holds the right: nothing was changed; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-PASSKEY-03` The challenge cannot be used; `APR-02` The request was decided already; `APR-03` The request expired; `APR-04` The envelope differs: nothing was changed; `APR-06` A change to it is waiting for approval already; `APR-10` An earlier approver no longer holds the right: nothing was changed; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PASSKEY-01` The passkey or its challenge cannot be used that way. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5635,7 +5810,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-07` A rejection needs its reason. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -5677,7 +5852,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;
