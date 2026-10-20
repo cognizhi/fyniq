@@ -3,7 +3,7 @@ key: accounting.journals
 title: Prepare, post and reverse journals
 mode: expert
 roles: [accountant, tax_agent, controller, owner, auditor]
-requirements: [FR-GL-01, FR-GL-12, FR-INT-14, ENG-24]
+requirements: [FR-GL-01, FR-GL-12, FR-INT-14, ENG-24, FM-1, FM-2, SOD-3]
 status: draft            # written with the journal screens (P1, p1-general-ledger-close); reviewed with the accountant
 ---
 
@@ -18,8 +18,9 @@ credits, and it posts on its date.
 - Each journal shows its number, date, description, total (its debits), who prepared it, who posted
   it and its status: **Draft**, **Posted** or **Reversed**.
 - Choose a status to narrow the list, or type part of a description or number in the search box.
-- An Accountant or a Tax agent prepares journals. Only an Accountant posts and reverses them.
-  Everyone else with a finance role can read them. The pages are in Expert mode.
+- An Accountant or a Tax agent prepares journals. Only an Accountant posts and reverses them, and a
+  Controller approves the ones that need a second person. Everyone else with a finance role can
+  read them. The pages are in Expert mode.
 
 ## Prepare a journal
 
@@ -47,6 +48,20 @@ unit buys.
 
 Fyniq records who posted it and when. Once posted, a journal is never edited.
 
+## Journals above the self-approval threshold
+
+A journal whose debits are above the self-approval threshold (S$2,000 unless your company changed it
+in **Settings → Organisation**) posts only once another person approves it.
+
+1. Open the draft and select **Post**. Fyniq says another person approves this journal.
+2. Select **Ask for approval** and confirm it's you.
+3. The journal shows that a request waits. A Controller who did not prepare the journal approves it
+   in **Inbox → To approve**, and it posts then, with them as the one who posted it.
+
+Changing the draft while the request waits cancels the request: ask again once it is ready. In
+Founder mode a journal at or below the threshold posts at once; it is flagged as self-approved, and
+another founder reviews it in the weekly review.
+
 ## Reverse a posted journal
 
 1. Open the posted journal.
@@ -56,6 +71,10 @@ Fyniq records who posted it and when. Once posted, a journal is never edited.
 
 A reversing entry with every line the other way round posts on that date. The journal stays in the
 books, marked **Reversed**, and the audit trail keeps your reason. A journal is reversed once.
+
+In Founder mode a reversal needs a second person: the button says **Ask to reverse**. Fill in the
+date and the reason the same way and select **Ask to reverse**; another founder approves it in
+**Inbox → To approve**, and the reversal posts then.
 
 ## Common problems
 
@@ -69,9 +88,14 @@ books, marked **Reversed**, and the audit trail keeps your reason. A journal is 
 | A rate is missing, or entered on a base-currency line (LEDGER-07, LEDGER-13) | Enter a rate only on a line in another currency |
 | A reversal dated before the journal (LEDGER-16) | Date the reversal on or after the journal's date |
 | The journal is not a draft (JOURNAL-02) | A posted journal is reversed, not changed |
+| Its debits are above the self-approval threshold (JOURNAL-07) | Select **Ask for approval** |
+| In Founder mode a reversal needs a second person (JOURNAL-08) | Select **Ask to reverse** |
+| You prepared this journal (JOURNAL-09) | Another person who did not prepare it approves it |
 
 ## Related
 
+- [Approve a change](approvals.md)
+- [Organisation settings: the self-approval threshold](organisation-settings.md)
 - [Open the financial year and close the periods](periods-and-close.md)
 - [Set up and keep the chart of accounts](chart-of-accounts.md)
 - [Read the general ledger](general-ledger.md)

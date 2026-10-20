@@ -228,6 +228,14 @@
       "label": "Reverse",
       "tooltip": "Post a reversing entry with every line the other way round, on a date you choose, with a reason."
     },
+    "journal.ask-approval": {
+      "label": "Ask for approval",
+      "tooltip": "Its debits are above the self-approval threshold: another person, who did not prepare it, approves it and it posts then."
+    },
+    "journal.ask-reverse": {
+      "label": "Ask to reverse",
+      "tooltip": "In Founder mode another founder approves a reversal first; it posts on the date you choose once they approve."
+    },
     "accounting.periods": {
       "label": "Periods and close",
       "tooltip": "The monthly periods of each financial year, open or closed; opening the next year and closing a month."

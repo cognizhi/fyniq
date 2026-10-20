@@ -165,6 +165,20 @@ export function ApprovalPage() {
             Asked for by {mine ? "you" : a.requested_by_name} on {dateTime(a.requested_at)}
             {pending ? ` · expires ${dateTime(a.expires_at)}` : a.decided_at ? ` · decided ${dateTime(a.decided_at)}` : ""}
           </p>
+          {a.object_type === "journal" && (
+            <p className="fy-small">
+              <Link to="/accounting/journals/$journalId" params={{ journalId: a.object_key }}>
+                Open the journal and its lines
+              </Link>
+            </p>
+          )}
+          {a.object_type === "period" && (
+            <p className="fy-small">
+              <Link to="/accounting/close/$periodId" params={{ periodId: a.object_key }}>
+                Open the period and its close
+              </Link>
+            </p>
+          )}
         </div>
         <div className="fy-pagehead__actions">
           <StatusChip status={a.status} />

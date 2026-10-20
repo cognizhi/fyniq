@@ -47,10 +47,10 @@ const entry = {
   ],
 };
 
-function page(session: Session) {
+function page(session: Session, org: Organisation = organisation) {
   return function Page() {
     return (
-      <SignedInProvider value={{ session, organisation, mode: "expert" }}>
+      <SignedInProvider value={{ session, organisation: org, mode: "expert" }}>
         <JournalPage />
       </SignedInProvider>
     );
@@ -195,13 +195,63 @@ describe("the journal page", () => {
     expect(screen.getByRole("link", { name: /Open the financial year/ }).getAttribute("href")).toBe("/accounting/close");
   });
 
-  it("reverses a posted journal on a date, with a reason", async () => {
+  // req: FR-GL-01
+  // req: FM-2
+  it("asks for approval to post a journal above the self-approval threshold, then shows the request waiting", async () => {
+    let asked = false;
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": () => ({ status: 200, body: asked ? { ...draft, approval_asked: "a-1" } : draft, headers: { ETag: `"2-draft"` } }),
+      "POST /v1/journals/j1/post": problem(409, "JOURNAL-07", "The journal's debits are 2500.00 SGD, above the self-approval threshold of 2000.00.", "Ask for another person's approval to post it"),
+      "POST /v1/journals/j1/post-approval": () => {
+        asked = true;
+        return { status: 202, body: { id: "a-1", object_type: "journal", operation: "journal.post", status: "pending" } };
+      },
+    });
+    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    await screen.findByText("Prepared by Ah Kow");
+    fireEvent.click(screen.getAllByRole("button", { name: "Post" })[0]!);
+    expect(await screen.findByText("Another person approves this journal")).toBeTruthy();
+    expect(screen.getByText(/above the self-approval threshold of 2000.00/)).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "Ask for approval" }));
+    expect(await screen.findByText("Asked for approval: the journal posts when another person approves it.")).toBeTruthy();
+    const sent = seen.find((s) => s.path === "/v1/journals/j1/post-approval")!;
+    expect(sent.headers.get("If-Match")).toBe(`"2-draft"`);
+    expect(sent.headers.get("Idempotency-Key")).toBeTruthy();
+    expect((await screen.findByRole("link", { name: "See the request" })).getAttribute("href")).toBe("/approvals/a-1");
+    expect(screen.getByText("A request to post this journal waits for approval")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Post" })).toBeNull();
+  });
+
+  // req: FM-1
+  it("asks to reverse a posted journal in Founder mode, with the date and the reason", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: posted, headers: { ETag: `"2-posted"` } },
+      "POST /v1/journals/j1/reverse-approval": { status: 202, body: { id: "a-2", object_type: "journal", operation: "journal.reverse", status: "pending" } },
+    });
+    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    await screen.findByRole("table", { name: "Lines as entered" });
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask to reverse…" })[0]!);
+    const dialog = await screen.findByRole("dialog", { name: "Ask to reverse this journal?" });
+    fireEvent.change(within(dialog).getByLabelText("Date of the reversing entry"), { target: { value: "2026-11-01" } });
+    fireEvent.change(within(dialog).getByLabelText("Why it is reversed"), { target: { value: "Posted to the wrong account" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask to reverse" }));
+    expect(await screen.findByText("Asked for approval: the reversal posts when another founder approves it.")).toBeTruthy();
+    const sent = seen.find((s) => s.method === "POST")!;
+    expect(sent.path).toBe("/v1/journals/j1/reverse-approval");
+    expect(sent.body).toEqual({ date: "2026-11-01", reason: "Posted to the wrong account" });
+    expect(sent.headers.get("If-Match")).toBe(`"2-posted"`);
+  });
+
+  it("reverses a posted journal on a date, with a reason, in Standard mode", async () => {
     answer({
       "GET /v1/accounts": accounts,
       "GET /v1/journals/j1": { status: 200, body: posted, headers: { ETag: `"2-posted"` } },
       "POST /v1/journals/j1/reverse": { status: 200, body: { journal: { ...posted, status: "reversed" }, entry: { ...entry, posting_date: "2026-11-01" } } },
     });
-    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    renderPage(page(accountant, { ...organisation, team_mode: "standard" }), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
     const lines = await screen.findByRole("table", { name: "Lines as entered" });
     expect(within(lines).getByText("6110 Rent")).toBeTruthy();
     expect(screen.queryByLabelText("Line 1: Account")).toBeNull(); // posted: never edited

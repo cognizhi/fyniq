@@ -2,9 +2,9 @@
 key: accounting.journals
 type: task
 title: Prepare, post and reverse journals
-summary: Prepare a manual journal and save it as a draft, check what posting writes, post it, and reverse a posted journal with a reason
+summary: Prepare a journal as a draft, check and post it, ask for approval above the self-approval threshold, and reverse a posted journal with a reason
 sources:
-  - docs/user-guide/journals.md sha256:f3e44d7eb31d58fc7d425841796415d5657d2fc0ed028f09626a650200f0ec98
+  - docs/user-guide/journals.md sha256:ebc3416b699bb0b14fbc9ddb37800e506adf927c482579378d8fdf7013259eb7
 data_class: general
 taint: trusted
 status: draft
@@ -21,6 +21,8 @@ aliases:
   - reverse a journal
   - void a journal
   - draft journal
+  - self-approval threshold
+  - journal approval
 ---
 
 # Prepare, post and reverse journals
@@ -30,7 +32,7 @@ aliases:
 - **Accounting → Journals** (Expert mode) lists the manual journals, newest first, each with its number, date, description, total (its debits), who prepared it, who posted it and its status: **Draft**, **Posted** or **Reversed**.
 - A journal moves amounts between accounts (an accrual, a correction, a reclassification); its debits equal its credits, and it posts on its date.
 - Narrow the list by status, or search part of a description or number.
-- An Accountant or a Tax agent prepares journals; only an Accountant posts and reverses them; others with a finance role can read them.
+- An Accountant or a Tax agent prepares journals; only an Accountant posts and reverses them, and a Controller approves the ones that need a second person; others with a finance role can read them.
 
 (src: docs/user-guide/journals.md#what-it-is)
 
@@ -51,10 +53,21 @@ aliases:
 
 (src: docs/user-guide/journals.md#check-and-post-a-journal)
 
+## Journals above the self-approval threshold
+
+- A journal whose debits are above the self-approval threshold (S$2,000 unless the company changed it in **Settings → Organisation**, [[settings.organisation]]) posts only once another person approves it.
+- **Post** says another person approves this journal; select **Ask for approval** and confirm it's you; the journal then shows that a request waits.
+- A Controller who did not prepare the journal approves it in **Inbox → To approve** ([[approvals.decide]]), and it posts then, with them as the one who posted it.
+- Changing the draft while the request waits cancels it: ask again once it is ready.
+- In Founder mode a journal at or below the threshold posts at once, flagged as self-approved, and another founder reviews it in the weekly review.
+
+(src: docs/user-guide/journals.md#journals-above-the-self-approval-threshold)
+
 ## Reverse a posted journal
 
 - Open it, select **Reverse**, choose the date of the reversing entry (on or after the journal's date) and say why, then **Reverse**.
 - A reversing entry with every line the other way round posts on that date; the journal stays in the books, marked **Reversed**, and the audit trail keeps the reason. A journal is reversed once.
+- In Founder mode a reversal needs a second person: the button says **Ask to reverse**; give the date and the reason the same way, and another founder approves it in **Inbox → To approve**; the reversal posts then.
 - Related: opening the financial year so journals can post ([[accounting.periods]]); the accounts journals post to ([[accounting.chart]]); the lines they post, in the general ledger ([[reports.general-ledger]]).
 
 (src: docs/user-guide/journals.md#reverse-a-posted-journal) (src: docs/user-guide/journals.md#related)
@@ -69,5 +82,8 @@ aliases:
 - LEDGER-07 or LEDGER-13: a rate only on a line in another currency.
 - LEDGER-16: date a reversal on or after the journal's date.
 - JOURNAL-02, not a draft: a posted journal is reversed, not changed.
+- JOURNAL-07, its debits are above the self-approval threshold: select **Ask for approval**.
+- JOURNAL-08, in Founder mode a reversal needs a second person: select **Ask to reverse**.
+- JOURNAL-09, you prepared this journal: another person who did not prepare it approves it.
 
 (src: docs/user-guide/journals.md#common-problems)

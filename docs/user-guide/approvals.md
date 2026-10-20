@@ -3,7 +3,7 @@ key: approvals.decide
 title: Approve a change
 mode: basic
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [FM-1, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10, FM-3]
+requirements: [FM-1, FM-2, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10, FM-3]
 ---
 
 # Approve a change
@@ -11,8 +11,9 @@ requirements: [FM-1, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-A
 ## What it is
 
 Some changes are too important for one person to make alone: settings such as thresholds,
-retention and the AI assistant, activating a statutory pack version, and, once the company has a
-second member, adding or ending a role and inviting someone. Fyniq asks for approval instead of making the change. Another person
+retention and the AI assistant, activating a statutory pack version, posting a journal above the
+self-approval threshold, reversing a journal in Founder mode, and, once the company has a second
+member, adding or ending a role and inviting someone. Fyniq asks for approval instead of making the change. Another person
 who approves that kind of change, such as an Owner, then approves or rejects it. Nobody approves
 their own request.
 
@@ -56,8 +57,9 @@ can withdraw a request; anyone else who disagrees rejects it with a reason.
 
 ## Review high-risk actions
 
-Every high-risk change is logged when it is made: each change another person approved, and each role
-or invitation the Owner set up alone before a second person joined. Once a week, another founder
+Every high-risk change is logged when it is made: each change another person approved, each role
+or invitation the Owner set up alone before a second person joined, and, in Founder mode, each
+journal a founder posted alone at or below the self-approval threshold. Once a week, another founder
 reviews the log.
 
 1. Open **Inbox → Weekly review**. The **Review log** lists the actions nobody has reviewed yet,

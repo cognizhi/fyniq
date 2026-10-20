@@ -95,8 +95,12 @@
   and rate, the balance per currency added up exactly as typed), checks it with a dry run that shows the entry in the
   base currency, posts it, and reverses a posted journal with a date and a reason; a refusal for want of a period links
   to Periods and close. A new Accounting page lists the workspace's pages. Guide `journals.md` → kb `accounting.journals`.
-  **Left:** the Recurring tab and auto-reversal (2.4), approval above the threshold (2.2), evidence on the editor,
-  dimensions (`p1-organisation-chart` 3.3), the locked-period banner (1.2).)
+  Approvals (2.2, rev 0.53): a post refused above the self-approval threshold offers **Ask for approval**; in Founder
+  mode **Ask to reverse** asks for the reversal with its date and reason; a journal with a request waiting says so and
+  links to it, and the approval page links back to the journal. Guide `journals.md` and `approvals.md` → kb
+  `accounting.journals` and `approvals.decide`.
+  **Left:** the Recurring tab and auto-reversal (2.4), evidence on the editor, dimensions (`p1-organisation-chart`
+  3.3), the locked-period banner (1.2).)
 - [ ] 7.2 Build opening-balances and period-close as designed, with the periods of the year on the close page
   (21 Oct 2026, part: Accounting › Periods and close lists the periods by financial year, open or closed, and opens the
   next year; Home's set-up checklist gains "Open the first financial year". Guide `periods-and-close.md` → kb
