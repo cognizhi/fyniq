@@ -28,9 +28,11 @@ approve that kind of change, other than the person who asked.
 
 ## Change a policy
 
-1. Open **Settings → Approval policies** and choose the kind of change.
-2. Select **Change policy** and set the steps.
-3. Confirm it's you with your passkey or authenticator app.
+1. Open **Settings → Approval policies** (Expert mode) and find the kind of change.
+2. Select **Change policy** and set the steps: how many approvals each needs, and who may approve.
+   **Add a step** adds the next one.
+3. Select **Ask for this policy**, and confirm it's you with your passkey or authenticator app when
+   Fyniq asks.
 4. Fyniq shows **Waiting for approval**. The policy has not changed yet.
 
 An Administrator asks for the change. An Owner or a Controller who did not ask for it approves

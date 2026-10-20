@@ -117,6 +117,11 @@
   signatures, the envelope's hash with copy; Approve and Reject open the confirmation, which signs with a passkey over
   the challenge for the version shown, or with the session's step-up when there is no passkey; a rejection needs a
   reason; the requester withdraws) and the review log (`ReviewLog.tsx`, FM-3). Tests `approvals.test.tsx`.
-  **Left:** accountant-review, approval-policies, bank-details-change, payment-batch, personal-approvals and team-mode;
-  the Inbox's keyboard triage (J/K, A opens the confirmation) with p1-app-shell 2.2.)
+  Then team-mode (`screens/settings/TeamMode.tsx`: the mode as cards, the conflicts now, the switch with a reason
+  per member's conflict over the version shown, the reasons kept and the history) and approval-policies
+  (`ApprovalPolicies.tsx`: each kind of change with its steps; a change sets 1 to 5 steps, each a quorum narrowed to
+  roles or named members, over the policy's ETag; the fixed policy stays fixed). Tests `TeamMode.test.tsx`.
+  **Left:** accountant-review, bank-details-change, payment-batch and personal-approvals with their modules; Founder
+  mode's other controls (FM-4…9) and break-glass on team-mode as they are built; the Inbox's keyboard triage (J/K, A
+  opens the confirmation) with p1-app-shell 2.2.)
 - [ ] 5.2 Finish with `make check` and `make test`

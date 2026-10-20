@@ -30,10 +30,11 @@ and also posting or approving the books.
 
 ## Switch the team mode
 
-1. Open **Settings → Team mode** and choose the mode.
+1. Open **Settings → Team mode** (Expert mode) and choose the mode.
 2. For Standard mode, deal with each conflict listed: end one of the member's roles, or give the
    reason they keep both. Withdraw any invitation whose roles conflict.
-3. Confirm it's you with your passkey or authenticator app.
+3. Select **Ask to switch**, and confirm it's you with your passkey or authenticator app when
+   Fyniq asks.
 4. Fyniq shows **Waiting for approval**. The mode has not changed yet.
 
 An Administrator asks for the switch. An Owner who did not ask for it approves it

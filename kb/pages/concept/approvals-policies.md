@@ -4,7 +4,7 @@ type: concept
 title: Approval policies: who approves each kind of change
 summary: What an approval policy is, what its steps can say, how a policy is changed and approved, and what happens to waiting requests when it changes
 sources:
-  - docs/user-guide/approval-policies.md sha256:3ffd2d6be165eec729aae9b2c0831955e088564dfe7c612036b4c377ecb4a3c7
+  - docs/user-guide/approval-policies.md sha256:7de035d79ac26073652fe74d029e93b99111d59aacff936f50d945800d8a0b96
 data_class: general
 taint: trusted
 status: published
@@ -41,7 +41,7 @@ aliases:
 
 ## Change a policy
 
-- **Settings → Approval policies**, choose the kind of change, select **Change policy**, set the steps and confirm it's you.
+- **Settings → Approval policies** (Expert mode), find the kind of change and select **Change policy**; set each step's approvals and who may approve (**Add a step** adds one), then **Ask for this policy** and confirm it's you if asked.
 - Fyniq shows **Waiting for approval**; the policy has not changed yet.
 - An Administrator asks; an Owner or a Controller who did not ask approves it, like any other change.
 - Nobody can change who approves policy changes themselves, so a change can never lock the company out.
