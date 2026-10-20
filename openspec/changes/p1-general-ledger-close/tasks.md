@@ -54,7 +54,17 @@
 ## 7. Screens
 
 - [ ] 7.1 Build journals, the journal editor and the journal record page as designed. Add help keys, tooltips and `docs/user-guide/` pages compiled into `kb/`
+  (21 Oct 2026, part: Accounting › Journals lists journals newest first with status filters and search, debit totals,
+  preparer and poster; the journal page prepares a new journal or changes a draft (lines with debit or credit, currency
+  and rate, the balance per currency added up exactly as typed), checks it with a dry run that shows the entry in the
+  base currency, posts it, and reverses a posted journal with a date and a reason; a refusal for want of a period links
+  to Periods and close. A new Accounting page lists the workspace's pages. Guide `journals.md` → kb `accounting.journals`.
+  **Left:** the Recurring tab and auto-reversal (2.4), approval above the threshold (2.2), evidence on the editor,
+  dimensions (`p1-organisation-chart` 3.3), the locked-period banner (1.2).)
 - [ ] 7.2 Build opening-balances and period-close as designed, with the periods of the year on the close page
+  (21 Oct 2026, part: Accounting › Periods and close lists the periods by financial year, open or closed, and opens the
+  next year; Home's set-up checklist gains "Open the first financial year". Guide `periods-and-close.md` → kb
+  `accounting.periods`. **Left:** the close itself (1.2, 1.3) and opening balances (3.1).)
 - [ ] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
 - [ ] 7.4 Build schedules with 6.4
 

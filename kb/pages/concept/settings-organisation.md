@@ -4,14 +4,14 @@ type: concept
 title: Organisation settings and their recommended values
 summary: The company-wide settings (features, payment terms, settlement tolerances, capitalisation threshold, data region, retention) and the value each ships with
 sources:
-  - docs/user-guide/organisation-settings.md sha256:b97412f3d7c4609c3e519d4b1669d5d7467462f6a0851fcf8248de1f25557e2e
+  - docs/user-guide/organisation-settings.md sha256:f374e8f2e9205e304168f6468e9098e08e4802c0b2b07d7f9c9fad2f38e41320
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-20
+compiled_at: 2026-10-21
 aliases:
   - feature switches
   - default settings
