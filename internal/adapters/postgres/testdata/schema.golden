@@ -445,6 +445,29 @@ user_session | last_seen_at | timestamp with time zone | not null |
 user_session | expires_at | timestamp with time zone | not null | 
 user_session | step_up_at | timestamp with time zone | null | 
 user_session | ended_at | timestamp with time zone | null | 
+user_session | step_up_method | text | null | 
+webauthn_challenge | id | uuid | not null | uuidv7()
+webauthn_challenge | user_id | uuid | not null | 
+webauthn_challenge | purpose | text | not null | 
+webauthn_challenge | challenge | bytea | not null | 
+webauthn_challenge | session_hash | bytea | not null | 
+webauthn_challenge | created_at | timestamp with time zone | not null | 
+webauthn_challenge | expires_at | timestamp with time zone | not null | 
+webauthn_challenge | taken_at | timestamp with time zone | null | 
+webauthn_challenge | answered_by | uuid | null | 
+webauthn_credential | id | uuid | not null | uuidv7()
+webauthn_credential | user_id | uuid | not null | 
+webauthn_credential | credential_id | bytea | not null | 
+webauthn_credential | public_key | bytea | not null | 
+webauthn_credential | sign_count | bigint | not null | 
+webauthn_credential | aaguid | bytea | not null | 
+webauthn_credential | transports | text[] | not null | 
+webauthn_credential | backup_eligible | boolean | not null | 
+webauthn_credential | backup_state | boolean | not null | 
+webauthn_credential | name | text | not null | 
+webauthn_credential | created_at | timestamp with time zone | not null | 
+webauthn_credential | last_used_at | timestamp with time zone | null | 
+webauthn_credential | revoked_at | timestamp with time zone | null | 
 
 ## constraints
 account | account_attribute_lengths | CHECK ((((length(report_group) >= 1) AND (length(report_group) <= 60)) AND ((length(cash_flow_line) >= 1) AND (length(cash_flow_line) <= 60)) AND ((length(guidance) >= 1) AND (length(guidance) <= 500))))
@@ -1121,12 +1144,53 @@ user_session | user_session_pkey | PRIMARY KEY (token_hash)
 user_session | user_session_provider_length | CHECK (((length(provider) >= 1) AND (length(provider) <= 100)))
 user_session | user_session_provider_not_null | NOT NULL provider
 user_session | user_session_seen_after_start | CHECK ((last_seen_at >= created_at))
-user_session | user_session_step_up_before_start | CHECK ((step_up_at <= created_at))
+user_session | user_session_step_up_method | CHECK ((((step_up_at IS NULL) AND (step_up_method IS NULL)) OR ((step_up_method = 'sign_in'::text) AND (step_up_at <= created_at)) OR ((step_up_method = 'passkey'::text) AND (step_up_at >= created_at))))
 user_session | user_session_subject_length | CHECK (((length(subject) >= 1) AND (length(subject) <= 500)))
 user_session | user_session_subject_not_null | NOT NULL subject
 user_session | user_session_token_hash_not_null | NOT NULL token_hash
 user_session | user_session_token_sha256 | CHECK ((length(token_hash) = 32))
 user_session | user_session_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+webauthn_challenge | webauthn_challenge_answer_fkey | FOREIGN KEY (answered_by) REFERENCES webauthn_credential(id)
+webauthn_challenge | webauthn_challenge_answered_once_taken | CHECK (((answered_by IS NULL) OR (taken_at IS NOT NULL)))
+webauthn_challenge | webauthn_challenge_challenge_not_null | NOT NULL challenge
+webauthn_challenge | webauthn_challenge_created_at_not_null | NOT NULL created_at
+webauthn_challenge | webauthn_challenge_expires_at_not_null | NOT NULL expires_at
+webauthn_challenge | webauthn_challenge_id_not_null | NOT NULL id
+webauthn_challenge | webauthn_challenge_lifetime | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:05:00'::interval))))
+webauthn_challenge | webauthn_challenge_once | UNIQUE (challenge)
+webauthn_challenge | webauthn_challenge_pkey | PRIMARY KEY (id)
+webauthn_challenge | webauthn_challenge_purpose_known | CHECK ((purpose = ANY (ARRAY['register'::text, 'step_up'::text])))
+webauthn_challenge | webauthn_challenge_purpose_not_null | NOT NULL purpose
+webauthn_challenge | webauthn_challenge_random | CHECK ((length(challenge) = 32))
+webauthn_challenge | webauthn_challenge_session_fkey | FOREIGN KEY (session_hash) REFERENCES user_session(token_hash)
+webauthn_challenge | webauthn_challenge_session_hash_not_null | NOT NULL session_hash
+webauthn_challenge | webauthn_challenge_taken_in_time | CHECK (((taken_at >= created_at) AND (taken_at < expires_at)))
+webauthn_challenge | webauthn_challenge_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+webauthn_challenge | webauthn_challenge_user_id_not_null | NOT NULL user_id
+webauthn_credential | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+webauthn_credential | webauthn_credential_aaguid_length | CHECK ((length(aaguid) = 16))
+webauthn_credential | webauthn_credential_aaguid_not_null | NOT NULL aaguid
+webauthn_credential | webauthn_credential_backup_eligible_not_null | NOT NULL backup_eligible
+webauthn_credential | webauthn_credential_backup_flags | CHECK ((backup_eligible OR (NOT backup_state)))
+webauthn_credential | webauthn_credential_backup_state_not_null | NOT NULL backup_state
+webauthn_credential | webauthn_credential_count_range | CHECK (((sign_count >= 0) AND (sign_count <= '4294967295'::bigint)))
+webauthn_credential | webauthn_credential_created_at_not_null | NOT NULL created_at
+webauthn_credential | webauthn_credential_credential_id_not_null | NOT NULL credential_id
+webauthn_credential | webauthn_credential_id_length | CHECK (((length(credential_id) >= 16) AND (length(credential_id) <= 1023)))
+webauthn_credential | webauthn_credential_id_not_null | NOT NULL id
+webauthn_credential | webauthn_credential_key_length | CHECK (((length(public_key) >= 16) AND (length(public_key) <= 4096)))
+webauthn_credential | webauthn_credential_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+webauthn_credential | webauthn_credential_name_not_null | NOT NULL name
+webauthn_credential | webauthn_credential_once | UNIQUE (credential_id)
+webauthn_credential | webauthn_credential_pkey | PRIMARY KEY (id)
+webauthn_credential | webauthn_credential_public_key_not_null | NOT NULL public_key
+webauthn_credential | webauthn_credential_revoked_after_created | CHECK ((revoked_at >= created_at))
+webauthn_credential | webauthn_credential_sign_count_not_null | NOT NULL sign_count
+webauthn_credential | webauthn_credential_transports_few | CHECK ((cardinality(transports) <= 8))
+webauthn_credential | webauthn_credential_transports_not_null | NOT NULL transports
+webauthn_credential | webauthn_credential_used_after_created | CHECK ((last_used_at >= created_at))
+webauthn_credential | webauthn_credential_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+webauthn_credential | webauthn_credential_user_id_not_null | NOT NULL user_id
 
 ## indexes
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
@@ -1150,6 +1214,8 @@ CREATE INDEX super_admin_grant_used_by_idx ON fyniq.super_admin_grant USING btre
 CREATE INDEX super_admin_grant_user_idx ON fyniq.super_admin_grant USING btree (user_id, kind)
 CREATE INDEX user_identity_user_idx ON fyniq.user_identity USING btree (user_id)
 CREATE INDEX user_session_user_idx ON fyniq.user_session USING btree (user_id) WHERE (ended_at IS NULL)
+CREATE INDEX webauthn_challenge_session_idx ON fyniq.webauthn_challenge USING btree (session_hash)
+CREATE INDEX webauthn_credential_user_idx ON fyniq.webauthn_credential USING btree (user_id) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX account_code_key ON fyniq.account USING btree (organisation_id, code)
 CREATE UNIQUE INDEX account_pkey ON fyniq.account USING btree (organisation_id, id)
 CREATE UNIQUE INDEX app_user_pkey ON fyniq.app_user USING btree (user_id)
@@ -1223,6 +1289,10 @@ CREATE UNIQUE INDEX user_identity_pkey ON fyniq.user_identity USING btree (issue
 CREATE UNIQUE INDEX user_membership_pkey ON fyniq.user_membership USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_membership_user_key ON fyniq.user_membership USING btree (organisation_id, user_id)
 CREATE UNIQUE INDEX user_session_pkey ON fyniq.user_session USING btree (token_hash)
+CREATE UNIQUE INDEX webauthn_challenge_once ON fyniq.webauthn_challenge USING btree (challenge)
+CREATE UNIQUE INDEX webauthn_challenge_pkey ON fyniq.webauthn_challenge USING btree (id)
+CREATE UNIQUE INDEX webauthn_credential_once ON fyniq.webauthn_credential USING btree (credential_id)
+CREATE UNIQUE INDEX webauthn_credential_pkey ON fyniq.webauthn_credential USING btree (id)
 
 ## triggers
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
@@ -1237,6 +1307,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sod_override DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.statutory_pack_activation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('statutory_pack_activation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.team_mode DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('team_mode', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF revoked_at ON fyniq.webauthn_credential DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_passkey_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
@@ -1304,6 +1375,8 @@ CREATE TRIGGER super_admin_guard BEFORE INSERT OR UPDATE ON fyniq.super_admin FO
 CREATE TRIGGER super_admin_no_delete BEFORE DELETE OR TRUNCATE ON fyniq.super_admin FOR EACH STATEMENT EXECUTE FUNCTION super_admin_no_delete()
 CREATE TRIGGER team_mode_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.team_mode FOR EACH ROW EXECUTE FUNCTION team_mode_guard()
 CREATE TRIGGER team_mode_voids AFTER INSERT ON fyniq.team_mode FOR EACH ROW EXECUTE FUNCTION team_mode_voids()
+CREATE TRIGGER webauthn_challenge_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_challenge FOR EACH ROW EXECUTE FUNCTION webauthn_challenge_guard()
+CREATE TRIGGER webauthn_credential_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_credential FOR EACH ROW EXECUTE FUNCTION webauthn_credential_guard()
 
 ## policies
 account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1383,6 +1456,7 @@ journal_line_check() → trigger | security definer | v | search_path=pg_catalog
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
+live_session_user(p_session bytea, p_now timestamp with time zone) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1e4b8368d23fd003bc4e7f03c591ed49
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
 member_invitation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bbbd3cfc69b3ef2e3f033c058258160c
 member_names() → TABLE(user_id uuid, display_name text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9cbac1cf633afffdb29757fcd8b4615f
@@ -1402,15 +1476,17 @@ require_audit() → trigger | security definer | v | search_path=pg_catalog, fyn
 require_grant_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 10dc33c6231fa48667c6b95ffe2a04c4
 require_installation_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f9c3cec49b84db3497dc1be8e78f5180
 require_org() → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | e4d10f54e6dd65070850532ca0c115f5
+require_passkey_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 98f44603b09487ab03360525adf3b07c
 require_super_admin(p_user uuid) → void | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c817be869461445bf3e2ff0f94e5b146
 role_assignment_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 802ca214ce4476cbc77f0a6d8d36eb9e
 session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1fa557346732ac0de88a7a7d9407fedc
+session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8cc48851a6aca36c0bfbe73119b00f4e
 set_recovery_codes(p_user uuid, p_hashes bytea[], p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fa0ec035edd7677410f7fb3b8de88b51
 set_setup_code(p_hash bytea) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1401833c664206cef80dad827e0bd549
 setup_done() → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3872e1ae6024a26a11ca317f9463791c
 skip_job_slots(p_job text, p_slots timestamp with time zone[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8f2a4dc16b9baa48f2314e6e58698273
 sod_override_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e021a424a2fa6f356b652fb6b46c466d
-start_session(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 44d3805f8ddaf3abbe864b9aaf1ea4dc
+start_session(p_hash bytea, p_issuer text, p_subject text, p_provider text, p_now timestamp with time zone, p_expires timestamp with time zone, p_step_up_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 74b70160438f9f79c162de86f4e58276
 started_job_slot(p_job text, p_slot timestamp with time zone, p_execution text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7756c126ccf9097216eb5bc9be493cd7
 statutory_pack_activation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ef02590dc3dd32325e6222bb4d1789d
 statutory_pack_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c9f66a7d4fd181c1348790e46eaba6d7
@@ -1420,6 +1496,13 @@ super_admin_no_delete() → trigger | security invoker | v | search_path=pg_cata
 team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9
 team_mode_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1e8ab28fa03705e0a02ec3819d22d067
 user_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 2d20860879f5e546a6feda7d9fbefdfb
+webauthn_challenge_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 09b040e12226a3373493fdd3af45f5b9
+webauthn_challenge_issue(p_session bytea, p_purpose text, p_challenge bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 6c64585b79a192c2728e56ca75b7ab8d
+webauthn_challenge_take(p_id uuid, p_session bytea, p_purpose text, p_now timestamp with time zone, OUT challenge bytea, OUT user_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 01e0de215e07090f2e6ae0ea134e6d42
+webauthn_credential_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d545f5515df2b1d1c145ccbe12638b4
+webauthn_credential_register(p_challenge uuid, p_session bytea, p_credential_id bytea, p_public_key bytea, p_sign_count bigint, p_aaguid bytea, p_transports text[], p_backup_eligible boolean, p_backup_state boolean, p_name text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | fe0edf3f3b51b620dcdb81d2a2e76d14
+webauthn_credential_revoke(p_user uuid, p_credential uuid, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | db067f4b644964dd08eab59fb859a341
+webauthn_credentials(p_user uuid, p_all boolean) → SETOF webauthn_credential | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1b6421434f028a41ac3647af4f1fd4f1
 
 ## extensions
 btree_gist | fyniq_ext

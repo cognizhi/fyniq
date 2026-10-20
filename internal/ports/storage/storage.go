@@ -67,6 +67,7 @@ type UnitOfWork interface {
 	Approvals() Approvals
 	ApprovalPolicies() ApprovalPolicies
 	TeamModes() TeamModes
+	Passkeys() Passkeys
 	Packs() Packs
 	EmailMessages() EmailMessages
 	Outbox() Outbox
@@ -427,6 +428,7 @@ const (
 	CodeSequence       = "STORAGE-SEQUENCE-01" // a number sequence cannot be set that way, or a number is used already
 	CodeApproval       = "STORAGE-APPROVAL-01" // an approval or its request cannot be made or changed that way (FR-APR-03, FM-1)
 	CodePack           = "STORAGE-PACK-01"     // a loaded statutory pack version cannot change; an activation needs a second person
+	CodePasskey        = "STORAGE-PASSKEY-01"  // a passkey or its challenge cannot be made or used that way (FR-ADM-02, SEC-01)
 	// CodeEvidence: evidence keeps what it is, is removed only from a draft, is append-only once its record is
 	// not a draft, keeps a retain-until that only moves later, and is never deleted (FR-DOC-02, FR-DOC-07).
 	CodeEvidence = "STORAGE-EVIDENCE-01"

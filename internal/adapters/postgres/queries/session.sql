@@ -9,7 +9,8 @@ SELECT coalesce(s.issuer, '')::text AS issuer, coalesce(s.subject, '')::text AS 
        coalesce(s.organisation_id, '00000000-0000-0000-0000-000000000000')::uuid AS organisation_id,
        coalesce(s.roles, '{}')::text[] AS roles,
        coalesce(extract(epoch FROM s.step_up_at), 0)::bigint AS step_up_unix,
-       coalesce(s.expires_at, 'epoch')::timestamptz AS expires_at
+       coalesce(s.expires_at, 'epoch')::timestamptz AS expires_at,
+       coalesce(fyniq.session_step_up_method(sqlc.arg(token_hash)::bytea), '')::text AS step_up_method
   FROM fyniq.session_for(sqlc.arg(token_hash)::bytea, sqlc.arg(now)::timestamptz,
        sqlc.arg(idle_seconds)::bigint * interval '1 second') AS s;
 

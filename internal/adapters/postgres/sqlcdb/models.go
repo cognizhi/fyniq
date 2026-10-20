@@ -593,14 +593,43 @@ type FyniqUserMembership struct {
 }
 
 type FyniqUserSession struct {
-	TokenHash  []byte
-	Issuer     string
-	Subject    string
-	Provider   string
-	UserID     *uuid.UUID
-	CreatedAt  time.Time
-	LastSeenAt time.Time
-	ExpiresAt  time.Time
-	StepUpAt   *time.Time
-	EndedAt    *time.Time
+	TokenHash    []byte
+	Issuer       string
+	Subject      string
+	Provider     string
+	UserID       *uuid.UUID
+	CreatedAt    time.Time
+	LastSeenAt   time.Time
+	ExpiresAt    time.Time
+	StepUpAt     *time.Time
+	EndedAt      *time.Time
+	StepUpMethod *string
+}
+
+type FyniqWebauthnChallenge struct {
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Purpose     string
+	Challenge   []byte
+	SessionHash []byte
+	CreatedAt   time.Time
+	ExpiresAt   time.Time
+	TakenAt     *time.Time
+	AnsweredBy  *uuid.UUID
+}
+
+type FyniqWebauthnCredential struct {
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	CredentialID   []byte
+	PublicKey      []byte
+	SignCount      int64
+	Aaguid         []byte
+	Transports     []string
+	BackupEligible bool
+	BackupState    bool
+	Name           string
+	CreatedAt      time.Time
+	LastUsedAt     *time.Time
+	RevokedAt      *time.Time
 }

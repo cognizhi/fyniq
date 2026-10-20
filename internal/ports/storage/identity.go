@@ -139,7 +139,10 @@ type Session struct {
 	UserID, Organisation uuid.UUID
 	Roles                []string // the user's live roles in Organisation
 	StepUpAt             time.Time
-	ExpiresAt            time.Time
+	// StepUpMethod is how the session passed its last second factor: sign_in (at the provider, TOTP) or passkey;
+	// empty when it passed none.
+	StepUpMethod string
+	ExpiresAt    time.Time
 }
 
 // Members are an organisation's memberships and role assignments (§11.4). A role change goes with a

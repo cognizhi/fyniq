@@ -31,7 +31,7 @@ func (s *Store) Session(ctx context.Context, tokenHash []byte, now time.Time, id
 		return storage.Session{}, ports.ErrNotFound
 	}
 	out := storage.Session{Issuer: row.Issuer, Subject: row.Subject, Provider: row.Provider, UserID: row.UserID,
-		Organisation: row.OrganisationID, Roles: row.Roles, ExpiresAt: row.ExpiresAt}
+		Organisation: row.OrganisationID, Roles: row.Roles, ExpiresAt: row.ExpiresAt, StepUpMethod: row.StepUpMethod}
 	if row.StepUpUnix != 0 {
 		out.StepUpAt = time.Unix(row.StepUpUnix, 0).UTC()
 	}
