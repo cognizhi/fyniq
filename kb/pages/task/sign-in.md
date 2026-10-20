@@ -2,9 +2,9 @@
 key: auth.sign-in
 type: task
 title: Sign in to Fyniq, confirm it's you with a passkey, or join as the second Super admin
-summary: Signing in with a second factor, adding and using a passkey, when a session ends, joining as the second Super admin, and the sign-in errors
+summary: Signing in with a second factor, passkeys, your devices and sign-in emails, when a session ends, joining as the second Super admin, and errors
 sources:
-  - docs/user-guide/sign-in.md sha256:60fb4b8e182aeeb6ce36c17155a36aa15a23ea0d6e06314f60b84e463b58413a
+  - docs/user-guide/sign-in.md sha256:a55d4f7fce58a05672d6e249cc4bc184046c191ae392007d5368c9d1d91e4197
 data_class: general
 taint: trusted
 status: published
@@ -23,6 +23,10 @@ aliases:
   - 2FA
   - authenticator app
   - confirm it's you
+  - devices
+  - sign out everywhere
+  - lost phone
+  - sign-in email
 ---
 
 # Sign in to Fyniq, confirm it's you with a passkey, or join as the second Super admin
@@ -53,6 +57,15 @@ aliases:
 - Each request to confirm works once, for 5 minutes, and only on this site.
 
 (src: docs/user-guide/sign-in.md#confirm-its-you-with-a-passkey)
+
+## Your devices
+
+- Each sign-in sends an email, to the address the provider confirmed, with when, which provider and which browser; if it was not you, end that session.
+- **Your devices** lists every browser signed in, with when it signed in and was last used; the current one is marked.
+- **Sign out** next to a device ends that session, such as on a lost phone, at its next request.
+- **Sign out everywhere else** ends every session but the current one.
+
+(src: docs/user-guide/sign-in.md#your-devices)
 
 ## Joining as the second Super admin
 

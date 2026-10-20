@@ -35,3 +35,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | docs/user-guide/sign-in.md → auth.sign-in (passkeys and the mandatory second factor, PRD rev 0.43)
 
 ## [2026-10-20] compile | docs/user-guide/approvals.md → approvals.decide (approvals signed with a passkey, PRD rev 0.44)
+
+## [2026-10-20] compile | docs/user-guide/sign-in.md → auth.sign-in (your devices and sign-in emails, PRD rev 0.45)

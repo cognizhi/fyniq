@@ -50,6 +50,12 @@
   founders cannot add a passkey from the web app yet; the sign-in half of NFR-A11Y-05. Rev 0.44: approvals signed with a
   passkey assertion over the envelope hash (`p1-approval-engine` 1.2, G4-056) are built.)
 - [ ] 2.3 Sessions: idle and absolute timeouts, the device list, revocation and sign-in alerts through the outbox. Tests `// req: FR-ADM-03`, `// req: SEC-05` and `// req: SEC-08` extend P0's
+  (20 Oct 2026, provisional (PRD rev 0.45): migration 000049: `user_session.user_agent`, `start_session_from`,
+  `user_sessions` and `end_user_session`; `GET /v1/session/devices`, `DELETE /v1/session/devices/{device_id}` and `POST
+  /v1/session/devices/sign-out-others`, a device's ID derived from its session's hash; `signin.EmailAlert` emails each
+  sign-in to the provider-verified address through the outbox in the installation's organisation (email purpose
+  `sign_in_alert`). Test: `TestYourDevices`. **Left:** a configurable idle timeout (SEC-05), with the security
+  settings; the devices screen (4.1).)
 - [ ] 2.4 Sign-in providers by configuration, allowed domains and identity linking; the Super admin's scope; Owner succession with dual control. Tests `// req: FR-ADM-07`, `// req: FR-ADM-08` and `// req: FR-ADM-09` extend P0's
 - [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
 

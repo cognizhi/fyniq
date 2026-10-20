@@ -102,6 +102,21 @@ Source: PRD-001 §8.21 · Priority M · Phase P1
 - **WHEN** a user signs in
 - **THEN** a sign-in alert is sent to them
 
+#### Scenario: Your devices (rev 0.45)
+- **WHEN** a person opens their devices
+- **THEN** they see each browser they are signed in on, with its provider, browser, sign-in time and last use, the current one marked
+- **AND** a device's ID never shows the session behind it
+
+#### Scenario: Signing devices out (rev 0.45)
+- **WHEN** a person signs a device out, or all but the current one
+- **THEN** those sessions end at their next request, and the security log records each
+- **AND** nobody signs out another person's sessions
+
+#### Scenario: The sign-in alert by email (rev 0.45)
+- **WHEN** a person signs in with an address their provider verified, after first-run setup
+- **THEN** an email tells them when, with which provider and from which browser, and what to do if it was not them
+- **AND** it is queued through the outbox and recorded in the installation's trail
+
 ### Requirement: FR-ADM-04 Approval-gated administration
 Every change to the team mode, the approval policies, the AI settings and task catalogue, the statutory parameters or the integrations SHALL be approval-gated and audited.
 
