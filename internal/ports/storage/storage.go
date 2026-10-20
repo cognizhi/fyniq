@@ -65,6 +65,7 @@ type UnitOfWork interface {
 	Evidence() EvidenceFiles
 	Settings() Settings
 	Approvals() Approvals
+	ApprovalPolicies() ApprovalPolicies
 	Packs() Packs
 	EmailMessages() EmailMessages
 	Outbox() Outbox

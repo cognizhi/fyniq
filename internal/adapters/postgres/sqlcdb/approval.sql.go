@@ -68,8 +68,8 @@ const decideApprovalRequest = `-- name: DecideApprovalRequest :one
 UPDATE fyniq.approval_request SET status = $1, decided_at = $2, status_reason = $3,
   version = version + 1
  WHERE id = $4 AND version = $5 AND status = 'pending'
-RETURNING id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
-  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
+RETURNING id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
+  requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
 `
 
 type DecideApprovalRequestParams struct {
@@ -90,6 +90,7 @@ type DecideApprovalRequestRow struct {
 	Envelope           string
 	EnvelopeHash       []byte
 	PolicyVersion      string
+	PolicySteps        []byte
 	RequestedBy        uuid.UUID
 	RequestedAt        time.Time
 	RequesterMfaMethod string
@@ -120,6 +121,7 @@ func (q *Queries) DecideApprovalRequest(ctx context.Context, arg DecideApprovalR
 		&i.Envelope,
 		&i.EnvelopeHash,
 		&i.PolicyVersion,
+		&i.PolicySteps,
 		&i.RequestedBy,
 		&i.RequestedAt,
 		&i.RequesterMfaMethod,
@@ -134,8 +136,8 @@ func (q *Queries) DecideApprovalRequest(ctx context.Context, arg DecideApprovalR
 }
 
 const getApprovalRequest = `-- name: GetApprovalRequest :one
-SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
-  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
+SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
+  requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
   FROM fyniq.approval_request WHERE id = $1
 `
 
@@ -149,6 +151,7 @@ type GetApprovalRequestRow struct {
 	Envelope           string
 	EnvelopeHash       []byte
 	PolicyVersion      string
+	PolicySteps        []byte
 	RequestedBy        uuid.UUID
 	RequestedAt        time.Time
 	RequesterMfaMethod string
@@ -173,6 +176,7 @@ func (q *Queries) GetApprovalRequest(ctx context.Context, id uuid.UUID) (GetAppr
 		&i.Envelope,
 		&i.EnvelopeHash,
 		&i.PolicyVersion,
+		&i.PolicySteps,
 		&i.RequestedBy,
 		&i.RequestedAt,
 		&i.RequesterMfaMethod,
@@ -186,14 +190,61 @@ func (q *Queries) GetApprovalRequest(ctx context.Context, id uuid.UUID) (GetAppr
 	return i, err
 }
 
+const insertApprovalPolicy = `-- name: InsertApprovalPolicy :one
+INSERT INTO fyniq.approval_policy (object_type, version, steps, request_id, created_by, created_at)
+VALUES ($1, $2, $3::jsonb, $4, $5, $6)
+RETURNING id, object_type, version, steps, request_id, created_by, created_at
+`
+
+type InsertApprovalPolicyParams struct {
+	ObjectType string
+	Version    int32
+	Steps      []byte
+	RequestID  uuid.UUID
+	CreatedBy  uuid.UUID
+	CreatedAt  time.Time
+}
+
+type InsertApprovalPolicyRow struct {
+	ID         uuid.UUID
+	ObjectType string
+	Version    int32
+	Steps      []byte
+	RequestID  uuid.UUID
+	CreatedBy  uuid.UUID
+	CreatedAt  time.Time
+}
+
+func (q *Queries) InsertApprovalPolicy(ctx context.Context, arg InsertApprovalPolicyParams) (InsertApprovalPolicyRow, error) {
+	row := q.db.QueryRow(ctx, insertApprovalPolicy,
+		arg.ObjectType,
+		arg.Version,
+		arg.Steps,
+		arg.RequestID,
+		arg.CreatedBy,
+		arg.CreatedAt,
+	)
+	var i InsertApprovalPolicyRow
+	err := row.Scan(
+		&i.ID,
+		&i.ObjectType,
+		&i.Version,
+		&i.Steps,
+		&i.RequestID,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const insertApprovalRequest = `-- name: InsertApprovalRequest :one
 INSERT INTO fyniq.approval_request (object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version,
-  requested_by, requested_at, requester_mfa_method, requester_mfa_at, expires_at)
+  policy_steps, requested_by, requested_at, requester_mfa_method, requester_mfa_at, expires_at)
 VALUES ($1, $2, $3, $4, $5::jsonb, $6,
-  $7, $8, $9, $10, $11,
-  $12, $13)
-RETURNING id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
-  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
+  $7, $8, $9::jsonb, $10, $11,
+  $12, $13, $14)
+RETURNING id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
+  requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
 `
 
 type InsertApprovalRequestParams struct {
@@ -205,6 +256,7 @@ type InsertApprovalRequestParams struct {
 	Envelope           string
 	EnvelopeHash       []byte
 	PolicyVersion      string
+	PolicySteps        []byte
 	RequestedBy        uuid.UUID
 	RequestedAt        time.Time
 	RequesterMfaMethod string
@@ -222,6 +274,7 @@ type InsertApprovalRequestRow struct {
 	Envelope           string
 	EnvelopeHash       []byte
 	PolicyVersion      string
+	PolicySteps        []byte
 	RequestedBy        uuid.UUID
 	RequestedAt        time.Time
 	RequesterMfaMethod string
@@ -243,6 +296,7 @@ func (q *Queries) InsertApprovalRequest(ctx context.Context, arg InsertApprovalR
 		arg.Envelope,
 		arg.EnvelopeHash,
 		arg.PolicyVersion,
+		arg.PolicySteps,
 		arg.RequestedBy,
 		arg.RequestedAt,
 		arg.RequesterMfaMethod,
@@ -260,6 +314,7 @@ func (q *Queries) InsertApprovalRequest(ctx context.Context, arg InsertApprovalR
 		&i.Envelope,
 		&i.EnvelopeHash,
 		&i.PolicyVersion,
+		&i.PolicySteps,
 		&i.RequestedBy,
 		&i.RequestedAt,
 		&i.RequesterMfaMethod,
@@ -335,9 +390,53 @@ func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprova
 	return i, err
 }
 
+const listApprovalPolicies = `-- name: ListApprovalPolicies :many
+SELECT id, object_type, version, steps, request_id, created_by, created_at
+  FROM fyniq.approval_policy
+ ORDER BY object_type, version
+`
+
+type ListApprovalPoliciesRow struct {
+	ID         uuid.UUID
+	ObjectType string
+	Version    int32
+	Steps      []byte
+	RequestID  uuid.UUID
+	CreatedBy  uuid.UUID
+	CreatedAt  time.Time
+}
+
+func (q *Queries) ListApprovalPolicies(ctx context.Context) ([]ListApprovalPoliciesRow, error) {
+	rows, err := q.db.Query(ctx, listApprovalPolicies)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListApprovalPoliciesRow
+	for rows.Next() {
+		var i ListApprovalPoliciesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ObjectType,
+			&i.Version,
+			&i.Steps,
+			&i.RequestID,
+			&i.CreatedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listApprovalRequests = `-- name: ListApprovalRequests :many
-SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
-  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
+SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
+  requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
   FROM fyniq.approval_request
  WHERE $1::text = '' OR status = $1::text
  ORDER BY requested_at, id
@@ -353,6 +452,7 @@ type ListApprovalRequestsRow struct {
 	Envelope           string
 	EnvelopeHash       []byte
 	PolicyVersion      string
+	PolicySteps        []byte
 	RequestedBy        uuid.UUID
 	RequestedAt        time.Time
 	RequesterMfaMethod string
@@ -383,6 +483,7 @@ func (q *Queries) ListApprovalRequests(ctx context.Context, status string) ([]Li
 			&i.Envelope,
 			&i.EnvelopeHash,
 			&i.PolicyVersion,
+			&i.PolicySteps,
 			&i.RequestedBy,
 			&i.RequestedAt,
 			&i.RequesterMfaMethod,
@@ -404,8 +505,8 @@ func (q *Queries) ListApprovalRequests(ctx context.Context, status string) ([]Li
 }
 
 const lockApprovalRequest = `-- name: LockApprovalRequest :one
-SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, requested_by, requested_at,
-  requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
+SELECT id, object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version, policy_steps, requested_by,
+  requested_at, requester_mfa_method, requester_mfa_at, expires_at, status, decided_at, status_reason, version
   FROM fyniq.approval_request WHERE id = $1 FOR UPDATE
 `
 
@@ -419,6 +520,7 @@ type LockApprovalRequestRow struct {
 	Envelope           string
 	EnvelopeHash       []byte
 	PolicyVersion      string
+	PolicySteps        []byte
 	RequestedBy        uuid.UUID
 	RequestedAt        time.Time
 	RequesterMfaMethod string
@@ -443,6 +545,7 @@ func (q *Queries) LockApprovalRequest(ctx context.Context, id uuid.UUID) (LockAp
 		&i.Envelope,
 		&i.EnvelopeHash,
 		&i.PolicyVersion,
+		&i.PolicySteps,
 		&i.RequestedBy,
 		&i.RequestedAt,
 		&i.RequesterMfaMethod,

@@ -25,6 +25,14 @@ app_user | user_id | uuid | not null | uuidv7()
 app_user | display_name | text | not null | 
 app_user | status | text | not null | 'active'::text
 app_user | created_at | timestamp with time zone | not null | now()
+approval_policy | organisation_id | uuid | not null | current_org()
+approval_policy | id | uuid | not null | uuidv7()
+approval_policy | object_type | text | not null | 
+approval_policy | version | integer | not null | 
+approval_policy | steps | jsonb | not null | 
+approval_policy | request_id | uuid | not null | 
+approval_policy | created_by | uuid | not null | 
+approval_policy | created_at | timestamp with time zone | not null | 
 approval_request | organisation_id | uuid | not null | current_org()
 approval_request | id | uuid | not null | uuidv7()
 approval_request | object_type | text | not null | 
@@ -45,6 +53,7 @@ approval_request | decided_at | timestamp with time zone | null |
 approval_request | status_reason | text | null | 
 approval_request | voided_xact | bigint | null | 
 approval_request | version | integer | not null | 1
+approval_request | policy_steps | jsonb | not null | '[{"roles": [], "users": [], "quorum": 1}]'::jsonb
 approval_signature | organisation_id | uuid | not null | current_org()
 approval_signature | id | uuid | not null | uuidv7()
 approval_signature | request_id | uuid | not null | 
@@ -456,6 +465,24 @@ app_user | app_user_pkey | PRIMARY KEY (user_id)
 app_user | app_user_status_known | CHECK ((status = ANY (ARRAY['active'::text, 'deactivated'::text])))
 app_user | app_user_status_not_null | NOT NULL status
 app_user | app_user_user_id_not_null | NOT NULL user_id
+approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
+approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
+approval_policy | approval_policy_id_not_null | NOT NULL id
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text])))
+approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
+approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
+approval_policy | approval_policy_pkey | PRIMARY KEY (organisation_id, id)
+approval_policy | approval_policy_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES approval_request(organisation_id, id)
+approval_policy | approval_policy_request_id_not_null | NOT NULL request_id
+approval_policy | approval_policy_request_once | UNIQUE (organisation_id, request_id)
+approval_policy | approval_policy_steps_not_null | NOT NULL steps
+approval_policy | approval_policy_steps_valid | CHECK (approval_steps_valid(steps))
+approval_policy | approval_policy_version_not_null | NOT NULL version
+approval_policy | approval_policy_version_once | UNIQUE (organisation_id, object_type, version)
+approval_policy | approval_policy_version_range | CHECK (((version >= 1) AND (version <= 1000000)))
+approval_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 approval_request | approval_request_change_not_null | NOT NULL change
 approval_request | approval_request_change_object | CHECK ((jsonb_typeof(change) = 'object'::text))
 approval_request | approval_request_decided | CHECK (((status = 'pending'::text) = (decided_at IS NULL)))
@@ -470,13 +497,15 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))))
+approval_request | approval_request_object_known | CHECK (((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_request | approval_request_organisation_id_not_null | NOT NULL organisation_id
 approval_request | approval_request_pkey | PRIMARY KEY (organisation_id, id)
 approval_request | approval_request_policy_length | CHECK (((length(policy_version) >= 1) AND (length(policy_version) <= 100)))
+approval_request | approval_request_policy_steps_not_null | NOT NULL policy_steps
+approval_request | approval_request_policy_steps_valid | CHECK (approval_steps_valid(policy_steps))
 approval_request | approval_request_policy_version_not_null | NOT NULL policy_version
 approval_request | approval_request_reason_length | CHECK (((status_reason IS NULL) OR ((length(status_reason) >= 1) AND (length(status_reason) <= 500))))
 approval_request | approval_request_requested_at_not_null | NOT NULL requested_at
@@ -1071,6 +1100,9 @@ CREATE INDEX user_session_user_idx ON fyniq.user_session USING btree (user_id) W
 CREATE UNIQUE INDEX account_code_key ON fyniq.account USING btree (organisation_id, code)
 CREATE UNIQUE INDEX account_pkey ON fyniq.account USING btree (organisation_id, id)
 CREATE UNIQUE INDEX app_user_pkey ON fyniq.app_user USING btree (user_id)
+CREATE UNIQUE INDEX approval_policy_pkey ON fyniq.approval_policy USING btree (organisation_id, id)
+CREATE UNIQUE INDEX approval_policy_request_once ON fyniq.approval_policy USING btree (organisation_id, request_id)
+CREATE UNIQUE INDEX approval_policy_version_once ON fyniq.approval_policy USING btree (organisation_id, object_type, version)
 CREATE UNIQUE INDEX approval_request_one_pending ON fyniq.approval_request USING btree (organisation_id, object_type, object_key) WHERE (status = 'pending'::text)
 CREATE UNIQUE INDEX approval_request_pkey ON fyniq.approval_request USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_signature_once ON fyniq.approval_signature USING btree (organisation_id, request_id, signer)
@@ -1137,6 +1169,7 @@ CREATE UNIQUE INDEX user_session_pkey ON fyniq.user_session USING btree (token_h
 ## triggers
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
@@ -1161,6 +1194,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_ad
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_grant_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
+CREATE TRIGGER approval_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_guard()
+CREATE TRIGGER approval_policy_voids AFTER INSERT ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_voids()
 CREATE TRIGGER approval_request_guard BEFORE UPDATE ON fyniq.approval_request FOR EACH ROW EXECUTE FUNCTION approval_request_guard()
 CREATE TRIGGER approval_request_voided AFTER UPDATE OF status ON fyniq.approval_request FOR EACH ROW WHEN ((new.status = 'void'::text)) EXECUTE FUNCTION approval_request_voided()
 CREATE TRIGGER approval_signature_check BEFORE INSERT OR UPDATE ON fyniq.approval_signature FOR EACH ROW EXECUTE FUNCTION approval_signature_check()
@@ -1208,6 +1243,7 @@ CREATE TRIGGER super_admin_no_delete BEFORE DELETE OR TRUNCATE ON fyniq.super_ad
 
 ## policies
 account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+approval_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_signature | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1241,10 +1277,15 @@ user_membership | tenant_isolation | * | (organisation_id = current_org()) | (or
 accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone, OUT organisation_id uuid, OUT invitation_id uuid, OUT user_id uuid, OUT new_user boolean, OUT membership_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 373d5598a87ef8c472e30e47598b7407
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
-approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7bc93874b31c3afb0ef6b6855ce994c7
+approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54bfd8bf483ebb04da99069f2b6836cf
+approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
+approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
 approval_request_voided() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8a52518e632c789b205db97d82662924
-approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a3933bbd418aad2557b2fc5a32cd441a
+approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 620103136b9caf9290045ca9e732178b
+approval_steps_met(p_org uuid, p_request uuid, p_hash bytea, p_steps jsonb, p_upto integer) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 87283a918dece8cd6ce8b836a822f76d
+approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_path=pg_catalog, pg_temp | d50ae4849ebdf5e7511ee70dc98ccfd3
 approval_void_pending(p_type text, p_key text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d881befb6ede26f4ea128fc16cd228d
+approval_void_pending_type(p_type text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f8b69e58a60cc252f3e4b22a2cc98989
 audit_chain_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 91e817a2872fcf6bd69bb233274ae47b
 audit_event_append() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b28a8a36f47d380d03f4120d6fab3ae
 audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d06777cbb7f0bd4dfb455fd25fe4970

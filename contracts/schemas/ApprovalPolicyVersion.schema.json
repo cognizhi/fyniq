@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "changed_at": {
+      "description": "When it took effect: when its request was approved.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "changed_by": {
+      "description": "Who asked for it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, from 1.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "request_id": {
+      "description": "The approved request that made it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "steps": {
+      "description": "Its ordered steps.",
+      "items": {
+        "$ref": "ApprovalStep.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "version": {
+      "description": "The version string the requests made under it record.",
+      "examples": [
+        "organisation_setting/v1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "version",
+    "number",
+    "steps",
+    "request_id",
+    "changed_by",
+    "changed_at"
+  ],
+  "title": "ApprovalPolicyVersion",
+  "type": "object"
+}

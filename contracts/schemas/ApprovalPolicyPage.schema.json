@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The policy in force for each object type, by object type.",
+      "items": {
+        "$ref": "ApprovalPolicy.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6Im1lbWJlcnNoaXAifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "ApprovalPolicyPage",
+  "type": "object"
+}

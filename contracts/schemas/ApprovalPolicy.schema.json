@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "built_in": {
+      "description": "true while the built-in policy applies: one step with a quorum of one.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "fixed": {
+      "description": "true for the policy for approval policies, which no organisation changes, so a change can never lock it out (FR-APR-09).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "number": {
+      "description": "The organisation's version of it; 0 while the built-in policy applies.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "object_type": {
+      "description": "The kind of change it covers.",
+      "enum": [
+        "organisation_setting",
+        "membership",
+        "member_invitation",
+        "approval_policy"
+      ],
+      "examples": [
+        "organisation_setting"
+      ],
+      "type": "string"
+    },
+    "row": {
+      "description": "The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.",
+      "examples": [
+        "Organisation profile, financial year, defaults (rev 0.29)"
+      ],
+      "type": "string"
+    },
+    "steps": {
+      "description": "Its ordered steps: each needs its quorum before the next is signed (FR-APR-01).",
+      "items": {
+        "$ref": "ApprovalStep.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "version": {
+      "description": "The version string each request records (G4-057).",
+      "examples": [
+        "founder/organisation_setting@2026-10-20.1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "object_type",
+    "row",
+    "version",
+    "number",
+    "built_in",
+    "fixed",
+    "steps"
+  ],
+  "title": "ApprovalPolicy",
+  "type": "object"
+}

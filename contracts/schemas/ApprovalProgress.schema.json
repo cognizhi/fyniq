@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approvals": {
+      "description": "The approvals signed in this step, not voided.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "quorum": {
+      "description": "How many people sign this step, each once.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "roles": {
+      "description": "Only people holding one of these roles sign it; empty, with users empty, for anyone who holds the approval right (A) on the object's Appendix D row.",
+      "items": {
+        "description": "A role of PRD-001 §7.1, such as owner, accountant or bookkeeper.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "users": {
+      "description": "Only these members sign it; empty, with roles empty, for anyone who holds the approval right.",
+      "items": {
+        "description": "A member's user ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "approvals",
+    "quorum",
+    "roles",
+    "users"
+  ],
+  "title": "ApprovalProgress",
+  "type": "object"
+}

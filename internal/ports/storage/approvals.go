@@ -19,6 +19,7 @@ type ApprovalRequest struct {
 	Envelope           string // RFC 8785 canonical JSON
 	EnvelopeHash       []byte // SHA-256 of Envelope; the database recomputes it
 	PolicyVersion      string
+	PolicySteps        []ApprovalStep // the steps of the policy it started under, which it keeps
 	RequestedBy        uuid.UUID
 	RequestedAt        time.Time
 	RequesterMFAMethod string
@@ -37,11 +38,21 @@ type NewApprovalRequest struct {
 	Envelope                                  string
 	EnvelopeHash                              []byte
 	PolicyVersion                             string
+	PolicySteps                               []ApprovalStep
 	RequestedBy                               uuid.UUID
 	RequestedAt                               time.Time
 	RequesterMFAMethod                        string
 	RequesterMFAAt                            time.Time
 	ExpiresAt                                 time.Time
+}
+
+// ApprovalStep is one ordered step of an approval policy: Quorum people who hold the approve right on the object's
+// Appendix D row sign, narrowed to those holding one of Roles, or to the members Users (never both); neither
+// narrows nothing (FR-APR-01, rev 0.40).
+type ApprovalStep struct {
+	Quorum int         `json:"quorum"`
+	Roles  []string    `json:"roles"`
+	Users  []uuid.UUID `json:"users"`
 }
 
 // ApprovalSignature is a signed approval or rejection: the electronic signature of §14.2 (FR-APR-03).
@@ -93,4 +104,36 @@ type Approvals interface {
 	// Decide moves a pending request at version to status (approved, rejected, void or expired) at at, with a
 	// reason: CodeVersion when it changed since.
 	Decide(ctx context.Context, id uuid.UUID, version int, status, reason string, at time.Time) (ApprovalRequest, error)
+}
+
+// ApprovalPolicy is a version of an organisation's approval policy for an object type (FR-APR-01, FR-APR-09): its
+// steps, and the approved request that made it.
+type ApprovalPolicy struct {
+	ID         uuid.UUID
+	ObjectType string
+	Version    int
+	Steps      []ApprovalStep
+	RequestID  uuid.UUID
+	CreatedBy  uuid.UUID // who asked for it
+	CreatedAt  time.Time
+}
+
+// NewApprovalPolicy is what ApprovalPolicies.Add needs.
+type NewApprovalPolicy struct {
+	ObjectType string
+	Version    int
+	Steps      []ApprovalStep
+	RequestID  uuid.UUID
+	CreatedBy  uuid.UUID
+	CreatedAt  time.Time
+}
+
+// ApprovalPolicies are the versions of the organisation's approval policies. The database adds a version only as
+// the next, with the approved request that holds exactly its steps, never changes one (CodeApproval), and voids
+// every pending request of its object type when one is added; Add audits the version and the voids.
+type ApprovalPolicies interface {
+	// List returns every version, by object type and version.
+	List(ctx context.Context) ([]ApprovalPolicy, error)
+	// Add records a version.
+	Add(ctx context.Context, n NewApprovalPolicy) (ApprovalPolicy, error)
 }

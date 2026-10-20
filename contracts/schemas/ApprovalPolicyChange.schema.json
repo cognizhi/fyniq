@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "steps": {
+      "description": "The ordered steps: 1 to 5.",
+      "items": {
+        "$ref": "ApprovalStepChange.schema.json"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "steps"
+  ],
+  "title": "ApprovalPolicyChange",
+  "type": "object"
+}
