@@ -1,6 +1,6 @@
 -- name: StartSession :exec
-SELECT fyniq.start_session(sqlc.arg(token_hash)::bytea, sqlc.arg(issuer)::text, sqlc.arg(subject)::text, sqlc.arg(provider)::text,
-  sqlc.arg(now)::timestamptz, sqlc.arg(expires)::timestamptz, sqlc.narg(step_up_at)::timestamptz);
+SELECT fyniq.start_session_from(sqlc.arg(token_hash)::bytea, sqlc.arg(issuer)::text, sqlc.arg(subject)::text, sqlc.arg(provider)::text,
+  sqlc.arg(now)::timestamptz, sqlc.arg(expires)::timestamptz, sqlc.narg(step_up_at)::timestamptz, sqlc.arg(user_agent)::text);
 
 -- name: SessionFor :one
 -- An empty issuer means no live session. Step-up is in Unix seconds, 0 when the sign-in passed none.
@@ -20,3 +20,11 @@ SELECT fyniq.end_session(sqlc.arg(token_hash)::bytea, sqlc.arg(now)::timestamptz
 -- name: EndUserSessions :one
 SELECT fyniq.end_user_sessions(sqlc.arg(user_id)::uuid, sqlc.arg(keep_issuer)::text, sqlc.arg(keep_subject)::text,
   sqlc.arg(removed_subjects)::text[], sqlc.arg(now)::timestamptz)::integer AS ended;
+
+-- name: UserSessions :many
+SELECT s.token_hash, s.provider, s.created_at, s.last_seen_at, s.expires_at, coalesce(s.step_up_method, '')::text AS step_up_method,
+       coalesce(s.user_agent, '')::text AS user_agent
+  FROM fyniq.user_sessions(sqlc.arg(user_id)::uuid, sqlc.arg(now)::timestamptz, sqlc.arg(idle_seconds)::bigint * interval '1 second') AS s;
+
+-- name: EndUserSession :one
+SELECT fyniq.end_user_session(sqlc.arg(user_id)::uuid, sqlc.arg(token_hash)::bytea, sqlc.arg(now)::timestamptz)::boolean AS ended;

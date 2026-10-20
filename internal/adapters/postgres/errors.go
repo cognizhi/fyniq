@@ -149,6 +149,7 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"webauthn_challenge_taken_in_time":          {storage.CodePasskey, "a challenge is taken before it expires"},
 	"webauthn_challenge_answered_once_taken":    {storage.CodePasskey, "a challenge is answered once it is taken"},
 	"approval_signature_passkey_shape":          {storage.CodeApproval, "a passkey-signed approval keeps all of its assertion, any other none"},
+	"user_session_user_agent_length":            {storage.CodeInvalid, "a session keeps at most 300 characters of its browser's User-Agent"},
 	"user_session_step_up_method":               {storage.CodeInvalid, "a session's step-up is at sign-in, or by a passkey after it began"},
 	"team_mode_version_once":                    {storage.CodeApproval, "that version of the team mode exists already"},
 	"team_mode_request_once":                    {storage.CodeApproval, "that request added a version of the team mode already"},

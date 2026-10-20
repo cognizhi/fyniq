@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "browser": {
+      "description": "The browser that signed in, as it described itself; absent when it said nothing.",
+      "examples": [
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 Safari/605.1.15"
+      ],
+      "type": "string"
+    },
+    "current": {
+      "description": "true for the session making this request.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "expires_at": {
+      "description": "When it ends at the latest: 12 hours after it signed in (SEC-05).",
+      "examples": [
+        "2026-10-20T21:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The device's ID: derived from its session, never the session itself.",
+      "examples": [
+        "3f0c9a1b5d7e4c2a8b6f1e0d9c8b7a65"
+      ],
+      "pattern": "^[0-9a-f]{32}$",
+      "type": "string"
+    },
+    "last_seen_at": {
+      "description": "When it was last used, to the minute.",
+      "examples": [
+        "2026-10-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "provider": {
+      "description": "The sign-in provider it used.",
+      "examples": [
+        "google"
+      ],
+      "type": "string"
+    },
+    "signed_in_at": {
+      "description": "When it signed in.",
+      "examples": [
+        "2026-10-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "step_up_method": {
+      "description": "How it last passed a second factor.",
+      "enum": [
+        "sign_in",
+        "passkey"
+      ],
+      "examples": [
+        "sign_in"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "provider",
+    "signed_in_at",
+    "last_seen_at",
+    "expires_at",
+    "current"
+  ],
+  "title": "Device",
+  "type": "object"
+}

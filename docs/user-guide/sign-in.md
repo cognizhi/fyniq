@@ -3,7 +3,7 @@ key: auth.sign-in
 title: Sign in to Fyniq
 mode: basic
 roles: [all]
-requirements: [FR-ADM-08, FR-ADM-02, SEC-01, SEC-05, SEC-08]
+requirements: [FR-ADM-08, FR-ADM-02, FR-ADM-03, SEC-01, SEC-05, SEC-08]
 ---
 
 # Sign in to Fyniq
@@ -45,6 +45,17 @@ Asking for or approving a change needs this confirmation in the last 5 minutes.
 3. To stop using a passkey, for example on a lost device, revoke it. It works no more.
 
 Each request to confirm works once, for 5 minutes, and only on this site.
+
+## Your devices
+
+Each time you sign in, Fyniq emails you, at the address your provider confirmed: when, with which
+provider and from which browser. If it was not you, end that session.
+
+1. Open **Your devices** to see every browser you are signed in on, with when it signed in and was
+   last used. The one you are using is marked.
+2. To end a session, such as on a lost phone, select **Sign out** next to it. It is signed out at
+   its next request.
+3. To end every session but this one, select **Sign out everywhere else**.
 
 ## Join as the second Super admin
 

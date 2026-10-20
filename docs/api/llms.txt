@@ -68,6 +68,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/organisation/settings/{key}` (getSetting): Get an organisation setting
 - `PATCH /v1/organisation/settings/{key}` (updateSetting): Change an organisation setting
 - `GET /v1/session` (getSession): Get your session
+- `GET /v1/session/devices` (listDevices): List your devices
+- `POST /v1/session/devices/sign-out-others` (signOutOtherDevices): Sign out everywhere else
+- `DELETE /v1/session/devices/{device_id}` (signOutDevice): Sign a device out
 - `GET /v1/session/passkeys` (listPasskeys): List your passkeys
 - `POST /v1/session/passkeys` (registerPasskey): Register a passkey
 - `POST /v1/session/passkeys/challenge` (startPasskeyRegistration): Start registering a passkey

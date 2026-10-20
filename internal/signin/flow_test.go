@@ -3,6 +3,7 @@ package signin_test
 import (
 	"bytes"
 	"context"
+	"github.com/google/uuid"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -56,6 +57,14 @@ func (f *fakeSessions) Session(context.Context, []byte, time.Time, time.Duration
 func (f *fakeSessions) EndSession(_ context.Context, h []byte, _ time.Time) error {
 	f.ended = append(f.ended, h)
 	return nil
+}
+
+func (f *fakeSessions) UserSessions(context.Context, uuid.UUID, time.Time, time.Duration) ([]storage.Device, error) {
+	return nil, nil
+}
+
+func (f *fakeSessions) EndUserSession(context.Context, uuid.UUID, []byte, time.Time) error {
+	return ports.ErrNotFound
 }
 
 type flowEnv struct {
