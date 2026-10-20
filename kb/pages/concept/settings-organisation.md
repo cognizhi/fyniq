@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: The company-wide settings (features, payment terms, settlement tolerances, capitalisation threshold, data region, retention) and the value each ships with
 sources:
-  - docs/user-guide/organisation-settings.md sha256:f365f746ae4334d7f47f50cb16cc0010e07c26092c454d86e58c4786fe34134a
+  - docs/user-guide/organisation-settings.md sha256:b97412f3d7c4609c3e519d4b1669d5d7467462f6a0851fcf8248de1f25557e2e
 data_class: general
 taint: trusted
 status: draft
@@ -70,3 +70,9 @@ aliases:
 - AI conversations are kept 365 days; proposals stay with the audit trail.
 
 (src: docs/user-guide/organisation-settings.md#data-region-and-retention)
+
+## Related
+
+- Setting up the accounts themselves: [[accounting.chart]]. Approving a change: [[approvals.decide]].
+
+(src: docs/user-guide/organisation-settings.md#related)

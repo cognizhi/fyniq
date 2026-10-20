@@ -167,6 +167,22 @@
     "review.awaiting-verification": {
       "label": "Needs additional verification",
       "tooltip": "Some rules this page uses await a specialist's review. Check the figures before you rely on them or file them."
+    },
+    "nav.accounting": {
+      "label": "Accounting",
+      "tooltip": "The chart of accounts, and later journals, periods and the close."
+    },
+    "accounting.chart": {
+      "label": "Chart of accounts",
+      "tooltip": "Every account the books post to, by type, with its report group, function, GST code and flags."
+    },
+    "chart.add": {
+      "label": "New account",
+      "tooltip": "Add an account; its code and type never change once added."
+    },
+    "chart.load-standard": {
+      "label": "Load the standard chart",
+      "tooltip": "The Singapore start-up chart of 86 accounts, for a chart with no accounts yet."
     }
   }
 }

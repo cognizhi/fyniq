@@ -125,7 +125,12 @@
   Expert mode): the profile with Edit the profile (only the fields changed, over the organisation's ETag), and every
   setting by group with Recommended or Changed from recommended, Needs a second approver and Set by the platform; Change
   sets a value from a day, today or later, with Preview (`Prefer: return=preview`), Save or Ask for approval (202), and
-  Reset to recommended, showing the earlier values. Tests `Organisation.test.tsx`. **Left:** chart-of-accounts,
-  contact-record, contacts-list, items and logo-brand; the organisation-settings sections whose operations do not exist
+  Reset to recommended, showing the earlier values. Tests `Organisation.test.tsx`. Then chart-of-accounts as
+  Accounting › Chart of accounts (`screens/accounting/ChartOfAccounts.tsx`, Expert): the accounts by type, each group's
+  accounts under it, with report group, function, GST code and flags, system accounts locked; an empty chart offers
+  the standard chart; an Accountant or Tax agent adds an account and changes one (only the fields changed, over its
+  ETag), with the guide page `chart-of-accounts.md` compiled into `accounting.chart`. Tests
+  `ChartOfAccounts.test.tsx`. **Left:** contact-record, contacts-list, items and logo-brand; on chart-of-accounts,
+  merge, the Dimensions tab and balances, which have no operations yet; the organisation-settings sections whose operations do not exist
   yet (brand, numbering, GST status on this page).)
 - [ ] 5.3 Finish with `make check` and `make test`

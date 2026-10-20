@@ -51,3 +51,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-20] compile | team-mode.md, approval-policies.md → settings.team-mode, approvals.policies (Settings › Team mode and Approval policies in the web app)
 
 ## [2026-10-20] compile | organisation-settings.md, statutory-packs.md → settings.organisation, settings.change, settings.statutory-packs (Settings › Organisation and Statutory parameter packs in the web app)
+
+## [2026-10-20] compile | chart-of-accounts.md → accounting.chart (new guide for Accounting › Chart of accounts in the web app)
+
+## [2026-10-20] compile | organisation-settings.md → settings.organisation, settings.change (related pages)
