@@ -1,10 +1,10 @@
 ---
 key: settings.change
 type: task
-title: Change or reset an organisation setting
-summary: Change a company-wide setting from today or a later date, reset it to its recommended value, and why some settings need a second approver
+title: Change or reset an organisation setting, or edit the profile
+summary: Change a company-wide setting from a date, reset it to recommended, why some need a second approver, and edit the profile
 sources:
-  - docs/user-guide/organisation-settings.md sha256:0463646dacc3573b726c20843b25f57e723488d635fbba060d35e2ed12cbc70b
+  - docs/user-guide/organisation-settings.md sha256:f365f746ae4334d7f47f50cb16cc0010e07c26092c454d86e58c4786fe34134a
 data_class: general
 taint: trusted
 status: draft
@@ -18,13 +18,13 @@ aliases:
   - effective date
 ---
 
-# Change or reset an organisation setting
+# Change or reset an organisation setting, or edit the profile
 
 ## Steps
 
-- Open **Settings → Organisation** and choose the setting ([[settings.organisation]] lists them).
+- Open **Settings → Organisation** (Expert mode) and select **Change** next to the setting ([[settings.organisation]] lists them).
 - Enter the new value and the date it takes effect: today or later, never earlier.
-- **Preview** checks it; **Save** records it.
+- **Preview** checks it without saving; **Save** records it, after confirming it's you if asked.
 - Every earlier value is kept with its dates, so the value on any day can be shown again.
 - **Reset to recommended** records the recommended value as a new change; nothing is deleted.
 - If someone changed the setting meanwhile, reload it first.
@@ -34,6 +34,13 @@ aliases:
 ## Settings that need a second approver
 
 - Thresholds, retention and the AI assistant need a second approver.
-- They show **Needs a second approver**. Saving a change to one asks for approval: the setting keeps its value until another member who approves settings, such as an Owner, approves it ([[approvals.decide]]).
+- They show **Needs a second approver**, and the button says **Ask for approval** instead of **Save**. Saving a change to one asks for approval: the setting keeps its value until another member who approves settings, such as an Owner, approves it ([[approvals.decide]]).
 
 (src: docs/user-guide/organisation-settings.md#settings-that-need-a-second-approver)
+
+## Edit the profile
+
+- The **Profile** at the top of the page is what documents print: legal name, UEN, addresses, contact details, and the bank and PayNow details customers pay to; also when each financial year starts, when the books start and the time zone.
+- **Edit the profile**, change the fields (a field left empty is cleared), then **Save the profile**; if someone else saved it meanwhile, reload first.
+
+(src: docs/user-guide/organisation-settings.md#the-profile)

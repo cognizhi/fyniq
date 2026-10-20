@@ -251,7 +251,7 @@ export function ApprovalPolicies() {
   const pendingFor = (p: Policy) => (waiting.data ?? []).find((a) => a.object_key === p.object_type);
 
   return (
-    <SettingsPage title="Approval policies" lead="Who approves each kind of change. Until you change one, one approval from anyone who may approve it, other than the person who asked.">
+    <SettingsPage title="Approval policies" screen="approval-policies" lead="Who approves each kind of change. Until you change one, one approval from anyone who may approve it, other than the person who asked.">
       {asked && (
         <div className="fy-banner fy-banner--info" role="status">
           <Icon of={Hourglass} size={20} />

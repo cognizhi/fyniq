@@ -36,7 +36,7 @@ export function calls(): string[] {
 export async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const req = input instanceof Request ? input : new Request(input, init);
   const url = new URL(req.url);
-  const path = url.pathname.replace(/^\/api/, "");
+  const path = decodeURIComponent(url.pathname).replace(/^\/api/, "");
   const text = await req.text();
   const body: unknown = text ? JSON.parse(text) : undefined;
   seen.push({ method: req.method, path, query: url.search, body, headers: req.headers });

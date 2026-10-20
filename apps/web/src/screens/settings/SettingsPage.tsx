@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
+import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { helpText } from "../../i18n";
 import { setMode } from "../../mode";
@@ -69,8 +70,8 @@ export function SettingsList({ compact }: { compact?: boolean }) {
 }
 
 // SettingsPage is the frame of each Settings page: the side navigation from medium, the way back to
-// all settings in compact, and the page head.
-export function SettingsPage({ title, lead, actions, children }: { title: string; lead?: ReactNode; actions?: ReactNode; children: ReactNode }) {
+// all settings in compact, the page head, and the review banner for its screen (its inventory ID).
+export function SettingsPage({ title, lead, actions, screen, children }: { title: string; lead?: ReactNode; actions?: ReactNode; screen?: string; children: ReactNode }) {
   return (
     <div className="fy-page fy-enter">
       <Link className="fy-btn fy-btn--ghost fy-btn--sm fy-only-compact -ms-2 self-start" to="/settings">
@@ -90,6 +91,7 @@ export function SettingsPage({ title, lead, actions, children }: { title: string
             </div>
             {actions && <div className="fy-pagehead__actions">{actions}</div>}
           </div>
+          {screen && <ReviewBanner screen={screen} />}
           {children}
         </div>
       </div>

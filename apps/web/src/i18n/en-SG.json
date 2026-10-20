@@ -143,6 +143,30 @@
     "approval-policy.change": {
       "label": "Change policy",
       "tooltip": "Ask for new steps; an Owner or Controller who did not ask approves them. Waiting requests of this kind restart."
+    },
+    "settings.organisation": {
+      "label": "Organisation",
+      "tooltip": "The profile documents print, and the settings that apply to the whole company."
+    },
+    "settings.statutory-packs": {
+      "label": "Statutory parameter packs",
+      "tooltip": "GST rates and codes from official sources, with pinned tests; a version is used once activated."
+    },
+    "setting.change": {
+      "label": "Change",
+      "tooltip": "Set a new value from a date, today or later. Preview checks it without saving."
+    },
+    "setting.reset": {
+      "label": "Reset to recommended",
+      "tooltip": "Record the recommended value as a new change, from the date chosen. Nothing is deleted."
+    },
+    "pack.activate": {
+      "label": "Activate",
+      "tooltip": "Ask to use this version; an Owner or Controller who did not ask approves it."
+    },
+    "review.awaiting-verification": {
+      "label": "Needs additional verification",
+      "tooltip": "Some rules this page uses await a specialist's review. Check the figures before you rely on them or file them."
     }
   }
 }

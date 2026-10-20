@@ -22,11 +22,21 @@ where its data is kept and for how long.
 - The Owner, the Administrator and the Controller change settings; everyone else in the company
   can see them.
 
+## The profile
+
+The **Profile** at the top of the page is what documents print about the company: its legal name,
+UEN, addresses, contact details, and the bank and PayNow details customers pay to. It also says
+when each financial year starts, when the books start and the company's time zone.
+
+1. Select **Edit the profile**.
+2. Change the fields. A field left empty is cleared.
+3. Select **Save the profile**. If someone else saved it meanwhile, Fyniq asks you to reload first.
+
 ## Change a setting
 
-1. Open **Settings → Organisation** and choose the setting.
+1. Open **Settings → Organisation** (Expert mode) and select **Change** next to the setting.
 2. Enter the new value and the date it takes effect: today or a later date, never an earlier one.
-3. Select **Preview** to check it, then **Save**.
+3. Select **Preview** to check it, then **Save**. Confirm it's you if Fyniq asks.
 
 - A change applies from its date. Fyniq keeps every earlier value with its dates, so what was in
   effect on any day can be shown again.
@@ -38,6 +48,7 @@ where its data is kept and for how long.
 
 - Thresholds, retention and the AI assistant need a second approver before they change: they show
   **Needs a second approver**.
+- For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
 

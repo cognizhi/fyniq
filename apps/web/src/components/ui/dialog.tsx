@@ -59,7 +59,7 @@ export function Dialog({
               )}
             </div>
             {children && <div className="fy-dialog__body">{children}</div>}
-            {footer && <div className="fy-dialog__foot sticky bottom-0">{footer}</div>}
+            {footer && <div className="fy-dialog__foot sticky bottom-0 z-10">{footer}</div>}
           </Primitive.Popup>
         </Primitive.Viewport>
       </Primitive.Portal>

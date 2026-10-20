@@ -404,7 +404,7 @@ function Devices() {
 export function Profile() {
   const { session, mode } = useSignedIn();
   return (
-    <SettingsPage title="Profile and security" lead="How Fyniq behaves for you, and how you confirm it's you.">
+    <SettingsPage title="Profile and security" screen="profile-preferences" lead="How Fyniq behaves for you, and how you confirm it's you.">
       <ModeChoice mode={mode} />
       <section className="fy-card" aria-labelledby="security-title">
         <div className="fy-card__head">

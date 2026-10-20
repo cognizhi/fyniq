@@ -229,7 +229,7 @@ export function TeamMode() {
   const to = chosen ?? team?.mode ?? "founder";
 
   return (
-    <SettingsPage title="Team mode" lead="How strictly duties are separated, and the safeguards that make up for a small team.">
+    <SettingsPage title="Team mode" screen="team-mode" lead="How strictly duties are separated, and the safeguards that make up for a small team.">
       {q.isError && <Refusal problem={problemOf(q.error)} title="The team mode could not be shown" />}
       {q.isPending && <p className="fy-secondary">Loading the team mode…</p>}
       {waiting && (

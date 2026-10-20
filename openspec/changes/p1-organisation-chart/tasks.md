@@ -120,4 +120,12 @@
 - [ ] 5.2 Build the screens as designed:
   - chart-of-accounts, contact-record, contacts-list, items, logo-brand and organisation-settings;
   - help keys, tooltips and a page in `docs/user-guide/` for each, compiled into `kb/` (`make kb-index`, `make kb-lint`).
+
+  (20 Oct 2026, in part: organisation-settings as Settings › Organisation (`apps/web/src/screens/settings/Organisation.tsx`,
+  Expert mode): the profile with Edit the profile (only the fields changed, over the organisation's ETag), and every
+  setting by group with Recommended or Changed from recommended, Needs a second approver and Set by the platform; Change
+  sets a value from a day, today or later, with Preview (`Prefer: return=preview`), Save or Ask for approval (202), and
+  Reset to recommended, showing the earlier values. Tests `Organisation.test.tsx`. **Left:** chart-of-accounts,
+  contact-record, contacts-list, items and logo-brand; the organisation-settings sections whose operations do not exist
+  yet (brand, numbering, GST status on this page).)
 - [ ] 5.3 Finish with `make check` and `make test`
