@@ -59,7 +59,13 @@
 
 ## 4. The general ledger report
 
-- [ ] 4.1 Lines of any accounts and dates in base currency with opening, running and closing balances, at most 5,000 lines per account per request, and the source of each line. Tests `// req: FR-GL-11`
+- [x] 4.1 Lines of any accounts and dates in base currency with opening, running and closing balances, at most 5,000 lines per account per request, and the source of each line. Tests `// req: FR-GL-11`
+  (21 Oct 2026, PRD rev 0.52: `balance.GeneralLedger` (the balance service, ENG-04) reads the opening from the cached
+  balances of earlier periods and the earlier lines of the first day's period, then the account's lines in posting order;
+  `GET /v1/reports/general-ledger?account_id=…&from=…&to=…` (one to 20 accounts, each its own parameter) with the source
+  of each line; REPORT-01 beyond 5,000 lines; policies may need a right without a qualifier (`Policy.Unqualified`),
+  which the authorisation matrix reads. Tests: `TestTheGeneralLedger`, an authorisation-matrix row. **Left:** the export
+  and the screen (7.3).)
 
 ## 5. Scheduler and system postings
 

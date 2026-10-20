@@ -268,6 +268,11 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** a user exports the report or opens a line
 - **THEN** the report is exported, or the line's source document opens
 
+#### Scenario: Read at one revision, for a view of every report (rev 0.52)
+- **WHEN** the general ledger report is run
+- **THEN** it reads the accounts at one ledger revision, each line with its source, at most 5,000 lines per account
+- **AND** a view of the reports limited to part of the books cannot run it
+
 ### Requirement: FR-GL-12 Posted documents are never edited in place
 Posted documents SHALL never be edited in place: an edit in an open period SHALL create a new version, posted as reversal and replacement entries, and a void SHALL be a reversal with a reason. A reversal SHALL negate the stored lines, be dated on or after the entry in an open period and happen at most once (from P0 for manual journals).
 

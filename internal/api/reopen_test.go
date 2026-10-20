@@ -24,7 +24,9 @@ func TestReopeningAClosedPeriod(t *testing.T) {
 	e := f.e
 	ahkow, weiling := f.as(f.ahkow, authz.Controller), f.as(f.weiling, authz.Owner, authz.Controller)
 	path := func(id, op string) string { return "/v1/periods/" + id + "/" + op }
-	etagOf := func(id string) string { return e.call(http.MethodGet, path(id, "close"), ahkow, nil).Header.Get("ETag") }
+	etagOf := func(id string) string {
+		return e.call(http.MethodGet, path(id, "close"), ahkow, nil).Header.Get("ETag")
+	}
 	closeIt := func(id string) response {
 		t.Helper()
 		c := e.call(http.MethodPost, path(id, "close-checks"), ahkow, nil, "If-Match", etagOf(id))

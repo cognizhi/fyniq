@@ -12,6 +12,83 @@ import (
 	"github.com/google/uuid"
 )
 
+const accountLines = `-- name: AccountLines :many
+SELECT e.id AS entry_id, e.ledger_revision, e.posting_date, e.source_type, e.source_id, e.source_version, e.memo,
+       e.reverses_entry_id, l.line_no, l.currency, l.amount, l.base_amount, l.description, n.number
+FROM fyniq.journal_line l
+JOIN fyniq.journal_entry e ON e.organisation_id = l.organisation_id AND e.id = l.entry_id
+LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n.id::text = e.source_id
+WHERE l.account_id = $1 AND e.posting_date BETWEEN $2 AND $3
+ORDER BY e.posting_date, e.ledger_revision, l.line_no
+LIMIT $4
+`
+
+type AccountLinesParams struct {
+	AccountID uuid.UUID
+	DateFrom  time.Time
+	DateTo    time.Time
+	RowLimit  int32
+}
+
+type AccountLinesRow struct {
+	EntryID         uuid.UUID
+	LedgerRevision  int64
+	PostingDate     time.Time
+	SourceType      string
+	SourceID        string
+	SourceVersion   int32
+	Memo            *string
+	ReversesEntryID *uuid.UUID
+	LineNo          int32
+	Currency        string
+	Amount          string
+	BaseAmount      string
+	Description     *string
+	Number          *string
+}
+
+// An account's lines dated from..to, in posting order: date, then revision, then line (FR-GL-11), with their entry's
+// provenance and the source document's number when it has one.
+func (q *Queries) AccountLines(ctx context.Context, arg AccountLinesParams) ([]AccountLinesRow, error) {
+	rows, err := q.db.Query(ctx, accountLines,
+		arg.AccountID,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AccountLinesRow
+	for rows.Next() {
+		var i AccountLinesRow
+		if err := rows.Scan(
+			&i.EntryID,
+			&i.LedgerRevision,
+			&i.PostingDate,
+			&i.SourceType,
+			&i.SourceID,
+			&i.SourceVersion,
+			&i.Memo,
+			&i.ReversesEntryID,
+			&i.LineNo,
+			&i.Currency,
+			&i.Amount,
+			&i.BaseAmount,
+			&i.Description,
+			&i.Number,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEntry = `-- name: GetEntry :one
 SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
        source_version, rule_version, reverses_entry_id, memo, recorded_at

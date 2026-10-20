@@ -252,6 +252,9 @@ type Policy struct {
 	// SingleFactor operations are open to a session that passed no second factor yet: reading the session and
 	// stepping it up with a passkey. Every other operation refuses such a session (SEC-01, rev 0.43).
 	SingleFactor bool
+	// Unqualified operations need the right without a qualifier: a cell such as Reports' "V sales" or "V dept"
+	// grants it over part of the books only, which the operation does not narrow to (rev 0.52).
+	Unqualified bool
 }
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
@@ -325,6 +328,10 @@ var (
 	OpenFinancialYear = Policy{Operation: "openFinancialYear", Capability: PeriodClose, Need: Create}
 	// The close is two acts by two people (FR-GL-07, FM-4; rev 0.50): the preparer runs the checks under C, another
 	// person attests and closes under A, never the AI.
+	// The general ledger report reads every line of the accounts asked for, so it needs an unqualified view of the
+	// reports (rev 0.52).
+	GetGeneralLedger = Policy{Operation: "getGeneralLedger", Capability: Reports, Need: View, Unqualified: true,
+		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
 	GetPeriodClose = Policy{Operation: "getPeriodClose", Capability: PeriodClose, Need: View}
 	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
 	ClosePeriod    = Policy{Operation: "closePeriod", Capability: PeriodClose, Need: Approve,
@@ -446,7 +453,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances,
-	ListPeriods, GetPeriod, OpenFinancialYear, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
@@ -556,10 +563,13 @@ func holds(p Policy, roles []Role) (Right, bool) {
 			continue
 		}
 		var rights string
-		if p.Capability == Membership {
+		switch cell := Grants[p.Capability][col]; {
+		case p.Capability == Membership:
 			rights = "V"
-		} else {
-			rights = Grants[p.Capability][col].Rights
+		case p.Unqualified && cell.Qualifier != "":
+			continue
+		default:
+			rights = cell.Rights
 		}
 		for i := 0; i < len(rights); i++ {
 			got, ok := satisfies(Right(rights[i]), p.Need)

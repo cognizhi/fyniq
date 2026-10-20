@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
@@ -160,6 +161,7 @@ var codeFacts = map[string]struct {
 	period.CodeNotNext:         {409, "Not the next year to open"},
 	period.CodeYearsOpen:       {409, "The financial years are fixed"},
 	closing.CodeNotOpen:        {409, "The period is not open"},
+	balance.CodeTooManyLines:   {422, "Too many lines for one report"},
 	closing.CodeStale:          {409, "The checks are stale"},
 	closing.CodeOrder:          {409, "An earlier period is open"},
 	closing.CodeNotClean:       {409, "The checks refused the close"},
