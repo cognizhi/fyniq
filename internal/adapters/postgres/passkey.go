@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,9 +34,17 @@ func (r passkeys) installation(ctx context.Context) error {
 }
 
 func toPasskey(c sqlcdb.FyniqWebauthnCredential) storage.Passkey {
-	return storage.Passkey{ID: c.ID, UserID: c.UserID, CredentialID: c.CredentialID, PublicKey: c.PublicKey, SignCount: uint32(c.SignCount), // 0 to 2³²−1 (CHECK)
+	return storage.Passkey{ID: c.ID, UserID: c.UserID, CredentialID: c.CredentialID, PublicKey: c.PublicKey, SignCount: count32(c.SignCount),
 		AAGUID: c.Aaguid, Transports: c.Transports, BackupEligible: c.BackupEligible, BackupState: c.BackupState, Name: c.Name,
 		CreatedAt: c.CreatedAt, LastUsedAt: c.LastUsedAt, RevokedAt: c.RevokedAt}
+}
+
+// count32 is a signature counter as WebAuthn counts it: 0 to 2³²−1, which webauthn_credential_count_range keeps it in.
+func count32(n int64) uint32 {
+	if n < 0 || n > math.MaxUint32 {
+		return math.MaxUint32 // never: the CHECK refuses it; the largest count refuses every later assertion
+	}
+	return uint32(n)
 }
 
 func (r passkeys) Challenge(ctx context.Context, n storage.NewPasskeyChallenge) (uuid.UUID, error) {

@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"math"
 	"testing"
 
 	"github.com/fxamacker/cbor/v2"
@@ -100,8 +101,13 @@ func (a *Authenticator) coseKey() []byte {
 
 // Create answers a registration challenge: the JSON of the PublicKeyCredential the browser returns.
 func (a *Authenticator) Create(challenge []byte) []byte {
+	n := len(a.CredentialID)
+	if n < 0 || n > math.MaxUint16 {
+		a.t.Fatalf("a credential ID of %d bytes", n)
+		return nil
+	}
 	attested := append([]byte{}, a.AAGUID...)
-	attested = binary.BigEndian.AppendUint16(attested, uint16(len(a.CredentialID))) // 32 bytes
+	attested = binary.BigEndian.AppendUint16(attested, uint16(n))
 	attested = append(attested, a.CredentialID...)
 	attested = append(attested, a.coseKey()...)
 	obj, err := cbor.Marshal(map[string]any{"fmt": "none", "attStmt": map[string]any{}, "authData": a.authData(a.Flags|FlagAT, a.Count, attested)})

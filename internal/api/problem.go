@@ -98,8 +98,8 @@ const (
 	CodeSuperAdminRefused = "API-SUPERADMIN-02"  // at most two Super admins, never none; nobody confirms their own recovery
 	CodeRateLimited       = "API-RATE-01"        // the client's requests this minute reached its limit (429)
 	CodeSecondFactor      = "API-AUTHZ-07"       // the session passed no second factor (SEC-01)
-	CodePasskeyRefused    = "API-PASSKEY-01"     // the passkey's answer failed a check: nothing changed
-	CodeNoPasskey         = "API-PASSKEY-02"     // the person has no passkey to step up with
+	CodePasskeyRefused    = "API-PASSKEY-01"     // #nosec G101 -- a problem code's name, not a credential: the passkey's answer failed a check
+	CodeNoPasskey         = "API-PASSKEY-02"     // #nosec G101 -- a problem code's name, not a credential: no passkey to step up with
 	CodeChallenge         = "API-PASSKEY-03"     // the challenge is unknown, another session's, used or expired
 )
 
