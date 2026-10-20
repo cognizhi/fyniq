@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry of the new version, on its date."
+    },
+    "journal": {
+      "$ref": "Journal.schema.json",
+      "description": "The journal at its new version, still posted, with whoever posted the edit."
+    },
+    "reversal": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry that reverses the one the journal had, dated on that entry's date."
+    }
+  },
+  "required": [
+    "journal",
+    "reversal",
+    "entry"
+  ],
+  "title": "JournalEdited",
+  "type": "object"
+}

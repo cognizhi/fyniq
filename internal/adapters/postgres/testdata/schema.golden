@@ -595,7 +595,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))))
+approval_request | approval_request_object_known | CHECK (((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -712,6 +712,7 @@ document | document_created_at_not_null | NOT NULL created_at
 document | document_current_version_fkey | FOREIGN KEY (organisation_id, id, current_version) REFERENCES document_version(organisation_id, document_id, version) DEFERRABLE INITIALLY DEFERRED
 document | document_current_version_not_null | NOT NULL current_version
 document | document_current_version_positive | CHECK ((current_version > 0))
+document | document_edit_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_id_not_null | NOT NULL id
 document | document_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 document | document_organisation_id_not_null | NOT NULL organisation_id
@@ -1459,6 +1460,7 @@ CREATE UNIQUE INDEX webauthn_credential_once ON fyniq.webauthn_credential USING 
 CREATE UNIQUE INDEX webauthn_credential_pkey ON fyniq.webauthn_credential USING btree (id)
 
 ## triggers
+CREATE CONSTRAINT TRIGGER document_edit_posted AFTER UPDATE OF current_version ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.status = 'posted'::text) AND (new.current_version <> old.current_version))) EXECUTE FUNCTION document_edit_posted()
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
@@ -1624,7 +1626,8 @@ claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) �
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
-document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2f3a8d9dc84e75cc2501a63166e8da5d
+document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a01747c115d9a2d30df18c0df49e146f
+document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_version_created_by() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b35b5285220973313c6224ad1d90dd81
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab

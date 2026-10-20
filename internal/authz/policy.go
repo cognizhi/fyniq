@@ -324,6 +324,10 @@ var (
 	// it through the approval engine (FM-1, FM-2, SOD-3; rev 0.53).
 	RequestJournalPost     = Policy{Operation: "requestJournalPost", Capability: Journals, Need: Post}
 	RequestJournalReversal = Policy{Operation: "requestJournalReversal", Capability: Journals, Need: Post}
+	// Editing a posted journal posts its reversal and its new version, which is posting (P); asking for approval to edit
+	// it is the same right (FR-GL-12, FM-1; rev 0.54).
+	EditJournal        = Policy{Operation: "editJournal", Capability: Journals, Need: Post}
+	RequestJournalEdit = Policy{Operation: "requestJournalEdit", Capability: Journals, Need: Post}
 	// Changing a draft is preparing it, as saving one is (FR-GL-01).
 	ReplaceJournal = Policy{Operation: "replaceJournal", Capability: Journals, Need: Create}
 	// Periods are read by whoever holds a right on the close (FR-ORG-02, FR-GL-08); opening a year is preparing the
@@ -456,7 +460,7 @@ var (
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal,
+	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,

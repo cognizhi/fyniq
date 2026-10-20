@@ -222,6 +222,91 @@ func (s Service) Reverse(ctx context.Context, org, id uuid.UUID, date time.Time,
 	return out, err
 }
 
+// Edited is what an edit of a posted journal posts: the reversal of the entry it had, and the entry of its new version.
+type Edited struct {
+	Reversal, Entry storage.Entry
+}
+
+// Edit corrects a posted journal in place of a void and a new journal (FR-GL-12, posting rule "Edits of posted
+// documents"): it saves d as the journal's next version, reverses the entry of the version it had on that entry's own
+// date, and posts the new version's entry on its date, in one transaction; the journal stays posted, with the actor as
+// who posted the edit, and its number. Both periods must be open (INV-03); the database refuses an edit without both
+// postings (FY055). preparer is who prepared the new version ("type:id"), empty for the actor: an approved edit names
+// its requester. The reason goes with every audit event.
+func (s Service) Edit(ctx context.Context, org, id uuid.UUID, d Draft, reason, preparer string) (Edited, error) {
+	b, err := encode(d)
+	if err != nil {
+		return Edited{}, err
+	}
+	if reason != "" {
+		ctx = storage.WithReason(ctx, reason)
+	}
+	var out Edited
+	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Lock(ctx, id) // ENG-47 step 1
+		if err != nil {
+			return err
+		}
+		if err := editable(doc); err != nil {
+			return err
+		}
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		// The new version's entry first: an edit the rules refuse writes nothing.
+		next := doc
+		next.Version, next.Payload = doc.Version+1, b
+		j, err := decode(next, settings.Base)
+		if err != nil {
+			return err
+		}
+		entry, err := ledger.PostJournal(j, settings)
+		if err != nil {
+			return err
+		}
+		stored, err := u.Ledger().ByIdentity(ctx, ledger.JournalIdentity(id, doc.Version, ledger.RuleManualJournal))
+		if err != nil {
+			return err
+		}
+		original, err := fromStorage(stored, settings.Base)
+		if err != nil {
+			return err
+		}
+		reversal, err := ledger.Reverse(original, original.PostingDate, reason)
+		if err != nil {
+			return err
+		}
+		edited, err := u.Documents().Edit(ctx, id, b, preparer)
+		if err != nil {
+			return err
+		}
+		if out.Reversal, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
+			return err
+		}
+		if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+			return err
+		}
+		edited.Number = doc.Number
+		if err := s.after(ctx, u, edited, out.Reversal); err != nil {
+			return err
+		}
+		return s.after(ctx, u, edited, out.Entry)
+	})
+	return out, err
+}
+
+// editable refuses an edit of anything but a posted manual journal.
+func editable(doc storage.Document) error {
+	if err := isJournal(doc); err != nil {
+		return err
+	}
+	if doc.Status != storage.DocumentPosted {
+		return &Error{CodeNotPosted, fmt.Sprintf("the journal is %s, not posted", doc.Status), "Only a posted journal is edited this way; change a draft as it is"}
+	}
+	return nil
+}
+
 func (s Service) after(ctx context.Context, u storage.UnitOfWork, doc storage.Document, e storage.Entry) error {
 	if s.AfterPosting == nil {
 		return nil
@@ -404,15 +489,57 @@ func (s Service) Debits(ctx context.Context, org, id uuid.UUID) (money.Money, er
 		if err != nil {
 			return err
 		}
-		out = money.Zero(settings.Base)
-		for _, l := range entry.Lines {
-			if l.Base.Sign() > 0 {
-				if out, err = out.Add(l.Base); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
+		out, err = debitsOf(entry, settings.Base)
+		return err
 	})
 	return out, err
+}
+
+// EditDebits runs the posting rules over the edit d of a posted journal without writing anything, and answers its
+// debits in the base currency, as Debits does for a draft (FM-2): an edit the rules refuse answers their problems.
+func (s Service) EditDebits(ctx context.Context, org, id uuid.UUID, d Draft) (money.Money, error) {
+	b, err := encode(d)
+	if err != nil {
+		return money.Money{}, err
+	}
+	var out money.Money
+	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if err := editable(doc); err != nil {
+			return err
+		}
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		doc.Version, doc.Payload = doc.Version+1, b
+		j, err := decode(doc, settings.Base)
+		if err != nil {
+			return err
+		}
+		entry, err := ledger.PostJournal(j, settings)
+		if err != nil {
+			return err
+		}
+		out, err = debitsOf(entry, settings.Base)
+		return err
+	})
+	return out, err
+}
+
+// debitsOf adds up an entry's debits in the base currency.
+func debitsOf(e ledger.Entry, base money.Currency) (money.Money, error) {
+	out := money.Zero(base)
+	for _, l := range e.Lines {
+		if l.Base.Sign() > 0 {
+			var err error
+			if out, err = out.Add(l.Base); err != nil {
+				return money.Money{}, err
+			}
+		}
+	}
+	return out, nil
 }

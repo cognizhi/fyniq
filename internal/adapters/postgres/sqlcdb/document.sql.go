@@ -12,6 +12,31 @@ import (
 	"github.com/google/uuid"
 )
 
+const editDocument = `-- name: EditDocument :exec
+UPDATE fyniq.document
+SET current_version = $1, posted_by = $2::text, posted_at = $3::timestamptz
+WHERE id = $4
+`
+
+type EditDocumentParams struct {
+	Version  int32
+	PostedBy string
+	PostedAt time.Time
+	ID       uuid.UUID
+}
+
+// An edit of a posted document (FR-GL-12): its next version becomes current with who posted the edit and when, in one
+// statement (document_guard, FY053); document_edit_posted checks the reversal and the new entry at commit (FY055).
+func (q *Queries) EditDocument(ctx context.Context, arg EditDocumentParams) error {
+	_, err := q.db.Exec(ctx, editDocument,
+		arg.Version,
+		arg.PostedBy,
+		arg.PostedAt,
+		arg.ID,
+	)
+	return err
+}
+
 const getDocument = `-- name: GetDocument :one
 SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
 FROM fyniq.document d

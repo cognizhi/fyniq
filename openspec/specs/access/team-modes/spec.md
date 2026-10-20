@@ -143,6 +143,12 @@ Source: PRD-001 §6.4
 - **AND** another member who holds A on Journals approves it, and the reversal posts then
 - **AND** in Standard and Enterprise modes a person who holds P on Journals reverses directly
 
+#### Scenario: An edit of a posted journal in Founder mode is asked for (rev 0.54)
+- **GIVEN** the organisation is in Founder mode
+- **WHEN** a founder edits a posted journal
+- **THEN** the edit is refused (JOURNAL-10) and asked for with its new content and reason
+- **AND** another member who holds A on Journals approves it, and the edit posts then
+
 ### Requirement: FM-2 Self-approval below a threshold
 In Founder mode, a founder SHALL be allowed to self-approve routine items at or below a threshold (default S$2,000 per document; configurable), and each self-approval SHALL be flagged "self-approved" and queued for review.
 

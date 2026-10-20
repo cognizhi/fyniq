@@ -701,6 +701,32 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return requestsOf(e, "journal") == was }
 	},
+	// An edit in Founder mode is asked for (requestJournalEdit), so the row edits in an organisation in Standard mode.
+	"editJournal": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.postedJournal("10.00")
+		r := s.call(http.MethodPost, "/v1/journals/"+id+"/edit", tok, s.edit("12.00", "2026-10-21", "Matrix test"), "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/journals/"+id, s.as(authz.Accountant), nil).Header.Get("ETag") == tag
+		}
+	},
+	"requestJournalEdit": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "journal")
+		id, tag := e.postedJournal("10.00")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/journals/"+id+"/edit-approval", person, e.edit("12.00", "2026-10-21", "Matrix test"), "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "journal") == was }
+	},
 	// A void in Founder mode is asked for (requestJournalReversal), so the row reverses in an organisation in Standard mode.
 	"reverseJournal": func(e *env, tok string) (response, func() bool) {
 		s := inStandardMode(e)

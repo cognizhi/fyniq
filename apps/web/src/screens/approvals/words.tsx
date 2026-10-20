@@ -18,6 +18,7 @@ const operations: Record<Approval["operation"], string> = {
   "period.reopen": "Reopen a closed period",
   "journal.post": "Post a journal",
   "journal.reverse": "Reverse a journal",
+  "journal.edit": "Edit a posted journal",
 };
 
 export function operationLabel(op: string): string {

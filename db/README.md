@@ -121,6 +121,7 @@ Add one only with its access model here and in the test's list.
 | INV-13 share capital only from the register or the opening balances (rev 0.24, from P0; rev 0.49) | `account.role = 'share-capital'` (000014), set at creation and fixed by `account_guard` (`FY040`); `journal_line_check` refuses a line to such an account from any source but `share_issue` and `opening_balance` (`FY007`, an allow list since 000054) | `TestAttackManualJournalToShareCapitalFails`, `TestAttackOpeningBalancesAreOneAndOnlyTheyReachShareCapital` |
 | Documents (§11.4, FR-GL-12) | `document_version` rows immutable; `document_guard`: draft → posted → reversed only, type fixed, version only forward; the current version must exist (deferred FK) | `TestAttackDocumentVersionsAndStatusesCannotBeRewound` |
 | Preparer and approver (FR-GL-01, rev 0.48) | `document_version.created_by` required on every new version (`document_version_created_by`, `FY053`); `document.posted_by` and `posted_at` set with the move from draft to posted and never changed (`document_guard`, `FY053`) | `TestAttackDocumentActorsAreRecordedOnce` |
+| Edits of posted documents (FR-GL-12, rev 0.54) | `document_guard`: a posted document's version moves forward only with who posted the edit and when set anew (`FY053`), and a reversed document never changes (`FY055`); `document_edit_posted`, deferred to commit: the new version has its entry and the entry of the version it replaced is reversed (`FY055`) | `TestAttackAnEditReversesAndPostsTogether` |
 | The close (FR-GL-07, FM-4, AUD-04; rev 0.50) | `period_close_check` and `period_close` never change (`FY152`); `period_close_guard` refuses an attestation by the one who ran the checks, on unclean checks or another period's, or before them (`FY153`); `period_close_snapshot_hash` recomputes the snapshot's SHA-256; the stale-check refusal (G4-053) runs in the API under the ledger lock | `TestAttackTheCloseIsAttestedByAnotherOnItsOwnChecks`, `TestRaceBackDatedPostingAgainstTheAttestedClose` |
 | Reopening (FR-GL-08, FM-1; rev 0.51) | `period_reopen` never changes (`FY154`); `period_reopen_guard` ties it to the period's latest close and an approved request to reopen that period, signed by the one who reopens it (`FY155`); `period_reopen_after_hash` recomputes the after snapshot's SHA-256 | `TestAttackAReopeningIsTheApprovedRequest` |
 
@@ -149,8 +150,9 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY046 | STORAGE-REV-01 | The ledger revision only increases by one |
 | FY050, FY052 | STORAGE-DOC-01 | A document's type cannot change, nor its version go back |
 | FY051 | STORAGE-DOC-02 | A document moves only draft → posted → reversed |
-| FY053 | STORAGE-DOC-03 | A document version names who saved it; a posting names who posted it and when, set once |
+| FY053 | STORAGE-DOC-03 | A document version names who saved it; a posting names who posted it and when, set when it posts or its edit posts, and never otherwise |
 | FY054 | STORAGE-DOC-01 | The opening balances document is one per organisation, of its own type, and never changes or goes |
+| FY055 | STORAGE-DOC-04 | An edit of a posted document reverses the entry it replaces and posts its new version in the same transaction; a reversed document never changes |
 | FY152 | STORAGE-CLOSE-01 | A record of the close (a run of the checks, a close) never changes or goes |
 | FY153 | STORAGE-CLOSE-01 | A close is attested by someone other than the one who ran its checks, on clean checks of the same period, after them |
 | FY154 | STORAGE-CLOSE-01 | A reopening never changes or goes |

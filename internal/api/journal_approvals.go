@@ -35,9 +35,10 @@ const (
 	CodeOwnJournal    = "JOURNAL-09" // the one who prepared a journal never approves it (SOD-3)
 )
 
-// JournalApprovalCodes are the codes an approval of a journal's post or void may answer: SOD-3, and the posting's own.
+// JournalApprovalCodes are the codes an approval of a journal's post, void or edit may answer: SOD-3, and the
+// posting's own.
 func JournalApprovalCodes() []string {
-	return append([]string{CodeOwnJournal, journal.CodeNotDraft, journal.CodeNotPosted}, postingCodes()...)
+	return append([]string{CodeOwnJournal, journal.CodeNotDraft, journal.CodeNotPosted, storage.CodeDocumentEdit}, postingCodes()...)
 }
 
 // selfApprovalThreshold is the threshold in force today.
@@ -185,7 +186,7 @@ type journalRequestOutput struct {
 
 // requestFor asks for approval of a change to a journal at the version read.
 func (a *API) requestFor(ctx context.Context, rawID, key, ifMatch, prefer string, request any, status storage.DocumentStatus,
-	change func(doc storage.Document, j Journal, debits string) pendingChange) (*journalRequestOutput, error) {
+	change func(ctx context.Context, u storage.UnitOfWork, doc storage.Document, j Journal, debits string) (pendingChange, error)) (*journalRequestOutput, error) {
 	id, err := parseID("journal_id", rawID)
 	if err != nil {
 		return nil, err
@@ -217,7 +218,11 @@ func (a *API) requestFor(ctx context.Context, rawID, key, ifMatch, prefer string
 		if err != nil {
 			return Approval{}, err
 		}
-		return a.requestApproval(ctx, u, change(doc, j, debits))
+		c, err := change(ctx, u, doc, j, debits)
+		if err != nil {
+			return Approval{}, err
+		}
+		return a.requestApproval(ctx, u, c)
 	})
 	if err != nil {
 		return nil, err
@@ -253,12 +258,13 @@ func registerJournalApprovals(a *API) {
 			"person signed in who passed step-up, and If-Match with the journal's ETag. Idempotent with Idempotency-Key; Prefer: " +
 			"return=preview checks it and asks nothing.",
 	}, codes, func(ctx context.Context, in *journalRequestInput) (*journalRequestOutput, error) {
-		return a.requestFor(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, storage.DocumentDraft, func(doc storage.Document, j Journal, debits string) pendingChange {
-			return pendingChange{ObjectType: approval.ObjectJournal, ObjectKey: doc.ID.String(), Operation: approval.OpJournalPost,
-				Summary: fmt.Sprintf("Post %s, debits %s", journalName(doc, j), debits),
-				Execute: map[string]any{"journal_id": doc.ID.String(), "version": fmt.Sprint(doc.Version)},
-				Diff:    []ApprovalDiff{{Field: "status", Before: "draft", After: "posted"}, {Field: "debits", After: debits}}}
-		})
+		return a.requestFor(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, storage.DocumentDraft,
+			func(_ context.Context, _ storage.UnitOfWork, doc storage.Document, j Journal, debits string) (pendingChange, error) {
+				return pendingChange{ObjectType: approval.ObjectJournal, ObjectKey: doc.ID.String(), Operation: approval.OpJournalPost,
+					Summary: fmt.Sprintf("Post %s, debits %s", journalName(doc, j), debits),
+					Execute: map[string]any{"journal_id": doc.ID.String(), "version": fmt.Sprint(doc.Version)},
+					Diff:    []ApprovalDiff{{Field: "status", Before: "draft", After: "posted"}, {Field: "debits", After: debits}}}, nil
+			})
 	})
 
 	register(a, authz.RequestJournalReversal, huma.Operation{
@@ -274,11 +280,12 @@ func registerJournalApprovals(a *API) {
 			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.date", Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"}})
 		}
 		reason := strings.TrimSpace(in.Body.Reason)
-		return a.requestFor(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, storage.DocumentPosted, func(doc storage.Document, j Journal, debits string) pendingChange {
-			return pendingChange{ObjectType: approval.ObjectJournal, ObjectKey: doc.ID.String(), Operation: approval.OpJournalReverse,
-				Summary: fmt.Sprintf("Reverse %s on %s: %s", journalName(doc, j), in.Body.Date, reason),
-				Execute: map[string]any{"journal_id": doc.ID.String(), "version": fmt.Sprint(doc.Version), "date": in.Body.Date, "reason": reason},
-				Diff:    []ApprovalDiff{{Field: "status", Before: "posted", After: "reversed"}, {Field: "reversal_date", After: in.Body.Date}}}
-		})
+		return a.requestFor(ctx, in.JournalID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, storage.DocumentPosted,
+			func(_ context.Context, _ storage.UnitOfWork, doc storage.Document, j Journal, debits string) (pendingChange, error) {
+				return pendingChange{ObjectType: approval.ObjectJournal, ObjectKey: doc.ID.String(), Operation: approval.OpJournalReverse,
+					Summary: fmt.Sprintf("Reverse %s on %s: %s", journalName(doc, j), in.Body.Date, reason),
+					Execute: map[string]any{"journal_id": doc.ID.String(), "version": fmt.Sprint(doc.Version), "date": in.Body.Date, "reason": reason},
+					Diff:    []ApprovalDiff{{Field: "status", Before: "posted", After: "reversed"}, {Field: "reversal_date", After: in.Body.Date}}}, nil
+			})
 	})
 }

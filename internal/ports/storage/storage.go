@@ -111,6 +111,11 @@ type Documents interface {
 	SetStatus(ctx context.Context, id uuid.UUID, to DocumentStatus) error
 	// Revise saves a new version of a document with its payload, which becomes the current one.
 	Revise(ctx context.Context, id uuid.UUID, payload []byte) (Document, error)
+	// Edit saves the next version of a posted document with its payload, saved by preparer ("type:id"; empty for the
+	// actor), and makes it the current one with the actor as who posted the edit, now (FR-GL-12). The caller reverses
+	// the entry of the version it had and posts the new one in the same unit of work: the database refuses the commit
+	// otherwise (CodeDocumentEdit).
+	Edit(ctx context.Context, id uuid.UUID, payload []byte, preparer string) (Document, error)
 	// Page lists documents of a type at their current version, newest date first, after a cursor.
 	Page(ctx context.Context, f DocumentFilter) ([]Document, error)
 	// OpeningBalance is the organisation's opening balances document at its current version, or ports.ErrNotFound.
@@ -467,6 +472,7 @@ const (
 	CodeDocument       = "STORAGE-DOC-01"        // a document's type cannot change, or its version go back
 	CodeDocumentStatus = "STORAGE-DOC-02"        // a document cannot move to that status
 	CodeDocumentActor  = "STORAGE-DOC-03"        // a version or a posting names no actor, or who posted it changed
+	CodeDocumentEdit   = "STORAGE-DOC-04"        // an edit of a posted document posts and reverses together; a reversed one never changes
 	CodeClose          = "STORAGE-CLOSE-01"      // a close is attested by the one who ran its checks, or on checks not clean or of another period; or a close record changed
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state

@@ -49,7 +49,16 @@
   `requestJournalPost` asks; the approval checks SOD-3 against who saved the version (JOURNAL-09) and posts as the
   approver. In Founder mode `reverseJournal` refuses a posted journal (JOURNAL-08) and `requestJournalReversal` asks.
   Tests: `TestJournalApprovals`, `TestJournalThresholdInStandardMode`, the matrix rows. The web screens follow.)
-- [ ] 2.3 Edit a posted journal in an open period: a new version whose post writes the reversal and the replacement in one transaction. Tests `// req: FR-GL-12` and `// req: ledger/posting-rules Edits of posted documents`
+- [x] 2.3 Edit a posted journal in an open period: a new version whose post writes the reversal and the replacement in one transaction. Tests `// req: FR-GL-12` and `// req: ledger/posting-rules Edits of posted documents`
+  (21 Oct 2026, PRD rev 0.54: `editJournal` takes the new content and a reason; `journal.Service.Edit` saves the next
+  version, reverses the old entry on its own date and posts the new one, in one transaction; the journal stays posted.
+  Migration 000061: `document_guard` lets a posted document's version move only with who posted the edit set anew
+  (FY053) and freezes reversed documents (FY055); the deferred `document_edit_posted` checks both postings at commit
+  (FY055); approval requests take `journal.edit` (000062 validates). In Founder mode an edit is refused (JOURNAL-10),
+  and above the threshold in any mode (JOURNAL-07); `requestJournalEdit` keeps the content beside the envelope, bound
+  by its SHA-256, and lists the changed lines. Tests: `TestEditAPostedJournal`, `TestEditAPostedJournalInFounderMode`,
+  `TestAttackAnEditReversesAndPostsTogether`, the matrix rows. The oracle's edit shape stays with 8.1; the web
+  follows.)
 - [ ] 2.4 Auto-reversing journals (the reversal date, by default the first day of the next period) and recurring journal templates. Tests `// req: FR-GL-02`
 
 ## 3. Opening balances

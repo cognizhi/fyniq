@@ -40,7 +40,7 @@ const (
 	ObjectPack       = "statutory_pack"       // a statutory pack version the organisation activates (ENG-32, SOD-10); its key is the version's id
 	ObjectTeamMode   = "team_mode"            // the organisation's team mode (§6.4, FR-ADM-04); its key is TeamModeKey
 	ObjectPeriod     = "period"               // a closed accounting period to reopen (FR-GL-08, FM-1); its key is the period's id
-	ObjectJournal    = "journal"              // a manual journal to post above the threshold or to void (FR-GL-01, FM-1, FM-2); its key is its id
+	ObjectJournal    = "journal"              // a manual journal to post above the threshold, to void or to edit (FR-GL-01, FR-GL-12, FM-1, FM-2); its key is its id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -58,6 +58,7 @@ const (
 	OpPeriodReopen   = "period.reopen"
 	OpJournalPost    = "journal.post"
 	OpJournalReverse = "journal.reverse"
+	OpJournalEdit    = "journal.edit"
 )
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any

@@ -309,6 +309,17 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** it is reversed again
 - **THEN** the second reversal is refused
 
+#### Scenario: Editing a posted journal (rev 0.54)
+- **GIVEN** a posted journal whose entry's period is open
+- **WHEN** a person who holds P on Journals edits it with new content and a reason
+- **THEN** in one transaction its next version is saved, the entry it had is reversed on that entry's date and the new version's entry posts on its date
+- **AND** the journal stays posted, keeps its number, and records who prepared the new version and who posted the edit
+- **AND** the database refuses an edit without both postings, and any change to a reversed journal
+
+#### Scenario: An edit needs the approval a void needs (rev 0.54)
+- **WHEN** a posted journal is edited in Founder mode, or its new debits are above the self-approval threshold
+- **THEN** the edit is refused and asked for; another person who holds A on Journals approves it, and it posts as them
+
 ### Requirement: FR-GL-13 Intercompany journals and eliminations
 The system SHALL support intercompany journals and eliminations.
 
