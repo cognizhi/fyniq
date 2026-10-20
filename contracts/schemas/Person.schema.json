@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The member's user ID, or the client's or service's name.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "user is a member; ai the assistant acting for one; integration and service act on their own.",
+      "enum": [
+        "user",
+        "ai",
+        "integration",
+        "service"
+      ],
+      "examples": [
+        "user"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The member's name, while they are a member.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "id"
+  ],
+  "title": "Person",
+  "type": "object"
+}

@@ -18,7 +18,14 @@
 
 ## 2. Journals
 
-- [ ] 2.1 List journals by status, date and text with a cursor; save a draft as a new version under If-Match; record the preparer and the approver. Tests `// req: FR-GL-01`
+- [x] 2.1 List journals by status, date and text with a cursor; save a draft as a new version under If-Match; record the preparer and the approver. Tests `// req: FR-GL-01`
+  (21 Oct 2026, PRD rev 0.48: migration 000052 adds `document_version.created_by` and `document.posted_by`/`posted_at`;
+  the database refuses a new version without who saved it and a posting without who posted it and when, and any later
+  change to them (FY053, STORAGE-DOC-03). `GET /v1/journals` lists journals newest date first (a draft without a date last)
+  by status, dates and text in the memo or number, with debit totals per currency; `PUT /v1/journals/{id}` saves a draft's
+  next version under If-Match; every journal answer names its preparer and poster. The approver becomes the approval's
+  signers with task 2.2. Tests: `TestJournalListDraftVersionsAndWhoPrepared`, `TestAttackDocumentActorsAreRecordedOnce`,
+  two authorisation-matrix rows.)
 - [ ] 2.2 Amount conditions on a `journal` approval policy: FM-2's self-approval at or below the threshold, flagged and logged for the FM-3 review; above it, an approval request; SOD-3 in Standard mode; FM-1 for voids. Tests `// req: FR-GL-01`, `// req: FM-2`, `// req: SOD-3` and `// req: FM-1`
 - [ ] 2.3 Edit a posted journal in an open period: a new version whose post writes the reversal and the replacement in one transaction. Tests `// req: FR-GL-12` and `// req: ledger/posting-rules Edits of posted documents`
 - [ ] 2.4 Auto-reversing journals (the reversal date, by default the first day of the next period) and recurring journal templates. Tests `// req: FR-GL-02`

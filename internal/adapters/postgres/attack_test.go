@@ -668,6 +668,51 @@ func TestAttackDocumentVersionsAndStatusesCannotBeRewound(t *testing.T) {
 	}
 }
 
+// Every new version names who saved it, and a posting names who posted it and when, set with the move to posted and
+// never changed after (FR-GL-01, rev 0.48).
+// req: FR-GL-01
+func TestAttackDocumentActorsAreRecordedOnce(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Attack document actors Pte Ltd")
+	var draft, posted storage.Document
+	if err := store(t, "fyniq_api").Do(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "attacker-test"}}), b.Org,
+		func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			if draft, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"lines":[]}`)}); err != nil {
+				return err
+			}
+			if posted, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: []byte(`{"lines":[]}`)}); err != nil {
+				return err
+			}
+			if err = u.Documents().SetStatus(ctx, posted.ID, storage.DocumentPosted); err != nil {
+				return err
+			}
+			posted, err = u.Documents().Get(ctx, posted.ID)
+			return err
+		}); err != nil {
+		t.Fatal(err)
+	}
+	if draft.SavedBy != "user:attacker-test" || posted.PostedBy != "user:attacker-test" || posted.PostedAt == nil {
+		t.Fatalf("the actors recorded: %+v %+v", draft, posted)
+	}
+	d, p := draft.ID.String(), posted.ID.String()
+	for _, c := range []struct{ role, stmt, state string }{
+		// A version without who saved it, or with a malformed actor.
+		{"fyniq_api", "INSERT INTO fyniq.document_version (document_id, version, payload) VALUES ('" + d + "', 2, '{}')", "FY053"},
+		{"fyniq_api", "INSERT INTO fyniq.document_version (document_id, version, payload, created_by) VALUES ('" + d + "', 2, '{}', 'nobody')", "23514"},
+		// Posting without who posted it; changing who posted it after.
+		{"fyniq_api", "UPDATE fyniq.document SET status = 'posted' WHERE id = '" + d + "'", "FY053"},
+		{"fyniq_api", "UPDATE fyniq.document SET posted_by = 'user:someone-else' WHERE id = '" + p + "'", "FY053"},
+		{"fyniq_api", "UPDATE fyniq.document SET posted_at = now() - interval '1 day' WHERE id = '" + p + "'", "FY053"},
+		{"fyniq_api", "UPDATE fyniq.document SET posted_by = 'user:early', posted_at = now() WHERE id = '" + d + "'", "FY053"},
+		{"fyniq_migrator", "UPDATE fyniq.document SET posted_by = NULL, posted_at = NULL WHERE id = '" + p + "'", "FY053"},
+		{"fyniq_api", "UPDATE fyniq.document_version SET created_by = 'user:x'", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.role+": "+c.stmt, err, c.state)
+	}
+}
+
 // An organisation reads only its own members' names, and an invitation is withdrawn or accepted once, never
 // changed again; the last Owner keeps the role (FR-ADM-01, rev 0.35).
 // req: FR-ADM-01

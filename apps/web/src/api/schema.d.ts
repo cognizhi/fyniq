@@ -339,7 +339,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the journals
+         * @description The organisation's manual journals at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency and who prepared and posted it (FR-GL-01). Read-only; no side effects.
+         */
+        get: operations["listJournals"];
         put?: never;
         /**
          * Save a draft journal
@@ -364,7 +368,11 @@ export interface paths {
          * @description Returns a manual journal's current version and status, with its ETag. Read-only; no side effects.
          */
         get: operations["getJournal"];
-        put?: never;
+        /**
+         * Change a draft journal
+         * @description Saves the draft's new content as its next version, recording who saved it (FR-GL-01); the earlier versions are kept. Only a draft changes: a posted journal is corrected by reversal (FR-GL-12). Like createJournal, a draft is checked only for its amounts and currencies. Side effects: the new version and its audit event. Needs If-Match with the draft's ETag. Prefer: return=preview checks it and saves nothing.
+         */
+        put: operations["replaceJournal"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3061,6 +3069,16 @@ export interface components {
              */
             number?: string;
             /**
+             * Format: date-time
+             * @description When it was posted.
+             * @example 2026-10-31T09:30:00Z
+             */
+            posted_at?: string;
+            /** @description Who posted it, once posted; absent for journals from before it was recorded. */
+            posted_by?: components["schemas"]["Person"];
+            /** @description Who saved the current version; absent for journals from before it was recorded. */
+            prepared_by?: components["schemas"]["Person"];
+            /**
              * @description Draft (✎), posted, or reversed by a reversing entry.
              * @example draft
              * @enum {string}
@@ -3117,11 +3135,73 @@ export interface components {
              */
             fx_rate_source?: string;
         };
+        JournalPage: {
+            items: components["schemas"]["JournalSummary"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYtMTAtMzF8MDE5MiJ9
+             */
+            next_cursor?: string;
+        };
         JournalPosting: {
             /** @description The entry the command posted: the journal's entry, or its reversing entry. */
             entry: components["schemas"]["Entry"];
             /** @description The journal after the command. */
             journal: components["schemas"]["Journal"];
+        };
+        JournalSummary: {
+            /**
+             * Format: date
+             * @description The date it belongs to.
+             * @example 2026-10-31
+             */
+            date?: string;
+            /** @description The total of its debit lines, per currency, as entered. */
+            debits: components["schemas"]["Money"][];
+            /**
+             * Format: uuid
+             * @description The journal's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many lines it has.
+             * @example 2
+             */
+            lines: number;
+            /**
+             * @description What it is for.
+             * @example October rent accrual
+             */
+            memo?: string;
+            /**
+             * @description Its number, once it has one.
+             * @example JNL-0042
+             */
+            number?: string;
+            /**
+             * Format: date-time
+             * @description When it was posted.
+             * @example 2026-10-31T09:30:00Z
+             */
+            posted_at?: string;
+            /** @description Who posted it. */
+            posted_by?: components["schemas"]["Person"];
+            /** @description Who saved the current version. */
+            prepared_by?: components["schemas"]["Person"];
+            /**
+             * @description Draft (✎), posted, or reversed.
+             * @example posted
+             * @enum {string}
+             */
+            status: "draft" | "posted" | "reversed";
+            /**
+             * Format: int64
+             * @description The version of its content.
+             * @example 2
+             */
+            version: number;
         };
         Member: {
             /**
@@ -3709,6 +3789,24 @@ export interface components {
             next_cursor?: string;
             /** @description The financial year that opens next with openFinancialYear; absent until the books start and the first year end are set. */
             next_year?: components["schemas"]["FinancialYear"];
+        };
+        Person: {
+            /**
+             * @description The member's user ID, or the client's or service's name.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            id: string;
+            /**
+             * @description user is a member; ai the assistant acting for one; integration and service act on their own.
+             * @example user
+             * @enum {string}
+             */
+            kind: "user" | "ai" | "integration" | "service";
+            /**
+             * @description The member's name, while they are a member.
+             * @example Wei Ling Tan
+             */
+            name?: string;
         };
         PossibleDuplicate: {
             /**
@@ -7393,6 +7491,94 @@ export interface operations {
             };
         };
     };
+    listJournals: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only journals with this status. */
+                status?: "draft" | "posted" | "reversed";
+                /** @description Only journals dated on or after this day. */
+                from?: string;
+                /** @description Only journals dated on or before this day. */
+                to?: string;
+                /** @description Only journals whose memo or number contains this text, ignoring case. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     createJournal: {
         parameters: {
             query?: never;
@@ -7619,6 +7805,168 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceJournal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The journal's ID. */
+                journal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Journal"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `JOURNAL-02` The journal is not a draft; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid; `MONEY-05` An exchange rate is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

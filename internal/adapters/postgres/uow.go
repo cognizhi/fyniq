@@ -368,7 +368,9 @@ func (r documents) Create(ctx context.Context, d storage.NewDocument) (storage.D
 	if err != nil {
 		return storage.Document{}, mapError(err)
 	}
-	if err := r.u.q.InsertDocumentVersion(ctx, sqlcdb.InsertDocumentVersionParams{DocumentID: row.ID, Version: row.CurrentVersion, Payload: d.Payload}); err != nil {
+	by := r.u.actor(ctx)
+	if err := r.u.q.InsertDocumentVersion(ctx, sqlcdb.InsertDocumentVersionParams{DocumentID: row.ID, Version: row.CurrentVersion, Payload: d.Payload,
+		CreatedBy: &by}); err != nil {
 		return storage.Document{}, mapError(err)
 	}
 	payload, err := jsonValue(d.Payload)
@@ -381,7 +383,63 @@ func (r documents) Create(ctx context.Context, d storage.NewDocument) (storage.D
 		return storage.Document{}, err
 	}
 	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
-		Version: int(row.CurrentVersion), Payload: d.Payload}, nil
+		Version: int(row.CurrentVersion), Payload: d.Payload, SavedBy: by}, nil
+}
+
+func (r documents) Revise(ctx context.Context, id uuid.UUID, payload []byte) (storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Document{}, err
+	}
+	cur, err := r.u.q.LockDocument(ctx, id)
+	if err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	next, by := cur.CurrentVersion+1, r.u.actor(ctx)
+	if err := r.u.q.InsertDocumentVersion(ctx, sqlcdb.InsertDocumentVersionParams{DocumentID: id, Version: next, Payload: payload, CreatedBy: &by}); err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	if err := r.u.q.SetDocumentVersion(ctx, sqlcdb.SetDocumentVersionParams{ID: id, Version: next}); err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	before, err := jsonValue(cur.Payload)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	after, err := jsonValue(payload)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	v := int(next)
+	if err := r.u.event(ctx, "document.revised", "document", id, &v, map[string][2]any{
+		"version": {cur.CurrentVersion, next}, "payload": {before, after}}); err != nil {
+		return storage.Document{}, err
+	}
+	return storage.Document{ID: id, Type: storage.DocumentType(cur.Type), Status: storage.DocumentStatus(cur.Status), Version: v, Payload: payload,
+		Number: str(cur.Number), SavedBy: by, PostedBy: str(cur.PostedBy), PostedAt: cur.PostedAt}, nil
+}
+
+func (r documents) Page(ctx context.Context, f storage.DocumentFilter) ([]storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	opt := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
+	rows, err := r.u.q.ListDocuments(ctx, sqlcdb.ListDocumentsParams{Type: string(f.Type), Status: opt(string(f.Status)), DateFrom: opt(f.From),
+		DateTo: opt(f.To), Search: opt(f.Search), AfterID: f.AfterID, AfterDate: f.AfterDate, PageSize: int32(min(max(f.Limit, 1), 1000))}) // 1 to 1,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Document, len(rows))
+	for i, row := range rows {
+		out[i] = storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+			Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy),
+			PostedBy: str(row.PostedBy), PostedAt: row.PostedAt, Date: row.Date}
+	}
+	return out, nil
 }
 
 func (r documents) Get(ctx context.Context, id uuid.UUID) (storage.Document, error) {
@@ -393,7 +451,8 @@ func (r documents) Get(ctx context.Context, id uuid.UUID) (storage.Document, err
 		return storage.Document{}, mapError(err)
 	}
 	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
-		Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number)}, nil
+		Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy),
+		PostedBy: str(row.PostedBy), PostedAt: row.PostedAt}, nil
 }
 
 func (r documents) Lock(ctx context.Context, id uuid.UUID) (storage.Document, error) {
@@ -405,7 +464,8 @@ func (r documents) Lock(ctx context.Context, id uuid.UUID) (storage.Document, er
 		return storage.Document{}, mapError(err)
 	}
 	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
-		Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number)}, nil
+		Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy),
+		PostedBy: str(row.PostedBy), PostedAt: row.PostedAt}, nil
 }
 
 func (r documents) SetStatus(ctx context.Context, id uuid.UUID, to storage.DocumentStatus) error {
@@ -416,7 +476,12 @@ func (r documents) SetStatus(ctx context.Context, id uuid.UUID, to storage.Docum
 	if err != nil {
 		return mapError(err)
 	}
-	if err := r.u.q.SetDocumentStatus(ctx, sqlcdb.SetDocumentStatusParams{ID: id, Status: string(to)}); err != nil {
+	params := sqlcdb.SetDocumentStatusParams{ID: id, Status: string(to)}
+	if to == storage.DocumentPosted {
+		by, at := r.u.actor(ctx), r.u.store.clock.Now()
+		params.PostedBy, params.PostedAt = &by, &at
+	}
+	if err := r.u.q.SetDocumentStatus(ctx, params); err != nil {
 		return mapError(err)
 	}
 	return r.u.event(ctx, "document."+string(to), "document", id, nil, map[string][2]any{"status": {before, string(to)}})

@@ -105,8 +105,25 @@ type Documents interface {
 	// Lock is Get with the document's row locked until commit: ENG-47 step 1, taken before the
 	// ledger lock by any command that changes the document.
 	Lock(ctx context.Context, id uuid.UUID) (Document, error)
-	// SetStatus moves a document draft → posted → reversed; the database refuses any other move.
+	// SetStatus moves a document draft → posted → reversed; the database refuses any other move. Posting
+	// records who posted it and when (FY053).
 	SetStatus(ctx context.Context, id uuid.UUID, to DocumentStatus) error
+	// Revise saves a new version of a document with its payload, which becomes the current one.
+	Revise(ctx context.Context, id uuid.UUID, payload []byte) (Document, error)
+	// Page lists documents of a type at their current version, newest date first, after a cursor.
+	Page(ctx context.Context, f DocumentFilter) ([]Document, error)
+}
+
+// DocumentFilter narrows a list of documents. Empty fields do not narrow it.
+type DocumentFilter struct {
+	Type     DocumentType
+	Status   DocumentStatus
+	From, To string // payload dates, YYYY-MM-DD, inclusive
+	Search   string // matched in the memo or the number, as typed
+	// After is the cursor: the date and ID of the last document of the previous page.
+	AfterDate string
+	AfterID   *uuid.UUID
+	Limit     int
 }
 
 // Periods are the accounting periods.
@@ -312,6 +329,12 @@ type Document struct {
 	Version int
 	Payload []byte
 	Number  string // its document number, once it has one (FR-ORG-04); empty before
+	// SavedBy is who saved the current version and PostedBy who posted it, as "type:id" (FR-GL-01); empty for
+	// documents from before they were recorded.
+	SavedBy  string
+	PostedBy string
+	PostedAt *time.Time
+	Date     string // the payload's date, in a list
 }
 
 // Source is where an entry comes from (ENG-03).
@@ -413,6 +436,7 @@ const (
 	CodeOrganisation   = "STORAGE-ORG-01"
 	CodeDocument       = "STORAGE-DOC-01"        // a document's type cannot change, or its version go back
 	CodeDocumentStatus = "STORAGE-DOC-02"        // a document cannot move to that status
+	CodeDocumentActor  = "STORAGE-DOC-03"        // a version or a posting names no actor, or who posted it changed
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

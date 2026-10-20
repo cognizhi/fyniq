@@ -2368,6 +2368,18 @@ components:
           examples:
             - JNL-0042
           type: string
+        posted_at:
+          description: When it was posted.
+          examples:
+            - "2026-10-31T09:30:00Z"
+          format: date-time
+          type: string
+        posted_by:
+          $ref: "#/components/schemas/Person"
+          description: Who posted it, once posted; absent for journals from before it was recorded.
+        prepared_by:
+          $ref: "#/components/schemas/Person"
+          description: Who saved the current version; absent for journals from before it was recorded.
         status:
           description: Draft (✎), posted, or reversed by a reversing entry.
           enum:
@@ -2464,6 +2476,21 @@ components:
         - account_id
         - amount
       type: object
+    JournalPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/JournalSummary"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjIwMjYtMTAtMzF8MDE5MiJ9
+          type: string
+      required:
+        - items
+      type: object
     JournalPosting:
       additionalProperties: false
       properties:
@@ -2476,6 +2503,76 @@ components:
       required:
         - journal
         - entry
+      type: object
+    JournalSummary:
+      additionalProperties: false
+      properties:
+        date:
+          description: The date it belongs to.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        debits:
+          description: The total of its debit lines, per currency, as entered.
+          items:
+            $ref: "#/components/schemas/Money"
+          type: array
+        id:
+          description: The journal's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          format: uuid
+          type: string
+        lines:
+          description: How many lines it has.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        memo:
+          description: What it is for.
+          examples:
+            - October rent accrual
+          type: string
+        number:
+          description: Its number, once it has one.
+          examples:
+            - JNL-0042
+          type: string
+        posted_at:
+          description: When it was posted.
+          examples:
+            - "2026-10-31T09:30:00Z"
+          format: date-time
+          type: string
+        posted_by:
+          $ref: "#/components/schemas/Person"
+          description: Who posted it.
+        prepared_by:
+          $ref: "#/components/schemas/Person"
+          description: Who saved the current version.
+        status:
+          description: Draft (✎), posted, or reversed.
+          enum:
+            - draft
+            - posted
+            - reversed
+          examples:
+            - posted
+          type: string
+        version:
+          description: The version of its content.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - id
+        - status
+        - version
+        - lines
+        - debits
       type: object
     Member:
       additionalProperties: false
@@ -3346,6 +3443,33 @@ components:
           description: The financial year that opens next with openFinancialYear; absent until the books start and the first year end are set.
       required:
         - items
+      type: object
+    Person:
+      additionalProperties: false
+      properties:
+        id:
+          description: The member's user ID, or the client's or service's name.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+        kind:
+          description: user is a member; ai the assistant acting for one; integration and service act on their own.
+          enum:
+            - user
+            - ai
+            - integration
+            - service
+          examples:
+            - user
+          type: string
+        name:
+          description: The member's name, while they are a member.
+          examples:
+            - Wei Ling Tan
+          type: string
+      required:
+        - kind
+        - id
       type: object
     PossibleDuplicate:
       additionalProperties: false
@@ -8404,6 +8528,161 @@ paths:
         capability: Contacts and items (rev 0.33)
         right: C
   /v1/journals:
+    get:
+      description: The organisation's manual journals at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency and who prepared and posted it (FR-GL-01). Read-only; no side effects.
+      operationId: listJournals
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only journals with this status.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only journals with this status.
+            enum:
+              - draft
+              - posted
+              - reversed
+            examples:
+              - draft
+            type: string
+        - description: Only journals dated on or after this day.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: Only journals dated on or after this day.
+            examples:
+              - "2026-10-01"
+            format: date
+            type: string
+        - description: Only journals dated on or before this day.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: Only journals dated on or before this day.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+        - description: Only journals whose memo or number contains this text, ignoring case.
+          explode: false
+          in: query
+          name: q
+          schema:
+            description: Only journals whose memo or number contains this text, ignoring case.
+            examples:
+              - rent
+            maxLength: 100
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the journals
+      tags:
+        - Journals
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Journals
+        right: V
     post:
       description: "Saves a manual journal as a draft (✎) at version 1. Side effects: a draft document and its audit event; nothing posts until postJournal. A draft is checked only for its amounts and currencies. Idempotent with Idempotency-Key."
       operationId: createJournal
@@ -8710,6 +8989,201 @@ paths:
       x-fyniq-permission:
         capability: Journals
         right: V
+    put:
+      description: "Saves the draft's new content as its next version, recording who saved it (FR-GL-01); the earlier versions are kept. Only a draft changes: a posted journal is corrected by reversal (FR-GL-12). Like createJournal, a draft is checked only for its amounts and currencies. Side effects: the new version and its audit event. Needs If-Match with the draft's ETag. Prefer: return=preview checks it and saves nothing."
+      operationId: replaceJournal
+      parameters:
+        - description: The journal's ID.
+          in: path
+          name: journal_id
+          required: true
+          schema:
+            description: The journal's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+            format: uuid
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Journal"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The new version, for If-Match.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `JOURNAL-01` Not a manual journal."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `JOURNAL-02` The journal is not a draft; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid; `MONEY-05` An exchange rate is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change a draft journal
+      tags:
+        - Journals
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - JOURNAL-01
+        - JOURNAL-02
+        - JOURNAL-04
+        - MONEY-01
+        - MONEY-02
+        - MONEY-03
+        - MONEY-04
+        - MONEY-05
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: C
   /v1/journals/{journal_id}/evidence:
     get:
       description: The files attached to a manual journal, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.

@@ -258,6 +258,112 @@ type Journal struct {
 	Date    string             `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
 	Memo    string             `json:"memo,omitempty" doc:"What it is for." example:"October rent accrual"`
 	Lines   []JournalLineDraft `json:"lines" doc:"The lines as entered."`
+	// The preparer and the approver are recorded (FR-GL-01; PRD-001 rev 0.48).
+	PreparedBy *Person    `json:"prepared_by,omitempty" doc:"Who saved the current version; absent for journals from before it was recorded."`
+	PostedBy   *Person    `json:"posted_by,omitempty" doc:"Who posted it, once posted; absent for journals from before it was recorded."`
+	PostedAt   *time.Time `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
+}
+
+// Person is who did something: a member, by name, the AI acting for one, an integration or a service.
+type Person struct {
+	Kind string `json:"kind" enum:"user,ai,integration,service" doc:"user is a member; ai the assistant acting for one; integration and service act on their own." example:"user"`
+	ID   string `json:"id" doc:"The member's user ID, or the client's or service's name." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	Name string `json:"name,omitempty" doc:"The member's name, while they are a member." example:"Wei Ling Tan"`
+}
+
+// personOf reads an actor recorded as "kind:id".
+func personOf(actor string) *Person {
+	kind, id, ok := strings.Cut(actor, ":")
+	if !ok {
+		return nil
+	}
+	return &Person{Kind: kind, ID: id}
+}
+
+// name fills in the names of the members among people.
+func (a *API) name(ctx context.Context, u storage.UnitOfWork, people ...*Person) error {
+	var users bool
+	for _, p := range people {
+		users = users || (p != nil && p.Kind == "user")
+	}
+	if !users {
+		return nil
+	}
+	ms, err := u.Members().List(ctx, a.deps.Clock.Now())
+	if err != nil {
+		return err
+	}
+	names := make(map[string]string, len(ms))
+	for _, m := range ms {
+		names[m.UserID.String()] = m.DisplayName
+	}
+	for _, p := range people {
+		if p != nil && p.Kind == "user" {
+			p.Name = names[p.ID]
+		}
+	}
+	return nil
+}
+
+// JournalSummary is a journal in a list: what it is, its totals and who prepared and posted it.
+type JournalSummary struct {
+	ID         string     `json:"id" format:"uuid" doc:"The journal's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"`
+	Number     string     `json:"number,omitempty" doc:"Its number, once it has one." example:"JNL-0042"`
+	Status     string     `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed." example:"posted"`
+	Version    int        `json:"version" doc:"The version of its content." example:"2"`
+	Date       string     `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
+	Memo       string     `json:"memo,omitempty" doc:"What it is for." example:"October rent accrual"`
+	Lines      int        `json:"lines" doc:"How many lines it has." example:"2"`
+	Debits     []Money    `json:"debits" nullable:"false" doc:"The total of its debit lines, per currency, as entered."`
+	PreparedBy *Person    `json:"prepared_by,omitempty" doc:"Who saved the current version."`
+	PostedBy   *Person    `json:"posted_by,omitempty" doc:"Who posted it."`
+	PostedAt   *time.Time `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
+}
+
+// JournalPage is a page of journals, newest date first.
+type JournalPage struct {
+	Items      []JournalSummary `json:"items" nullable:"false"`
+	NextCursor string           `json:"next_cursor,omitempty" doc:"Pass it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjIwMjYtMTAtMzF8MDE5MiJ9"`
+}
+
+type journalListInput struct {
+	PageQuery
+	Status string `query:"status" enum:"draft,posted,reversed" doc:"Only journals with this status." example:"draft"`
+	From   string `query:"from" format:"date" doc:"Only journals dated on or after this day." example:"2026-10-01"`
+	To     string `query:"to" format:"date" doc:"Only journals dated on or before this day." example:"2026-10-31"`
+	Q      string `query:"q" maxLength:"100" doc:"Only journals whose memo or number contains this text, ignoring case." example:"rent"`
+}
+
+type journalListOutput struct {
+	Body JournalPage
+}
+
+func summaryOf(doc storage.Document) (JournalSummary, error) {
+	saved, err := journal.ReadSaved(doc)
+	if err != nil {
+		return JournalSummary{}, err
+	}
+	out := JournalSummary{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo,
+		Lines: len(saved.Lines), Debits: []Money{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
+	totals := map[string]money.Money{}
+	var order []string
+	for _, l := range saved.Lines {
+		if l.Amount.Sign() <= 0 {
+			continue
+		}
+		code := l.Amount.Currency().Code
+		t, ok := totals[code]
+		if !ok {
+			order, t = append(order, code), money.Zero(l.Amount.Currency())
+		}
+		if totals[code], err = t.Add(l.Amount); err != nil {
+			return JournalSummary{}, err
+		}
+	}
+	for _, code := range order {
+		out.Debits = append(out.Debits, Money{Amount: totals[code].String(), Currency: code})
+	}
+	return out, nil
 }
 
 // EntryLine is a posted line.
@@ -297,7 +403,7 @@ func journalOf(doc storage.Document) (Journal, error) {
 		return Journal{}, err
 	}
 	out := Journal{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo,
-		Lines: make([]JournalLineDraft, 0, len(saved.Lines))}
+		Lines: make([]JournalLineDraft, 0, len(saved.Lines)), PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
 	for _, l := range saved.Lines {
 		out.Lines = append(out.Lines, JournalLineDraft{AccountID: l.AccountID.String(),
 			Amount: Money{Amount: l.Amount.String(), Currency: l.Amount.Currency().Code},
@@ -472,7 +578,86 @@ type postingOutput struct {
 	Body     JournalPosting
 }
 
+type replaceJournalInput struct {
+	JournalPath
+	IfMatchHeader
+	PreferHeader
+	Body JournalDraft
+}
+
+type replaceJournalOutput struct {
+	ETag    string `header:"ETag" doc:"The new version, for If-Match."`
+	Applied string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+	Body    Journal
+}
+
+// journalCursor is a list cursor: the last journal's date and ID.
+func journalCursor(after string) (string, *uuid.UUID, error) {
+	if after == "" {
+		return "", nil, nil
+	}
+	date, raw, _ := strings.Cut(after, "|")
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return "", nil, badCursor()
+	}
+	return date, &id, nil
+}
+
 func registerJournals(a *API) {
+	register(a, authz.ListJournals, huma.Operation{
+		OperationID: "listJournals", Method: http.MethodGet, Path: "/v1/journals", Tags: []string{"Journals"},
+		Summary: "List the journals",
+		Description: "The organisation's manual journals at their current version, newest date first (a draft without a date last), " +
+			"a page at a time, narrowed by status, dates and text in the memo or number. Each has its debit totals per currency " +
+			"and who prepared and posted it (FR-GL-01). Read-only; no side effects.",
+	}, []string{CodeCursor, CodeInvalid}, func(ctx context.Context, in *journalListInput) (*journalListOutput, error) {
+		after, err := decodeCursor(in.Cursor)
+		if err != nil {
+			return nil, err
+		}
+		afterDate, afterID, err := journalCursor(after)
+		if err != nil {
+			return nil, err
+		}
+		var bad []FieldProblem
+		for field, v := range map[string]string{"from": in.From, "to": in.To} {
+			if _, err := time.Parse(time.DateOnly, v); v != "" && err != nil {
+				bad = append(bad, FieldProblem{Code: CodeInvalid, Field: field, Message: "is not a date", Fix: "Send the date as YYYY-MM-DD"})
+			}
+		}
+		if len(bad) > 0 {
+			return nil, invalid(bad)
+		}
+		p, _ := authn.From(ctx)
+		out := journalListOutput{Body: JournalPage{Items: []JournalSummary{}}}
+		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: storage.DocumentJournal, Status: storage.DocumentStatus(in.Status),
+				From: in.From, To: in.To, Search: strings.TrimSpace(in.Q), AfterDate: afterDate, AfterID: afterID, Limit: in.PageSize + 1})
+			if err != nil {
+				return err
+			}
+			if len(docs) > in.PageSize {
+				docs = docs[:in.PageSize]
+				last := docs[len(docs)-1]
+				out.Body.NextCursor = encodeCursor(last.Date + "|" + last.ID.String())
+			}
+			var people []*Person
+			for _, d := range docs {
+				j, err := summaryOf(d)
+				if err != nil {
+					return err
+				}
+				out.Body.Items = append(out.Body.Items, j)
+			}
+			for i := range out.Body.Items {
+				people = append(people, out.Body.Items[i].PreparedBy, out.Body.Items[i].PostedBy)
+			}
+			return a.name(ctx, u, people...)
+		})
+		return &out, err
+	})
+
 	register(a, authz.CreateJournal, huma.Operation{
 		OperationID: "createJournal", Method: http.MethodPost, Path: "/v1/journals", Tags: []string{"Journals"}, DefaultStatus: http.StatusCreated,
 		Summary: "Save a draft journal",
@@ -499,7 +684,11 @@ func registerJournals(a *API) {
 				if err != nil {
 					return Journal{}, err
 				}
-				return journalOf(doc)
+				j, err := journalOf(doc)
+				if err != nil {
+					return Journal{}, err
+				}
+				return j, a.name(ctx, u, j.PreparedBy)
 			})
 			if err != nil {
 				return nil, err
@@ -567,14 +756,78 @@ func registerJournals(a *API) {
 			if err != nil {
 				return err
 			}
-			j, err = journalOf(doc)
-			return err
+			if j, err = journalOf(doc); err != nil {
+				return err
+			}
+			return a.name(ctx, u, j.PreparedBy, j.PostedBy)
 		})
 		if err != nil {
 			return nil, err
 		}
 		return &journalReadOutput{ETag: journalETag(j), Body: j}, nil
 	})
+
+	register(a, authz.ReplaceJournal, huma.Operation{
+		OperationID: "replaceJournal", Method: http.MethodPut, Path: "/v1/journals/{journal_id}", Tags: []string{"Journals"},
+		Summary: "Change a draft journal",
+		Description: "Saves the draft's new content as its next version, recording who saved it (FR-GL-01); the earlier versions are " +
+			"kept. Only a draft changes: a posted journal is corrected by reversal (FR-GL-12). Like createJournal, a draft is checked " +
+			"only for its amounts and currencies. Side effects: the new version and its audit event. Needs If-Match with the draft's " +
+			"ETag. Prefer: return=preview checks it and saves nothing.",
+	}, []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, journal.CodeNotJournal, journal.CodeNotDraft,
+		journal.CodeBadDraft, money.CodeNotDecimal, money.CodePrecision, money.CodeRange, money.CodeCurrency, money.CodeRate, storage.CodeRetry,
+		storage.CodeLockTimeout},
+		func(ctx context.Context, in *replaceJournalInput) (*replaceJournalOutput, error) {
+			id, err := parseID("journal_id", in.JournalID)
+			if err != nil {
+				return nil, err
+			}
+			if strings.TrimSpace(in.IfMatch) == "" {
+				return nil, checkIfMatch(in.IfMatch, "")
+			}
+			p, _ := authn.From(ctx)
+			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (Journal, error) {
+				doc, err := u.Documents().Lock(ctx, id)
+				if err != nil {
+					return Journal{}, err
+				}
+				before, err := journalOf(doc)
+				if err != nil {
+					return Journal{}, err
+				}
+				if err := checkIfMatch(in.IfMatch, journalETag(before)); err != nil {
+					return Journal{}, err
+				}
+				org, err := u.Organisation(ctx)
+				if err != nil {
+					return Journal{}, err
+				}
+				base, err := money.Lookup(org.BaseCurrency)
+				if err != nil {
+					return Journal{}, err
+				}
+				d, err := draftOf(in.Body, base)
+				if err != nil {
+					return Journal{}, err
+				}
+				after, err := a.journals.Revise(ctx, p.Organisation, id, d)
+				if err != nil {
+					return Journal{}, err
+				}
+				j, err := journalOf(after)
+				if err != nil {
+					return Journal{}, err
+				}
+				return j, a.name(ctx, u, j.PreparedBy, j.PostedBy)
+			})
+			if err != nil {
+				return nil, err
+			}
+			if w.Previewed {
+				return &replaceJournalOutput{Applied: applied(w), Body: w.Body}, nil
+			}
+			return &replaceJournalOutput{ETag: journalETag(w.Body), Body: w.Body}, nil
+		})
 
 	postingCodes := []string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
 		journal.CodeNotJournal, journal.CodeBadDraft, storage.CodeUnbalanced, storage.CodeImmutable, storage.CodePeriodClosed,
@@ -650,7 +903,10 @@ func (a *API) posting(ctx context.Context, rawID, key, ifMatch, prefer string, r
 			return JournalPosting{}, err
 		}
 		j, err := journalOf(after)
-		return JournalPosting{Journal: j, Entry: entryOf(entry)}, err
+		if err != nil {
+			return JournalPosting{}, err
+		}
+		return JournalPosting{Journal: j, Entry: entryOf(entry)}, a.name(ctx, u, j.PreparedBy, j.PostedBy)
 	})
 	if err != nil {
 		return nil, err

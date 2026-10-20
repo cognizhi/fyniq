@@ -172,7 +172,7 @@ func TestAttackChangesWithoutAnAuditEventFail(t *testing.T) {
 		"a new period":           "INSERT INTO fyniq.period (starts_on, ends_on) VALUES ('2027-01-01', '2027-01-31')",
 		"a closed period":        "UPDATE fyniq.period SET status = 'closed' WHERE starts_on = '2026-11-01'",
 		"a renamed company":      "UPDATE fyniq.organisation SET name = 'Someone Else Pte Ltd'",
-		"a new document":         "WITH d AS (INSERT INTO fyniq.document (type) VALUES ('journal') RETURNING id) INSERT INTO fyniq.document_version (document_id, version, payload) SELECT id, 1, '{}' FROM d",
+		"a new document":         "WITH d AS (INSERT INTO fyniq.document (type) VALUES ('journal') RETURNING id) INSERT INTO fyniq.document_version (document_id, version, payload, created_by) SELECT id, 1, '{}', 'user:quiet' FROM d",
 		"an entry with no event": "INSERT INTO fyniq.journal_entry (posting_date, posting_identity, source_type, source_id, source_version, rule_version) VALUES ('2026-10-14', 'quiet', 'attack', 'quiet', 1, 'attack@1')",
 	} {
 		err := asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, stmt); return err })

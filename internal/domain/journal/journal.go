@@ -65,8 +65,8 @@ type Service struct {
 	AfterPosting func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document, entry storage.Entry) error
 }
 
-// Create saves a draft (✎). Drafts are not validated beyond their amounts: Post validates.
-func (s Service) Create(ctx context.Context, org uuid.UUID, d Draft) (storage.Document, error) {
+// encode is a draft as a document version stores it.
+func encode(d Draft) ([]byte, error) {
 	p := payload{Date: d.Date.Format(time.DateOnly), Memo: d.Memo}
 	if d.Date.IsZero() {
 		p.Date = ""
@@ -78,7 +78,12 @@ func (s Service) Create(ctx context.Context, org uuid.UUID, d Draft) (storage.Do
 		}
 		p.Lines = append(p.Lines, pl)
 	}
-	b, err := json.Marshal(p)
+	return json.Marshal(p)
+}
+
+// Create saves a draft (✎). Drafts are not validated beyond their amounts: Post validates.
+func (s Service) Create(ctx context.Context, org uuid.UUID, d Draft) (storage.Document, error) {
+	b, err := encode(d)
 	if err != nil {
 		return storage.Document{}, err
 	}
@@ -96,6 +101,31 @@ func (s Service) Create(ctx context.Context, org uuid.UUID, d Draft) (storage.Do
 		return err
 	})
 	return doc, err
+}
+
+// Revise saves a draft's new content as its next version, recording who saved it (FR-GL-01). Only a draft
+// changes this way; a posted journal is corrected by reversal (FR-GL-12).
+func (s Service) Revise(ctx context.Context, org, id uuid.UUID, d Draft) (storage.Document, error) {
+	b, err := encode(d)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	var out storage.Document
+	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		doc, err := u.Documents().Lock(ctx, id) // ENG-47 step 1
+		if err != nil {
+			return err
+		}
+		if err := isJournal(doc); err != nil {
+			return err
+		}
+		if doc.Status != storage.DocumentDraft {
+			return &Error{CodeNotDraft, fmt.Sprintf("the journal is %s, not a draft", doc.Status), "Only a draft changes; reverse a posted journal instead"}
+		}
+		out, err = u.Documents().Revise(ctx, id, b)
+		return err
+	})
+	return out, err
 }
 
 // Post posts a draft: the engine turns its current version into an entry, which is written with

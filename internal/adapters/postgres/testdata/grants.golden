@@ -32,13 +32,13 @@ fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
 fyniq_api       INSERT    document (type)
 fyniq_api       SELECT    document
-fyniq_api       UPDATE    document (current_version, status)
+fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)
 fyniq_api       INSERT    document_number (document_type, id, number)
 fyniq_api       SELECT    document_number
 fyniq_api       INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
 fyniq_api       SELECT    document_sequence
 fyniq_api       UPDATE    document_sequence (digits, gap_free, next_number, prefix, version)
-fyniq_api       INSERT    document_version (document_id, payload, version)
+fyniq_api       INSERT    document_version (created_by, document_id, payload, version)
 fyniq_api       SELECT    document_version
 fyniq_api       INSERT    email_message (purpose, recipient, subject)
 fyniq_api       SELECT    email_message
@@ -142,13 +142,13 @@ fyniq_executor  SELECT    currencies
 fyniq_executor  EXECUTE   current_org()
 fyniq_executor  INSERT    document (type)
 fyniq_executor  SELECT    document
-fyniq_executor  UPDATE    document (current_version, status)
+fyniq_executor  UPDATE    document (current_version, posted_at, posted_by, status)
 fyniq_executor  INSERT    document_number (document_type, id, number)
 fyniq_executor  SELECT    document_number
 fyniq_executor  INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
 fyniq_executor  SELECT    document_sequence
 fyniq_executor  UPDATE    document_sequence (next_number)
-fyniq_executor  INSERT    document_version (document_id, payload, version)
+fyniq_executor  INSERT    document_version (created_by, document_id, payload, version)
 fyniq_executor  SELECT    document_version
 fyniq_executor  SELECT    evidence
 fyniq_executor  SELECT    gst_registration
