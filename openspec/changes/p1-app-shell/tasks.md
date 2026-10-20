@@ -42,7 +42,14 @@
   returns, and to the mode. Tests `navigation.test.ts` and `AppFrame.test.tsx` (`// req: FR-UX-40`). Only Home is
   registered: each module adds its item with its first screen. **Left:** the personal section and FR-UX-39's personal
   workspace, badges, the record page anatomy, the organisation switcher, the Finance | People switch, and the Go test
-  that calls each hidden endpoint directly and expects 403.)
+  that calls each hidden endpoint directly and expects 403.
+  20 Oct 2026, later: `session.tsx` is the signed-in layout every signed-in page shares (a pathless route): it asks the
+  API where the browser belongs once, keeps the page asked for as `return_to` when it sends a browser to sign in,
+  shows a session without a second factor only "Confirm it's you" (SEC-01, rev 0.43), and gives each page the
+  person, the organisation, the mode and the "Confirm it's you" dialog (`stepup.tsx`: a passkey, or signing in again;
+  an action the API refuses with API-AUTHZ-05 runs once more after it, with the same Idempotency-Key). Settings sits at
+  the sidebar's foot; the Settings page lists its pages from the registry's `settingsNav`, cut by role and mode, and in
+  Basic says how many more Expert mode shows (FR-UX-26). An unknown address says so, with a link to Home.)
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
 - [ ] 2.3 Drill-down to the Trace panel, side peeks and split view, keyboard-first entry and the shortcut sheet. Tests `// req: FR-UX-04`, `// req: FR-UX-05` and `// req: FR-UX-06`
 
@@ -56,6 +63,13 @@
 ## 4. Modes and help
 
 - [ ] 4.1 The mode toggle stored server-side, presentation only, the disclosure of hidden fields, discoverable growth and defaults by role. Tests `// req: FR-UX-23` through `// req: FR-UX-27`, and `// req: experience/modes <title>` for each of the 13 unnumbered requirements, with a check that safety information shows in Basic mode
+  (20 Oct 2026, in part: the header's Basic | Expert switch (`role="radiogroup"`, arrow keys) and the choice on
+  Settings › Profile and security; `src/mode.ts` starts a person in their roles' default, the Owner winning
+  (FR-UX-27), and sets `data-mode` on the device for the kit's `.fy-basic-only` / `.fy-expert-only`. Tests
+  `mode.test.ts`, `AppFrame.test.tsx`. Provisional: the choice is kept in this browser, like the appearance, until the
+  preferences operation exists. **Left:** storing it on the server, the Administrator's default per role, the
+  disclosure of hidden fields and the mode-parity test.)
+
 - [ ] 4.2 Tooltips, `/help` built from `docs/user-guide/`, context-aware help, the first-run tour, practice in the sample company, and the FR-UX-41 banner from the review register. Tests `// req: FR-UX-30`, `// req: FR-UX-32`, `// req: FR-UX-33` (guide half), `// req: FR-UX-34`, `// req: FR-UX-36` and `// req: FR-UX-41`
 
 ## 5. Devices, accessibility and budgets

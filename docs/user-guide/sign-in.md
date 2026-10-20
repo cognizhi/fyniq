@@ -38,8 +38,9 @@ To leave, select **Sign out**.
 A passkey lets you confirm it's you with your fingerprint, face or device PIN, instead of a code.
 Asking for or approving a change needs this confirmation in the last 5 minutes.
 
-1. Sign in with your authenticator app first. Within 5 minutes, add a passkey and give it a name,
-   such as "Work laptop". Your device asks for your fingerprint, face or PIN.
+1. Sign in with your authenticator app first. Within 5 minutes, open **Settings › Profile and
+   security**, add a passkey and give it a name, such as "Work laptop". Your device asks for your
+   fingerprint, face or PIN.
 2. Later, when Fyniq asks you to confirm it's you, choose your passkey and confirm on your device.
    The confirmation counts for 5 minutes.
 3. To stop using a passkey, for example on a lost device, revoke it. It works no more.
@@ -51,8 +52,8 @@ Each request to confirm works once, for 5 minutes, and only on this site.
 Each time you sign in, Fyniq emails you, at the address your provider confirmed: when, with which
 provider and from which browser. If it was not you, end that session.
 
-1. Open **Your devices** to see every browser you are signed in on, with when it signed in and was
-   last used. The one you are using is marked.
+1. Open **Settings › Profile and security**: **Your devices** lists every browser you are signed
+   in on, with when it signed in and was last used. The one you are using is marked.
 2. To end a session, such as on a lost phone, select **Sign out** next to it. It is signed out at
    its next request.
 3. To end every session but this one, select **Sign out everywhere else**.
@@ -83,3 +84,4 @@ An invitation works once, within 7 days.
 ## Related
 
 - [Set up a new installation](setup-first-run.md)
+- [Your profile and security](profile-and-security.md)

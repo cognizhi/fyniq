@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { Session } from "../api/client";
 import { startAppearance } from "../appearance";
 import { noViolations } from "../test/axe";
+import type { Mode } from "../registry";
 import { AppFrame } from "./AppFrame";
 
 const owner: Pick<Session, "roles" | "features"> = {
@@ -11,13 +12,13 @@ const owner: Pick<Session, "roles" | "features"> = {
   features: { multi_currency: true, payroll: false, projects: false, portals: false, ai_assistant: false },
 };
 
-function renderFrame(session = owner) {
+function renderFrame(session = owner, mode: Mode = "basic") {
   const root = createRootRoute();
   const home = createRoute({
     getParentRoute: () => root,
     path: "/",
     component: () => (
-      <AppFrame session={session} title="Home">
+      <AppFrame session={session} title="Home" mode={mode}>
         <h1>Home</h1>
       </AppFrame>
     ),
@@ -45,7 +46,7 @@ describe("the app frame", () => {
   it("shows a person with no role only what every signed-in person may see", async () => {
     renderFrame({ roles: [], features: undefined });
     const side = await screen.findByRole("navigation", { name: "Main" });
-    expect(within(side).getAllByRole("link").map((a) => a.getAttribute("aria-label") ?? a.textContent)).toEqual(["Fyniq home", "Home"]);
+    expect(within(side).getAllByRole("link").map((a) => a.getAttribute("aria-label") ?? a.textContent)).toEqual(["Fyniq home", "Home", "Settings"]);
   });
 
   // req: experience/visual-design Themes
@@ -73,5 +74,19 @@ describe("the app frame", () => {
     fireEvent.change(input, { target: { value: "dark theme" } });
     fireEvent.keyDown(input, { key: "Enter" });
     await waitFor(() => expect(html().classList.contains("dark")).toBe(true));
+  });
+
+  // req: FR-UX-23
+  // req: FR-UX-24
+  it("shows the mode in the header and switches it, by click or arrow key", async () => {
+    renderFrame(owner, "basic");
+    const group = await screen.findByRole("radiogroup", { name: "Experience mode" });
+    const basic = within(group).getByRole("radio", { name: "Basic" });
+    expect(basic.getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(within(group).getByRole("radio", { name: "Expert" }));
+    expect(window.localStorage.getItem("fyniq.mode")).toBe("expert");
+    fireEvent.keyDown(basic, { key: "ArrowRight" });
+    expect(window.localStorage.getItem("fyniq.mode")).toBe("expert");
+    await noViolations(document.body);
   });
 });

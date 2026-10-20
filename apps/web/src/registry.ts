@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { House, type LucideIcon } from "lucide-react";
+import { House, Settings, UserRound, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -41,7 +41,9 @@ export interface NavFeature extends Feature {
   kind: "nav";
   route: string; // a registry route's path
   icon: LucideIcon;
-  group: "personal" | "main";
+  // personal and main are the sidebar's sections, footer its foot (Settings); you and organisation
+  // are the sections of the Settings page's own navigation.
+  group: "personal" | "main" | "footer" | "you" | "organisation";
   roles: "all" | readonly string[]; // role names as GET /v1/session returns them
   feature?: FeatureSwitch;
   bottom?: boolean; // one of the compact bottom bar's items (at most four, then More)
@@ -53,6 +55,8 @@ export const routes = [
   { kind: "route", id: "home", path: "/", mode: "basic", signedIn: true, help: "home.overview", guide: "home.overview" },
   { kind: "route", id: "sign-in", path: "/sign-in", mode: "basic", signedIn: false, help: "auth.sign-in", guide: "auth.sign-in" },
   { kind: "route", id: "install", path: "/install", mode: "basic", signedIn: false, help: "installation.setup", guide: "installation.setup" },
+  { kind: "route", id: "settings", path: "/settings", mode: "basic", signedIn: true, help: "settings.overview", guide: "home.overview#settings" },
+  { kind: "route", id: "settings-profile", path: "/settings/profile", mode: "basic", signedIn: true, help: "settings.profile", guide: "preferences.security" },
 ] as const satisfies readonly RouteFeature[];
 
 export const actions = [
@@ -63,18 +67,32 @@ export const actions = [
   { kind: "action", id: "appearance.density", mode: "expert", help: "appearance.density", guide: "preferences.appearance#density" },
   { kind: "action", id: "appearance.motion", mode: "basic", help: "appearance.motion", guide: "preferences.appearance#motion" },
   { kind: "action", id: "sign-out", mode: "basic", help: "auth.sign-out", guide: "home.overview#sign-out" },
+  { kind: "action", id: "mode", mode: "basic", help: "shell.mode", guide: "preferences.security#basic-and-expert-mode" },
+  { kind: "action", id: "step-up", mode: "basic", help: "session.step-up", guide: "auth.sign-in#confirm-its-you-with-a-passkey" },
+  { kind: "action", id: "sign-in-again", mode: "basic", help: "session.sign-in-again", guide: "auth.sign-in#confirm-its-you-with-a-passkey" },
+  { kind: "action", id: "passkey.add", mode: "basic", help: "passkey.add", guide: "preferences.security#add-a-passkey" },
+  { kind: "action", id: "passkey.revoke", mode: "basic", help: "passkey.revoke", guide: "preferences.security#revoke-a-passkey" },
+  { kind: "action", id: "device.sign-out", mode: "basic", help: "device.sign-out", guide: "preferences.security#your-devices" },
+  { kind: "action", id: "device.sign-out-others", mode: "basic", help: "device.sign-out-others", guide: "preferences.security#your-devices" },
 ] as const satisfies readonly ActionFeature[];
 
 // The sidebar's items in the designed order (the NAV list in docs/design/screens/build.py). Each
 // module adds its item with its first screen; the sidebar holds at most 13 (§7.1).
 export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
+  { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
+] as const satisfies readonly NavFeature[];
+
+// The Settings page's own navigation (docs/design/screens OrganisationSettings, UsersRoles): your
+// settings, then the organisation's. Cut like the sidebar, by role and mode; the API still decides.
+export const settingsNav = [
+  { kind: "nav", id: "settings.profile", route: "/settings/profile", icon: UserRound, group: "you", roles: "all", mode: "basic", help: "settings.profile", guide: "preferences.security" },
 ] as const satisfies readonly NavFeature[];
 
 export type RouteId = (typeof routes)[number]["id"];
 export type ActionId = (typeof actions)[number]["id"];
 
-export const registry: readonly Entry[] = [...routes, ...actions, ...nav];
+export const registry: readonly Entry[] = [...routes, ...actions, ...nav, ...settingsNav];
 
 export function entry(id: RouteId | ActionId): Entry {
   const e = registry.find((x) => x.id === id);
