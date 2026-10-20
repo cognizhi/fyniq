@@ -83,8 +83,12 @@
   object's row (the Owner), passes step-up and is a person, never the AI. The final approval executes the change in
   the same transaction, audited with the approval's ID. Tests: `TestTwoPersonRuleForASetting`,
   `TestRoleChangesAfterTheBootstrapWaitForApproval`. Rev 0.40: the requester withdraws their pending request
-  (`POST /v1/approvals/{id}/withdraw`), which voids it and its signatures; anyone else is refused (APR-12). **Left:**
-  FM-2 and FM-3 (the weekly review, which also lists the founder bootstrap's changes).)
+  (`POST /v1/approvals/{id}/withdraw`), which voids it and its signatures; anyone else is refused (APR-12). Rev 0.46, FM-3:
+  migration 000051's `review_log_entry` and `review_log_review` (never changed, FY150; never reviewed by the one who
+  acted, FY151); each approved change and each founder-bootstrap role change or invitation is logged as it executes;
+  `GET /v1/review-log` (with the unreviewed and overdue counts: 14 days in Founder mode) and `POST /v1/review-log/reviews`
+  (APR-13, APR-14). Tests: `TestTheReviewLog`, `TestAttackTheReviewLogNeverChanges`. **Left:** FM-2, with the first
+  documents that carry an amount; the weekly Inbox task, with the Inbox; the Checks warning, with Checks.)
 - [ ] 3.3 FM-8 break-glass and FM-9 beneficiary exclusion. Tests `// req: FM-8` (G4-062, G4-063) and `// req: FM-9`
   **Left.**
 - [ ] 3.4 The rules and records for FM-4, FM-5 and FM-7, called by the close (wave 2) and reconciliation (wave 3). FM-6's advisory review arrives with wave 6. Tests `// req: FM-4`, `// req: FM-5` and `// req: FM-7` on the records (G4-109)

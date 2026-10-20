@@ -3,7 +3,7 @@ key: approvals.decide
 title: Approve a change
 mode: basic
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [FM-1, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10]
+requirements: [FM-1, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10, FM-3]
 ---
 
 # Approve a change
@@ -49,6 +49,18 @@ You approve a request once, and only at a step that names you or one of your rol
 
 The request is cancelled with any approvals it had, and nothing changes. Only the person who asked
 can withdraw a request; anyone else who disagrees rejects it with a reason.
+
+## Review high-risk actions
+
+Every high-risk change is logged when it is made: each change another person approved, and each role
+or invitation the Owner set up alone before a second person joined. Once a week, another founder
+reviews the log.
+
+1. Open **Review log**. It lists the actions nobody has reviewed yet, with who did each.
+2. Choose the ones you checked, add a note if you like, and select **Mark as reviewed**.
+
+You can't review an action you took yourself. Each action is reviewed once. An action still
+unreviewed 14 days after it was made shows as overdue on **Checks**.
 
 ## When a request can no longer be approved
 
