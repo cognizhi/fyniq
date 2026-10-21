@@ -62,6 +62,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/opening-balances` (replaceOpeningBalances): Save the opening balances as a draft
 - `POST /v1/opening-balances/post` (postOpeningBalances): Post the opening balances
 - `GET /v1/organisation` (getOrganisation): Get your organisation
+- `GET /v1/organisation/accounting` (getAccounting): Get a year's accounting framework and policies
+- `POST /v1/organisation/accounting/framework` (recordAccountingFramework): Record the accounting framework
+- `POST /v1/organisation/accounting/framework/{version}/confirm` (confirmAccountingFramework): Confirm the accounting framework
+- `POST /v1/organisation/accounting/policies/{area}` (recordAccountingPolicy): Record an accounting policy
+- `POST /v1/organisation/accounting/policies/{area}/{version}/approve` (approveAccountingPolicy): Approve an accounting policy
 - `GET /v1/organisation/email/messages/{message_id}` (getEmailMessage): Get an email message's outcome
 - `POST /v1/organisation/email/test-messages` (sendTestEmail): Send a test email
 - `GET /v1/organisation/gst-registrations` (listGSTRegistrations): List the GST registrations

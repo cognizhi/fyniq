@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "description": "What keeps the statements management statements; empty once approved.",
+      "items": {
+        "$ref": "AccountingCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "ends_on": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "framework": {
+      "$ref": "AccountingFramework.schema.json",
+      "description": "The framework version in force for the year; absent while none is recorded."
+    },
+    "policies": {
+      "description": "Each policy FR-ORG-10 asks for, in its order, with the version in force.",
+      "items": {
+        "$ref": "AccountingPolicyArea.schema.json"
+      },
+      "type": "array"
+    },
+    "recommended_edition": {
+      "description": "The edition of SFRS for Small Entities that applies to the year.",
+      "examples": [
+        "Third Edition"
+      ],
+      "type": "string"
+    },
+    "recommended_framework": {
+      "description": "The framework Fyniq assumes until the accountant decides (open question 31).",
+      "examples": [
+        "sfrs_se"
+      ],
+      "type": "string"
+    },
+    "starts_on": {
+      "description": "The financial year's first day.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "statement_basis": {
+      "description": "What they are prepared under, once approved; absent until then, so management statements name no framework.",
+      "examples": [
+        "Prepared under SFRS for Small Entities (Third Edition)"
+      ],
+      "type": "string"
+    },
+    "statement_title": {
+      "description": "How the year's statements are titled (G4-017).",
+      "enum": [
+        "Management statements",
+        "Financial statements"
+      ],
+      "examples": [
+        "Management statements"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "approved once the framework in force is confirmed and every policy in force is approved.",
+      "enum": [
+        "approved",
+        "not_approved"
+      ],
+      "examples": [
+        "not_approved"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "starts_on",
+    "ends_on",
+    "status",
+    "statement_title",
+    "recommended_framework",
+    "recommended_edition",
+    "policies",
+    "checks"
+  ],
+  "title": "AccountingYear",
+  "type": "object"
+}

@@ -132,7 +132,14 @@
   (21 Oct 2026, PRD rev 0.57: `journal.Statuses` maps the Journal sheet's 13 statuses onto the platform's codes in
   its priority order and words; `getJournal` and `listJournals` return `checks`. Test:
   `TestJournalsCarryTheWorkbooksStatuses`. The screens follow.)
-- [ ] 6.2 The accounting framework and edition from a financial year, the accountant's confirmation and the policies with their approver and date. Tests `// req: FR-ORG-10`
+- [x] 6.2 The accounting framework and edition from a financial year, the accountant's confirmation and the policies with their approver and date. Tests `// req: FR-ORG-10`
+  (21 Oct 2026, PRD rev 0.62, the founders' decision: the Owner, the Controller or the Accountant records each version; another
+  member who holds the Accountant role confirms or approves it, never its writer, which the database refuses too; a new
+  Appendix D row. `GET /v1/organisation/accounting` gives a year's status, statement title and basis, which `p1-reports`
+  reads when the statements arrive. Routing a transaction no policy covers to an approved journal arrives with the modules
+  that post such transactions. Tests: `TestAYearsStatementsAreManagementStatementsUntilTheAccountantApproves`,
+  `TestRecordingAndSigningTheFrameworkAndPolicies`, `TestAccountingFrameworkAndPolicies`,
+  `TestAccountingVersionsNeverChangeAndTheirWriterNeverSignsThem`. The screen follows.)
 - [ ] 6.3 Month-on-month flux on the close: variances above the threshold need an explanation before the close is signed off. Test `// req: FR-GL-14` (the budget half waits for `p1-planning`)
 - [ ] 6.4 Schedules for prepayments and deferred revenue, with the first source that spreads over months (`p1-purchases` bills). Tests `// req: FR-GL-03`
 

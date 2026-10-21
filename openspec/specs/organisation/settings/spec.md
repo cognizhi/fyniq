@@ -83,6 +83,18 @@ Source: PRD-001 §8.1 · Priority M · Phase P1
 - **WHEN** statements for that year are produced
 - **THEN** they are titled "management statements" (open question 31)
 
+#### Scenario: The accountant signs what others record (rev 0.62)
+- **GIVEN** the Owner, the Controller or the Accountant records a version of the framework or of a policy, from the first day of a financial year
+- **WHEN** someone confirms the framework version or approves the policy version
+- **THEN** only a member who holds the Accountant role may, never the person who wrote that version, and only once
+- **AND** a version never changes: a correction is a new version, signed again
+
+#### Scenario: A year is approved when everything in force is signed (rev 0.62)
+- **GIVEN** the framework and each policy in force for a financial year are those from its first day or the latest earlier year
+- **WHEN** the framework in force is confirmed and every policy in force is approved
+- **THEN** the year's statements are titled financial statements and say the framework and edition they are prepared under
+- **AND** otherwise they are management statements naming no framework, with what is missing listed
+
 #### Scenario: G4-017 First close before the framework and policies are approved
 - **GIVEN** the accountant has not yet approved the framework and policies
 - **WHEN** the first close produces statements

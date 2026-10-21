@@ -11,6 +11,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
@@ -254,6 +255,10 @@ var codeFacts = map[string]struct {
 	journal.CodeRecurringSchedule: {422, "The schedule has no occurrence"},
 	journal.CodeRecurringPaused:   {409, "The recurring journal is not in that state"},
 	storage.CodeRecurring:         {409, "Not the recurring journal's next occurrence"},
+	accounting.CodeInput:          {422, "Not a framework or policy version that can be recorded"},
+	accounting.CodeOwn:            {403, "You wrote it, so another accountant signs it"},
+	accounting.CodeSigned:         {409, "Signed already, or replaced"},
+	storage.CodeAccounting:        {409, "A framework or policy version never changes"},
 	CodeNeedsApproval:             {409, "The journal needs another person's approval"},
 	CodeVoidApproval:              {409, "Reversing needs a second person"},
 	CodeOwnJournal:                {403, "You prepared it, so another person approves it"},
@@ -319,6 +324,7 @@ var storageFixes = map[string]string{
 	storage.CodeInvalid:      "Correct the value the message names and send it again",
 	storage.CodeApproval:     "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
 	storage.CodeEvidence:     "Files can be removed only while the record is a draft; add a newer file instead",
+	storage.CodeAccounting:   "Record a new version instead; another member who holds the Accountant role confirms or approves it",
 }
 
 // problem builds a Problem for one of the catalogue's codes.
@@ -429,6 +435,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		lp  ledger.Problems
 		je  *journal.Error
 		pe  *period.Error
+		ae  *accounting.Error
 		ce  *closing.Error
 		me  *money.Error
 		ste *storage.Error
@@ -447,6 +454,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(je.Code, sentence(je.Message), sentence(je.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
+	case errors.As(err, &ae):
+		return problem(ae.Code, sentence(ae.Message), sentence(ae.Fix))
 	case errors.As(err, &ce):
 		return problem(ce.Code, sentence(ce.Message), sentence(ce.Fix))
 	case errors.As(err, &me):

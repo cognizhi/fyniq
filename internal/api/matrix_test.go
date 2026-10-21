@@ -79,6 +79,44 @@ func matrixOpening(e *env, tok string, draft bool) (porttest.Books, authn.Princi
 	return b, p
 }
 
+// matrixAccountingOrg is the organisation the accounting framework and policies are tried in, with books from 1 October 2026.
+var matrixAccountingOrg = map[*env]uuid.UUID{}
+
+// matrixAccounting returns tok's principal moved into the organisation of the accounting framework and policies, made
+// once per env, and a token of an Owner of it, who records the versions others confirm or approve.
+func matrixAccounting(e *env, tok string) (authn.Principal, string) {
+	org, ok := matrixAccountingOrg[e]
+	if !ok {
+		b, _ := matrixOpening(e, e.as(authz.Owner), false)
+		org, matrixAccountingOrg[e] = b.Org, b.Org
+	}
+	e.tokens.mu.Lock()
+	p := e.tokens.m[tok]
+	e.tokens.mu.Unlock()
+	if p.Organisation != uuid.Nil {
+		p.Organisation = org
+	}
+	return p, e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: org, Roles: []authz.Role{authz.Owner}})
+}
+
+// matrixFrameworkVersion is the version of the framework in force in the accounting organisation, 0 when none is.
+func matrixFrameworkVersion(e *env, owner string) float64 {
+	f, _ := e.call(http.MethodGet, "/v1/organisation/accounting", owner, nil).Body["framework"].(map[string]any)
+	v, _ := f["version"].(float64)
+	return v
+}
+
+// matrixPolicy is the version and approver of the leases policy in force in the accounting organisation.
+func matrixPolicy(e *env, owner string) (float64, any) {
+	for _, it := range e.call(http.MethodGet, "/v1/organisation/accounting", owner, nil).Body["policies"].([]any) {
+		if a := it.(map[string]any); a["area"] == "leases" && a["policy"] != nil {
+			pol := a["policy"].(map[string]any)
+			return pol["version"].(float64), pol["approved_by"]
+		}
+	}
+	return 0, nil
+}
+
 // matrixOpeningStatus is the status of an organisation's opening balances, "" when there are none.
 func matrixOpeningStatus(e *env, org uuid.UUID) storage.DocumentStatus {
 	var status storage.DocumentStatus
@@ -195,6 +233,41 @@ var matrixCalls = map[string]matrixCall{
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/organisation/profile", e.as(authz.Controller), nil).Body["document_footer"] != footer
 		}
+	},
+	"getAccounting": func(e *env, tok string) (response, func() bool) {
+		p, _ := matrixAccounting(e, tok)
+		return e.call(http.MethodGet, "/v1/organisation/accounting", e.principal(p), nil), nil
+	},
+	"recordAccountingFramework": func(e *env, tok string) (response, func() bool) {
+		p, owner := matrixAccounting(e, tok)
+		before := matrixFrameworkVersion(e, owner)
+		r := e.call(http.MethodPost, "/v1/organisation/accounting/framework", e.principal(p),
+			map[string]any{"framework": "sfrs_se", "edition": "Matrix", "from_on": "2026-10-01"})
+		return r, func() bool { return matrixFrameworkVersion(e, owner) == before }
+	},
+	"confirmAccountingFramework": func(e *env, tok string) (response, func() bool) {
+		p, owner := matrixAccounting(e, tok)
+		v := e.call(http.MethodPost, "/v1/organisation/accounting/framework", owner,
+			map[string]any{"framework": "sfrs_se", "edition": "Matrix", "from_on": "2026-10-01"}).Body["version"].(float64)
+		r := e.call(http.MethodPost, fmt.Sprintf("/v1/organisation/accounting/framework/%d/confirm", int(v)), e.principal(p), nil)
+		return r, func() bool {
+			f, _ := e.call(http.MethodGet, "/v1/organisation/accounting", owner, nil).Body["framework"].(map[string]any)
+			return f["confirmed_by"] == nil
+		}
+	},
+	"recordAccountingPolicy": func(e *env, tok string) (response, func() bool) {
+		p, owner := matrixAccounting(e, tok)
+		before, _ := matrixPolicy(e, owner)
+		r := e.call(http.MethodPost, "/v1/organisation/accounting/policies/leases", e.principal(p),
+			map[string]any{"wording": "Matrix", "from_on": "2026-10-01"})
+		return r, func() bool { v, _ := matrixPolicy(e, owner); return v == before }
+	},
+	"approveAccountingPolicy": func(e *env, tok string) (response, func() bool) {
+		p, owner := matrixAccounting(e, tok)
+		v := e.call(http.MethodPost, "/v1/organisation/accounting/policies/leases", owner,
+			map[string]any{"wording": "Matrix", "from_on": "2026-10-01"}).Body["version"].(float64)
+		r := e.call(http.MethodPost, fmt.Sprintf("/v1/organisation/accounting/policies/leases/%d/approve", int(v)), e.principal(p), nil)
+		return r, func() bool { _, by := matrixPolicy(e, owner); return by == nil }
 	},
 	"listGSTRegistrations": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation/gst-registrations", tok, nil), nil

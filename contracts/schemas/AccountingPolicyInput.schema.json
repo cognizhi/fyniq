@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from_on": {
+      "description": "The first day of the financial year it applies from, until a later version replaces it; at most a year after the current one.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "wording": {
+      "description": "The policy, as the accountant decided it; where the area does not apply to the company, say so.",
+      "examples": [
+        "Subscription revenue is recognised evenly over each billing period."
+      ],
+      "maxLength": 4000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "wording",
+    "from_on"
+  ],
+  "title": "AccountingPolicyInput",
+  "type": "object"
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "area": {
+      "description": "The area's key.",
+      "enum": [
+        "revenue",
+        "government_grants",
+        "leases",
+        "development_costs",
+        "impairment",
+        "safes_and_notes",
+        "conversion_measurement",
+        "capitalisation_threshold",
+        "untaken_leave"
+      ],
+      "examples": [
+        "revenue"
+      ],
+      "type": "string"
+    },
+    "decides": {
+      "description": "What the policy decides; Fyniq never writes its words.",
+      "examples": [
+        "When revenue is recognised, including subscriptions and fixed-fee projects."
+      ],
+      "type": "string"
+    },
+    "policy": {
+      "$ref": "AccountingPolicy.schema.json",
+      "description": "The version in force for the year; absent while none is recorded."
+    },
+    "setting": {
+      "description": "The organisation setting that holds the figure the policy approves, when one does.",
+      "examples": [
+        "assets.capitalisation_threshold"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "Its name.",
+      "examples": [
+        "Revenue"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "area",
+    "title",
+    "decides"
+  ],
+  "title": "AccountingPolicyArea",
+  "type": "object"
+}

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "confirmed_at": {
+      "description": "When they confirmed it.",
+      "examples": [
+        "2026-10-22T03:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "confirmed_by": {
+      "$ref": "Person.schema.json",
+      "description": "The accountant who confirmed the company may use it; absent until then."
+    },
+    "edition": {
+      "description": "Its edition.",
+      "examples": [
+        "Third Edition"
+      ],
+      "type": "string"
+    },
+    "framework": {
+      "description": "The framework's code.",
+      "enum": [
+        "sfrs_se",
+        "frs",
+        "sfrs_i"
+      ],
+      "examples": [
+        "sfrs_se"
+      ],
+      "type": "string"
+    },
+    "from_on": {
+      "description": "The first day of the financial year it applies from.",
+      "examples": [
+        "2027-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "name": {
+      "description": "The framework's name, as statements show it.",
+      "examples": [
+        "SFRS for Small Entities"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The framework version: 1, 2, …",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "written_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-10-21T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "written_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who recorded it: they never confirm it."
+    },
+    "you_may_confirm": {
+      "description": "true when the caller may confirm it: they hold the Accountant role, did not record it, and it is not confirmed or replaced.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "version",
+    "from_on",
+    "framework",
+    "name",
+    "edition",
+    "written_at",
+    "you_may_confirm"
+  ],
+  "title": "AccountingFramework",
+  "type": "object"
+}
