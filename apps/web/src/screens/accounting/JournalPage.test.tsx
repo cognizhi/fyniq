@@ -11,6 +11,7 @@ import { balances, check, firstOfNextMonth, JournalPage, type Form } from "./Jou
 type Account = components["schemas"]["Account"];
 type Journal = components["schemas"]["Journal"];
 
+const noEvidence = { status: 200, body: { items: [] } };
 const organisation: Organisation = { id: ownerSession.organisation_id, name: "Cognizhi Pte Ltd", base_currency: "SGD", base_minor_units: 2, team_mode: "founder", version: 1 };
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
 const acc = (id: string, code: string, name: string, extra: Record<string, unknown> = {}) =>
@@ -167,6 +168,7 @@ describe("the journal page", () => {
     let posts = 0;
     answer({
       "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1/evidence": noEvidence,
       "GET /v1/journals/j1": () => ({ status: 200, body: posts ? posted : draft, headers: { ETag: posts ? `"2-posted"` : `"2-draft"` } }),
       "POST /v1/journals/j1/post": (_b, req) => {
         if (req.headers.get("Prefer") === "return=preview") return { status: 200, body: { journal: posted, entry }, headers: { "Preference-Applied": "return=preview" } };
@@ -194,6 +196,7 @@ describe("the journal page", () => {
   it("points to the periods when no period covers the date", async () => {
     answer({
       "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1/evidence": noEvidence,
       "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
       "POST /v1/journals/j1/post": problem(409, "STORAGE-PERIOD-01", "No period covers the posting date 2026-10-31.", "Create the period first."),
     });
@@ -210,6 +213,7 @@ describe("the journal page", () => {
     let asked = false;
     answer({
       "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1/evidence": noEvidence,
       "GET /v1/journals/j1": () => ({ status: 200, body: asked ? { ...draft, approval_asked: "a-1" } : draft, headers: { ETag: `"2-draft"` } }),
       "POST /v1/journals/j1/post": problem(409, "JOURNAL-07", "The journal's debits are 2500.00 SGD, above the self-approval threshold of 2000.00.", "Ask for another person's approval to post it"),
       "POST /v1/journals/j1/post-approval": () => {
@@ -237,6 +241,7 @@ describe("the journal page", () => {
   it("asks to reverse a posted journal in Founder mode, with the date and the reason", async () => {
     answer({
       "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1/evidence": noEvidence,
       "GET /v1/journals/j1": { status: 200, body: posted, headers: { ETag: `"2-posted"` } },
       "POST /v1/journals/j1/reverse-approval": { status: 202, body: { id: "a-2", object_type: "journal", operation: "journal.reverse", status: "pending" } },
     });
@@ -260,6 +265,7 @@ describe("the journal page", () => {
     let edits = 0;
     answer({
       "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1/evidence": noEvidence,
       "GET /v1/journals/j1": () => ({ status: 200, body: edits ? { ...posted, version: 3, date: "2026-11-02" } : posted, headers: { ETag: edits ? `"3-posted"` : `"2-posted"` } }),
       "POST /v1/journals/j1/edit": (_b, req) => {
         const reversal = { ...entry, id: "e2", posting_date: "2026-10-31", reverses_entry_id: "e1" };
@@ -303,6 +309,7 @@ describe("the journal page", () => {
   it("asks to post an edit in Founder mode", async () => {
     answer({
       "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1/evidence": noEvidence,
       "GET /v1/journals/j1": { status: 200, body: posted, headers: { ETag: `"2-posted"` } },
       "POST /v1/journals/j1/edit-approval": { status: 202, body: { id: "a-3", object_type: "journal", operation: "journal.edit", status: "pending" } },
     });
@@ -324,6 +331,7 @@ describe("the journal page", () => {
   it("reverses a posted journal on a date, with a reason, in Standard mode", async () => {
     answer({
       "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1/evidence": noEvidence,
       "GET /v1/journals/j1": { status: 200, body: posted, headers: { ETag: `"2-posted"` } },
       "POST /v1/journals/j1/reverse": { status: 200, body: { journal: { ...posted, status: "reversed" }, entry: { ...entry, posting_date: "2026-11-01" } } },
     });
@@ -351,6 +359,7 @@ describe("the journal page", () => {
     answer({
       "GET /v1/accounts": accounts,
       "POST /v1/journals": { status: 201, body: { ...draft, id: "j9", reverse_on: "2026-11-01" }, headers: { ETag: `"1-draft"` } },
+      "GET /v1/journals/j9/evidence": noEvidence,
       "GET /v1/journals/j9": { status: 200, body: { ...posted, id: "j9", reverse_on: "2026-11-01" }, headers: { ETag: `"1-posted"` } },
     });
     renderPage(page(accountant), { path: "/accounting/journals/new", route: "/accounting/journals/new" });
@@ -367,7 +376,8 @@ describe("the journal page", () => {
   });
 
   it("shows when a posted journal reverses by itself", async () => {
-    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1": { status: 200, body: { ...posted, reverse_on: "2026-11-01" }, headers: { ETag: `"2-posted"` } } });
+    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1/evidence": noEvidence,
+ "GET /v1/journals/j1": { status: 200, body: { ...posted, reverse_on: "2026-11-01" }, headers: { ETag: `"2-posted"` } } });
     renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
     expect(await screen.findByText("Reverses by itself on 1 Nov 2026")).toBeTruthy();
   });
@@ -377,6 +387,7 @@ describe("the journal page", () => {
     const waiting = { severity: "warning" as const, code: "JOURNAL-WAITING", field: "reverse_on", title: "Its automatic reversal is waiting", detail: "Its automatic reversal is dated 2027-01-01, and no period covers that date yet.", fix: "Open the financial year of 2027-01-01 in Accounting › Periods and close; the reversal posts within the hour" };
     answer({
       "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1/evidence": noEvidence,
       "GET /v1/journals/j1": {
         status: 200,
         body: { ...posted, reverse_on: "2027-01-01", prepared_by: { kind: "service", id: "scheduler:journals.recurring", name: "Scheduler" }, recurring_journal: { id: "r1", version: 2 }, checks: [waiting] },
@@ -396,7 +407,8 @@ describe("the journal page", () => {
       { severity: "error" as const, code: "LEDGER-01", field: "date", title: "Enter the date", detail: "the journal has no date", fix: "Enter the date the journal belongs to" },
       { severity: "error" as const, code: "LEDGER-09", field: "lines", title: "Entry does not balance", detail: "the debits and the credits differ by 100.00 SGD", fix: "Make the debits equal the credits" },
     ];
-    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1": { status: 200, body: { ...draft, checks }, headers: { ETag: `"2-draft"` } } });
+    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1/evidence": noEvidence,
+ "GET /v1/journals/j1": { status: 200, body: { ...draft, checks }, headers: { ETag: `"2-draft"` } } });
     renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
     const list = await screen.findByRole("heading", { name: "2 things to fix before it can post" });
     expect(list).toBeTruthy();
@@ -407,7 +419,8 @@ describe("the journal page", () => {
   });
 
   it("shows an Owner a draft read-only, with nothing to post", async () => {
-    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } } });
+    answer({ "GET /v1/accounts": accounts, "GET /v1/journals/j1/evidence": noEvidence,
+ "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } } });
     renderPage(page(ownerSession as Session), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
     expect(await screen.findByRole("table", { name: "Lines as entered" })).toBeTruthy();
     expect(screen.getByText("An Accountant or a Tax agent changes drafts.")).toBeTruthy();

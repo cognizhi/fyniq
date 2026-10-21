@@ -122,6 +122,7 @@ export const actions = [
   { kind: "action", id: "journal.ask-reverse", mode: "expert", help: "journal.ask-reverse", guide: "accounting.journals#reverse-a-posted-journal" },
   { kind: "action", id: "journal.reverse-on", mode: "expert", help: "journal.reverse-on", guide: "accounting.journals#journals-that-reverse-by-themselves" },
   { kind: "action", id: "journal.edit", mode: "expert", help: "journal.edit", guide: "accounting.journals#edit-a-posted-journal" },
+  { kind: "action", id: "journal.attach-evidence", mode: "expert", help: "journal.attach-evidence", guide: "accounting.journals#attach-evidence" },
   { kind: "action", id: "journal.post-edit", mode: "expert", help: "journal.post-edit", guide: "accounting.journals#edit-a-posted-journal" },
   { kind: "action", id: "journal.ask-edit", mode: "expert", help: "journal.ask-edit", guide: "accounting.journals#edit-a-posted-journal" },
   { kind: "action", id: "recurring.save", mode: "expert", help: "recurring.save", guide: "accounting.journals#recurring-journals" },

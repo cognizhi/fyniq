@@ -185,8 +185,12 @@
   `accounting.journals` and `approvals.decide`. Edits (2.3, rev 0.54): a posted journal gains **Edit**, which opens the
   editor prefilled with a reason; **Check the edit** shows the reversal and the new entry, **Post the edit** posts
   both, and in Founder mode **Ask to post the edit** asks. Guide `journals.md` "Edit a posted journal".
-  **Left:** the Recurring tab and auto-reversal (2.4), evidence on the editor, dimensions (`p1-organisation-chart`
-  3.3), the locked-period banner (1.2).)
+  (22 Oct 2026) Evidence: the journal page lists its files, oldest first, with what each is and whether it is attached,
+  kept (final, with its retain-until) or removed; the Owner, the Controller, the Accountant and the Tax agent attach a
+  file with what it is, a note and its data class (multipart, at the journal's version read), and take one off a
+  draft. Guide `journals.md` "Attach evidence". The Recurring tab and auto-reversal were built with 2.4 (#112, #120).
+  **Left:** dimensions (`p1-organisation-chart` 3.3); the locked-period banner, which the design shows for soft locks
+  (FR-GL-09, P2): a journal dated in a closed month already shows the status JOURNAL-LOCKED.)
 - [ ] 7.2 Build opening-balances and period-close as designed, with the periods of the year on the close page
   (21 Oct 2026, part: Accounting › Periods and close lists the periods by financial year, open or closed, and opens the
   next year; Home's set-up checklist gains "Open the first financial year". Guide `periods-and-close.md` → kb

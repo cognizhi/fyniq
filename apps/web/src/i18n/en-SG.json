@@ -320,6 +320,10 @@
       "label": "Opening balances",
       "tooltip": "Each account's balance on the day the books start, as a debit or a credit, adding up to zero."
     },
+    "journal.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach a file that supports the journal. Once the journal is posted, its files are kept and never deleted."
+    },
     "opening.save": {
       "label": "Save as a draft",
       "tooltip": "Keep the balances as a draft (✎); nothing posts until they are posted."
