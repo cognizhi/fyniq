@@ -66,6 +66,19 @@ describe("the journals list", () => {
     await waitFor(() => expect(seen.some((s) => s.query.includes("q=rent") && s.query.includes("status=posted"))).toBe(true));
   });
 
+  // req: FR-GL-02
+  it("warns of the automatic reversals that wait, each linked to its journal", async () => {
+    answer({
+      "GET /v1/journals": { status: 200, body: { items: [] } },
+      "GET /v1/journals/waiting-reversals": { status: 200, body: { items: [sum("j7", { status: "posted", number: "JNL-0007", reverse_on: "2027-01-01" })] } },
+    });
+    renderPage(Journals, { path: "/accounting/journals", session: accountant });
+    expect(await screen.findByText("1 automatic reversal is waiting")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "JNL-0007" }).getAttribute("href")).toBe("/accounting/journals/j7");
+    expect(screen.getByText(": reverses on 1 Jan 2027", { exact: false })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Journals" }).getAttribute("aria-current")).toBe("page");
+  });
+
   it("teaches what a journal is when there are none, and offers no button to an Owner", async () => {
     answer({ "GET /v1/journals": { status: 200, body: { items: [] } } });
     renderPage(Journals, { path: "/accounting/journals" });

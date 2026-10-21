@@ -16,7 +16,8 @@ to, which currency its books are kept in, and its team mode. The pages of your w
 each module arrives; you only ever see the pages your roles allow.
 
 - **Waiting for you** counts the requests waiting for your approval and the high-risk actions you
-  can review, with any that are overdue. Select one to open the Inbox or the review log.
+  can review, with any that are overdue. Select one to open the Inbox or the review log. It also
+  counts the automatic reversals waiting for a month to be opened; select it to open **Journals**.
 - **Set up the company** lists the first steps, each marked **Done** or **To do**, with progress.
   It goes once every step is done.
 

@@ -46,6 +46,11 @@ closes the month.
    - the balances agree with the ledger;
    - the trial balance at the month's end adds up to zero;
    - draft journals dated in the month (⚠: once the month closes they cannot post on those dates);
+   - automatic reversals that have not posted: dated on or before the month's end, or of a journal
+     dated in the month and waiting for a month that is not open (⚠);
+   - recurring journals due in the month with no draft yet (⚠), or a draft more than a day late,
+     which means the scheduler failed (✖);
+   - active recurring journals whose lines would not post (⚠);
    - in the month the books start, the opening balances are posted (⚠).
 3. Another founder, an Owner or a Controller who did not run the checks, reads them, says what they
    attest and selects **Attest and close**. Fyniq asks them to confirm it's them first.

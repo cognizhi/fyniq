@@ -248,6 +248,42 @@
       "label": "Ask to post the edit",
       "tooltip": "In Founder mode another founder approves an edit first; it posts when they approve it."
     },
+    "accounting.recurring": {
+      "label": "Recurring",
+      "tooltip": "Journals that repeat, such as a monthly accrual: Fyniq makes each one's draft on its date, and a person posts it."
+    },
+    "accounting.recurring-journal": {
+      "label": "Recurring journal",
+      "tooltip": "One recurring journal: its schedule, its lines, its next draft and what would stop its drafts posting."
+    },
+    "recurring.new": {
+      "label": "New recurring journal",
+      "tooltip": "Set up a journal that repeats every 1, 3, 6 or 12 months; each draft waits for a person to post it."
+    },
+    "recurring.save": {
+      "label": "Save",
+      "tooltip": "Save it. A change to its lines is a new version; drafts already made keep theirs."
+    },
+    "recurring.check": {
+      "label": "Check",
+      "tooltip": "See the date of its next draft and what would stop its drafts posting, without saving."
+    },
+    "recurring.reverses": {
+      "label": "Each draft reverses by itself",
+      "tooltip": "For an accrual: each draft reverses on the first day of the next month once it is posted."
+    },
+    "recurring.pause": {
+      "label": "Pause",
+      "tooltip": "Stop making drafts until you resume it. The drafts already made stay."
+    },
+    "recurring.resume": {
+      "label": "Resume",
+      "tooltip": "Start making drafts again from today; the dates passed while it was paused are skipped."
+    },
+    "journal.waiting": {
+      "label": "Automatic reversal waiting",
+      "tooltip": "Its reversal is dated in a month that is closed or a year not opened yet; it posts within the hour once that month is open."
+    },
     "journal.ask-reverse": {
       "label": "Ask to reverse",
       "tooltip": "In Founder mode another founder approves a reversal first; it posts on the date you choose once they approve."

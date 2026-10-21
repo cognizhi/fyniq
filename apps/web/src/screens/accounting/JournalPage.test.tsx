@@ -372,6 +372,23 @@ describe("the journal page", () => {
     expect(await screen.findByText("Reverses by itself on 1 Nov 2026")).toBeTruthy();
   });
 
+  // req: FR-GL-02
+  it("says why a posted journal's automatic reversal waits, and which recurring journal made it", async () => {
+    const waiting = { severity: "warning" as const, code: "JOURNAL-WAITING", field: "reverse_on", title: "Its automatic reversal is waiting", detail: "Its automatic reversal is dated 2027-01-01, and no period covers that date yet.", fix: "Open the financial year of 2027-01-01 in Accounting › Periods and close; the reversal posts within the hour" };
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": {
+        status: 200,
+        body: { ...posted, reverse_on: "2027-01-01", prepared_by: { kind: "service", id: "scheduler:journals.recurring", name: "Scheduler" }, recurring_journal: { id: "r1", version: 2 }, checks: [waiting] },
+        headers: { ETag: `"2-posted"` },
+      },
+    });
+    renderPage(page(accountant), { path: "/accounting/journals/j1", route: "/accounting/journals/$journalId" });
+    expect(await screen.findByText(/no period covers that date yet\. Open the financial year of 2027-01-01/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "a recurring journal" }).getAttribute("href")).toBe("/accounting/journals/recurring/r1");
+    expect(screen.getByText(/Prepared by Scheduler/)).toBeTruthy();
+  });
+
   // req: ENG-20
   // req: ENG-21
   it("lists what stops a draft posting, in the workbook's words and order", async () => {
