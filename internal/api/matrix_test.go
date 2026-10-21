@@ -622,6 +622,9 @@ var matrixCalls = map[string]matrixCall{
 	"listJournals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals", tok, nil), nil
 	},
+	"listWaitingReversals": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/journals/waiting-reversals", tok, nil), nil
+	},
 	"replaceJournal": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createDraft("10.00")
 		r := e.call(http.MethodPut, "/v1/journals/"+id, tok, e.draft("11.00"), "If-Match", "*")

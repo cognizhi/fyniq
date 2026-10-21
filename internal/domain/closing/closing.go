@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -89,7 +90,9 @@ func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Or
 // run runs the checks of a period as they stand in u. Until p1-checks, the close's own checks are these:
 // ✖ every earlier period is closed; ✖ the balances agree with the lines (INV-08); ✖ the trial balance at the period end
 // nets to zero (INV-01, INV-09); ⚠ draft journals dated in the period; ⚠ the opening balances not posted, in the period
-// the books start in. Reconciliations join with p1-bank-import-reconcile, flux with task 6.3.
+// the books start in; (rev 0.58) ⚠ automatic reversals that have not posted: dated on or before the period's end, so
+// closing it stops them, or of a journal dated in the period and waiting for a period that is not open.
+// Reconciliations join with p1-bank-import-reconcile, flux with task 6.3.
 func run(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([]Check, error) {
 	cur, org, err := base(ctx, u)
 	if err != nil {
@@ -142,6 +145,40 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([]Check, 
 		out = append(out, Check{"drafts", Warning, "Draft journals are dated in the period", count + " draft journal(s): once the period closes they cannot post on those dates"})
 	} else {
 		out = append(out, Check{"drafts", OK, "No draft journal is dated in the period", ""})
+	}
+	due, err := u.Documents().DueReversals(ctx, p.EndsOn.Format(time.DateOnly), 101)
+	if err != nil {
+		return nil, err
+	}
+	waiting, err := u.Documents().WaitingReversals(ctx, "", nil, 1000)
+	if err != nil {
+		return nil, err
+	}
+	dueIDs := map[uuid.UUID]bool{}
+	for _, id := range due {
+		dueIDs[id] = true
+	}
+	held := 0
+	for _, d := range waiting {
+		if !dueIDs[d.ID] && d.Date >= p.StartsOn.Format(time.DateOnly) && d.Date <= p.EndsOn.Format(time.DateOnly) {
+			held++
+		}
+	}
+	if len(due) > 0 || held > 0 {
+		var parts []string
+		if n := len(due); n > 0 {
+			count := fmt.Sprint(n)
+			if n > 100 {
+				count = "More than 100"
+			}
+			parts = append(parts, count+" journal(s) reverse by themselves on or before "+p.EndsOn.Format(time.DateOnly)+": once the period closes, their reversals cannot post")
+		}
+		if held > 0 {
+			parts = append(parts, fmt.Sprint(held)+" journal(s) dated in the period wait to reverse in a period that is not open: open it so they can")
+		}
+		out = append(out, Check{"reversals", Warning, "Automatic reversals have not posted", strings.Join(parts, "; ")})
+	} else {
+		out = append(out, Check{"reversals", OK, "No automatic reversal is waiting", ""})
 	}
 	if bs := org.Profile.BooksStart; bs != nil && !bs.Before(p.StartsOn) && !bs.After(p.EndsOn) {
 		ob, err := u.Documents().OpeningBalance(ctx)

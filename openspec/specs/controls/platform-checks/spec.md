@@ -763,6 +763,25 @@ Source: PRD-001 §C.2
 - **WHEN** a company secretary other than a sole director is recorded
 - **THEN** the check passes
 
+### Requirement: C.2 #56 Automatic reversals not posted
+The system SHALL warn in the close checks when a journal reverses by itself on or before the period's end, so that closing the period stops its reversal, or when a journal dated in the period waits to reverse in a period that is not open (FR-GL-02).
+
+Source: PRD-001 §C.2
+
+#### Scenario: A reversal due in the period
+- **GIVEN** a posted journal that reverses by itself on a day on or before the period's end, and has not reversed yet
+- **WHEN** the period's close checks run
+- **THEN** the check warns (⚠) that closing the period stops its reversal
+
+#### Scenario: A reversal waiting from the period
+- **GIVEN** a posted journal dated in the period whose reversal date no open period covers
+- **WHEN** the period's close checks run
+- **THEN** the check warns (⚠) that it waits for that period to be opened
+
+#### Scenario: Nothing waits
+- **WHEN** no automatic reversal is due by the period's end and none from the period waits
+- **THEN** the check passes
+
 ### Requirement: C.2 #55 Model route needs attention
 The system SHALL flag for review an agent's route that fell back more often than its daily threshold, runs on a moving model alias not re-qualified this week, is within 20% of its budget or quota, or names a model that is retiring within 30 days, retired or no longer listed, and a connection whose model list has not been read for 3 days (AI-76…AI-78, AI-80, AI-81).
 
