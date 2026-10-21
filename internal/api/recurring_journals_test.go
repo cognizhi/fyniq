@@ -37,7 +37,7 @@ func monthly(day int, starts string) map[string]any {
 	return map[string]any{"every_months": 1, "day_of_month": day, "starts_on": starts}
 }
 
-// FR-GL-02, FR-AUT-01 (the founders' decision of rev 0.58, built in rev 0.60): a recurring journal is a journal's content
+// FR-GL-02, FR-AUT-01 (the founders' decisions of rev 0.58 and rev 0.61, built in rev 0.60): a recurring journal is a journal's content
 // and a schedule; the scheduler makes the draft of each occurrence, dated on it and named for it, which a person
 // posts. Its statuses are the workbook's checks of recurring entries: content the posting rules would refuse (C.1
 // #29) and an occurrence due but not made (C.1 #28), which the close checks warn of too.
@@ -133,11 +133,11 @@ func TestRecurringJournals(t *testing.T) {
 	}
 	oct := e.books.Oct.ID.String()
 	// On 15 October, 1 September's occurrence is more than a day late: the hourly scheduler failed (✖, C.1 #28). The
-	// unbalanced one's content blocks the close too (✖, C.1 #29).
+	// unbalanced one's content is warned of (⚠, C.1 #29; the founders' decision of rev 0.61).
 	if c := closeCheck(oct, "recurring"); c["severity"] != "error" || !strings.Contains(c["detail"].(string), "1 recurring journal(s) have an occurrence more than a day ago") {
 		t.Errorf("October's close, with an occurrence the scheduler did not make: %v", c)
 	}
-	if c := closeCheck(oct, "recurring-content"); c["severity"] != "error" || !strings.Contains(c["detail"].(string), "1 active recurring journal(s)") {
+	if c := closeCheck(oct, "recurring-content"); c["severity"] != "warning" || !strings.Contains(c["detail"].(string), "1 active recurring journal(s)") {
 		t.Errorf("October's close, with an incomplete recurring journal: %v", c)
 	}
 

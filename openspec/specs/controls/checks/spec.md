@@ -512,13 +512,13 @@ Source: PRD-001 §C.1
 - **AND** the recurring journal itself carries the warning "Due but not created" while an occurrence before today has no draft
 
 ### Requirement: C.1 #29 Recurring templates incomplete
-The system SHALL check, on every relevant change and nightly, that recurring templates are complete; an incomplete template blocks the close.
+The system SHALL check, on every relevant change and nightly, that recurring templates are complete; an incomplete template is an error on itself and, while active, a warning at the close (rev 0.61).
 
 Source: PRD-001 §C.1
 
 #### Scenario: A recurring template is incomplete
 - **WHEN** a recurring template is incomplete
-- **THEN** the check fails and blocks the close
+- **THEN** the check fails on the template, and the close warns of it (the founders' decision of rev 0.61)
 
 #### Scenario: Every template is complete
 - **WHEN** every recurring template is complete
@@ -528,7 +528,7 @@ Source: PRD-001 §C.1
 - **GIVEN** a recurring journal whose content the posting rules refuse
 - **WHEN** it is saved or read
 - **THEN** it is kept, with each problem as an error status on it
-- **AND** while it is active, the close checks refuse the close until it is fixed or paused
+- **AND** while it is active, the close checks warn of it (rev 0.61)
 
 ### Requirement: C.1 #30 Suspense balance not zero
 The system SHALL flag for review, on every relevant change and nightly, a bank suspense balance that is not zero.

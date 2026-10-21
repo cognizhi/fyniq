@@ -104,6 +104,11 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** it is resumed
 - **THEN** its next draft is for its first occurrence on or after today; the ones it missed are not made late
 
+#### Scenario: A start in the past (rev 0.61)
+- **GIVEN** a recurring journal saved with a start before today
+- **WHEN** the scheduler next runs
+- **THEN** it makes the drafts of the occurrences already passed, up to 12 a run, and the next runs take the rest
+
 ### Requirement: FR-GL-03 Schedules
 The system SHALL keep **schedules** for prepayments and deferred revenue (from bills, invoices and transactions with "spread over months"), depreciation and amortisation, recognising up to the current period only (workbook "as of" gate).
 

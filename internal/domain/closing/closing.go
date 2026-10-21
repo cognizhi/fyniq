@@ -97,8 +97,9 @@ func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Or
 // the books start in; (rev 0.58) ⚠ automatic reversals that have not posted: dated on or before the period's end, so
 // closing it stops them, or of a journal dated in the period and waiting for a period that is not open; (rev 0.60)
 // recurring journals with an occurrence on or before the period's end and no draft yet, ⚠, or ✖ when the occurrence is
-// more than a day before today, so the hourly scheduler failed (Appendix C.1 #28); ✖ active recurring journals whose
-// content the posting rules refuse (C.1 #29).
+// more than a day before today, so the hourly scheduler failed (Appendix C.1 #28); ⚠ active recurring journals whose
+// content the posting rules refuse (C.1 #29; the founders' decision of rev 0.61: it warns, as the close is about the
+// period's postings and their drafts show their own problems).
 // Reconciliations join with p1-bank-import-reconcile, flux with task 6.3.
 func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
 	cur, org, err := base(ctx, u)
@@ -514,7 +515,7 @@ func recurringChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period
 		}
 	}
 	if incomplete > 0 {
-		out = append(out, Check{"recurring-content", Failed, "Recurring journals are incomplete",
+		out = append(out, Check{"recurring-content", Warning, "Recurring journals are incomplete",
 			count(incomplete) + " active recurring journal(s) have content the posting rules refuse, so their drafts could not post: fix or pause them"})
 	} else {
 		out = append(out, Check{"recurring-content", OK, "Every active recurring journal is complete", ""})

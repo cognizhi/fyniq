@@ -41,7 +41,7 @@ under the usual approvals: nothing recurring posts by itself, the founders' deci
 | T4 | The worker may update `next_on` only. Content versions never change or go (FY058), even for the owner | `TestRecurringJournalsMakeDraftsTheSchedulerCannotPost` |
 | T5 | The approval of a draft's post refuses whoever wrote the version it came from, read from `recurring_journal_version`, never from the draft (JOURNAL-09) | `TestTheAuthorOfARecurringJournalDoesNotApproveItsDrafts` (SOD-3) |
 | T6 | Each job has its own principal, recorded on every audit event it writes (AUD-01); a waiting reversal is audited too | `TestAutomaticReversals`, `TestRecurringJournalsMakeDraftsTheSchedulerCannotPost` |
-| T7 | A waiting reversal warns on the journal, on Home and in the close (C.2 #56). A recurring occurrence more than a day late refuses the close (C.1 #28), as does an active recurring journal whose content would not post (C.1 #29) | `TestAWaitingAutomaticReversalShows`, `TestRecurringJournals` |
+| T7 | A waiting reversal warns on the journal, on Home and in the close (C.2 #56). A recurring occurrence more than a day late refuses the close (C.1 #28); an active recurring journal whose content would not post is ✖ on itself and ⚠ at the close (C.1 #29, the founders' decision of rev 0.61) | `TestAWaitingAutomaticReversalShows`, `TestRecurringJournals` |
 | T8 | `create_scheduled_draft` makes an occurrence only when it is the recurring journal's next one and after its last (FY057), under the row's lock | `TestRecurringJournalsMakeDraftsTheSchedulerCannotPost` |
 
 ## 4. What remains
@@ -50,4 +50,4 @@ under the usual approvals: nothing recurring posts by itself, the founders' deci
   21 Oct 2026 the founders accepted this until the cloud gate. The scheduler's jobs then move to a
   role of their own (PRD-001 §17.5 item 5).
 - A recurring journal's content is checked by the posting rules when it is read, not when it is saved;
-  an incomplete one is kept and shown, and blocks the close while it is active.
+  an incomplete one is kept and shown, and the close warns of it while it is active.
