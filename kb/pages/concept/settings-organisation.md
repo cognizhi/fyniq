@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings (features, payment terms, tolerances, capitalisation and self-approval thresholds, data region, retention) and their recommended values
 sources:
-  - docs/user-guide/organisation-settings.md sha256:73363f8105bc0c18ef18ba6cb53c18ed522977ac51c66e2532b4ea685ba8d6f6
+  - docs/user-guide/organisation-settings.md sha256:c8a306cd86f4766832f990f00055d7aef53deba9635a105aabb8de965bc13615
 data_class: general
 taint: trusted
 status: draft
@@ -61,7 +61,7 @@ aliases:
 ## Capitalisation threshold
 
 - A purchase of S$1,000 or more is offered as a fixed asset; a smaller one is an expense.
-- The company's accountant confirms it.
+- The company's accountant confirms it by approving the capitalisation threshold policy under **Settings → Accounting framework and policies** ([[settings.accounting]]).
 
 (src: docs/user-guide/organisation-settings.md#capitalisation-threshold)
 
@@ -83,6 +83,6 @@ aliases:
 
 ## Related
 
-- Setting up the accounts themselves: [[accounting.chart]]. Approving a change: [[approvals.decide]].
+- Setting up the accounts themselves: [[accounting.chart]]. Approving a change: [[approvals.decide]]. The accounting framework and policies: [[settings.accounting]].
 
 (src: docs/user-guide/organisation-settings.md#related)

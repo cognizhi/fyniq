@@ -87,3 +87,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/journals.md (a draft's statuses) → accounting.journals (p1-general-ledger-close 6.1)
 
 ## [2026-10-21] compile | docs/user-guide/journals.md, periods-and-close.md, home.md → accounting.journals, accounting.periods, home.overview (recurring journals, automatic reversals that wait, the new close checks; PRD rev 0.59-0.61)
+
+## [2026-10-21] compile | docs/user-guide/accounting-framework.md → settings.accounting (new page: the accounting framework and policies, FR-ORG-10, rev 0.62)
+
+## [2026-10-21] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the capitalisation threshold is confirmed by its accounting policy; link to settings.accounting)
