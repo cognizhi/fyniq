@@ -45,4 +45,5 @@ jobs:
       version: ${{ steps.release.outputs.version }}
 
   # P0 adds a job here, gated on needs.release-please.outputs.release_created,
-  # that builds, signs and publishes the images tagged vX.Y.Z and sha-<git sha> (§12.9).
+  # that builds, signs and publishes the images tagged vX.Y.Z and sha-<git sha> (§12.9), each a
+  # multi-platform index for linux/amd64 and linux/arm64 (NFR-IMG-08; Cloud Run runs the amd64 one).

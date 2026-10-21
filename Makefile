@@ -19,6 +19,21 @@ GO_IMAGES := api ai mcp worker executor render migrate jobs
 # Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
 MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger
 FLAVOURS ?= release local
+# The platform `make images` builds: empty for the Docker engine's own (linux/arm64 on Apple silicon), or
+# linux/amd64 or linux/arm64 (NFR-IMG-08)
+PLATFORM ?=
+# make images also checks that every pinned image has both platforms, which reads the registries; make up skips it
+PIN_CHECK ?= yes
+# Docker in a VM on a Mac (Colima, OrbStack, Docker Desktop) is reached through the docker CLI's context,
+# which Testcontainers does not read: give it the context's socket as DOCKER_HOST, and the socket's path
+# inside the VM for the containers it starts that mount it
+ifeq ($(origin DOCKER_HOST),undefined)
+DOCKER_CONTEXT_HOST := $(shell docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null)
+ifneq ($(filter unix://$(HOME)/%,$(DOCKER_CONTEXT_HOST)),)
+export DOCKER_HOST := $(DOCKER_CONTEXT_HOST)
+export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE ?= /var/run/docker.sock
+endif
+endif
 VERSION := $(shell tr -d '[:space:]' < VERSION)
 GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
@@ -49,7 +64,7 @@ dev: ## Run the stack with hot reload: dependencies in Docker, the Go services a
 	@$(MISE) scripts/dev.sh
 
 up: ## Run the stack from the local flavour of the images, behind Caddy on http://localhost:8080
-	@$(MAKE) --no-print-directory images FLAVOURS=local
+	@$(MAKE) --no-print-directory images FLAVOURS=local PIN_CHECK=no
 	@$(COMPOSE) --profile core up -d --wait
 	@echo "Fyniq       http://localhost:$${FYNIQ_HTTP_PORT:-8080}   (API http://localhost:$${FYNIQ_API_PORT:-8081}/version)"
 
@@ -118,14 +133,15 @@ test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 evals: ## Run the AI eval suites in replay mode (the suites arrive in P1)
 	@scripts/evals.sh
 
-images: ## Build the Go and web images (FLAVOURS="release local" by default) and check them: budgets, non-root, no shell, no local adapter in release (§12.9)
+images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the engine's own by default) and check them: budgets, non-root, no shell, no local adapter in release, the platform (§12.9)
 	@for svc in $(GO_IMAGES); do for f in $(FLAVOURS); do \
 	  tag=$$( [ "$$f" = local ] && echo local || echo "$(VERSION)" ); \
-	  docker build -q -f deploy/docker/Dockerfile.go-service --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
+	  docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.go-service --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
 	    --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t fyniq-$$svc:$$tag . >/dev/null; \
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
-	@docker build -q -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
-	@python3 scripts/images.py check --version $(VERSION) --flavours "$(FLAVOURS)"
+	@docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
+	@python3 scripts/images.py check --version $(VERSION) --flavours "$(FLAVOURS)" --platform "$(PLATFORM)"
+	@$(if $(filter yes,$(PIN_CHECK)),python3 scripts/images.py platforms)
 
 infra-check: ## OpenTofu in infra/: fmt, init from the lock files, validate, the module tests on mock providers, and no keys, authoritative IAM, human grants or regions outside Singapore (NFR-PORT-05); downloads the providers
 	@$(MISE) python3 scripts/infra.py check

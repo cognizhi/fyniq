@@ -79,7 +79,7 @@ The Makefile is the single entry point, and CI calls the same targets (`make ci`
 | `make test` | Every merge gate offline: unit, property, DB invariant attacks (Testcontainers), oracle differential, contract, authz matrix, front-end unit and accessibility | ≤ 10 min (NFR-DEVX-02) |
 | `make test-e2e` | Playwright journeys against `make up` (QA-E2E-01) | — |
 | `make evals` | AI golden, proposal and red-team suites; replay by default, `FYNIQ_AI_LIVE=1` for live | — |
-| `make images` | Build every image in both flavours and check it: the budgets of `deploy/docker/budgets.json`, non-root, no shell, no local adapter in a release binary (`make image-scan` adds the SBOMs and the grype scan) | — |
+| `make images` | Build every image in both flavours for the Docker engine's own platform (`PLATFORM=linux/amd64` or `linux/arm64` to name one) and check it: the budgets of `deploy/docker/budgets.json`, non-root, no shell, no local adapter in a release binary, the image's and its binary's platform; and that every pinned image is multi-platform (`make image-scan` adds the SBOMs and the grype scan) | — |
 | `make ci` | Exactly what CI runs, in the same order | — |
 
 Today, `make deps-up` starts only the three dependencies above and prints their URLs
@@ -141,6 +141,7 @@ Never point a local MCP client at staging or production with test credentials.
 | NFR-IMG-05 | SBOM (syft), scan with no unwaived critical/high (grype or Trivy), cosign signature, SLSA provenance; deploy by digest |
 | NFR-IMG-06 | `/healthz`, `/readyz`, `/version` (SemVer, git SHA, build time) used by Cloud Run probes |
 | NFR-IMG-07 | Reproducible: same commit → same digest (`SOURCE_DATE_EPOCH`, no timestamps in layers) |
+| NFR-IMG-08 | (rev 0.64) `linux/amd64` and `linux/arm64` from the same Dockerfile, native to the build machine by default (arm64 on Apple silicon). Build stages are `FROM --platform=$BUILDPLATFORM` and cross-compile (`GOARCH` from `TARGETARCH`), so nothing runs under emulation. Every pinned image, ours and the local stack's, is a multi-platform index with both (`scripts/images.py platforms`); CI builds and runs the stack on an amd64 and an arm64 runner. Cloud Run runs `linux/amd64` only |
 
 Each service is a **separate binary and image** from its own `cmd/<service>`. The AI and MCP
 images must not contain domain write code (§12.3). Check with `go list -deps ./cmd/ai` that no
@@ -162,6 +163,8 @@ not wired into any build: the budgets in force are `deploy/docker/budgets.json`.
 
 | Symptom | Look at |
 |---|---|
+| `docker: unknown command: docker buildx` or `docker compose` (Colima or the Homebrew Docker CLI) | `brew install docker-buildx docker-compose`, then add `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]` to `~/.docker/config.json`. The Dockerfiles need BuildKit (`RUN --mount`), so the legacy builder fails |
+| `exec format error`, or a container that is slow on an Apple-silicon laptop | An image for the other platform: an amd64-only pin running under emulation, or an image built with `PLATFORM=linux/amd64`. Pin a multi-platform index (`clamav/clamav` is amd64 only, so the stack uses `clamav/clamav-debian`) and rebuild with `make images` |
 | Port 55432, 8025, 1025 or 4443 already in use | A previous stack (`make deps-down`, `docker ps`), or set `FYNIQ_PG_PORT`, `FYNIQ_MAIL_UI_PORT`, `FYNIQ_SMTP_PORT`, `FYNIQ_GCS_PORT` |
 | `make deps-up` hangs on postgres | `make deps-logs`; a volume from an older major version needs `docker volume rm` (data is disposable) |
 | Works locally, fails in staging | A substitute gap (Bucket Lock, Model Armor, WAF, IAM DB auth): see the fidelity column; add a staging check (R17) |
@@ -169,7 +172,7 @@ not wired into any build: the budgets in force are `deploy/docker/budgets.json`.
 | Passkey prompt fails | Use `http://localhost`, not a LAN IP; WebAuthn needs a secure context |
 | AI tests fail with "cassette not found" | The prompt, tools or model changed: re-record with `FYNIQ_AI_LIVE=1 make evals` on synthetic data, review the diff, commit the cassettes |
 | Container cannot write a file | It runs read-only: write under the declared `tmpfs` or object storage, never the root filesystem |
-| `make test` fails with "postgres adapter tests need Docker" | Start Docker. The database suites (QA-ENG-05) block merge, so they fail rather than skip |
+| `make test` fails with "postgres adapter tests need Docker" | Start Docker. The database suites (QA-ENG-05) block merge, so they fail rather than skip. With "rootless Docker not found" on a Mac (Colima, OrbStack): Testcontainers reads only `DOCKER_HOST`, which the Makefile takes from the docker CLI's context, with `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`; for a bare `go test`, export both yourself |
 | `make db-lint` says `sqlcdb` is stale | You changed a query or a migration: `make sqlc`, then commit the generated files |
 | `migrate up` fails with "permission denied to create role" or on `fyniq_migrations` | The database was created by an older run: `make reset` (local data is disposable) |
 

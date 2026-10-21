@@ -58,8 +58,11 @@ work, the API conventions, CI images and releases, infrastructure, identity and 
 
 ## Quick start
 
-Needs Docker, GNU Make, git and [mise](https://mise.jdx.dev/) (it installs the pinned toolchain
-in `mise.toml`), or the dev container in `.devcontainer/`. No cloud account is needed.
+Needs Docker with the buildx and compose plugins, GNU Make, git and [mise](https://mise.jdx.dev/) (it
+installs the pinned toolchain in `mise.toml`), or the dev container in `.devcontainer/`. No cloud account
+is needed. Everything runs natively on Apple silicon as on amd64 (NFR-IMG-08); with Colima, install the
+plugins with `brew install docker-buildx docker-compose` and list `/opt/homebrew/lib/docker/cli-plugins`
+under `cliPluginsExtraDirs` in `~/.docker/config.json`.
 
 ```bash
 make setup        # the pinned toolchain, web dependencies, git hooks and a local .env

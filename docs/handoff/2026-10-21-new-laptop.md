@@ -99,7 +99,7 @@ request.
    - authorisation-matrix rows;
    - a web test.
 10. **Records:**
-    - PRD revision **0.64** for the built details and the provisional staleness rule.
+    - PRD revision **0.65** (0.64 is taken) for the built details and the provisional staleness rule.
     - In `tasks.md` 6.3, note that the AI-drafted explanation and budget variances are out of
       scope.
 
@@ -120,7 +120,7 @@ request.
 | Migration | `000066` |
 | FY error code | FY162 (FY059 to FY061 are taken; FY160 and FY161 are the accounting guard) |
 | Appendix C.2 check | #57 |
-| PRD-001 revision | 0.64 (tag `(rev 0.64)`, history row, header Revision line) |
+| PRD-001 revision | 0.65 (tag `(rev 0.65)`, history row, header Revision line); 0.64 went to the image platforms (NFR-IMG-08) |
 
 ## Lessons that cost reruns
 
@@ -164,6 +164,9 @@ request.
   the rest), the web dependencies and the commit hook. Then run `make up`, `make setup-code` and
   `make seed-load`, as AGENTS.md describes.
 - If PostgreSQL already uses host port 5432 there, the stack's 55432 still applies.
+- The new laptop is Apple silicon with Colima. Its Homebrew Docker CLI needs the buildx and compose
+  plugins (`brew install docker-buildx docker-compose` and `cliPluginsExtraDirs` in
+  `~/.docker/config.json`; README). Every image builds and runs natively as `linux/arm64` (NFR-IMG-08).
 - If the machine's Go updates itself past the pinned version, set `GOTOOLCHAIN` to the pinned one
   before `make scan`.
 - `make test` needs Docker running (Testcontainers).

@@ -159,7 +159,7 @@ services:
 
   # ---------------------------------------------------------------- scan
   clamav:
-    image: clamav/clamav:stable        # pin
+    image: clamav/clamav-debian:stable # pin; clamav/clamav is amd64 only (NFR-IMG-08)
     profiles: [scan]
     healthcheck: { <<: *health, interval: 30s, test: ["CMD", "clamdcheck.sh"] }
 
