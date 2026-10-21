@@ -3,7 +3,7 @@ key: accounting.opening-balances
 title: Enter the opening balances
 mode: expert
 roles: [accountant, tax_agent, controller, owner, auditor]
-requirements: [FR-GL-06, INV-13]
+requirements: [FR-GL-06, FR-GL-12, FM-1, INV-13]
 status: draft            # written with the opening balances screen (P1, p1-general-ledger-close); reviewed with the accountant
 ---
 
@@ -44,8 +44,21 @@ If the balances do not add up, the difference usually belongs in retained earnin
 Share capital takes its opening balance here: after that, it changes only through the register of
 share issues.
 
-Posted opening balances do not change on this page yet. Changing them needs a second founder's
-approval, which arrives soon; until then, correct them with a journal.
+## Change posted opening balances
+
+Changing posted opening balances is a high-risk change, so it always needs another person's
+approval, whatever the team mode.
+
+1. An Accountant selects **Change the balances**, corrects the balances, and says why they change.
+2. Select **Ask for approval**, and confirm it's you. The balances stay as they are for now.
+3. Another member who approves journals, such as the Controller, reads what changes and approves it
+   in their **Inbox**. The one who asked never approves it.
+
+- On the approval, Fyniq reverses the balances that were posted and posts the new ones, both on the
+  day the books start. The ledger keeps all of it.
+- The month the books start in must be open. If it is closed, ask to reopen it first, or correct
+  the balances with a journal in an open month.
+- While a change waits for approval, the page says so and links to it.
 
 ## Common problems
 
@@ -55,9 +68,12 @@ approval, which arrives soon; until then, correct them with a journal.
 | No period covers the posting date (STORAGE-PERIOD-01) | Open the first financial year in **Accounting → Periods and close** |
 | The balances do not net to zero (LEDGER-09, LEDGER-10) | Make the debits equal the credits |
 | A balance not in the base currency (LEDGER-17) | Enter it in the base currency |
-| They are not a draft (JOURNAL-02) | Posted opening balances do not change here; correct them with a journal |
+| They are not a draft (JOURNAL-02) | Posted opening balances change only with another person's approval: select **Change the balances** |
+| A change is waiting for approval already (APR-06) | Approve or reject the waiting request first |
+| The period is closed (STORAGE-INV-03) | Ask to reopen the month the books start in, or correct the balances with a journal |
 
 ## Related
 
 - [Open the financial year and close the periods](periods-and-close.md)
 - [Prepare, post and reverse journals](journals.md)
+- [Approve a change](approvals.md)

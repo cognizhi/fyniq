@@ -82,7 +82,8 @@
         "statutory_pack",
         "team_mode",
         "period",
-        "journal"
+        "journal",
+        "opening_balance"
       ],
       "examples": [
         "organisation_setting"
@@ -102,7 +103,8 @@
         "period.reopen",
         "journal.post",
         "journal.reverse",
-        "journal.edit"
+        "journal.edit",
+        "opening_balance.edit"
       ],
       "examples": [
         "organisation_setting.change"

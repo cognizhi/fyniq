@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "lines": {
+      "description": "Every balance as it should be, not only the ones that change; together they net to zero.",
+      "items": {
+        "$ref": "OpeningLine.schema.json"
+      },
+      "maxItems": 1000,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "memo": {
+      "description": "A note on where the balances come from.",
+      "examples": [
+        "Balances from the 31 March 2026 trial balance"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why they change: the approver reads it, and the audit trail and the reversal's memo keep it.",
+      "examples": [
+        "The bank balance at the books start was 12,480.00, not 12,840.00"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "lines",
+    "reason"
+  ],
+  "title": "OpeningEdit",
+  "type": "object"
+}

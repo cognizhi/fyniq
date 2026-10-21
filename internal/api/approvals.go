@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -52,9 +53,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -418,6 +419,25 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		}
 		e.ObjectVersion = doc.Version
 		e.Dependencies["journal_version"] = doc.Version
+		e.Dependencies["status"] = string(doc.Status)
+		e.Dependencies["debits"] = debits
+	case approval.ObjectOpening:
+		id, err := uuid.Parse(c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		debits := ""
+		if doc.Status == storage.DocumentPosted {
+			if debits, err = postedDebits(ctx, u, ledger.OpeningIdentity(doc.ID, doc.Version, ledger.RuleOpeningBalance)); err != nil {
+				return nil, err
+			}
+		}
+		e.ObjectVersion = doc.Version
+		e.Dependencies["opening_version"] = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["debits"] = debits
 	}
@@ -898,6 +918,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return err
 	case approval.OpJournalEdit:
 		return a.executeEdit(ctx, u, r, s)
+	case approval.OpOpeningEdit:
+		return a.executeOpeningEdit(ctx, u, r, s)
 	}
 	return fmt.Errorf("approval: no operation %s", r.Operation)
 }

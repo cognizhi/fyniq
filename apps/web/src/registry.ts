@@ -134,6 +134,7 @@ export const actions = [
   { kind: "action", id: "opening.save", mode: "expert", help: "opening.save", guide: "accounting.opening-balances#enter-the-opening-balances" },
   { kind: "action", id: "opening.check", mode: "expert", help: "opening.check", guide: "accounting.opening-balances#check-and-post-them" },
   { kind: "action", id: "opening.post", mode: "expert", help: "opening.post", guide: "accounting.opening-balances#check-and-post-them" },
+  { kind: "action", id: "opening.ask-change", mode: "expert", help: "opening.ask-change", guide: "accounting.opening-balances#change-posted-opening-balances" },
   { kind: "action", id: "close.run-checks", mode: "expert", help: "close.run-checks", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.attest", mode: "expert", help: "close.attest", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.reopen", mode: "expert", help: "close.reopen", guide: "accounting.periods#reopen-a-month" },

@@ -121,9 +121,60 @@ describe("the opening balances page", () => {
     const sent = seen.filter((s) => s.method === "POST")[1]!;
     expect(sent.headers.get("Idempotency-Key")).toBeTruthy();
     expect(sent.headers.get("If-Match")).toBe(`"1-draft"`);
-    await waitFor(() => expect(screen.getByText("Posted opening balances do not change here yet")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Posted opening balances change only with another person's approval")).toBeTruthy());
     expect(screen.queryByLabelText("1010 DBS current account: debit")).toBeNull();
     expect(within(screen.getByRole("table", { name: "Accounts" })).getAllByText("10,000.00")).toHaveLength(4); // a debit, a credit and both totals
+  });
+
+  // req: FM-1
+  // req: FR-GL-12
+  it("asks another person to approve a change to posted balances, with a reason, then shows the request; axe finds nothing", async () => {
+    let asked = false;
+    const posted = { ...draft, status: "posted" as const, posted_by: { kind: "user" as const, id: "u2", name: "Wei Ling" } };
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/organisation/profile": profile,
+      "GET /v1/opening-balances": () => ({ status: 200, body: asked ? { ...posted, edit_asked: "ap1" } : posted, headers: { ETag: `"1-posted"` } }),
+      "POST /v1/opening-balances/edit-approval": () => {
+        asked = true;
+        return { status: 202, body: { id: "ap1", status: "pending" } };
+      },
+    });
+    renderPage(page(accountant), { path: "/accounting/opening-balances" });
+    fireEvent.click(await screen.findByRole("button", { name: "Change the balances" }));
+    fireEvent.change(screen.getByLabelText("1010 DBS current account: debit"), { target: { value: "12,000.00" } });
+    fireEvent.change(screen.getByLabelText("3010 Share capital, ordinary: credit"), { target: { value: "12,000.00" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask for approval" })[0]!);
+    expect(await screen.findByText(/Say why: the approver reads it/)).toBeTruthy();
+    expect(seen.filter((x) => x.method === "POST")).toEqual([]);
+    await noViolations(document.body);
+    fireEvent.change(screen.getByLabelText("Why they change"), { target: { value: "The bank balance was 12,000.00" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Ask for approval" })[0]!);
+    expect(await screen.findByText("Asked for approval: the balances change once another person approves.")).toBeTruthy();
+    const sent = seen.find((x) => x.method === "POST")!;
+    expect(sent.body).toEqual({
+      lines: [
+        { account_id: "a-bank", amount: { amount: "12000.00", currency: "SGD" } },
+        { account_id: "a-shares", amount: { amount: "-12000.00", currency: "SGD" } },
+      ],
+      reason: "The bank balance was 12,000.00",
+    });
+    expect(sent.headers.get("If-Match")).toBe(`"1-posted"`);
+    expect(sent.headers.get("Idempotency-Key")).toBeTruthy();
+    expect(await screen.findByText("A change to the opening balances waits for approval")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "See the request" }).getAttribute("href")).toBe("/approvals/ap1");
+    expect(screen.queryByRole("button", { name: "Change the balances" })).toBeNull();
+  });
+
+  it("lets only an Accountant ask to change posted balances", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/organisation/profile": profile,
+      "GET /v1/opening-balances": { status: 200, body: { ...draft, status: "posted" }, headers: { ETag: `"1-posted"` } },
+    });
+    renderPage(page({ ...ownerSession, roles: ["controller"] } as Session), { path: "/accounting/opening-balances" });
+    expect(await screen.findByText("An Accountant asks for a change, and another person approves it.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Change the balances" })).toBeNull();
   });
 
   it("asks for the books start first", async () => {

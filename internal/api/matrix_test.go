@@ -625,6 +625,32 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPost, "/v1/opening-balances/post", e.principal(p), nil, "If-Match", "*")
 		return r, func() bool { return matrixOpeningStatus(e, b.Org) == storage.DocumentDraft }
 	},
+	// Changing posted opening balances asks for approval, so each call asks in an organisation of its own whose opening
+	// balances are posted, as a person with a Fyniq user, stepped up now.
+	"requestOpeningBalancesEdit": func(e *env, tok string) (response, func() bool) {
+		ctx := context.Background()
+		b, p := matrixOpening(e, tok, true)
+		if _, err := e.api.journals.PostOpening(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "matrix-poster"}}), b.Org); err != nil {
+			panic(err)
+		}
+		if p.Class == authn.ClassUser {
+			p.UserID, p.StepUpAt = uuid.MustParse(matrixApprover(e)), e.clock.Now()
+		}
+		line := func(account uuid.UUID, amount string) map[string]any {
+			return map[string]any{"account_id": account.String(), "amount": map[string]any{"amount": amount, "currency": "SGD"}}
+		}
+		r := e.call(http.MethodPost, "/v1/opening-balances/edit-approval", e.principal(p), map[string]any{
+			"lines": []any{line(b.Bank.ID, "20.00"), line(b.Sales.ID, "-20.00")}, "reason": "Matrix"}, "If-Match", "*")
+		return r, func() bool {
+			var n int
+			_ = e.store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				rs, err := u.Approvals().List(ctx, "")
+				n = len(rs)
+				return err
+			})
+			return n == 0
+		}
+	},
 	"getPeriodClose": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/periods/"+e.books.Oct.ID.String()+"/close", tok, nil), nil
 	},

@@ -34,7 +34,8 @@
         "statutory_pack",
         "team_mode",
         "period",
-        "journal"
+        "journal",
+        "opening_balance"
       ],
       "examples": [
         "organisation_setting"

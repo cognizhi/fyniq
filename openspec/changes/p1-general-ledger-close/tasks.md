@@ -97,7 +97,15 @@
   `"0-none"` before the first save) and `POST /v1/opening-balances/post`. Tests: `TestOpeningBalancesPostAsEnteredWithShareCapital`,
   `TestOpeningBalancesNetToZeroInTheBaseCurrency`, `TestOpeningBalances`, `TestAttackOpeningBalancesAreOneAndOnlyTheyReachShareCapital`,
   the allow list in `TestAttackManualJournalToShareCapitalFails`, three authorisation-matrix rows. **Left:** the
-  oracle's side (8.1); changes after posting with FM-1 (2.3); the screen (7.2).)
+  oracle's side (8.1).)
+  (22 Oct 2026, PRD rev 0.66, provisional: changes after posting. FM-1 lists editing opening balances, so in every team
+  mode a change is asked for: `requestOpeningBalancesEdit` (P on Journals, stepped up) keeps the new content bound by
+  its SHA-256 and lists what changes; another member who holds A on Journals approves it, and
+  `journal.Service.EditOpening` posts the reversal and the new version's entry at the books start, as the approver.
+  A request is refused while the books start's month is closed. Migrations 000067 and 000068 admit the approval object
+  `opening_balance` and `opening_balance.edit`. The page offers **Change the balances** and shows a waiting request.
+  Guide `opening-balances.md` "Change posted opening balances". Tests: `TestChangingPostedOpeningBalances`, the matrix
+  row, the web tests.)
 
 ## 4. The general ledger report
 

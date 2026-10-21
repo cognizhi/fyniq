@@ -199,6 +199,13 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** they are one document per organisation, saved as a draft a version at a time and posted once at the books start
 - **AND** they post only when they net to zero, every line in the base currency, share capital included
 
+#### Scenario: Posted opening balances change with another person's approval (rev 0.66)
+- **GIVEN** the opening balances are posted and the month the books start in is open
+- **WHEN** a person who holds P on Journals asks to change them, with every balance and a reason
+- **THEN** the content is checked against the posting rules and kept with an approval request, in every team mode
+- **AND** on another person's approval their next version posts as a reversal of the entry they had and the new entry, both at the books start
+- **AND** while the month the books start in is closed, the request is refused
+
 ### Requirement: FR-GL-07 Period close workflow
 The system SHALL provide a **period close workflow** per month: a close checklist, checks that must be clean, reconciliations signed off and an attestation (FM-4); closing locks the period.
 
