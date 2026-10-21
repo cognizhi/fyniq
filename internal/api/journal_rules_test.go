@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"go.yaml.in/yaml/v3"
@@ -202,6 +203,113 @@ func TestAJournalReversesByItselfOnItsDate(t *testing.T) {
 	bad := e.draft("1.00")
 	bad["reverse_on"] = "1 Nov"
 	e.problemIs(e.call(http.MethodPost, "/v1/journals", accountant, bad), "createJournal", 422, CodeInvalid)
+}
+
+// FR-GL-02, FR-AUT-02 (rev 0.58, founder decision 21 Oct 2026): an automatic reversal that waits for a period that is
+// not open shows: as the journal's first status, in the list of waiting reversals and in the close checks.
+// req: FR-GL-02
+// req: FR-AUT-02
+// req: C.2 #56
+func TestAWaitingAutomaticReversalShows(t *testing.T) {
+	e := newEnv(t)
+	accountant, controller := e.as(authz.Accountant), e.as(authz.Controller)
+	post := func(date, reverseOn string) string {
+		t.Helper()
+		body := e.draft("300.00")
+		body["date"], body["reverse_on"] = date, reverseOn
+		r := e.call(http.MethodPost, "/v1/journals", accountant, body)
+		p := e.call(http.MethodPost, "/v1/journals/"+r.str("id")+"/post", accountant, nil, "If-Match", r.Header.Get("ETag"))
+		if p.Status != http.StatusOK {
+			t.Fatalf("posting a journal that reverses on %s: %d %s", reverseOn, p.Status, p.Raw)
+		}
+		return r.str("id")
+	}
+	first := func(id string) map[string]any {
+		t.Helper()
+		c, _ := e.call(http.MethodGet, "/v1/journals/"+id, accountant, nil).Body["checks"].([]any)
+		if len(c) == 0 {
+			t.Fatalf("journal %s has no statuses", id)
+		}
+		return c[0].(map[string]any)
+	}
+	waiting := func() []any {
+		t.Helper()
+		r := e.call(http.MethodGet, "/v1/journals/waiting-reversals", accountant, nil)
+		if r.Status != http.StatusOK || r.Body["next_cursor"] != nil {
+			t.Fatalf("listWaitingReversals: %d %s", r.Status, r.Raw)
+		}
+		return r.Body["items"].([]any)
+	}
+	reversals := func(period string) map[string]any {
+		t.Helper()
+		s := e.call(http.MethodGet, "/v1/periods/"+period+"/close", controller, nil)
+		r := e.call(http.MethodPost, "/v1/periods/"+period+"/close-checks", controller, nil, "If-Match", s.Header.Get("ETag"))
+		if r.Status != http.StatusOK {
+			t.Fatalf("runCloseChecks: %d %s", r.Status, r.Raw)
+		}
+		for _, c := range r.Body["checks"].(map[string]any)["checks"].([]any) {
+			if c.(map[string]any)["key"] == "reversals" {
+				return c.(map[string]any)
+			}
+		}
+		t.Fatalf("no reversals check: %s", r.Raw)
+		return nil
+	}
+
+	waits := post("2026-11-20", "2026-12-01") // no period covers December yet
+	soon := post("2026-10-20", "2026-11-01")  // November is open: it posts when its day comes
+	if c := first(waits); c["severity"] != "warning" || c["code"] != journal.StatusWaiting || c["field"] != "reverse_on" ||
+		c["title"] != "Its automatic reversal is waiting" || !strings.Contains(c["fix"].(string), "Open the financial year of 2026-12-01") {
+		t.Errorf("a journal whose reversal has no period: %v", c)
+	}
+	if c := first(soon); c["code"] != journal.StatusPosted {
+		t.Errorf("a journal whose reversal's period is open: %v", c)
+	}
+	if items := waiting(); len(items) != 1 || items[0].(map[string]any)["id"] != waits || items[0].(map[string]any)["reverse_on"] != "2026-12-01" {
+		t.Errorf("the waiting reversals: %v", items)
+	}
+	if c := reversals(e.books.Oct.ID.String()); c["severity"] != "ok" {
+		t.Errorf("October's close, where nothing reverses or waits: %v", c)
+	}
+	c := reversals(e.books.Nov.ID.String())
+	if d, _ := c["detail"].(string); c["severity"] != "warning" || c["title"] != "Automatic reversals have not posted" ||
+		!strings.Contains(d, "1 journal(s) reverse by themselves on or before 2026-11-30") || !strings.Contains(d, "1 journal(s) dated in the period wait") {
+		t.Errorf("November's close, with a reversal due in it and one waiting from it: %v", c)
+	}
+
+	// December opens: nothing waits. Once it is closed, the reversal waits again, for a closed month.
+	var dec storage.Period
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		dec, err = u.Periods().Create(ctx, storage.NewPeriod{StartsOn: time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC), EndsOn: time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if c := first(waits); c["code"] != journal.StatusPosted || len(waiting()) != 0 {
+		t.Errorf("a journal whose reversal's period opened: %v", c)
+	}
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Periods().Close(ctx, dec.ID)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if c := first(waits); c["code"] != journal.StatusWaiting || !strings.Contains(c["detail"].(string), "in a closed month") || len(waiting()) != 1 {
+		t.Errorf("a journal whose reversal's month is closed: %v", c)
+	}
+
+	// A page at a time, earliest reversal first.
+	later := post("2026-11-21", "2026-12-02")
+	p1 := e.call(http.MethodGet, "/v1/journals/waiting-reversals?page_size=1", accountant, nil)
+	next := p1.str("next_cursor")
+	p2 := e.call(http.MethodGet, "/v1/journals/waiting-reversals?page_size=1&cursor="+next, accountant, nil)
+	if items := p1.Body["items"].([]any); len(items) != 1 || items[0].(map[string]any)["id"] != waits || next == "" {
+		t.Errorf("the first page: %s", p1.Raw)
+	}
+	if items := p2.Body["items"].([]any); len(items) != 1 || items[0].(map[string]any)["id"] != later || p2.Body["next_cursor"] != nil {
+		t.Errorf("the second page: %s", p2.Raw)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/journals/waiting-reversals?cursor=bm90LWEtY3Vyc29y", accountant, nil), "listWaitingReversals", 422, CodeCursor)
 }
 
 // ENG-20, ENG-21 (rev 0.57): every journal carries its statuses as the workbook's Journal sheet showed them, in its

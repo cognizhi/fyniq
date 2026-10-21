@@ -121,6 +121,10 @@ type Documents interface {
 	// DueReversals lists the posted journals whose automatic reversal is dated on or before day (YYYY-MM-DD), earliest
 	// first, at most limit (FR-GL-02).
 	DueReversals(ctx context.Context, day string, limit int) ([]uuid.UUID, error)
+	// WaitingReversals lists, earliest reversal first, the posted journals whose automatic reversal waits because no
+	// period that is not closed covers its date (FR-GL-02; rev 0.58): at most limit of them, after the cursor's reversal
+	// date and ID when afterID is set.
+	WaitingReversals(ctx context.Context, afterOn string, afterID *uuid.UUID, limit int) ([]Document, error)
 	// OpeningBalance is the organisation's opening balances document at its current version, or ports.ErrNotFound.
 	// Create makes it, one at most: a second is refused (CodeDuplicate).
 	OpeningBalance(ctx context.Context) (Document, error)

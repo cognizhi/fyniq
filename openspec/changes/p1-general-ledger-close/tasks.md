@@ -74,6 +74,9 @@
   principal, and a person posts it under the usual approvals; the worker's role may add documents only as drafts
   (INSERT on the document's type and on `document_version`; it cannot record who posted). A reversal waiting for a
   closed or unopened period shows as a warning on Home and in the close checks. **Left:** both.)
+  (21 Oct 2026, PRD rev 0.59: the waiting reversal shows. A posted journal whose reversal no open period covers first
+  has the warning JOURNAL-WAITING; `listWaitingReversals` lists them for Home; the close checks gain C.2 #56. Test:
+  `TestAWaitingAutomaticReversalShows`. **Left:** recurring journal templates, and the screens (Home, 7.1).)
 
 ## 3. Opening balances
 

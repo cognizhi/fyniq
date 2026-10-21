@@ -26,6 +26,24 @@ WHERE d.type = 'journal' AND d.status = 'posted'
 ORDER BY v.payload->>'reverse_on', d.id
 LIMIT sqlc.arg(max_rows);
 
+-- name: WaitingReversals :many
+-- Posted journals whose automatic reversal waits (FR-GL-02, FR-AUT-02; rev 0.58): no period that is not closed covers
+-- its date, so the scheduler cannot post it until one is opened or reopened. Earliest reversal first, then ID, after
+-- the cursor's (reverse_on, id).
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.type = 'journal' AND d.status = 'posted' AND coalesce(v.payload->>'reverse_on', '') <> ''
+  AND NOT EXISTS (
+    SELECT 1 FROM fyniq.period p
+    WHERE p.organisation_id = d.organisation_id AND p.status <> 'closed'
+      AND to_char(p.starts_on, 'YYYY-MM-DD') <= v.payload->>'reverse_on' AND to_char(p.ends_on, 'YYYY-MM-DD') >= v.payload->>'reverse_on')
+  AND (sqlc.narg(after_id)::uuid IS NULL OR (v.payload->>'reverse_on', d.id) > (sqlc.arg(after_on)::text, sqlc.narg(after_id)::uuid))
+ORDER BY v.payload->>'reverse_on', d.id
+LIMIT sqlc.arg(max_rows);
+
 -- name: GetDocument :one
 SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
 FROM fyniq.document d

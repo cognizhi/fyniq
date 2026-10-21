@@ -82,6 +82,12 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** the scheduler cannot post its reversal
 - **THEN** it shows as a warning on Home and in the close checks until it posts
 
+#### Scenario: The waiting reversal is the journal's first status (rev 0.59)
+- **GIVEN** a posted journal whose automatic reversal no period that is not closed covers
+- **WHEN** the journal or the list of waiting reversals is read
+- **THEN** its first status is the warning "Its automatic reversal is waiting" (JOURNAL-WAITING), saying whether its year is not open or its month is closed
+- **AND** once a period covering the date is open, the warning goes
+
 ### Requirement: FR-GL-03 Schedules
 The system SHALL keep **schedules** for prepayments and deferred revenue (from bills, invoices and transactions with "spread over months"), depreciation and amortisation, recognising up to the current period only (workbook "as of" gate).
 

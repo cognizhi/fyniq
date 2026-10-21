@@ -469,6 +469,24 @@ func (r documents) DueReversals(ctx context.Context, day string, limit int) ([]u
 	return ids, mapError(err)
 }
 
+func (r documents) WaitingReversals(ctx context.Context, afterOn string, afterID *uuid.UUID, limit int) ([]storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.WaitingReversals(ctx, sqlcdb.WaitingReversalsParams{AfterOn: afterOn, AfterID: afterID,
+		MaxRows: int32(min(max(limit, 1), 1000))}) // #nosec G115 -- 1 to 1,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Document, len(rows))
+	for i, row := range rows {
+		out[i] = storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+			Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy),
+			PostedBy: str(row.PostedBy), PostedAt: row.PostedAt, Date: row.Date}
+	}
+	return out, nil
+}
+
 func (r documents) Page(ctx context.Context, f storage.DocumentFilter) ([]storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

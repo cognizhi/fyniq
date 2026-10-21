@@ -393,3 +393,72 @@ func (q *Queries) SetDocumentVersion(ctx context.Context, arg SetDocumentVersion
 	_, err := q.db.Exec(ctx, setDocumentVersion, arg.Version, arg.ID)
 	return err
 }
+
+const waitingReversals = `-- name: WaitingReversals :many
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.type = 'journal' AND d.status = 'posted' AND coalesce(v.payload->>'reverse_on', '') <> ''
+  AND NOT EXISTS (
+    SELECT 1 FROM fyniq.period p
+    WHERE p.organisation_id = d.organisation_id AND p.status <> 'closed'
+      AND to_char(p.starts_on, 'YYYY-MM-DD') <= v.payload->>'reverse_on' AND to_char(p.ends_on, 'YYYY-MM-DD') >= v.payload->>'reverse_on')
+  AND ($1::uuid IS NULL OR (v.payload->>'reverse_on', d.id) > ($2::text, $1::uuid))
+ORDER BY v.payload->>'reverse_on', d.id
+LIMIT $3
+`
+
+type WaitingReversalsParams struct {
+	AfterID *uuid.UUID
+	AfterOn string
+	MaxRows int32
+}
+
+type WaitingReversalsRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+	Date           string
+}
+
+// Posted journals whose automatic reversal waits (FR-GL-02, FR-AUT-02; rev 0.58): no period that is not closed covers
+// its date, so the scheduler cannot post it until one is opened or reopened. Earliest reversal first, then ID, after
+// the cursor's (reverse_on, id).
+func (q *Queries) WaitingReversals(ctx context.Context, arg WaitingReversalsParams) ([]WaitingReversalsRow, error) {
+	rows, err := q.db.Query(ctx, waitingReversals, arg.AfterID, arg.AfterOn, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WaitingReversalsRow
+	for rows.Next() {
+		var i WaitingReversalsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Status,
+			&i.CurrentVersion,
+			&i.Payload,
+			&i.Number,
+			&i.CreatedBy,
+			&i.PostedBy,
+			&i.PostedAt,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -338,12 +338,13 @@ type JournalSummary struct {
 	Version    int            `json:"version" doc:"The version of its content." example:"2"`
 	Date       string         `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
 	Memo       string         `json:"memo,omitempty" doc:"What it is for." example:"October rent accrual"`
+	ReverseOn  string         `json:"reverse_on,omitempty" format:"date" doc:"The date it reverses by itself, when it does (FR-GL-02; rev 0.58)." example:"2026-11-01"`
 	Lines      int            `json:"lines" doc:"How many lines it has." example:"2"`
 	Debits     []Money        `json:"debits" nullable:"false" doc:"The total of its debit lines, per currency, as entered."`
 	PreparedBy *Person        `json:"prepared_by,omitempty" doc:"Who saved the current version."`
 	PostedBy   *Person        `json:"posted_by,omitempty" doc:"Who posted it."`
 	PostedAt   *time.Time     `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
-	Checks     []JournalCheck `json:"checks" nullable:"false" doc:"Its statuses in the workbook's priority order (ENG-20, ENG-21; rev 0.57): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month); none for a reversed one."`
+	Checks     []JournalCheck `json:"checks" nullable:"false" doc:"Its statuses in the workbook's priority order (ENG-20, ENG-21; rev 0.57): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month), after a warning when its automatic reversal waits for a period that is not open (rev 0.58); none for a reversed one."`
 }
 
 // JournalPage is a page of journals, newest date first.
@@ -364,12 +365,16 @@ type journalListOutput struct {
 	Body JournalPage
 }
 
+type waitingReversalsInput struct {
+	PageQuery
+}
+
 func summaryOf(doc storage.Document) (JournalSummary, error) {
 	saved, err := journal.ReadSaved(doc)
 	if err != nil {
 		return JournalSummary{}, err
 	}
-	out := JournalSummary{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo,
+	out := JournalSummary{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo, ReverseOn: saved.ReverseOn,
 		Lines: len(saved.Lines), Debits: []Money{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
 	totals := map[string]money.Money{}
 	var order []string
@@ -675,6 +680,58 @@ func registerJournals(a *API) {
 				docs = docs[:in.PageSize]
 				last := docs[len(docs)-1]
 				out.Body.NextCursor = encodeCursor(last.Date + "|" + last.ID.String())
+			}
+			statuses, err := journal.Statuses(ctx, u, docs)
+			if err != nil {
+				return err
+			}
+			var people []*Person
+			for _, d := range docs {
+				j, err := summaryOf(d)
+				if err != nil {
+					return err
+				}
+				j.Checks = checksOf(statuses[d.ID])
+				out.Body.Items = append(out.Body.Items, j)
+			}
+			for i := range out.Body.Items {
+				people = append(people, out.Body.Items[i].PreparedBy, out.Body.Items[i].PostedBy)
+			}
+			return a.name(ctx, u, people...)
+		})
+		return &out, err
+	})
+
+	register(a, authz.ListWaitingReversals, huma.Operation{
+		OperationID: "listWaitingReversals", Method: http.MethodGet, Path: "/v1/journals/waiting-reversals", Tags: []string{"Journals"},
+		Summary: "List the automatic reversals that wait",
+		Description: "The posted journals whose automatic reversal waits, earliest reversal first: no period that is not closed covers " +
+			"its date, so the scheduler cannot post it until that period is opened or reopened (FR-GL-02, FR-AUT-02; PRD-001 rev " +
+			"0.58), a page at a time. Each is a journal summary with its statuses, the first of which says why it waits. " +
+			"Read-only; no side effects.",
+	}, []string{CodeCursor}, func(ctx context.Context, in *waitingReversalsInput) (*journalListOutput, error) {
+		after, err := decodeCursor(in.Cursor)
+		if err != nil {
+			return nil, err
+		}
+		afterOn, afterID, err := journalCursor(after)
+		if err != nil {
+			return nil, err
+		}
+		p, _ := authn.From(ctx)
+		out := journalListOutput{Body: JournalPage{Items: []JournalSummary{}}}
+		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			docs, err := u.Documents().WaitingReversals(ctx, afterOn, afterID, in.PageSize+1)
+			if err != nil {
+				return err
+			}
+			if len(docs) > in.PageSize {
+				docs = docs[:in.PageSize]
+				last, err := journal.ReadSaved(docs[len(docs)-1])
+				if err != nil {
+					return err
+				}
+				out.Body.NextCursor = encodeCursor(last.ReverseOn + "|" + docs[len(docs)-1].ID.String())
 			}
 			statuses, err := journal.Statuses(ctx, u, docs)
 			if err != nil {

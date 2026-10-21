@@ -37,6 +37,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PATCH /v1/items/{item_id}` (updateItem): Change an item
 - `GET /v1/journals` (listJournals): List the journals
 - `POST /v1/journals` (createJournal): Save a draft journal
+- `GET /v1/journals/waiting-reversals` (listWaitingReversals): List the automatic reversals that wait
 - `GET /v1/journals/{journal_id}` (getJournal): Get a journal
 - `PUT /v1/journals/{journal_id}` (replaceJournal): Change a draft journal
 - `POST /v1/journals/{journal_id}/edit` (editJournal): Edit a posted journal

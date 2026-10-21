@@ -21,9 +21,10 @@ const (
 
 // The codes of the statuses that are not refusals of a command.
 const (
-	StatusReady  = "JOURNAL-OK"     // a draft the rules accept, dated in an open period: ✔ OK
-	StatusPosted = "JOURNAL-POSTED" // a posted journal in an open period: ✔ OK
-	StatusLocked = "JOURNAL-LOCKED" // a posted journal in a closed month: ✔ Locked (closed month)
+	StatusReady   = "JOURNAL-OK"      // a draft the rules accept, dated in an open period: ✔ OK
+	StatusPosted  = "JOURNAL-POSTED"  // a posted journal in an open period: ✔ OK
+	StatusLocked  = "JOURNAL-LOCKED"  // a posted journal in a closed month: ✔ Locked (closed month)
+	StatusWaiting = "JOURNAL-WAITING" // a posted journal whose automatic reversal waits for a period: ⚠ (rev 0.58)
 )
 
 // Status is one status of a journal, as the workbook's Journal sheet showed it (ENG-20): its severity, the stable code
@@ -65,6 +66,7 @@ var titles = map[string]string{
 	StatusReady:                "OK",
 	StatusPosted:               "OK",
 	StatusLocked:               "Locked (closed month)",
+	StatusWaiting:              "Its automatic reversal is waiting",
 }
 
 func status(severity, code, field, detail, fix string) Status {
@@ -78,7 +80,8 @@ func status(severity, code, field, detail, fix string) Status {
 // Statuses evaluates journals as the workbook's Journal sheet did (ENG-20, ENG-21): a draft has every problem the
 // posting rules find, in their order, then whether a period is open for its date, or "OK" when it would post; a posted
 // journal is "OK", or "Locked (closed month)" once its month is closed; a reversed one has none. It reads in u, once for
-// all of docs, and writes nothing.
+// all of docs, and writes nothing. (rev 0.58) A posted journal whose automatic reversal waits, because no period that is
+// not closed covers its date, first has a warning that says so: the scheduler posts it once that period is open.
 func Statuses(ctx context.Context, u storage.UnitOfWork, docs []storage.Document) (map[uuid.UUID][]Status, error) {
 	out := map[uuid.UUID][]Status{}
 	if len(docs) == 0 {
@@ -112,12 +115,25 @@ func Statuses(ctx context.Context, u storage.UnitOfWork, docs []storage.Document
 			if err != nil {
 				return nil, err
 			}
+			var st []Status
+			if saved.ReverseOn != "" {
+				on, _ := time.Parse(time.DateOnly, saved.ReverseOn)
+				switch p := periodOf(on); {
+				case p == nil:
+					st = append(st, status(SeverityWarning, StatusWaiting, "reverse_on", "Its automatic reversal is dated "+saved.ReverseOn+", and no period covers that date yet.",
+						"Open the financial year of "+saved.ReverseOn+" in Accounting › Periods and close; the reversal posts within the hour"))
+				case p.Status == storage.PeriodClosed:
+					st = append(st, status(SeverityWarning, StatusWaiting, "reverse_on", "Its automatic reversal is dated "+saved.ReverseOn+", in a closed month.",
+						"Ask for the month of "+saved.ReverseOn+" to be reopened, or reverse the journal yourself in an open month"))
+				}
+			}
 			day, _ := time.Parse(time.DateOnly, saved.Date)
 			if p := periodOf(day); p != nil && p.Status == storage.PeriodClosed {
-				out[doc.ID] = []Status{status(SeverityOK, StatusLocked, "", "Its month is closed: nothing changes it now.", "")}
+				st = append(st, status(SeverityOK, StatusLocked, "", "Its month is closed: nothing changes it now.", ""))
 			} else {
-				out[doc.ID] = []Status{status(SeverityOK, StatusPosted, "", "It is posted.", "")}
+				st = append(st, status(SeverityOK, StatusPosted, "", "It is posted.", ""))
 			}
+			out[doc.ID] = st
 		}
 	}
 	return out, nil
