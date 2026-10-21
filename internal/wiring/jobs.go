@@ -40,6 +40,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := balance.VerifyAll(ctx, k.Store)
 			return err
 		},
+		"ledger.replay": func(ctx context.Context) error {
+			_, err := journal.ReplayAll(ctx, k.Store)
+			return err
+		},
 		"superadmins.verify": func(ctx context.Context) error {
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
 			return err

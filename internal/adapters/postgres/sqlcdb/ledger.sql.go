@@ -89,6 +89,44 @@ func (q *Queries) AccountLines(ctx context.Context, arg AccountLinesParams) ([]A
 	return items, nil
 }
 
+const entryIDsAfter = `-- name: EntryIDsAfter :many
+SELECT id, ledger_revision FROM fyniq.journal_entry
+WHERE ledger_revision > $1
+ORDER BY ledger_revision
+LIMIT $2
+`
+
+type EntryIDsAfterParams struct {
+	AfterRevision int64
+	PageSize      int32
+}
+
+type EntryIDsAfterRow struct {
+	ID             uuid.UUID
+	LedgerRevision int64
+}
+
+// The entries after a ledger revision, in revision order, a page at a time: the replay walks them (ENG-06, QA-ENG-06).
+func (q *Queries) EntryIDsAfter(ctx context.Context, arg EntryIDsAfterParams) ([]EntryIDsAfterRow, error) {
+	rows, err := q.db.Query(ctx, entryIDsAfter, arg.AfterRevision, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EntryIDsAfterRow
+	for rows.Next() {
+		var i EntryIDsAfterRow
+		if err := rows.Scan(&i.ID, &i.LedgerRevision); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEntry = `-- name: GetEntry :one
 SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
        source_version, rule_version, reverses_entry_id, memo, recorded_at

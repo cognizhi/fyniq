@@ -106,3 +106,11 @@ FROM fyniq.opening_balance o
 JOIN fyniq.document d ON d.organisation_id = o.organisation_id AND d.id = o.document_id
 JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
 LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id;
+
+-- name: GetDocumentVersion :one
+-- A document at one of its versions, as it was saved: the replay re-runs the rule over the version that posted.
+SELECT d.id, d.type, d.status, v.version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = sqlc.arg(version)
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.id = sqlc.arg(id);

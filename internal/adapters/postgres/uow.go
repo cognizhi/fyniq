@@ -524,6 +524,22 @@ func (r documents) Get(ctx context.Context, id uuid.UUID) (storage.Document, err
 		PostedBy: str(row.PostedBy), PostedAt: row.PostedAt}, nil
 }
 
+func (r documents) Version(ctx context.Context, id uuid.UUID, version int) (storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Document{}, err
+	}
+	if version < 1 || version > math.MaxInt32 {
+		return storage.Document{}, ports.ErrNotFound // no document has such a version
+	}
+	row, err := r.u.q.GetDocumentVersion(ctx, sqlcdb.GetDocumentVersionParams{ID: id, Version: int32(version)})
+	if err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	return storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+		Version: int(row.Version), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy),
+		PostedBy: str(row.PostedBy), PostedAt: row.PostedAt}, nil
+}
+
 func (r documents) OpeningBalance(ctx context.Context) (storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return storage.Document{}, err
@@ -737,6 +753,28 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 		return storage.Entry{}, err
 	}
 	return posted, nil
+}
+
+func (r ledger) Entries(ctx context.Context, afterRevision int64, limit int) ([]storage.Entry, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	if limit < 1 || limit > 10000 {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d entries", limit), Hint: "Ask for 1 to 10,000"}
+	}
+	ids, err := r.u.q.EntryIDsAfter(ctx, sqlcdb.EntryIDsAfterParams{AfterRevision: afterRevision, PageSize: int32(limit)})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Entry, 0, len(ids))
+	for _, x := range ids {
+		e, err := r.Entry(ctx, x.ID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, nil
 }
 
 func (r ledger) Entry(ctx context.Context, id uuid.UUID) (storage.Entry, error) {

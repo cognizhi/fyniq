@@ -122,6 +122,49 @@ func (q *Queries) GetDocumentStatusForUpdate(ctx context.Context, id uuid.UUID) 
 	return status, err
 }
 
+const getDocumentVersion = `-- name: GetDocumentVersion :one
+SELECT d.id, d.type, d.status, v.version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = $1
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.id = $2
+`
+
+type GetDocumentVersionParams struct {
+	Version int32
+	ID      uuid.UUID
+}
+
+type GetDocumentVersionRow struct {
+	ID        uuid.UUID
+	Type      string
+	Status    string
+	Version   int32
+	Payload   []byte
+	Number    *string
+	CreatedBy *string
+	PostedBy  *string
+	PostedAt  *time.Time
+}
+
+// A document at one of its versions, as it was saved: the replay re-runs the rule over the version that posted.
+func (q *Queries) GetDocumentVersion(ctx context.Context, arg GetDocumentVersionParams) (GetDocumentVersionRow, error) {
+	row := q.db.QueryRow(ctx, getDocumentVersion, arg.Version, arg.ID)
+	var i GetDocumentVersionRow
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Status,
+		&i.Version,
+		&i.Payload,
+		&i.Number,
+		&i.CreatedBy,
+		&i.PostedBy,
+		&i.PostedAt,
+	)
+	return i, err
+}
+
 const getOpeningBalance = `-- name: GetOpeningBalance :one
 SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at
 FROM fyniq.opening_balance o

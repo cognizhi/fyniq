@@ -105,6 +105,12 @@ Source: PRD-001 §10.1 · Priority M · Phase P1
 - **WHEN** that rule version is re-run over the same document (replay test, QA-ENG-06)
 - **THEN** it reproduces the original entries exactly
 
+#### Scenario: Every rule version is kept and replayed (rev 0.67)
+- **GIVEN** the rule versions the engine has posted with
+- **WHEN** a build runs
+- **THEN** each version replays its fixed documents and must match its reviewed golden output
+- **AND** an entry under a version the engine no longer has is refused by the replay (LEDGER-18)
+
 ### Requirement: ENG-46 Ledger revision
 Each organisation SHALL have one ledger revision counter, and every journal entry and every change to master data that reports show SHALL take the next revision.
 
