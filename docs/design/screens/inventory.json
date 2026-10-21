@@ -3745,24 +3745,58 @@
     "FR-ORG-03",
     "FR-ORG-04",
     "FR-ORG-06",
-    "FR-ORG-08",
-    "FR-ORG-10"
+    "FR-ORG-08"
    ],
-   "purpose": "Set up the organisation's identity, year, GST status, defaults, features and accounting policies.",
+   "purpose": "Set up the organisation's identity, year, GST status, defaults and features.",
    "content": [
-    "Settings sub-navigation (on phones Settings opens on a section list): Organisation, Brand, Users and roles, Team mode, Approval policies, AI, Connected apps, Integrations, Statutory parameters, Templates, Appearance and motion, Data",
+    "Settings sub-navigation (on phones Settings opens on a section list): Organisation, Accounting framework and policies, Brand, Users and roles, Team mode, Approval policies, AI, Connected apps, Integrations, Statutory parameters, Templates, Appearance and motion, Data",
     "Profile: legal name, UEN, GST registration number and date, addresses, PayNow details for documents, footers",
     "Financial year (any start month, short or long first year), books start date, base currency SGD, time zone Asia/Singapore",
     "GST status with effective dates, return frequency, invoice basis; reverse-charge setting decided by the tax agent",
     "Defaults: payment terms, numbering per document type (prefix, next number, gap-free), rounding and FX tolerances, capitalisation threshold",
     "Feature switches: payroll, projects, multi-currency, AI assistant, portals",
-    "Accounting framework and edition (FRS, SFRS(I), SFRS for Small Entities) and policies with approver and date",
     "Each setting: Recommended / Changed from recommended, reason, Reset to recommended; dual approval where FM-1 applies"
    ],
    "states": [
     "change awaiting approval",
-    "policies not approved",
     "recommended"
+   ]
+  },
+  {
+   "id": "accounting-framework",
+   "file": "AccountingFramework",
+   "title": "Accounting framework and policies",
+   "canvas": "settings-admin",
+   "module": "Settings",
+   "route": "/settings/accounting",
+   "kind": "page",
+   "phase": "P1",
+   "roles": [
+    "Owner",
+    "Controller",
+    "Accountant",
+    "Auditor",
+    "Tax agent"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "FR-ORG-10"
+   ],
+   "purpose": "Record the accounting framework and edition and each accounting policy from a financial year, and have the accountant confirm and approve them.",
+   "content": [
+    "Settings sub-navigation, as on Organisation settings",
+    "This or next financial year, with the year's dates",
+    "The statements' title for the year: 'Management statements' and how many things remain until everything in force is signed; then 'Financial statements' and what they are prepared under",
+    "Framework and edition in force, from which year, recorded by whom; the accountant's confirmation (name and date) or 'Not confirmed'; Record a new version; the Third Edition of SFRS for Small Entities from years beginning on or after 1 Jan 2027",
+    "Nine policies (revenue, government grants, leases, development costs, impairment, SAFEs and notes, conversions into shares, capitalisation threshold, untaken leave): what each decides, the accountant's words, version, year, writer, and the approval or 'Not approved'; Write or Change; the capitalisation threshold links to its amount under Defaults",
+    "Confirm and Approve only for a member with the Accountant role who did not write that version, with a passkey or authenticator while the Accounting sign-off setting is on"
+   ],
+   "states": [
+    "management statements (not all signed)",
+    "financial statements (all signed)",
+    "accountant's view: Confirm and Approve",
+    "record dialog with Check",
+    "financial years not set"
    ]
   },
   {
