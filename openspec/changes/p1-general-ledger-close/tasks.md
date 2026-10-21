@@ -141,6 +141,9 @@
   `TestRecordingAndSigningTheFrameworkAndPolicies`, `TestAccountingFrameworkAndPolicies`,
   `TestAccountingVersionsNeverChangeAndTheirWriterNeverSignsThem`. The screen follows.)
 - [ ] 6.3 Month-on-month flux on the close: variances above the threshold need an explanation before the close is signed off. Test `// req: FR-GL-14` (the budget half waits for `p1-planning`)
+  (21 Oct 2026, founder decisions, PRD rev 0.63: income and expense accounts only, each month against the previous one;
+  an explanation when a variance is both more than S$1,000 and more than 10%, as settings under FM-1. Not started: the
+  build plan is in `docs/handoff/2026-10-21-new-laptop.md`.)
 - [ ] 6.4 Schedules for prepayments and deferred revenue, with the first source that spreads over months (`p1-purchases` bills). Tests `// req: FR-GL-03`
 
 ## 7. Screens
