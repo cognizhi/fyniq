@@ -24,6 +24,10 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **THEN** each posted journal due by its organisation's own today is reversed, each in its own transaction
 - **AND** a run reverses at most 500 per organisation, and the next run takes the rest
 
+#### Scenario: Recurring journals are created as drafts (rev 0.58)
+- **WHEN** a recurring journal falls due
+- **THEN** the scheduler creates it as a draft for a person to post (FR-GL-02)
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 
@@ -48,6 +52,12 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **GIVEN** an approval policy applies to a posting
 - **WHEN** that posting is made automatically
 - **THEN** the approval policy applies to it
+
+#### Scenario: The scheduler's database permissions (rev 0.58)
+- **WHEN** the scheduler runs under the worker's database role
+- **THEN** it may move a document's status, which the database allows to "reversed" only with the reversing entry (FY056), and add documents only as drafts
+- **AND** it cannot post a document, because it cannot record who posted it
+- **AND** before real data reaches the cloud its jobs move to a database role of their own (§17.5)
 
 ### Requirement: FR-AUT-03 Workflow rules without code
 The system SHALL let users configure workflow rules ("when a bill over S$5,000 is created, notify X") without code.

@@ -69,6 +69,11 @@
   `journals.auto-reverse` reverses it on that date as `scheduler:journals.auto-reverse` (5.1). Tests:
   `TestAutomaticReversals`, `TestAJournalReversesByItselfOnItsDate`. The editor's "Reverses by itself", the first of
   the next month suggested; the journal shows the date. **Left:** recurring journal templates.)
+  (21 Oct 2026, founder decisions, PRD rev 0.58: the automatic reversal needs no approval of its own, confirmed.
+  Recurring journals: the scheduler creates each period's journal from its template as a **draft**, under its own
+  principal, and a person posts it under the usual approvals; the worker's role may add documents only as drafts
+  (INSERT on the document's type and on `document_version`; it cannot record who posted). A reversal waiting for a
+  closed or unopened period shows as a warning on Home and in the close checks. **Left:** both.)
 
 ## 3. Opening balances
 
@@ -100,6 +105,9 @@
   reversal needs its entry); each run names `scheduler:journals.auto-reverse`; a reversal whose period is closed or not
   open waits with `journal.reversal_waiting`. The principal is per job rather than one `system:scheduler`, so the audit
   trail says which job acted. **Left:** recurring templates, and the other automated postings with their sources.)
+  (21 Oct 2026, founder decisions, PRD rev 0.58: the worker's role keeps UPDATE (status) for the scheduler; a database
+  role of the scheduler's own joins the cloud gate (PRD §17.5 item 5), so the email and evidence jobs then hold no
+  permission on documents.)
 - [ ] 5.2 Recognition up to the current period only, with future amounts as projections. Test `// req: ENG-05`
 - [ ] 5.3 Versioned posting rules with a replay test per rule version. Test `// req: ENG-06` (QA-ENG-06)
 

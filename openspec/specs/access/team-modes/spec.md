@@ -149,6 +149,12 @@ Source: PRD-001 §6.4
 - **THEN** the edit is refused (JOURNAL-10) and asked for with its new content and reason
 - **AND** another member who holds A on Journals approves it, and the edit posts then
 
+#### Scenario: An edit always needs a second founder (rev 0.58)
+- **GIVEN** the organisation is in Founder mode
+- **WHEN** a founder edits a posted journal whose amounts are at or below the self-approval threshold
+- **THEN** the edit still needs another member's approval, because an edit is a void and a post
+- **AND** a new correcting journal at or below the threshold still posts alone
+
 ### Requirement: FM-2 Self-approval below a threshold
 In Founder mode, a founder SHALL be allowed to self-approve routine items at or below a threshold (default S$2,000 per document; configurable), and each self-approval SHALL be flagged "self-approved" and queued for review.
 
@@ -184,6 +190,11 @@ Source: PRD-001 §6.4
 - **WHEN** a founder posts a journal whose debits are S$2,000.00 alone
 - **THEN** the post is logged as self-approved in the review log, for another founder to review (FM-3)
 - **AND** in Standard and Enterprise modes nothing is logged
+
+#### Scenario: The threshold holds in every team mode (rev 0.58)
+- **GIVEN** an organisation in Standard or Enterprise mode, which have no amount rule of their own for journals
+- **WHEN** a journal whose debits are above the self-approval threshold is posted
+- **THEN** it waits for another person's approval, as in Founder mode
 
 ### Requirement: FM-3 Weekly review
 In Founder mode, another founder SHALL review the log of self-approved and high-risk items every week, as an Inbox task.
