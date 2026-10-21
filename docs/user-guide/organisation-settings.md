@@ -91,7 +91,8 @@ rounding** (7030) instead of leaving the document part-paid.
 ## Capitalisation threshold
 
 - A purchase of S$1,000 or more is offered as a fixed asset; a smaller one is an expense.
-- The company's accountant confirms the threshold.
+- The company's accountant confirms the threshold, by approving the capitalisation threshold policy under
+  **Settings → Accounting framework and policies**.
 
 ## Self-approval threshold
 
@@ -114,3 +115,4 @@ rounding** (7030) instead of leaving the document part-paid.
 
 - [Set up and keep the chart of accounts](chart-of-accounts.md)
 - [Approve a change](approvals.md)
+- [Record and approve the accounting framework and policies](accounting-framework.md)

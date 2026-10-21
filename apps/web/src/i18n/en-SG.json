@@ -148,6 +148,26 @@
       "label": "Organisation",
       "tooltip": "The profile documents print, and the settings that apply to the whole company."
     },
+    "settings.accounting": {
+      "label": "Accounting framework and policies",
+      "tooltip": "The framework your statements are prepared under and the policies Fyniq follows, each approved by the accountant."
+    },
+    "accounting.record-framework": {
+      "label": "Record the framework",
+      "tooltip": "Record the framework and its edition from this financial year; the accountant then confirms it."
+    },
+    "accounting.confirm-framework": {
+      "label": "Confirm",
+      "tooltip": "Confirm, as the accountant, that the company may use this framework; never one you recorded."
+    },
+    "accounting.record-policy": {
+      "label": "Record the policy",
+      "tooltip": "Record the policy as the accountant decided it, from this financial year; the accountant then approves it."
+    },
+    "accounting.approve-policy": {
+      "label": "Approve",
+      "tooltip": "Approve this policy as the accountant; never one you wrote."
+    },
     "settings.statutory-packs": {
       "label": "Statutory parameter packs",
       "tooltip": "GST rates and codes from official sources, with pinned tests; a version is used once activated."
