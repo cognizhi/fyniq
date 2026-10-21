@@ -71,6 +71,17 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** the scheduler posts its reversal on that date, with the reason "Automatic reversal", needing no approval of its own
 - **AND** a reversal date on or before the journal's date is refused when it posts (JOURNAL-11)
 
+#### Scenario: Recurring journals are drafts a person posts (rev 0.58)
+- **GIVEN** a recurring journal template with a schedule
+- **WHEN** a scheduled date arrives
+- **THEN** the scheduler creates that period's journal from the template as a draft, under its own principal
+- **AND** nothing recurring posts by itself: a person posts the draft under the usual approvals (FM-1, FM-2)
+
+#### Scenario: A waiting automatic reversal shows (rev 0.58)
+- **GIVEN** a posted journal whose reversal date falls in a period that is closed or not open yet
+- **WHEN** the scheduler cannot post its reversal
+- **THEN** it shows as a warning on Home and in the close checks until it posts
+
 ### Requirement: FR-GL-03 Schedules
 The system SHALL keep **schedules** for prepayments and deferred revenue (from bills, invoices and transactions with "spread over months"), depreciation and amortisation, recognising up to the current period only (workbook "as of" gate).
 
@@ -278,6 +289,11 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** a general ledger range starts in one financial year and ends in the next
 - **THEN** it is refused (REPORT-02), with a fix that asks for a range within one year
 
+#### Scenario: Year-end stays computed (rev 0.58)
+- **WHEN** a financial year ends
+- **THEN** nothing is posted to close it, and a general ledger range across its start stays refused
+- **AND** the optional closing entry waits for open question 31
+
 ### Requirement: FR-GL-11 General ledger report
 The system SHALL provide a general ledger report for any account or accounts and any date range, with running balance, export and drill to source.
 
@@ -335,6 +351,12 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 #### Scenario: An edit needs the approval a void needs (rev 0.54)
 - **WHEN** a posted journal is edited in Founder mode, or its new debits are above the self-approval threshold
 - **THEN** the edit is refused and asked for; another person who holds A on Journals approves it, and it posts as them
+
+#### Scenario: A journal in a closed month is corrected, not edited (rev 0.58)
+- **GIVEN** a posted journal whose month is closed
+- **WHEN** a person edits it
+- **THEN** the edit is refused, because the replaced entry is reversed on its own date and that month is closed
+- **AND** it is corrected by a correcting journal in an open month, or edited after a reopen (FR-GL-08)
 
 ### Requirement: FR-GL-13 Intercompany journals and eliminations
 The system SHALL support intercompany journals and eliminations.
