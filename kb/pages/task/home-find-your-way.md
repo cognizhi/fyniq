@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, Settings, and signing out
 summary: What Home shows (what waits for you, the set-up steps), finding a page with Search and commands (Ctrl+K), Settings, and signing out
 sources:
-  - docs/user-guide/home.md sha256:6c99212af4c93963f64a9986bc339d367b3d1abb1f82f213aee77ed982554731
+  - docs/user-guide/home.md sha256:e956ab10d73c41be1a44aeff05709ec30eece1711e442911a657de187fe07359
 data_class: general
 taint: trusted
 status: draft
@@ -30,7 +30,7 @@ aliases:
 
 - Home is where Fyniq opens after sign-in.
 - It names the organisation the person is signed in to, the currency its books are kept in, and its team mode.
-- **Waiting for you** counts requests waiting for the person's approval ([[approvals.decide]]) and high-risk actions they can review, with any overdue.
+- **Waiting for you** counts requests waiting for the person's approval ([[approvals.decide]]) and high-risk actions they can review, with any overdue; it also counts the automatic reversals waiting for a month to be opened, which open **Journals** ([[accounting.journals]]).
 - **Set up the company** lists the first steps, **Done** or **To do**, with progress, and goes once all are done.
 - Workspace pages appear as each module arrives; a person only sees the pages their roles allow.
 - Without a session Fyniq opens sign-in ([[auth.sign-in]]); a new installation opens setup ([[installation.setup]]).

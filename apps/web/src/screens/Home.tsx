@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Circle, CircleCheck, ClipboardCheck, ClockAlert, Stamp } from "lucide-react";
+import { ChevronRight, Circle, CircleCheck, ClipboardCheck, ClockAlert, Stamp, TriangleAlert } from "lucide-react";
 import { api } from "../api/client";
 import { useSignedIn } from "../session";
 import { Icon } from "../ui";
@@ -15,6 +15,8 @@ async function count<T>(read: () => Promise<{ data?: { items?: T[] | null }; err
 function useCounts() {
   const opts = { retry: false, staleTime: 30_000 };
   return {
+    // The automatic reversals that wait for a month that is closed or a year not opened (FR-GL-02; rev 0.58).
+    reversals: useQuery({ ...opts, queryKey: ["journals", "waiting-reversals", "home"], queryFn: () => count(() => api.GET("/v1/journals/waiting-reversals", { params: { query: { page_size: 100 } } })) }),
     toApprove: useQuery({ ...opts, queryKey: ["approvals", "home"], queryFn: () => count(() => api.GET("/v1/approvals", { params: { query: { status: "pending", page_size: 500 } } }), (a) => a.you_may_approve) }),
     review: useQuery({
       ...opts,
@@ -58,9 +60,10 @@ interface Step {
   to: string;
 }
 
-// Waiting is what waits for the person now: approvals and the weekly review (FR-APR-01, FM-3).
-function Waiting({ toApprove, review }: { toApprove: number | null; review: { mine: number; overdue: number } | null }) {
-  if (toApprove === null && review === null) return null;
+// Waiting is what waits for the person now: approvals, the weekly review, and automatic reversals that cannot post
+// until a month is opened (FR-APR-01, FM-3, FR-GL-02).
+function Waiting({ toApprove, review, reversals }: { toApprove: number | null; review: { mine: number; overdue: number } | null; reversals: number | null }) {
+  if (toApprove === null && review === null && !reversals) return null;
   return (
     <section className="fy-card" aria-labelledby="waiting-title">
       <div className="fy-card__head">
@@ -103,6 +106,20 @@ function Waiting({ toApprove, review }: { toApprove: number | null; review: { mi
             </Link>
           </li>
         )}
+        {reversals ? (
+          <li>
+            <Link className="fy-list__item" to="/accounting/journals">
+              <span className="fy-list__icon fy-list__icon--warning">
+                <Icon of={TriangleAlert} size={20} />
+              </span>
+              <span className="fy-list__main">
+                <span className="fy-list__title">{reversals === 1 ? "1 automatic reversal is waiting" : `${reversals >= 100 ? "100 or more" : reversals} automatic reversals are waiting`}</span>
+                <span className="fy-list__meta">Each is dated in a month that is closed or a year not opened yet: it posts once that month is open</span>
+              </span>
+              <Icon of={ChevronRight} />
+            </Link>
+          </li>
+        ) : null}
       </ul>
     </section>
   );
@@ -191,7 +208,7 @@ export function Home() {
       </div>
       {organisation && (
         <>
-          <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} />
+          <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} reversals={c.reversals.data ?? null} />
           {!allDone && <SetUp steps={steps} />}
         </>
       )}

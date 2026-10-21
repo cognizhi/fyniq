@@ -2,9 +2,9 @@
 key: accounting.journals
 type: task
 title: Prepare, post and reverse journals
-summary: Prepare, check and post a journal, ask for approval above the self-approval threshold, and edit or reverse a posted journal with a reason
+summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, set up recurring journals, and fix automatic reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:56c1ac7d2ed5a9632eb27abc95eec82cf08ca72dd598041facfe2fbd37e5869b
+  - docs/user-guide/journals.md sha256:e088e2b989eb6168dbe23aff40370ada8515272b531fa696ce9f57ae17bda8db
 data_class: general
 taint: trusted
 status: draft
@@ -29,6 +29,13 @@ aliases:
   - auto-reversing journal
   - accrual reversal
   - correct a posted journal
+  - recurring journal
+  - repeating journal
+  - monthly accrual
+  - scheduled journal
+  - pause a recurring journal
+  - automatic reversal waiting
+  - reversal waiting
 ---
 
 # Prepare, post and reverse journals
@@ -67,6 +74,28 @@ aliases:
 - If the reversal's month is closed or not open yet, it waits and Fyniq tries again every hour; the journal page shows the date until it reverses.
 
 (src: docs/user-guide/journals.md#journals-that-reverse-by-themselves)
+
+## Automatic reversals that wait
+
+- A reversal cannot post into a month that is closed, or into a financial year not open yet (a December accrual that reverses on 1 January before the new year is opened); Fyniq keeps it waiting and tries again every hour.
+- The journal shows **Its automatic reversal is waiting**, with what to do; **Journals** lists the ones that wait at the top; **Home** counts them under **Waiting for you** ([[home.overview]]).
+- The close of a month warns (⚠) of a journal that reverses by itself on or before the month's end: once the month closes, its reversal cannot post ([[accounting.periods]]).
+- Fix: open the financial year in **Accounting → Periods and close**, or ask for the month to be reopened; the reversal then posts within the hour. Or reverse the journal yourself in an open month.
+
+(src: docs/user-guide/journals.md#automatic-reversals-that-wait)
+
+## Recurring journals
+
+- A recurring journal repeats, such as a monthly rent accrual: Fyniq makes its **draft** on each date, and a person checks and posts it like any other journal. Nothing recurring posts by itself; the usual approvals apply.
+- Set one up: **Accounting → Journals**, the **Recurring** tab, **New recurring journal**; name it; repeat every month, every 3 months, every 6 months or every year on a day of the month (the 29th to the 31st fall on the last day of a shorter month); a start date and, if it stops, an end date; the description and lines of each draft; for an accrual, tick **Each draft reverses by itself** (each draft reverses on the first day of the next month once posted).
+- A start in the past makes the drafts of the dates already passed, up to 12 an hour.
+- **Check** shows the date of its next draft and anything that would stop its drafts posting, saving nothing; then **Save**.
+- Each draft is dated on its date, named after the recurring journal it came from, and takes its number when it posts. Whoever wrote the recurring journal's lines does not approve the posting of its drafts: another person does.
+- A change to its lines is a new version; drafts already made keep theirs. **Pause** stops it making drafts; **Resume** starts again from today and skips the dates that passed while it was paused (journal them by hand if needed).
+- Its status shows anything the posting rules would refuse, such as an inactive account, and **Due but not created** if a date passed with no draft.
+- The close warns of a recurring journal due in the month with no draft yet, and of an active one whose lines would not post; it refuses to close if a draft is more than a day late, because the scheduler has failed: tell an administrator.
+
+(src: docs/user-guide/journals.md#recurring-journals)
 
 ## Journals above the self-approval threshold
 
@@ -112,5 +141,9 @@ aliases:
 - JOURNAL-08, in Founder mode a reversal needs a second person: select **Ask to reverse**.
 - JOURNAL-09, you prepared this journal: another person who did not prepare it approves it.
 - JOURNAL-10, in Founder mode an edit needs a second person: select **Ask to post the edit**.
+- JOURNAL-WAITING, its automatic reversal is waiting: open the financial year, or ask for the month to be reopened.
+- RECURRING-01, the schedule has no date: set the end on or after its first date, or leave the end out.
+- RECURRING-02, the recurring journal is already paused, or has ended: resume a paused one; an ended one makes no more drafts.
+- JOURNAL-09 on a draft from a recurring journal: you wrote its lines, so another person approves it.
 
 (src: docs/user-guide/journals.md#common-problems)

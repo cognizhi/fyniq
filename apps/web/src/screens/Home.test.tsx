@@ -32,9 +32,11 @@ describe("Home", () => {
       "GET /v1/members": { status: 200, body: { items: [{ id: "m1" }] } },
       "GET /v1/members/invitations": { status: 200, body: { items: [] } },
       "GET /v1/session/passkeys": problem(403, "API-AUTHZ-01"),
+      "GET /v1/journals/waiting-reversals": { status: 200, body: { items: [{ id: "j7" }, { id: "j8" }] } },
     });
     renderPage(WithOrganisation, { path: "/" });
     expect(await screen.findByText("1 request to approve")).toBeTruthy();
+    expect(await screen.findByText("2 automatic reversals are waiting")).toBeTruthy(); // req: FR-GL-02
     expect(await screen.findByText("1 high-risk action to review")).toBeTruthy();
     const setup = await screen.findByRole("list", { name: "Set up the company" });
     await screen.findByText("Add customers and vendors");

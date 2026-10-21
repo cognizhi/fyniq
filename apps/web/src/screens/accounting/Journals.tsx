@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { BookOpen, CircleCheck, CircleX, Lock, PencilLine, Plus, Search, TriangleAlert, Undo2 } from "lucide-react";
 import { useId, useState } from "react";
@@ -102,10 +102,61 @@ export function debits(d: Summary["debits"]): string {
   return d.length === 0 ? "—" : d.map((m) => `${formatAmount(m.amount)}${d.length > 1 ? ` ${m.currency}` : ""}`).join(" · ");
 }
 
+// JournalTabs switches between the journals and the recurring journals (docs/design/screens Journals; FR-GL-02).
+export function JournalTabs() {
+  return (
+    <nav className="fy-tabs" aria-label="Journal lists">
+      <Link to="/accounting/journals" activeOptions={{ exact: true }}>
+        Journals
+      </Link>
+      <Link to="/accounting/journals/recurring" activeOptions={{ exact: true }}>
+        Recurring
+      </Link>
+    </nav>
+  );
+}
+
+// WaitingReversals warns of the posted journals whose automatic reversal waits for a month that is closed or a year
+// not opened yet (FR-GL-02; rev 0.59): they post within the hour once that month is open.
+function WaitingReversals() {
+  const waiting = useQuery({
+    queryKey: ["journals", "waiting-reversals"],
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/journals/waiting-reversals", { params: { query: { page_size: 5 } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+  const items = waiting.data?.items ?? [];
+  if (items.length === 0) return null;
+  const more = Boolean(waiting.data?.next_cursor);
+  const h = helpText("journal.waiting");
+  return (
+    <div className="fy-banner fy-banner--warning" role="status">
+      <Icon of={TriangleAlert} size={20} />
+      <div className="fy-banner__text">
+        <span className="fy-strong">{items.length === 1 && !more ? "1 automatic reversal is waiting" : `${items.length}${more ? " or more" : ""} automatic reversals are waiting`}</span>
+        <span className="fy-small">{h.tooltip}</span>
+        <ul className="fy-small">
+          {items.map((j) => (
+            <li key={j.id}>
+              <Link to="/accounting/journals/$journalId" params={{ journalId: j.id }}>
+                {j.number || j.memo || "A journal"}
+              </Link>
+              {j.reverse_on ? `: reverses on ${date(j.reverse_on)}` : ""}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // Journals is Accounting › Journals (docs/design/screens Journals; FR-GL-01, FR-GL-12): every manual journal,
 // newest first, narrowed by status and by text in its description or number. Posted journals are never edited;
-// they are reversed. Recurring journals, the awaiting-approval filter and the locked-period banner arrive with
-// their tasks.
+// they are reversed. The recurring journals are the other tab (FR-GL-02), and automatic reversals that wait are
+// warned of at the top. The awaiting-approval filter and the locked-period banner arrive with their tasks.
 export function Journals() {
   const { session, organisation } = useSignedIn();
   const [status, setStatus] = useState<Status | "">("");
@@ -147,6 +198,8 @@ export function Journals() {
         )}
       </div>
       <ReviewBanner screen="journals" />
+      <JournalTabs />
+      <WaitingReversals />
       <div className="fy-row fy-row--wrap fy-row--between gap-3">
         <div className="fy-chipset" role="group" aria-label="Status">
           {filters.map(([s, label]) => (

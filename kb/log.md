@@ -85,3 +85,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/general-ledger.md (a new financial year) → reports.general-ledger (p1-general-ledger-close 1.4)
 
 ## [2026-10-21] compile | docs/user-guide/journals.md (a draft's statuses) → accounting.journals (p1-general-ledger-close 6.1)
+
+## [2026-10-21] compile | docs/user-guide/journals.md, periods-and-close.md, home.md → accounting.journals, accounting.periods, home.overview (recurring journals, automatic reversals that wait, the new close checks; PRD rev 0.59-0.61)

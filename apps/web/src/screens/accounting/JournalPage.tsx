@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { CalendarPlus, CircleCheck, CircleX, Clock, Eye, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
+import { CalendarPlus, CircleCheck, CircleX, Clock, Eye, Pencil, Repeat, Save, Send, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -10,13 +10,16 @@ import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
 import { date, dateTime, timeZone } from "../../format/date";
-import { isZero, minus, sign, sum, typed } from "../../format/decimal";
+import { sign, sum, typed } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, postable, type Account } from "./data";
 import { CheckChip, preparers, StatusChip, who, type Check } from "./Journals";
+import { accountLabel, balances, checkLines, LineEditor, newLine, toLines, type Errors, type Line } from "./lines";
+
+export { balances, type Balance, type Errors, type Line } from "./lines";
 
 type Journal = components["schemas"]["Journal"];
 type Posting = components["schemas"]["JournalPosting"];
@@ -30,16 +33,8 @@ const posters = ["accountant"];
 const noPeriod = "STORAGE-PERIOD-01";
 // The code the API answers when a journal's debits are above the self-approval threshold (FM-2): ask for approval.
 const overThreshold = "JOURNAL-07";
-
-export interface Line {
-  key: string;
-  account_id: string;
-  description: string;
-  debit: string;
-  credit: string;
-  currency: string;
-  fx_rate: string;
-}
+// The status of a posted journal whose automatic reversal waits for a period that is not open (FR-GL-02, rev 0.59).
+const waitingCode = "JOURNAL-WAITING";
 
 export interface Form {
   date: string;
@@ -48,95 +43,26 @@ export interface Form {
   reverse_on: string; // empty: the journal does not reverse by itself (FR-GL-02)
 }
 
-let keys = 0;
-const lineKey = () => `line-${++keys}`;
-const newLine = (currency: string): Line => ({ key: lineKey(), account_id: "", description: "", debit: "", credit: "", currency, fx_rate: "" });
-
 // formOf is a saved journal as the form shows it: a positive amount is a debit, a negative one a credit.
 export function formOf(j: Journal): Form {
   return {
     date: j.date ?? "",
     memo: j.memo ?? "",
     reverse_on: j.reverse_on ?? "",
-    lines: (j.lines ?? []).map((l) => {
-      const credit = l.amount.amount.startsWith("-");
-      return {
-        key: lineKey(),
-        account_id: l.account_id,
-        description: l.description ?? "",
-        debit: credit ? "" : l.amount.amount,
-        credit: credit ? l.amount.amount.slice(1) : "",
-        currency: l.amount.currency,
-        fx_rate: l.fx_rate ?? "",
-      };
-    }),
+    lines: toLines(j.lines ?? []),
   };
 }
-
-const blank = (l: Line) => !l.account_id && !l.description.trim() && !l.debit.trim() && !l.credit.trim();
-
-export type Errors = Record<string, string>; // by "date", "lines", or "<line key>.<field>"
 
 // check turns what was typed into the draft to send, or says what to fix under each field. Blank lines
 // are left out. The API checks the rest when the journal posts (ENG-24).
 export function check(f: Form, base: string): { draft?: Draft; errors: Errors } {
   const errors: Errors = {};
-  const lines: Draft["lines"] = [];
   if (!f.date) errors.date = "Enter the date the journal belongs to.";
   if (f.reverse_on && f.date && f.reverse_on <= f.date) errors.reverse_on = "Date the reversal after the journal's date, such as the first day of the next month.";
-  for (const l of f.lines) {
-    if (blank(l)) continue;
-    const debit = typed(l.debit);
-    const credit = typed(l.credit);
-    if (!l.account_id) errors[`${l.key}.account`] = "Choose the account.";
-    if (debit === null) errors[`${l.key}.debit`] = "Enter an amount, such as 1,200.00.";
-    if (credit === null) errors[`${l.key}.credit`] = "Enter an amount, such as 1,200.00.";
-    let amount = "";
-    if (debit !== null && credit !== null) {
-      const d = debit !== "" && !isZero(debit);
-      const c = credit !== "" && !isZero(credit);
-      if (sign(debit || "0") < 0 || sign(credit || "0") < 0) errors[`${l.key}.debit`] = "Enter the amount without a minus sign: a credit goes under Credit.";
-      else if (d && c) errors[`${l.key}.debit`] = "Enter a debit or a credit, not both.";
-      else if (!d && !c) errors[`${l.key}.debit`] = "Enter a debit or a credit.";
-      else amount = d ? debit : `-${credit}`;
-    }
-    const currency = (l.currency.trim() || base).toUpperCase();
-    const rate = l.fx_rate.trim();
-    if (!/^[A-Z]{3}$/.test(currency)) errors[`${l.key}.currency`] = "Enter a currency code, such as USD.";
-    else if (currency !== base && !/^(0|[1-9]\d{0,9})(\.\d{1,10})?$/.test(rate)) errors[`${l.key}.fx_rate`] = `Enter the rate: ${base} for 1 ${currency}, such as 1.3472.`;
-    lines.push({ account_id: l.account_id, amount: { amount, currency }, description: l.description.trim() || undefined, fx_rate: currency !== base ? rate : undefined });
-  }
+  const lines = checkLines(f.lines, base, errors);
   if (lines.length === 0) errors.lines = "Add a line.";
   if (Object.keys(errors).length > 0) return { errors };
   return { draft: { date: f.date, memo: f.memo.trim() || undefined, lines, reverse_on: f.reverse_on || undefined }, errors };
-}
-
-export interface Balance {
-  currency: string;
-  debits: string;
-  credits: string;
-  difference: string; // debits − credits
-}
-
-// balances adds up what was typed, per currency, exactly; amounts that are not amounts yet count as 0.
-export function balances(f: Form, base: string): Balance[] {
-  const by = new Map<string, { d: string[]; c: string[] }>();
-  for (const l of f.lines) {
-    const currency = (l.currency.trim() || base).toUpperCase();
-    const t = by.get(currency) ?? { d: [], c: [] };
-    const d = typed(l.debit);
-    const c = typed(l.credit);
-    if (d) t.d.push(d);
-    if (c) t.c.push(c);
-    by.set(currency, t);
-  }
-  return [...by.entries()]
-    .filter(([, t]) => t.d.length + t.c.length > 0)
-    .map(([currency, t]) => {
-      const debits = sum(t.d);
-      const credits = sum(t.c);
-      return { currency, debits, credits, difference: minus(debits, credits) };
-    });
 }
 
 // firstOfNextMonth is the usual date an accrual reverses on: the first day of the month after date (YYYY-MM-DD).
@@ -149,41 +75,6 @@ export function firstOfNextMonth(date: string): string {
 // today is the date in the organisation's time zone, as YYYY-MM-DD.
 function today(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-}
-
-function BalanceStatus({ list, base }: { list: Balance[]; base: string }) {
-  if (list.length === 0) return <span className="fy-small fy-muted">Enter the lines to see whether they balance.</span>;
-  // A journal in several currencies balances in the base currency, once each line is converted and rounded: only
-  // the server's check can say so, because the page never rounds (RND-FX, FR-UX-22).
-  if (list.length > 1)
-    return (
-      <span className="fy-small fy-muted">
-        In {list.map((b) => b.currency).join(" and ")}: select Check to see whether it balances in {base}.
-      </span>
-    );
-  return (
-    <span className="fy-row fy-row--wrap gap-2">
-      {list.map((b) =>
-        isZero(b.difference) ? (
-          <span key={b.currency} className="fy-chip fy-chip--good">
-            <Icon of={CircleCheck} />
-            Balanced in {b.currency}: {formatAmount(b.debits)} each side
-          </span>
-        ) : (
-          <span key={b.currency} className="fy-chip fy-chip--critical">
-            <Icon of={CircleX} />
-            {sign(b.difference) > 0 ? "Debits exceed credits" : "Credits exceed debits"} by {formatAmount(b.difference.replace(/^-/, ""))} {b.currency}
-          </span>
-        ),
-      )}
-      {list[0]?.currency !== base && <span className="fy-small fy-muted">Check it to see it in {base}: rounding can leave a difference to post to 7030.</span>}
-    </span>
-  );
-}
-
-function accountLabel(accounts: Map<string, Account>, id: string): string {
-  const a = accounts.get(id);
-  return a ? `${a.code} ${a.name}` : "An account not in the chart";
 }
 
 // Lines shows a journal's lines, read-only: as entered, or as posted in the base currency.
@@ -255,8 +146,9 @@ function Lines({ lines, accounts, base, caption }: { lines: { account_id: string
 
 // Reverse voids a posted journal with a reason. In Founder mode a void needs a second person (FM-1), so it asks for the
 // reversal instead, which another founder approves.
-// Checks lists what stops a draft posting, as the workbook's Journal sheet did, in its order (ENG-20, ENG-21).
-function Checks({ checks }: { checks: Check[] }) {
+// Checks lists what stops a draft posting, as the workbook's Journal sheet did, in its order (ENG-20, ENG-21); a
+// recurring journal's list says what would stop its drafts posting.
+export function Checks({ checks, heading = (n) => (n === 1 ? "1 thing to fix before it can post" : `${n} things to fix before it can post`) }: { checks: Check[]; heading?: (n: number) => string }) {
   const id = useId();
   const errors = checks.filter((c) => c.severity !== "ok");
   if (errors.length === 0) return null;
@@ -264,7 +156,7 @@ function Checks({ checks }: { checks: Check[] }) {
     <section className="fy-card" aria-labelledby={id}>
       <div className="fy-card__head">
         <h2 className="fy-h3" id={id}>
-          {errors.length === 1 ? "1 thing to fix before it can post" : `${errors.length} things to fix before it can post`}
+          {heading(errors.length)}
         </h2>
       </div>
       <ul className="fy-list">
@@ -382,8 +274,8 @@ function Reverse({ open, journal, etag, ask, onClose, onDone, onAsked }: { open:
 // its preparer changes, checks and posts, or a posted journal, read-only, which an Accountant reverses with a
 // reason. What was typed is added up exactly as it is entered; the server's check gives the base-currency entry
 // before anything posts. A journal above the self-approval threshold, and in Founder mode a reversal, is asked for and
-// approved by another person (FM-1, FM-2, SOD-3). Evidence, automatic reversal and recurring journals arrive with their
-// tasks.
+// approved by another person (FM-1, FM-2, SOD-3). A journal the scheduler made from a recurring journal links to it, and
+// a posted one whose automatic reversal waits says why (FR-GL-02). Evidence arrives with its task.
 export function JournalPage() {
   const { journalId } = useParams({ strict: false }) as { journalId?: string };
   const isNew = !journalId;
@@ -436,6 +328,8 @@ export function JournalPage() {
   // In Founder mode a void needs a second person (FM-1): the API refuses a reversal and takes a request instead.
   const founder = organisation?.team_mode === "founder";
   const asked = j?.approval_asked;
+  // A posted journal whose automatic reversal waits for a month that is closed or a year not opened (rev 0.59).
+  const waiting = j?.status === "posted" ? j.checks?.find((c) => c.code === waitingCode) : undefined;
   const editHelp = helpText("journal.edit");
   const reverseOnHelp = helpText("journal.reverse-on");
   const postEditHelp = helpText(founder ? "journal.ask-edit" : "journal.post-edit");
@@ -446,7 +340,6 @@ export function JournalPage() {
     setPreview(null);
     setEdited(null);
   };
-  const setLine = (key: string, field: keyof Line, value: string) => f && change({ ...f, lines: f.lines.map((l) => (l.key === key ? { ...l, [field]: value } : l)) });
 
   const refresh = async () => {
     await Promise.all([queries.invalidateQueries({ queryKey: ["journals"] }), queries.invalidateQueries({ queryKey: ["journal", journalId] })]);
@@ -693,6 +586,15 @@ export function JournalPage() {
               {[j.prepared_by && `Prepared by ${who(j.prepared_by)}`, j.posted_by && `posted by ${who(j.posted_by)}${j.posted_at ? ` on ${dateTime(j.posted_at)}` : ""}`].filter(Boolean).join(" · ")}
             </p>
           )}
+          {j?.recurring_journal && (
+            <p className="fy-small">
+              <Icon of={Repeat} /> Made by the scheduler from{" "}
+              <Link to="/accounting/journals/recurring/$recurringId" params={{ recurringId: j.recurring_journal.id }}>
+                a recurring journal
+              </Link>{" "}
+              (version {j.recurring_journal.version}). Whoever wrote its lines does not approve its posting.
+            </p>
+          )}
         </div>
         <div className="fy-pagehead__actions fy-from-medium">
           {actions}
@@ -749,6 +651,22 @@ export function JournalPage() {
             </p>
           )}
         </>
+      )}
+      {waiting && (
+        <div className="fy-banner fy-banner--warning" role="status">
+          <Icon of={TriangleAlert} size={20} />
+          <div className="fy-banner__text">
+            <strong>{waiting.title}</strong>
+            <span className="fy-small">
+              {waiting.detail} {waiting.fix ? `${waiting.fix}.` : ""}
+            </span>
+          </div>
+          <div className="fy-banner__action">
+            <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/accounting/close">
+              <Icon of={CalendarPlus} /> Periods and close
+            </Link>
+          </div>
+        </div>
       )}
       {!isNew && one.isPending && <p className="fy-secondary">Loading the journal…</p>}
       {j?.status === "draft" && !dirty && j.checks && <Checks checks={j.checks} />}
@@ -845,93 +763,7 @@ export function JournalPage() {
             </div>
           </section>
 
-          <section className="fy-card" aria-labelledby={`${id}-lines`}>
-            <div className="fy-card__head">
-              <h2 className="fy-h3" id={`${id}-lines`}>
-                Lines
-              </h2>
-              <span className="fy-small fy-muted fy-from-medium">Debits are positive, credits negative, once posted.</span>
-            </div>
-            <ol className="fy-card__body fy-stack fy-stack--3">
-              {f.lines.map((l, i) => {
-                const n = i + 1;
-                return (
-                  <li key={l.key} className="grid grid-cols-2 gap-2 border-b border-border pb-3 medium:grid-cols-12 medium:items-start">
-                    <div className="fy-field col-span-2 medium:col-span-6 expanded:col-span-3">
-                      <label className="fy-label" htmlFor={`${l.key}-account`}>
-                        <span className="fy-sr">Line {n}: </span>
-                        Account
-                      </label>
-                      <select className="fy-select" id={`${l.key}-account`} value={l.account_id} onChange={(e) => setLine(l.key, "account_id", e.target.value)} aria-invalid={errors[`${l.key}.account`] ? true : undefined} aria-describedby={described(`${l.key}.account`)}>
-                        <option value="">Choose an account</option>
-                        {choices.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.code} {a.name}
-                          </option>
-                        ))}
-                        {l.account_id && !choices.some((a) => a.id === l.account_id) && <option value={l.account_id}>{accountLabel(byId, l.account_id)}</option>}
-                      </select>
-                      {fieldError(`${l.key}.account`)}
-                    </div>
-                    <div className="fy-field col-span-2 medium:col-span-6 expanded:col-span-3">
-                      <label className="fy-label" htmlFor={`${l.key}-description`}>
-                        <span className="fy-sr">Line {n}: </span>
-                        Description
-                      </label>
-                      <input className="fy-input" id={`${l.key}-description`} value={l.description} maxLength={500} onChange={(e) => setLine(l.key, "description", e.target.value)} />
-                    </div>
-                    <div className="fy-field medium:col-span-4 expanded:col-span-2">
-                      <label className="fy-label" htmlFor={`${l.key}-debit`}>
-                        <span className="fy-sr">Line {n}: </span>
-                        Debit
-                      </label>
-                      <input className="fy-input fy-num" id={`${l.key}-debit`} inputMode="decimal" value={l.debit} onChange={(e) => setLine(l.key, "debit", e.target.value)} aria-invalid={errors[`${l.key}.debit`] ? true : undefined} aria-describedby={described(`${l.key}.debit`)} />
-                      {fieldError(`${l.key}.debit`)}
-                    </div>
-                    <div className="fy-field medium:col-span-4 expanded:col-span-2">
-                      <label className="fy-label" htmlFor={`${l.key}-credit`}>
-                        <span className="fy-sr">Line {n}: </span>
-                        Credit
-                      </label>
-                      <input className="fy-input fy-num" id={`${l.key}-credit`} inputMode="decimal" value={l.credit} onChange={(e) => setLine(l.key, "credit", e.target.value)} aria-invalid={errors[`${l.key}.credit`] ? true : undefined} aria-describedby={described(`${l.key}.credit`)} />
-                      {fieldError(`${l.key}.credit`)}
-                    </div>
-                    <div className="fy-field medium:col-span-3 expanded:col-span-1">
-                      <label className="fy-label" htmlFor={`${l.key}-currency`}>
-                        <span className="fy-sr">Line {n}: </span>
-                        Currency
-                      </label>
-                      <input className="fy-input fy-mono" id={`${l.key}-currency`} value={l.currency} maxLength={3} onChange={(e) => setLine(l.key, "currency", e.target.value.toUpperCase())} aria-invalid={errors[`${l.key}.currency`] ? true : undefined} aria-describedby={described(`${l.key}.currency`)} />
-                      {fieldError(`${l.key}.currency`)}
-                    </div>
-                    <div className="flex items-end justify-end self-end medium:col-span-1">
-                      <Button variant="ghost" size="sm" type="button" aria-label={`Remove line ${n}`} onClick={() => change({ ...f, lines: f.lines.filter((x) => x.key !== l.key) })}>
-                        <Icon of={Trash2} />
-                      </Button>
-                    </div>
-                    {(l.currency.trim() || base).toUpperCase() !== base && (
-                      <div className="fy-field col-span-2 medium:col-span-4 expanded:col-span-3">
-                        <label className="fy-label" htmlFor={`${l.key}-rate`}>
-                          <span className="fy-sr">Line {n}: </span>
-                          Rate ({base} for 1 {l.currency.toUpperCase()})
-                        </label>
-                        <input className="fy-input fy-num" id={`${l.key}-rate`} inputMode="decimal" value={l.fx_rate} onChange={(e) => setLine(l.key, "fx_rate", e.target.value)} aria-invalid={errors[`${l.key}.fx_rate`] ? true : undefined} aria-describedby={described(`${l.key}.fx_rate`)} />
-                        {fieldError(`${l.key}.fx_rate`)}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-            <div className="fy-card__foot fy-row fy-row--wrap fy-row--between gap-2">
-              <Button variant="ghost" size="sm" type="button" onClick={() => change({ ...f, lines: [...f.lines, newLine(base)] })}>
-                <Icon of={Plus} />
-                Add a line
-              </Button>
-              <BalanceStatus list={list} base={base} />
-            </div>
-            {errors.lines && <p className="fy-error px-4 pb-3">{errors.lines}</p>}
-          </section>
+          <LineEditor id={id} lines={f.lines} onChange={(lines) => change({ ...f, lines })} base={base} choices={choices} byId={byId} errors={errors} />
         </form>
       )}
 
