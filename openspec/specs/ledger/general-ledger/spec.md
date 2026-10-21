@@ -88,6 +88,22 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** its first status is the warning "Its automatic reversal is waiting" (JOURNAL-WAITING), saying whether its year is not open or its month is closed
 - **AND** once a period covering the date is open, the warning goes
 
+#### Scenario: A recurring journal and its schedule (rev 0.60)
+- **GIVEN** a recurring journal every 1, 3, 6 or 12 months on a day of the month, from a start date to an optional end
+- **WHEN** an occurrence falls on the 29th to the 31st of a shorter month
+- **THEN** it falls on that month's last day (FR-AR-07)
+- **AND** a change of its memo, lines or reversal is a new version written by whoever changed it, and drafts already made keep theirs
+
+#### Scenario: The scheduler's draft of an occurrence (rev 0.60)
+- **WHEN** the scheduler makes the draft of an occurrence
+- **THEN** the draft is dated on the occurrence, saved by `scheduler:journals.recurring`, numbered only when it posts, and names the recurring journal and the version it came from
+- **AND** one that reverses carries a reversal on the first day of the next month
+
+#### Scenario: Paused and resumed (rev 0.60)
+- **GIVEN** a recurring journal paused while occurrences passed
+- **WHEN** it is resumed
+- **THEN** its next draft is for its first occurrence on or after today; the ones it missed are not made late
+
 ### Requirement: FR-GL-03 Schedules
 The system SHALL keep **schedules** for prepayments and deferred revenue (from bills, invoices and transactions with "spread over months"), depreciation and amortisation, recognising up to the current period only (workbook "as of" gate).
 

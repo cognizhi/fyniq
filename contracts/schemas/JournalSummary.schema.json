@@ -70,6 +70,14 @@
       "$ref": "Person.schema.json",
       "description": "Who saved the current version."
     },
+    "recurring_journal_id": {
+      "description": "The recurring journal the scheduler made it from, when it did (FR-GL-02; rev 0.60).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "reverse_on": {
       "description": "The date it reverses by itself, when it does (FR-GL-02; rev 0.58).",
       "examples": [

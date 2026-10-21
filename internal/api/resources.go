@@ -265,15 +265,30 @@ type Journal struct {
 	PreparedBy *Person    `json:"prepared_by,omitempty" doc:"Who saved the current version; absent for journals from before it was recorded."`
 	PostedBy   *Person    `json:"posted_by,omitempty" doc:"Who posted it, once posted; absent for journals from before it was recorded."`
 	PostedAt   *time.Time `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
+	// RecurringJournal is the recurring journal it was made from (FR-GL-02; rev 0.60).
+	RecurringJournal *RecurringOrigin `json:"recurring_journal,omitempty" doc:"For a journal the scheduler made from a recurring journal: which one, and the version of its content (FR-GL-02; PRD-001 rev 0.60). Saving or editing the journal keeps it."`
 	// Checks are its statuses as the workbook showed them (ENG-20, ENG-21; rev 0.57); getJournal fills them.
 	Checks []JournalCheck `json:"checks,omitempty" doc:"getJournal and listJournals only: its statuses in the workbook's priority order (ENG-20, ENG-21): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month)."`
 	// ApprovalAsked is the pending request to post or reverse it (rev 0.53); getJournal fills it.
 	ApprovalAsked string `json:"approval_asked,omitempty" format:"uuid" doc:"getJournal only: the pending request to post or to reverse it, while one waits for approval (FM-1, FM-2)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
 }
 
+// RecurringOrigin is the recurring journal, and the version of its content, that a journal was made from.
+type RecurringOrigin struct {
+	ID      string `json:"id" format:"uuid" doc:"The recurring journal's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
+	Version int    `json:"version" doc:"The version of its content the journal was made from." example:"2"`
+}
+
+func originOf(ref *journal.RecurringRef) *RecurringOrigin {
+	if ref == nil {
+		return nil
+	}
+	return &RecurringOrigin{ID: ref.ID.String(), Version: ref.Version}
+}
+
 // Person is who did something: a member, by name, the AI acting for one, an integration or a service.
 type Person struct {
-	Kind string `json:"kind" enum:"user,ai,integration,service" doc:"user is a member; ai the assistant acting for one; integration and service act on their own." example:"user"`
+	Kind string `json:"kind" enum:"user,ai,integration,service" doc:"user is a member; ai the assistant acting for one; integration and service act on their own, the scheduler as a service whose ID names its job (scheduler:journals.recurring)." example:"user"`
 	ID   string `json:"id" doc:"The member's user ID, or the client's or service's name." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	Name string `json:"name,omitempty" doc:"The member's name, while they are a member." example:"Wei Ling Tan"`
 }
@@ -301,6 +316,9 @@ func personOf(actor string) *Person {
 	kind, id, ok := strings.Cut(actor, ":")
 	if !ok {
 		return nil
+	}
+	if kind == "scheduler" { // a scheduled job is a service, named by its job (FR-AUT-02)
+		return &Person{Kind: "service", ID: actor, Name: "Scheduler"}
 	}
 	return &Person{Kind: kind, ID: id}
 }
@@ -332,19 +350,20 @@ func (a *API) name(ctx context.Context, u storage.UnitOfWork, people ...*Person)
 
 // JournalSummary is a journal in a list: what it is, its totals and who prepared and posted it.
 type JournalSummary struct {
-	ID         string         `json:"id" format:"uuid" doc:"The journal's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"`
-	Number     string         `json:"number,omitempty" doc:"Its number, once it has one." example:"JNL-0042"`
-	Status     string         `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed." example:"posted"`
-	Version    int            `json:"version" doc:"The version of its content." example:"2"`
-	Date       string         `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
-	Memo       string         `json:"memo,omitempty" doc:"What it is for." example:"October rent accrual"`
-	ReverseOn  string         `json:"reverse_on,omitempty" format:"date" doc:"The date it reverses by itself, when it does (FR-GL-02; rev 0.58)." example:"2026-11-01"`
-	Lines      int            `json:"lines" doc:"How many lines it has." example:"2"`
-	Debits     []Money        `json:"debits" nullable:"false" doc:"The total of its debit lines, per currency, as entered."`
-	PreparedBy *Person        `json:"prepared_by,omitempty" doc:"Who saved the current version."`
-	PostedBy   *Person        `json:"posted_by,omitempty" doc:"Who posted it."`
-	PostedAt   *time.Time     `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
-	Checks     []JournalCheck `json:"checks" nullable:"false" doc:"Its statuses in the workbook's priority order (ENG-20, ENG-21; rev 0.57): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month), after a warning when its automatic reversal waits for a period that is not open (rev 0.58); none for a reversed one."`
+	ID                 string         `json:"id" format:"uuid" doc:"The journal's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"`
+	Number             string         `json:"number,omitempty" doc:"Its number, once it has one." example:"JNL-0042"`
+	Status             string         `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed." example:"posted"`
+	Version            int            `json:"version" doc:"The version of its content." example:"2"`
+	Date               string         `json:"date,omitempty" format:"date" doc:"The date it belongs to." example:"2026-10-31"`
+	Memo               string         `json:"memo,omitempty" doc:"What it is for." example:"October rent accrual"`
+	ReverseOn          string         `json:"reverse_on,omitempty" format:"date" doc:"The date it reverses by itself, when it does (FR-GL-02; rev 0.58)." example:"2026-11-01"`
+	RecurringJournalID string         `json:"recurring_journal_id,omitempty" format:"uuid" doc:"The recurring journal the scheduler made it from, when it did (FR-GL-02; rev 0.60)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
+	Lines              int            `json:"lines" doc:"How many lines it has." example:"2"`
+	Debits             []Money        `json:"debits" nullable:"false" doc:"The total of its debit lines, per currency, as entered."`
+	PreparedBy         *Person        `json:"prepared_by,omitempty" doc:"Who saved the current version."`
+	PostedBy           *Person        `json:"posted_by,omitempty" doc:"Who posted it."`
+	PostedAt           *time.Time     `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-31T09:30:00Z"`
+	Checks             []JournalCheck `json:"checks" nullable:"false" doc:"Its statuses in the workbook's priority order (ENG-20, ENG-21; rev 0.57): for a draft, every problem the posting rules find and whether its month is open, or OK; for a posted journal, OK or Locked (closed month), after a warning when its automatic reversal waits for a period that is not open (rev 0.58); none for a reversed one."`
 }
 
 // JournalPage is a page of journals, newest date first.
@@ -375,10 +394,20 @@ func summaryOf(doc storage.Document) (JournalSummary, error) {
 		return JournalSummary{}, err
 	}
 	out := JournalSummary{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo, ReverseOn: saved.ReverseOn,
-		Lines: len(saved.Lines), Debits: []Money{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
+		Lines: len(saved.Lines), PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
+	if saved.RecurringJournal != nil {
+		out.RecurringJournalID = saved.RecurringJournal.ID.String()
+	}
+	out.Debits, err = debitTotals(saved.Lines)
+	return out, err
+}
+
+// debitTotals are the totals of the debit lines, per currency, in the order the currencies first appear.
+func debitTotals(lines []journal.SavedLine) ([]Money, error) {
+	out := []Money{}
 	totals := map[string]money.Money{}
 	var order []string
-	for _, l := range saved.Lines {
+	for _, l := range lines {
 		if l.Amount.Sign() <= 0 {
 			continue
 		}
@@ -387,12 +416,13 @@ func summaryOf(doc storage.Document) (JournalSummary, error) {
 		if !ok {
 			order, t = append(order, code), money.Zero(l.Amount.Currency())
 		}
+		var err error
 		if totals[code], err = t.Add(l.Amount); err != nil {
-			return JournalSummary{}, err
+			return nil, err
 		}
 	}
 	for _, code := range order {
-		out.Debits = append(out.Debits, Money{Amount: totals[code].String(), Currency: code})
+		out = append(out, Money{Amount: totals[code].String(), Currency: code})
 	}
 	return out, nil
 }
@@ -434,13 +464,20 @@ func journalOf(doc storage.Document) (Journal, error) {
 		return Journal{}, err
 	}
 	out := Journal{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Date: saved.Date, Memo: saved.Memo, ReverseOn: saved.ReverseOn,
-		Lines: make([]JournalLineDraft, 0, len(saved.Lines)), PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
-	for _, l := range saved.Lines {
-		out.Lines = append(out.Lines, JournalLineDraft{AccountID: l.AccountID.String(),
+		Lines: linesOut(saved.Lines), PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt),
+		RecurringJournal: originOf(saved.RecurringJournal)}
+	return out, nil
+}
+
+// linesOut are saved journal lines as the API shows them.
+func linesOut(lines []journal.SavedLine) []JournalLineDraft {
+	out := make([]JournalLineDraft, 0, len(lines))
+	for _, l := range lines {
+		out = append(out, JournalLineDraft{AccountID: l.AccountID.String(),
 			Amount: Money{Amount: l.Amount.String(), Currency: l.Amount.Currency().Code},
 			FXRate: l.FXRate, FXRateSource: l.FXRateSource, Description: l.Description})
 	}
-	return out, nil
+	return out
 }
 
 func journalETag(j Journal) string { return etag(j.Version, j.Status) }

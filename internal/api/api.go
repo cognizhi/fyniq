@@ -149,7 +149,7 @@ func New(mux humago.Mux, d Deps) *API {
 	if d.Store == nil {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
-	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, closing: closing.Service{Store: d.Store}}
+	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -188,6 +188,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerDevices(a)
 	registerReviewLog(a)
 	registerJournals(a)
+	registerRecurringJournals(a)
 	registerEvidence(a)
 	registerSetup(a)
 	registerSuperAdmins(a)

@@ -509,6 +509,33 @@ type FyniqRateLimitWindow struct {
 	Used           int32
 }
 
+type FyniqRecurringJournal struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Status         string
+	EveryMonths    int32
+	DayOfMonth     int32
+	StartsOn       time.Time
+	EndsOn         pgtype.Date
+	NextOn         pgtype.Date
+	Version        int32
+	ContentVersion int32
+	LastOn         pgtype.Date
+	LastJournalID  *uuid.UUID
+	CreatedAt      time.Time
+}
+
+type FyniqRecurringJournalVersion struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	RecurringJournalID uuid.UUID
+	Version            int32
+	Content            []byte
+	EditedBy           string
+	EditedAt           time.Time
+}
+
 type FyniqReviewLogEntry struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
