@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | The accounting framework and policies: FR-ORG-10, G4-017, Appendix D "Accounting framework and policies" (PRD-001 rev 0.62, the founders' decision of 21 Oct 2026) |
+| Feature and requirement IDs | The accounting framework and policies: FR-ORG-10, G4-017, Appendix D "Accounting framework and policies" (PRD-001 rev 0.62 and rev 0.63, the founders' decisions of 21 Oct 2026) |
 | Author, reviewer, date | Claude Code for the founders, 21 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
 | Data and its class | The framework, its edition and each policy's words (internal); who wrote, confirmed and approved each version; no personal data beyond member IDs, no bank numbers or secrets |
 | Who acts | The Owner, the Controller and the Accountant record versions; a member who holds the Accountant role confirms or approves them; the API's database role `fyniq_api` |
@@ -25,6 +25,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02); **API ↔ dat
 | T3 | API ↔ database | Tampering: a fault in the API rewrites a version, withdraws a signature or signs as its writer | As T1 and T2 | Low |
 | T4 | person ↔ API | Repudiation: nobody can tell who recorded or signed a version | No evidence for the auditor | Low |
 | T5 | person ↔ API | Spoofing: an AI client signs on a person's behalf | An approval no person gave | Low |
+| T6 | person ↔ API | Spoofing: someone uses an accountant's unattended or stolen session to sign | Statements titled "financial statements" on an approval the accountant never gave | Low |
 
 ## 3. What we do about it
 
@@ -35,8 +36,12 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02); **API ↔ dat
 | T3 | `fyniq_api` may update only the signature columns; `accounting_version_guard` refuses any other change, a delete and a second or withdrawn signature, even for the tables' owner (`FY160`) | `TestAccountingVersionsNeverChangeAndTheirWriterNeverSignsThem` |
 | T4 | Every version and signature is audited with its actor in the same transaction (AUD-01), and the versions keep their writer and signer | The same test |
 | T5 | The AI column holds V only on the row, and the AI never approves (§9.6) | `TestAuthorisationMatrix` |
+| T6 | While `accounting.signing_step_up` is on, as it is by default, confirming and approving need step-up in the last 5 minutes (rev 0.63); turning it off is a setting change a second approver approves (FM-1) | `TestAccountingFrameworkAndPolicies` |
 
 ## 4. What remains
+
+- The founders asked for the step-up to be a switch, so it can be turned off for now (rev 0.63). While it is off,
+  T6 rests on the session's own protections alone (a second factor at sign-in, signing out other devices).
 
 - A founder who also holds the Accountant role may approve another founder's words. The founders accepted this on
   21 Oct 2026 (the recommended option); "approved" then means a second person reviewed it, not necessarily an outside

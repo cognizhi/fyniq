@@ -53,6 +53,9 @@ with the Accountant role signs it. Each version is signed once, with who signed 
 
 1. Open the year.
 2. Select **Confirm** beside the framework, or **Approve** beside a policy.
+3. Confirm it's you with your passkey or authenticator app when Fyniq asks. It asks while the
+   **Accounting sign-off** setting is on, as it is unless your company turned it off under **Settings →
+   Organisation**; once you have, it doesn't ask again for 5 minutes.
 
 The Owner and the Controller can record the framework and policies but cannot confirm or approve
 them.
@@ -70,6 +73,8 @@ statements until it is approved.
 ## Common problems
 
 - **You wrote it, so another accountant signs it**: ask another member who holds the Accountant role.
+- **This needs a second factor**: confirm it's you with your passkey or authenticator app; if you have
+  neither, add one under **Settings → Profile and security**.
 - **Signed already, or replaced**: the version is signed already, or a later version from the same
   year replaces it; sign the latest version instead.
 - **Not the first day of a financial year**: a version applies from the start of a financial year. If

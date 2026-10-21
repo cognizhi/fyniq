@@ -55,6 +55,9 @@ const guide = "/help/organisation-settings#"
 // Catalogue is every setting, by key. A setting is added here, with its recommended value, reason and guide
 // section, before anything reads it.
 var Catalogue = []Definition{
+	{Key: "accounting.signing_step_up", Group: "Approvals", Label: "Second factor to sign the accounting framework and policies", Kind: Switch, Recommended: "true",
+		Reason: "The accountant's signature turns management statements into financial statements, so it asks for a passkey or authenticator app, as other approvals do",
+		Guide:  guide + "accounting-sign-off", Requirement: "FR-ORG-10", DualControl: true},
 	{Key: "approvals.self_approval_threshold", Group: "Approvals", Label: "Self-approval threshold", Kind: AmountSGD, Recommended: "2000.00",
 		Reason: "In Founder mode a founder posts a journal of up to S$2,000 alone, flagged for the weekly review; above it another founder approves",
 		Guide:  guide + "self-approval-threshold", Requirement: "FM-2", DualControl: true, Min: "0.00", Max: "1000000.00"},

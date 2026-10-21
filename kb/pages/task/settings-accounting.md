@@ -4,7 +4,7 @@ type: task
 title: Record and approve the accounting framework and policies
 summary: How the framework, its edition and each accounting policy are recorded by year, and how the accountant confirms and approves them
 sources:
-  - docs/user-guide/accounting-framework.md sha256:cfbf52b529296e0f1b63313ddf35f65908bb5a252f60d37afd56e1e949951206
+  - docs/user-guide/accounting-framework.md sha256:68c59222c026ffff0ec75d7c7ef3732db64f8be2ad36a1478239dc5377a78032
 data_class: general
 taint: trusted
 status: published
@@ -50,6 +50,7 @@ aliases:
 ## Confirm and approve
 
 - A member who holds the Accountant role confirms the framework (that the company may use it) and approves each policy, with **Confirm** or **Approve**.
+- While the **Accounting sign-off** setting is on (unless the company turned it off under **Settings → Organisation**), Fyniq first asks them to confirm it's them with a passkey or authenticator app; it doesn't ask again for 5 minutes.
 - Nobody signs a version they recorded themselves; another member with the Accountant role signs it. Each version is signed once, with who signed it and when.
 - The Owner and the Controller can record the framework and policies but cannot confirm or approve them ([[members.roles]]).
 
@@ -66,6 +67,7 @@ aliases:
 ## Common problems
 
 - **You wrote it, so another accountant signs it**: ask another member who holds the Accountant role.
+- **This needs a second factor**: confirm it's you with a passkey or authenticator app; with neither, add one under **Settings → Profile and security** ([[preferences.security]]).
 - **Signed already, or replaced**: the version is signed already, or a later version from the same year replaces it; sign the latest version.
 - **Not the first day of a financial year**: versions apply from a year's start; if the years are not set, set the books start and the first year end under **Settings → Organisation** ([[settings.organisation]]).
 

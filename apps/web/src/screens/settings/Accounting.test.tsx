@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
 import type { components } from "../../api/schema";
-import { answer, ownerSession, seen } from "../../test/api";
+import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Accounting, dayAfter } from "./Accounting";
@@ -98,6 +98,28 @@ describe("the accounting framework and policies", () => {
     fireEvent.click(screen.getByRole("button", { name: "Approve: Revenue" }));
     await waitFor(() => expect(seen.some((s) => s.method === "POST" && s.path === "/v1/organisation/accounting/policies/revenue/2/approve" && s.headers.get("Idempotency-Key"))).toBe(true));
     expect(await screen.findByText("Revenue: approved.")).toBeTruthy();
+  });
+
+  it("asks for a second factor when the API says signing needs one (rev 0.63)", async () => {
+    answer({
+      "GET /v1/organisation/accounting": {
+        status: 200,
+        body: year({
+          policies: [
+            {
+              area: "leases",
+              title: "Leases",
+              decides: "How leases are recognised.",
+              policy: { area: "leases", version: 1, from_on: "2026-01-01", wording: "The company has no leases.", written_at: "2026-10-21T01:00:00Z", you_may_approve: true },
+            },
+          ],
+        }),
+      },
+      "POST /v1/organisation/accounting/policies/leases/1/approve": problem(403, "API-AUTHZ-05", "Approving a policy needs step-up authentication in the last 5 minutes."),
+    });
+    renderPage(Accounting, { path: "/settings/accounting", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Approve: Leases" }));
+    expect(await screen.findByRole("heading", { name: "This needs a second factor" })).toBeTruthy();
   });
 
   it("says what the statements are prepared under once the year is approved", async () => {

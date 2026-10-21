@@ -409,6 +409,12 @@ Source: PRD-001 §8.8 · Priority S · Phase P1
 - **WHEN** the close is signed off
 - **THEN** sign-off needs a short explanation of that variance
 
+#### Scenario: Which variances need an explanation (rev 0.63)
+- **GIVEN** an income or expense account's total for the month and for the previous month
+- **WHEN** the close compares them
+- **THEN** the variance needs an explanation when it is both more than S$1,000 and more than 10% of the previous month's total, each an organisation setting changed under dual control
+- **AND** balance-sheet accounts are not compared, their support being required by the close already
+
 #### Scenario: AI may draft the explanation
 - **WHEN** a variance needs an explanation
 - **THEN** the AI may draft it

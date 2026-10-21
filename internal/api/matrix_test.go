@@ -96,6 +96,7 @@ func matrixAccounting(e *env, tok string) (authn.Principal, string) {
 	if p.Organisation != uuid.Nil {
 		p.Organisation = org
 	}
+	p.StepUpAt = e.clock.Now() // signing asks for step-up (rev 0.63)
 	return p, e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: org, Roles: []authz.Role{authz.Owner}})
 }
 
