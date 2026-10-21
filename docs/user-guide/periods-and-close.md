@@ -53,7 +53,7 @@ closes the month.
    - active recurring journals whose lines would not post (⚠);
    - income and expense accounts that moved against the previous month by more than both
      thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
-     explanation of their totals as they are now (✖);
+     explanation of their totals as they are now (✖; see [Explain the variances](#explain-the-variances));
    - in the month the books start, the opening balances are posted (⚠).
 3. Another founder, an Owner or a Controller who did not run the checks, reads them, says what they
    attest and selects **Attest and close**. Fyniq asks them to confirm it's them first.
@@ -62,6 +62,27 @@ If anything dated in or before the month posts after the checks ran, the checks 
 the close is refused: run them again. A closed month refuses every posting dated in it, by anyone.
 The close keeps a fingerprint (a SHA-256 hash) of the trial balance at the month's end, and the
 ledger revision it closed at.
+
+## Explain the variances
+
+Before a month closes, Fyniq compares each income and expense account's total for the month with
+the previous month's. A change needs a short explanation when it is more than both thresholds in
+**Settings → Organisation**: S$1,000 and 10% of the previous month's total, unless changed. When the
+previous month's total is zero, the amount alone decides.
+
+1. On the month's close page, **Variances to explain** lists the accounts that need one, with both
+   months' totals and the change.
+2. An Accountant or a Controller selects **Explain** beside an account, says why it moved, and
+   selects **Explain** again.
+3. Run the checks again: they see the explanations when they run.
+
+- An explanation is of the two totals shown. If either changes afterwards, the account shows **The
+  totals changed**, and the close asks for a new explanation.
+- An explanation is never changed or deleted: a new one replaces the earlier one.
+- **Show every income and expense account** also lists the accounts that moved within the
+  thresholds.
+- Totals are shown as in the trial balance, so income is negative.
+- The first month of the books has no earlier month, so nothing is compared.
 
 ## Reopen a month
 
@@ -89,6 +110,8 @@ fingerprint as the one before, and takes a new one of the trial balance as the o
 | Another founder attests the close (CLOSE-05) | Ask another founder: you ran the checks |
 | The period is not closed (CLOSE-07) | Only a closed month reopens |
 | A later period is closed (CLOSE-08) | Reopen the latest closed month first |
+| The account has no variance to explain (CLOSE-09) | Explain one of the accounts under **Variances to explain** |
+| The totals changed since they were read (CLOSE-10) | Reload the page and explain the totals as they are now |
 | A change to this record is waiting for approval already (APR-06) | Approve or reject the waiting request first |
 
 ## Related

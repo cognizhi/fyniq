@@ -118,7 +118,7 @@ the previous month's. A change needs a short explanation when it is more than **
 - **Variance to explain, percentage of the previous month**: 10% of the previous month's total.
 
 When the previous month's total is zero, the amount alone decides. Changing either needs a second
-approver. See [Close a month](periods-and-close.md#close-a-month).
+approver. See [Explain the variances](periods-and-close.md#explain-the-variances).
 
 ## Data region and retention
 
