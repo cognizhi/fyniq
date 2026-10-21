@@ -28,6 +28,11 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** a recurring journal falls due
 - **THEN** the scheduler creates it as a draft for a person to post (FR-GL-02)
 
+#### Scenario: Recurring journals run hourly (rev 0.60)
+- **WHEN** the tick reaches the hourly slot of `journals.recurring`
+- **THEN** the draft of each occurrence due by its organisation's own today is made, each in its own transaction
+- **AND** a run makes at most 12 missed occurrences of one recurring journal, and the next run takes the rest
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 
@@ -58,6 +63,11 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **THEN** it may move a document's status, which the database allows to "reversed" only with the reversing entry (FY056), and add documents only as drafts
 - **AND** it cannot post a document, because it cannot record who posted it
 - **AND** before real data reaches the cloud its jobs move to a database role of their own (§17.5)
+
+#### Scenario: The scheduler makes documents through one function (rev 0.60)
+- **WHEN** the scheduler makes a recurring journal's draft under the worker's role
+- **THEN** it calls `create_scheduled_draft`, which makes the version-1 draft journal of an active recurring journal's next occurrence from its current version, once (FY057)
+- **AND** the role holds no INSERT on `document` or `document_version`, and may otherwise only move a recurring journal's next occurrence
 
 ### Requirement: FR-AUT-03 Workflow rules without code
 The system SHALL let users configure workflow rules ("when a bill over S$5,000 is created, notify X") without code.

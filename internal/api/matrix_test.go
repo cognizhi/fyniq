@@ -108,6 +108,12 @@ func matrixItem(e *env) string {
 	return e.call(http.MethodPost, "/v1/items", e.as(authz.Accountant), map[string]any{"code": "MATRIX", "name": "Matrix item", "type": "service"}).str("id")
 }
 
+// matrixRecurring adds an active recurring journal, as an Accountant, and returns its ID.
+func matrixRecurring(e *env) string {
+	return e.call(http.MethodPost, "/v1/recurring-journals", e.as(authz.Accountant),
+		e.recurring("Matrix "+uuid.NewString()[:8], "10.00", monthly(1, "2026-11-01"))).str("id")
+}
+
 // matrixMember returns the ID of a member of e's organisation, inviting and adding one first if needed. The
 // organisation keeps one member at most, so role changes stay in the founder bootstrap (FR-ADM-01).
 func matrixMember(e *env) string {
@@ -624,6 +630,42 @@ var matrixCalls = map[string]matrixCall{
 	},
 	"listWaitingReversals": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/journals/waiting-reversals", tok, nil), nil
+	},
+	"listRecurringJournals": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/recurring-journals", tok, nil), nil
+	},
+	"getRecurringJournal": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/recurring-journals/"+matrixRecurring(e), tok, nil), nil
+	},
+	"createRecurringJournal": func(e *env, tok string) (response, func() bool) {
+		name := "Matrix " + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/recurring-journals", tok, e.recurring(name, "10.00", monthly(1, "2026-11-01")))
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/recurring-journals?page_size=500", e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"name":"`+name+`"`)
+		}
+	},
+	"replaceRecurringJournal": func(e *env, tok string) (response, func() bool) {
+		id, name := matrixRecurring(e), "Matrix "+uuid.NewString()[:8]
+		r := e.call(http.MethodPut, "/v1/recurring-journals/"+id, tok, e.recurring(name, "10.00", monthly(1, "2026-11-01")), "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-journals/"+id, e.as(authz.Accountant), nil).str("name") != name
+		}
+	},
+	"pauseRecurringJournal": func(e *env, tok string) (response, func() bool) {
+		id := matrixRecurring(e)
+		r := e.call(http.MethodPost, "/v1/recurring-journals/"+id+"/pause", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-journals/"+id, e.as(authz.Accountant), nil).str("status") == "active"
+		}
+	},
+	"resumeRecurringJournal": func(e *env, tok string) (response, func() bool) {
+		id := matrixRecurring(e)
+		e.call(http.MethodPost, "/v1/recurring-journals/"+id+"/pause", e.as(authz.Accountant), nil, "If-Match", "*")
+		r := e.call(http.MethodPost, "/v1/recurring-journals/"+id+"/resume", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-journals/"+id, e.as(authz.Accountant), nil).str("status") == "paused"
+		}
 	},
 	"replaceJournal": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createDraft("10.00")

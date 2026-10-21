@@ -43,6 +43,15 @@ type Draft struct {
 	// ReverseOn is when the scheduler reverses the posted journal by itself (FR-GL-02): after Date, often the first day
 	// of the next period; zero for a journal that does not reverse by itself.
 	ReverseOn time.Time
+	// RecurringJournal is the recurring journal version the scheduler made it from (FR-GL-02; rev 0.60), nil for one a
+	// person made. Saving a draft or an edit keeps it, so the journal still says where it came from.
+	RecurringJournal *RecurringRef
+}
+
+// RecurringRef names the recurring journal, and the version of its content, that a journal was made from.
+type RecurringRef struct {
+	ID      uuid.UUID `json:"id"`
+	Version int       `json:"version"`
 }
 
 // payload is a draft as the document version stores it: dates and amounts as text.
@@ -51,6 +60,8 @@ type payload struct {
 	Memo      string        `json:"memo,omitempty"`
 	Lines     []payloadLine `json:"lines"`
 	ReverseOn string        `json:"reverse_on,omitempty"`
+	// RecurringJournal is written by the database's create_scheduled_draft, and kept by every later version.
+	RecurringJournal *RecurringRef `json:"recurring_journal,omitempty"`
 }
 
 type payloadLine struct {
@@ -72,21 +83,28 @@ type Service struct {
 
 // encode is a draft as a document version stores it.
 func encode(d Draft) ([]byte, error) {
-	p := payload{Date: d.Date.Format(time.DateOnly), Memo: d.Memo}
+	p := payload{Date: d.Date.Format(time.DateOnly), Memo: d.Memo, RecurringJournal: d.RecurringJournal}
 	if d.Date.IsZero() {
 		p.Date = ""
 	}
 	if !d.ReverseOn.IsZero() {
 		p.ReverseOn = d.ReverseOn.Format(time.DateOnly)
 	}
-	for _, l := range d.Lines {
+	p.Lines = linesOf(d.Lines)
+	return json.Marshal(p)
+}
+
+// linesOf are journal lines as a document version stores them.
+func linesOf(lines []ledger.JournalLine) []payloadLine {
+	var out []payloadLine
+	for _, l := range lines {
 		pl := payloadLine{AccountID: l.AccountID, Amount: l.Amount, Description: l.Description}
 		if l.Rate != nil {
 			pl.FXRate, pl.FXRateSource = l.Rate.String(), l.Rate.Source
 		}
-		p.Lines = append(p.Lines, pl)
+		out = append(out, pl)
 	}
-	return json.Marshal(p)
+	return out
 }
 
 // Create saves a draft (✎). Drafts are not validated beyond their amounts: Post validates.
@@ -114,12 +132,11 @@ func (s Service) Create(ctx context.Context, org uuid.UUID, d Draft) (storage.Do
 // Revise saves a draft's new content as its next version, recording who saved it (FR-GL-01). Only a draft
 // changes this way; a posted journal is corrected by reversal (FR-GL-12).
 func (s Service) Revise(ctx context.Context, org, id uuid.UUID, d Draft) (storage.Document, error) {
-	b, err := encode(d)
-	if err != nil {
+	if _, err := encode(d); err != nil {
 		return storage.Document{}, err
 	}
 	var out storage.Document
-	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		doc, err := u.Documents().Lock(ctx, id) // ENG-47 step 1
 		if err != nil {
 			return err
@@ -130,10 +147,24 @@ func (s Service) Revise(ctx context.Context, org, id uuid.UUID, d Draft) (storag
 		if doc.Status != storage.DocumentDraft {
 			return &Error{CodeNotDraft, fmt.Sprintf("the journal is %s, not a draft", doc.Status), "Only a draft changes; reverse a posted journal instead"}
 		}
+		b, err := keepOrigin(doc, d)
+		if err != nil {
+			return err
+		}
 		out, err = u.Documents().Revise(ctx, id, b)
 		return err
 	})
 	return out, err
+}
+
+// keepOrigin encodes d with the recurring journal the current version of doc came from, unless d names one.
+func keepOrigin(doc storage.Document, d Draft) ([]byte, error) {
+	if d.RecurringJournal == nil {
+		if saved, err := readSaved(doc); err == nil {
+			d.RecurringJournal = saved.RecurringJournal
+		}
+	}
+	return encode(d)
 }
 
 // Post posts a draft: the engine turns its current version into an entry, which is written with
@@ -258,6 +289,9 @@ func (s Service) Edit(ctx context.Context, org, id uuid.UUID, d Draft, reason, p
 		if err := editable(doc); err != nil {
 			return err
 		}
+		if b, err = keepOrigin(doc, d); err != nil {
+			return err
+		}
 		settings, err := loadSettings(ctx, u)
 		if err != nil {
 			return err
@@ -357,6 +391,8 @@ type Saved struct {
 	Memo      string
 	Lines     []SavedLine
 	ReverseOn string // empty for a journal that does not reverse by itself
+	// RecurringJournal is the recurring journal version it was made from, nil for one a person made (rev 0.60).
+	RecurringJournal *RecurringRef
 }
 
 // SavedLine is one line of a saved journal.
@@ -389,7 +425,7 @@ func readSaved(doc storage.Document) (Saved, error) {
 	if err := json.Unmarshal(doc.Payload, &p); err != nil {
 		return Saved{}, &Error{CodeBadDraft, fmt.Sprintf("the saved journal cannot be read: %v", err), "Save the draft again"}
 	}
-	out := Saved{Date: p.Date, Memo: p.Memo, Lines: make([]SavedLine, 0, len(p.Lines)), ReverseOn: p.ReverseOn}
+	out := Saved{Date: p.Date, Memo: p.Memo, Lines: make([]SavedLine, 0, len(p.Lines)), ReverseOn: p.ReverseOn, RecurringJournal: p.RecurringJournal}
 	for _, l := range p.Lines {
 		out.Lines = append(out.Lines, SavedLine{AccountID: l.AccountID, Amount: l.Amount, FXRate: l.FXRate,
 			FXRateSource: l.FXRateSource, Description: l.Description})

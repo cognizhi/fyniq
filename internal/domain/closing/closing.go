@@ -18,6 +18,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -65,6 +66,9 @@ type Check struct {
 // Service runs the close commands against a store.
 type Service struct {
 	Store storage.Store
+	// Clock gives the day the checks run on, in the organisation's time zone, for the checks that depend on it (a
+	// recurring journal's occurrence the scheduler failed to make, C.1 #28). Without it they are not run.
+	Clock ports.Clock
 }
 
 // earlier are the periods before p, earliest first.
@@ -91,9 +95,12 @@ func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Or
 // ✖ every earlier period is closed; ✖ the balances agree with the lines (INV-08); ✖ the trial balance at the period end
 // nets to zero (INV-01, INV-09); ⚠ draft journals dated in the period; ⚠ the opening balances not posted, in the period
 // the books start in; (rev 0.58) ⚠ automatic reversals that have not posted: dated on or before the period's end, so
-// closing it stops them, or of a journal dated in the period and waiting for a period that is not open.
+// closing it stops them, or of a journal dated in the period and waiting for a period that is not open; (rev 0.60)
+// recurring journals with an occurrence on or before the period's end and no draft yet, ⚠, or ✖ when the occurrence is
+// more than a day before today, so the hourly scheduler failed (Appendix C.1 #28); ✖ active recurring journals whose
+// content the posting rules refuse (C.1 #29).
 // Reconciliations join with p1-bank-import-reconcile, flux with task 6.3.
-func run(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([]Check, error) {
+func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
 	cur, org, err := base(ctx, u)
 	if err != nil {
 		return nil, err
@@ -180,6 +187,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period) ([]Check, 
 	} else {
 		out = append(out, Check{"reversals", OK, "No automatic reversal is waiting", ""})
 	}
+	recurring, err := recurringChecks(ctx, u, p, today)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, recurring...)
 	if bs := org.Profile.BooksStart; bs != nil && !bs.Before(p.StartsOn) && !bs.After(p.EndsOn) {
 		ob, err := u.Documents().OpeningBalance(ctx)
 		switch {
@@ -220,7 +232,20 @@ func (s Service) RunChecks(ctx context.Context, org, periodID uuid.UUID) (storag
 		if err != nil {
 			return err
 		}
-		checks, err := run(ctx, u, p)
+		var today time.Time
+		if s.Clock != nil {
+			o, err := u.Organisation(ctx)
+			if err != nil {
+				return err
+			}
+			loc, err := time.LoadLocation(o.Profile.TimeZone)
+			if err != nil || o.Profile.TimeZone == "" {
+				loc = time.UTC
+			}
+			y, m, d := s.Clock.Now().In(loc).Date()
+			today = time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+		}
+		checks, err := run(ctx, u, p, today)
 		if err != nil {
 			return err
 		}
@@ -424,4 +449,83 @@ func Reopen(ctx context.Context, u storage.UnitOfWork, periodID, approvalID uuid
 	r, err := u.Closes().RecordReopen(ctx, storage.NewReopen{PeriodID: p.ID, CloseID: c.ID, ApprovalID: approvalID, Reason: reason, ReopenedRevision: rev,
 		BeforeHash: c.SnapshotHash, AfterSnapshot: snap, AfterHash: hash})
 	return r, opened, err
+}
+
+// recurringChecks are the close's checks of the recurring journals (FR-GL-02; Appendix C.1 #28, #29; rev 0.60).
+func recurringChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
+	var out []Check
+	due, err := u.RecurringJournals().Due(ctx, p.EndsOn.Format(time.DateOnly), 101)
+	if err != nil {
+		return nil, err
+	}
+	failed := 0
+	for _, id := range due {
+		r, err := u.RecurringJournals().Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if !today.IsZero() && r.NextOn != nil && r.NextOn.Before(today.AddDate(0, 0, -1)) {
+			failed++
+		}
+	}
+	count := func(n int) string {
+		if n > 100 {
+			return "More than 100"
+		}
+		return fmt.Sprint(n)
+	}
+	switch {
+	case failed > 0:
+		out = append(out, Check{"recurring", Failed, "The scheduler did not make recurring drafts",
+			count(failed) + " recurring journal(s) have an occurrence more than a day ago with no draft: the scheduler may have failed. Tell an administrator, then run the checks again"})
+	case len(due) > 0:
+		out = append(out, Check{"recurring", Warning, "Recurring journals due in the period have no draft",
+			count(len(due)) + " recurring journal(s) have an occurrence on or before " + p.EndsOn.Format(time.DateOnly) + " with no draft yet: the scheduler makes them within the hour"})
+	default:
+		out = append(out, Check{"recurring", OK, "Every recurring journal due in the period has its draft", ""})
+	}
+	var all []storage.RecurringJournal
+	var afterName string
+	var afterID *uuid.UUID
+	for {
+		page, err := u.RecurringJournals().Page(ctx, afterName, afterID, 1000)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range page {
+			if r.Status == storage.RecurringActive && r.NextOn != nil {
+				all = append(all, r)
+			}
+		}
+		if len(page) < 1000 {
+			break
+		}
+		last := page[len(page)-1]
+		afterName, afterID = last.Name, &last.ID
+	}
+	statuses, err := journal.RecurringStatuses(ctx, u, all, cmpDay(today, p.EndsOn))
+	if err != nil {
+		return nil, err
+	}
+	incomplete := 0
+	for _, st := range statuses {
+		if len(st) > 0 && st[0].Severity == journal.SeverityError {
+			incomplete++
+		}
+	}
+	if incomplete > 0 {
+		out = append(out, Check{"recurring-content", Failed, "Recurring journals are incomplete",
+			count(incomplete) + " active recurring journal(s) have content the posting rules refuse, so their drafts could not post: fix or pause them"})
+	} else {
+		out = append(out, Check{"recurring-content", OK, "Every active recurring journal is complete", ""})
+	}
+	return out, nil
+}
+
+// cmpDay is today, or day when today is unknown.
+func cmpDay(today, day time.Time) time.Time {
+	if today.IsZero() {
+		return day
+	}
+	return today
 }

@@ -76,6 +76,10 @@
       "$ref": "Person.schema.json",
       "description": "Who saved the current version; absent for journals from before it was recorded."
     },
+    "recurring_journal": {
+      "$ref": "RecurringOrigin.schema.json",
+      "description": "For a journal the scheduler made from a recurring journal: which one, and the version of its content (FR-GL-02; PRD-001 rev 0.60). Saving or editing the journal keeps it."
+    },
     "reverse_on": {
       "description": "The date the scheduler reverses it by itself, if it does; once posted, it reverses on the first run on or after that date whose period is open.",
       "examples": [

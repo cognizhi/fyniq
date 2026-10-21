@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "day_of_month": {
+      "description": "The day of the month of each occurrence; the 29th to the 31st are the last day of a shorter month (FR-AR-07).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 31,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "ends_on": {
+      "description": "No occurrence after this date; leave it out for no end.",
+      "examples": [
+        "2027-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "every_months": {
+      "description": "Every 1, 3, 6 or 12 months: monthly, quarterly, half-yearly or yearly.",
+      "enum": [
+        1,
+        3,
+        6,
+        12
+      ],
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "starts_on": {
+      "description": "The first occurrence is the first on or after this date, in the months from this one; one in the past is made by the next run.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "every_months",
+    "day_of_month",
+    "starts_on"
+  ],
+  "title": "RecurringSchedule",
+  "type": "object"
+}

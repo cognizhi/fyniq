@@ -105,20 +105,8 @@ func ReverseDueAll(ctx context.Context, store storage.Store, now time.Time) ([]D
 	var runs []DueRun
 	var errs []error
 	for _, org := range orgs {
-		var day time.Time
-		if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-			o, err := u.Organisation(ctx)
-			if err != nil {
-				return err
-			}
-			loc, err := time.LoadLocation(o.Profile.TimeZone)
-			if err != nil || o.Profile.TimeZone == "" {
-				loc = time.UTC
-			}
-			y, m, d := now.In(loc).Date()
-			day = time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
-			return nil
-		}); err != nil {
+		day, err := todayIn(ctx, store, org, now)
+		if err != nil {
 			errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
 			continue
 		}

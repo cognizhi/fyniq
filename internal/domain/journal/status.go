@@ -67,6 +67,10 @@ var titles = map[string]string{
 	StatusPosted:               "OK",
 	StatusLocked:               "Locked (closed month)",
 	StatusWaiting:              "Its automatic reversal is waiting",
+	StatusRecurringReady:       "OK",
+	StatusRecurringDue:         "Due but not created",
+	StatusRecurringPaused:      "Paused",
+	StatusRecurringEnded:       "Ended",
 }
 
 func status(severity, code, field, detail, fix string) Status {

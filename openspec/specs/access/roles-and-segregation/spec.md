@@ -371,6 +371,11 @@ Source: PRD-001 §6.3
 - **WHEN** the user who prepared a journal above the threshold tries to approve it
 - **THEN** it is blocked
 
+#### Scenario: The author of a recurring journal (rev 0.60)
+- **GIVEN** a draft the scheduler made from a version of a recurring journal
+- **WHEN** whoever wrote that version tries to approve the draft's posting
+- **THEN** it is refused (JOURNAL-09), whoever asked for the approval
+
 ### Requirement: SOD-4 Prepare a pay run and approve or pay it
 The same person SHALL NOT both prepare a pay run and approve it or release salary payments, to prevent payroll fraud.
 

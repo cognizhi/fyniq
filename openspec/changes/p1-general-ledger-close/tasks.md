@@ -64,7 +64,7 @@
   by its SHA-256, and lists the changed lines. Tests: `TestEditAPostedJournal`, `TestEditAPostedJournalInFounderMode`,
   `TestAttackAnEditReversesAndPostsTogether`, the matrix rows. The oracle's edit shape stays with 8.1; the web
   follows.)
-- [ ] 2.4 Auto-reversing journals (the reversal date, by default the first day of the next period) and recurring journal templates. Tests `// req: FR-GL-02`
+- [x] 2.4 Auto-reversing journals (the reversal date, by default the first day of the next period) and recurring journal templates. Tests `// req: FR-GL-02`
   (21 Oct 2026, part, PRD rev 0.55: a journal carries `reverse_on`, after its date (JOURNAL-11); the scheduler's hourly
   `journals.auto-reverse` reverses it on that date as `scheduler:journals.auto-reverse` (5.1). Tests:
   `TestAutomaticReversals`, `TestAJournalReversesByItselfOnItsDate`. The editor's "Reverses by itself", the first of
@@ -77,6 +77,12 @@
   (21 Oct 2026, PRD rev 0.59: the waiting reversal shows. A posted journal whose reversal no open period covers first
   has the warning JOURNAL-WAITING; `listWaitingReversals` lists them for Home; the close checks gain C.2 #56. Test:
   `TestAWaitingAutomaticReversalShows`. **Left:** recurring journal templates, and the screens (Home, 7.1).)
+  (21 Oct 2026, PRD rev 0.60: recurring journals. `recurring_journal` and its immutable `recurring_journal_version`
+  (migration 000064); the API `/v1/recurring-journals` (list, create, get, replace, pause, resume); the hourly
+  `journals.recurring` makes each occurrence's draft through `create_scheduled_draft` (FY057), the worker holding no
+  INSERT on documents; the author of a version does not approve its drafts (SOD-3); statuses and close checks for
+  C.1 #28 and #29. Tests: `TestRecurringOccurrences`, `TestRecurringJournalsMakeDraftsTheSchedulerCannotPost`,
+  `TestRecurringJournals`, `TestTheAuthorOfARecurringJournalDoesNotApproveItsDrafts`. The screens are 7.1's.)
 
 ## 3. Opening balances
 
@@ -111,6 +117,9 @@
   (21 Oct 2026, founder decisions, PRD rev 0.58: the worker's role keeps UPDATE (status) for the scheduler; a database
   role of the scheduler's own joins the cloud gate (PRD §17.5 item 5), so the email and evidence jobs then hold no
   permission on documents.)
+  (21 Oct 2026, PRD rev 0.60: the platform schedules gain `journals.recurring`, hourly at ten past, as
+  `scheduler:journals.recurring`; it makes documents only through `create_scheduled_draft`. **Left:** the other automated
+  postings with their sources (depreciation, FX revaluation, schedules).)
 - [ ] 5.2 Recognition up to the current period only, with future amounts as projections. Test `// req: ENG-05`
 - [ ] 5.3 Versioned posting rules with a replay test per rule version. Test `// req: ENG-06` (QA-ENG-06)
 

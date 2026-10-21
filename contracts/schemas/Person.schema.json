@@ -10,7 +10,7 @@
       "type": "string"
     },
     "kind": {
-      "description": "user is a member; ai the assistant acting for one; integration and service act on their own.",
+      "description": "user is a member; ai the assistant acting for one; integration and service act on their own, the scheduler as a service whose ID names its job (scheduler:journals.recurring).",
       "enum": [
         "user",
         "ai",

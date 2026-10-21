@@ -74,6 +74,7 @@ type UnitOfWork interface {
 	EmailMessages() EmailMessages
 	Outbox() Outbox
 	Sweeping() Sweeping
+	RecurringJournals() RecurringJournals
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
@@ -483,6 +484,7 @@ const (
 	CodeDocumentStatus = "STORAGE-DOC-02"        // a document cannot move to that status
 	CodeDocumentActor  = "STORAGE-DOC-03"        // a version or a posting names no actor, or who posted it changed
 	CodeDocumentEdit   = "STORAGE-DOC-04"        // an edit or a reversal of a posted document posts its entries with it; a reversed one never changes
+	CodeRecurring      = "STORAGE-RECURRING-01"  // a scheduled draft is made only for an active recurring journal's next occurrence, once; a version never changes
 	CodeClose          = "STORAGE-CLOSE-01"      // a close is attested by the one who ran its checks, or on checks not clean or of another period; or a close record changed
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
