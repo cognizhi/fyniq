@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings (features, payment terms, tolerances, capitalisation and self-approval thresholds, data region, retention) and their recommended values
+summary: Company-wide settings and their recommended values: features, payment terms, tolerances, thresholds, close variances, data region, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:e4be1ac373ab51c77f4045fd55f9eeac67dec766d4d3e62e2449c380306bf6c3
+  - docs/user-guide/organisation-settings.md sha256:b53a7f1b2743ea37ddc5949597183cb53812b60dcc52769498cf06689ff4e6e0
 data_class: general
 taint: trusted
 status: draft
@@ -20,6 +20,8 @@ aliases:
   - data residency
   - self-approval threshold
   - self-approved
+  - variance threshold
+  - flux analysis
 ---
 
 # Organisation settings and their recommended values
@@ -79,6 +81,14 @@ aliases:
 - Changing the threshold needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#self-approval-threshold)
+
+## Variances at the close
+
+- Before a month closes, each income and expense account's total for the month is compared with the previous month's.
+- A change needs a short explanation when it is more than **both** S$1,000 and 10% of the previous month's total; when the previous month's total is zero, the amount alone decides.
+- Changing either needs a second approver. Closing a month: [[accounting.periods]].
+
+(src: docs/user-guide/organisation-settings.md#variances-at-the-close)
 
 ## Data region and retention
 

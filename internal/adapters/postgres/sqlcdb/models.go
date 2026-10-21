@@ -526,6 +526,18 @@ type FyniqPeriodReopen struct {
 	AfterHash        []byte
 }
 
+type FyniqPeriodVarianceExplanation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodID       uuid.UUID
+	AccountID      uuid.UUID
+	CurrentAmount  string
+	PreviousAmount string
+	Explanation    string
+	WrittenBy      string
+	WrittenAt      time.Time
+}
+
 type FyniqRateLimitWindow struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -1389,7 +1389,7 @@ components:
             - "2 draft journal(s): once the period closes they cannot post on those dates"
           type: string
         key:
-          description: "Which check: earlier, balances, trial-balance, drafts or opening; more join as their modules arrive."
+          description: "Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances or opening; more join as their modules arrive."
           examples:
             - drafts
           type: string
@@ -2205,6 +2205,27 @@ components:
           type: string
       required:
         - items
+      type: object
+    ExplainVarianceRequest:
+      additionalProperties: false
+      properties:
+        current:
+          $ref: "#/components/schemas/Money"
+          description: "The account's total for the period as listPeriodVariances showed it: the explanation is of these totals, and other totals now are refused (CLOSE-10)."
+        explanation:
+          description: Why the account moved, in a sentence or two, for the attester and the accountant.
+          examples:
+            - The annual design-tool licence renewed in November.
+          maxLength: 1000
+          minLength: 1
+          type: string
+        previous:
+          $ref: "#/components/schemas/Money"
+          description: Its total for the previous period as listPeriodVariances showed it.
+      required:
+        - current
+        - previous
+        - explanation
       type: object
     Features:
       additionalProperties: false
@@ -6111,6 +6132,147 @@ components:
         - approval_id
         - requested_by
         - created_at
+      type: object
+    Variance:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        change:
+          $ref: "#/components/schemas/Money"
+          description: current − previous.
+        change_percent:
+          description: "The change as a percentage of the previous total's size, to one decimal, half away from zero (RND-PERCENT), with the change's sign; absent when the previous total is zero. For showing only: the thresholds compare the exact amounts."
+          examples:
+            - "25.0"
+          pattern: ^-?(0|[1-9][0-9]*)\.[0-9]$
+          type: string
+        code:
+          description: Its code.
+          examples:
+            - "6420"
+          type: string
+        current:
+          $ref: "#/components/schemas/Money"
+          description: "Its total for the period in the base currency: debit positive, credit negative, so income is negative, as in the trial balance."
+        explained:
+          description: The latest explanation is of the totals as they are now; once either total changes it is stale, and the close asks for a new one.
+          examples:
+            - false
+          type: boolean
+        explanation:
+          $ref: "#/components/schemas/VarianceExplanation"
+          description: The latest explanation, current or stale; absent while there is none.
+        name:
+          description: Its name.
+          examples:
+            - Software subscriptions
+          type: string
+        needs_explanation:
+          description: The change is more than both thresholds, so the close needs an explanation of it.
+          examples:
+            - true
+          type: boolean
+        previous:
+          $ref: "#/components/schemas/Money"
+          description: Its total for the previous period.
+        type:
+          description: "revenue (income) or expense: balance-sheet accounts rely on the support the close requires."
+          enum:
+            - revenue
+            - expense
+          examples:
+            - expense
+          type: string
+      required:
+        - account_id
+        - code
+        - name
+        - type
+        - current
+        - previous
+        - change
+        - needs_explanation
+        - explained
+      type: object
+    VarianceExplanation:
+      additionalProperties: false
+      properties:
+        current:
+          $ref: "#/components/schemas/Money"
+          description: The account's total for the period it explained.
+        explanation:
+          description: Why the account moved.
+          examples:
+            - The annual design-tool licence renewed in November.
+          type: string
+        id:
+          description: The explanation's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4de0
+          format: uuid
+          type: string
+        previous:
+          $ref: "#/components/schemas/Money"
+          description: The account's total for the previous period it explained.
+        written_at:
+          description: When.
+          examples:
+            - "2026-12-02T09:30:00Z"
+          format: date-time
+          type: string
+        written_by:
+          $ref: "#/components/schemas/Person"
+          description: Who wrote it.
+      required:
+        - id
+        - explanation
+        - current
+        - previous
+        - written_at
+      type: object
+    VariancePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: Each income or expense account with a total in either period.
+          items:
+            $ref: "#/components/schemas/Variance"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjY0MjAifQ
+          type: string
+        period:
+          $ref: "#/components/schemas/Period"
+        previous_period:
+          $ref: "#/components/schemas/Period"
+          description: "The period it is compared with: the one that ends the day before it starts; absent when there is none, and then there is nothing to compare."
+        threshold_amount:
+          $ref: "#/components/schemas/Money"
+          description: A variance needs an explanation when its size is more than this (setting close.variance_amount)…
+        threshold_percent:
+          description: …and more than this percentage of the previous total's size (setting close.variance_percent); when the previous total is zero the amount alone decides.
+          examples:
+            - "10"
+          type: string
+        unexplained:
+          description: "How many variances, on every page, need an explanation and have no current one: the close checks refuse the close while there are any."
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - period
+        - threshold_amount
+        - threshold_percent
+        - unexplained
+        - items
       type: object
   securitySchemes:
     bearer:
@@ -17992,7 +18154,7 @@ paths:
         right: A
   /v1/periods/{period_id}/close-checks:
     post:
-      description: "Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing."
+      description: "Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing."
       operationId: runCloseChecks
       parameters:
         - description: The period's ID.
@@ -18414,6 +18576,331 @@ paths:
       x-fyniq-permission:
         capability: Period close / reopen
         note: A person stepped up in the last 5 minutes; the approval engine has another person who holds A approve it (FM-1).
+        right: C
+  /v1/periods/{period_id}/variances:
+    get:
+      description: "Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each income or expense account's total for the period against its total for the previous period (the one ending the day before it starts), in the base currency from the balance service, by account code, a page at a time. A variance needs an explanation when its size is more than both the amount and the percentage of the previous total in the organisation's settings (close.variance_amount, close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires; budget variances arrive with budgets. Read-only; no side effects."
+      operationId: listPeriodVariances
+      parameters:
+        - description: The period's ID.
+          in: path
+          name: period_id
+          required: true
+          schema:
+            description: The period's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariancePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List a period's variances
+      tags:
+        - Periods
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: V
+  /v1/periods/{period_id}/variances/{account_id}/explanation:
+    post:
+      description: "Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; PRD-001 rev 0.65, provisional). The request names the two totals as listPeriodVariances showed them: the explanation is of those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It replaces the account's earlier explanation for the period; explanations are never changed or removed, and once either total changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing."
+      operationId: explainVariance
+      parameters:
+        - description: The period's ID.
+          in: path
+          name: period_id
+          required: true
+          schema:
+            description: The period's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+            type: string
+        - description: The account whose variance is explained.
+          in: path
+          name: account_id
+          required: true
+          schema:
+            description: The account whose variance is explained.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExplainVarianceRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Variance"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-09` The account has no variance to explain; `CLOSE-10` The totals changed since they were read; `STORAGE-CLOSE-02` The variance is not explained that way; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Explain a variance
+      tags:
+        - Periods
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLOSE-01
+        - CLOSE-09
+        - CLOSE-10
+        - MONEY-01
+        - MONEY-02
+        - MONEY-03
+        - MONEY-04
+        - STORAGE-CLOSE-02
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Period close / reopen
         right: C
   /v1/periods:open-year:
     post:

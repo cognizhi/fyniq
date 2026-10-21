@@ -1155,7 +1155,7 @@ export interface paths {
         put?: never;
         /**
          * Run a period's close checks
-         * @description Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
+         * @description Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
          */
         post: operations["runCloseChecks"];
         delete?: never;
@@ -1178,6 +1178,46 @@ export interface paths {
          * @description Asks to reopen the latest closed period, with a reason (FR-GL-08, FM-1; PRD-001 rev 0.51, provisional). It never reopens at once: the answer is 202 with an approval request, which a person who holds A on "Period close / reopen" (the Owner or the Controller) and did not ask approves, stepped up. On the approval, under the ledger lock, the period still has to be the latest closed one; it reopens, and the reopening is recorded with the reason, the approval, and the snapshots before (the close's) and after (the trial balance at the period end), whose SHA-256 the database recomputes. Asking needs a person signed in who passed step-up. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
          */
         post: operations["requestPeriodReopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/periods/{period_id}/variances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a period's variances
+         * @description Flux analysis for the close (FR-GL-14; PRD-001 rev 0.65, provisional): each income or expense account's total for the period against its total for the previous period (the one ending the day before it starts), in the base currency from the balance service, by account code, a page at a time. A variance needs an explanation when its size is more than both the amount and the percentage of the previous total in the organisation's settings (close.variance_amount, close.variance_percent; when the previous total is zero the amount alone decides); each shows its latest explanation and whether that explanation is still of the totals as they are. unexplained counts, over every page, those the close checks refuse the close for (Appendix C.2 #57). Balance-sheet accounts rely on the support the close requires; budget variances arrive with budgets. Read-only; no side effects.
+         */
+        get: operations["listPeriodVariances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/periods/{period_id}/variances/{account_id}/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Explain a variance
+         * @description Records why an income or expense account's total for an open period moved against the previous period (FR-GL-14; PRD-001 rev 0.65, provisional). The request names the two totals as listPeriodVariances showed them: the explanation is of those totals, and is refused when the account's totals are not those now (CLOSE-10), so read the variances again. It replaces the account's earlier explanation for the period; explanations are never changed or removed, and once either total changes the explanation is stale and the close asks for a new one. The database refuses one in a period that is not open or for a balance-sheet account (STORAGE-CLOSE-02). Run the close checks again afterwards: they record what they found when they ran. Side effects: the explanation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+         */
+        post: operations["explainVariance"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2713,7 +2753,7 @@ export interface components {
              */
             detail?: string;
             /**
-             * @description Which check: earlier, balances, trial-balance, drafts or opening; more join as their modules arrive.
+             * @description Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances or opening; more join as their modules arrive.
              * @example drafts
              */
             key: string;
@@ -3343,6 +3383,17 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTIifQ
              */
             next_cursor?: string;
+        };
+        ExplainVarianceRequest: {
+            /** @description The account's total for the period as listPeriodVariances showed it: the explanation is of these totals, and other totals now are refused (CLOSE-10). */
+            current: components["schemas"]["Money"];
+            /**
+             * @description Why the account moved, in a sentence or two, for the attester and the accountant.
+             * @example The annual design-tool licence renewed in November.
+             */
+            explanation: string;
+            /** @description Its total for the previous period as listPeriodVariances showed it. */
+            previous: components["schemas"]["Money"];
         };
         Features: {
             /**
@@ -6075,6 +6126,103 @@ export interface components {
              * @example 1
              */
             version: number;
+        };
+        Variance: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            account_id: string;
+            /** @description current − previous. */
+            change: components["schemas"]["Money"];
+            /**
+             * @description The change as a percentage of the previous total's size, to one decimal, half away from zero (RND-PERCENT), with the change's sign; absent when the previous total is zero. For showing only: the thresholds compare the exact amounts.
+             * @example 25.0
+             */
+            change_percent?: string;
+            /**
+             * @description Its code.
+             * @example 6420
+             */
+            code: string;
+            /** @description Its total for the period in the base currency: debit positive, credit negative, so income is negative, as in the trial balance. */
+            current: components["schemas"]["Money"];
+            /**
+             * @description The latest explanation is of the totals as they are now; once either total changes it is stale, and the close asks for a new one.
+             * @example false
+             */
+            explained: boolean;
+            /** @description The latest explanation, current or stale; absent while there is none. */
+            explanation?: components["schemas"]["VarianceExplanation"];
+            /**
+             * @description Its name.
+             * @example Software subscriptions
+             */
+            name: string;
+            /**
+             * @description The change is more than both thresholds, so the close needs an explanation of it.
+             * @example true
+             */
+            needs_explanation: boolean;
+            /** @description Its total for the previous period. */
+            previous: components["schemas"]["Money"];
+            /**
+             * @description revenue (income) or expense: balance-sheet accounts rely on the support the close requires.
+             * @example expense
+             * @enum {string}
+             */
+            type: "revenue" | "expense";
+        };
+        VarianceExplanation: {
+            /** @description The account's total for the period it explained. */
+            current: components["schemas"]["Money"];
+            /**
+             * @description Why the account moved.
+             * @example The annual design-tool licence renewed in November.
+             */
+            explanation: string;
+            /**
+             * Format: uuid
+             * @description The explanation's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4de0
+             */
+            id: string;
+            /** @description The account's total for the previous period it explained. */
+            previous: components["schemas"]["Money"];
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-12-02T09:30:00Z
+             */
+            written_at: string;
+            /** @description Who wrote it. */
+            written_by?: components["schemas"]["Person"];
+        };
+        VariancePage: {
+            /** @description Each income or expense account with a total in either period. */
+            items: components["schemas"]["Variance"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjY0MjAifQ
+             */
+            next_cursor?: string;
+            period: components["schemas"]["Period"];
+            /** @description The period it is compared with: the one that ends the day before it starts; absent when there is none, and then there is nothing to compare. */
+            previous_period?: components["schemas"]["Period"];
+            /** @description A variance needs an explanation when its size is more than this (setting close.variance_amount)… */
+            threshold_amount: components["schemas"]["Money"];
+            /**
+             * @description …and more than this percentage of the previous total's size (setting close.variance_percent); when the previous total is zero the amount alone decides.
+             * @example 10
+             */
+            threshold_percent: string;
+            /**
+             * Format: int64
+             * @description How many variances, on every page, need an explanation and have no current one: the close checks refuse the close while there are any.
+             * @example 1
+             */
+            unexplained: number;
         };
     };
     responses: never;
@@ -15126,6 +15274,244 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPeriodVariances: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The period's ID. */
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VariancePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    explainVariance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The period's ID. */
+                period_id: string;
+                /** @description The account whose variance is explained. */
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExplainVarianceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Variance"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-09` The account has no variance to explain; `CLOSE-10` The totals changed since they were read; `STORAGE-CLOSE-02` The variance is not explained that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

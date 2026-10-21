@@ -99,8 +99,9 @@ func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Or
 // recurring journals with an occurrence on or before the period's end and no draft yet, ⚠, or ✖ when the occurrence is
 // more than a day before today, so the hourly scheduler failed (Appendix C.1 #28); ⚠ active recurring journals whose
 // content the posting rules refuse (C.1 #29; the founders' decision of rev 0.61: it warns, as the close is about the
-// period's postings and their drafts show their own problems).
-// Reconciliations join with p1-bank-import-reconcile, flux with task 6.3.
+// period's postings and their drafts show their own problems); (rev 0.65) ✖ an income or expense account's variance
+// against the previous month above both thresholds with no explanation of its totals as they are (FR-GL-14, Appendix C.2
+// #57). Reconciliations join with p1-bank-import-reconcile.
 func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
 	cur, org, err := base(ctx, u)
 	if err != nil {
@@ -193,6 +194,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, recurring...)
+	flux, err := compare(ctx, u, p, all, cur, cmpDay(today, p.EndsOn))
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, fluxCheck(flux))
 	if bs := org.Profile.BooksStart; bs != nil && !bs.Before(p.StartsOn) && !bs.After(p.EndsOn) {
 		ob, err := u.Documents().OpeningBalance(ctx)
 		switch {

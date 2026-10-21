@@ -32,3 +32,14 @@ RETURNING id, reopened_by, reopened_at;
 -- name: LatestPeriodReopen :one
 SELECT id, period_id, close_id, approval_id, reason, reopened_by, reopened_at, reopened_revision, before_hash, after_hash
 FROM fyniq.period_reopen WHERE period_id = $1 ORDER BY reopened_at DESC, id DESC LIMIT 1;
+
+-- name: InsertVarianceExplanation :one
+INSERT INTO fyniq.period_variance_explanation (period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at;
+
+-- name: LatestVarianceExplanations :many
+-- Each account's latest explanation of the period's variance (FR-GL-14): a later one replaces an earlier one.
+SELECT DISTINCT ON (account_id) id, period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at
+FROM fyniq.period_variance_explanation WHERE period_id = $1
+ORDER BY account_id, written_at DESC, id DESC;

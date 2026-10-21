@@ -140,10 +140,18 @@
   that post such transactions. Tests: `TestAYearsStatementsAreManagementStatementsUntilTheAccountantApproves`,
   `TestRecordingAndSigningTheFrameworkAndPolicies`, `TestAccountingFrameworkAndPolicies`,
   `TestAccountingVersionsNeverChangeAndTheirWriterNeverSignsThem`. The screen follows.)
-- [ ] 6.3 Month-on-month flux on the close: variances above the threshold need an explanation before the close is signed off. Test `// req: FR-GL-14` (the budget half waits for `p1-planning`)
+- [x] 6.3 Month-on-month flux on the close: variances above the threshold need an explanation before the close is signed off. Test `// req: FR-GL-14` (the budget half waits for `p1-planning`)
   (21 Oct 2026, founder decisions, PRD rev 0.63: income and expense accounts only, each month against the previous one;
-  an explanation when a variance is both more than S$1,000 and more than 10%, as settings under FM-1. Not started: the
-  build plan is in `docs/handoff/2026-10-21-new-laptop.md`.)
+  an explanation when a variance is both more than S$1,000 and more than 10%, as settings under FM-1. Built, PRD rev
+  0.65, provisional: the totals from the balance service, each period against the one ending the day before it starts;
+  settings `close.variance_amount` and `close.variance_percent` (dual control), compared exactly, the percentage shown
+  with the new `RND-PERCENT`; explanations append-only (migration 000066, FY162, FY163), each naming the two totals its
+  writer read and stale once either changes; the close check `variances` (Appendix C.2 #57, ✖);
+  `listPeriodVariances` and `explainVariance`, written under C on "Period close / reopen". Tests:
+  `TestAVarianceNeedsAnExplanationAboveBothThresholds`, `TestTheVariancesCheck`, `TestPercentPinnedCases`,
+  `TestFluxAnalysisInTheClose`, `TestAttackVarianceExplanationsAreAppendOnlyAndOnlyInAnOpenPeriod`, the matrix rows.
+  **Out of scope:** the AI-drafted explanation (an AI catalogue task type, wave 6) and budget variances (`p1-planning`).
+  The page's Variances section joins 7.2.)
 - [ ] 6.4 Schedules for prepayments and deferred revenue, with the first source that spreads over months (`p1-purchases` bills). Tests `// req: FR-GL-03`
 
 ## 7. Screens

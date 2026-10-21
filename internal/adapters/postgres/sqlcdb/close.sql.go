@@ -204,6 +204,57 @@ func (q *Queries) InsertPeriodReopen(ctx context.Context, arg InsertPeriodReopen
 	return i, err
 }
 
+const insertVarianceExplanation = `-- name: InsertVarianceExplanation :one
+INSERT INTO fyniq.period_variance_explanation (period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at
+`
+
+type InsertVarianceExplanationParams struct {
+	PeriodID       uuid.UUID
+	AccountID      uuid.UUID
+	CurrentAmount  string
+	PreviousAmount string
+	Explanation    string
+	WrittenBy      string
+	WrittenAt      time.Time
+}
+
+type InsertVarianceExplanationRow struct {
+	ID             uuid.UUID
+	PeriodID       uuid.UUID
+	AccountID      uuid.UUID
+	CurrentAmount  string
+	PreviousAmount string
+	Explanation    string
+	WrittenBy      string
+	WrittenAt      time.Time
+}
+
+func (q *Queries) InsertVarianceExplanation(ctx context.Context, arg InsertVarianceExplanationParams) (InsertVarianceExplanationRow, error) {
+	row := q.db.QueryRow(ctx, insertVarianceExplanation,
+		arg.PeriodID,
+		arg.AccountID,
+		arg.CurrentAmount,
+		arg.PreviousAmount,
+		arg.Explanation,
+		arg.WrittenBy,
+		arg.WrittenAt,
+	)
+	var i InsertVarianceExplanationRow
+	err := row.Scan(
+		&i.ID,
+		&i.PeriodID,
+		&i.AccountID,
+		&i.CurrentAmount,
+		&i.PreviousAmount,
+		&i.Explanation,
+		&i.WrittenBy,
+		&i.WrittenAt,
+	)
+	return i, err
+}
+
 const latestCloseCheck = `-- name: LatestCloseCheck :one
 SELECT id, period_id, checked_by, checked_at, ledger_revision, result, clean FROM fyniq.period_close_check
 WHERE period_id = $1 ORDER BY checked_at DESC, id DESC LIMIT 1
@@ -302,4 +353,51 @@ func (q *Queries) LatestPeriodReopen(ctx context.Context, periodID uuid.UUID) (L
 		&i.AfterHash,
 	)
 	return i, err
+}
+
+const latestVarianceExplanations = `-- name: LatestVarianceExplanations :many
+SELECT DISTINCT ON (account_id) id, period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at
+FROM fyniq.period_variance_explanation WHERE period_id = $1
+ORDER BY account_id, written_at DESC, id DESC
+`
+
+type LatestVarianceExplanationsRow struct {
+	ID             uuid.UUID
+	PeriodID       uuid.UUID
+	AccountID      uuid.UUID
+	CurrentAmount  string
+	PreviousAmount string
+	Explanation    string
+	WrittenBy      string
+	WrittenAt      time.Time
+}
+
+// Each account's latest explanation of the period's variance (FR-GL-14): a later one replaces an earlier one.
+func (q *Queries) LatestVarianceExplanations(ctx context.Context, periodID uuid.UUID) ([]LatestVarianceExplanationsRow, error) {
+	rows, err := q.db.Query(ctx, latestVarianceExplanations, periodID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LatestVarianceExplanationsRow
+	for rows.Next() {
+		var i LatestVarianceExplanationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PeriodID,
+			&i.AccountID,
+			&i.CurrentAmount,
+			&i.PreviousAmount,
+			&i.Explanation,
+			&i.WrittenBy,
+			&i.WrittenAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

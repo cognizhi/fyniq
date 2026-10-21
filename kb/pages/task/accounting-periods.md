@@ -4,7 +4,7 @@ type: task
 title: Open the financial year and close the periods
 summary: What accounting periods are, how the financial years run from the books start, opening the next financial year, and closing a month with two people
 sources:
-  - docs/user-guide/periods-and-close.md sha256:ffc353326639a4a323f5197577e1b3eaad6323d55b8f5cfa5b120bdc808f5f3e
+  - docs/user-guide/periods-and-close.md sha256:d8e267a4f1574b98853eb8efdf4548517bfaf1c899e6f555663dab9bd418855d
 data_class: general
 taint: trusted
 status: draft
@@ -23,6 +23,8 @@ aliases:
   - close a month
   - attestation
   - reopen a month
+  - variance
+  - flux analysis
 ---
 
 # Open the financial year and close the periods
@@ -48,7 +50,7 @@ aliases:
 ## Close a month
 
 - Closing takes two people: an Accountant or a Controller selects **Run the checks** on the month; another founder, an Owner or a Controller who did not run them, says what they attest and selects **Attest and close**, confirming it's them first.
-- The checks: every earlier month closed (months close in order); the balances agreeing with the ledger; the trial balance at the month's end adding up to zero; draft journals dated in the month (⚠); automatic reversals that have not posted, dated on or before the month's end or of a journal dated in the month and waiting for a month that is not open (⚠); recurring journals due in the month with no draft yet (⚠), or a draft more than a day late, which means the scheduler failed (✖); active recurring journals whose lines would not post (⚠) ([[accounting.journals]]); in the month the books start, the opening balances posted (⚠). ✖ blocks the close, ⚠ needs a look.
+- The checks: every earlier month closed (months close in order); the balances agreeing with the ledger; the trial balance at the month's end adding up to zero; draft journals dated in the month (⚠); automatic reversals that have not posted, dated on or before the month's end or of a journal dated in the month and waiting for a month that is not open (⚠); recurring journals due in the month with no draft yet (⚠), or a draft more than a day late, which means the scheduler failed (✖); active recurring journals whose lines would not post (⚠) ([[accounting.journals]]); income and expense accounts that moved against the previous month by more than both thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no explanation of their totals as they are now (✖) ([[settings.organisation]]); in the month the books start, the opening balances posted (⚠). ✖ blocks the close, ⚠ needs a look.
 - If anything dated in or before the month posts after the checks ran, they are out of date and the close is refused: run them again.
 - A closed month refuses every posting dated in it, by anyone; the close keeps a SHA-256 fingerprint of the trial balance at the month's end and the ledger revision it closed at.
 - Related: preparing and posting journals ([[accounting.journals]]); entering the opening balances ([[accounting.opening-balances]]).

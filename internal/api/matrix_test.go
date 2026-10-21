@@ -631,6 +631,43 @@ var matrixCalls = map[string]matrixCall{
 	"runCloseChecks": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/periods/"+e.books.Nov.ID.String()+"/close-checks", tok, nil, "If-Match", "*"), nil
 	},
+	"listPeriodVariances": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/periods/"+e.books.Nov.ID.String()+"/variances", tok, nil), nil
+	},
+	// Each call explains November's sales in an organisation of its own, whose totals are known: S$5,000 in October and
+	// S$8,000 in November, income so credit.
+	"explainVariance": func(e *env, tok string) (response, func() bool) {
+		ctx := context.Background()
+		b := porttest.NewBooks(e.t, e.store, "Matrix flux "+uuid.NewString()[:8])
+		if err := e.store.Do(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "matrix-fixture"}}), b.Org,
+			func(ctx context.Context, u storage.UnitOfWork) error {
+				if _, err := u.Ledger().Append(ctx, porttest.Sale(uuid.NewString(), porttest.Day(10, 5), b, "5000.00")); err != nil {
+					return err
+				}
+				_, err := u.Ledger().Append(ctx, porttest.Sale(uuid.NewString(), porttest.Day(11, 5), b, "8000.00"))
+				return err
+			}); err != nil {
+			panic(err)
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation != uuid.Nil {
+			p.Organisation = b.Org
+		}
+		r := e.call(http.MethodPost, "/v1/periods/"+b.Nov.ID.String()+"/variances/"+b.Sales.ID.String()+"/explanation", e.principal(p),
+			map[string]any{"current": map[string]any{"amount": "-8000.00", "currency": "SGD"}, "previous": map[string]any{"amount": "-5000.00", "currency": "SGD"},
+				"explanation": "A new customer started in November."})
+		return r, func() bool {
+			var n int
+			_ = e.store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				xs, err := u.Closes().VarianceExplanations(ctx, b.Nov.ID)
+				n = len(xs)
+				return err
+			})
+			return n == 0
+		}
+	},
 	// A close cannot be undone here, so each call closes October of an organisation of its own, on checks another person
 	// ran, as a person stepped up now.
 	"closePeriod": func(e *env, tok string) (response, func() bool) {

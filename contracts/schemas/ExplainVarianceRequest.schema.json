@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "current": {
+      "$ref": "Money.schema.json",
+      "description": "The account's total for the period as listPeriodVariances showed it: the explanation is of these totals, and other totals now are refused (CLOSE-10)."
+    },
+    "explanation": {
+      "description": "Why the account moved, in a sentence or two, for the attester and the accountant.",
+      "examples": [
+        "The annual design-tool licence renewed in November."
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "previous": {
+      "$ref": "Money.schema.json",
+      "description": "Its total for the previous period as listPeriodVariances showed it."
+    }
+  },
+  "required": [
+    "current",
+    "previous",
+    "explanation"
+  ],
+  "title": "ExplainVarianceRequest",
+  "type": "object"
+}

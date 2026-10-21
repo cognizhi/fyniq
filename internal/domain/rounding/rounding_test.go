@@ -235,3 +235,41 @@ func TestFXIsMonotonicAndWithinHalfAUnit(t *testing.T) {
 		}
 	})
 }
+
+// RND-PERCENT: the change as a percentage of the earlier total, to one decimal, half away from zero, with the change's
+// sign; the earlier total's sign does not matter, and zero has no percentage.
+// req: RND-PERCENT
+func TestPercentPinnedCases(t *testing.T) {
+	for _, c := range []struct{ part, whole, want string }{
+		{"2000.00", "5000.00", "40.0"},
+		{"-2000.00", "5000.00", "-40.0"},
+		{"2000.00", "-5000.00", "40.0"},
+		{"-2000.00", "-5000.00", "-40.0"},
+		{"0.01", "0.03", "33.3"},
+		{"0.02", "0.03", "66.7"},
+		{"-0.02", "0.03", "-66.7"},
+		{"1.00", "2000.00", "0.1"},   // 0.05: half away from zero
+		{"-1.00", "2000.00", "-0.1"}, // and its mirror
+		{"0.99", "2000.00", "0.0"},   // 0.0495
+		{"-0.01", "1000.00", "0.0"},  // -0.001: never -0.0
+		{"49.00", "400.00", "12.3"},  // 12.25
+		{"-49.00", "400.00", "-12.3"},
+		{"5000.00", "5000.00", "100.0"},
+		{"0.00", "5000.00", "0.0"},
+		{"9999999999999999.99", "0.01", "99999999999999999900.0"},
+	} {
+		got, err := Percent(m(t, c.part, sgd), m(t, c.whole, sgd))
+		if err != nil || got != c.want {
+			t.Errorf("Percent(%s, %s) = %q, %v; want %q", c.part, c.whole, got, err, c.want)
+		}
+	}
+	if _, err := Percent(m(t, "1.00", sgd), m(t, "0.00", sgd)); err == nil {
+		t.Error("a percentage of zero")
+	}
+	if _, err := Percent(m(t, "1.00", sgd), m(t, "1.00", usd)); err == nil {
+		t.Error("a percentage of another currency")
+	}
+	if got, err := Percent(m(t, "1", jpy), m(t, "3", jpy)); err != nil || got != "33.3" {
+		t.Errorf("Percent of yen = %q, %v", got, err)
+	}
+}

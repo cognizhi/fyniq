@@ -199,6 +199,7 @@ BY_ID.update({
     "RND-RATE": "p1-multi-currency-fx", "RND-GST-EXCL": "p1-statutory-packs", "RND-GST-INCL": "p1-statutory-packs",
     "RND-CPF": "p1-nemura-payroll", "RND-CPF-GRAD": "p1-nemura-payroll", "RND-SDL": "p1-nemura-payroll",
     "RND-SHARE": "p1-equity-register", "RND-MILEAGE": "p1-expense-claims", "RND-DISPLAY": "p1-app-shell",
+    "RND-PERCENT": "p1-general-ledger-close",
     "INV-07": "p1-checks", "INV-10": "p1-reports", "INV-11": "p1-reports", "ENG-45": "p1-statutory-packs",
     "ENG-40": "p1-multi-currency-fx", "ENG-41": "p1-multi-currency-fx", "ENG-42": "p1-multi-currency-fx",
     "ENG-43": "p1-multi-currency-fx", "SEC-07": "p1-users-roles", "SEC-35": "p1-users-roles",
