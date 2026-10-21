@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "area": {
+      "description": "The policy's area; absent for the framework.",
+      "examples": [
+        "revenue"
+      ],
+      "type": "string"
+    },
+    "code": {
+      "description": "ACCOUNTING-NO-FRAMEWORK, ACCOUNTING-UNCONFIRMED, ACCOUNTING-EDITION, ACCOUNTING-NO-POLICY or ACCOUNTING-UNAPPROVED.",
+      "examples": [
+        "ACCOUNTING-UNAPPROVED"
+      ],
+      "type": "string"
+    },
+    "detail": {
+      "description": "What it is, in a sentence.",
+      "examples": [
+        "Version 1 of the revenue policy waits for the accountant's approval."
+      ],
+      "type": "string"
+    },
+    "fix": {
+      "description": "What to do.",
+      "examples": [
+        "A member who holds the Accountant role, other than its writer, approves it"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What is missing.",
+      "examples": [
+        "Revenue: not approved"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "title",
+    "detail",
+    "fix"
+  ],
+  "title": "AccountingCheck",
+  "type": "object"
+}

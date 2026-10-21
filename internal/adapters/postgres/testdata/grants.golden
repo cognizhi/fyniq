@@ -6,6 +6,12 @@ fyniq_api       EXECUTE   accept_super_admin_invitation()
 fyniq_api       INSERT    account (cash_flow_line, code, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, role, type)
 fyniq_api       SELECT    account
 fyniq_api       UPDATE    account (cash_flow_line, currency, default_gst_code, function, guidance, is_active, is_control, is_group, is_money_account, is_payroll_cost, name, parent_id, report_group, version)
+fyniq_api       INSERT    accounting_framework (edition, framework, from_on, version, written_by)
+fyniq_api       SELECT    accounting_framework
+fyniq_api       UPDATE    accounting_framework (confirmed_at, confirmed_by)
+fyniq_api       INSERT    accounting_policy (area, from_on, version, wording, written_by)
+fyniq_api       SELECT    accounting_policy
+fyniq_api       UPDATE    accounting_policy (approved_at, approved_by)
 fyniq_api       INSERT    approval_policy (created_at, created_by, object_type, request_id, steps, version)
 fyniq_api       SELECT    approval_policy
 fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_steps, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
@@ -194,6 +200,8 @@ fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
 fyniq_executor  SELECT    team_mode
 fyniq_readonly  SELECT    account
+fyniq_readonly  SELECT    accounting_framework
+fyniq_readonly  SELECT    accounting_policy
 fyniq_readonly  SELECT    approval_policy
 fyniq_readonly  SELECT    approval_request
 fyniq_readonly  SELECT    approval_signature

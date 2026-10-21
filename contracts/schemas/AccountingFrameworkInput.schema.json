@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "edition": {
+      "description": "The edition, as the standard names it. SFRS for Small Entities' Third Edition applies to financial years beginning on or after 1 January 2027.",
+      "examples": [
+        "Third Edition"
+      ],
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    },
+    "framework": {
+      "description": "sfrs_se is SFRS for Small Entities, the recommended one (open question 31); frs is FRS; sfrs_i is SFRS(I).",
+      "enum": [
+        "sfrs_se",
+        "frs",
+        "sfrs_i"
+      ],
+      "examples": [
+        "sfrs_se"
+      ],
+      "type": "string"
+    },
+    "from_on": {
+      "description": "The first day of the financial year it applies from, until a later version replaces it; at most a year after the current one.",
+      "examples": [
+        "2027-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "framework",
+    "edition",
+    "from_on"
+  ],
+  "title": "AccountingFrameworkInput",
+  "type": "object"
+}

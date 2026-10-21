@@ -28,6 +28,7 @@ const (
 	UsersAndRoles       Capability = "Users, roles, team mode"
 	ApprovalPolicies    Capability = "Approval policies, AI catalogue"
 	OrganisationProfile Capability = "Organisation profile, financial year, defaults (rev 0.29)"
+	AccountingBasis     Capability = "Accounting framework and policies (rev 0.62)"
 	StatutoryParameters Capability = "Statutory parameters"
 	ChartOfAccounts     Capability = "Chart of accounts, dimensions"
 	ContactsAndItems    Capability = "Contacts and items (rev 0.33)"
@@ -67,7 +68,7 @@ const (
 )
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, StatutoryParameters, ChartOfAccounts, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -119,6 +120,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	OrganisationProfile: {
 		"Owner": {"A", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"V", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"V", ""}, "AI": {"V", ""},
+	},
+	AccountingBasis: {
+		"Owner": {"C", ""}, "Admin": {"V", ""}, "Controller": {"C", ""}, "Accountant": {"CA", ""}, "Bookkeeper": {"V", ""}, "AR": {"V", ""}, "AP": {"V", ""}, "Payroll": {"V", ""}, "Releaser": {"V", ""}, "Approver": {"V", ""}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"V", ""}, "AI": {"V", ""},
 	},
 	StatutoryParameters: {
 		"Owner": {"A", ""}, "Admin": {}, "Controller": {"CA", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {"V", ""}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {}, "AI": {"V", ""},
@@ -315,6 +319,14 @@ var (
 		Note: "The Owner approves GST registration changes; the approval itself arrives with the approval engine (P1)."}
 	GetJournal   = Policy{Operation: "getJournal", Capability: Journals, Need: View}
 	ListJournals = Policy{Operation: "listJournals", Capability: Journals, Need: View}
+	// The accounting framework and policies (FR-ORG-10; the founders' decision of rev 0.62): the Owner, the Controller and the
+	// Accountant record them (C); a member who holds the Accountant role confirms or approves each version (A), never its
+	// writer, which the domain and the database refuse.
+	GetAccounting              = Policy{Operation: "getAccounting", Capability: AccountingBasis, Need: View}
+	RecordAccountingFramework  = Policy{Operation: "recordAccountingFramework", Capability: AccountingBasis, Need: Create}
+	ConfirmAccountingFramework = Policy{Operation: "confirmAccountingFramework", Capability: AccountingBasis, Need: Approve}
+	RecordAccountingPolicy     = Policy{Operation: "recordAccountingPolicy", Capability: AccountingBasis, Need: Create}
+	ApproveAccountingPolicy    = Policy{Operation: "approveAccountingPolicy", Capability: AccountingBasis, Need: Approve}
 	// The automatic reversals that wait are a view of the journals (FR-GL-02; rev 0.58).
 	ListWaitingReversals = Policy{Operation: "listWaitingReversals", Capability: Journals, Need: View}
 	// Recurring journals are read as journals are; keeping one is preparing the drafts it makes (C), which a person posts
@@ -470,7 +482,7 @@ var (
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
+	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,

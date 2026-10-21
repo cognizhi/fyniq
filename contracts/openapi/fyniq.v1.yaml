@@ -352,6 +352,322 @@ components:
       required:
         - items
       type: object
+    AccountingCheck:
+      additionalProperties: false
+      properties:
+        area:
+          description: The policy's area; absent for the framework.
+          examples:
+            - revenue
+          type: string
+        code:
+          description: ACCOUNTING-NO-FRAMEWORK, ACCOUNTING-UNCONFIRMED, ACCOUNTING-EDITION, ACCOUNTING-NO-POLICY or ACCOUNTING-UNAPPROVED.
+          examples:
+            - ACCOUNTING-UNAPPROVED
+          type: string
+        detail:
+          description: What it is, in a sentence.
+          examples:
+            - Version 1 of the revenue policy waits for the accountant's approval.
+          type: string
+        fix:
+          description: What to do.
+          examples:
+            - A member who holds the Accountant role, other than its writer, approves it
+          type: string
+        title:
+          description: What is missing.
+          examples:
+            - "Revenue: not approved"
+          type: string
+      required:
+        - code
+        - title
+        - detail
+        - fix
+      type: object
+    AccountingFramework:
+      additionalProperties: false
+      properties:
+        confirmed_at:
+          description: When they confirmed it.
+          examples:
+            - "2026-10-22T03:00:00Z"
+          format: date-time
+          type: string
+        confirmed_by:
+          $ref: "#/components/schemas/Person"
+          description: The accountant who confirmed the company may use it; absent until then.
+        edition:
+          description: Its edition.
+          examples:
+            - Third Edition
+          type: string
+        framework:
+          description: The framework's code.
+          enum:
+            - sfrs_se
+            - frs
+            - sfrs_i
+          examples:
+            - sfrs_se
+          type: string
+        from_on:
+          description: The first day of the financial year it applies from.
+          examples:
+            - "2027-01-01"
+          format: date
+          type: string
+        name:
+          description: The framework's name, as statements show it.
+          examples:
+            - SFRS for Small Entities
+          type: string
+        version:
+          description: "The framework version: 1, 2, …"
+          examples:
+            - 2
+          format: int64
+          type: integer
+        written_at:
+          description: When it was recorded.
+          examples:
+            - "2026-10-21T09:30:00Z"
+          format: date-time
+          type: string
+        written_by:
+          $ref: "#/components/schemas/Person"
+          description: "Who recorded it: they never confirm it."
+        you_may_confirm:
+          description: "true when the caller may confirm it: they hold the Accountant role, did not record it, and it is not confirmed or replaced."
+          examples:
+            - false
+          type: boolean
+      required:
+        - version
+        - from_on
+        - framework
+        - name
+        - edition
+        - written_at
+        - you_may_confirm
+      type: object
+    AccountingFrameworkInput:
+      additionalProperties: false
+      properties:
+        edition:
+          description: The edition, as the standard names it. SFRS for Small Entities' Third Edition applies to financial years beginning on or after 1 January 2027.
+          examples:
+            - Third Edition
+          maxLength: 120
+          minLength: 1
+          type: string
+        framework:
+          description: sfrs_se is SFRS for Small Entities, the recommended one (open question 31); frs is FRS; sfrs_i is SFRS(I).
+          enum:
+            - sfrs_se
+            - frs
+            - sfrs_i
+          examples:
+            - sfrs_se
+          type: string
+        from_on:
+          description: The first day of the financial year it applies from, until a later version replaces it; at most a year after the current one.
+          examples:
+            - "2027-01-01"
+          format: date
+          type: string
+      required:
+        - framework
+        - edition
+        - from_on
+      type: object
+    AccountingPolicy:
+      additionalProperties: false
+      properties:
+        approved_at:
+          description: When they approved it.
+          examples:
+            - "2026-10-22T03:00:00Z"
+          format: date-time
+          type: string
+        approved_by:
+          $ref: "#/components/schemas/Person"
+          description: The accountant who approved it; absent until then.
+        area:
+          description: The policy's area.
+          examples:
+            - revenue
+          type: string
+        from_on:
+          description: The first day of the financial year it applies from.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        version:
+          description: "The area's policy version: 1, 2, …"
+          examples:
+            - 1
+          format: int64
+          type: integer
+        wording:
+          description: The policy.
+          examples:
+            - Subscription revenue is recognised evenly over each billing period.
+          type: string
+        written_at:
+          description: When it was recorded.
+          examples:
+            - "2026-10-21T09:30:00Z"
+          format: date-time
+          type: string
+        written_by:
+          $ref: "#/components/schemas/Person"
+          description: "Who recorded it: they never approve it."
+        you_may_approve:
+          description: "true when the caller may approve it: they hold the Accountant role, did not record it, and it is not approved or replaced."
+          examples:
+            - true
+          type: boolean
+      required:
+        - area
+        - version
+        - from_on
+        - wording
+        - written_at
+        - you_may_approve
+      type: object
+    AccountingPolicyArea:
+      additionalProperties: false
+      properties:
+        area:
+          description: The area's key.
+          enum:
+            - revenue
+            - government_grants
+            - leases
+            - development_costs
+            - impairment
+            - safes_and_notes
+            - conversion_measurement
+            - capitalisation_threshold
+            - untaken_leave
+          examples:
+            - revenue
+          type: string
+        decides:
+          description: What the policy decides; Fyniq never writes its words.
+          examples:
+            - When revenue is recognised, including subscriptions and fixed-fee projects.
+          type: string
+        policy:
+          $ref: "#/components/schemas/AccountingPolicy"
+          description: The version in force for the year; absent while none is recorded.
+        setting:
+          description: The organisation setting that holds the figure the policy approves, when one does.
+          examples:
+            - assets.capitalisation_threshold
+          type: string
+        title:
+          description: Its name.
+          examples:
+            - Revenue
+          type: string
+      required:
+        - area
+        - title
+        - decides
+      type: object
+    AccountingPolicyInput:
+      additionalProperties: false
+      properties:
+        from_on:
+          description: The first day of the financial year it applies from, until a later version replaces it; at most a year after the current one.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        wording:
+          description: The policy, as the accountant decided it; where the area does not apply to the company, say so.
+          examples:
+            - Subscription revenue is recognised evenly over each billing period.
+          maxLength: 4000
+          minLength: 1
+          type: string
+      required:
+        - wording
+        - from_on
+      type: object
+    AccountingYear:
+      additionalProperties: false
+      properties:
+        checks:
+          description: What keeps the statements management statements; empty once approved.
+          items:
+            $ref: "#/components/schemas/AccountingCheck"
+          type: array
+        ends_on:
+          description: Its last day.
+          examples:
+            - "2026-12-31"
+          format: date
+          type: string
+        framework:
+          $ref: "#/components/schemas/AccountingFramework"
+          description: The framework version in force for the year; absent while none is recorded.
+        policies:
+          description: Each policy FR-ORG-10 asks for, in its order, with the version in force.
+          items:
+            $ref: "#/components/schemas/AccountingPolicyArea"
+          type: array
+        recommended_edition:
+          description: The edition of SFRS for Small Entities that applies to the year.
+          examples:
+            - Third Edition
+          type: string
+        recommended_framework:
+          description: The framework Fyniq assumes until the accountant decides (open question 31).
+          examples:
+            - sfrs_se
+          type: string
+        starts_on:
+          description: The financial year's first day.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        statement_basis:
+          description: What they are prepared under, once approved; absent until then, so management statements name no framework.
+          examples:
+            - Prepared under SFRS for Small Entities (Third Edition)
+          type: string
+        statement_title:
+          description: How the year's statements are titled (G4-017).
+          enum:
+            - Management statements
+            - Financial statements
+          examples:
+            - Management statements
+          type: string
+        status:
+          description: approved once the framework in force is confirmed and every policy in force is approved.
+          enum:
+            - approved
+            - not_approved
+          examples:
+            - not_approved
+          type: string
+      required:
+        - starts_on
+        - ends_on
+        - status
+        - statement_title
+        - recommended_framework
+        - recommended_edition
+        - policies
+        - checks
+      type: object
     Approval:
       additionalProperties: false
       properties:
@@ -14187,6 +14503,810 @@ paths:
       x-fyniq-permission:
         capability: (membership)
         right: V
+  /v1/organisation/accounting:
+    get:
+      description: The accounting framework and edition, and each accounting policy, in force for the financial year that holds the day asked for (FR-ORG-10; PRD-001 rev 0.62), with who recorded, confirmed and approved each version and when. The year's statements are titled "Management statements" and name no framework until its framework is confirmed and every policy is approved by a member who holds the Accountant role, other than its writer; then "Financial statements" with the basis they are prepared under (G4-017). checks lists what is missing. Read-only; no side effects.
+      operationId: getAccounting
+      parameters:
+        - description: The day to read the values for; today, in the organisation's time zone, when left out.
+          explode: false
+          in: query
+          name: "on"
+          schema:
+            description: The day to read the values for; today, in the organisation's time zone, when left out.
+            examples:
+              - "2026-10-20"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingYear"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PERIOD-01` The financial years are not set."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a year's accounting framework and policies
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PERIOD-01
+      x-fyniq-permission:
+        capability: Accounting framework and policies (rev 0.62)
+        right: V
+  /v1/organisation/accounting/framework:
+    post:
+      description: "Records the next version of the accounting framework and its edition, from the first day of a financial year until a later version replaces it (FR-ORG-10; PRD-001 rev 0.62). A version never changes: a correction is a new version, which the accountant confirms again. Side effects: the version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: recordAccountingFramework
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountingFrameworkInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingFramework"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingFramework"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Record the accounting framework
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - ACCOUNTING-01
+        - ACCOUNTING-02
+        - ACCOUNTING-03
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - PERIOD-01
+        - STORAGE-ACCOUNTING-01
+      x-fyniq-permission:
+        capability: Accounting framework and policies (rev 0.62)
+        right: C
+  /v1/organisation/accounting/framework/{version}/confirm:
+    post:
+      description: "Records the caller's confirmation, as the accountant, that the company may use a framework version (FR-ORG-10; PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). Side effects: the confirmation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: confirmAccountingFramework
+      parameters:
+        - description: The framework version.
+          in: path
+          name: version
+          required: true
+          schema:
+            description: The framework version.
+            examples:
+              - 2
+            format: int64
+            minimum: 1
+            type: integer
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingFramework"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Confirm the accounting framework
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - ACCOUNTING-01
+        - ACCOUNTING-02
+        - ACCOUNTING-03
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PERIOD-01
+        - STORAGE-ACCOUNTING-01
+      x-fyniq-permission:
+        capability: Accounting framework and policies (rev 0.62)
+        right: A
+  /v1/organisation/accounting/policies/{area}:
+    post:
+      description: "Records the next version of one accounting policy's words, from the first day of a financial year until a later version replaces it (FR-ORG-10; PRD-001 rev 0.62). Fyniq never writes a policy: the words are the accountant's. A version never changes: a correction is a new version, which the accountant approves again. Side effects: the version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: recordAccountingPolicy
+      parameters:
+        - description: The policy's area.
+          in: path
+          name: area
+          required: true
+          schema:
+            description: The policy's area.
+            enum:
+              - revenue
+              - government_grants
+              - leases
+              - development_costs
+              - impairment
+              - safes_and_notes
+              - conversion_measurement
+              - capitalisation_threshold
+              - untaken_leave
+            examples:
+              - revenue
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountingPolicyInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingPolicy"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingPolicy"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Record an accounting policy
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - ACCOUNTING-01
+        - ACCOUNTING-02
+        - ACCOUNTING-03
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - PERIOD-01
+        - STORAGE-ACCOUNTING-01
+      x-fyniq-permission:
+        capability: Accounting framework and policies (rev 0.62)
+        right: C
+  /v1/organisation/accounting/policies/{area}/{version}/approve:
+    post:
+      description: "Records the caller's approval, as the accountant, of a version of one accounting policy (FR-ORG-10; PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). Side effects: the approval and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: approveAccountingPolicy
+      parameters:
+        - description: The policy's area.
+          in: path
+          name: area
+          required: true
+          schema:
+            description: The policy's area.
+            enum:
+              - revenue
+              - government_grants
+              - leases
+              - development_costs
+              - impairment
+              - safes_and_notes
+              - conversion_measurement
+              - capitalisation_threshold
+              - untaken_leave
+            examples:
+              - revenue
+            type: string
+        - description: The framework version.
+          in: path
+          name: version
+          required: true
+          schema:
+            description: The framework version.
+            examples:
+              - 2
+            format: int64
+            minimum: 1
+            type: integer
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountingPolicy"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Approve an accounting policy
+      tags:
+        - Organisation
+      x-fyniq-error-codes:
+        - ACCOUNTING-01
+        - ACCOUNTING-02
+        - ACCOUNTING-03
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PERIOD-01
+        - STORAGE-ACCOUNTING-01
+      x-fyniq-permission:
+        capability: Accounting framework and policies (rev 0.62)
+        right: A
   /v1/organisation/email/messages/{message_id}:
     get:
       description: "The record of an outbound message: its recipient, subject, attempts and outcome, never its body (FR-INT-21). Read-only; no side effects."

@@ -760,6 +760,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organisation/accounting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a year's accounting framework and policies
+         * @description The accounting framework and edition, and each accounting policy, in force for the financial year that holds the day asked for (FR-ORG-10; PRD-001 rev 0.62), with who recorded, confirmed and approved each version and when. The year's statements are titled "Management statements" and name no framework until its framework is confirmed and every policy is approved by a member who holds the Accountant role, other than its writer; then "Financial statements" with the basis they are prepared under (G4-017). checks lists what is missing. Read-only; no side effects.
+         */
+        get: operations["getAccounting"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organisation/accounting/framework": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the accounting framework
+         * @description Records the next version of the accounting framework and its edition, from the first day of a financial year until a later version replaces it (FR-ORG-10; PRD-001 rev 0.62). A version never changes: a correction is a new version, which the accountant confirms again. Side effects: the version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["recordAccountingFramework"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organisation/accounting/framework/{version}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the accounting framework
+         * @description Records the caller's confirmation, as the accountant, that the company may use a framework version (FR-ORG-10; PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). Side effects: the confirmation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["confirmAccountingFramework"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organisation/accounting/policies/{area}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record an accounting policy
+         * @description Records the next version of one accounting policy's words, from the first day of a financial year until a later version replaces it (FR-ORG-10; PRD-001 rev 0.62). Fyniq never writes a policy: the words are the accountant's. A version never changes: a correction is a new version, which the accountant approves again. Side effects: the version and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["recordAccountingPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organisation/accounting/policies/{area}/{version}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve an accounting policy
+         * @description Records the caller's approval, as the accountant, of a version of one accounting policy (FR-ORG-10; PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). Side effects: the approval and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["approveAccountingPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/organisation/email/messages/{message_id}": {
         parameters: {
             query?: never;
@@ -1945,6 +2045,233 @@ export interface components {
              * @example eyJhZnRlciI6IjYxMDAifQ
              */
             next_cursor?: string;
+        };
+        AccountingCheck: {
+            /**
+             * @description The policy's area; absent for the framework.
+             * @example revenue
+             */
+            area?: string;
+            /**
+             * @description ACCOUNTING-NO-FRAMEWORK, ACCOUNTING-UNCONFIRMED, ACCOUNTING-EDITION, ACCOUNTING-NO-POLICY or ACCOUNTING-UNAPPROVED.
+             * @example ACCOUNTING-UNAPPROVED
+             */
+            code: string;
+            /**
+             * @description What it is, in a sentence.
+             * @example Version 1 of the revenue policy waits for the accountant's approval.
+             */
+            detail: string;
+            /**
+             * @description What to do.
+             * @example A member who holds the Accountant role, other than its writer, approves it
+             */
+            fix: string;
+            /**
+             * @description What is missing.
+             * @example Revenue: not approved
+             */
+            title: string;
+        };
+        AccountingFramework: {
+            /**
+             * Format: date-time
+             * @description When they confirmed it.
+             * @example 2026-10-22T03:00:00Z
+             */
+            confirmed_at?: string;
+            /** @description The accountant who confirmed the company may use it; absent until then. */
+            confirmed_by?: components["schemas"]["Person"];
+            /**
+             * @description Its edition.
+             * @example Third Edition
+             */
+            edition: string;
+            /**
+             * @description The framework's code.
+             * @example sfrs_se
+             * @enum {string}
+             */
+            framework: "sfrs_se" | "frs" | "sfrs_i";
+            /**
+             * Format: date
+             * @description The first day of the financial year it applies from.
+             * @example 2027-01-01
+             */
+            from_on: string;
+            /**
+             * @description The framework's name, as statements show it.
+             * @example SFRS for Small Entities
+             */
+            name: string;
+            /**
+             * Format: int64
+             * @description The framework version: 1, 2, …
+             * @example 2
+             */
+            version: number;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-10-21T09:30:00Z
+             */
+            written_at: string;
+            /** @description Who recorded it: they never confirm it. */
+            written_by?: components["schemas"]["Person"];
+            /**
+             * @description true when the caller may confirm it: they hold the Accountant role, did not record it, and it is not confirmed or replaced.
+             * @example false
+             */
+            you_may_confirm: boolean;
+        };
+        AccountingFrameworkInput: {
+            /**
+             * @description The edition, as the standard names it. SFRS for Small Entities' Third Edition applies to financial years beginning on or after 1 January 2027.
+             * @example Third Edition
+             */
+            edition: string;
+            /**
+             * @description sfrs_se is SFRS for Small Entities, the recommended one (open question 31); frs is FRS; sfrs_i is SFRS(I).
+             * @example sfrs_se
+             * @enum {string}
+             */
+            framework: "sfrs_se" | "frs" | "sfrs_i";
+            /**
+             * Format: date
+             * @description The first day of the financial year it applies from, until a later version replaces it; at most a year after the current one.
+             * @example 2027-01-01
+             */
+            from_on: string;
+        };
+        AccountingPolicy: {
+            /**
+             * Format: date-time
+             * @description When they approved it.
+             * @example 2026-10-22T03:00:00Z
+             */
+            approved_at?: string;
+            /** @description The accountant who approved it; absent until then. */
+            approved_by?: components["schemas"]["Person"];
+            /**
+             * @description The policy's area.
+             * @example revenue
+             */
+            area: string;
+            /**
+             * Format: date
+             * @description The first day of the financial year it applies from.
+             * @example 2026-01-01
+             */
+            from_on: string;
+            /**
+             * Format: int64
+             * @description The area's policy version: 1, 2, …
+             * @example 1
+             */
+            version: number;
+            /**
+             * @description The policy.
+             * @example Subscription revenue is recognised evenly over each billing period.
+             */
+            wording: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-10-21T09:30:00Z
+             */
+            written_at: string;
+            /** @description Who recorded it: they never approve it. */
+            written_by?: components["schemas"]["Person"];
+            /**
+             * @description true when the caller may approve it: they hold the Accountant role, did not record it, and it is not approved or replaced.
+             * @example true
+             */
+            you_may_approve: boolean;
+        };
+        AccountingPolicyArea: {
+            /**
+             * @description The area's key.
+             * @example revenue
+             * @enum {string}
+             */
+            area: "revenue" | "government_grants" | "leases" | "development_costs" | "impairment" | "safes_and_notes" | "conversion_measurement" | "capitalisation_threshold" | "untaken_leave";
+            /**
+             * @description What the policy decides; Fyniq never writes its words.
+             * @example When revenue is recognised, including subscriptions and fixed-fee projects.
+             */
+            decides: string;
+            /** @description The version in force for the year; absent while none is recorded. */
+            policy?: components["schemas"]["AccountingPolicy"];
+            /**
+             * @description The organisation setting that holds the figure the policy approves, when one does.
+             * @example assets.capitalisation_threshold
+             */
+            setting?: string;
+            /**
+             * @description Its name.
+             * @example Revenue
+             */
+            title: string;
+        };
+        AccountingPolicyInput: {
+            /**
+             * Format: date
+             * @description The first day of the financial year it applies from, until a later version replaces it; at most a year after the current one.
+             * @example 2026-01-01
+             */
+            from_on: string;
+            /**
+             * @description The policy, as the accountant decided it; where the area does not apply to the company, say so.
+             * @example Subscription revenue is recognised evenly over each billing period.
+             */
+            wording: string;
+        };
+        AccountingYear: {
+            /** @description What keeps the statements management statements; empty once approved. */
+            checks: components["schemas"]["AccountingCheck"][];
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2026-12-31
+             */
+            ends_on: string;
+            /** @description The framework version in force for the year; absent while none is recorded. */
+            framework?: components["schemas"]["AccountingFramework"];
+            /** @description Each policy FR-ORG-10 asks for, in its order, with the version in force. */
+            policies: components["schemas"]["AccountingPolicyArea"][];
+            /**
+             * @description The edition of SFRS for Small Entities that applies to the year.
+             * @example Third Edition
+             */
+            recommended_edition: string;
+            /**
+             * @description The framework Fyniq assumes until the accountant decides (open question 31).
+             * @example sfrs_se
+             */
+            recommended_framework: string;
+            /**
+             * Format: date
+             * @description The financial year's first day.
+             * @example 2026-01-01
+             */
+            starts_on: string;
+            /**
+             * @description What they are prepared under, once approved; absent until then, so management statements name no framework.
+             * @example Prepared under SFRS for Small Entities (Third Edition)
+             */
+            statement_basis?: string;
+            /**
+             * @description How the year's statements are titled (G4-017).
+             * @example Management statements
+             * @enum {string}
+             */
+            statement_title: "Management statements" | "Financial statements";
+            /**
+             * @description approved once the framework in force is confirmed and every policy in force is approved.
+             * @example not_approved
+             * @enum {string}
+             */
+            status: "approved" | "not_approved";
         };
         Approval: {
             /**
@@ -11854,6 +12181,578 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAccounting: {
+        parameters: {
+            query?: {
+                /** @description The day to read the values for; today, in the organisation's time zone, when left out. */
+                on?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingYear"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PERIOD-01` The financial years are not set. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordAccountingFramework: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountingFrameworkInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingFramework"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingFramework"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    confirmAccountingFramework: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The framework version. */
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingFramework"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordAccountingPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The policy's area. */
+                area: "revenue" | "government_grants" | "leases" | "development_costs" | "impairment" | "safes_and_notes" | "conversion_measurement" | "capitalisation_threshold" | "untaken_leave";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountingPolicyInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingPolicy"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingPolicy"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    approveAccountingPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The policy's area. */
+                area: "revenue" | "government_grants" | "leases" | "development_costs" | "impairment" | "safes_and_notes" | "conversion_measurement" | "capitalisation_threshold" | "untaken_leave";
+                /** @description The framework version. */
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingPolicy"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

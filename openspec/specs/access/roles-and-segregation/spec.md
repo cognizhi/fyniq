@@ -547,6 +547,27 @@ Source: PRD-001 §D
 - **WHEN** a role acts on the organisation's profile, financial year and defaults
 - **THEN** the Employee has no right over it (—)
 
+### Requirement: Permission matrix: Accounting framework and policies
+In Standard mode, each role SHALL hold only the rights over the accounting framework and policies that the permission matrix gives it (rev 0.62).
+
+Source: PRD-001 §D
+
+#### Scenario: Create and approve
+- **WHEN** a role acts on the accounting framework and policies
+- **THEN** the Accountant can create or prepare and approve (C/A), never both for the same version
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on the accounting framework and policies
+- **THEN** the Owner and the Finance controller can create or prepare (C)
+
+#### Scenario: View
+- **WHEN** a role acts on the accounting framework and policies
+- **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Auditor, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the accounting framework and policies
+- **THEN** the Employee has no right over it (—)
+
 ### Requirement: Permission matrix: Contacts and items
 In Standard mode, each role SHALL hold only the rights over contacts and items that the permission matrix gives it (rev 0.33).
 

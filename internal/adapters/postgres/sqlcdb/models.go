@@ -34,6 +34,32 @@ type FyniqAccount struct {
 	Guidance       *string
 }
 
+type FyniqAccountingFramework struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Version        int32
+	FromOn         time.Time
+	Framework      string
+	Edition        string
+	WrittenBy      string
+	WrittenAt      time.Time
+	ConfirmedBy    *string
+	ConfirmedAt    *time.Time
+}
+
+type FyniqAccountingPolicy struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Area           string
+	Version        int32
+	FromOn         time.Time
+	Wording        string
+	WrittenBy      string
+	WrittenAt      time.Time
+	ApprovedBy     *string
+	ApprovedAt     *time.Time
+}
+
 type FyniqAppUser struct {
 	UserID      uuid.UUID
 	DisplayName string
