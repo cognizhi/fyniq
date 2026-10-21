@@ -162,3 +162,57 @@ func TestComposeHardensOurServices(t *testing.T) {
 		t.Fatalf("only %d of our services (and the OAuth server's) in the local stack", ours)
 	}
 }
+
+// Every image builds for linux/amd64 and linux/arm64 (NFR-IMG-08): the build stage runs on the build
+// machine and takes its target from BuildKit, nothing names one architecture, and CI builds on both.
+// That each pinned digest is a multi-platform index needs the registries: `make images` checks it.
+// req: NFR-IMG-08
+func TestImagesBuildForBothPlatforms(t *testing.T) {
+	root := repoRoot(t)
+	oneArch := regexp.MustCompile(`GOARCH=(amd64|arm64)|--platform[= ]linux/`)
+	for _, f := range []string{"deploy/docker/Dockerfile.go-service", "deploy/docker/Dockerfile.web", ".devcontainer/Dockerfile"} {
+		src, err := os.ReadFile(filepath.Join(root, f))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, line := range strings.Split(string(src), "\n") {
+			if !strings.HasPrefix(strings.TrimSpace(line), "#") && oneArch.MatchString(line) {
+				t.Errorf("%s:%d names one architecture: %s", f, i+1, strings.TrimSpace(line))
+			}
+		}
+		if f == ".devcontainer/Dockerfile" && !(strings.Contains(string(src), "TARGETARCH") &&
+			strings.Contains(string(src), "linux-x64") && strings.Contains(string(src), "linux-arm64")) {
+			t.Errorf("%s must install mise for its own platform, amd64 (linux-x64) or arm64 (linux-arm64), from TARGETARCH", f)
+		}
+		if strings.HasPrefix(f, "deploy/") && !regexp.MustCompile(`(?m)^FROM --platform=\$BUILDPLATFORM \S+ AS build$`).Match(src) {
+			t.Errorf("%s: the build stage must run on the build machine: FROM --platform=$BUILDPLATFORM … AS build", f)
+		}
+	}
+	goSvc, _ := os.ReadFile(filepath.Join(root, "deploy", "docker", "Dockerfile.go-service"))
+	if !strings.Contains(string(goSvc), "GOARCH=${TARGETARCH}") || !strings.Contains(string(goSvc), "GOOS=${TARGETOS}") {
+		t.Error("Dockerfile.go-service must cross-compile for BuildKit's target: GOOS=${TARGETOS} GOARCH=${TARGETARCH}")
+	}
+	var ci struct {
+		Jobs map[string]struct {
+			RunsOn string `yaml:"runs-on"`
+			Steps  []struct {
+				Run string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	src, _ := os.ReadFile(filepath.Join(root, ".github", "workflows", "ci.yml"))
+	if err := yaml.Unmarshal(src, &ci); err != nil {
+		t.Fatal(err)
+	}
+	built := map[string]bool{}
+	for _, j := range ci.Jobs {
+		for _, s := range j.Steps {
+			if strings.HasPrefix(s.Run, "make images") {
+				built[map[bool]string{true: "arm64", false: "amd64"}[strings.HasSuffix(j.RunsOn, "-arm")]] = true
+			}
+		}
+	}
+	if !built["amd64"] || !built["arm64"] {
+		t.Errorf("CI must run `make images` on an amd64 and an arm64 runner; it runs on %v", built)
+	}
+}

@@ -1,7 +1,7 @@
 # platform/container-images Specification
 
 ## Purpose
-How the container images of Fyniq are built: one small, hardened, reproducible image per service from multi-stage Dockerfiles, on distroless bases within size budgets, non-root, with pinned and patched bases, an SBOM, a scan gate, a signature and provenance, deployment by digest, and health and version endpoints. Derived from PRD-001 §12.9 (ADR-T5, part 1).
+How the container images of Fyniq are built: one small, hardened, reproducible image per service, for `linux/amd64` and `linux/arm64`, from multi-stage Dockerfiles, on distroless bases within size budgets, non-root, with pinned and patched bases, an SBOM, a scan gate, a signature and provenance, deployment by digest, and health and version endpoints. Derived from PRD-001 §12.9 (ADR-T5, part 1).
 
 ## Requirements
 
@@ -191,3 +191,30 @@ Source: PRD-001 §12.9 · Priority S · Phase P1
 - **WHEN** an image is built
 - **THEN** it uses `SOURCE_DATE_EPOCH`
 - **AND** its layers contain no timestamps or random data
+
+### Requirement: NFR-IMG-08 Images for linux/amd64 and linux/arm64
+Every image SHALL build for `linux/amd64` and `linux/arm64` from the same Dockerfile, natively for the build machine unless a platform is named, and nothing in the build or the local stack SHALL need emulation.
+
+Source: PRD-001 §12.9 · Priority M · Phase P0
+
+#### Scenario: Native by default
+- **WHEN** the images are built without a named platform
+- **THEN** each image and its binary are for the build machine's platform
+- **AND** on an Apple-silicon laptop they are `linux/arm64`
+
+#### Scenario: Either platform from one Dockerfile
+- **WHEN** `linux/amd64` or `linux/arm64` is named
+- **THEN** the build stages run on the build machine and cross-compile for the named platform
+- **AND** `make images` refuses an image whose platform, or whose binary's architecture, is not the one named
+
+#### Scenario: Multi-platform pins
+- **WHEN** a base image or a third-party image of the local stack is pinned by digest
+- **THEN** the digest is a multi-platform index that includes `linux/amd64` and `linux/arm64`
+
+#### Scenario: Both platforms in CI
+- **WHEN** CI runs
+- **THEN** it builds the images and runs the local stack on an amd64 runner and on an arm64 runner
+
+#### Scenario: The cloud's platform
+- **WHEN** an image is deployed to Cloud Run
+- **THEN** the deployed reference includes `linux/amd64`, the only platform Cloud Run runs

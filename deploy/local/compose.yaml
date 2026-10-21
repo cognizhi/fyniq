@@ -69,8 +69,9 @@ services:
   clamav:                                     # optional malware scanner for evidence uploads (FR-DOC-01, SEC-24)
     # Off by default: tests and local mode use the EICAR fake. To scan with ClamAV, start this profile and set
     # FYNIQ_CLAMD_ADDR (localhost:3310 for make dev; clamav:3310 for the api container). It downloads its
-    # signatures when it starts, and is ready when clamd listens.
-    image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
+    # signatures when it starts, and is ready when clamd listens. The Debian build, because clamav/clamav
+    # is published for amd64 only and every image here runs natively on arm64 too (NFR-IMG-08).
+    image: clamav/clamav-debian:1.4.3@sha256:1d261f9c83ef2bbeef3915c7792f125e5707500fde0019d53547461747b90374
     profiles: [scanner]
     ports:
       - "127.0.0.1:${FYNIQ_CLAMD_PORT:-3310}:3310"

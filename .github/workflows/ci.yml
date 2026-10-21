@@ -150,7 +150,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
-      - run: make images        # both flavours: budgets, non-root, no shell, no local adapter in release (§12.9)
+      - run: make images        # both flavours, linux/amd64: budgets, non-root, no shell, no local adapter in release (§12.9)
       - run: make image-scan    # SBOM and grype per release image (SEC-21)
       - run: make image-sign    # push by digest to a throwaway registry, sign, attest the SBOM, verify (NFR-IMG-05, SEC-22)
       - run: scripts/local-smoke.sh   # QA-LOCAL-01: make up from the local images, no cloud credentials
@@ -164,6 +164,23 @@ jobs:
           name: image-reports   # SBOMs, scans and signatures: the evidence (CTL-CHG-08, CTL-CHG-04)
           path: .data/images/
           retention-days: 90
+
+  images-arm64:
+    name: Images and local mode on arm64 (make images, QA-LOCAL-01)
+    # GitHub's arm64 runner, the platform of an Apple-silicon laptop: the images build natively for it and
+    # the local stack runs on it (NFR-IMG-08). The job above does the same on amd64, and scans and signs.
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: make images        # both flavours, linux/arm64: the check refuses an image or binary for another platform
+      - run: scripts/local-smoke.sh   # QA-LOCAL-01 on arm64
+        env:
+          FYNIQ_PG_PORT: "25432"
 
   evals:
     name: AI evals (make evals)

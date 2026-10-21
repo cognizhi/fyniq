@@ -7,9 +7,13 @@
 # FLAVOUR=release (staging and production) or local (`make up`): the local flavour adds the
 # `local` build tag and with it the local adapters (DEV-07). Same Dockerfile, base and hardening.
 # Image budgets, scanning and signing are enforced by p0-ci-images-release.
+# Platforms (NFR-IMG-08): linux/amd64 and linux/arm64. Without --platform the image is the build
+# machine's own (arm64 on Apple silicon, amd64 on the CI runner); `--platform linux/amd64,linux/arm64`
+# builds both. The compiler runs on the build machine and cross-compiles, so no emulation is needed,
+# and each pinned digest is a multi-platform index, so every stage resolves for either platform.
 
 # ---- build stage ------------------------------------------------------------------------
-FROM golang:1.27-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS build
 
 WORKDIR /src
 COPY go.* ./
@@ -25,6 +29,9 @@ ARG FLAVOUR=release
 ARG VERSION=0.0.0-dev
 ARG GIT_SHA=unknown
 ARG BUILD_TIME=unknown
+# Set by BuildKit from the target platform (--platform, else the build machine's).
+ARG TARGETOS
+ARG TARGETARCH
 
 # CGO_ENABLED=0: a static binary for distroless/static. -trimpath, -buildid= and stamped values
 # make the build reproducible (NFR-IMG-07); -s -w strip symbols; timetzdata embeds the zone data.
@@ -32,7 +39,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     test -n "${SERVICE}" && \
     case "${FLAVOUR}" in release) tags=timetzdata ;; local) tags=timetzdata,local ;; *) echo "FLAVOUR must be release or local" >&2; exit 1 ;; esac && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    case "${TARGETOS}/${TARGETARCH}" in linux/amd64|linux/arm64) ;; *) echo "platform ${TARGETOS}/${TARGETARCH}: build linux/amd64 or linux/arm64 with BuildKit (NFR-IMG-08)" >&2; exit 1 ;; esac && \
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -buildvcs=false -tags "${tags}" \
       -ldflags "-s -w -buildid= \
         -X github.com/cognizhi/fyniq/internal/version.Version=${VERSION} \

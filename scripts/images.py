@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Checks the images `make images` built (PRD-001 §12.9), and scans them.
 
-    python3 scripts/images.py check --version 0.1.0 --flavours "release local"
+    python3 scripts/images.py check --version 0.1.0 --flavours "release local" [--platform linux/arm64]
+    python3 scripts/images.py platforms                # every pinned image has linux/amd64 and linux/arm64 (make images)
     python3 scripts/images.py scan --version 0.1.0     # SBOM and vulnerability scan (make image-scan)
     python3 scripts/images.py sign --version 0.1.0     # push by digest, sign, attest the SBOM, verify (make image-sign)
     python3 scripts/images.py self-test                # the checks on planted images (part of make check)
@@ -12,7 +13,12 @@ check (part of `make images`; Docker only):
   - a Go image holds no shell, package manager or toolchain (NFR-IMG-01); the web image is the
     nginx-unprivileged Alpine image §12.9 names, used locally and in previews only;
   - a release binary contains no local adapter, and a local one does, which proves the check
-    (DEV-07, CTL-CHG-09, QA-IMG-01).
+    (DEV-07, CTL-CHG-09, QA-IMG-01);
+  - the image, and the ELF binary it runs, are for the platform asked for: --platform, else the Docker
+    engine's own, so a build on an Apple-silicon laptop is linux/arm64 and runs natively (NFR-IMG-08).
+platforms (part of `make images`; needs the registries): every image pinned by digest in the Dockerfiles,
+the local stack, the dev container, the database tests and this script is a multi-platform index with
+linux/amd64 and linux/arm64, so neither platform needs emulation (NFR-IMG-08).
 scan (CI): an SPDX SBOM per release image (syft) and a grype scan; a Critical finding fails unless
 compliance/scan-waivers.toml waives it (tool "grype-image"; SEC-21). Reports go to .data/images/.
 sign (CI, after scan): pushes each release image to a registry, signs it by digest with cosign, attaches
@@ -32,6 +38,7 @@ import datetime as dt
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -56,6 +63,13 @@ LOCAL_MARK = b"github.com/cognizhi/fyniq/internal/adapters/local"
 # registry of record. Dependabot does not read a pin in a script, so update this one by hand.
 REGISTRY_IMAGE = "registry:3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e"
 SPDX = "https://spdx.dev/Document"   # the predicate type of `cosign attest --type spdxjson`
+# The platforms every image builds for (NFR-IMG-08), and the ELF e_machine of each one's binaries.
+PLATFORMS = ("linux/amd64", "linux/arm64")
+ELF_MACHINES = {62: "amd64", 183: "arm64"}   # EM_X86_64, EM_AARCH64
+# Where images are pinned by digest; each must be a multi-platform index with PLATFORMS.
+PINNED_IN = ("deploy/docker/Dockerfile.go-service", "deploy/docker/Dockerfile.web", "deploy/local/compose.yaml",
+             ".devcontainer/Dockerfile", "internal/adapters/postgres/pgtest/pgtest.go", "scripts/images.py")
+PIN = re.compile(r"([a-z0-9][a-z0-9._/-]*(?::[A-Za-z0-9._-]+)?)@(sha256:[0-9a-f]{64})")
 
 
 def sh(*cmd: str, capture: bool = True) -> str:
@@ -87,8 +101,8 @@ def compressed_size(image: str) -> int:
     return n
 
 
-def filesystem(image: str) -> tuple[list[str], bytes]:
-    """The image's files, and its /app binary (empty when it has none)."""
+def filesystem(image: str, binary: str) -> tuple[list[str], bytes]:
+    """The image's files, and the named binary (empty when it has none)."""
     cid = sh("docker", "create", image).strip()
     try:
         raw = subprocess.run(["docker", "export", cid], capture_output=True, check=True).stdout
@@ -98,7 +112,7 @@ def filesystem(image: str) -> tuple[list[str], bytes]:
     with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
         for m in tar:
             names.append(m.name.lstrip("./"))
-            if m.name.lstrip("./") == "app" and m.isfile():
+            if m.name.lstrip("./") == binary and m.isfile():
                 f = tar.extractfile(m)
                 app = f.read() if f else b""
     return names, app
@@ -109,11 +123,24 @@ def tags(version: str, flavours: list[str]) -> list[tuple[str, str, str]]:
     return out + [("web", "local", "fyniq-web:local")]
 
 
-def judge(svc: str, flavour: str, image: str, size: int, cfg: dict, names: list[str], app: bytes) -> list[str]:
-    """What is wrong with one built image (§12.9)."""
+def elf_arch(binary: bytes) -> str:
+    """The architecture a 64-bit little-endian ELF binary runs on, from its header."""
+    if binary[:4] != b"\x7fELF" or binary[4:6] != b"\x02\x01":
+        return "not a 64-bit little-endian ELF binary"
+    machine = int.from_bytes(binary[18:20], "little")
+    return ELF_MACHINES.get(machine, f"ELF machine {machine}")
+
+
+def judge(svc: str, flavour: str, image: str, size: int, cfg: dict, names: list[str], app: bytes,
+          platform: str = "linux/amd64", built: str = "linux/amd64") -> list[str]:
+    """What is wrong with one built image (§12.9). app is its binary: /app, or nginx in the web image."""
     problems = []
     if size > BUDGETS[svc] * 1_000_000:
         problems.append(f"{image} is {size / 1e6:.1f} MB compressed, over its {BUDGETS[svc]} MB budget (NFR-IMG-04)")
+    if built != platform:
+        problems.append(f"{image} is built for {built}, not {platform} (NFR-IMG-08)")
+    if app and (arch := elf_arch(app)) != platform.split("/")[1]:
+        problems.append(f"{image}: its binary is {arch}, not {platform.split('/')[1]}, so it would not run natively (NFR-IMG-08)")
     if svc == "web":
         if cfg.get("User") != "101":
             problems.append(f"{image} runs as {cfg.get('User')!r}, not nginx (101)")
@@ -131,38 +158,92 @@ def judge(svc: str, flavour: str, image: str, size: int, cfg: dict, names: list[
     return problems
 
 
-def check(version: str, flavours: list[str]) -> int:
+def engine_platform() -> str:
+    """The Docker engine's own platform: what a build without --platform makes."""
+    return sh("docker", "version", "--format", "{{.Server.Os}}/{{.Server.Arch}}").strip()
+
+
+def check(version: str, flavours: list[str], platform: str) -> int:
+    platform = platform or engine_platform()
+    if platform not in PLATFORMS:
+        raise SystemExit(f"✖ images: {platform} is not one of {', '.join(PLATFORMS)} (NFR-IMG-08)")
     problems, rows = [], []
     for svc, flavour, image in tags(version, flavours):
         size = compressed_size(image)
-        cfg = json.loads(sh("docker", "image", "inspect", image))[0]["Config"]
-        names, app = filesystem(image)
-        rows.append(f"  {image:<28} {size / 1e6:6.1f} MB of {BUDGETS[svc]} MB")
-        problems += judge(svc, flavour, image, size, cfg, names, app)
+        info = json.loads(sh("docker", "image", "inspect", image))[0]
+        names, app = filesystem(image, "usr/sbin/nginx" if svc == "web" else "app")
+        rows.append(f"  {image:<28} {size / 1e6:6.1f} MB of {BUDGETS[svc]} MB  {info['Os']}/{info['Architecture']}")
+        problems += judge(svc, flavour, image, size, info["Config"], names, app, platform, f"{info['Os']}/{info['Architecture']}")
     print("\n".join(rows))
     if problems:
         print("✖ images:\n  " + "\n  ".join(problems))
         return 1
-    print(f"✔ {len(rows)} images within budget, non-root, without a shell; release images without local adapters")
+    print(f"✔ {len(rows)} images for {platform}, within budget, non-root, without a shell; release images without local adapters")
+    return 0
+
+
+def missing_platforms(manifest: dict) -> list[str]:
+    """The PLATFORMS a registry manifest lacks: all of them unless it is a multi-platform index."""
+    have = {f"{m['platform']['os']}/{m['platform']['architecture']}" for m in manifest.get("manifests", []) if "platform" in m}
+    return [p for p in PLATFORMS if p not in have]
+
+
+def pins() -> dict[str, str]:
+    """Every image pinned by digest where images are pinned: name@digest → where it is pinned."""
+    found: dict[str, str] = {}
+    for f in PINNED_IN:
+        for m in PIN.finditer((ROOT / f).read_text()):
+            name = m.group(1)
+            if ":" in name.rsplit("/", 1)[-1]:   # the tag goes: a moved tag must not hide the pinned digest
+                name = name.rsplit(":", 1)[0]
+            found.setdefault(f"{name}@{m.group(2)}", f"{f}: {m.group(1)}")
+    return found
+
+
+# req: NFR-IMG-08
+def platforms() -> int:
+    problems, refs = [], pins()
+    for ref, where in sorted(refs.items(), key=lambda kv: kv[1]):
+        raw = run("docker", "buildx", "imagetools", "inspect", "--raw", ref)
+        if raw.returncode:
+            raise SystemExit(f"✖ {where}: cannot read its manifest ({raw.stderr.strip()[-300:]}); `make images` needs the registries and docker buildx")
+        if missing := missing_platforms(json.loads(raw.stdout)):
+            problems.append(f"{where} has no {' or '.join(missing)} image: pin a multi-platform index, or an image built for both (NFR-IMG-08)")
+    if problems:
+        print("✖ pinned images:\n  " + "\n  ".join(problems))
+        return 1
+    print(f"✔ {len(refs)} pinned images are multi-platform, each with {' and '.join(PLATFORMS)}")
     return 0
 
 
 # req: NFR-IMG-04
 # req: NFR-IMG-01
 # req: NFR-IMG-02
+# req: NFR-IMG-08
 # req: DEV-07
 # req: CTL-CHG-09
 # req: CTL-CHG-08
 def self_test() -> None:
     good = {"User": "65532:65532", "Entrypoint": ["/app"]}
-    if judge("api", "release", "fyniq-api:0", 5_000_000, good, ["app", "etc/passwd"], b"main"):
+    elf = lambda machine: b"\x7fELF\x02\x01" + bytes(12) + machine.to_bytes(2, "little")  # noqa: E731  (an ELF header)
+    if judge("api", "release", "fyniq-api:0", 5_000_000, good, ["app", "etc/passwd"], elf(62) + b"main"):
         raise SystemExit("✖ images self-test: a good image was refused")
     planted = judge("api", "release", "fyniq-api:0", 31_000_000, {"User": "0:0", "Entrypoint": ["/bin/sh"]},
-                    ["app", "bin/sh"], b"x" + LOCAL_MARK)
+                    ["app", "bin/sh"], elf(62) + LOCAL_MARK)
     if len(planted) != 4:
         raise SystemExit(f"✖ images self-test: want 4 problems (budget, user, shell, local adapter), got {planted}")
     if not judge("web", "local", "fyniq-web:local", 26_000_000, {"User": "root"}, [], b""):
         raise SystemExit("✖ images self-test: an over-budget web image running as root was accepted")
+    # Platforms (NFR-IMG-08): an amd64 binary in an arm64 image, an image for the wrong platform, a single-platform pin.
+    if judge("api", "release", "fyniq-api:0", 5_000_000, good, ["app"], elf(183), "linux/arm64", "linux/arm64"):
+        raise SystemExit("✖ images self-test: a good arm64 image was refused")
+    if len(judge("api", "release", "fyniq-api:0", 5_000_000, good, ["app"], elf(62), "linux/arm64", "linux/amd64")) != 2 \
+            or not judge("web", "local", "fyniq-web:local", 5_000_000, {"User": "101"}, [], elf(62), "linux/arm64", "linux/arm64"):
+        raise SystemExit("✖ images self-test: an image or a binary for the wrong platform was accepted")
+    index = {"manifests": [{"platform": {"os": "linux", "architecture": a}} for a in ("amd64", "arm64", "s390x")]}
+    if missing_platforms(index) or missing_platforms({"mediaType": "application/vnd.oci.image.manifest.v1+json"}) != list(PLATFORMS) \
+            or missing_platforms({"manifests": index["manifests"][:1]}) != ["linux/arm64"]:
+        raise SystemExit("✖ images self-test: a single-platform pin, or an index without arm64, was accepted")
     # Signing: a verified answer counts only for the digest it names, an attestation only with the SPDX type.
     answer = json.dumps([{"critical": {"image": {"docker-manifest-digest": "sha256:aa"}}}])
     statement = {"predicateType": SPDX, "subject": [{"digest": {"sha256": "bb"}}]}
@@ -170,8 +251,8 @@ def self_test() -> None:
     if signed_digests(answer) != {"sha256:aa"} or attested(line(statement), SPDX) != {"sha256:bb"} \
             or attested(line({**statement, "predicateType": "https://slsa.dev/provenance/v1"}), SPDX):
         raise SystemExit("✖ images self-test: a signature or an attestation counted for the wrong digest or type")
-    print("✔ image checks: an over-budget image, a root user, a shell and a local adapter in release are each refused;"
-          " a signature counts only for its digest")
+    print("✔ image checks: an over-budget image, a root user, a shell, a local adapter in release, the wrong platform"
+          " and a single-platform pin are each refused; a signature counts only for its digest")
 
 
 def scan_images(version: str) -> int:
@@ -322,9 +403,10 @@ def sign_images(version: str, registry: str, key: str) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "scan", "sign", "self-test"])
+    ap.add_argument("command", choices=["check", "platforms", "scan", "sign", "self-test"])
     ap.add_argument("--version", default="0.0.0")
     ap.add_argument("--flavours", default="release local")
+    ap.add_argument("--platform", default="", help="check: the platform the images were built for; default the Docker engine's")
     ap.add_argument("--registry", default="", help="sign: push here (host[:port][/path]); default a throwaway local registry")
     ap.add_argument("--key", default="", help="sign: a cosign key reference (a key file or a KMS URI); default a key pair made for the run")
     a = ap.parse_args()
@@ -332,7 +414,9 @@ def main() -> int:
         self_test()
         return 0
     if a.command == "check":
-        return check(a.version, a.flavours.split())
+        return check(a.version, a.flavours.split(), a.platform)
+    if a.command == "platforms":
+        return platforms()
     if a.command == "sign":
         return sign_images(a.version, a.registry, a.key)
     return scan_images(a.version)
