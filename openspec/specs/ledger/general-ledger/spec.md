@@ -418,3 +418,27 @@ Source: PRD-001 §8.8 · Priority S · Phase P1
 #### Scenario: AI may draft the explanation
 - **WHEN** a variance needs an explanation
 - **THEN** the AI may draft it
+
+#### Scenario: The totals compared (rev 0.65)
+- **GIVEN** a period and the period that ends the day before it starts
+- **WHEN** the close compares them
+- **THEN** each income or expense account's two totals come from the balance service in the base currency, debit positive, as the trial balance shows them
+- **AND** a period with no such earlier period has nothing to compare
+
+#### Scenario: An exact comparison (rev 0.65)
+- **GIVEN** the settings close.variance_amount (recommended S$1,000.00) and close.variance_percent (recommended 10)
+- **WHEN** a variance is judged
+- **THEN** it needs an explanation when its size is more than the amount and its size × 100 is more than the percentage × the previous total's size
+- **AND** when the previous total is zero the amount alone decides
+- **AND** the change's percentage is only shown, rounded with RND-PERCENT
+
+#### Scenario: An explanation is of the totals its writer read (rev 0.65)
+- **GIVEN** a member who runs the close checks explains a variance, naming the two totals they read
+- **WHEN** either total is no longer the account's
+- **THEN** the explanation is refused
+- **AND** a recorded explanation is stale once either total changes, and the close asks for a new one
+
+#### Scenario: Explanations are append-only (rev 0.65)
+- **WHEN** an explanation is recorded
+- **THEN** it replaces the account's earlier explanation for the period, which is kept
+- **AND** the database refuses an explanation in a period that is not open or for a balance-sheet account, and never changes or removes one

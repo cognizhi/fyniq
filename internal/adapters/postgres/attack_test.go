@@ -463,6 +463,24 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"item_price.unit_price": func(t *testing.T, b porttest.Books, v string) error {
 		return rawItemPrice(t, b, v)
 	},
+	"period_variance_explanation.current_amount": func(t *testing.T, b porttest.Books, v string) error {
+		return rawExplanation(t, b, v, "0")
+	},
+	"period_variance_explanation.previous_amount": func(t *testing.T, b porttest.Books, v string) error {
+		return rawExplanation(t, b, "0", v)
+	},
+}
+
+// rawExplanation explains rent's November variance as the API role, so only the amounts' own checks can fail.
+func rawExplanation(t *testing.T, b porttest.Books, current, previous string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.period_variance_explanation
+  (period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at)
+VALUES ($1, $2, $3::numeric, $4::numeric, 'Attack', 'user:attack-test', now())`, b.Nov.ID, b.Rent.ID, current, previous)
+		return err
+	})
 }
 
 // rawItemPrice adds an item with one SGD price as the API role, audited, so only the price's own checks can fail.

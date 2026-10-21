@@ -389,3 +389,17 @@ Source: PRD-001 §10.4
 - **WHEN** a report shows totals
 - **THEN** each total is the sum of the stored amounts it covers
 - **AND** the report foots and cross-foots exactly
+
+### Requirement: RND-PERCENT Percentage shown
+A percentage shown SHALL be the part as a percentage of the whole's size, rounded to one decimal, half-up, with the part's sign; it SHALL be for showing only, never compared by a rule (new, FR-GL-14).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Percentage formula
+- **WHEN** a percentage of a whole is shown
+- **THEN** percentage = round(part ÷ the size of the whole × 100, 1 decimal), half-up, with the part's sign
+- **AND** a whole of zero has no percentage
+
+#### Scenario: Rules compare exact amounts
+- **WHEN** a rule compares a change with a percentage threshold
+- **THEN** it compares the exact amounts, never a rounded percentage

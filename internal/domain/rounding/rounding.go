@@ -18,6 +18,7 @@ const (
 	FXName           = "RND-FX"
 	AllocEvenName    = "ALLOC-EVEN"
 	AllocProRataName = "ALLOC-PRORATA"
+	PercentName      = "RND-PERCENT"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -48,6 +49,31 @@ func FX(amount money.Money, rate money.Rate) (money.Money, error) {
 		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "amount", Message: err.Error()}
 	}
 	return money.FromRounded(halfAwayFromZero(&product, rate.To.MinorUnits), rate.To)
+}
+
+// Percent is RND-PERCENT (PRD-001 rev 0.65): part as a percentage of whole = round(part ÷ |whole| × 100, 1 decimal), half
+// away from zero, with part's sign, as a plain decimal string such as "40.0" or "-12.5". It is computed to 60 digits
+// before its one rounding, which no tie can fall within for amounts a stored column holds. A percentage is for showing
+// only: a rule compares the exact amounts, never a rounded percentage. A zero whole has no percentage.
+func Percent(part, whole money.Money) (string, error) {
+	if part.Currency() != whole.Currency() {
+		return "", fmt.Errorf("%s: %s of %s", PercentName, part.Currency(), whole.Currency())
+	}
+	if whole.IsZero() {
+		return "", fmt.Errorf("%s: a percentage of zero", PercentName)
+	}
+	var x apd.Decimal
+	if _, err := work.Mul(&x, part.Decimal(), apd.New(100, 0)); err != nil {
+		return "", err
+	}
+	w := whole.Decimal()
+	w.Abs(w)
+	if _, err := work.Quo(&x, &x, w); err != nil {
+		return "", err
+	}
+	r := halfAwayFromZero(&x, 1)
+	r.Negative = r.Negative && !r.IsZero() // -0.04 shows as 0.0, never -0.0
+	return r.Text('f'), nil
 }
 
 // AllocEven is ALLOC-EVEN: amount split into n periods by cumulative rounding. Period k is

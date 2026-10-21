@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "change": {
+      "$ref": "Money.schema.json",
+      "description": "current − previous."
+    },
+    "change_percent": {
+      "description": "The change as a percentage of the previous total's size, to one decimal, half away from zero (RND-PERCENT), with the change's sign; absent when the previous total is zero. For showing only: the thresholds compare the exact amounts.",
+      "examples": [
+        "25.0"
+      ],
+      "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]$",
+      "type": "string"
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "6420"
+      ],
+      "type": "string"
+    },
+    "current": {
+      "$ref": "Money.schema.json",
+      "description": "Its total for the period in the base currency: debit positive, credit negative, so income is negative, as in the trial balance."
+    },
+    "explained": {
+      "description": "The latest explanation is of the totals as they are now; once either total changes it is stale, and the close asks for a new one.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "explanation": {
+      "$ref": "VarianceExplanation.schema.json",
+      "description": "The latest explanation, current or stale; absent while there is none."
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Software subscriptions"
+      ],
+      "type": "string"
+    },
+    "needs_explanation": {
+      "description": "The change is more than both thresholds, so the close needs an explanation of it.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "previous": {
+      "$ref": "Money.schema.json",
+      "description": "Its total for the previous period."
+    },
+    "type": {
+      "description": "revenue (income) or expense: balance-sheet accounts rely on the support the close requires.",
+      "enum": [
+        "revenue",
+        "expense"
+      ],
+      "examples": [
+        "expense"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "type",
+    "current",
+    "previous",
+    "change",
+    "needs_explanation",
+    "explained"
+  ],
+  "title": "Variance",
+  "type": "object"
+}

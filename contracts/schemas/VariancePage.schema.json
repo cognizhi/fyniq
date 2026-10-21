@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "Each income or expense account with a total in either period.",
+      "items": {
+        "$ref": "Variance.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Pass it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjY0MjAifQ"
+      ],
+      "type": "string"
+    },
+    "period": {
+      "$ref": "Period.schema.json"
+    },
+    "previous_period": {
+      "$ref": "Period.schema.json",
+      "description": "The period it is compared with: the one that ends the day before it starts; absent when there is none, and then there is nothing to compare."
+    },
+    "threshold_amount": {
+      "$ref": "Money.schema.json",
+      "description": "A variance needs an explanation when its size is more than this (setting close.variance_amount)…"
+    },
+    "threshold_percent": {
+      "description": "…and more than this percentage of the previous total's size (setting close.variance_percent); when the previous total is zero the amount alone decides.",
+      "examples": [
+        "10"
+      ],
+      "type": "string"
+    },
+    "unexplained": {
+      "description": "How many variances, on every page, need an explanation and have no current one: the close checks refuse the close while there are any.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "period",
+    "threshold_amount",
+    "threshold_percent",
+    "unexplained",
+    "items"
+  ],
+  "title": "VariancePage",
+  "type": "object"
+}

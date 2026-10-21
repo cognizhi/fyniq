@@ -396,6 +396,15 @@ period_reopen | reopened_revision | bigint | not null |
 period_reopen | before_hash | bytea | not null | 
 period_reopen | after_snapshot | text | not null | 
 period_reopen | after_hash | bytea | not null | 
+period_variance_explanation | organisation_id | uuid | not null | current_org()
+period_variance_explanation | id | uuid | not null | uuidv7()
+period_variance_explanation | period_id | uuid | not null | 
+period_variance_explanation | account_id | uuid | not null | 
+period_variance_explanation | current_amount | numeric(20,4) | not null | 
+period_variance_explanation | previous_amount | numeric(20,4) | not null | 
+period_variance_explanation | explanation | text | not null | 
+period_variance_explanation | written_by | text | not null | 
+period_variance_explanation | written_at | timestamp with time zone | not null | 
 rate_limit_window | organisation_id | uuid | not null | current_org()
 rate_limit_window | id | uuid | not null | uuidv7()
 rate_limit_window | client_id | text | not null | 
@@ -1189,6 +1198,22 @@ period_reopen | period_reopen_reopened_by_not_null | NOT NULL reopened_by
 period_reopen | period_reopen_reopened_revision_not_null | NOT NULL reopened_revision
 period_reopen | period_reopen_revision | CHECK ((reopened_revision >= 0))
 period_reopen | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+period_variance_explanation | period_variance_explanation_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
+period_variance_explanation | period_variance_explanation_account_id_not_null | NOT NULL account_id
+period_variance_explanation | period_variance_explanation_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+period_variance_explanation | period_variance_explanation_amounts | CHECK (((current_amount <> 'NaN'::numeric) AND (previous_amount <> 'NaN'::numeric)))
+period_variance_explanation | period_variance_explanation_current_amount_not_null | NOT NULL current_amount
+period_variance_explanation | period_variance_explanation_explanation_not_null | NOT NULL explanation
+period_variance_explanation | period_variance_explanation_id_not_null | NOT NULL id
+period_variance_explanation | period_variance_explanation_length | CHECK (((length(btrim(explanation)) >= 1) AND (length(btrim(explanation)) <= 1000)))
+period_variance_explanation | period_variance_explanation_organisation_id_not_null | NOT NULL organisation_id
+period_variance_explanation | period_variance_explanation_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+period_variance_explanation | period_variance_explanation_period_id_not_null | NOT NULL period_id
+period_variance_explanation | period_variance_explanation_pkey | PRIMARY KEY (organisation_id, id)
+period_variance_explanation | period_variance_explanation_previous_amount_not_null | NOT NULL previous_amount
+period_variance_explanation | period_variance_explanation_written_at_not_null | NOT NULL written_at
+period_variance_explanation | period_variance_explanation_written_by_not_null | NOT NULL written_by
+period_variance_explanation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 rate_limit_window | rate_limit_window_client_id_not_null | NOT NULL client_id
 rate_limit_window | rate_limit_window_client_key | UNIQUE (organisation_id, client_id, kind, window_start)
 rate_limit_window | rate_limit_window_client_length | CHECK (((length(client_id) >= 1) AND (length(client_id) <= 200)))
@@ -1476,6 +1501,7 @@ CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
+CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
 CREATE INDEX role_assignment_membership_idx ON fyniq.role_assignment USING btree (organisation_id, membership_id)
@@ -1549,6 +1575,7 @@ CREATE UNIQUE INDEX period_close_pkey ON fyniq.period_close USING btree (organis
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_reopen_close_key ON fyniq.period_reopen USING btree (organisation_id, close_id)
 CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organisation_id, id)
+CREATE UNIQUE INDEX period_variance_explanation_pkey ON fyniq.period_variance_explanation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
 CREATE UNIQUE INDEX recurring_journal_pkey ON fyniq.recurring_journal USING btree (organisation_id, id)
@@ -1596,6 +1623,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setti
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_variance_explanation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_variance_explanation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'recurring_journal_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
@@ -1675,6 +1703,8 @@ CREATE TRIGGER period_close_no_truncate BEFORE TRUNCATE ON fyniq.period_close FO
 CREATE TRIGGER period_guard BEFORE UPDATE ON fyniq.period FOR EACH ROW EXECUTE FUNCTION period_guard()
 CREATE TRIGGER period_reopen_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_reopen FOR EACH ROW EXECUTE FUNCTION period_reopen_guard()
 CREATE TRIGGER period_reopen_no_truncate BEFORE TRUNCATE ON fyniq.period_reopen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER period_variance_explanation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_variance_explanation FOR EACH ROW EXECUTE FUNCTION period_variance_explanation_guard()
+CREATE TRIGGER period_variance_explanation_no_truncate BEFORE TRUNCATE ON fyniq.period_variance_explanation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER recurring_journal_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_journal_version FOR EACH ROW EXECUTE FUNCTION recurring_journal_version_immutable()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
@@ -1724,6 +1754,7 @@ period | tenant_isolation | * | (organisation_id = current_org()) | (organisatio
 period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1802,6 +1833,7 @@ outbox_no_delete() → trigger | security invoker | v | search_path=pg_catalog, 
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bd7af6699cf1474f70577dbea9a60dc6
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
+period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311

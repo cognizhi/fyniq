@@ -173,6 +173,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerJournalApprovals(a)
 	registerJournalEdits(a)
 	registerClose(a)
+	registerVariances(a)
 	registerReports(a)
 	registerAccountEditing(a)
 	registerContacts(a)

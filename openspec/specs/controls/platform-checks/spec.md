@@ -782,6 +782,25 @@ Source: PRD-001 §C.2
 - **WHEN** no automatic reversal is due by the period's end and none from the period waits
 - **THEN** the check passes
 
+### Requirement: C.2 #57 Variances without an explanation
+The system SHALL refuse the close (✖) while an income or expense account's total for the period differs from its total for the previous period by more than both the variance amount and the variance percentage of the organisation's settings (the amount alone when the previous total is zero), and has no explanation of the two totals as they are (FR-GL-14).
+
+Source: PRD-001 §C.2
+
+#### Scenario: A variance without an explanation
+- **GIVEN** an income or expense account whose change against the previous period is more than both thresholds
+- **WHEN** the period's close checks run and no explanation of its two totals as they are exists
+- **THEN** the check refuses the close (✖)
+
+#### Scenario: A stale explanation
+- **GIVEN** an explanation of a variance whose totals have changed since it was written
+- **WHEN** the period's close checks run
+- **THEN** the check refuses the close (✖) until a new explanation is written
+
+#### Scenario: Every variance explained, or nothing to compare
+- **WHEN** every variance above both thresholds has an explanation of its totals as they are, or the period has no previous period
+- **THEN** the check passes
+
 ### Requirement: C.2 #55 Model route needs attention
 The system SHALL flag for review an agent's route that fell back more often than its daily threshold, runs on a moving model alias not re-qualified this week, is within 20% of its budget or quota, or names a model that is retiring within 30 days, retired or no longer listed, and a connection whose model list has not been read for 3 days (AI-76…AI-78, AI-80, AI-81).
 

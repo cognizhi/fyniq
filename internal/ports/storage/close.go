@@ -29,6 +29,30 @@ type Closes interface {
 	// ChangedSince reports whether an entry dated on or before through has a revision later than revision: the checks
 	// that saw revision are then stale (FR-GL-07, G4-053).
 	ChangedSince(ctx context.Context, through time.Time, revision int64) (bool, error)
+	// ExplainVariance records an explanation of an account's variance for a period, by the unit of work's actor, now
+	// (FR-GL-14). The database refuses one in a period that is not open, or of an account that is not an income or
+	// expense account (CodeClose).
+	ExplainVariance(ctx context.Context, e NewVarianceExplanation) (VarianceExplanation, error)
+	// VarianceExplanations are each account's latest explanation of the period's variance.
+	VarianceExplanations(ctx context.Context, period uuid.UUID) ([]VarianceExplanation, error)
+}
+
+// NewVarianceExplanation explains an account's month-on-month variance: the two totals it explains, in the base
+// currency, and the words.
+type NewVarianceExplanation struct {
+	PeriodID    uuid.UUID
+	AccountID   uuid.UUID
+	Current     Decimal // the account's total for the period
+	Previous    Decimal // its total for the previous period
+	Explanation string
+}
+
+// VarianceExplanation is a recorded explanation.
+type VarianceExplanation struct {
+	NewVarianceExplanation
+	ID        uuid.UUID
+	WrittenBy string // "type:id"
+	WrittenAt time.Time
 }
 
 // NewCloseCheck is a run of the close checks.

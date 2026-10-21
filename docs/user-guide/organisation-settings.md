@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08]
+requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14]
 status: draft
 ---
 
@@ -12,8 +12,8 @@ status: draft
 ## What it is
 
 **Settings → Organisation** holds the choices that apply to the whole company: which features it
-uses, the default payment terms, the settlement tolerances, the capitalisation threshold, and
-where its data is kept and for how long.
+uses, the default payment terms, the settlement tolerances, the capitalisation threshold, the
+variances the close asks you to explain, and where its data is kept and for how long.
 
 - Every setting starts at its **recommended** value, with one line on why and a link to its
   section on this page.
@@ -108,6 +108,17 @@ rounding** (7030) instead of leaving the document part-paid.
 - Above the threshold, posting a journal needs another founder's approval, and the one who prepared
   it never approves it.
 - Changing the threshold needs a second approver.
+
+## Variances at the close
+
+Before a month closes, Fyniq compares each income and expense account's total for the month with
+the previous month's. A change needs a short explanation when it is more than **both** of these:
+
+- **Variance to explain, amount**: S$1,000.
+- **Variance to explain, percentage of the previous month**: 10% of the previous month's total.
+
+When the previous month's total is zero, the amount alone decides. Changing either needs a second
+approver. See [Close a month](periods-and-close.md#close-a-month).
 
 ## Data region and retention
 

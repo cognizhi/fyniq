@@ -171,7 +171,10 @@ var codeFacts = map[string]struct {
 	closing.CodeWrongCheck:        {409, "Not the checks of this period"},
 	closing.CodeNotClosed:         {409, "The period is not closed"},
 	closing.CodeLater:             {409, "A later period is closed"},
+	closing.CodeNoVariance:        {409, "The account has no variance to explain"},
+	closing.CodeMoved:             {409, "The totals changed since they were read"},
 	storage.CodeClose:             {409, "The close is not attested that way"},
+	storage.CodeVariance:          {409, "The variance is not explained that way"},
 	contact.CodeName:              {422, "The legal name is not valid"},
 	contact.CodeRole:              {422, "Neither a customer nor a vendor"},
 	contact.CodeEmail:             {422, "Not an email address"},
@@ -325,6 +328,7 @@ var storageFixes = map[string]string{
 	storage.CodeApproval:     "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
 	storage.CodeEvidence:     "Files can be removed only while the record is a draft; add a newer file instead",
 	storage.CodeAccounting:   "Record a new version instead; another member who holds the Accountant role confirms or approves it",
+	storage.CodeVariance:     "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

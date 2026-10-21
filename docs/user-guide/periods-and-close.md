@@ -3,7 +3,7 @@ key: accounting.periods
 title: Open the financial year and close the periods
 mode: expert
 roles: [accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-ORG-02, FR-GL-07, FR-GL-08, FM-4, AUD-04]
+requirements: [FR-ORG-02, FR-GL-07, FR-GL-08, FR-GL-14, FM-4, AUD-04]
 status: draft            # written with the periods page (P1, p1-general-ledger-close); the close joins it
 ---
 
@@ -51,6 +51,9 @@ closes the month.
    - recurring journals due in the month with no draft yet (⚠), or a draft more than a day late,
      which means the scheduler failed (✖);
    - active recurring journals whose lines would not post (⚠);
+   - income and expense accounts that moved against the previous month by more than both
+     thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
+     explanation of their totals as they are now (✖);
    - in the month the books start, the opening balances are posted (⚠).
 3. Another founder, an Owner or a Controller who did not run the checks, reads them, says what they
    attest and selects **Attest and close**. Fyniq asks them to confirm it's them first.

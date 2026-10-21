@@ -10,7 +10,7 @@
       "type": "string"
     },
     "key": {
-      "description": "Which check: earlier, balances, trial-balance, drafts or opening; more join as their modules arrive.",
+      "description": "Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances or opening; more join as their modules arrive.",
       "examples": [
         "drafts"
       ],
