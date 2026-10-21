@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and their recommended values: features, payment terms, tolerances, thresholds, close variances, data region, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:b53a7f1b2743ea37ddc5949597183cb53812b60dcc52769498cf06689ff4e6e0
+  - docs/user-guide/organisation-settings.md sha256:405cbe2e1ff08e55c243158833ca2d69f38b76fc999e0a2146988566410de740
 data_class: general
 taint: trusted
 status: draft
@@ -86,7 +86,7 @@ aliases:
 
 - Before a month closes, each income and expense account's total for the month is compared with the previous month's.
 - A change needs a short explanation when it is more than **both** S$1,000 and 10% of the previous month's total; when the previous month's total is zero, the amount alone decides.
-- Changing either needs a second approver. Closing a month: [[accounting.periods]].
+- Changing either needs a second approver. Explaining them at the close: [[accounting.periods]].
 
 (src: docs/user-guide/organisation-settings.md#variances-at-the-close)
 

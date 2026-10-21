@@ -348,6 +348,10 @@
       "label": "Ask to reopen",
       "tooltip": "Ask for the month to take postings again, with a reason; another founder approves it."
     },
+    "close.explain-variance": {
+      "label": "Explain",
+      "tooltip": "Say why the account moved against the previous month. It explains these totals: if either changes, the close asks again."
+    },
     "reports.general-ledger": {
       "label": "General ledger",
       "tooltip": "Every posted line of the accounts you choose over two dates, with a running balance and each line's source."

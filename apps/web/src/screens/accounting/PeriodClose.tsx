@@ -15,6 +15,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { who } from "./Journals";
 import { monthOf } from "./Periods";
+import { Variances } from "./Variances";
 
 type State = components["schemas"]["PeriodCloseState"];
 type Item = components["schemas"]["CloseCheckItem"];
@@ -110,8 +111,9 @@ function CheckRow({ c }: { c: Item }) {
 
 // PeriodClose closes a month (docs/design/screens PeriodClose; FR-GL-07, FR-GL-08, FM-4, AUD-04): one person runs the
 // close checks, which record the ledger revision they saw; another, who did not run them, attests and closes, after
-// confirming it's them. The period then refuses every posting, and the close keeps its snapshot's hash. The checklist
-// template, reconciliations, flux, reopening and year end arrive with their tasks.
+// confirming it's them. The period then refuses every posting, and the close keeps its snapshot's hash. The variances
+// against the previous month are explained beside the checks (FR-GL-14). The checklist template, reconciliations and
+// year end arrive with their tasks.
 export function PeriodClose() {
   const { periodId } = useParams({ strict: false }) as { periodId: string };
   const { session } = useSignedIn();
@@ -249,27 +251,30 @@ export function PeriodClose() {
       )}
       {s && (
         <div className="fy-split">
-          <section className="fy-card" aria-labelledby={`${id}-checks`}>
-            <div className="fy-card__head">
-              <h2 className="fy-h3" id={`${id}-checks`}>
-                Close checks
-              </h2>
-              {checks && <span className="fy-small fy-muted">{checks.clean ? "Nothing blocks the close" : "The close is blocked"}</span>}
-            </div>
-            {open && !checks && (
-              <p className="fy-card__body fy-secondary">
-                {mayCheck ? "Run the checks first. They record the ledger as they find it, so another founder can attest and close." : "An Accountant or a Controller runs the checks first."}
-              </p>
-            )}
-            {checks && (
-              <ul className="fy-list" aria-labelledby={`${id}-checks`}>
-                {checks.checks.map((c) => (
-                  <CheckRow key={c.key} c={c} />
-                ))}
-              </ul>
-            )}
-            {!open && <p className="fy-card__body fy-secondary">The period is closed: nothing posts in it, by any path.</p>}
-          </section>
+          <div className="fy-stack fy-stack--6">
+            <section className="fy-card" aria-labelledby={`${id}-checks`}>
+              <div className="fy-card__head">
+                <h2 className="fy-h3" id={`${id}-checks`}>
+                  Close checks
+                </h2>
+                {checks && <span className="fy-small fy-muted">{checks.clean ? "Nothing blocks the close" : "The close is blocked"}</span>}
+              </div>
+              {open && !checks && (
+                <p className="fy-card__body fy-secondary">
+                  {mayCheck ? "Run the checks first. They record the ledger as they find it, so another founder can attest and close." : "An Accountant or a Controller runs the checks first."}
+                </p>
+              )}
+              {checks && (
+                <ul className="fy-list" aria-labelledby={`${id}-checks`}>
+                  {checks.checks.map((c) => (
+                    <CheckRow key={c.key} c={c} />
+                  ))}
+                </ul>
+              )}
+              {!open && <p className="fy-card__body fy-secondary">The period is closed: nothing posts in it, by any path.</p>}
+            </section>
+            <Variances periodId={periodId} month={month} open={open} mayExplain={mayCheck} onExplained={setStatus} />
+          </div>
 
           <aside className="fy-stack fy-stack--6" aria-label="Attestation">
             {open && (

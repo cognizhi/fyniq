@@ -2,9 +2,9 @@
 key: accounting.periods
 type: task
 title: Open the financial year and close the periods
-summary: What accounting periods are, how the financial years run from the books start, opening the next financial year, and closing a month with two people
+summary: What accounting periods are, opening the next financial year, closing a month with two people, and explaining its variances
 sources:
-  - docs/user-guide/periods-and-close.md sha256:d8e267a4f1574b98853eb8efdf4548517bfaf1c899e6f555663dab9bd418855d
+  - docs/user-guide/periods-and-close.md sha256:bd0b36502ed556be5862477d9a9010913b5d92f2e97d660114232c23e2f60933
 data_class: general
 taint: trusted
 status: draft
@@ -50,12 +50,21 @@ aliases:
 ## Close a month
 
 - Closing takes two people: an Accountant or a Controller selects **Run the checks** on the month; another founder, an Owner or a Controller who did not run them, says what they attest and selects **Attest and close**, confirming it's them first.
-- The checks: every earlier month closed (months close in order); the balances agreeing with the ledger; the trial balance at the month's end adding up to zero; draft journals dated in the month (⚠); automatic reversals that have not posted, dated on or before the month's end or of a journal dated in the month and waiting for a month that is not open (⚠); recurring journals due in the month with no draft yet (⚠), or a draft more than a day late, which means the scheduler failed (✖); active recurring journals whose lines would not post (⚠) ([[accounting.journals]]); income and expense accounts that moved against the previous month by more than both thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no explanation of their totals as they are now (✖) ([[settings.organisation]]); in the month the books start, the opening balances posted (⚠). ✖ blocks the close, ⚠ needs a look.
+- The checks: every earlier month closed (months close in order); the balances agreeing with the ledger; the trial balance at the month's end adding up to zero; draft journals dated in the month (⚠); automatic reversals that have not posted, dated on or before the month's end or of a journal dated in the month and waiting for a month that is not open (⚠); recurring journals due in the month with no draft yet (⚠), or a draft more than a day late, which means the scheduler failed (✖); active recurring journals whose lines would not post (⚠) ([[accounting.journals]]); income and expense accounts that moved against the previous month by more than both thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no explanation of their totals as they are now (✖; see Explain the variances below) ([[settings.organisation]]); in the month the books start, the opening balances posted (⚠). ✖ blocks the close, ⚠ needs a look.
 - If anything dated in or before the month posts after the checks ran, they are out of date and the close is refused: run them again.
 - A closed month refuses every posting dated in it, by anyone; the close keeps a SHA-256 fingerprint of the trial balance at the month's end and the ledger revision it closed at.
 - Related: preparing and posting journals ([[accounting.journals]]); entering the opening balances ([[accounting.opening-balances]]).
 
 (src: docs/user-guide/periods-and-close.md#close-a-month) (src: docs/user-guide/periods-and-close.md#related)
+
+## Explain the variances
+
+- Before a month closes, each income and expense account's total for the month is compared with the previous month's; a change needs a short explanation when it is more than both thresholds in **Settings → Organisation**: S$1,000 and 10% of the previous month's total, unless changed ([[settings.organisation]]). When the previous month's total is zero, the amount alone decides.
+- On the month's close page, **Variances to explain** lists the accounts that need one with both months' totals and the change; an Accountant or a Controller selects **Explain** beside an account, says why it moved and selects **Explain** again, then runs the checks again so they see it.
+- An explanation is of the two totals shown: if either changes, the account shows **The totals changed** and the close asks for a new one. Explanations are never changed or deleted; a new one replaces the earlier one.
+- **Show every income and expense account** also lists those that moved within the thresholds. Totals are shown as in the trial balance, so income is negative. The first month of the books has nothing to compare.
+
+(src: docs/user-guide/periods-and-close.md#explain-the-variances)
 
 ## Reopen a month
 
@@ -77,6 +86,8 @@ aliases:
 - CLOSE-05, another founder attests the close: ask another founder, as you ran the checks.
 - CLOSE-07, the period is not closed: only a closed month reopens.
 - CLOSE-08, a later period is closed: reopen the latest closed month first.
+- CLOSE-09, the account has no variance to explain: explain one of the accounts under **Variances to explain**.
+- CLOSE-10, the totals changed since they were read: reload the page and explain the totals as they are now.
 - APR-06, a request is waiting already: approve or reject it first.
 
 (src: docs/user-guide/periods-and-close.md#common-problems)

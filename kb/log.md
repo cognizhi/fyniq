@@ -95,3 +95,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/accounting-framework.md, organisation-settings.md → settings.accounting, settings.organisation, settings.change (signing asks for a second factor while the Accounting sign-off setting is on; rev 0.63)
 
 ## [2026-10-21] compile | docs/user-guide/organisation-settings.md, docs/user-guide/periods-and-close.md → settings.organisation, settings.change, accounting.periods (flux analysis: the variance settings and the close's variances check, FR-GL-14)
+
+## [2026-10-21] compile | docs/user-guide/periods-and-close.md, docs/user-guide/organisation-settings.md → accounting.periods, settings.organisation, settings.change (the period-close page's Variances section, FR-GL-14)

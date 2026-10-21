@@ -180,8 +180,11 @@
   show what they found and when they go stale; another founder, an Owner or a Controller who did not run them, attests
   with a statement and closes (step-up through "Confirm it's you"); a closed month shows who attested it, the revision
   and the snapshot's hash; an Accountant or a Controller asks to reopen the latest closed month with a reason, the
-  pending request shows with a link to it, and the latest reopening shows its snapshots. **Left:** the checklist template
-  and reconciliations, flux (6.3), year end
+  pending request shows with a link to it, and the latest reopening shows its snapshots. (rev 0.65) Beside the checks,
+  **Variances to explain** lists the income and expense accounts against the previous month, those above both thresholds
+  with their latest explanation (current, or "The totals changed"); an Accountant or a Controller explains one for the
+  totals shown, then runs the checks again; every account shows on request. Guide `periods-and-close.md#explain-the-variances`.
+  **Left:** the checklist template and reconciliations, year end
   (1.4), open items (with `p1-sales`, `p1-purchases`), changes after posting (2.3).)
 - [x] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
   (21 Oct 2026: Accounting › General ledger (`/reports/general-ledger`): accounts chosen one at a time (up to 20), a
