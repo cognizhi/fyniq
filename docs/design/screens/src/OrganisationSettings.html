@@ -1,4 +1,4 @@
-<!-- fyniq-screen {"nav": "settings", "title": "Organisation", "mode": "expert", "heights": {"compact": 6150, "medium": 5800, "expanded": 3400}} -->
+<!-- fyniq-screen {"nav": "settings", "title": "Organisation", "mode": "expert", "heights": {"compact": 4700, "medium": 4000, "expanded": 2850}} -->
 <div class="fy-page fy-enter">
   <a class="fy-btn fy-btn--ghost fy-btn--sm fy-only-compact" href="#settings" style="align-self: flex-start; margin-left: -8px"><i data-icon="chevron-left"></i>All settings</a>
   <div class="fy-row fy-row--top fy-row--wrap" style="gap: var(--space-6)">
@@ -15,6 +15,7 @@
           <span class="fy-eyebrow" style="padding: 0 10px">Organisation</span>
           <ul class="fy-list">
             <li><a class="fy-list__item" href="#settings/organisation" aria-current="true" style="min-height: 36px; padding: 6px 10px; gap: 10px; border-bottom: 0; border-radius: var(--radius-m)"><i data-icon="building"></i><span class="fy-list__title">Organisation</span></a></li>
+            <li><a class="fy-list__item" href="#settings/accounting" style="min-height: 36px; padding: 6px 10px; gap: 10px; border-bottom: 0; border-radius: var(--radius-m)"><i data-icon="book-check"></i><span class="fy-list__title">Accounting framework and policies</span></a></li>
             <li><a class="fy-list__item" href="#settings/brand" style="min-height: 36px; padding: 6px 10px; gap: 10px; border-bottom: 0; border-radius: var(--radius-m)"><i data-icon="palette"></i><span class="fy-list__title">Logo and brand</span></a></li>
             <li><a class="fy-list__item" href="#settings/users" style="min-height: 36px; padding: 6px 10px; gap: 10px; border-bottom: 0; border-radius: var(--radius-m)"><i data-icon="users"></i><span class="fy-list__title">Users and roles</span></a></li>
             <li><a class="fy-list__item" href="#settings/team-mode" style="min-height: 36px; padding: 6px 10px; gap: 10px; border-bottom: 0; border-radius: var(--radius-m)"><i data-icon="shield-check"></i><span class="fy-list__title">Team mode</span></a></li>
@@ -268,59 +269,6 @@
             <button class="fy-switch" type="button" role="switch" aria-checked="false" aria-labelledby="ft-portal"></button>
           </li>
         </ul>
-      </section>
-
-      <section class="fy-card" aria-labelledby="pol-title">
-        <div class="fy-card__head">
-          <h2 class="fy-h3" id="pol-title">Accounting framework and policies</h2>
-          <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>3 not approved</span>
-        </div>
-        <div class="fy-card__body fy-stack">
-          <div class="fy-row fy-row--wrap fy-row--top" style="gap: var(--space-2) var(--space-4)">
-            <div class="fy-stack fy-stack--2" style="flex: 1 1 260px">
-              <div class="fy-row fy-row--wrap">
-                <label class="fy-label" for="pol-fw">Framework and edition</label>
-                <button class="fy-info" type="button" aria-label="About the accounting framework" aria-expanded="false"><i data-icon="info"></i></button>
-                <span class="fy-chip fy-chip--info"><i data-icon="badge-check"></i>Recommended</span>
-              </div>
-              <span class="fy-help">From FY2025. Eligibility confirmed by Grace Ho (Ho &amp; Partners LLP) on 2 Jan 2026. The third edition applies from FY2027.</span>
-            </div>
-            <select class="fy-select" id="pol-fw" style="flex: 0 1 260px"><option>SFRS for Small Entities, current edition</option><option>FRS</option><option>SFRS(I)</option></select>
-          </div>
-          <div class="fy-banner fy-banner--warning">
-            <i data-icon="triangle-alert" class="fy-i--20"></i>
-            <div class="fy-banner__text">
-              <span class="fy-strong">FY2026 statements are “management statements” for now</span>
-              <span class="fy-small">3 of 8 policies wait for the accountant. Once Grace Ho approves them, statements carry their normal titles. <a href="#inbox/ask-grace">Ask Grace Ho to review</a></span>
-            </div>
-          </div>
-          <div class="fy-tablewrap fy-from-expanded">
-            <table class="fy-table fy-table--compact fy-table--cards">
-              <thead><tr><th scope="col">Policy</th><th scope="col">What the books do</th><th scope="col" class="fy-from-expanded">Approved by</th><th scope="col">Status</th></tr></thead>
-              <tbody>
-                <tr><td data-card="title">Revenue: subscriptions</td><td data-card="meta">Evenly over the service period</td><td data-card="hide" class="fy-from-expanded">Grace Ho, 2 Jan 2026</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></td></tr>
-                <tr><td data-card="title">Revenue: fixed-fee projects</td><td data-card="meta">By milestone, as the customer accepts each</td><td data-card="hide" class="fy-from-expanded">Grace Ho, 2 Jan 2026</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></td></tr>
-                <tr><td data-card="title">Government grants</td><td data-card="meta">Matched to the costs the grant pays for</td><td data-card="hide" class="fy-from-expanded fy-muted">Not yet</td><td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>To approve</span></td></tr>
-                <tr><td data-card="title">Leases</td><td data-card="meta">Short-term and low-value leases expensed</td><td data-card="hide" class="fy-from-expanded">Grace Ho, 2 Jan 2026</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></td></tr>
-                <tr><td data-card="title">Development costs</td><td data-card="meta">Expensed as incurred</td><td data-card="hide" class="fy-from-expanded fy-muted">Not yet</td><td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>To approve</span></td></tr>
-                <tr><td data-card="title">Impairment of receivables</td><td data-card="meta">Expected losses, simplified approach</td><td data-card="hide" class="fy-from-expanded">Grace Ho, 2 Jan 2026</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></td></tr>
-                <tr><td data-card="title">SAFEs and convertible notes</td><td data-card="meta">Lion Rock Ventures SAFE held as a liability</td><td data-card="hide" class="fy-from-expanded fy-muted">Not yet</td><td data-card="status"><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>To approve</span></td></tr>
-                <tr><td data-card="title">Measurement basis for conversions</td><td data-card="meta">Price of the first priced round</td><td data-card="hide" class="fy-from-expanded">Grace Ho, 2 Jan 2026</td><td data-card="status"><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></td></tr>
-              </tbody>
-            </table>
-          </div>
-          <ul class="fy-list fy-until-expanded" style="border: 1px solid var(--border); border-radius: var(--radius-m)">
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Revenue: subscriptions</span><span class="fy-list__meta" style="white-space: normal">Evenly over the service period · Grace Ho, 2 Jan 2026</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></li>
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Revenue: fixed-fee projects</span><span class="fy-list__meta" style="white-space: normal">By milestone, as the customer accepts each · Grace Ho, 2 Jan 2026</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></li>
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Government grants</span><span class="fy-list__meta" style="white-space: normal">Matched to the costs the grant pays for · Not yet</span></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>To approve</span></li>
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Leases</span><span class="fy-list__meta" style="white-space: normal">Short-term and low-value leases expensed · Grace Ho, 2 Jan 2026</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></li>
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Development costs</span><span class="fy-list__meta" style="white-space: normal">Expensed as incurred · Not yet</span></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>To approve</span></li>
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Impairment of receivables</span><span class="fy-list__meta" style="white-space: normal">Expected losses, simplified approach · Grace Ho, 2 Jan 2026</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></li>
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">SAFEs and convertible notes</span><span class="fy-list__meta" style="white-space: normal">Lion Rock Ventures SAFE held as a liability · Not yet</span></span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>To approve</span></li>
-            <li class="fy-list__item"><span class="fy-list__main"><span class="fy-list__title" style="white-space: normal">Measurement basis for conversions</span><span class="fy-list__meta" style="white-space: normal">Price of the first priced round · Grace Ho, 2 Jan 2026</span></span><span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Approved</span></li>
-          </ul>
-          <p class="fy-small fy-muted">A transaction no policy covers goes to an accountant-approved journal.</p>
-        </div>
       </section>
 
       <div class="fy-actionbar fy-only-compact">

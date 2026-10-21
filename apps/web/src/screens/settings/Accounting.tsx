@@ -266,7 +266,7 @@ export function Accounting() {
   return (
     <SettingsPage
       title="Accounting framework and policies"
-      screen="organisation-settings"
+      screen="accounting-framework"
       lead="The framework your statements are prepared under, and the accounting policies Fyniq follows. Anyone who keeps them records them; a member with the Accountant role confirms and approves them."
     >
       <div className="fy-segmented self-start" role="group" aria-label="Financial year">
