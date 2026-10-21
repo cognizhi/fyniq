@@ -83,6 +83,9 @@
   INSERT on documents; the author of a version does not approve its drafts (SOD-3); statuses and close checks for
   C.1 #28 and #29. Tests: `TestRecurringOccurrences`, `TestRecurringJournalsMakeDraftsTheSchedulerCannotPost`,
   `TestRecurringJournals`, `TestTheAuthorOfARecurringJournalDoesNotApproveItsDrafts`. The screens are 7.1's.)
+  (21 Oct 2026, founder decisions, PRD rev 0.61: a late occurrence refuses the close; a past start makes the missed
+  drafts; a resume skips them, all confirmed; an incomplete active recurring journal warns at the close instead of
+  refusing it.)
 
 ## 3. Opening balances
 
