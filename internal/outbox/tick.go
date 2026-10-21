@@ -26,7 +26,8 @@ type Schedule struct {
 // hour, the nightly verification at 02:00 Singapore time (18:00 UTC), the hourly purge of expired
 // idempotency keys (FR-INT-08: kept 24 hours) and of ended rate-limit windows (FR-INT-16), the nightly
 // comparison of every organisation's balances
-// with its journal lines at 02:30 (CTL-FIN-01), the nightly count of Super admins at 03:00 (CTL-IAM-07),
+// with its journal lines at 02:30 (CTL-FIN-01), the nightly replay of every entry under the rule version that posted
+// it at 02:45 (ENG-06, QA-ENG-06), the nightly count of Super admins at 03:00 (CTL-IAM-07),
 // and the night's control evidence at 04:00, after them (compliance/, PRD-001 §14.1); every hour, the
 // commit and the sweep of evidence files (FR-DOC-13), and at 03:30 the re-verification of their hashes.
 var PlatformSchedules = []Schedule{
@@ -35,6 +36,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "idempotency.purge", Every: time.Hour, Offset: 30 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "ratelimit.purge", Every: time.Hour, Offset: 45 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "ledger.verify", Every: 24 * time.Hour, Offset: 18*time.Hour + 30*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
+	// Nightly at 02:45, every stored entry posted again under the rule version that posted it (ENG-06, QA-ENG-06; rev 0.67).
+	{Job: "ledger.replay", Every: 24 * time.Hour, Offset: 18*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 	{Job: "superadmins.verify", Every: 24 * time.Hour, Offset: 19 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	{Job: "compliance.evidence", Every: 24 * time.Hour, Offset: 20 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Evidence (FR-DOC-13): hourly, commit the files of records no longer drafts that the outbox missed, and

@@ -46,3 +46,10 @@ LEFT JOIN fyniq.document_number n ON n.organisation_id = e.organisation_id AND n
 WHERE l.account_id = sqlc.arg(account_id) AND e.posting_date BETWEEN sqlc.arg(date_from) AND sqlc.arg(date_to)
 ORDER BY e.posting_date, e.ledger_revision, l.line_no
 LIMIT sqlc.arg(row_limit);
+
+-- name: EntryIDsAfter :many
+-- The entries after a ledger revision, in revision order, a page at a time: the replay walks them (ENG-06, QA-ENG-06).
+SELECT id, ledger_revision FROM fyniq.journal_entry
+WHERE ledger_revision > sqlc.arg(after_revision)
+ORDER BY ledger_revision
+LIMIT sqlc.arg(page_size);

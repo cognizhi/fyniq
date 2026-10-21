@@ -148,6 +148,12 @@ Source: PRD-001 §16.2
 - **THEN** the replay tests run
 - **AND** any byte difference fails them: at night it pages the platform owner, and at a release it blocks the release
 
+#### Scenario: The nightly replay of stored entries (rev 0.67)
+- **WHEN** the nightly job ledger.replay runs
+- **THEN** every stored entry is posted again from the document version it names, under the rule version that posted it, and compared in every stored field, amounts and rates as exact decimals
+- **AND** each reversal must be the exact negation of the entry it reverses
+- **AND** a mismatch is recorded in the organisation's audit trail as a failed check and fails the job
+
 ### Requirement: QA-ENG-07 Golden data sets
 The workbook sample company and all workbook edge-case data sets (Appendix G) SHALL be ported as fixtures with their verified expected results, and every new feature SHALL add new sets.
 

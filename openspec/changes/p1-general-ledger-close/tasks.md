@@ -132,7 +132,16 @@
   `scheduler:journals.recurring`; it makes documents only through `create_scheduled_draft`. **Left:** the other automated
   postings with their sources (depreciation, FX revaluation, schedules).)
 - [ ] 5.2 Recognition up to the current period only, with future amounts as projections. Test `// req: ENG-05`
-- [ ] 5.3 Versioned posting rules with a replay test per rule version. Test `// req: ENG-06` (QA-ENG-06)
+- [x] 5.3 Versioned posting rules with a replay test per rule version. Test `// req: ENG-06` (QA-ENG-06)
+  (22 Oct 2026, PRD rev 0.67, provisional: `ledger.Rules` names every rule version the engine has posted with
+  (`manual_journal@1`, `opening_balance@1`); `ledger.Replay` re-runs one, and an unknown version is LEDGER-18. Each
+  version has fixed replay cases and a golden file, `internal/domain/ledger/testdata/replay/<version>.golden`, so a
+  change to a version's output fails `make test` (the release gate) and becomes a new version. The nightly
+  `ledger.replay` (02:45 Singapore time) posts every stored entry again from the document version it names, and checks
+  each reversal is the exact negation of its entry; a mismatch is recorded as `control.check.failed` (QA-ENG-06) and
+  fails the job, whose absence alert pages the platform owner. Storage gains `Ledger.Entries` and `Documents.Version`.
+  Tests: `TestEveryRuleVersionReplaysItsGoldenEntries`, `TestDifferencesNameEveryStoredField`,
+  `TestReplayReproducesEveryStoredEntry`.)
 
 ## 6. Validation, framework and schedules
 

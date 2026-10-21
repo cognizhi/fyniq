@@ -105,6 +105,9 @@ type Documents interface {
 	Create(ctx context.Context, d NewDocument) (Document, error)
 	// Get returns a document at its current version.
 	Get(ctx context.Context, id uuid.UUID) (Document, error)
+	// Version returns a document at one of its versions, with that version's payload and who saved it: the replay
+	// re-runs a rule over the version that posted (ENG-06). ports.ErrNotFound when it has no such version.
+	Version(ctx context.Context, id uuid.UUID, version int) (Document, error)
 	// Lock is Get with the document's row locked until commit: ENG-47 step 1, taken before the
 	// ledger lock by any command that changes the document.
 	Lock(ctx context.Context, id uuid.UUID) (Document, error)
@@ -163,6 +166,9 @@ type Ledger interface {
 	// revision (ENG-46) and the period, and refuses an unbalanced entry at commit (INV-01).
 	Append(ctx context.Context, e NewEntry) (Entry, error)
 	Entry(ctx context.Context, id uuid.UUID) (Entry, error)
+	// Entries are the entries posted after a ledger revision, in revision order, with their lines, at most limit: the
+	// replay walks them a page at a time (ENG-06, QA-ENG-06).
+	Entries(ctx context.Context, afterRevision int64, limit int) ([]Entry, error)
 	// ByIdentity returns the entry posted with a posting identity.
 	ByIdentity(ctx context.Context, postingIdentity string) (Entry, error)
 	// Revision is the organisation's current ledger revision.
