@@ -19,6 +19,7 @@ const operations: Record<Approval["operation"], string> = {
   "journal.post": "Post a journal",
   "journal.reverse": "Reverse a journal",
   "journal.edit": "Edit a posted journal",
+  "opening_balance.edit": "Change the posted opening balances",
 };
 
 export function operationLabel(op: string): string {
@@ -34,6 +35,7 @@ const objects: Record<string, string> = {
   team_mode: "Team mode",
   period: "Accounting period",
   journal: "Journal",
+  opening_balance: "Opening balances",
 };
 
 export function objectLabel(t: string): string {

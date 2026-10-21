@@ -97,3 +97,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/organisation-settings.md, docs/user-guide/periods-and-close.md → settings.organisation, settings.change, accounting.periods (flux analysis: the variance settings and the close's variances check, FR-GL-14)
 
 ## [2026-10-21] compile | docs/user-guide/periods-and-close.md, docs/user-guide/organisation-settings.md → accounting.periods, settings.organisation, settings.change (the period-close page's Variances section, FR-GL-14)
+
+## [2026-10-22] compile | docs/user-guide/opening-balances.md → accounting.opening-balances (changing posted opening balances with another person's approval, FM-1)

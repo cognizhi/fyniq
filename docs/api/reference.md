@@ -1334,11 +1334,40 @@ Saves the opening balances as a draft dated at the books start (FR-GL-06; PRD-00
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `JOURNAL-02`, `JOURNAL-04`, `JOURNAL-05`, `JOURNAL-06`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/opening-balances/edit-approval`
+
+**Ask for approval to change the posted opening balances** (`requestOpeningBalancesEdit`)
+
+Asks for another person's approval to change posted opening balances to the content sent (FR-GL-06, FR-GL-12, FM-1; PRD-001 rev 0.66, provisional): FM-1 lists editing opening balances among the high-risk actions, so in every team mode they never change at once. The content must pass the posting rules as posting does (every line in the base currency, netting to zero; share capital allowed, INV-13). The answer is 202 with an approval request whose changes list the memo, the debits and each line that changes; it keeps the content, and its envelope holds the content's SHA-256 with the balances' version, status and debits, so any change to them voids it. A person who holds A on Journals and did not ask approves it, stepped up; on the approval, in one transaction, their next version is saved, the entry they had is reversed on its date and the new version's entry posts at the books start, so the month the books start in must be open; the approver posts it, with the requester as the one who prepared it. Asking needs a person signed in who passed step-up, and If-Match with their ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.
+
+- **Permission:** Post on Journals. A person stepped up in the last 5 minutes; the approval engine has another person who holds A approve it (FM-1).
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`OpeningEdit`](../../contracts/schemas/OpeningEdit.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `JOURNAL-03` The journal is not posted; `JOURNAL-06` The books start is not set; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-INV-03` The period is closed.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `JOURNAL-04` The saved journal cannot be read; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `JOURNAL-03`, `JOURNAL-04`, `JOURNAL-06`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-APPROVAL-01`, `STORAGE-INV-03`
+
 ### `POST /v1/opening-balances/post`
 
 **Post the opening balances** (`postOpeningBalances`)
 
-Posts the opening balances' current version as entered at the books start, once they net to zero (FR-GL-06, posting rule "Opening balances"): every line in the base currency, share capital allowed (INV-13), the rest of ENG-24 as for a journal. Side effects: the entry, a new ledger revision, balances, audit events. Needs If-Match with their ETag. Posted opening balances do not change until edits with a second person's approval arrive (FM-1). Idempotent with Idempotency-Key; Prefer: return=preview shows the entry and saves nothing.
+Posts the opening balances' current version as entered at the books start, once they net to zero (FR-GL-06, posting rule "Opening balances"): every line in the base currency, share capital allowed (INV-13), the rest of ENG-24 as for a journal. Side effects: the entry, a new ledger revision, balances, audit events. Needs If-Match with their ETag. Posted, they change only with another person's approval (requestOpeningBalancesEdit; FM-1). Idempotent with Idempotency-Key; Prefer: return=preview shows the entry and saves nothing.
 
 - **Permission:** Post on Journals
 - **Parameters:**

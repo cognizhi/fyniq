@@ -10,6 +10,14 @@
       "format": "date",
       "type": "string"
     },
+    "edit_asked": {
+      "description": "The pending request to change the posted balances, while one waits for approval (FM-1).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "id": {
       "description": "The document's ID, once saved.",
       "examples": [
@@ -33,7 +41,7 @@
       "type": "string"
     },
     "posted_at": {
-      "description": "When they were posted.",
+      "description": "When they were posted, or their latest change posted.",
       "examples": [
         "2026-10-21T09:30:00Z"
       ],

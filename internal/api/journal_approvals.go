@@ -135,7 +135,12 @@ func (a *API) journalDebits(ctx context.Context, u storage.UnitOfWork, org uuid.
 		d, err := a.journals.Debits(ctx, org, doc.ID)
 		return d.String(), err
 	}
-	e, err := u.Ledger().ByIdentity(ctx, ledger.JournalIdentity(doc.ID, doc.Version, ledger.RuleManualJournal))
+	return postedDebits(ctx, u, ledger.JournalIdentity(doc.ID, doc.Version, ledger.RuleManualJournal))
+}
+
+// postedDebits are the debits, in the base currency, of the entry posted under a posting identity.
+func postedDebits(ctx context.Context, u storage.UnitOfWork, identity string) (string, error) {
+	e, err := u.Ledger().ByIdentity(ctx, identity)
 	if err != nil {
 		return "", err
 	}

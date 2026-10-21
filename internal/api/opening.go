@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -45,7 +48,24 @@ type OpeningBalances struct {
 	Lines      []OpeningLine `json:"lines" nullable:"false" doc:"The balances as entered."`
 	PreparedBy *Person       `json:"prepared_by,omitempty" doc:"Who saved the current version."`
 	PostedBy   *Person       `json:"posted_by,omitempty" doc:"Who posted them."`
-	PostedAt   *time.Time    `json:"posted_at,omitempty" doc:"When they were posted." example:"2026-10-21T09:30:00Z"`
+	PostedAt   *time.Time    `json:"posted_at,omitempty" doc:"When they were posted, or their latest change posted." example:"2026-10-21T09:30:00Z"`
+	EditAsked  string        `json:"edit_asked,omitempty" format:"uuid" doc:"The pending request to change the posted balances, while one waits for approval (FM-1)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd0"`
+}
+
+// OpeningEdit changes posted opening balances: their new content, and why (FR-GL-06, FR-GL-12, FM-1).
+type OpeningEdit struct {
+	Memo   string        `json:"memo,omitempty" maxLength:"1000" doc:"A note on where the balances come from." example:"Balances from the 31 March 2026 trial balance"`
+	Lines  []OpeningLine `json:"lines" maxItems:"1000" doc:"Every balance as it should be, not only the ones that change; together they net to zero."`
+	Reason string        `json:"reason" minLength:"1" maxLength:"500" doc:"Why they change: the approver reads it, and the audit trail and the reversal's memo keep it." example:"The bank balance at the books start was 12,480.00, not 12,840.00"`
+}
+
+func (e OpeningEdit) draft() OpeningDraft { return OpeningDraft{Memo: e.Memo, Lines: e.Lines} }
+
+type openingEditInput struct {
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+	Body OpeningEdit
 }
 
 // OpeningPosting is the opening balances after posting, with the entry it made.
@@ -118,7 +138,87 @@ func (a *API) currentOpening(ctx context.Context, u storage.UnitOfWork, lock boo
 	if err != nil {
 		return OpeningBalances{}, err
 	}
+	if doc.Status == storage.DocumentPosted {
+		pending, err := u.Approvals().List(ctx, string(approval.Pending))
+		if err != nil {
+			return OpeningBalances{}, err
+		}
+		now := a.deps.Clock.Now()
+		for _, r := range pending {
+			if r.ObjectType == approval.ObjectOpening && r.ObjectKey == doc.ID.String() && approval.StatusAt(requestOf(r), now) == approval.Pending {
+				o.EditAsked = r.ID.String()
+			}
+		}
+	}
 	return o, a.name(ctx, u, o.PreparedBy, o.PostedBy)
+}
+
+// openingDiff is what a change to the opening balances changes, line by line, for the approver (FR-APR-02).
+func openingDiff(ctx context.Context, u storage.UnitOfWork, before OpeningBalances, after OpeningDraft, debitsBefore, debitsAfter string) ([]ApprovalDiff, error) {
+	accounts, err := u.Accounts().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := map[string]string{}
+	for _, ac := range accounts {
+		names[ac.ID.String()] = ac.Code + " " + ac.Name
+	}
+	line := func(l OpeningLine) string {
+		s := fmt.Sprintf("%s: %s %s", names[l.AccountID], l.Amount.Amount, l.Amount.Currency)
+		if l.Description != "" {
+			s += " (" + l.Description + ")"
+		}
+		return s
+	}
+	var out []ApprovalDiff
+	if before.Memo != after.Memo {
+		out = append(out, ApprovalDiff{Field: "memo", Before: before.Memo, After: after.Memo})
+	}
+	out = append(out, ApprovalDiff{Field: "debits", Before: debitsBefore, After: debitsAfter})
+	for i := 0; i < max(len(before.Lines), len(after.Lines)); i++ {
+		var b, f string
+		if i < len(before.Lines) {
+			b = line(before.Lines[i])
+		}
+		if i < len(after.Lines) {
+			f = line(after.Lines[i])
+		}
+		if b != f {
+			out = append(out, ApprovalDiff{Field: fmt.Sprintf("line %d", i+1), Before: b, After: f})
+		}
+	}
+	return out, nil
+}
+
+// executeOpeningEdit runs an approved change to the posted opening balances: the content the request kept, checked
+// against the hash its envelope holds, posted as the approver, with the requester as the one who prepared it.
+func (a *API) executeOpeningEdit(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored) error {
+	text := func(k string) string { v, _ := s.Execute[k].(string); return v }
+	content, sum, err := canonicalOf(s.Content)
+	if err != nil {
+		return err
+	}
+	if sum != text("content_sha256") {
+		return fmt.Errorf("approval: the content of request %s does not match its envelope", r.ID)
+	}
+	var body OpeningDraft
+	if err := json.Unmarshal(content, &body); err != nil {
+		return err
+	}
+	base, err := baseOf(ctx, u)
+	if err != nil {
+		return err
+	}
+	lines, err := openingLines(body, base)
+	if err != nil {
+		return err
+	}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = a.journals.EditOpening(ctx, o.ID, body.Memo, lines, text("reason"), text("prepared_by"))
+	return err
 }
 
 // openingLines reads the lines from the request, with every invalid field at once.
@@ -227,7 +327,7 @@ func registerOpening(a *API) {
 		Description: "Posts the opening balances' current version as entered at the books start, once they net to zero (FR-GL-06, " +
 			"posting rule \"Opening balances\"): every line in the base currency, share capital allowed (INV-13), the rest of " +
 			"ENG-24 as for a journal. Side effects: the entry, a new ledger revision, balances, audit events. Needs If-Match with " +
-			"their ETag. Posted opening balances do not change until edits with a second person's approval arrive (FM-1). " +
+			"their ETag. Posted, they change only with another person's approval (requestOpeningBalancesEdit; FM-1). " +
 			"Idempotent with Idempotency-Key; Prefer: return=preview shows the entry and saves nothing.",
 	}, append([]string{journal.CodeNotOpening, journal.CodeNotDraft, journal.CodeNoBooksStart, ledger.CodeForeignOpening}, postingCodes()...),
 		func(ctx context.Context, in *postOpeningInput) (*postOpeningOutput, error) {
@@ -263,5 +363,103 @@ func registerOpening(a *API) {
 				return &postOpeningOutput{Applied: applied(w), Body: w.Body}, nil
 			}
 			return &postOpeningOutput{ETag: openingETag(w.Body.OpeningBalances), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
+		})
+
+	register(a, authz.RequestOpeningBalancesEdit, huma.Operation{
+		OperationID: "requestOpeningBalancesEdit", Method: http.MethodPost, Path: "/v1/opening-balances/edit-approval", Tags: []string{"Journals"},
+		Summary: "Ask for approval to change the posted opening balances", DefaultStatus: http.StatusAccepted,
+		Description: "Asks for another person's approval to change posted opening balances to the content sent (FR-GL-06, FR-GL-12, " +
+			"FM-1; PRD-001 rev 0.66, provisional): FM-1 lists editing opening balances among the high-risk actions, so in every team " +
+			"mode they never change at once. The content must pass the posting rules as posting does (every line in the base currency, " +
+			"netting to zero; share capital allowed, INV-13). The answer is 202 with an approval request whose changes list the memo, " +
+			"the debits and each line that changes; it keeps the content, and its envelope holds the content's SHA-256 with the " +
+			"balances' version, status and debits, so any change to them voids it. A person who holds A on Journals and did not ask " +
+			"approves it, stepped up; on the approval, in one transaction, their next version is saved, the entry they had is reversed " +
+			"on its date and the new version's entry posts at the books start, so the month the books start in must be open; the " +
+			"approver posts it, with the requester as the one who prepared it. Asking needs a person signed in who passed step-up, and " +
+			"If-Match with their ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+		CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval, storage.CodePeriodClosed, journal.CodeNotPosted, journal.CodeNoBooksStart,
+		journal.CodeBadDraft, ledger.CodeForeignOpening, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, money.CodeNotDecimal,
+		money.CodePrecision, money.CodeRange, money.CodeCurrency}, LedgerCodes...),
+		func(ctx context.Context, in *openingEditInput) (*journalRequestOutput, error) {
+			reason := strings.TrimSpace(in.Body.Reason)
+			if reason == "" {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.reason", Message: "is empty", Fix: "Say why the opening balances change"}})
+			}
+			if strings.TrimSpace(in.IfMatch) == "" {
+				return nil, checkIfMatch(in.IfMatch, "")
+			}
+			p, _ := authn.From(ctx)
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+				before, err := a.currentOpening(ctx, u, true)
+				if err != nil {
+					return Approval{}, err
+				}
+				if before.Status == "none" {
+					return Approval{}, problem(CodeNotFound, "No opening balances are saved yet.", "Save them as a draft and post them first.")
+				}
+				if err := checkIfMatch(in.IfMatch, openingETag(before)); err != nil {
+					return Approval{}, err
+				}
+				if before.Status != string(storage.DocumentPosted) {
+					return Approval{}, problem(journal.CodeNotPosted, fmt.Sprintf("The opening balances are a %s.", before.Status),
+						"Change a draft by saving it again: only posted opening balances need approval to change")
+				}
+				// The change posts at the books start, so its month must be open when it is approved; say so now.
+				periods, err := u.Periods().List(ctx)
+				if err != nil {
+					return Approval{}, err
+				}
+				for _, x := range periods {
+					if day, _ := time.Parse(time.DateOnly, before.Date); !day.Before(x.StartsOn) && !day.After(x.EndsOn) && x.Status != storage.PeriodOpen {
+						return Approval{}, problem(storage.CodePeriodClosed, fmt.Sprintf("The month the books start in, %s, is closed.", x.StartsOn.Format("January 2006")),
+							"Ask to reopen it first (FR-GL-08), then ask for the change; or correct the balances with a journal in an open month")
+					}
+				}
+				base, err := baseOf(ctx, u)
+				if err != nil {
+					return Approval{}, err
+				}
+				draft := in.Body.draft()
+				draft.Memo = strings.TrimSpace(draft.Memo)
+				lines, err := openingLines(draft, base)
+				if err != nil {
+					return Approval{}, err
+				}
+				after, err := a.journals.OpeningEditDebits(ctx, p.Organisation, draft.Memo, lines)
+				if err != nil {
+					return Approval{}, err
+				}
+				id, err := uuid.Parse(before.ID)
+				if err != nil {
+					return Approval{}, err
+				}
+				debits, err := postedDebits(ctx, u, ledger.OpeningIdentity(id, before.Version, ledger.RuleOpeningBalance))
+				if err != nil {
+					return Approval{}, err
+				}
+				raw, err := json.Marshal(draft)
+				if err != nil {
+					return Approval{}, err
+				}
+				content, sum, err := canonicalOf(raw)
+				if err != nil {
+					return Approval{}, err
+				}
+				diff, err := openingDiff(ctx, u, before, draft, debits, after.String())
+				if err != nil {
+					return Approval{}, err
+				}
+				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectOpening, ObjectKey: before.ID, Operation: approval.OpOpeningEdit,
+					Summary: "Change the opening balances: " + reason,
+					Execute: map[string]any{"opening_id": before.ID, "version": fmt.Sprint(before.Version), "content_sha256": sum, "reason": reason,
+						"prepared_by": (storage.Actor{Type: "user", ID: p.UserID.String()}).String()},
+					Content: content, Diff: diff})
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &journalRequestOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 		})
 }

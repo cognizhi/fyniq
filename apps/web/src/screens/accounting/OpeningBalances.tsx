@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarRange, CircleCheck, CircleX, Eye, Lock, Save, Send } from "lucide-react";
+import { CalendarRange, CircleCheck, CircleX, Clock, Eye, Lock, PencilLine, Save, Send, X } from "lucide-react";
 import { useId, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -76,8 +76,8 @@ function totals(cells: Record<string, Cell>) {
 
 // OpeningBalances is Accounting › Opening balances (docs/design/screens OpeningBalances; FR-GL-06): every account's
 // balance at the books start, as a debit or a credit, adding up to zero. An Accountant or a Tax agent saves them as a
-// draft; an Accountant checks and posts them, once. Open invoices and bills, and changing posted balances with a second
-// approver (FM-1), arrive with their tasks.
+// draft; an Accountant checks and posts them, once. Posted, an Accountant asks to change them, and another person who
+// approves journals approves it (FM-1, rev 0.66). Open invoices and bills arrive with sales and purchases.
 export function OpeningBalances() {
   const { session, organisation } = useSignedIn();
   const base = organisation?.base_currency ?? "SGD";
@@ -105,7 +105,14 @@ export function OpeningBalances() {
     },
   });
   const o = current.data?.opening;
+  const posted = o && (o.status === "posted" || o.status === "reversed");
   const editable = mayPrepare && (o?.status === "none" || o?.status === "draft");
+  // Changing posted balances: an Accountant (P on Journals) asks, another person approves (FM-1).
+  const [changing, setChanging] = useState(false);
+  const [reason, setReason] = useState("");
+  const [reasonMissing, setReasonMissing] = useState(false);
+  const asking = Boolean(posted && changing && mayPost && !o?.edit_asked);
+  const editing = editable || asking;
   const [cells, setCells] = useState<Record<string, Cell> | null>(null);
   const [memo, setMemo] = useState<string | null>(null);
   const [all, setAll] = useState(false);
@@ -125,6 +132,7 @@ export function OpeningBalances() {
   const save = helpText("opening.save");
   const check = helpText("opening.check");
   const post = helpText("opening.post");
+  const askChange = helpText("opening.ask-change");
   const booksStart = profile.data?.books_start;
 
   const set = (account: string, side: keyof Cell, value: string) => {
@@ -174,7 +182,54 @@ export function OpeningBalances() {
     setStatus(`Posted at ${date(out.data.entry.posting_date)}.`);
   };
 
-  const actions = editable && (
+  const ask = async () => {
+    if (!current.data) return;
+    const { draft, errors: errs } = draftOf(c, base, m);
+    setErrors(errs);
+    if (!draft) return setStatus("Fix the balances marked, then ask again.");
+    if (!reason.trim()) return setReasonMissing(true);
+    setBusy(true);
+    setProblem(null);
+    const etag = current.data.etag;
+    const key = newKey();
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/opening-balances/edit-approval", {
+        params: { header: { "If-Match": etag, "Idempotency-Key": key } },
+        body: { memo: draft.memo, lines: draft.lines, reason: reason.trim() },
+      }),
+    );
+    setBusy(false);
+    setFailed("The change was not asked for");
+    if (!out.data) return setProblem(problemOf(out.error));
+    await Promise.all(["opening-balances", "approvals"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
+    setCells(null);
+    setMemo(null);
+    setChanging(false);
+    setReason("");
+    setStatus("Asked for approval: the balances change once another person approves.");
+  };
+
+  const cancel = () => {
+    setChanging(false);
+    setCells(null);
+    setMemo(null);
+    setReason("");
+    setReasonMissing(false);
+    setErrors({});
+  };
+
+  const actions = asking ? (
+    <>
+      <Button variant="ghost" onClick={cancel} disabled={busy}>
+        <Icon of={X} />
+        Cancel
+      </Button>
+      <Button variant="primary" onClick={() => void ask()} disabled={busy} title={askChange.tooltip}>
+        <Icon of={Send} />
+        {askChange.label}
+      </Button>
+    </>
+  ) : editable && (
     <>
       {(dirty || o?.status === "none") && (
         <Button variant="primary" onClick={() => void onSave()} disabled={busy} title={save.tooltip}>
@@ -196,8 +251,6 @@ export function OpeningBalances() {
       )}
     </>
   );
-  const posted = o && (o.status === "posted" || o.status === "reversed");
-
   return (
     <div className="fy-page fy-enter">
       <div className="fy-pagehead">
@@ -247,13 +300,35 @@ export function OpeningBalances() {
           </Link>
         </div>
       )}
-      {posted && (
+      {o?.edit_asked && (
+        <div className="fy-banner fy-banner--info" role="note">
+          <Icon of={Clock} size={20} />
+          <div className="fy-banner__text">
+            <strong>A change to the opening balances waits for approval</strong>
+            <span className="fy-small">Another person who approves journals approves it; until then, the balances stay as posted.</span>
+          </div>
+          <div className="fy-banner__action">
+            <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/approvals/$approvalId" params={{ approvalId: o.edit_asked }}>
+              See the request
+            </Link>
+          </div>
+        </div>
+      )}
+      {posted && !o?.edit_asked && !asking && (
         <div className="fy-banner fy-banner--info" role="note">
           <Icon of={Lock} size={20} />
           <div className="fy-banner__text">
-            <strong>Posted opening balances do not change here yet</strong>
-            <span className="fy-small">Changing them is high-risk and needs a second founder's approval, which arrives soon. Until then, correct them with a journal.</span>
+            <strong>Posted opening balances change only with another person's approval</strong>
+            <span className="fy-small">{mayPost ? "Correct them and ask: nothing changes until another person who approves journals approves it." : "An Accountant asks for a change, and another person approves it."}</span>
           </div>
+          {mayPost && (
+            <div className="fy-banner__action">
+              <Button variant="secondary" size="sm" onClick={() => setChanging(true)}>
+                <Icon of={PencilLine} />
+                Change the balances
+              </Button>
+            </div>
+          )}
         </div>
       )}
       {booksStart && current.data && chart.length > 0 && (
@@ -262,21 +337,45 @@ export function OpeningBalances() {
             <h2 className="fy-h3" id={`${id}-accounts`}>
               Accounts
             </h2>
-            {editable && (
+            {editing && (
               <label className="fy-row gap-2 fy-small">
                 <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} />
                 Show revenue and expense accounts
               </label>
             )}
           </div>
-          {editable && (
-            <div className="fy-card__body">
+          {editing && (
+            <div className="fy-card__body fy-stack fy-stack--3">
               <div className="fy-field">
                 <label className="fy-label" htmlFor={`${id}-memo`}>
                   Where the balances come from
                 </label>
                 <input className="fy-input" id={`${id}-memo`} value={m} maxLength={1000} placeholder="Such as the trial balance at the end of the last year" onChange={(e) => setMemo(e.target.value)} />
               </div>
+              {asking && (
+                <div className="fy-field">
+                  <label className="fy-label" htmlFor={`${id}-reason`}>
+                    Why they change
+                  </label>
+                  <textarea
+                    className="fy-textarea"
+                    id={`${id}-reason`}
+                    value={reason}
+                    maxLength={500}
+                    onChange={(e) => {
+                      setReason(e.target.value);
+                      setReasonMissing(false);
+                    }}
+                    aria-invalid={reasonMissing || undefined}
+                    aria-describedby={reasonMissing ? `${id}-reason-error` : undefined}
+                  />
+                  {reasonMissing && (
+                    <span className="fy-error" id={`${id}-reason-error`}>
+                      Say why: the approver reads it, and the reversal keeps it.
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
           <div className="fy-tablewrap">
@@ -293,7 +392,7 @@ export function OpeningBalances() {
                 </tr>
               </thead>
               {types.map(([type, label]) => {
-                const rows = editable ? shown.filter((a) => a.type === type) : (o?.lines ?? []).filter((l) => byId.get(l.account_id)?.type === type).map((l) => byId.get(l.account_id) as Account);
+                const rows = editing ? shown.filter((a) => a.type === type) : (o?.lines ?? []).filter((l) => byId.get(l.account_id)?.type === type).map((l) => byId.get(l.account_id) as Account);
                 if (rows.length === 0) return null;
                 return (
                   <tbody key={type}>
@@ -312,7 +411,7 @@ export function OpeningBalances() {
                               </span>
                             )}
                           </td>
-                          {editable ? (
+                          {editing ? (
                             <>
                               <td className="fy-num">
                                 <input
@@ -370,7 +469,7 @@ export function OpeningBalances() {
                 {sign(t.difference) > 0 ? "Debits exceed credits" : "Credits exceed debits"} by {formatAmount(t.difference.replace(/^-/, ""))} {base}
               </span>
             )}
-            {editable && <span className="fy-small fy-muted">Accounts left empty are left out. The difference, if any, usually belongs in 3100 Retained earnings.</span>}
+            {editing && <span className="fy-small fy-muted">Accounts left empty are left out. The difference, if any, usually belongs in 3100 Retained earnings.</span>}
           </div>
         </section>
       )}
@@ -384,7 +483,7 @@ export function OpeningBalances() {
           </p>
         </section>
       )}
-      {editable && <div className="fy-actionbar fy-only-compact">{actions}</div>}
+      {editing && <div className="fy-actionbar fy-only-compact">{actions}</div>}
     </div>
   );
 }

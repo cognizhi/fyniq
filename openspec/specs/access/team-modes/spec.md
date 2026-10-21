@@ -155,6 +155,11 @@ Source: PRD-001 §6.4
 - **THEN** the edit still needs another member's approval, because an edit is a void and a post
 - **AND** a new correcting journal at or below the threshold still posts alone
 
+#### Scenario: Changing posted opening balances is asked for in every team mode (rev 0.66)
+- **WHEN** someone changes posted opening balances, in any team mode
+- **THEN** the change is asked for with its new content and reason
+- **AND** another member who holds A on Journals approves it, never the requester, and the change posts then
+
 ### Requirement: FM-2 Self-approval below a threshold
 In Founder mode, a founder SHALL be allowed to self-approve routine items at or below a threshold (default S$2,000 per document; configurable), and each self-approval SHALL be flagged "self-approved" and queued for review.
 

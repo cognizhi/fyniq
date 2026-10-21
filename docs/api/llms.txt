@@ -60,6 +60,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/members/{member_id}/roles/{role}` (revokeRole): End a member's role
 - `GET /v1/opening-balances` (getOpeningBalances): Get the opening balances
 - `PUT /v1/opening-balances` (replaceOpeningBalances): Save the opening balances as a draft
+- `POST /v1/opening-balances/edit-approval` (requestOpeningBalancesEdit): Ask for approval to change the posted opening balances
 - `POST /v1/opening-balances/post` (postOpeningBalances): Post the opening balances
 - `GET /v1/organisation` (getOrganisation): Get your organisation
 - `GET /v1/organisation/accounting` (getAccounting): Get a year's accounting framework and policies

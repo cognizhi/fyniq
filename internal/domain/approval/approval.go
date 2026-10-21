@@ -41,6 +41,7 @@ const (
 	ObjectTeamMode   = "team_mode"            // the organisation's team mode (§6.4, FR-ADM-04); its key is TeamModeKey
 	ObjectPeriod     = "period"               // a closed accounting period to reopen (FR-GL-08, FM-1); its key is the period's id
 	ObjectJournal    = "journal"              // a manual journal to post above the threshold, to void or to edit (FR-GL-01, FR-GL-12, FM-1, FM-2); its key is its id
+	ObjectOpening    = "opening_balance"      // the posted opening balances to change (FR-GL-06, FM-1); its key is their document's id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -59,6 +60,7 @@ const (
 	OpJournalPost    = "journal.post"
 	OpJournalReverse = "journal.reverse"
 	OpJournalEdit    = "journal.edit"
+	OpOpeningEdit    = "opening_balance.edit"
 )
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -81,6 +83,8 @@ var Dependencies = map[string][]string{
 	ObjectPeriod: {"period_version", "status", "close_id", "later_closed"},
 	// the journal's version and status, and its debits in the base currency
 	ObjectJournal: {"journal_version", "status", "debits"},
+	// the opening balances' version and status, and their debits in the base currency
+	ObjectOpening: {"opening_version", "status", "debits"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -94,6 +98,7 @@ var Rows = map[string]string{
 	ObjectTeamMode:   "Users, roles, team mode",
 	ObjectPeriod:     "Period close / reopen",
 	ObjectJournal:    "Journals",
+	ObjectOpening:    "Journals",
 }
 
 // The limits of a policy.
@@ -136,6 +141,7 @@ var Policies = map[string]Policy{
 	ObjectTeamMode:   {ObjectType: ObjectTeamMode, Version: "founder/team_mode@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPeriod:     {ObjectType: ObjectPeriod, Version: "founder/period@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
 	ObjectJournal:    {ObjectType: ObjectJournal, Version: "founder/journal@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
+	ObjectOpening:    {ObjectType: ObjectOpening, Version: "founder/opening_balance@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

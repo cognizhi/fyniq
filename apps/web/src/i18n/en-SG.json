@@ -330,7 +330,11 @@
     },
     "opening.post": {
       "label": "Post",
-      "tooltip": "Post the balances at the books start, once. Changing them afterwards needs a second founder."
+      "tooltip": "Post the balances at the books start, once. Changing them afterwards needs another person's approval."
+    },
+    "opening.ask-change": {
+      "label": "Ask for approval",
+      "tooltip": "Ask another person to approve the corrected balances. Nothing changes until they approve."
     },
     "accounting.period-close": {
       "label": "Close a month",
