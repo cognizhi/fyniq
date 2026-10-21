@@ -89,6 +89,12 @@ Source: PRD-001 §8.1 · Priority M · Phase P1
 - **THEN** only a member who holds the Accountant role may, never the person who wrote that version, and only once
 - **AND** a version never changes: a correction is a new version, signed again
 
+#### Scenario: Signing asks for a second factor while the setting is on (rev 0.63)
+- **GIVEN** the organisation setting for the accountant's sign-off is on, as it is by default
+- **WHEN** a member who holds the Accountant role confirms the framework or approves a policy
+- **THEN** they need step-up authentication within the last 5 minutes
+- **AND** while the setting is off nothing more is asked, and turning it off needs a second approver
+
 #### Scenario: A year is approved when everything in force is signed (rev 0.62)
 - **GIVEN** the framework and each policy in force for a financial year are those from its first day or the latest earlier year
 - **WHEN** the framework in force is confirmed and every policy in force is approved

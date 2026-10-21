@@ -10,6 +10,7 @@ import { Dialog } from "../../components/ui/dialog";
 import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
+import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { who } from "../accounting/Journals";
 import { SettingsPage } from "./SettingsPage";
@@ -225,6 +226,7 @@ function Signed({ by, at, waiting }: { by?: components["schemas"]["Person"]; at?
 export function Accounting() {
   const { session } = useSignedIn();
   const queries = useQueryClient();
+  const stepUp = useConfirm();
   const [next, setNext] = useState(false);
   const current = useQuery({ queryKey: ["accounting", "current"], queryFn: () => readYear() });
   const later = useQuery({
@@ -247,10 +249,11 @@ export function Accounting() {
     setProblem(null);
     setDone("");
     const header = { "Idempotency-Key": newKey() };
+    // While the organisation asks for it (the default), signing needs step-up: guarded asks for it and tries again.
     const out =
       "framework" in what
-        ? await api.POST("/v1/organisation/accounting/framework/{version}/confirm", { params: { path: { version: what.framework }, header } })
-        : await api.POST("/v1/organisation/accounting/policies/{area}/{version}/approve", { params: { path: { area: what.area.area, version: what.version }, header } });
+        ? await guarded(stepUp, () => api.POST("/v1/organisation/accounting/framework/{version}/confirm", { params: { path: { version: what.framework }, header } }))
+        : await guarded(stepUp, () => api.POST("/v1/organisation/accounting/policies/{area}/{version}/approve", { params: { path: { area: what.area.area, version: what.version }, header } }));
     setBusy(false);
     if (!out.data) {
       setProblem(problemOf(out.error));

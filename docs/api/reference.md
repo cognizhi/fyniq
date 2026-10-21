@@ -454,7 +454,7 @@ Records the next version of the accounting framework and its edition, from the f
 
 **Confirm the accounting framework** (`confirmAccountingFramework`)
 
-Records the caller's confirmation, as the accountant, that the company may use a framework version (FR-ORG-10; PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). Side effects: the confirmation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+Records the caller's confirmation, as the accountant, that the company may use a framework version (FR-ORG-10; PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). While the accounting.signing_step_up setting is on (the default), it needs step-up in the last 5 minutes. Side effects: the confirmation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Approve on Accounting framework and policies (rev 0.62)
 - **Parameters:**
@@ -464,13 +464,13 @@ Records the caller's confirmation, as the accountant, that the company may use a
 - **Responses:**
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AccountingFramework`](../../contracts/schemas/AccountingFramework.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes.
   - `422` Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `ACCOUNTING-01`, `ACCOUNTING-02`, `ACCOUNTING-03`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PERIOD-01`, `STORAGE-ACCOUNTING-01`
+- **Error codes:** `ACCOUNTING-01`, `ACCOUNTING-02`, `ACCOUNTING-03`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PERIOD-01`, `STORAGE-ACCOUNTING-01`
 
 ### `POST /v1/organisation/accounting/policies/{area}`
 
@@ -502,7 +502,7 @@ Records the next version of one accounting policy's words, from the first day of
 
 **Approve an accounting policy** (`approveAccountingPolicy`)
 
-Records the caller's approval, as the accountant, of a version of one accounting policy (FR-ORG-10; PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). Side effects: the approval and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+Records the caller's approval, as the accountant, of a version of one accounting policy (FR-ORG-10; PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). While the accounting.signing_step_up setting is on (the default), it needs step-up in the last 5 minutes. Side effects: the approval and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Approve on Accounting framework and policies (rev 0.62)
 - **Parameters:**
@@ -513,13 +513,13 @@ Records the caller's approval, as the accountant, of a version of one accounting
 - **Responses:**
   - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AccountingPolicy`](../../contracts/schemas/AccountingPolicy.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
-  - `403` Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `403` Forbidden: `ACCOUNTING-02` You wrote it, so another accountant signs it; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `ACCOUNTING-03` Signed already, or replaced; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PERIOD-01` The financial years are not set; `STORAGE-ACCOUNTING-01` A framework or policy version never changes.
   - `422` Unprocessable Entity: `ACCOUNTING-01` Not a framework or policy version that can be recorded; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `ACCOUNTING-01`, `ACCOUNTING-02`, `ACCOUNTING-03`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PERIOD-01`, `STORAGE-ACCOUNTING-01`
+- **Error codes:** `ACCOUNTING-01`, `ACCOUNTING-02`, `ACCOUNTING-03`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PERIOD-01`, `STORAGE-ACCOUNTING-01`
 
 ### `GET /v1/organisation/email/messages/{message_id}`
 

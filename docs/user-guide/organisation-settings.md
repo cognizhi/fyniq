@@ -49,8 +49,8 @@ the month the year starts in and the end of the first year no longer change.
 
 ## Settings that need a second approver
 
-- Thresholds, retention and the AI assistant need a second approver before they change: they show
-  **Needs a second approver**.
+- Thresholds, retention, the accounting sign-off and the AI assistant need a second approver before they
+  change: they show **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
@@ -93,6 +93,13 @@ rounding** (7030) instead of leaving the document part-paid.
 - A purchase of S$1,000 or more is offered as a fixed asset; a smaller one is an expense.
 - The company's accountant confirms the threshold, by approving the capitalisation threshold policy under
   **Settings → Accounting framework and policies**.
+
+## Accounting sign-off
+
+- A member with the Accountant role confirms the accounting framework and approves each accounting
+  policy under **Settings → Accounting framework and policies**. While this setting is on, Fyniq first
+  asks them to confirm it's them with their passkey or authenticator app, as for other approvals.
+- It is on by default. Turning it off needs a second approver, like the other thresholds.
 
 ## Self-approval threshold
 

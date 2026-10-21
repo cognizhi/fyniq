@@ -91,3 +91,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-21] compile | docs/user-guide/accounting-framework.md → settings.accounting (new page: the accounting framework and policies, FR-ORG-10, rev 0.62)
 
 ## [2026-10-21] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the capitalisation threshold is confirmed by its accounting policy; link to settings.accounting)
+
+## [2026-10-21] compile | docs/user-guide/accounting-framework.md, organisation-settings.md → settings.accounting, settings.organisation, settings.change (signing asks for a second factor while the Accounting sign-off setting is on; rev 0.63)

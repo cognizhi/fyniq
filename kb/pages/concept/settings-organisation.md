@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings (features, payment terms, tolerances, capitalisation and self-approval thresholds, data region, retention) and their recommended values
 sources:
-  - docs/user-guide/organisation-settings.md sha256:c8a306cd86f4766832f990f00055d7aef53deba9635a105aabb8de965bc13615
+  - docs/user-guide/organisation-settings.md sha256:e4be1ac373ab51c77f4045fd55f9eeac67dec766d4d3e62e2449c380306bf6c3
 data_class: general
 taint: trusted
 status: draft
@@ -64,6 +64,13 @@ aliases:
 - The company's accountant confirms it by approving the capitalisation threshold policy under **Settings → Accounting framework and policies** ([[settings.accounting]]).
 
 (src: docs/user-guide/organisation-settings.md#capitalisation-threshold)
+
+## Accounting sign-off
+
+- While this setting is on, a member with the Accountant role confirms the accounting framework and approves each accounting policy only after confirming it's them with a passkey or authenticator app, as for other approvals ([[settings.accounting]]).
+- It is on by default; turning it off needs a second approver, like the other thresholds.
+
+(src: docs/user-guide/organisation-settings.md#accounting-sign-off)
 
 ## Self-approval threshold
 

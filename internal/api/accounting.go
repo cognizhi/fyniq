@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/period"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -188,6 +189,29 @@ func accountingPolicyOf(ctx context.Context, all []storage.PolicyVersion, p stor
 	return out
 }
 
+// signingStepUp refuses a confirmation or an approval without step-up in the last 5 minutes while the organisation's
+// accounting.signing_step_up setting is on, as it is by default (the founders' decision of rev 0.63). Off, it asks
+// nothing more than the Accountant role and not being the writer.
+func (a *API) signingStepUp(ctx context.Context, u storage.UnitOfWork, what string) error {
+	today, err := orgToday(ctx, a, u)
+	if err != nil {
+		return err
+	}
+	d, _ := settings.Lookup("accounting.signing_step_up")
+	changes, err := u.Settings().Changes(ctx, d.Key)
+	if err != nil {
+		return err
+	}
+	if settings.On(d, changes, today).Value != "true" {
+		return nil
+	}
+	if p, _ := authn.From(ctx); !p.SteppedUp(a.deps.Clock.Now()) {
+		return problem(CodeStepUpRequired, what+" needs step-up authentication in the last 5 minutes (FR-ORG-10).",
+			"Confirm it's you with your passkey or authenticator app, then try again.")
+	}
+	return nil
+}
+
 // calendar is the organisation's financial years, and its today.
 func (a *API) calendar(ctx context.Context, u storage.UnitOfWork) (period.Calendar, time.Time, error) {
 	o, err := u.Organisation(ctx)
@@ -334,9 +358,10 @@ func registerAccounting(a *API) {
 		Tags: []string{"Organisation"}, Summary: "Confirm the accounting framework",
 		Description: "Records the caller's confirmation, as the accountant, that the company may use a framework version (FR-ORG-10; " +
 			"PRD-001 rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from " +
-			"the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). Side effects: " +
+			"the same year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). While the " +
+			"accounting.signing_step_up setting is on (the default), it needs step-up in the last 5 minutes. Side effects: " +
 			"the confirmation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
-	}, append([]string{CodeNotFound, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld}, AccountingCodes...),
+	}, append([]string{CodeNotFound, CodeStepUpRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld}, AccountingCodes...),
 		func(ctx context.Context, in *accountingConfirmInput) (*accountingFrameworkOutput, error) {
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (AccountingFramework, error) {
 				all, err := u.AccountingBasis().Frameworks(ctx)
@@ -354,6 +379,9 @@ func registerAccounting(a *API) {
 						"Read the year's framework to find its version.")
 				}
 				if err := accounting.MaySign("framework", cur.WrittenBy, signer(ctx), cur.ConfirmedBy, accounting.FrameworkReplaced(all, *cur)); err != nil {
+					return AccountingFramework{}, err
+				}
+				if err := a.signingStepUp(ctx, u, "Confirming the framework"); err != nil {
 					return AccountingFramework{}, err
 				}
 				f, err := u.AccountingBasis().ConfirmFramework(ctx, in.Version)
@@ -415,9 +443,10 @@ func registerAccounting(a *API) {
 		Tags: []string{"Organisation"}, Summary: "Approve an accounting policy",
 		Description: "Records the caller's approval, as the accountant, of a version of one accounting policy (FR-ORG-10; PRD-001 " +
 			"rev 0.62). Needs the Accountant role; never its writer, never twice, and never a version a later one from the same " +
-			"year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). Side effects: the " +
+			"year replaces (the founders' decision of 21 Oct 2026; the database refuses the writer too). While the " +
+			"accounting.signing_step_up setting is on (the default), it needs step-up in the last 5 minutes. Side effects: the " +
 			"approval and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
-	}, append([]string{CodeNotFound, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld}, AccountingCodes...),
+	}, append([]string{CodeNotFound, CodeStepUpRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld}, AccountingCodes...),
 		func(ctx context.Context, in *accountingApproveInput) (*accountingPolicyOutput, error) {
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (AccountingPolicy, error) {
 				all, err := u.AccountingBasis().Policies(ctx)
@@ -435,6 +464,9 @@ func registerAccounting(a *API) {
 						"Read the year's policies to find the version.")
 				}
 				if err := accounting.MaySign("policy", cur.WrittenBy, signer(ctx), cur.ApprovedBy, accounting.PolicyReplaced(all, *cur)); err != nil {
+					return AccountingPolicy{}, err
+				}
+				if err := a.signingStepUp(ctx, u, "Approving a policy"); err != nil {
 					return AccountingPolicy{}, err
 				}
 				p, err := u.AccountingBasis().ApprovePolicy(ctx, in.Area, in.Version)

@@ -3,23 +3,30 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // FR-ORG-10, G4-017 (the founders' decision of rev 0.62): the Owner, the Controller or the Accountant records the
 // framework and each policy from a financial year; a member who holds the Accountant role confirms or approves each
 // version, never its writer, never twice and never a replaced one. A year's statements are "Management statements",
 // naming no framework, until everything in force for it is signed; then they show the framework and edition, and a year
-// from 1 Jan 2027 under SFRS for Small Entities needs the Third Edition.
+// from 1 Jan 2027 under SFRS for Small Entities needs the Third Edition. While accounting.signing_step_up is on, as it is
+// by default, signing needs step-up in the last 5 minutes (the founders' decision of rev 0.63); off, it does not.
 // req: FR-ORG-10
 func TestAccountingFrameworkAndPolicies(t *testing.T) {
 	e := newEnv(t)
-	owner, writer, checker := e.as(authz.Owner), e.as(authz.Accountant), e.as(authz.Accountant)
+	owner, writer := e.as(authz.Owner), e.as(authz.Accountant)
+	checker := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: e.books.Org, Roles: []authz.Role{authz.Accountant},
+		StepUpAt: e.clock.Now().Add(-time.Minute)})
 	tag := e.call(http.MethodGet, "/v1/organisation/profile", e.as(authz.Controller), nil).Header.Get("ETag")
 	if p := e.call(http.MethodPatch, "/v1/organisation/profile", e.as(authz.Controller),
 		map[string]any{"fy_start_month": 1, "books_start": "2026-01-01", "first_year_end": "2026-12-31"}, "If-Match", tag); p.Status != 200 {
@@ -65,6 +72,8 @@ func TestAccountingFrameworkAndPolicies(t *testing.T) {
 		t.Fatalf("the revenue policy: %d %s", rev.Status, rev.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/organisation/accounting/policies/revenue/1/approve", writer, nil), "approveAccountingPolicy", 403, accounting.CodeOwn)
+	// Another accountant who has not stepped up in the last 5 minutes is asked to.
+	e.problemIs(e.call(http.MethodPost, "/v1/organisation/accounting/policies/revenue/1/approve", e.as(authz.Accountant), nil), "approveAccountingPolicy", 403, CodeStepUpRequired)
 	if a := e.call(http.MethodPost, "/v1/organisation/accounting/policies/revenue/1/approve", checker, nil); a.Status != 200 || a.Body["approved_by"] == nil || a.Body["approved_at"] == nil {
 		t.Fatalf("approved by another accountant: %d %s", a.Status, a.Raw)
 	}
@@ -115,5 +124,16 @@ func TestAccountingFrameworkAndPolicies(t *testing.T) {
 	e.problemIs(e.call(http.MethodPost, "/v1/organisation/accounting/policies/leases/2/approve", checker, nil), "approveAccountingPolicy", 409, accounting.CodeSigned)
 	if y = year("2026-10-15"); y.str("status") != "not_approved" || y.str("statement_title") != "Management statements" || y.Body["statement_basis"] != nil {
 		t.Fatalf("a revised policy: %s", y.Raw)
+	}
+
+	// With the setting off, signing asks for no step-up.
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Settings().Record(ctx, "accounting.signing_step_up", "true", "false", time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC), 1)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if a := e.call(http.MethodPost, "/v1/organisation/accounting/policies/leases/3/approve", e.as(authz.Accountant), nil); a.Status != 200 {
+		t.Fatalf("approved without step-up, the setting off: %d %s", a.Status, a.Raw)
 	}
 }
