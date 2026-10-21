@@ -528,6 +528,9 @@ func (r documents) Version(ctx context.Context, id uuid.UUID, version int) (stor
 	if err := r.u.check(); err != nil {
 		return storage.Document{}, err
 	}
+	if version < 1 || version > math.MaxInt32 {
+		return storage.Document{}, ports.ErrNotFound // no document has such a version
+	}
 	row, err := r.u.q.GetDocumentVersion(ctx, sqlcdb.GetDocumentVersionParams{ID: id, Version: int32(version)})
 	if err != nil {
 		return storage.Document{}, mapError(err)
@@ -755,6 +758,9 @@ func (r ledger) Append(ctx context.Context, e storage.NewEntry) (storage.Entry, 
 func (r ledger) Entries(ctx context.Context, afterRevision int64, limit int) ([]storage.Entry, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err
+	}
+	if limit < 1 || limit > 10000 {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d entries", limit), Hint: "Ask for 1 to 10,000"}
 	}
 	ids, err := r.u.q.EntryIDsAfter(ctx, sqlcdb.EntryIDsAfterParams{AfterRevision: afterRevision, PageSize: int32(limit)})
 	if err != nil {
