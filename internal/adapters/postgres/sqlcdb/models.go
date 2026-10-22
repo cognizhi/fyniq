@@ -627,6 +627,33 @@ type FyniqRateLimitWindow struct {
 	Used           int32
 }
 
+type FyniqRecurringBill struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Status         string
+	EveryMonths    int32
+	DayOfMonth     int32
+	StartsOn       time.Time
+	EndsOn         pgtype.Date
+	NextOn         pgtype.Date
+	Version        int32
+	ContentVersion int32
+	LastOn         pgtype.Date
+	LastBillID     *uuid.UUID
+	CreatedAt      time.Time
+}
+
+type FyniqRecurringBillVersion struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	RecurringBillID uuid.UUID
+	Version         int32
+	Content         []byte
+	EditedBy        string
+	EditedAt        time.Time
+}
+
 type FyniqRecurringJournal struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

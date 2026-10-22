@@ -474,15 +474,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 			out.Supplier.Name = c.LegalName
 		}
 	}
-	for _, l := range d.Lines {
-		bl := BillLineDraft{AccountID: l.AccountID.String(), Description: l.Description, GSTCode: l.GSTCode,
-			Net: Money{Amount: l.Net.String(), Currency: l.Net.Currency().Code}, GST: Money{Amount: l.GST.String(), Currency: l.GST.Currency().Code}}
-		if l.StatedGST != nil {
-			bl.StatedGST = &Money{Amount: l.StatedGST.String(), Currency: l.StatedGST.Currency().Code}
-		}
-		bl.SpreadMonths, bl.SpreadFrom = l.SpreadMonths, dayText(l.SpreadFrom)
-		out.Lines = append(out.Lines, bl)
-	}
+	out.Lines = billLinesOut(d)
 	total, err := d.Total()
 	if err != nil {
 		return Bill{}, err
@@ -552,6 +544,21 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 		out.States.Due = "overdue"
 	}
 	return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
+}
+
+// billLinesOut are a bill's lines as entered, as the API shows them.
+func billLinesOut(d bill.Draft) []BillLineDraft {
+	out := make([]BillLineDraft, 0, len(d.Lines))
+	for _, l := range d.Lines {
+		bl := BillLineDraft{AccountID: l.AccountID.String(), Description: l.Description, GSTCode: l.GSTCode,
+			Net: Money{Amount: l.Net.String(), Currency: l.Net.Currency().Code}, GST: Money{Amount: l.GST.String(), Currency: l.GST.Currency().Code}}
+		if l.StatedGST != nil {
+			bl.StatedGST = &Money{Amount: l.StatedGST.String(), Currency: l.StatedGST.Currency().Code}
+		}
+		bl.SpreadMonths, bl.SpreadFrom = l.SpreadMonths, dayText(l.SpreadFrom)
+		out = append(out, bl)
+	}
+	return out
 }
 
 // billPaid fills a posted or voided bill's payments: what is open of it, its payment state, and with withPayments the

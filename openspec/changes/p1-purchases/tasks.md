@@ -100,9 +100,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 7. Recurring bills (the owner's decision of 22 Oct 2026)
 
-- [ ] 7.1 Templates with versions; `create_scheduled_bill_draft` (EXECUTE for `fyniq_worker` only) and
+- [x] 7.1 Templates with versions; `create_scheduled_bill_draft` (EXECUTE for `fyniq_worker` only) and
   the job `bills.recurring`; drafts a person posts; threat model `scheduler-postings`. Tests
   `// req: FR-AP-09`, `// req: FR-AUT-02`, `// req: SEC-03`
+  (23 Oct 2026, PRD-001 rev 0.84, provisional: migration 000090; `journal.Bills` recurring commands and `MakeDue`; the
+  hourly `bills.recurring`; a draft keeps naming the recurring bill's version, and SOD-3 refuses its author on the post;
+  the six `/v1/recurring-bills` operations; the threat model covers it and rev 0.83's releases)
 - [ ] 7.2 Recurring bills on the board and their editor
 
 ## 8. Purchase orders

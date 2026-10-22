@@ -473,6 +473,27 @@ rate_limit_window | client_id | text | not null |
 rate_limit_window | kind | text | not null | 
 rate_limit_window | window_start | timestamp with time zone | not null | 
 rate_limit_window | used | integer | not null | 1
+recurring_bill | organisation_id | uuid | not null | current_org()
+recurring_bill | id | uuid | not null | uuidv7()
+recurring_bill | name | text | not null | 
+recurring_bill | status | text | not null | 'active'::text
+recurring_bill | every_months | integer | not null | 
+recurring_bill | day_of_month | integer | not null | 
+recurring_bill | starts_on | date | not null | 
+recurring_bill | ends_on | date | null | 
+recurring_bill | next_on | date | null | 
+recurring_bill | version | integer | not null | 1
+recurring_bill | content_version | integer | not null | 1
+recurring_bill | last_on | date | null | 
+recurring_bill | last_bill_id | uuid | null | 
+recurring_bill | created_at | timestamp with time zone | not null | now()
+recurring_bill_version | organisation_id | uuid | not null | current_org()
+recurring_bill_version | id | uuid | not null | uuidv7()
+recurring_bill_version | recurring_bill_id | uuid | not null | 
+recurring_bill_version | version | integer | not null | 
+recurring_bill_version | content | jsonb | not null | 
+recurring_bill_version | edited_by | text | not null | 
+recurring_bill_version | edited_at | timestamp with time zone | not null | now()
 recurring_journal | organisation_id | uuid | not null | current_org()
 recurring_journal | id | uuid | not null | uuidv7()
 recurring_journal | name | text | not null | 
@@ -1386,6 +1407,43 @@ rate_limit_window | rate_limit_window_pkey | PRIMARY KEY (organisation_id, id)
 rate_limit_window | rate_limit_window_used_not_null | NOT NULL used
 rate_limit_window | rate_limit_window_used_positive | CHECK ((used > 0))
 rate_limit_window | rate_limit_window_window_start_not_null | NOT NULL window_start
+recurring_bill | recurring_bill_content_version_fkey | FOREIGN KEY (organisation_id, id, content_version) REFERENCES recurring_bill_version(organisation_id, recurring_bill_id, version) DEFERRABLE INITIALLY DEFERRED
+recurring_bill | recurring_bill_content_version_not_null | NOT NULL content_version
+recurring_bill | recurring_bill_created_at_not_null | NOT NULL created_at
+recurring_bill | recurring_bill_day_of_month_not_null | NOT NULL day_of_month
+recurring_bill | recurring_bill_day_valid | CHECK (((day_of_month >= 1) AND (day_of_month <= 31)))
+recurring_bill | recurring_bill_ends_after_start | CHECK (((ends_on IS NULL) OR (ends_on >= starts_on)))
+recurring_bill | recurring_bill_every_known | CHECK ((every_months = ANY (ARRAY[1, 3, 6, 12])))
+recurring_bill | recurring_bill_every_months_not_null | NOT NULL every_months
+recurring_bill | recurring_bill_id_not_null | NOT NULL id
+recurring_bill | recurring_bill_last_bill_fkey | FOREIGN KEY (organisation_id, last_bill_id) REFERENCES document(organisation_id, id)
+recurring_bill | recurring_bill_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+recurring_bill | recurring_bill_name_not_null | NOT NULL name
+recurring_bill | recurring_bill_next_in_range | CHECK (((next_on IS NULL) OR ((next_on >= starts_on) AND ((ends_on IS NULL) OR (next_on <= ends_on)))))
+recurring_bill | recurring_bill_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+recurring_bill | recurring_bill_organisation_id_not_null | NOT NULL organisation_id
+recurring_bill | recurring_bill_pkey | PRIMARY KEY (organisation_id, id)
+recurring_bill | recurring_bill_starts_on_not_null | NOT NULL starts_on
+recurring_bill | recurring_bill_status_known | CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text])))
+recurring_bill | recurring_bill_status_not_null | NOT NULL status
+recurring_bill | recurring_bill_version_not_null | NOT NULL version
+recurring_bill | recurring_bill_versions_positive | CHECK (((version > 0) AND (content_version > 0)))
+recurring_bill | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+recurring_bill_version | recurring_bill_version_bill_fkey | FOREIGN KEY (organisation_id, recurring_bill_id) REFERENCES recurring_bill(organisation_id, id)
+recurring_bill_version | recurring_bill_version_content_not_null | NOT NULL content
+recurring_bill_version | recurring_bill_version_content_object | CHECK (((jsonb_typeof(content) = 'object'::text) AND (NOT (content ?| ARRAY['date'::text, 'due_date'::text, 'supplier_ref'::text, 'recurring_bill'::text]))))
+recurring_bill_version | recurring_bill_version_content_size | CHECK ((octet_length((content)::text) <= 1048576))
+recurring_bill_version | recurring_bill_version_edited_at_not_null | NOT NULL edited_at
+recurring_bill_version | recurring_bill_version_edited_by_format | CHECK ((edited_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+recurring_bill_version | recurring_bill_version_edited_by_not_null | NOT NULL edited_by
+recurring_bill_version | recurring_bill_version_id_not_null | NOT NULL id
+recurring_bill_version | recurring_bill_version_key | UNIQUE (organisation_id, recurring_bill_id, version)
+recurring_bill_version | recurring_bill_version_organisation_id_not_null | NOT NULL organisation_id
+recurring_bill_version | recurring_bill_version_pkey | PRIMARY KEY (organisation_id, id)
+recurring_bill_version | recurring_bill_version_positive | CHECK ((version > 0))
+recurring_bill_version | recurring_bill_version_recurring_bill_id_not_null | NOT NULL recurring_bill_id
+recurring_bill_version | recurring_bill_version_version_not_null | NOT NULL version
+recurring_bill_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 recurring_journal | recurring_journal_content_version_fkey | FOREIGN KEY (organisation_id, id, content_version) REFERENCES recurring_journal_version(organisation_id, recurring_journal_id, version) DEFERRABLE INITIALLY DEFERRED
 recurring_journal | recurring_journal_content_version_not_null | NOT NULL content_version
 recurring_journal | recurring_journal_created_at_not_null | NOT NULL created_at
@@ -1750,6 +1808,9 @@ CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organ
 CREATE UNIQUE INDEX period_variance_explanation_pkey ON fyniq.period_variance_explanation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
+CREATE UNIQUE INDEX recurring_bill_pkey ON fyniq.recurring_bill USING btree (organisation_id, id)
+CREATE UNIQUE INDEX recurring_bill_version_key ON fyniq.recurring_bill_version USING btree (organisation_id, recurring_bill_id, version)
+CREATE UNIQUE INDEX recurring_bill_version_pkey ON fyniq.recurring_bill_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX recurring_journal_pkey ON fyniq.recurring_journal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX recurring_journal_version_key ON fyniq.recurring_journal_version USING btree (organisation_id, recurring_journal_id, version)
 CREATE UNIQUE INDEX recurring_journal_version_pkey ON fyniq.recurring_journal_version USING btree (organisation_id, id)
@@ -1800,6 +1861,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_variance_explanation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_variance_explanation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_bill_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'recurring_bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'recurring_journal_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_review', 'id')
@@ -1823,6 +1885,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_pri
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation', 'organisation_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('role_assignment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_installation_audit()
@@ -1893,6 +1956,7 @@ CREATE TRIGGER period_reopen_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pe
 CREATE TRIGGER period_reopen_no_truncate BEFORE TRUNCATE ON fyniq.period_reopen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_variance_explanation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_variance_explanation FOR EACH ROW EXECUTE FUNCTION period_variance_explanation_guard()
 CREATE TRIGGER period_variance_explanation_no_truncate BEFORE TRUNCATE ON fyniq.period_variance_explanation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
 CREATE TRIGGER recurring_journal_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_journal_version FOR EACH ROW EXECUTE FUNCTION recurring_journal_version_immutable()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_review FOR EACH ROW EXECUTE FUNCTION review_log_guard()
@@ -1948,6 +2012,8 @@ period_close_check | tenant_isolation | * | (organisation_id = current_org()) | 
 period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+recurring_bill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+recurring_bill_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_journal_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 review_log_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1985,6 +2051,7 @@ claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) �
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
+create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
 create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3a11f739d0529e16f9662b7ad7fd8477
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
@@ -2036,6 +2103,7 @@ period_variance_explanation_guard() → trigger | security invoker | v | search_
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a
+recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d
 require_grant_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 10dc33c6231fa48667c6b95ffe2a04c4

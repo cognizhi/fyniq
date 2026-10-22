@@ -118,6 +118,11 @@ fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
 fyniq_api       EXECUTE   recover_super_admin()
+fyniq_api       INSERT    recurring_bill (day_of_month, ends_on, every_months, name, next_on, starts_on, status)
+fyniq_api       SELECT    recurring_bill
+fyniq_api       UPDATE    recurring_bill (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
+fyniq_api       INSERT    recurring_bill_version (content, edited_by, recurring_bill_id, version)
+fyniq_api       SELECT    recurring_bill_version
 fyniq_api       INSERT    recurring_journal (day_of_month, ends_on, every_months, name, next_on, starts_on, status)
 fyniq_api       SELECT    recurring_journal
 fyniq_api       UPDATE    recurring_journal (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
@@ -207,6 +212,8 @@ fyniq_executor  SELECT    period_close
 fyniq_executor  SELECT    period_close_check
 fyniq_executor  SELECT    period_reopen
 fyniq_executor  SELECT    period_variance_explanation
+fyniq_executor  SELECT    recurring_bill
+fyniq_executor  SELECT    recurring_bill_version
 fyniq_executor  SELECT    recurring_journal
 fyniq_executor  SELECT    recurring_journal_version
 fyniq_executor  SELECT    review_log_entry
@@ -261,6 +268,8 @@ fyniq_readonly  SELECT    period_close_check
 fyniq_readonly  SELECT    period_reopen
 fyniq_readonly  SELECT    period_variance_explanation
 fyniq_readonly  SELECT    rate_limit_window
+fyniq_readonly  SELECT    recurring_bill
+fyniq_readonly  SELECT    recurring_bill_version
 fyniq_readonly  SELECT    recurring_journal
 fyniq_readonly  SELECT    recurring_journal_version
 fyniq_readonly  SELECT    review_log_entry
@@ -288,6 +297,7 @@ fyniq_worker    SELECT    close_checklist_entry
 fyniq_worker    SELECT    close_checklist_template
 fyniq_worker    SELECT    contact
 fyniq_worker    EXECUTE   count_super_admins()
+fyniq_worker    EXECUTE   create_scheduled_bill_draft()
 fyniq_worker    EXECUTE   create_scheduled_draft()
 fyniq_worker    EXECUTE   create_scheduled_revaluation()
 fyniq_worker    SELECT    currencies
@@ -334,6 +344,9 @@ fyniq_worker    DELETE    rate_limit_window
 fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()
 fyniq_worker    EXECUTE   record_feed_rate()
+fyniq_worker    SELECT    recurring_bill
+fyniq_worker    UPDATE    recurring_bill (next_on)
+fyniq_worker    SELECT    recurring_bill_version
 fyniq_worker    SELECT    recurring_journal
 fyniq_worker    UPDATE    recurring_journal (next_on)
 fyniq_worker    SELECT    recurring_journal_version

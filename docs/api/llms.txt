@@ -128,6 +128,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
 - `GET /v1/purchases/gst-codes` (getPurchaseGSTCodes): Get the GST codes for purchases
+- `GET /v1/recurring-bills` (listRecurringBills): List the recurring bills
+- `POST /v1/recurring-bills` (createRecurringBill): Add a recurring bill
+- `GET /v1/recurring-bills/{recurring_bill_id}` (getRecurringBill): Get a recurring bill
+- `PUT /v1/recurring-bills/{recurring_bill_id}` (replaceRecurringBill): Change a recurring bill
+- `POST /v1/recurring-bills/{recurring_bill_id}/pause` (pauseRecurringBill): Pause a recurring bill
+- `POST /v1/recurring-bills/{recurring_bill_id}/resume` (resumeRecurringBill): Resume a recurring bill
 - `GET /v1/recurring-journals` (listRecurringJournals): List the recurring journals
 - `POST /v1/recurring-journals` (createRecurringJournal): Add a recurring journal
 - `GET /v1/recurring-journals/{recurring_journal_id}` (getRecurringJournal): Get a recurring journal

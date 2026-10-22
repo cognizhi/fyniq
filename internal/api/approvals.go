@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -856,8 +857,21 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		if err != nil {
 			return err
 		}
-		if doc.SavedBy == (storage.Actor{Type: "user", ID: signer.String()}).String() {
+		me := (storage.Actor{Type: "user", ID: signer.String()}).String()
+		if doc.SavedBy == me {
 			return problem(CodeOwnBill, "You prepared this bill, so another person approves it (SOD-3).", "Ask another person who holds the approval right")
+		}
+		// A draft the scheduler made from a recurring bill was prepared by whoever wrote that version of it, read from the
+		// recurring bill's own immutable versions, never from the draft (SOD-3; FR-AP-09, PRD-001 rev 0.84).
+		if ref := bill.RecurringOf(doc); ref != nil {
+			v, err := u.RecurringBills().Version(ctx, ref.ID, ref.Version)
+			if err != nil {
+				return err
+			}
+			if v.EditedBy == me {
+				return problem(CodeOwnBill, "You wrote the recurring bill this draft was made from, so another person approves it (SOD-3).",
+					"Ask another person who holds the approval right")
+			}
 		}
 		return nil
 	case approval.OpJournalPost: // SOD-3: whoever prepared the journal never approves it

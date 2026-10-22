@@ -84,6 +84,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.ReverseRevaluationsAll(ctx, k.Store, clock.Now())
 			return err
 		},
+		"bills.recurring": func(ctx context.Context) error {
+			_, err := journal.MakeDueBillsAll(ctx, k.Store, clock.Now())
+			return err
+		},
 		"bills.releases": func(ctx context.Context) error {
 			_, err := journal.ReleaseDueAll(ctx, k.Store, clock.Now())
 			return err

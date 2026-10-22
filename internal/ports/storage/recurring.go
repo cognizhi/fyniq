@@ -88,3 +88,66 @@ type RecurringJournals interface {
 	// next (nil when the schedule has ended).
 	MakeDraft(ctx context.Context, id uuid.UUID, on time.Time, next *time.Time) (Document, error)
 }
+
+// RecurringBill is a recurring bill at its version, with its current content (FR-AP-09; PRD-001 rev 0.84): kept as a
+// recurring journal is, whose content is a bill's and whose drafts are bills.
+type RecurringBill struct {
+	ID       uuid.UUID
+	Name     string
+	Status   RecurringStatus
+	Schedule Schedule
+	// NextOn is the next occurrence the scheduler makes a draft for; nil once the schedule has ended.
+	NextOn *time.Time
+	// Version is the version of the whole record, for If-Match; ContentVersion the version of its content.
+	Version        int
+	ContentVersion int
+	// Content is the current content version: a bill's supplier, currency, lines and notes as a document version stores
+	// them, without a date, a due date or the supplier's number. EditedBy wrote it, at EditedAt.
+	Content  []byte
+	EditedBy string
+	EditedAt time.Time
+	// LastOn and LastBillID are the last occurrence a draft was made for, and that draft bill.
+	LastOn     *time.Time
+	LastBillID *uuid.UUID
+}
+
+// RecurringBillDetails is what a person sets on a recurring bill. Content nil on an update keeps the content; any other
+// content is saved as its next version, written by the unit of work's actor.
+type RecurringBillDetails struct {
+	Name     string
+	Status   RecurringStatus
+	Schedule Schedule
+	NextOn   *time.Time
+	Content  []byte
+}
+
+// RecurringBillVersion is one version of a recurring bill's content, which never changes (FY058).
+type RecurringBillVersion struct {
+	Version  int
+	Content  []byte
+	EditedBy string
+	EditedAt time.Time
+}
+
+// RecurringBills are the organisation's recurring bills (FR-AP-09, FR-AUT-01). Every change is audited.
+type RecurringBills interface {
+	// Create adds a recurring bill at version 1 with its first content version.
+	Create(ctx context.Context, d RecurringBillDetails) (RecurringBill, error)
+	Get(ctx context.Context, id uuid.UUID) (RecurringBill, error)
+	// Lock reads a recurring bill and locks it until the unit of work ends, so what is computed from it holds.
+	Lock(ctx context.Context, id uuid.UUID) (RecurringBill, error)
+	// Update changes a recurring bill at its version and returns it at its next: CodeVersion when it changed since.
+	Update(ctx context.Context, id uuid.UUID, version int, d RecurringBillDetails) (RecurringBill, error)
+	// Page returns at most limit recurring bills by name, then ID, after the cursor's name and ID when afterID is set.
+	Page(ctx context.Context, afterName string, afterID *uuid.UUID, limit int) ([]RecurringBill, error)
+	// Version is one version of a recurring bill's content.
+	Version(ctx context.Context, id uuid.UUID, version int) (RecurringBillVersion, error)
+	// Due lists the active recurring bills whose next occurrence is on or before day (YYYY-MM-DD), earliest first: at
+	// most limit of them.
+	Due(ctx context.Context, day string, limit int) ([]uuid.UUID, error)
+	// MakeDraft makes the draft bill of a recurring bill's next occurrence, on, as the scheduler does (the database's
+	// create_scheduled_bill_draft: the current content, dated on, saved by "scheduler:bills.recurring", no number until
+	// it posts; CodeRecurring when on is not its active next occurrence), and moves its next occurrence to next (nil
+	// when the schedule has ended).
+	MakeDraft(ctx context.Context, id uuid.UUID, on time.Time, next *time.Time) (Document, error)
+}
