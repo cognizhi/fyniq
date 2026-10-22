@@ -354,3 +354,119 @@ func TestRateIsWithinHalfAUnitOfTheTenthPlace(t *testing.T) {
 		}
 	})
 }
+
+func gstOf(t tb, method GSTMethod, lines ...GSTNet) string {
+	t.Helper()
+	got, err := GSTExcl(lines, method)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var b strings.Builder
+	for _, s := range got {
+		fmt.Fprintf(&b, "%s %s %s %s; ", s.Code, s.Rate, s.Net, s.GST)
+	}
+	return b.String()
+}
+
+// Worked by hand. Three lines of S$10.06 at 9%: 0.9054 each, so 0.91 a line and S$2.73 by line, against round(30.18 ×
+// 0.09) = round(2.7162) = S$2.72 by subtotal: G4-024's supplier who rounded per line, one cent above. Three of S$10.05
+// go the other way (0.90 a line, S$2.70, against round(2.7135) = S$2.71). Each code is its own subtotal, in the order
+// codes first appear; a credit line rounds half away from zero; JPY rounds to the yen.
+// req: RND-GST-EXCL
+func TestGSTExclRoundsPerSubtotalOrPerLine(t *testing.T) {
+	tx := func(net string) GSTNet { return GSTNet{Code: "TX", Rate: "0.09", Net: m(t, net, sgd)} }
+	for _, c := range []struct {
+		name   string
+		method GSTMethod
+		lines  []GSTNet
+		want   string
+	}{
+		{"G4-024 by subtotal", GSTPerSubtotal, []GSTNet{tx("10.06"), tx("10.06"), tx("10.06")}, "TX 0.09 30.18 2.72; "},
+		{"G4-024 by line", GSTPerLine, []GSTNet{tx("10.06"), tx("10.06"), tx("10.06")}, "TX 0.09 30.18 2.73; "},
+		{"down by line", GSTPerLine, []GSTNet{tx("10.05"), tx("10.05"), tx("10.05")}, "TX 0.09 30.15 2.70; "},
+		{"down by subtotal", GSTPerSubtotal, []GSTNet{tx("10.05"), tx("10.05"), tx("10.05")}, "TX 0.09 30.15 2.71; "},
+		{"codes apart", GSTPerSubtotal, []GSTNet{tx("100.00"), {Code: "ZP", Rate: "0", Net: m(t, "50.00", sgd)}, tx("0.50"),
+			{Code: "BL", Rate: "0.090", Net: m(t, "20.00", sgd)}}, "TX 0.09 100.50 9.05; ZP 0 50.00 0.00; BL 0.090 20.00 1.80; "},
+		{"a credit line", GSTPerSubtotal, []GSTNet{tx("-5.50")}, "TX 0.09 -5.50 -0.50; "}, // −0.495 → −0.50
+		{"a credit line by line", GSTPerLine, []GSTNet{tx("5.50"), tx("-5.50")}, "TX 0.09 0.00 0.00; "},
+		{"the yen", GSTPerSubtotal, []GSTNet{{Code: "TX", Rate: "0.09", Net: m(t, "1005", jpy)}}, "TX 0.09 1005 90; "}, // 90.45
+		{"half a cent up", GSTPerSubtotal, []GSTNet{{Code: "TX", Rate: "0.05", Net: m(t, "0.10", sgd)}}, "TX 0.05 0.10 0.01; "},
+		{"no lines", GSTPerSubtotal, nil, ""},
+	} {
+		if got := gstOf(t, c.method, c.lines...); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+	for name, c := range map[string]struct {
+		lines  []GSTNet
+		method GSTMethod
+		want   string
+	}{
+		"no such method":        {[]GSTNet{tx("1.00")}, "invoice", `no method "invoice"`},
+		"two currencies":        {[]GSTNet{tx("1.00"), {Code: "TX", Rate: "0.09", Net: m(t, "1.00", usd)}}, GSTPerSubtotal, "line 2 is in USD"},
+		"two rates of a code":   {[]GSTNet{tx("1.00"), {Code: "TX", Rate: "0.08", Net: m(t, "1.00", sgd)}}, GSTPerLine, "line 2 gives code TX the rate 0.08"},
+		"a percentage":          {[]GSTNet{{Code: "TX", Rate: "9", Net: m(t, "1.00", sgd)}}, GSTPerSubtotal, "line 1's rate"},
+		"a negative rate":       {[]GSTNet{{Code: "TX", Rate: "-0.09", Net: m(t, "1.00", sgd)}}, GSTPerSubtotal, "line 1's rate"},
+		"a rate of one or more": {[]GSTNet{{Code: "TX", Rate: "1.0", Net: m(t, "1.00", sgd)}}, GSTPerSubtotal, "line 1's rate"},
+		"seven decimals":        {[]GSTNet{{Code: "TX", Rate: "0.0900001", Net: m(t, "1.00", sgd)}}, GSTPerSubtotal, "line 1's rate"},
+	} {
+		if _, err := GSTExcl(c.lines, c.method); err == nil || !strings.Contains(err.Error(), c.want) || !strings.Contains(err.Error(), GSTExclName) {
+			t.Errorf("%s: got %v, want an error with %q", name, err, c.want)
+		}
+	}
+}
+
+// By subtotal each code's GST is within half a cent of its exact net × rate; by line within half a cent a line; a
+// document's mirror image has the mirror GST; one line is the same either way; and the nets add up.
+// req: QA-ENG-03
+// req: RND-GST-EXCL
+func TestGSTExclProperties(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		rate := rapid.SampledFrom([]string{"0.09", "0.08", "0.07", "0.03", "0", "0.075"}).Draw(t, "rate")
+		n := rapid.IntRange(1, 12).Draw(t, "lines")
+		var lines, mirror []GSTNet
+		var units int64
+		for i := range n {
+			u := rapid.Int64Range(-100_000_000, 100_000_000).Draw(t, fmt.Sprintf("net %d", i))
+			units += u
+			lines = append(lines, GSTNet{Code: "TX", Rate: rate, Net: money.FromMinor(u, sgd)})
+			mirror = append(mirror, GSTNet{Code: "TX", Rate: rate, Net: money.FromMinor(-u, sgd)})
+		}
+		exact := new(apd.Decimal)
+		r, _, _ := apd.NewFromString(rate)
+		if _, err := work.Mul(exact, money.FromMinor(units, sgd).Decimal(), r); err != nil {
+			t.Fatal(err)
+		}
+		for _, method := range []GSTMethod{GSTPerSubtotal, GSTPerLine} {
+			got, err := GSTExcl(lines, method)
+			if err != nil || len(got) != 1 {
+				t.Fatalf("%s: %v %v", method, got, err)
+			}
+			if minor(t, got[0].Net) != units {
+				t.Fatalf("%s: the nets add to %s, want %d cents", method, got[0].Net, units)
+			}
+			// |GST − exact| ≤ ½ cent (by subtotal) or n × ½ cent (by line)
+			var diff apd.Decimal
+			if _, err := work.Sub(&diff, got[0].GST.Decimal(), exact); err != nil {
+				t.Fatal(err)
+			}
+			diff.Abs(&diff)
+			limit := apd.New(5, -3)
+			if method == GSTPerLine {
+				limit = apd.New(int64(5*n), -3)
+			}
+			if diff.Cmp(limit) > 0 {
+				t.Fatalf("%s: GST %s is %s from the exact %s, over %s", method, got[0].GST, diff.Text('f'), exact.Text('f'), limit.Text('f'))
+			}
+			back, _ := GSTExcl(mirror, method)
+			if minor(t, back[0].GST) != -minor(t, got[0].GST) {
+				t.Fatalf("%s: the mirror's GST %s is not −%s", method, back[0].GST, got[0].GST)
+			}
+		}
+		one, _ := GSTExcl(lines[:1], GSTPerSubtotal)
+		same, _ := GSTExcl(lines[:1], GSTPerLine)
+		if !one[0].GST.Equal(same[0].GST) {
+			t.Fatalf("one line: %s by subtotal, %s by line", one[0].GST, same[0].GST)
+		}
+	})
+}
