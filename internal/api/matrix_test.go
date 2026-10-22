@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz/authztest"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -70,6 +72,18 @@ func matrixOpening(e *env, tok string, draft bool) (porttest.Books, authn.Princi
 			panic(err)
 		}
 	}
+	e.tokens.mu.Lock()
+	p := e.tokens.m[tok]
+	e.tokens.mu.Unlock()
+	if p.Organisation != uuid.Nil {
+		p.Organisation = b.Org
+	}
+	return b, p
+}
+
+// matrixChecklistOrg makes an organisation of its own for tok's principal, with its October and November.
+func matrixChecklistOrg(e *env, tok string) (porttest.Books, authn.Principal) {
+	b := porttest.NewBooks(e.t, e.store, "Matrix checklist "+uuid.NewString()[:8])
 	e.tokens.mu.Lock()
 	p := e.tokens.m[tok]
 	e.tokens.mu.Unlock()
@@ -651,6 +665,41 @@ var matrixCalls = map[string]matrixCall{
 			return n == 0
 		}
 	},
+	"getCloseChecklistTemplate": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/close-checklist-template", tok, nil), nil
+	},
+	"getPeriodChecklist": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/periods/"+e.books.Nov.ID.String()+"/checklist", tok, nil), nil
+	},
+	// Each change to the template and each mark is made in an organisation of its own, so a refused call is seen to change
+	// nothing.
+	"replaceCloseChecklistTemplate": func(e *env, tok string) (response, func() bool) {
+		b, p := matrixChecklistOrg(e, tok)
+		r := e.call(http.MethodPut, "/v1/close-checklist-template", e.principal(p), map[string]any{"tasks": []any{map[string]any{"title": "Matrix task", "due_days": 3}}},
+			"If-Match", "*")
+		return r, func() bool {
+			var none bool
+			_ = e.store.Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				_, err := u.Closes().ChecklistTemplate(ctx)
+				none = errors.Is(err, ports.ErrNotFound)
+				return nil
+			})
+			return none
+		}
+	},
+	"markChecklistTask": func(e *env, tok string) (response, func() bool) {
+		b, p := matrixChecklistOrg(e, tok)
+		r := e.call(http.MethodPost, "/v1/periods/"+b.Oct.ID.String()+"/checklist/documents", e.principal(p), map[string]any{"state": "done"})
+		return r, func() bool {
+			var n int
+			_ = e.store.Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				es, err := u.Closes().ChecklistEntries(ctx, b.Oct.ID)
+				n = len(es)
+				return err
+			})
+			return n == 0
+		}
+	},
 	"getPeriodClose": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/periods/"+e.books.Oct.ID.String()+"/close", tok, nil), nil
 	},
@@ -699,6 +748,7 @@ var matrixCalls = map[string]matrixCall{
 	"closePeriod": func(e *env, tok string) (response, func() bool) {
 		ctx := context.Background()
 		b := porttest.NewBooks(e.t, e.store, "Matrix close "+uuid.NewString()[:8])
+		checklistDone(e.t, e.store, b.Org, b.Oct.ID)
 		c, err := e.api.closing.RunChecks(storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "matrix-preparer"}}), b.Org, b.Oct.ID)
 		if err != nil {
 			panic(err)
@@ -732,6 +782,7 @@ var matrixCalls = map[string]matrixCall{
 		as := func(who string) context.Context {
 			return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: who}})
 		}
+		checklistDone(e.t, e.store, b.Org, b.Oct.ID)
 		c, err := e.api.closing.RunChecks(as("matrix-preparer"), b.Org, b.Oct.ID)
 		if err == nil {
 			_, _, err = e.api.closing.Close(as("matrix-attester"), b.Org, b.Oct.ID, c.ID, "Reviewed.")

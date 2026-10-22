@@ -153,6 +153,27 @@ type FyniqBalance struct {
 	LineCount      int64
 }
 
+type FyniqCloseChecklistEntry struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	PeriodID        uuid.UUID
+	TaskKey         string
+	TemplateVersion int32
+	State           string
+	Note            *string
+	WrittenBy       string
+	WrittenAt       time.Time
+}
+
+type FyniqCloseChecklistTemplate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Version        int32
+	Tasks          []byte
+	WrittenBy      string
+	WrittenAt      time.Time
+}
+
 type FyniqContact struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID

@@ -3,6 +3,9 @@ package postgres
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -167,6 +170,74 @@ func (r closes) VarianceExplanations(ctx context.Context, period uuid.UUID) ([]s
 	out := make([]storage.VarianceExplanation, 0, len(rows))
 	for _, x := range rows {
 		out = append(out, varianceExplanationOf(x.ID, x.PeriodID, x.AccountID, x.CurrentAmount, x.PreviousAmount, x.Explanation, x.WrittenBy, x.WrittenAt))
+	}
+	return out, nil
+}
+
+func (r closes) SaveChecklistTemplate(ctx context.Context, tasks []byte) (storage.ChecklistTemplate, error) {
+	if err := r.u.check(); err != nil {
+		return storage.ChecklistTemplate{}, err
+	}
+	row, err := r.u.q.InsertChecklistTemplate(ctx, sqlcdb.InsertChecklistTemplateParams{Tasks: tasks, WrittenBy: r.u.actor(ctx), WrittenAt: r.u.store.clock.Now()})
+	if err != nil {
+		return storage.ChecklistTemplate{}, mapError(err)
+	}
+	out := storage.ChecklistTemplate{ID: row.ID, Version: int(row.Version), Tasks: row.Tasks, WrittenBy: row.WrittenBy, WrittenAt: row.WrittenAt}
+	if err := r.u.event(ctx, "close_checklist.template_saved", "close_checklist_template", out.ID, nil, map[string][2]any{
+		"version": {nil, out.Version}, "tasks": {nil, json.RawMessage(out.Tasks)}}); err != nil {
+		return storage.ChecklistTemplate{}, err
+	}
+	return out, nil
+}
+
+func (r closes) ChecklistTemplate(ctx context.Context) (storage.ChecklistTemplate, error) {
+	if err := r.u.check(); err != nil {
+		return storage.ChecklistTemplate{}, err
+	}
+	row, err := r.u.q.LatestChecklistTemplate(ctx)
+	if err != nil {
+		return storage.ChecklistTemplate{}, mapError(err)
+	}
+	return storage.ChecklistTemplate{ID: row.ID, Version: int(row.Version), Tasks: row.Tasks, WrittenBy: row.WrittenBy, WrittenAt: row.WrittenAt}, nil
+}
+
+func checklistEntryOf(id, period uuid.UUID, key string, version int32, state string, note *string, by string, at time.Time) storage.ChecklistEntry {
+	return storage.ChecklistEntry{ID: id, WrittenBy: by, WrittenAt: at, NewChecklistEntry: storage.NewChecklistEntry{PeriodID: period, TaskKey: key,
+		TemplateVersion: int(version), State: state, Note: str(note)}}
+}
+
+func (r closes) MarkChecklistTask(ctx context.Context, e storage.NewChecklistEntry) (storage.ChecklistEntry, error) {
+	if err := r.u.check(); err != nil {
+		return storage.ChecklistEntry{}, err
+	}
+	if e.TemplateVersion < 0 || e.TemplateVersion > math.MaxInt32 {
+		return storage.ChecklistEntry{}, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("template version %d is out of range", e.TemplateVersion)}
+	}
+	row, err := r.u.q.InsertChecklistEntry(ctx, sqlcdb.InsertChecklistEntryParams{PeriodID: e.PeriodID, TaskKey: e.TaskKey,
+		TemplateVersion: int32(e.TemplateVersion), State: e.State, Note: opt(e.Note), WrittenBy: r.u.actor(ctx), WrittenAt: r.u.store.clock.Now()})
+	if err != nil {
+		return storage.ChecklistEntry{}, mapError(err)
+	}
+	out := checklistEntryOf(row.ID, row.PeriodID, row.TaskKey, row.TemplateVersion, row.State, row.Note, row.WrittenBy, row.WrittenAt)
+	if err := r.u.event(ctx, "close_checklist.task_marked", "close_checklist_entry", out.ID, nil, map[string][2]any{
+		"period_id": {nil, out.PeriodID}, "task_key": {nil, out.TaskKey}, "template_version": {nil, out.TemplateVersion},
+		"state": {nil, out.State}, "note": {nil, out.Note}}); err != nil {
+		return storage.ChecklistEntry{}, err
+	}
+	return out, nil
+}
+
+func (r closes) ChecklistEntries(ctx context.Context, period uuid.UUID) ([]storage.ChecklistEntry, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.LatestChecklistEntries(ctx, period)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ChecklistEntry, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, checklistEntryOf(x.ID, x.PeriodID, x.TaskKey, x.TemplateVersion, x.State, x.Note, x.WrittenBy, x.WrittenAt))
 	}
 	return out, nil
 }

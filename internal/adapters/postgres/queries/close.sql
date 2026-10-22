@@ -43,3 +43,23 @@ RETURNING id, period_id, account_id, current_amount, previous_amount, explanatio
 SELECT DISTINCT ON (account_id) id, period_id, account_id, current_amount, previous_amount, explanation, written_by, written_at
 FROM fyniq.period_variance_explanation WHERE period_id = $1
 ORDER BY account_id, written_at DESC, id DESC;
+
+-- name: InsertChecklistTemplate :one
+-- The next version of the organisation's close checklist template (FR-GL-07); two at once collide on the version.
+INSERT INTO fyniq.close_checklist_template (version, tasks, written_by, written_at)
+VALUES ((SELECT coalesce(max(version), 0) + 1 FROM fyniq.close_checklist_template), $1, $2, $3)
+RETURNING id, version, tasks, written_by, written_at;
+
+-- name: LatestChecklistTemplate :one
+SELECT id, version, tasks, written_by, written_at FROM fyniq.close_checklist_template ORDER BY version DESC LIMIT 1;
+
+-- name: InsertChecklistEntry :one
+INSERT INTO fyniq.close_checklist_entry (period_id, task_key, template_version, state, note, written_by, written_at)
+VALUES ($1, $2, $3, $4, sqlc.narg(note), $5, $6)
+RETURNING id, period_id, task_key, template_version, state, note, written_by, written_at;
+
+-- name: LatestChecklistEntries :many
+-- Each task's latest entry for the period: its state (FR-GL-07).
+SELECT DISTINCT ON (task_key) id, period_id, task_key, template_version, state, note, written_by, written_at
+FROM fyniq.close_checklist_entry WHERE period_id = $1
+ORDER BY task_key, written_at DESC, id DESC;

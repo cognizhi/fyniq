@@ -35,6 +35,49 @@ type Closes interface {
 	ExplainVariance(ctx context.Context, e NewVarianceExplanation) (VarianceExplanation, error)
 	// VarianceExplanations are each account's latest explanation of the period's variance.
 	VarianceExplanations(ctx context.Context, period uuid.UUID) ([]VarianceExplanation, error)
+	// SaveChecklistTemplate records the next version of the organisation's close checklist template, its tasks as a JSON
+	// array, by the unit of work's actor, now (FR-GL-07).
+	SaveChecklistTemplate(ctx context.Context, tasks []byte) (ChecklistTemplate, error)
+	// ChecklistTemplate is the template's latest version, or ports.ErrNotFound while the organisation has saved none.
+	ChecklistTemplate(ctx context.Context) (ChecklistTemplate, error)
+	// MarkChecklistTask records a checklist task's state for a period, by the unit of work's actor, now. The database
+	// refuses it while the period is not open (CodeChecklist).
+	MarkChecklistTask(ctx context.Context, e NewChecklistEntry) (ChecklistEntry, error)
+	// ChecklistEntries are each task's latest entry for the period: its state.
+	ChecklistEntries(ctx context.Context, period uuid.UUID) ([]ChecklistEntry, error)
+}
+
+// ChecklistTemplate is a version of the close checklist template.
+type ChecklistTemplate struct {
+	ID        uuid.UUID
+	Version   int
+	Tasks     []byte // a JSON array of the tasks
+	WrittenBy string
+	WrittenAt time.Time
+}
+
+// The states of a checklist task.
+const (
+	ChecklistDone    = "done"
+	ChecklistSkipped = "skipped" // not this month, with a reason
+	ChecklistOpen    = "open"    // opened again
+)
+
+// NewChecklistEntry is what happened to a checklist task in a period.
+type NewChecklistEntry struct {
+	PeriodID        uuid.UUID
+	TaskKey         string
+	TemplateVersion int // 0 for the platform's recommended template
+	State           string
+	Note            string // what was done, or why it was skipped; required to skip
+}
+
+// ChecklistEntry is a recorded entry.
+type ChecklistEntry struct {
+	NewChecklistEntry
+	ID        uuid.UUID
+	WrittenBy string
+	WrittenAt time.Time
 }
 
 // NewVarianceExplanation explains an account's month-on-month variance: the two totals it explains, in the base

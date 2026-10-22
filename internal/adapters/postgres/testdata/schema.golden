@@ -113,6 +113,21 @@ balance | minor_units | smallint | not null |
 balance | amount | numeric(20,4) | not null | 
 balance | base_amount | numeric(20,4) | not null | 
 balance | line_count | bigint | not null | 
+close_checklist_entry | organisation_id | uuid | not null | current_org()
+close_checklist_entry | id | uuid | not null | uuidv7()
+close_checklist_entry | period_id | uuid | not null | 
+close_checklist_entry | task_key | text | not null | 
+close_checklist_entry | template_version | integer | not null | 
+close_checklist_entry | state | text | not null | 
+close_checklist_entry | note | text | null | 
+close_checklist_entry | written_by | text | not null | 
+close_checklist_entry | written_at | timestamp with time zone | not null | 
+close_checklist_template | organisation_id | uuid | not null | current_org()
+close_checklist_template | id | uuid | not null | uuidv7()
+close_checklist_template | version | integer | not null | 
+close_checklist_template | tasks | jsonb | not null | 
+close_checklist_template | written_by | text | not null | 
+close_checklist_template | written_at | timestamp with time zone | not null | 
 contact | organisation_id | uuid | not null | current_org()
 contact | id | uuid | not null | uuidv7()
 contact | legal_name | text | not null | 
@@ -767,6 +782,36 @@ balance | balance_organisation_id_not_null | NOT NULL organisation_id
 balance | balance_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
 balance | balance_period_id_not_null | NOT NULL period_id
 balance | balance_pkey | PRIMARY KEY (organisation_id, id)
+close_checklist_entry | close_checklist_entry_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+close_checklist_entry | close_checklist_entry_id_not_null | NOT NULL id
+close_checklist_entry | close_checklist_entry_key_format | CHECK ((task_key ~ '^[a-z0-9][a-z0-9-]{0,39}$'::text))
+close_checklist_entry | close_checklist_entry_note_length | CHECK (((note IS NULL) OR ((length(btrim(note)) >= 1) AND (length(btrim(note)) <= 1000))))
+close_checklist_entry | close_checklist_entry_organisation_id_not_null | NOT NULL organisation_id
+close_checklist_entry | close_checklist_entry_period_fkey | FOREIGN KEY (organisation_id, period_id) REFERENCES period(organisation_id, id)
+close_checklist_entry | close_checklist_entry_period_id_not_null | NOT NULL period_id
+close_checklist_entry | close_checklist_entry_pkey | PRIMARY KEY (organisation_id, id)
+close_checklist_entry | close_checklist_entry_skip_reason | CHECK (((state <> 'skipped'::text) OR (note IS NOT NULL)))
+close_checklist_entry | close_checklist_entry_state_known | CHECK ((state = ANY (ARRAY['done'::text, 'skipped'::text, 'open'::text])))
+close_checklist_entry | close_checklist_entry_state_not_null | NOT NULL state
+close_checklist_entry | close_checklist_entry_task_key_not_null | NOT NULL task_key
+close_checklist_entry | close_checklist_entry_template_version | CHECK ((template_version >= 0))
+close_checklist_entry | close_checklist_entry_template_version_not_null | NOT NULL template_version
+close_checklist_entry | close_checklist_entry_written_at_not_null | NOT NULL written_at
+close_checklist_entry | close_checklist_entry_written_by_not_null | NOT NULL written_by
+close_checklist_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+close_checklist_template | close_checklist_template_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+close_checklist_template | close_checklist_template_id_not_null | NOT NULL id
+close_checklist_template | close_checklist_template_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+close_checklist_template | close_checklist_template_organisation_id_not_null | NOT NULL organisation_id
+close_checklist_template | close_checklist_template_pkey | PRIMARY KEY (organisation_id, id)
+close_checklist_template | close_checklist_template_tasks_array | CHECK (((jsonb_typeof(tasks) = 'array'::text) AND ((jsonb_array_length(tasks) >= 1) AND (jsonb_array_length(tasks) <= 40)) AND (octet_length((tasks)::text) <= 65536)))
+close_checklist_template | close_checklist_template_tasks_not_null | NOT NULL tasks
+close_checklist_template | close_checklist_template_version_key | UNIQUE (organisation_id, version)
+close_checklist_template | close_checklist_template_version_not_null | NOT NULL version
+close_checklist_template | close_checklist_template_version_positive | CHECK ((version > 0))
+close_checklist_template | close_checklist_template_written_at_not_null | NOT NULL written_at
+close_checklist_template | close_checklist_template_written_by_not_null | NOT NULL written_by
+close_checklist_template | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 contact | contact_country_format | CHECK ((country ~ '^[A-Z]{2}$'::text))
 contact | contact_created_at_not_null | NOT NULL created_at
 contact | contact_currency_format | CHECK ((currency ~ '^[A-Z]{3}$'::text))
@@ -1489,6 +1534,7 @@ CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, p
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
+CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
 CREATE INDEX evidence_document ON fyniq.evidence USING btree (organisation_id, document_id, id)
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
@@ -1532,6 +1578,9 @@ CREATE UNIQUE INDEX audit_event_pkey ON fyniq.audit_event USING btree (organisat
 CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX balance_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, currency)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX close_checklist_entry_pkey ON fyniq.close_checklist_entry USING btree (organisation_id, id)
+CREATE UNIQUE INDEX close_checklist_template_pkey ON fyniq.close_checklist_template USING btree (organisation_id, id)
+CREATE UNIQUE INDEX close_checklist_template_version_key ON fyniq.close_checklist_template USING btree (organisation_id, version)
 CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
@@ -1615,6 +1664,8 @@ CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_e
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
@@ -1664,6 +1715,10 @@ CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON fyniq.audit_chain FOR 
 CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_event_append()
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER close_checklist_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_entry FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
+CREATE TRIGGER close_checklist_entry_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER close_checklist_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_template FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
+CREATE TRIGGER close_checklist_template_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_sequence_guard BEFORE UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION document_sequence_guard()
@@ -1731,6 +1786,8 @@ approval_signature | tenant_isolation | * | (organisation_id = current_org()) | 
 audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+close_checklist_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+close_checklist_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1789,6 +1846,7 @@ beat(p_name text, p_at timestamp with time zone, p_detail text) → void | secur
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
 claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
+close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661

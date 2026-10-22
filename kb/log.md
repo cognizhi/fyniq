@@ -101,3 +101,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-22] compile | docs/user-guide/opening-balances.md → accounting.opening-balances (changing posted opening balances with another person's approval, FM-1)
 
 ## [2026-10-22] compile | docs/user-guide/journals.md → accounting.journals (attaching evidence to a journal, FR-DOC-05)
+
+## [2026-10-22] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close checklist's check, FR-GL-07)

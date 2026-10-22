@@ -236,6 +236,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/close-checklist-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the close checklist template
+         * @description The tasks every month's close checklist has (FR-GL-07; PRD-001 rev 0.68, provisional), in order, each with the role that usually does it and the days after the month's end it is due by: the organisation's latest version, or the platform's recommended template (version 0) while it has saved none. With its ETag. Read-only; no side effects.
+         */
+        get: operations["getCloseChecklistTemplate"];
+        /**
+         * Change the close checklist template
+         * @description Saves the close checklist template's next version: every task, in order (FR-GL-07; the founders' decision of 22 Oct 2026: the Accountant or the Controller changes it). A task keeps its key so the months already marked keep their marks; a new task leaves it out and gets one from its title; a task left out is no longer on any open month's checklist. One to 40 tasks, each with a title of up to 200 characters, a detail of up to 500, an owner among the roles that work on the close, and a due day from 0 to 60 after the month's end; every problem is listed at once (CLOSE-11). A version never changes. Side effects: the new version and its audit event. Needs If-Match with the template's ETag ("0" for the recommended template). Prefer: return=preview checks it and saves nothing.
+         */
+        put: operations["replaceCloseChecklistTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/contacts": {
         parameters: {
             query?: never;
@@ -1140,6 +1164,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/periods/{period_id}/checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a month's close checklist
+         * @description A month's close checklist (FR-GL-07, FM-4; PRD-001 rev 0.68, provisional): the current template's tasks, in order, each due the given days after the month's end, with its latest mark: done, skipped for the month with a reason, or open, and who marked it when. The close checks refuse the close while a task is open (Appendix C.2 #58). Read-only; no side effects.
+         */
+        get: operations["getPeriodChecklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/periods/{period_id}/checklist/{task_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a task of a month's close checklist
+         * @description Marks a task of an open month's close checklist done, skipped for the month with a reason (CLOSE-13), or open again (FR-GL-07; PRD-001 rev 0.68, provisional), by the members who run the close checks. Each mark is kept, append-only: the latest is the task's state, and the database refuses one in a month that is not open (STORAGE-CLOSE-03). Run the close checks again afterwards: they record what they found when they ran. Side effects: the mark and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+         */
+        post: operations["markChecklistTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/periods/{period_id}/close": {
         parameters: {
             query?: never;
@@ -1175,7 +1239,7 @@ export interface paths {
         put?: never;
         /**
          * Run a period's close checks
-         * @description Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
+         * @description Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances), checklist tasks neither done nor skipped with a reason (✖, FR-GL-07; getPeriodChecklist) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
          */
         post: operations["runCloseChecks"];
         delete?: never;
@@ -2766,6 +2830,151 @@ export interface components {
              */
             accounts: number;
         };
+        ChecklistItem: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-06T02:00:00Z
+             */
+            at?: string;
+            /** @description Who marked it last. */
+            by?: components["schemas"]["Person"];
+            /**
+             * @description More about it.
+             * @example Each balance agrees with its statement at the month's end
+             */
+            detail?: string;
+            /**
+             * Format: date
+             * @description When it is due: the month's end plus the template's due days.
+             * @example 2026-11-07
+             */
+            due_on: string;
+            /**
+             * @description The task's key.
+             * @example bank
+             */
+            key: string;
+            /**
+             * @description What was done, or why it was skipped.
+             * @example 4 statements agreed
+             */
+            note?: string;
+            /**
+             * @description The role that usually does it.
+             * @example accountant
+             */
+            owner_role?: string;
+            /**
+             * @description open until it is done, or skipped for the month with a reason; the close checks refuse the close while one is open.
+             * @example done
+             * @enum {string}
+             */
+            state: "open" | "done" | "skipped";
+            /**
+             * @description What the task is.
+             * @example Bank, card and wallet accounts reconciled
+             */
+            title: string;
+        };
+        ChecklistMark: {
+            /**
+             * @description What was done; for a skipped task, why it does not apply this month.
+             * @example 4 statements agreed
+             */
+            note?: string;
+            /**
+             * @description done; skipped for the month, with a reason in note; or open again.
+             * @example done
+             * @enum {string}
+             */
+            state: "done" | "skipped" | "open";
+        };
+        ChecklistTask: {
+            /**
+             * @description More about it.
+             * @example Each balance agrees with its statement at the month's end
+             */
+            detail?: string;
+            /**
+             * Format: int64
+             * @description Due this many days after the month's end.
+             * @example 7
+             */
+            due_days: number;
+            /**
+             * @description The task's key: the month's checklist marks it by it.
+             * @example bank
+             */
+            key: string;
+            /**
+             * @description The role that usually does it.
+             * @example accountant
+             * @enum {string}
+             */
+            owner_role?: "owner" | "controller" | "accountant" | "bookkeeper" | "ar_specialist" | "ap_specialist" | "payroll_administrator" | "tax_agent";
+            /**
+             * @description What the task is.
+             * @example Bank, card and wallet accounts reconciled
+             */
+            title: string;
+        };
+        ChecklistTaskInput: {
+            /**
+             * @description More about it.
+             * @example Each balance agrees with its statement at the month's end
+             */
+            detail?: string;
+            /**
+             * Format: int64
+             * @description Due this many days after the month's end; 0, the default, at the month's end.
+             * @example 7
+             */
+            due_days?: number;
+            /**
+             * @description The task's key: keep it for a task the template has, so its months keep their marks; leave it out for a new task, which gets one from its title.
+             * @example bank
+             */
+            key?: string;
+            /**
+             * @description The role that usually does it.
+             * @example accountant
+             * @enum {string}
+             */
+            owner_role?: "owner" | "controller" | "accountant" | "bookkeeper" | "ar_specialist" | "ap_specialist" | "payroll_administrator" | "tax_agent";
+            /**
+             * @description What the task is.
+             * @example Bank, card and wallet accounts reconciled
+             */
+            title: string;
+        };
+        ChecklistTemplate: {
+            /**
+             * @description true while it is the platform's recommended template.
+             * @example false
+             */
+            recommended: boolean;
+            /** @description Its tasks, in order. */
+            tasks: components["schemas"]["ChecklistTask"][];
+            /**
+             * Format: int64
+             * @description Its version; 0 for the platform's recommended template, in force until the organisation saves one.
+             * @example 2
+             */
+            version: number;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-10-22T09:00:00Z
+             */
+            written_at?: string;
+            /** @description Who saved this version; absent for the recommended template. */
+            written_by?: components["schemas"]["Person"];
+        };
+        ChecklistTemplateRequest: {
+            /** @description Every task, in order: a task left out is no longer on the checklist. */
+            tasks: components["schemas"]["ChecklistTaskInput"][] | null;
+        };
         CloseCheckItem: {
             /**
              * @description More about it, and what to do.
@@ -2773,7 +2982,7 @@ export interface components {
              */
             detail?: string;
             /**
-             * @description Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances or opening; more join as their modules arrive.
+             * @description Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances, checklist or opening; more join as their modules arrive.
              * @example drafts
              */
             key: string;
@@ -4872,6 +5081,35 @@ export interface components {
              * @example 1
              */
             version: number;
+        };
+        PeriodChecklist: {
+            /**
+             * Format: int64
+             * @description How many tasks are done.
+             * @example 4
+             */
+            done: number;
+            /**
+             * Format: int64
+             * @description How many are neither: the close checks refuse the close while any is (Appendix C.2 #58).
+             * @example 1
+             */
+            open: number;
+            period: components["schemas"]["Period"];
+            /**
+             * Format: int64
+             * @description How many are skipped for the month.
+             * @example 1
+             */
+            skipped: number;
+            /** @description Its tasks, in the template's order. */
+            tasks: components["schemas"]["ChecklistItem"][];
+            /**
+             * Format: int64
+             * @description The template version its tasks come from; 0 for the recommended template.
+             * @example 2
+             */
+            template_version: number;
         };
         PeriodCloseRecord: {
             /**
@@ -7920,6 +8158,232 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-07` A rejection needs its reason. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCloseChecklistTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecklistTemplate"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceCloseChecklistTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChecklistTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecklistTemplate"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `CLOSE-12` No such task on the checklist; `STORAGE-CLOSE-03` The checklist does not change that way; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `CLOSE-11` The checklist template is not valid; `CLOSE-13` Skipping a task needs a reason. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -14948,6 +15412,239 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPeriodChecklist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The period's ID. */
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodChecklist"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    markChecklistTask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The period's ID. */
+                period_id: string;
+                /** @description The task's key. */
+                task_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChecklistMark"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodChecklist"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-12` No such task on the checklist; `STORAGE-CLOSE-03` The checklist does not change that way; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CLOSE-11` The checklist template is not valid; `CLOSE-13` Skipping a task needs a reason. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

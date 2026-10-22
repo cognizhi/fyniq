@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "More about it.",
+      "examples": [
+        "Each balance agrees with its statement at the month's end"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "due_days": {
+      "description": "Due this many days after the month's end; 0, the default, at the month's end.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "maximum": 60,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "key": {
+      "description": "The task's key: keep it for a task the template has, so its months keep their marks; leave it out for a new task, which gets one from its title.",
+      "examples": [
+        "bank"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    },
+    "owner_role": {
+      "description": "The role that usually does it.",
+      "enum": [
+        "owner",
+        "controller",
+        "accountant",
+        "bookkeeper",
+        "ar_specialist",
+        "ap_specialist",
+        "payroll_administrator",
+        "tax_agent"
+      ],
+      "examples": [
+        "accountant"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What the task is.",
+      "examples": [
+        "Bank, card and wallet accounts reconciled"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "title": "ChecklistTaskInput",
+  "type": "object"
+}

@@ -115,6 +115,7 @@ func TestChangingPostedOpeningBalances(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	checklistDone(t, e.store, e.books.Org, oct.ID)
 	c, err := e.api.closing.RunChecks(as("preparer"), e.books.Org, oct.ID)
 	if err == nil {
 		_, _, err = e.api.closing.Close(as("attester"), e.books.Org, oct.ID, c.ID, "Reviewed.")

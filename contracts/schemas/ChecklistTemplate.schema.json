@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "recommended": {
+      "description": "true while it is the platform's recommended template.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "tasks": {
+      "description": "Its tasks, in order.",
+      "items": {
+        "$ref": "ChecklistTask.schema.json"
+      },
+      "type": "array"
+    },
+    "version": {
+      "description": "Its version; 0 for the platform's recommended template, in force until the organisation saves one.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "written_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-22T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "written_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who saved this version; absent for the recommended template."
+    }
+  },
+  "required": [
+    "version",
+    "recommended",
+    "tasks"
+  ],
+  "title": "ChecklistTemplate",
+  "type": "object"
+}

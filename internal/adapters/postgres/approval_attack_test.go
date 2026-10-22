@@ -532,6 +532,7 @@ func TestAttackAReopeningIsTheApprovedRequest(t *testing.T) {
 		return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: who}})
 	}
 	svc := closing.Service{Store: st}
+	checklistDone(t, st, b.Org, b.Oct.ID)
 	c, err := svc.RunChecks(as("preparer"), b.Org, b.Oct.ID)
 	if err != nil {
 		t.Fatal(err)

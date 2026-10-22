@@ -495,6 +495,7 @@ const (
 	CodeAccounting     = "STORAGE-ACCOUNTING-01" // a framework or policy version never changes; it is confirmed or approved once, never by its writer
 	CodeClose          = "STORAGE-CLOSE-01"      // a close is attested by the one who ran its checks, or on checks not clean or of another period; or a close record changed
 	CodeVariance       = "STORAGE-CLOSE-02"      // a variance explained in a period that is not open, or of an account not income or expense; or an explanation changed
+	CodeChecklist      = "STORAGE-CLOSE-03"      // a checklist task marked in a period that is not open; or a checklist record changed
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

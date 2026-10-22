@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
@@ -29,6 +31,7 @@ func TestReopeningAClosedPeriod(t *testing.T) {
 	}
 	closeIt := func(id string) response {
 		t.Helper()
+		checklistDone(t, e.store, e.books.Org, uuid.MustParse(id))
 		c := e.call(http.MethodPost, path(id, "close-checks"), ahkow, nil, "If-Match", etagOf(id))
 		r := e.call(http.MethodPost, path(id, "close"), weiling, map[string]any{"checks_id": c.str("checks", "id"), "statement": "Reviewed."}, "If-Match", etagOf(id))
 		if r.Status != 200 {

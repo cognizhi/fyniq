@@ -1538,6 +1538,49 @@ Starts a paused recurring journal again (FR-GL-02; PRD-001 rev 0.60): its next d
 
 Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08).
 
+### `GET /v1/close-checklist-template`
+
+**Get the close checklist template** (`getCloseChecklistTemplate`)
+
+The tasks every month's close checklist has (FR-GL-07; PRD-001 rev 0.68, provisional), in order, each with the role that usually does it and the days after the month's end it is due by: the organisation's latest version, or the platform's recommended template (version 0) while it has saved none. With its ETag. Read-only; no side effects.
+
+- **Permission:** View on Period close / reopen
+- **Responses:**
+  - `200` OK [`ChecklistTemplate`](../../contracts/schemas/ChecklistTemplate.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `PUT /v1/close-checklist-template`
+
+**Change the close checklist template** (`replaceCloseChecklistTemplate`)
+
+Saves the close checklist template's next version: every task, in order (FR-GL-07; the founders' decision of 22 Oct 2026: the Accountant or the Controller changes it). A task keeps its key so the months already marked keep their marks; a new task leaves it out and gets one from its title; a task left out is no longer on any open month's checklist. One to 40 tasks, each with a title of up to 200 characters, a detail of up to 500, an owner among the roles that work on the close, and a due day from 0 to 60 after the month's end; every problem is listed at once (CLOSE-11). A version never changes. Side effects: the new version and its audit event. Needs If-Match with the template's ETag ("0" for the recommended template). Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Period close / reopen
+- **Parameters:**
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ChecklistTemplateRequest`](../../contracts/schemas/ChecklistTemplateRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ChecklistTemplate`](../../contracts/schemas/ChecklistTemplate.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `CLOSE-12` No such task on the checklist; `STORAGE-CLOSE-03` The checklist does not change that way; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `CLOSE-11` The checklist template is not valid; `CLOSE-13` Skipping a task needs a reason.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `CLOSE-11`, `CLOSE-12`, `CLOSE-13`, `STORAGE-CLOSE-03`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/periods`
 
 **List the periods** (`listPeriods`)
@@ -1575,6 +1618,53 @@ A period with its status and its ETag. Read-only; no side effects.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `GET /v1/periods/{period_id}/checklist`
+
+**Get a month's close checklist** (`getPeriodChecklist`)
+
+A month's close checklist (FR-GL-07, FM-4; PRD-001 rev 0.68, provisional): the current template's tasks, in order, each due the given days after the month's end, with its latest mark: done, skipped for the month with a reason, or open, and who marked it when. The close checks refuse the close while a task is open (Appendix C.2 #58). Read-only; no side effects.
+
+- **Permission:** View on Period close / reopen
+- **Parameters:**
+  - `period_id` (path, required): The period's ID.
+- **Responses:**
+  - `200` OK [`PeriodChecklist`](../../contracts/schemas/PeriodChecklist.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/periods/{period_id}/checklist/{task_key}`
+
+**Mark a task of a month's close checklist** (`markChecklistTask`)
+
+Marks a task of an open month's close checklist done, skipped for the month with a reason (CLOSE-13), or open again (FR-GL-07; PRD-001 rev 0.68, provisional), by the members who run the close checks. Each mark is kept, append-only: the latest is the task's state, and the database refuses one in a month that is not open (STORAGE-CLOSE-03). Run the close checks again afterwards: they record what they found when they ran. Side effects: the mark and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+
+- **Permission:** Create on Period close / reopen
+- **Parameters:**
+  - `period_id` (path, required): The period's ID.
+  - `task_key` (path, required): The task's key.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ChecklistMark`](../../contracts/schemas/ChecklistMark.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PeriodChecklist`](../../contracts/schemas/PeriodChecklist.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CLOSE-01` The period is not open; `CLOSE-12` No such task on the checklist; `STORAGE-CLOSE-03` The checklist does not change that way; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CLOSE-11` The checklist template is not valid; `CLOSE-13` Skipping a task needs a reason.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLOSE-01`, `CLOSE-11`, `CLOSE-12`, `CLOSE-13`, `STORAGE-CLOSE-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/periods/{period_id}/close`
 
@@ -1629,7 +1719,7 @@ Attests a period's close on its latest checks and closes it, in one transaction 
 
 **Run a period's close checks** (`runCloseChecks`)
 
-Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
+Runs the close checks of an open period and records them with the ledger revision they saw and who ran them: the close's preparer (FR-GL-07; PRD-001 rev 0.50, provisional). Until the checks catalogue arrives they are: every earlier period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances), checklist tasks neither done nor skipped with a reason (✖, FR-GL-07; getPeriodChecklist) and, in the period the books start in, opening balances not posted (⚠). Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs them and records nothing.
 
 - **Permission:** Create on Period close / reopen
 - **Parameters:**

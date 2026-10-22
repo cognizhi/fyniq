@@ -3,6 +3,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"testing"
@@ -69,7 +70,9 @@ func TestThePeriodClose(t *testing.T) {
 	}
 	e.problemIs(closeIt(weiling, nov, r.str("checks", "id")), "closePeriod", 409, closing.CodeNotClean)
 
-	// October: Ah Kow runs the checks, which see a draft dated in the month (⚠, the close may go on).
+	// October: its checklist is done (C.2 #58); Ah Kow runs the checks, which see a draft dated in the month (⚠, the close
+	// may go on).
+	checklistDone(t, e.store, e.books.Org, e.books.Oct.ID)
 	id, _ := e.createDraft("5.00")
 	r = checks(ahkow, oct)
 	if r.Status != 200 || of(r, "clean") != true || severity(r, "drafts") != "warning" || severity(r, "trial-balance") != "ok" ||
@@ -136,5 +139,26 @@ func TestThePeriodClose(t *testing.T) {
 		if !strings.Contains(trail, want) {
 			t.Errorf("no %s in the trail", want)
 		}
+	}
+}
+
+// checklistDone marks every task of a period's close checklist done, so its close checks see the checklist finished
+// (FR-GL-07, C.2 #58).
+func checklistDone(t testing.TB, store storage.Store, org, period uuid.UUID) {
+	t.Helper()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "checklist-preparer"}})
+	if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		c, err := closing.ChecklistOf(ctx, u, period)
+		if err != nil {
+			return err
+		}
+		for _, it := range c.Items {
+			if _, err := closing.MarkTask(ctx, u, period, it.Key, storage.ChecklistDone, ""); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
 	}
 }

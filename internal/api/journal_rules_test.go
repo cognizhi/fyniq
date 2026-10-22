@@ -380,6 +380,7 @@ func TestJournalsCarryTheWorkbooksStatuses(t *testing.T) {
 	as := func(who string) context.Context {
 		return storage.WithAudit(ctx, storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: who}})
 	}
+	checklistDone(t, e.store, e.books.Org, e.books.Oct.ID)
 	c, err := e.api.closing.RunChecks(as("status-preparer"), e.books.Org, e.books.Oct.ID)
 	if err == nil {
 		_, _, err = e.api.closing.Close(as("status-attester"), e.books.Org, e.books.Oct.ID, c.ID, "Reviewed.")
