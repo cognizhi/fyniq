@@ -71,11 +71,12 @@ func problemContentType(ct string) string {
 	return ct
 }
 
-// LedgerCodes are the engine's validation codes: posting a journal can return any of them.
+// LedgerCodes are the engine's validation codes, and the cascade's FX-01 for a line it finds no rate for (ENG-40):
+// posting a journal can return any of them.
 var LedgerCodes = []string{ledger.CodeNoDate, ledger.CodeTooFewLines, ledger.CodeZeroLine, ledger.CodeUnknownAccount,
 	ledger.CodeGroupAccount, ledger.CodeInactiveAccount, ledger.CodeMissingRate, ledger.CodeWrongRate, ledger.CodeUnbalancedBase,
 	ledger.CodeUnbalancedCur, ledger.CodeTooLong, ledger.CodeNotPosted, ledger.CodeRateOnBase, ledger.CodeBaseRange,
-	ledger.CodeShareCapital, ledger.CodeReversalDate, ledger.CodeForeignOpening}
+	ledger.CodeShareCapital, ledger.CodeReversalDate, ledger.CodeForeignOpening, fx.CodeNoRate}
 
 // The API's own codes. The domain's codes (JOURNAL-*, LEDGER-*, MONEY-*, STORAGE-*) pass through.
 const (

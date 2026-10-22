@@ -27,7 +27,11 @@
 
 ## 2. Manual journals
 
-- [ ] 2.1 A foreign-currency journal line without a typed rate takes the cascade's rate for the journal's date when its statuses are worked out and when it posts, with its source; `FX-01` as the line's status when there is none. Tests `// req: ENG-40` and `// req: FR-GL-05` (the source on every converted amount)
+- [x] 2.1 A foreign-currency journal line without a typed rate takes the cascade's rate for the journal's date when its statuses are worked out and when it posts, with its source; `FX-01` as the line's status when there is none. Tests `// req: ENG-40` and `// req: FR-GL-05` (the source on every converted amount)
+  (22 Oct 2026, PRD rev 0.71: `journal.rated` fills each such line before the engine sees it, which stays pure; FX-01
+  takes the place of LEDGER-07 on a line with no rate, in the checks and in the refusal; a recurring journal's checks
+  leave rates to its drafts; `ratedAs` gives replay the rate the entry kept. Test:
+  `TestForeignCurrencyJournalsTakeTheCascadesRate`.)
 
 ## 3. Month-end revaluation
 

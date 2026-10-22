@@ -37,6 +37,12 @@ Source: PRD-001 §10.8 · Priority M · Phase P1
 - **THEN** it takes the feed's latest rate within those 7 days, and the source names that rate's own date
 - **AND** with none in the 7 days it falls to the monthly table [accountant to confirm the look-back]
 
+#### Scenario: A manual journal takes the cascade's rate (rev 0.71)
+- **GIVEN** a manual journal's foreign-currency line without a typed rate
+- **WHEN** its checks run, and when it posts
+- **THEN** the line takes the rate the cascade finds for the journal's date, and the entry records it with its source
+- **AND** with no rate anywhere the line's check is FX-01 and posting is refused; a typed rate stays the document's own
+
 #### Scenario: Duplicate monthly-table rates
 - **GIVEN** the monthly table holds more than one rate for a currency and month
 - **WHEN** a posting takes the rate from the monthly table

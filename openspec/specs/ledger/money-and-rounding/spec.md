@@ -62,7 +62,7 @@ Source: PRD-001 §10.3 · Priority M · Phase P0
 
 #### Scenario: FX rates are base per one unit
 - **WHEN** an FX rate is stored
-- **THEN** it is base-currency units per one unit of the line's currency, and a manual journal's rate is entered that way
+- **THEN** it is base-currency units per one unit of the line's currency, and a manual journal's rate is entered that way, or left out to take the cascade's (rev 0.71, ENG-40)
 - **AND** a rate quoted the other way or per 100 units is converted when it is stored (`RND-RATE`), and the original quote is kept beside it
 
 #### Scenario: Quantities and unit prices
