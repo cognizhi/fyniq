@@ -64,6 +64,9 @@ export const routes = [
   { kind: "route", id: "bill-new", path: "/purchases/bills/new", mode: "basic", signedIn: true, help: "bill.new", guide: "purchases.bills#enter-a-bill" },
   { kind: "route", id: "credit-new", path: "/purchases/credits/new", mode: "basic", signedIn: true, help: "credit.new", guide: "purchases.bills#credit-notes" },
   { kind: "route", id: "bill", path: "/purchases/bills/$billId", mode: "basic", signedIn: true, help: "purchases.bill", guide: "purchases.bills#check-and-post-a-bill" },
+  { kind: "route", id: "recurring-bills", path: "/purchases/bills/recurring", mode: "basic", signedIn: true, help: "purchases.recurring-bills", guide: "purchases.bills#recurring-bills" },
+  { kind: "route", id: "recurring-bill-new", path: "/purchases/bills/recurring/new", mode: "basic", signedIn: true, help: "recurring-bill.new", guide: "purchases.bills#recurring-bills" },
+  { kind: "route", id: "recurring-bill", path: "/purchases/bills/recurring/$recurringBillId", mode: "basic", signedIn: true, help: "purchases.recurring-bill", guide: "purchases.bills#recurring-bills" },
   { kind: "route", id: "accounting", path: "/accounting", mode: "expert", signedIn: true, help: "nav.accounting", guide: "accounting.journals" },
   { kind: "route", id: "journals", path: "/accounting/journals", mode: "expert", signedIn: true, help: "accounting.journals", guide: "accounting.journals" },
   { kind: "route", id: "journal-new", path: "/accounting/journals/new", mode: "expert", signedIn: true, help: "journal.new", guide: "accounting.journals#prepare-a-journal" },
@@ -132,6 +135,10 @@ export const actions = [
   { kind: "action", id: "bill.record-payment", mode: "basic", help: "bill.record-payment", guide: "purchases.bills#record-a-payment" },
   // A line's spread is an Expert field group (§7.8: service periods and spreads); a bill that has one shows it, and its
   // schedule, in both modes.
+  { kind: "action", id: "recurring-bill.save", mode: "basic", help: "recurring-bill.save", guide: "purchases.bills#recurring-bills" },
+  { kind: "action", id: "recurring-bill.check", mode: "basic", help: "recurring-bill.check", guide: "purchases.bills#recurring-bills" },
+  { kind: "action", id: "recurring-bill.pause", mode: "basic", help: "recurring-bill.pause", guide: "purchases.bills#recurring-bills" },
+  { kind: "action", id: "recurring-bill.resume", mode: "basic", help: "recurring-bill.resume", guide: "purchases.bills#recurring-bills" },
   { kind: "action", id: "bill.spread", mode: "expert", help: "bill.spread", guide: "purchases.bills#spread-a-cost-over-months" },
   { kind: "action", id: "bill.releases", mode: "basic", help: "bill.releases", guide: "purchases.bills#spread-a-cost-over-months" },
   { kind: "action", id: "bill-payment.void", mode: "basic", help: "bill-payment.void", guide: "purchases.bills#void-a-payment" },

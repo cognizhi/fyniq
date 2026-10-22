@@ -109,6 +109,34 @@ func TestRecurringBillsThroughTheAPI(t *testing.T) {
 		t.Fatalf("resuming: %d %s", s.Status, s.Raw)
 	}
 
+	// One that started in September is late, so October's close refuses (C.1 #28); the incomplete one is warned of
+	// (C.1 #29).
+	late := e.call(http.MethodPost, "/v1/recurring-bills", accountant, e.recurringBill("Software", "50.00", monthly(1, "2026-09-01")))
+	if late.str("next_on") != "2026-09-01" || check(late, 0)["code"] != journal.StatusRecurringDue {
+		t.Fatalf("a recurring bill due but not made: %s", late.Raw)
+	}
+	controller := e.as(authz.Controller)
+	closeCheck := func(key string) map[string]any {
+		t.Helper()
+		oct := e.books.Oct.ID.String()
+		st := e.call(http.MethodGet, "/v1/periods/"+oct+"/close", controller, nil)
+		r := e.call(http.MethodPost, "/v1/periods/"+oct+"/close-checks", controller, nil, "If-Match", st.Header.Get("ETag"))
+		for _, c := range r.Body["checks"].(map[string]any)["checks"].([]any) {
+			if c.(map[string]any)["key"] == key {
+				return c.(map[string]any)
+			}
+		}
+		t.Fatalf("no %s check: %s", key, r.Raw)
+		return nil
+	}
+	if c := closeCheck("recurring-bills"); c["severity"] != "error" || !strings.Contains(c["detail"].(string), "1 recurring bill(s) have an occurrence more than a day ago") {
+		t.Errorf("October's close, with a recurring bill the scheduler did not make: %v", c)
+	}
+	if c := closeCheck("recurring-bills-content"); c["severity"] != "warning" || !strings.Contains(c["detail"].(string), "1 active recurring bill(s)") {
+		t.Errorf("October's close, with an incomplete recurring bill: %v", c)
+	}
+	e.call(http.MethodPost, "/v1/recurring-bills/"+late.str("id")+"/pause", accountant, nil, "If-Match", `"1"`)
+
 	// The scheduler makes the draft of 31 October: dated on it, saved by it, naming the recurring bill's version, with no
 	// supplier's number and no number of its own until it posts.
 	if run := e.makeBillDrafts(time.Date(2026, 10, 31, 0, 0, 0, 0, time.UTC)); run.Made != 1 {

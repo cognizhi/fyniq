@@ -28,7 +28,7 @@ var CloseCodes = []string{closing.CodeNotOpen, closing.CodeStale, closing.CodeOr
 
 // CloseCheckItem is one close check's outcome.
 type CloseCheckItem struct {
-	Key      string `json:"key" doc:"Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances, checklist or opening; more join as their modules arrive." example:"drafts"`
+	Key      string `json:"key" doc:"Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, recurring-bills, recurring-bills-content, variances, checklist or opening; more join as their modules arrive." example:"drafts"`
 	Severity string `json:"severity" enum:"ok,warning,error" doc:"ok; warning (⚠) lets the close go on; error (✖) refuses it." example:"warning"`
 	Title    string `json:"title" doc:"What the check found." example:"Draft journals are dated in the period"`
 	Detail   string `json:"detail,omitempty" doc:"More about it, and what to do." example:"2 draft journal(s): once the period closes they cannot post on those dates"`

@@ -89,6 +89,26 @@ shows both fields in Basic mode too.
 
 Only a cost on an expense account is spread, and a credit note's lines never are.
 
+## Recurring bills
+
+A bill that comes every month, quarter or year, such as the office rent, can be set up once under
+**Purchases → Bills → Recurring**: select **New recurring bill**, name it, choose how often it
+repeats (every month, 3 months, 6 months or year) and on which day, when it starts and, if it
+ends, when; then the supplier, the currency and the lines, as on a bill. The 29th to the 31st fall
+on the last day of a shorter month.
+
+- Fyniq makes a draft bill on each date by itself, within the hour. Nothing recurring posts by
+  itself: open the draft, add **Their invoice number** from the supplier's invoice, check it and
+  post it as any bill.
+- Whoever wrote a recurring bill's lines does not approve the posting of the drafts made from them.
+- **Check** shows the date of the next draft and what would stop the drafts posting, without saving.
+  A recurring bill whose lines a bill would refuse is kept, and shows ✖ until it is fixed.
+- A change to the supplier, currency, lines or notes applies to the drafts made after it; drafts
+  already made keep theirs. **Pause** stops the drafts; **Resume** starts them again from today,
+  skipping the dates passed while it was paused.
+- At the month's close, Fyniq warns of a recurring bill due in the month whose draft is not made
+  yet, and refuses the close when one is more than a day late, as the scheduler may have failed.
+
 ## Bills above the self-approval threshold
 
 A bill whose total is above the self-approval threshold (S$2,000 unless changed) is not posted by

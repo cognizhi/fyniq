@@ -511,6 +511,11 @@ Source: PRD-001 §C.1
 - **THEN** they warn (⚠), or refuse the close (✖) when the occurrence is more than a day before today, as the hourly scheduler then failed
 - **AND** the recurring journal itself carries the warning "Due but not created" while an occurrence before today has no draft
 
+#### Scenario: Recurring bills, as built (rev 0.85)
+- **GIVEN** an active recurring bill whose occurrence on or before the period's end has no draft
+- **WHEN** the period's close checks run
+- **THEN** the check `recurring-bills` warns (⚠), or refuses the close (✖) when the occurrence is more than a day before today
+
 ### Requirement: C.1 #29 Recurring templates incomplete
 The system SHALL check, on every relevant change and nightly, that recurring templates are complete; an incomplete template is an error on itself and, while active, a warning at the close (rev 0.61).
 
@@ -529,6 +534,11 @@ Source: PRD-001 §C.1
 - **WHEN** it is saved or read
 - **THEN** it is kept, with each problem as an error status on it
 - **AND** while it is active, the close checks warn of it (rev 0.61)
+
+#### Scenario: Recurring bills, as built (rev 0.85)
+- **GIVEN** an active recurring bill whose lines a bill would refuse, a missing rate aside
+- **WHEN** it is saved or read, or the close checks run
+- **THEN** it is kept with each problem as an error status on it, and the check `recurring-bills-content` warns of it
 
 ### Requirement: C.1 #30 Suspense balance not zero
 The system SHALL flag for review, on every relevant change and nightly, a bank suspense balance that is not zero.
