@@ -13,7 +13,7 @@ over() { awk -v x="$1" -v max="$2" 'BEGIN { exit !(x > max) }'; }
 ready() { curl -fsS localhost:8081/readyz >/dev/null 2>&1 && curl -fsS localhost:5173/ >/dev/null 2>&1; }
 wait_for() { # wait_for <seconds> <command…>
   local deadline=$(( $(date +%s) + $1 )); shift
-  until "$@"; do sleep 0.2; [ "$(date +%s)" -lt "$deadline" ] || return 1; done
+  until "$@"; do sleep 0.05; [ "$(date +%s)" -lt "$deadline" ] || return 1; done
 }
 start_dev() { setsid make dev >>.data/devx-dev.log 2>&1 & echo $!; }
 stop_dev() { kill -TERM -- "-$1" 2>/dev/null || true; wait_for 30 sh -c "! kill -0 $1 2>/dev/null" || true; }
@@ -31,12 +31,13 @@ pid=$(start_dev)
 wait_for 120 ready || { echo "✖ the stack was not ready within 2 minutes on the second run" >&2; stop_dev "$pid"; exit 1; }
 later=$(since "$t")
 
-# A real edit, so the measure includes recompiling and relinking, not only the build cache.
+# A real edit, so the measure includes recompiling and relinking every service, not only the build cache: a
+# comment alone compiles to the same package and relinks nothing.
 before=$(restarts)
 cp internal/version/version.go .data/version.go.orig
 trap 'cp .data/version.go.orig internal/version/version.go' EXIT
 t=$(now)
-printf '\n// devx-timing %s\n' "$t" >>internal/version/version.go
+printf '\nvar devxTiming = "%s"\n' "$t" >>internal/version/version.go
 wait_for 60 sh -c "[ \$(grep -c 'listening on' .data/dev/api.log) -gt $before ] && curl -fsS localhost:8081/healthz >/dev/null" \
   || { echo "✖ the api did not restart after a Go change; is watchexec installed?" >&2; stop_dev "$pid"; exit 1; }
 reload=$(since "$t")

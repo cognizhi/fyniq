@@ -35,7 +35,10 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
-build="go build -tags local -o .data/dev/bin/ $(printf './cmd/%s ' "${SERVICES[@]}")"
+# No VCS stamp (nothing reads it; the release build has none either) and no DWARF: a change relinks every
+# service, and these two make that about a third faster (NFR-DEVX-03). Stack traces are unaffected; to attach a
+# debugger, run the service with `dlv debug ./cmd/<service>`.
+build="go build -tags local -buildvcs=false -ldflags=-w -o .data/dev/bin/ $(printf './cmd/%s ' "${SERVICES[@]}")"
 if command -v watchexec >/dev/null 2>&1; then
   reload=on
   # watchexec runs the command string through sh itself and restarts it on every change.
