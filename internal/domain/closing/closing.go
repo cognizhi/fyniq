@@ -20,7 +20,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/payables"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -102,8 +104,9 @@ func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Or
 // content the posting rules refuse (C.1 #29; the founders' decision of rev 0.61: it warns, as the close is about the
 // period's postings and their drafts show their own problems); (rev 0.65) ✖ an income or expense account's variance
 // against the previous month above both thresholds with no explanation of its totals as they are (FR-GL-14, Appendix C.2
-// #57); (rev 0.68) ✖ a task of the month's close checklist neither done nor skipped with a reason (FR-GL-07, C.2 #58).
-// Reconciliations join with p1-bank-import-reconcile.
+// #57); (rev 0.68) ✖ a task of the month's close checklist neither done nor skipped with a reason (FR-GL-07, C.2 #58);
+// (rev 0.78) ✖ the AP sub-ledger differs from 2010 by anything no source explains, ⚠ amounts on 2010 from opening
+// balances or manual journals (INV-07, C.2 #2). Reconciliations join with p1-bank-import-reconcile.
 func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
 	cur, org, err := base(ctx, u)
 	if err != nil {
@@ -196,6 +199,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, reval)
+	payables, err := payablesChecks(ctx, u, cur, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, payables...)
 	recurring, err := recurringChecks(ctx, u, p, today)
 	if err != nil {
 		return nil, err
@@ -246,6 +254,70 @@ func revaluationCheck(ctx context.Context, u storage.UnitOfWork, p storage.Perio
 		detail += "; " + strings.TrimPrefix(m.Message, "✖ ")
 	}
 	return Check{"revaluation", Failed, "Foreign-currency balances are not revalued", detail}, nil
+}
+
+// explainedWords names a source that posts to accounts payable other than bills and their payments.
+var explainedWords = map[string]string{ledger.SourceOpeningBalance: "opening balances", ledger.SourceManualJournal: "manual journals"}
+
+// payablesChecks reconcile the AP sub-ledger with the accounts-payable account at the period's end (INV-07; the owner's
+// decision of 23 Oct 2026): ✖ when they differ by anything no source explains, which is a fault; ⚠ when the account
+// holds amounts from opening balances or manual journals that no bill supports (question 55 lets a journal post there);
+// ✔ otherwise. The revaluation's base-only lines are explained and need no warning. Nothing is said when the chart has
+// no accounts-payable account, or it and the sub-ledger are empty.
+func payablesChecks(ctx context.Context, u storage.UnitOfWork, cur money.Currency, p storage.Period) ([]Check, error) {
+	accounts, err := u.Accounts().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var ap *storage.Account
+	for i := range accounts {
+		if string(accounts[i].Role) == ledger.RoleAccountsPayable {
+			ap = &accounts[i]
+		}
+	}
+	if ap == nil {
+		return nil, nil
+	}
+	r, l, err := payables.Reconcile(ctx, u, cur, ap.ID, p.EndsOn)
+	if err != nil {
+		return nil, err
+	}
+	if len(r.Currencies) == 0 && len(l.Suppliers) == 0 {
+		return nil, nil
+	}
+	var out []Check
+	if r.Unexplained() {
+		var parts []string
+		for _, c := range r.Currencies {
+			if !c.Unexplained.IsZero() {
+				parts = append(parts, fmt.Sprintf("in %s, %s says %s is owed and the open bills and credits %s", c.Currency, ap.Code, c.Control, c.SubLedger))
+			}
+		}
+		if b := r.Base; !b.Unexplained.IsZero() {
+			parts = append(parts, fmt.Sprintf("in carrying amounts (%s), %s says %s and the open bills and credits %s", b.Currency, ap.Code, b.Control, b.SubLedger))
+		}
+		out = append(out, Check{"payables", Failed, "The AP sub-ledger does not agree with accounts payable",
+			strings.Join(parts, "; ") + ": a posting and its document disagree; report it, never adjust it by journal"})
+	} else {
+		items := 0
+		for _, s := range l.Suppliers {
+			items += len(s.Items)
+		}
+		out = append(out, Check{"payables", OK, "The AP sub-ledger agrees with accounts payable", fmt.Sprintf("%d open bill(s) and supplier credit(s)", items)})
+	}
+	var held []string
+	for _, c := range r.Currencies {
+		for _, e := range c.Explained {
+			if w, ok := explainedWords[e.SourceType]; ok && !e.Amount.IsZero() {
+				held = append(held, fmt.Sprintf("%s %s from %s", e.Amount, c.Currency, w))
+			}
+		}
+	}
+	if len(held) > 0 {
+		out = append(out, Check{"payables-unsupported", Warning, "Accounts payable holds amounts no bill supports",
+			fmt.Sprintf("%s holds %s: support them with the suppliers' statements, or enter the bills", ap.Code, strings.Join(held, ", "))})
+	}
+	return out, nil
 }
 
 func clean(checks []Check) bool {

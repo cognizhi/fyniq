@@ -29,8 +29,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   (22 Oct 2026, part: `listBills`, `getBill` (states, checks, ledger impact), `createBill`, `replaceBill`, `postBill`,
   `voidBill`, `editBill`, `requestBillPost`, `requestBillVoid`, `requestBillEdit`, each with Prefer: return=preview, and
   their matrix rows. **Left:** a bill's attachments, with the screens)
-- [ ] 1.6 The AP sub-ledger: open documents by supplier, equal to 2010 (INV-07), shown at the close.
+- [x] 1.6 The AP sub-ledger: open documents by supplier, equal to 2010 (INV-07), shown at the close.
   Tests `// req: INV-07`
+  (23 Oct 2026, rev 0.78: `payables.Open` and `payables.Reconcile` from the documents, `balance.Control`, the close's
+  `payables` (✖ only unexplained, the owner's decision) and `payables-unsupported` (⚠ opening balances and manual
+  journals). Test `TestTheAPSubLedgerReconcilesWith2010`. **Left, with their own tasks:** the nightly verification
+  (FR-CTL-05) and the ⚠ on a manual journal to a control account)
 
 ## 2. Bill screens
 

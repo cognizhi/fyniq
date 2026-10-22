@@ -3,7 +3,7 @@ key: accounting.periods
 title: Open the financial year and close the periods
 mode: expert
 roles: [accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-ORG-02, FR-GL-04, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04]
+requirements: [FR-ORG-02, FR-GL-04, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04, INV-07]
 status: draft            # written with the periods page (P1, p1-general-ledger-close); the close joins it
 ---
 
@@ -54,6 +54,10 @@ closes the month.
    - recurring journals due in the month with no draft yet (⚠), or a draft more than a day late,
      which means the scheduler failed (✖);
    - active recurring journals whose lines would not post (⚠);
+   - accounts payable agrees with the bills still open and the credits with suppliers at the month's
+     end (✖ when they differ by anything Fyniq cannot explain: report it, never adjust it by
+     journal); amounts on accounts payable from opening balances or manual journals, which no bill
+     supports, show ⚠: support them with the suppliers' statements, or enter the bills;
    - income and expense accounts that moved against the previous month by more than both
      thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
      explanation of their totals as they are now (✖; see [Explain the variances](#explain-the-variances));
