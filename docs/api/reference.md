@@ -2036,6 +2036,52 @@ Enters each rate on its own, as createFxRate does, such as the rows of a rates f
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/periods/{period_id}/fx-revaluation`
+
+**Preview a period's FX revaluation** (`getFxRevaluation`)
+
+The month-end revaluation of the period (FR-GL-04; PRD-001 rev 0.73, provisional): every account marked revalue with a balance in a foreign currency at the period end, from the balance service, at the rate the cascade finds for the period's last day (ENG-40), with its change, RND-FX(open × rate) − carrying; the currencies with no rate; the foreign-currency balances on accounts not marked revalue, which stay as recorded; what a run would post now; and the latest run, with whether a posting dated in or before the period came after it. Read-only; no side effects.
+
+- **Permission:** View on Period close / reopen
+- **Parameters:**
+  - `period_id` (path, required): The period's ID.
+- **Responses:**
+  - `200` OK [`FXRevaluation`](../../contracts/schemas/FXRevaluation.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/periods/{period_id}/fx-revaluation`
+
+**Revalue a period's foreign-currency balances** (`postFxRevaluation`)
+
+Runs the period's month-end revaluation (FR-GL-04; PRD-001 rev 0.73, provisional) under the ledger lock: records what it read as a revaluation document and posts its entry, dated the period's last day: a base-only line per account and currency that changes, and the losses and gains on the unrealised-FX account (fx_revaluation@1). The entry reverses on the next period's first day, at once when that period is open, else when it opens (the scheduler's fx.reversals). A run with nothing to change posts no entry and still records the revaluation. Run again after a posting dated in or before the period: the new run posts what changed since. Refused while the period is not open (FX-05), before its last day (FX-06), without an unrealised-FX account (FX-07), or with a currency that has no rate (FX-01). Needs If-Match with the period's ETag, as getFxRevaluation or getPeriod gives it. Answers the revaluation as it then stands. Side effects: the document, its entry, its reversal, and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and posts nothing.
+
+- **Permission:** Create on Period close / reopen
+- **Parameters:**
+  - `period_id` (path, required): The period's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`FXRevaluation`](../../contracts/schemas/FXRevaluation.schema.json)
+  - `201` Created [`FXRevaluation`](../../contracts/schemas/FXRevaluation.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FX-05` The period is not open; `FX-06` The period has not ended; `FX-07` No account takes unrealised FX; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `FX-01`, `FX-05`, `FX-06`, `FX-07`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Reports
 
 Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive.

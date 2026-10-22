@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The currency.",
+      "examples": [
+        "AUD"
+      ],
+      "type": "string"
+    },
+    "detail": {
+      "description": "FX-01's message.",
+      "examples": [
+        "✖ No exchange rate for AUD on 31 Oct 2026"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "detail"
+  ],
+  "title": "RevaluationMissing",
+  "type": "object"
+}

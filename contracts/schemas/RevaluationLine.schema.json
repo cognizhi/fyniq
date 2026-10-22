@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "In the line's currency: 0 on a base-only line (INV-05)."
+    },
+    "base": {
+      "$ref": "Money.schema.json",
+      "description": "In the base currency: debit positive, credit negative."
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "7040"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What the line is.",
+      "examples": [
+        "Unrealised FX loss"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Unrealised FX gain or loss"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "amount",
+    "base",
+    "description"
+  ],
+  "title": "RevaluationLine",
+  "type": "object"
+}

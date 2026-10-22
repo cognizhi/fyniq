@@ -782,6 +782,20 @@ Source: PRD-001 §C.2
 - **WHEN** no automatic reversal is due by the period's end and none from the period waits
 - **THEN** the check passes
 
+### Requirement: C.2 #59 Foreign-currency balances not revalued
+The system SHALL refuse the close (✖) while an account marked revalue has a balance in a foreign currency at the period's end and no revaluation of the period has run since the last posting dated in or before it, naming a currency with no rate on the period's last day (FR-GL-04).
+
+Source: PRD-001 §C.2
+
+#### Scenario: A balance not revalued
+- **GIVEN** a foreign-currency balance on an account marked revalue, and no current revaluation of the period
+- **WHEN** the period's close checks run
+- **THEN** the check refuses the close (✖), naming a currency with no rate
+
+#### Scenario: Revalued, or nothing to revalue
+- **WHEN** the latest revaluation of the period came after the last posting dated in or before it, or no such balance exists
+- **THEN** the check passes
+
 ### Requirement: C.2 #58 Close checklist not finished
 The system SHALL refuse the close (✖) while a task of the month's close checklist is neither done nor skipped for the month with a reason (FR-GL-07; the founders' decision of 22 Oct 2026).
 

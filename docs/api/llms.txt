@@ -99,6 +99,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/periods/{period_id}/close` (getPeriodClose): Get a period's close
 - `POST /v1/periods/{period_id}/close` (closePeriod): Attest and close a period
 - `POST /v1/periods/{period_id}/close-checks` (runCloseChecks): Run a period's close checks
+- `GET /v1/periods/{period_id}/fx-revaluation` (getFxRevaluation): Preview a period's FX revaluation
+- `POST /v1/periods/{period_id}/fx-revaluation` (postFxRevaluation): Revalue a period's foreign-currency balances
 - `POST /v1/periods/{period_id}/reopen` (requestPeriodReopen): Ask to reopen a closed period
 - `GET /v1/periods/{period_id}/variances` (listPeriodVariances): List a period's variances
 - `POST /v1/periods/{period_id}/variances/{account_id}/explanation` (explainVariance): Explain a variance
