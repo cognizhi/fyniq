@@ -59,6 +59,7 @@ const draft: Bill = {
     { line_no: 2, account_id: "a2010", amount: { amount: "-1090.00", currency: "SGD" }, fx_rate: "1", fx_rate_source: "base", base_amount: { amount: "-1090.00", currency: "SGD" } },
   ],
   payments: [],
+  releases: [],
 };
 const posted: Bill = { ...draft, number: "BILL-0007", status: "posted", states: states({ approval: "approved", ledger: "posted", due: "overdue" }), checks: [], open: { amount: "1090.00", currency: "SGD" } };
 const partPaid: Bill = {
@@ -143,11 +144,58 @@ describe("A bill", () => {
   });
 
   it("says what to fix before saving", () => {
-    const { draft: d, errors } = check({ supplier_id: "", supplier_ref: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", lines: [{ key: "l1", account_id: "", description: "x", gst_code: "", net: "", gst: "", stated_gst: "" }] }, "SGD");
+    const { draft: d, errors } = check({ supplier_id: "", supplier_ref: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", lines: [{ key: "l1", account_id: "", description: "x", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" }] }, "SGD");
     expect(d).toBeUndefined();
     expect(errors["l1.account"]).toBe("Choose what the line is for.");
     expect(errors["l1.gst_code"]).toBe("Choose the GST code on the supplier's invoice.");
     expect(errors["l1.net"]).toBe("Enter the amount before GST, such as 1,200.00.");
+  });
+
+  // req: FR-GL-03
+  it("sends a line's spread over months, and says what to fix in one", () => {
+    const form = (spread_months: string, spread_from: string) => ({
+      supplier_id: "c1",
+      supplier_ref: "",
+      date: "2026-10-14",
+      due_date: "",
+      currency: "SGD",
+      fx_rate: "",
+      notes: "",
+      lines: [{ key: "l1", account_id: "a6120", description: "Jira, a year", gst_code: "TX", net: "13080.00", gst: "1177.20", stated_gst: "", spread_months, spread_from }],
+    });
+    expect(check(form("12", "2026-09"), "SGD").draft?.lines?.[0]).toMatchObject({ spread_months: 12, spread_from: "2026-09-01" });
+    expect(check(form("12", ""), "SGD").draft?.lines?.[0]).toMatchObject({ spread_months: 12, spread_from: undefined });
+    expect(check(form("", ""), "SGD").draft?.lines?.[0]?.spread_months).toBeUndefined();
+    for (const [months, from, field] of [["0", "", "spread_months"], ["121", "", "spread_months"], ["", "2026-09", "spread_months"], ["12", "Sept", "spread_from"]] as const) {
+      expect(check(form(months, from), "SGD").errors[`l1.${field}`], `${months} from ${from}`).toBeTruthy();
+    }
+  });
+
+  // req: FR-GL-03
+  // req: ENG-05
+  it("shows a spread bill's months: those posted, and those to come as projections; axe finds nothing", async () => {
+    const sgd = (amount: string) => ({ amount, currency: "SGD" });
+    const spread: Bill = {
+      ...posted,
+      lines: [{ ...draft.lines[0]!, spread_months: 3, spread_from: "2026-09-01" }],
+      releases: [
+        { line: 1, month: "2026-09", part: 1, of: 3, date: "2026-10-14", amount: sgd("363.33"), status: "posted", entry_id: "e1" },
+        { line: 1, month: "2026-10", part: 2, of: 3, date: "2026-10-14", amount: sgd("363.34"), status: "posted", entry_id: "e2" },
+        { line: 1, month: "2026-11", part: 3, of: 3, date: "2026-11-01", amount: sgd("363.33"), status: "projected" },
+      ],
+    };
+    answer({ ...reads, "GET /v1/bills/b1": read(spread) });
+    const { container } = renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    const table = await screen.findByRole("table", { name: "Spread over months" });
+    const rows = within(table).getAllByRole("row");
+    expect(rows[1]!.textContent).toContain("Sept 2026");
+    expect(rows[1]!.textContent).toContain("Posted");
+    expect(rows[3]!.textContent).toContain("1 Nov 2026");
+    expect(rows[3]!.textContent).toContain("363.33");
+    expect(rows[3]!.textContent).toContain("Projected");
+    expect((screen.getByLabelText("Spread over (months, optional)") as HTMLInputElement).value).toBe("3");
+    expect((screen.getByLabelText("Spread from") as HTMLInputElement).value).toBe("2026-09");
+    await noViolations(container);
   });
 
   it("shows what posting writes and its warnings, and asks for approval above the threshold; axe finds nothing", async () => {

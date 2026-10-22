@@ -112,6 +112,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	if err != nil {
 		return "", err
 	}
+	if e.Source.Type == ledger.SourceBillRelease { // a month of a bill's spread cost, from the bill version and its entry (FR-GL-03)
+		want, err := replayBillRelease(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	if doc.Type == fx.DocumentFXRevaluation { // the month-end revaluation, from what its run recorded (FR-GL-04)
 		r, rs, err := fx.ReadRevaluation(ctx, u, doc)
 		if err != nil {

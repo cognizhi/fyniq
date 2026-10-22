@@ -380,7 +380,7 @@ func loadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, e
 	s := ledger.Settings{Base: base, Accounts: make(map[uuid.UUID]ledger.Account, len(accounts))}
 	for _, a := range accounts {
 		s.Accounts[a.ID] = ledger.Account{ID: a.ID, Code: a.Code, Group: a.Group, Active: a.Active, ShareCapital: a.Role == storage.RoleShareCapital,
-			Revalue: a.Revalue, UnrealisedFX: a.Role == storage.RoleUnrealisedFX, Role: string(a.Role), Money: a.MoneyAccount, Currency: a.Currency}
+			Revalue: a.Revalue, UnrealisedFX: a.Role == storage.RoleUnrealisedFX, Role: string(a.Role), Money: a.MoneyAccount, Currency: a.Currency, Type: string(a.Type)}
 	}
 	return s, nil
 }

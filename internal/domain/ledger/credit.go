@@ -30,14 +30,22 @@ var asCredit = strings.NewReplacer(
 // legs a bill of the same content posts (bill@1), line for line: Dr 2010 with its total, Cr each line's account with its
 // net (with its GST when the input tax is not claimable), Cr 2200 with the claimable GST as stated, and for a credit in
 // another currency the difference the other way on 7030. RND-FX rounds half away from zero, so each base amount is
-// exactly the bill's, negated. Every refusal is the bill rule's, worded for a credit note (ENG-22).
+// exactly the bill's, negated. Every refusal is the bill rule's, worded for a credit note (ENG-22), and a credit note's
+// line is never spread (FR-GL-03): what it credits leaves the account the cost is in when the credit is dated.
 func PostVendorCredit(b Bill, s Settings) (Entry, error) {
+	var spread Problems
+	for i, l := range b.Lines {
+		if l.Spread != nil {
+			spread = append(spread, Problem{CodeSpread, fmt.Sprintf("lines[%d].spread_months", i+1), "a credit note's line is not spread",
+				"Remove the spread, and credit the account the cost is in"})
+		}
+	}
 	e, err := PostBill(b, s)
-	if probs, ok := err.(Problems); ok {
+	if probs, ok := err.(Problems); ok || len(spread) > 0 {
 		for i := range probs {
 			probs[i].Message, probs[i].Fix = asCredit.Replace(probs[i].Message), asCredit.Replace(probs[i].Fix)
 		}
-		return Entry{}, probs
+		return Entry{}, append(spread, probs...)
 	}
 	if err != nil {
 		return Entry{}, err

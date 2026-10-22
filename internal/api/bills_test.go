@@ -229,3 +229,58 @@ func TestVendorCreditsThroughTheAPI(t *testing.T) {
 		t.Errorf("the bills list the credit: %s", l.Raw)
 	}
 }
+
+// FR-GL-03 through the API (rev 0.83): a line spread over months shows its releases, all projected while the bill is a
+// draft; once it posts, those due by the organisation's today are in the ledger at once and the rest stay projections
+// (ENG-05). A credit note's line is never spread (LEDGER-28).
+// req: FR-GL-03
+// req: ENG-05
+func TestSpreadBillsThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	e.supplier()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	var prepaid storage.Account
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		prepaid, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1210", Name: "Prepayments", Type: storage.Asset, Role: storage.AccountRole(ledger.RolePrepayments)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	releases := func(r response) string {
+		var out []string
+		for _, x := range r.Body["releases"].([]any) {
+			m := x.(map[string]any)
+			out = append(out, m["month"].(string)+" "+m["date"].(string)+" "+m["amount"].(map[string]any)["amount"].(string)+" "+m["status"].(string))
+		}
+		return strings.Join(out, "; ")
+	}
+	d := e.billDraft("1200.00", "108.00")
+	d["lines"].([]map[string]any)[0]["spread_months"], d["lines"].([]map[string]any)[0]["spread_from"] = 3, "2026-09-20"
+	r := e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), d)
+	if r.Status != 201 || !strings.Contains(r.Raw, `"spread_months":3,"spread_from":"2026-09-20"`) {
+		t.Fatalf("saving a spread bill: %d %s", r.Status, r.Raw)
+	}
+	id, tag := r.str("id"), r.Header.Get("ETag")
+	g := e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Accountant), nil)
+	if got := releases(g); got != "2026-09 2026-10-14 436.00 projected; 2026-10 2026-10-14 436.00 projected; 2026-11 2026-11-01 436.00 projected" ||
+		g.Body["ledger_impact"].([]any)[0].(map[string]any)["account_id"] != prepaid.ID.String() {
+		t.Fatalf("the draft's releases: %s\n%s", got, g.Raw)
+	}
+	if p := e.call(http.MethodPost, "/v1/bills/"+id+"/post", e.as(authz.Accountant), nil, "If-Match", tag); p.Status != 200 {
+		t.Fatalf("posting: %d %s", p.Status, p.Raw)
+	}
+	g = e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Auditor), nil)
+	if got := releases(g); got != "2026-09 2026-10-14 436.00 posted; 2026-10 2026-10-14 436.00 posted; 2026-11 2026-11-01 436.00 projected" ||
+		!strings.Contains(g.Raw, `"entry_id":"`) {
+		t.Fatalf("the posted bill's releases: %s\n%s", got, g.Raw)
+	}
+
+	c := e.billDraft("100.00", "9.00")
+	c["kind"], c["supplier_ref"] = "vendor_credit", "CN-13"
+	c["lines"].([]map[string]any)[0]["spread_months"] = 2
+	r = e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), c)
+	if g := e.call(http.MethodGet, "/v1/bills/"+r.str("id"), e.as(authz.Accountant), nil); !strings.Contains(g.Raw, `"code":"`+ledger.CodeSpread+`"`) ||
+		len(g.Body["releases"].([]any)) != 0 {
+		t.Errorf("a spread credit note: %s", g.Raw)
+	}
+}

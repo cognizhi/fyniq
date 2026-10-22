@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"pgregory.net/rapid"
@@ -19,15 +20,16 @@ var (
 	payables   = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000002010"), Code: "2010", Active: true, Role: RoleAccountsPayable}
 	gstControl = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000002200"), Code: "2200", Active: true, Role: RoleGSTControl}
 	fxRounding = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000007030"), Code: "7030", Active: true, Role: RoleFXRounding}
-	software   = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000006120"), Code: "6120", Active: true}
-	hosting    = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000005010"), Code: "5010", Active: true}
+	software   = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000006120"), Code: "6120", Active: true, Type: "expense"}
+	hosting    = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000005010"), Code: "5010", Active: true, Type: "expense"}
+	prepaid    = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000001210"), Code: "1210", Active: true, Type: "asset", Role: RolePrepayments}
 	billID     = uuid.MustParse("0192f1a0-0000-7000-8000-0000000b1110")
 )
 
 // purchasing is the chart a bill posts against: the system accounts by role, two expense accounts, and settings' own.
 func purchasing() Settings {
 	s := Settings{Base: sgd, Accounts: map[uuid.UUID]Account{}}
-	for _, a := range []Account{payables, gstControl, fxRounding, software, hosting, bank, group, closed} {
+	for _, a := range []Account{payables, gstControl, fxRounding, prepaid, software, hosting, bank, group, closed} {
 		s.Accounts[a.ID] = a
 	}
 	return s
@@ -158,6 +160,11 @@ func TestPostBillRefuses(t *testing.T) {
 			Lines: []BillLine{{AccountID: software.ID, Net: amt(t, "1.00", sgd), GST: amt(t, "0.00", sgd), Description: strings.Repeat("d", MaxDescription+1)}}}, s,
 			[]string{CodeTooLong, CodeTooLong}},
 		"no accounts payable": {sgdBill(billLine(t, software, "1.00", "0.09", sgd, true)), without(s, payables, gstControl), []string{CodeSystemRole, CodeSystemRole}},
+		"spreads": {sgdBill(spreadLine(t, billLine(t, software, "1.00", "0.00", sgd, true), october, 0), spreadLine(t, billLine(t, software, "1.00", "0.00", sgd, true), october, MaxSpreadMonths+1),
+			spreadLine(t, billLine(t, software, "1.00", "0.00", sgd, true), time.Time{}, 2), spreadLine(t, billLine(t, prepaid, "1.00", "0.00", sgd, true), october, 2),
+			spreadLine(t, billLine(t, software, "0.00", "0.09", sgd, true), october, 2)), s,
+			[]string{CodeSpread, CodeSpread, CodeSpread, CodeSpread, CodeSpread}},
+		"no prepayments": {sgdBill(spreadLine(t, billLine(t, software, "1.00", "0.00", sgd, true), october, 2)), without(s, prepaid), []string{CodeSystemRole}},
 	} {
 		_, err := PostBill(c.b, c.s)
 		if got := codes(err); !slices.Equal(got, c.want) {
@@ -257,6 +264,11 @@ func TestEveryBillRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 			{"an SGD bill, claimable and not", sgdBill(billLine(t, software, "200.00", "18.00", sgd, true), billLine(t, hosting, "50.00", "4.50", sgd, false))},
 			{"G4-023, USD with the GST stated in SGD", Bill{ID: billID, Version: 2, Date: day, Memo: "Vercel INV-77", Currency: usd, Rate: usdRate(t, "1.34"),
 				Lines: []BillLine{g4023}}},
+			// rev 0.83: bill@1 gained the spread line; no entry posted before it has one, so every stored entry replays.
+			{"G4-022's bill half: a year's subscription spread, its GST claimed at once", sgdBill(spreadLine(t, billLine(t, software, "13080.00", "1177.20", sgd, true), october, 12),
+				billLine(t, hosting, "50.00", "4.50", sgd, false))},
+			{"a USD line spread, at its base amount", Bill{ID: billID, Version: 3, Date: day, Memo: "Vercel INV-78", Currency: usd, Rate: usdRate(t, "1.34"),
+				Lines: []BillLine{spreadLine(t, g4023, october, 6)}}},
 		},
 	}
 	for rule := range BillRules {

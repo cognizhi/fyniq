@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useParams } from "@tanstack/react-router";
-import { Banknote, CircleX, Link2, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
+import { Banknote, CalendarClock, CircleCheck, CircleX, ClockAlert, Link2, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -9,7 +9,7 @@ import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
-import { date } from "../../format/date";
+import { date, month } from "../../format/date";
 import { typed } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
@@ -23,6 +23,7 @@ import { ApplyCredit, Payments, RecordPayment } from "./Payments";
 type Draft = components["schemas"]["BillDraft"];
 type Check = components["schemas"]["BillCheck"];
 type EntryLine = components["schemas"]["EntryLine"];
+type Release = components["schemas"]["BillRelease"];
 
 // Who posts, voids and edits bills: P on "Bills, vendor credits" (Appendix D), the Accountant. The API decides.
 const posters = ["accountant"];
@@ -37,6 +38,8 @@ interface Line {
   net: string;
   gst: string;
   stated_gst: string; // the SGD GST the tax invoice states, for a bill in another currency (ENG-42)
+  spread_months: string; // a cost spread over months to Prepayments (FR-GL-03); blank for none
+  spread_from: string; // the spread's first month, "2026-10"; blank for the bill's month
 }
 
 interface Form {
@@ -53,7 +56,7 @@ interface Form {
 type Errors = Record<string, string>;
 
 let keys = 0;
-const newLine = (): Line => ({ key: `bl-${++keys}`, account_id: "", description: "", gst_code: "", net: "", gst: "", stated_gst: "" });
+const newLine = (): Line => ({ key: `bl-${++keys}`, account_id: "", description: "", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" });
 
 function today(): string {
   return new Date().toLocaleDateString("en-CA");
@@ -77,6 +80,8 @@ function formOf(b: Bill): Form {
       net: l.net.amount,
       gst: l.gst.amount,
       stated_gst: l.stated_gst?.amount ?? "",
+      spread_months: l.spread_months ? String(l.spread_months) : "",
+      spread_from: l.spread_from?.slice(0, 7) ?? "",
     })),
   };
 }
@@ -102,6 +107,10 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
     if (net === null || net === "") errors[`${l.key}.net`] = "Enter the amount before GST, such as 1,200.00.";
     if (gst === null) errors[`${l.key}.gst`] = "Enter the GST as the invoice states it, or 0.";
     if (stated === null) errors[`${l.key}.stated_gst`] = `Enter the GST in ${base} as the invoice states it, or leave it blank.`;
+    const months = l.spread_months.trim();
+    const from = l.spread_from.trim();
+    if ((months && !/^([1-9]\d?|1[01]\d|120)$/.test(months)) || (!months && from)) errors[`${l.key}.spread_months`] = "Enter how many months to spread it over, 1 to 120, or leave both spread fields blank.";
+    if (from && !/^\d{4}-(0[1-9]|1[0-2])$/.test(from)) errors[`${l.key}.spread_from`] = "Enter the month the service starts, such as 2026-10, or leave it blank for the invoice's month.";
     lines.push({
       account_id: l.account_id,
       description: l.description.trim() || undefined,
@@ -109,6 +118,8 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
       net: { amount: net ?? "0", currency },
       gst: { amount: gst || "0", currency },
       stated_gst: currency !== base && stated ? { amount: stated, currency: base } : undefined,
+      spread_months: months ? Number(months) : undefined,
+      spread_from: months && from ? `${from}-01` : undefined,
     });
   }
   if (lines.length === 0) errors.lines = "Add a line for what the bill is for.";
@@ -216,6 +227,95 @@ function Impact({ bill, lines, accounts, base }: { bill: Bill; lines: EntryLine[
         </section>
       )}
     </>
+  );
+}
+
+// releaseChip is a release's state (ENG-05): only posted ones are in the books; projected ones are not, yet.
+function releaseChip(r: Release) {
+  switch (r.status) {
+    case "posted":
+      return (
+        <span className="fy-chip fy-chip--good">
+          <Icon of={CircleCheck} />
+          Posted
+        </span>
+      );
+    case "waiting":
+      return (
+        <span className="fy-chip fy-chip--warning">
+          <Icon of={ClockAlert} />
+          Due, not posted
+        </span>
+      );
+    case "reversed":
+      return (
+        <span className="fy-chip fy-chip--neutral">
+          <Icon of={Undo2} />
+          Reversed
+        </span>
+      );
+    default:
+      return (
+        <span className="fy-chip fy-chip--neutral">
+          <Icon of={CalendarClock} />
+          Projected
+        </span>
+      );
+  }
+}
+
+// Releases is a spread bill's schedule (FR-GL-03): each month's part, moved from Prepayments to the cost as it posts.
+// Months to come are projections, never shown as if they were in the books (ENG-05).
+function Releases({ bill, base }: { bill: Bill; base: string }) {
+  const id = useId();
+  const releases = bill.releases ?? [];
+  if (releases.length === 0) return null;
+  const lines = new Set(releases.map((r) => r.line)).size;
+  return (
+    <section className="fy-card" aria-labelledby={id}>
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id={id}>
+          {helpText("bill.releases").label}
+        </h2>
+        <span className="fy-small fy-muted">{bill.status === "draft" ? "What posting starts" : "Released month by month"}</span>
+      </div>
+      <p className="fy-card__body fy-small whitespace-normal">
+        {bill.status === "draft"
+          ? "Posting puts the spread cost in Prepayments; each month's part then moves to the cost as its month comes."
+          : "Each month's part moves from Prepayments to the cost on its date. Projected months are not in the books yet."}
+      </p>
+      <table className="fy-table fy-table--compact fy-table--cards" aria-labelledby={id}>
+        <thead>
+          <tr>
+            <th scope="col">Month</th>
+            {lines > 1 && <th scope="col">Line</th>}
+            <th scope="col">Posts on</th>
+            <th scope="col" className="fy-num">
+              Amount ({base})
+            </th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {releases.map((r) => (
+            <tr key={`${r.line}-${r.month}`}>
+              <td data-card="title">
+                {month(r.month)}{" "}
+                <span className="fy-small fy-muted">
+                  ({r.part} of {r.of})
+                </span>
+              </td>
+              {lines > 1 && <td data-card="meta">Line {r.line}</td>}
+              <td data-card="meta">{date(r.date)}</td>
+              <td data-card="amount" className="fy-num">
+                {formatAmount(r.amount.amount)}
+              </td>
+              <td data-card="status">{releaseChip(r)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }
 
@@ -746,6 +846,52 @@ export function BillPage() {
                       )}
                     </div>
                   )}
+                  {!credit && (
+                    // A spread is an Expert field (§7.8), shown in Basic too once a line has one, so nothing is hidden.
+                    <>
+                      <div className={`fy-field${l.spread_months || l.spread_from ? "" : " fy-expert-only"}`}>
+                        <label className="fy-label" htmlFor={`${l.key}-spread`}>
+                          Spread over (months, optional)
+                        </label>
+                        <input
+                          className="fy-input fy-num"
+                          id={`${l.key}-spread`}
+                          inputMode="numeric"
+                          value={l.spread_months}
+                          disabled={!editable}
+                          onChange={(e) => setLine(l.key, { spread_months: e.target.value })}
+                          aria-invalid={Boolean(errors[`${l.key}.spread_months`]) || undefined}
+                          aria-describedby={errors[`${l.key}.spread_months`] ? described(`${l.key}.spread_months`) : `${l.key}-spread-help`}
+                        />
+                        {err(`${l.key}.spread_months`) ?? (
+                          <span className="fy-help" id={`${l.key}-spread-help`}>
+                            {h("bill.spread").tooltip}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`fy-field${l.spread_months || l.spread_from ? "" : " fy-expert-only"}`}>
+                        <label className="fy-label" htmlFor={`${l.key}-spread-from`}>
+                          Spread from
+                        </label>
+                        <input
+                          className="fy-input"
+                          id={`${l.key}-spread-from`}
+                          type="month"
+                          placeholder="2026-10"
+                          value={l.spread_from}
+                          disabled={!editable}
+                          onChange={(e) => setLine(l.key, { spread_from: e.target.value })}
+                          aria-invalid={Boolean(errors[`${l.key}.spread_from`]) || undefined}
+                          aria-describedby={errors[`${l.key}.spread_from`] ? described(`${l.key}.spread_from`) : `${l.key}-spread-from-help`}
+                        />
+                        {err(`${l.key}.spread_from`) ?? (
+                          <span className="fy-help" id={`${l.key}-spread-from-help`}>
+                            The month the service starts; blank for the invoice's month.
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
                   {editable && f.lines.length > 1 && (
                     <div className="fy-field fy-field--full">
                       <Button variant="ghost" size="sm" type="button" aria-label={`Remove line ${i + 1}`} onClick={() => set({ lines: f.lines.filter((x) => x.key !== l.key) })}>
@@ -878,6 +1024,7 @@ export function BillPage() {
         </div>
       </form>
 
+      {bill && !editing && !form && <Releases bill={bill} base={base} />}
       {bill && !editing && !form && <Impact bill={bill} lines={bill.ledger_impact ?? []} accounts={byId} base={base} />}
       {bill && applying && (
         <ApplyCredit

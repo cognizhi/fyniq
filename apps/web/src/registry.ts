@@ -130,6 +130,10 @@ export const actions = [
   { kind: "action", id: "credit.apply", mode: "basic", help: "credit.apply", guide: "purchases.bills#credit-notes" },
   { kind: "action", id: "credit.refund", mode: "basic", help: "credit.refund", guide: "purchases.bills#credit-notes" },
   { kind: "action", id: "bill.record-payment", mode: "basic", help: "bill.record-payment", guide: "purchases.bills#record-a-payment" },
+  // A line's spread is an Expert field group (§7.8: service periods and spreads); a bill that has one shows it, and its
+  // schedule, in both modes.
+  { kind: "action", id: "bill.spread", mode: "expert", help: "bill.spread", guide: "purchases.bills#spread-a-cost-over-months" },
+  { kind: "action", id: "bill.releases", mode: "basic", help: "bill.releases", guide: "purchases.bills#spread-a-cost-over-months" },
   { kind: "action", id: "bill-payment.void", mode: "basic", help: "bill-payment.void", guide: "purchases.bills#void-a-payment" },
   { kind: "action", id: "bill-payment.ask-void", mode: "basic", help: "bill-payment.ask-void", guide: "purchases.bills#void-a-payment" },
   { kind: "action", id: "journal.save", mode: "expert", help: "journal.save", guide: "accounting.journals#prepare-a-journal" },

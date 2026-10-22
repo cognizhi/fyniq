@@ -26,6 +26,24 @@ WHERE d.type = 'journal' AND d.status = 'posted'
 ORDER BY v.payload->>'reverse_on', d.id
 LIMIT sqlc.arg(max_rows);
 
+-- name: SpreadBills :many
+-- Posted bills whose current version spreads a line's cost over months (FR-GL-03, ENG-05; rev 0.83) with releases a
+-- period from from_day on may still take: a spread that runs past that day, or a bill dated on or after it, whose
+-- earlier months release on its date. By ID after a cursor. A spread with no first month starts in the bill's month.
+SELECT d.id
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+WHERE d.type = 'bill' AND d.status = 'posted'
+  AND EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v.payload->'lines') l
+    WHERE coalesce(l->>'spread_months', '') <> ''
+      AND (v.payload->>'date' >= sqlc.arg(from_day)::text
+        OR to_char(to_date(coalesce(nullif(l->>'spread_from', ''), v.payload->>'date'), 'YYYY-MM-DD')
+                   + make_interval(months => (l->>'spread_months')::int), 'YYYY-MM-DD') > sqlc.arg(from_day)::text))
+  AND (sqlc.narg(after_id)::uuid IS NULL OR d.id > sqlc.narg(after_id)::uuid)
+ORDER BY d.id
+LIMIT sqlc.arg(max_rows);
+
 -- name: WaitingReversals :many
 -- Posted journals whose automatic reversal waits (FR-GL-02, FR-AUT-02; rev 0.58): no period that is not closed covers
 -- its date, so the scheduler cannot post it until one is opened or reopened. Earliest reversal first, then ID, after

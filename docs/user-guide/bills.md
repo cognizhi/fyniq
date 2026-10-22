@@ -67,6 +67,28 @@ Its number comes from the bill sequence (BILL-0001 onwards).
 Input tax is claimed only once the company is GST-registered on the bill's date, for codes such as
 TX. Until then the GST is part of the cost.
 
+## Spread a cost over months
+
+A cost paid ahead, such as a year's software subscription or insurance, belongs to the months it
+covers. In Expert mode each line of a bill has **Spread over** (1 to 120 months) and **Spread
+from** (the month the service starts; blank for the invoice's month). A line that has a spread
+shows both fields in Basic mode too.
+
+- Posting the bill puts the line's cost in **1210 Prepayments**, in SGD, instead of the account it
+  is for. The GST is claimed in full at once: only the cost is spread.
+- Each month, one part moves from Prepayments to the account the line is for. The parts are even,
+  and the cents rounding leaves fall in different months, so they add up exactly to the cost.
+- A part posts on the first day of its month, or on the invoice date for the months before it: a
+  service that started before the invoice catches up when the bill posts.
+- Fyniq posts each part by itself once its date comes, in the company's own time zone, and never a
+  month ahead. A part whose month has no open period waits until it opens.
+- The bill lists the months under **Spread over months**: posted, due but not posted yet, or
+  projected (months to come, which are not in the books).
+- Voiding the bill reverses the parts already posted, on the void's date. Editing it reverses them
+  on their own dates and posts the new version's.
+
+Only a cost on an expense account is spread, and a credit note's lines never are.
+
 ## Bills above the self-approval threshold
 
 A bill whose total is above the self-approval threshold (S$2,000 unless changed) is not posted by
@@ -156,6 +178,7 @@ voided or edited while it is applied or refunded.
 | Payments settle the bill (BILL-13) | Void its payments first, then void or edit the bill |
 | More than the bill has open or the credit has left (CREDIT-05) | Apply or refund at most what is open on both |
 | The credit is applied to bills (CREDIT-08) | Void its applications and refunds first |
+| The spread cannot be used (LEDGER-28) | Spread an expense line over 1 to 120 months; a credit note's lines are not spread |
 
 ## Related
 

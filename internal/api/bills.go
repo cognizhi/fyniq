@@ -43,7 +43,7 @@ const (
 
 // BillCodes are the codes the posting rules and the bill's own checks answer.
 var BillCodes = []string{bill.CodeSupplier, bill.CodeGSTCode, bill.CodeDueDate, bill.CodeTooLong, ledger.CodeBillTotal, ledger.CodeSystemRole,
-	ledger.CodeRuleAccount, ledger.CodeLineCurrency}
+	ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread}
 
 // BillApprovalCodes are the codes an approval of a bill's post or void may answer: SOD-3, and the posting's own.
 func BillApprovalCodes() []string {
@@ -58,6 +58,21 @@ type BillLineDraft struct {
 	GSTCode     string `json:"gst_code" pattern:"^[A-Z]{2,4}$" doc:"The line's GST code for purchases, from the sg-gst pack: TX, IM, ZP, BL, NR, EP or OP." example:"TX"`
 	GST         Money  `json:"gst" doc:"The line's GST as the supplier states it, in the bill's currency; 0 when none is charged."`
 	StatedGST   *Money `json:"stated_gst,omitempty" doc:"For a bill in another currency: the GST the tax invoice states in the base currency, which is the input tax claimed (ENG-42). Without it the input tax is not claimed and stays in the cost (⚠)."`
+	// Spreads (FR-GL-03; rev 0.83).
+	SpreadMonths int    `json:"spread_months,omitempty" minimum:"1" maximum:"120" doc:"Spread the line's cost over this many months (FR-GL-03): the bill puts the cost on 1210 Prepayments in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05). Only an expense line's cost is spread, and never a vendor credit's (LEDGER-28)." example:"12"`
+	SpreadFrom   string `json:"spread_from,omitempty" format:"date" doc:"The spread's first month, as any day of it: when the service starts. Left out, the bill's month. Months before the bill's date release on the bill's date." example:"2026-10-01"`
+}
+
+// BillRelease is one month's release of a bill line's spread cost (FR-GL-03, ENG-05).
+type BillRelease struct {
+	Line    int    `json:"line" doc:"The bill's line it releases, from 1." example:"1"`
+	Month   string `json:"month" pattern:"^[0-9]{4}-[0-9]{2}$" doc:"The month it releases." example:"2026-11"`
+	Part    int    `json:"part" doc:"Which month of the spread it is, from 1." example:"2"`
+	Of      int    `json:"of" doc:"How many months the line is spread over." example:"12"`
+	Date    string `json:"date" format:"date" doc:"The day it posts: the first of its month, or the bill's date when that is later." example:"2026-11-01"`
+	Amount  Money  `json:"amount" doc:"What it moves from 1210 Prepayments to the line's account, in the base currency: its ALLOC-EVEN part of the line's cost."`
+	Status  string `json:"status" enum:"posted,waiting,projected,reversed" doc:"posted; waiting: due by the organisation's today but not in the ledger yet (the hourly job posts it, or waits for its period to open); projected: in the future, or of a draft, and not in the ledger (ENG-05); reversed by a void or an edit of the bill." example:"posted"`
+	EntryID string `json:"entry_id,omitempty" format:"uuid" doc:"Its entry, once posted." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70"`
 }
 
 // BillDraft is a bill as entered: checked for its form when saved, and by the posting rules when it posts.
@@ -117,6 +132,7 @@ type Bill struct {
 	Payable       *Money          `json:"payable,omitempty" doc:"What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."`
 	Open          *Money          `json:"open,omitempty" doc:"A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."`
 	Payments      []BillPaidBy    `json:"payments" nullable:"false" doc:"getBill only: the payments that settle it, earliest first, each marked when it was voided."`
+	Releases      []BillRelease   `json:"releases" nullable:"false" doc:"getBill only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05)."`
 	States        BillStates      `json:"states" doc:"Its approval, ledger, payment and due states."`
 	Checks        []BillCheck     `json:"checks" nullable:"false" doc:"getBill only: what stops a draft posting (✖), and the warnings it posts with (⚠)."`
 	LedgerImpact  []EntryLine     `json:"ledger_impact" nullable:"false" doc:"getBill only: the lines posting it writes (a draft), or wrote (posted): debits positive."`
@@ -329,6 +345,13 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 			}
 			line.StatedGST = &s
 		}
+		line.SpreadMonths = l.SpreadMonths
+		if l.SpreadFrom != "" {
+			if line.SpreadFrom, err = time.Parse(time.DateOnly, l.SpreadFrom); err != nil {
+				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("spread_from"), Message: "is not a date", Fix: "Send the spread's first month as YYYY-MM-DD"})
+				continue
+			}
+		}
 		d.Lines = append(d.Lines, line)
 	}
 	if len(fields) > 0 {
@@ -426,7 +449,22 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 	}
 	out := Bill{ID: doc.ID.String(), Kind: kindOf(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, SupplierRef: d.SupplierRef,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: []BillLineDraft{}, Checks: []BillCheck{},
-		LedgerImpact: []EntryLine{}, Payments: []BillPaidBy{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
+		LedgerImpact: []EntryLine{}, Payments: []BillPaidBy{}, Releases: []BillRelease{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
+		PostedAt: utc(doc.PostedAt)}
+	if withChecks {
+		rs, err := journal.ReleasesOf(ctx, u, doc, v.today)
+		if err != nil {
+			return Bill{}, err
+		}
+		for _, r := range rs {
+			x := BillRelease{Line: r.Release.Line, Month: r.Release.Month.Format("2006-01"), Part: r.Release.Part, Of: r.Release.Of, Date: dayText(r.Release.Date),
+				Amount: moneyOut(r.Release.Amount), Status: r.Status}
+			if r.EntryID != uuid.Nil {
+				x.EntryID = r.EntryID.String()
+			}
+			out.Releases = append(out.Releases, x)
+		}
+	}
 	if d.Rate != nil {
 		out.FXRate = d.Rate.String()
 	}
@@ -442,6 +480,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 		if l.StatedGST != nil {
 			bl.StatedGST = &Money{Amount: l.StatedGST.String(), Currency: l.StatedGST.Currency().Code}
 		}
+		bl.SpreadMonths, bl.SpreadFrom = l.SpreadMonths, dayText(l.SpreadFrom)
 		out.Lines = append(out.Lines, bl)
 	}
 	total, err := d.Total()
@@ -727,6 +766,12 @@ func billEditDiff(ctx context.Context, u storage.UnitOfWork, before Bill, after 
 		s := fmt.Sprintf("%s: %s %s + %s GST (%s)", names[l.AccountID], l.Net.Amount, l.Net.Currency, l.GST.Amount, l.GSTCode)
 		if l.StatedGST != nil {
 			s += fmt.Sprintf(", %s %s stated", l.StatedGST.Amount, l.StatedGST.Currency)
+		}
+		if l.SpreadMonths != 0 {
+			s += fmt.Sprintf(", spread over %d months", l.SpreadMonths)
+			if l.SpreadFrom != "" {
+				s += " from " + l.SpreadFrom[:min(len(l.SpreadFrom), 7)]
+			}
 		}
 		if l.Description != "" {
 			s += " (" + l.Description + ")"

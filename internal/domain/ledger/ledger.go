@@ -51,6 +51,9 @@ type Account struct {
 	// holds one other than the base; a payment is made from a money account (FR-AP-02).
 	Money    bool
 	Currency string
+	// Type is the account's type (FR-COA-02): "asset", "liability", "equity", "revenue" or "expense". A bill spreads
+	// only a line on an expense account (FR-GL-03, Appendix B.1: P&L categories only).
+	Type string
 }
 
 // Settings are the organisation's settings and master data the rules read.

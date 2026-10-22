@@ -125,6 +125,13 @@
       "$ref": "Person.schema.json",
       "description": "Who saved the current version."
     },
+    "releases": {
+      "description": "getBill only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05).",
+      "items": {
+        "$ref": "BillRelease.schema.json"
+      },
+      "type": "array"
+    },
     "states": {
       "$ref": "BillStates.schema.json",
       "description": "Its approval, ledger, payment and due states."
@@ -174,6 +181,7 @@
     "lines",
     "total",
     "payments",
+    "releases",
     "states",
     "checks",
     "ledger_impact"

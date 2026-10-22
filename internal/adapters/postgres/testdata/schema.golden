@@ -1862,6 +1862,7 @@ CREATE TRIGGER fx_feed_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_feed_rate FO
 CREATE TRIGGER fx_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.fx_rate FOR EACH ROW EXECUTE FUNCTION fx_rate_guard()
 CREATE TRIGGER fx_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_rate FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
+CREATE TRIGGER journal_entry_bill_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'bill_release'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bill_release()
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_entry_no_truncate BEFORE TRUNCATE ON fyniq.journal_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_line_balances AFTER INSERT ON fyniq.journal_line REFERENCING NEW TABLE AS new_lines FOR EACH STATEMENT EXECUTE FUNCTION journal_line_balances()
@@ -1987,9 +1988,9 @@ count_super_admins() → integer | security definer | s | search_path=pg_catalog
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
 create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3a11f739d0529e16f9662b7ad7fd8477
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
-document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a01747c115d9a2d30df18c0df49e146f
+document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c0faaeba06971a330631f0df37fb0c26
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
-document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 07ee1d98374e820d45cb71cf56e1da6e
+document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 138a00ddbbdba924f2fc09481f328d07
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_version_created_by() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b35b5285220973313c6224ad1d90dd81
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
@@ -2006,6 +2007,7 @@ installation_org() → uuid | security definer | s | search_path=pg_catalog, fyn
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8
 journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
+journal_entry_bill_release() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4640943f24f77ab7bdb4001855543147
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d82e1e5dfa883d38c11c8f4ffcf45d93

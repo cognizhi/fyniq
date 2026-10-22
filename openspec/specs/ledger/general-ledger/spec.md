@@ -127,6 +127,16 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** recognition runs
 - **THEN** amounts are recognised up to the current period only (workbook "as of" gate)
 
+#### Scenario: Built for bills: a line spread over months (rev 0.83)
+- **GIVEN** a bill line on an expense account spread over 1 to 120 months from the month its service starts (by default the bill's)
+- **WHEN** the bill posts
+- **THEN** 1210 Prepayments takes the line's cost in the base currency, and each month's ALLOC-EVEN part is released to the line's account, dated the first day of its month or, for months before the bill, the bill's date
+- **AND** a vendor credit's lines are not spread, and LEDGER-28 refuses any other spread
+
+#### Scenario: A void or an edit of a spread bill (rev 0.83)
+- **WHEN** a spread bill is voided or edited
+- **THEN** a void reverses its posted releases on the void's date, or a release's own when later, and an edit reverses them on their own dates and releases the new version's
+
 ### Requirement: FR-GL-04 FX revaluation
 The system SHALL revalue the open foreign-currency monetary items at month end at the period-end rate, posting the unrealised gain or loss as base-only lines (INV-05) with automatic reversal on day 1 of the next period.
 

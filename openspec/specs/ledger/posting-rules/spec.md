@@ -112,6 +112,11 @@ Source: PRD-001 §10.2
 - **WHEN** a credit note is posted
 - **THEN** every line is the line bill@1 posts for the same content, amount and base amount negated, so the negation is exact under RND-FX
 
+#### Scenario: Built: the spread line and its releases (rev 0.83)
+- **WHEN** a bill with a line spread over months is posted under bill@1
+- **THEN** 1210 takes RND-FX of the line's cost at the bill's rate, in the base currency, never revalued
+- **AND** bill_release@1 posts each month's part, Dr the line's account and Cr 1210 in the base currency; LEDGER-28 refuses a spread of 0 or over 120 months, of a line not an expense or with no cost, or on a vendor credit
+
 ### Requirement: Customer and supplier payments
 A customer payment SHALL debit the bank and credit AR 1100, matched to documents, and a supplier payment SHALL debit AP 2010 and credit the bank.
 
