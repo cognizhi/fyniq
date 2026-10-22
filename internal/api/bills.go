@@ -37,6 +37,7 @@ const (
 	CodeBillNeedsApproval = "BILL-09" // the bill's total is above the self-approval threshold: ask for approval (FM-2)
 	CodeBillVoidApproval  = "BILL-10" // in Founder mode a void needs a second person (FM-1)
 	CodeOwnBill           = "BILL-11" // whoever prepared the bill never approves its post (SOD-3)
+	CodeBillEditApproval  = "BILL-12" // in Founder mode an edit of a posted bill needs a second person (FM-1)
 )
 
 // BillCodes are the codes the posting rules and the bill's own checks answer.
@@ -181,6 +182,34 @@ type billVoidInput struct {
 	IfMatchHeader
 	PreferHeader
 	Body Reversal
+}
+
+// BillEdit is the correction of a posted bill: its new content, and why (FR-GL-12).
+type BillEdit struct {
+	BillDraft
+	Reason string `json:"reason" minLength:"1" maxLength:"500" doc:"Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12)." example:"The supplier credited one seat"`
+}
+
+// BillEdited is what an edit posted.
+type BillEdited struct {
+	Bill     Bill  `json:"bill" doc:"The bill at its new version, still posted, with whoever posted the edit."`
+	Reversal Entry `json:"reversal" doc:"The entry that reverses the one the bill had, dated on that entry's date."`
+	Entry    Entry `json:"entry" doc:"The entry of the new version, on its date."`
+}
+
+type billEditInput struct {
+	BillPath
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+	Body BillEdit
+}
+
+type billEditOutput struct {
+	ETag     string `header:"ETag" doc:"The bill's new version and status, for If-Match."`
+	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved, and the entries show what the edit would post (FR-INT-14)."`
+	Body     BillEdited
 }
 
 // BillPosting is a bill after a post or a void, with the entry it made.
@@ -537,6 +566,131 @@ func gateBillVoid(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) error
 		return problem(CodeBillVoidApproval, "In Founder mode, voiding a posted bill needs a second person (FM-1).", "Ask for another person's approval to void it")
 	}
 	return nil
+}
+
+// gateBillEdit refuses an edit in Founder mode (FM-1), and in any mode an edit whose new version adds more than the
+// self-approval threshold to accounts payable (FM-2). A bill that is not posted is left to the edit's own refusal; an
+// edit the rules refuse answers their problems.
+func (a *API) gateBillEdit(ctx context.Context, u storage.UnitOfWork, p authn.Principal, doc storage.Document, d bill.Draft) error {
+	if doc.Status != storage.DocumentPosted {
+		return nil
+	}
+	mode, _, _, err := teamModeOf(ctx, u)
+	if err != nil {
+		return err
+	}
+	if mode == team.Founder {
+		return problem(CodeBillEditApproval, "In Founder mode, editing a posted bill needs a second person (FM-1).", "Ask for another person's approval to edit it")
+	}
+	c, err := a.bills.Check(ctx, p.Organisation, doc.ID, &d)
+	if err != nil {
+		return err
+	}
+	if len(c.Problems) > 0 {
+		return billProblems(c.Problems)
+	}
+	threshold, err := selfApprovalThreshold(ctx, a, u, c.Payable.Currency())
+	if err != nil {
+		return err
+	}
+	if over, err := c.Payable.Cmp(threshold); err != nil {
+		return err
+	} else if over > 0 {
+		return problem(CodeBillNeedsApproval,
+			fmt.Sprintf("The edited bill's total is %s %s, above the self-approval threshold of %s.", c.Payable, c.Payable.Currency().Code, threshold),
+			"Ask for another person's approval to edit it")
+	}
+	return nil
+}
+
+// billEditDiff is what an edit changes, field by field and line by line, for the approver (FR-APR-02).
+func billEditDiff(ctx context.Context, u storage.UnitOfWork, before Bill, after BillDraft, payableBefore, payableAfter string) ([]ApprovalDiff, error) {
+	accounts, err := u.Accounts().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := map[string]string{}
+	for _, ac := range accounts {
+		names[ac.ID.String()] = ac.Code + " " + ac.Name
+	}
+	line := func(l BillLineDraft) string {
+		s := fmt.Sprintf("%s: %s %s + %s GST (%s)", names[l.AccountID], l.Net.Amount, l.Net.Currency, l.GST.Amount, l.GSTCode)
+		if l.StatedGST != nil {
+			s += fmt.Sprintf(", %s %s stated", l.StatedGST.Amount, l.StatedGST.Currency)
+		}
+		if l.Description != "" {
+			s += " (" + l.Description + ")"
+		}
+		return s
+	}
+	var out []ApprovalDiff
+	for _, f := range []struct{ field, before, after string }{{"supplier_ref", before.SupplierRef, after.SupplierRef}, {"date", before.Date, after.Date},
+		{"currency", before.Currency, after.Currency}, {"fx_rate", before.FXRate, after.FXRate}} {
+		if f.before != f.after {
+			out = append(out, ApprovalDiff{Field: f.field, Before: f.before, After: f.after})
+		}
+	}
+	if before.Supplier != nil && before.Supplier.ID != after.SupplierID {
+		out = append(out, ApprovalDiff{Field: "supplier_id", Before: before.Supplier.ID, After: after.SupplierID})
+	}
+	out = append(out, ApprovalDiff{Field: "payable", Before: payableBefore, After: payableAfter})
+	for i := 0; i < max(len(before.Lines), len(after.Lines)); i++ {
+		var b, f string
+		if i < len(before.Lines) {
+			b = line(before.Lines[i])
+		}
+		if i < len(after.Lines) {
+			f = line(after.Lines[i])
+		}
+		if b != f {
+			out = append(out, ApprovalDiff{Field: fmt.Sprintf("line %d", i+1), Before: b, After: f})
+		}
+	}
+	return out, nil
+}
+
+// executeBillEdit runs an approved edit: the content the request kept, checked against the hash its envelope holds,
+// posted as the approver, with the requester as the one who prepared the new version.
+func (a *API) executeBillEdit(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored) error {
+	text := func(k string) string { v, _ := s.Execute[k].(string); return v }
+	content, sum, err := canonicalOf(s.Content)
+	if err != nil {
+		return err
+	}
+	if sum != text("content_sha256") {
+		return fmt.Errorf("approval: the content of request %s does not match its envelope", r.ID)
+	}
+	var body BillDraft
+	if err := json.Unmarshal(content, &body); err != nil {
+		return err
+	}
+	id, err := uuid.Parse(r.ObjectKey)
+	if err != nil {
+		return err
+	}
+	base, err := baseOf(ctx, u)
+	if err != nil {
+		return err
+	}
+	d, err := billDraftOf(body, base)
+	if err != nil {
+		return err
+	}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = a.bills.Edit(ctx, o.ID, id, d, text("reason"), text("prepared_by"))
+	return err
+}
+
+// contentOfBill is an edit's content as the request keeps it, canonical, and its SHA-256, which the envelope holds.
+func contentOfBill(d BillDraft) ([]byte, string, error) {
+	raw, err := json.Marshal(d)
+	if err != nil {
+		return nil, "", err
+	}
+	return canonicalOf(raw)
 }
 
 // billPayable is a bill's total in the base currency, as its draft would post or as it posted.
@@ -910,6 +1064,155 @@ func registerBills(a *API) {
 					Execute: map[string]any{"bill_id": doc.ID.String(), "version": fmt.Sprint(doc.Version)},
 					Diff:    []ApprovalDiff{{Field: "status", Before: "draft", After: "posted"}, {Field: "payable", After: payable}}}
 			})
+	})
+
+	editCodes := append([]string{CodeBillEditApproval, storage.CodeDocumentEdit, CodeInvalid}, postCodes...)
+
+	register(a, authz.EditBill, huma.Operation{
+		OperationID: "editBill", Method: http.MethodPost, Path: "/v1/bills/{bill_id}/edit", Tags: []string{"Purchases"},
+		Summary: "Edit a posted bill",
+		Description: "Corrects a posted bill in an open period (FR-GL-12): saves the content sent as its next version, reverses the " +
+			"entry it had on that entry's own date, and posts the new version's entry, in one transaction; the bill stays posted, " +
+			"keeps its number, and records who posted the edit. An edit needs the approval a void needs: in Founder mode it is " +
+			"refused (BILL-12), and in any mode a new version whose total is above the self-approval threshold is refused " +
+			"(BILL-09); requestBillEdit asks for the approval. Side effects: a new version, two entries, a new ledger revision, " +
+			"balances, audit events with the reason. Needs If-Match with the bill's ETag. Idempotent with Idempotency-Key; " +
+			"Prefer: return=preview shows the two entries and saves nothing.",
+	}, editCodes, func(ctx context.Context, in *billEditInput) (*billEditOutput, error) {
+		id, err := parseID("bill_id", in.BillID)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(in.IfMatch) == "" {
+			return nil, checkIfMatch(in.IfMatch, "")
+		}
+		reason := strings.TrimSpace(in.Body.Reason)
+		if reason == "" {
+			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.reason", Message: "is empty", Fix: "Say why the bill is edited"}})
+		}
+		p, _ := authn.From(ctx)
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (BillEdited, error) {
+			doc, err := u.Documents().Lock(ctx, id)
+			if err != nil {
+				return BillEdited{}, err
+			}
+			v, err := a.billView(ctx, u)
+			if err != nil {
+				return BillEdited{}, err
+			}
+			before, err := a.billOf(ctx, u, v, doc, false)
+			if err != nil {
+				return BillEdited{}, err
+			}
+			if err := checkIfMatch(in.IfMatch, billETag(before)); err != nil {
+				return BillEdited{}, err
+			}
+			if err := checkConflicts(ctx, u, p, "Posting"); err != nil {
+				return BillEdited{}, err
+			}
+			d, err := billDraftOf(in.Body.BillDraft, v.base)
+			if err != nil {
+				return BillEdited{}, err
+			}
+			if err := a.gateBillEdit(ctx, u, p, doc, d); err != nil {
+				return BillEdited{}, err
+			}
+			res, err := a.bills.Edit(ctx, p.Organisation, id, d, reason, "")
+			if err != nil {
+				return BillEdited{}, billProblems(err)
+			}
+			after, err := u.Documents().Get(ctx, id)
+			if err != nil {
+				return BillEdited{}, err
+			}
+			b, err := a.billOf(ctx, u, v, after, false)
+			return BillEdited{Bill: b, Reversal: entryOf(res.Reversal), Entry: entryOf(res.Entry)}, err
+		})
+		if err != nil {
+			return nil, err
+		}
+		if w.Previewed {
+			return &billEditOutput{Applied: applied(w), Body: w.Body}, nil
+		}
+		return &billEditOutput{ETag: billETag(w.Body.Bill), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
+	})
+
+	register(a, authz.RequestBillEdit, huma.Operation{
+		OperationID: "requestBillEdit", Method: http.MethodPost, Path: "/v1/bills/{bill_id}/edit-approval", Tags: []string{"Purchases"},
+		Summary: "Ask for approval to edit a posted bill", DefaultStatus: http.StatusAccepted,
+		Description: "Asks for another person's approval to edit a posted bill with the content sent (FR-GL-12, FM-1, FM-2): what " +
+			"editBill asks for in Founder mode (BILL-12) or above the self-approval threshold (BILL-09). The content must pass the " +
+			"posting rules. The answer is 202 with an approval request whose changes list each field and line that changes and the " +
+			"total payable before and after; it keeps the content, and its envelope holds the content's SHA-256 with the bill's " +
+			"version, status and total, so any change to the bill voids it. A person who holds A on \"Bills, vendor credits\" and did " +
+			"not ask approves it, stepped up; on the approval the edit posts as the approver, with the requester as the one who " +
+			"prepared the new version. Asking needs a person signed in who passed step-up, and If-Match with the bill's ETag. " +
+			"Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
+	}, requestCodes, func(ctx context.Context, in *billEditInput) (*billRequestOutput, error) {
+		id, err := parseID("bill_id", in.BillID)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(in.IfMatch) == "" {
+			return nil, checkIfMatch(in.IfMatch, "")
+		}
+		reason := strings.TrimSpace(in.Body.Reason)
+		if reason == "" {
+			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.reason", Message: "is empty", Fix: "Say why the bill is edited"}})
+		}
+		p, _ := authn.From(ctx)
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+			doc, err := u.Documents().Lock(ctx, id)
+			if err != nil {
+				return Approval{}, err
+			}
+			v, err := a.billView(ctx, u)
+			if err != nil {
+				return Approval{}, err
+			}
+			b, err := a.billOf(ctx, u, v, doc, false)
+			if err != nil {
+				return Approval{}, err
+			}
+			if err := checkIfMatch(in.IfMatch, billETag(b)); err != nil {
+				return Approval{}, err
+			}
+			if doc.Status != storage.DocumentPosted {
+				return Approval{}, problem(bill.CodeNotPosted, fmt.Sprintf("The bill is %s.", doc.Status), "Ask for approval of a bill in the state it needs")
+			}
+			d, err := billDraftOf(in.Body.BillDraft, v.base)
+			if err != nil {
+				return Approval{}, err
+			}
+			c, err := a.bills.Check(ctx, p.Organisation, doc.ID, &d)
+			if err != nil {
+				return Approval{}, err
+			}
+			if len(c.Problems) > 0 {
+				return Approval{}, billProblems(c.Problems)
+			}
+			payable, err := a.billPayable(ctx, u, v, doc)
+			if err != nil {
+				return Approval{}, err
+			}
+			content, sum, err := contentOfBill(in.Body.BillDraft)
+			if err != nil {
+				return Approval{}, err
+			}
+			diff, err := billEditDiff(ctx, u, b, in.Body.BillDraft, payable, c.Payable.String())
+			if err != nil {
+				return Approval{}, err
+			}
+			return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectBill, ObjectKey: doc.ID.String(), Operation: approval.OpBillEdit,
+				Summary: fmt.Sprintf("Edit %s: %s", billName(doc, b), reason),
+				Execute: map[string]any{"bill_id": doc.ID.String(), "version": fmt.Sprint(doc.Version), "content_sha256": sum,
+					"reason": reason, "prepared_by": (storage.Actor{Type: "user", ID: p.UserID.String()}).String()},
+				Content: content, Diff: diff})
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &billRequestOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
 
 	register(a, authz.RequestBillVoid, huma.Operation{

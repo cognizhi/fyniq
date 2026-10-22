@@ -1113,6 +1113,32 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return requestsOf(e, "bill") == was }
 	},
+	"requestBillEdit": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "bill")
+		id, tag := e.postedBill("10.00", "0.90")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/bills/"+id+"/edit-approval", person, e.billEdit("12.00", "1.08", "Matrix test"), "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "bill") == was }
+	},
+	// An edit in Founder mode is asked for (requestBillEdit), so the row edits in an organisation in Standard mode.
+	"editBill": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.postedBill("10.00", "0.90")
+		r := s.call(http.MethodPost, "/v1/bills/"+id+"/edit", tok, s.billEdit("12.00", "1.08", "Matrix test"), "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/bills/"+id, s.as(authz.Accountant), nil).Header.Get("ETag") == tag
+		}
+	},
 	// A void in Founder mode is asked for (requestBillVoid), so the row voids in an organisation in Standard mode.
 	"voidBill": func(e *env, tok string) (response, func() bool) {
 		s := inStandardMode(e)

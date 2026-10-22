@@ -416,6 +416,8 @@ var (
 	VoidBill        = Policy{Operation: "voidBill", Capability: Bills, Need: Post}
 	RequestBillPost = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
 	RequestBillVoid = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
+	EditBill        = Policy{Operation: "editBill", Capability: Bills, Need: Post}
+	RequestBillEdit = Policy{Operation: "requestBillEdit", Capability: Bills, Need: Post}
 	// A journal's evidence needs the evidence right and the right to view the journal (FR-DOC-05, FR-DOC-11).
 	// The AI's cell is a proposal (doc.attach): an AI or MCP client never uploads, lists or reads evidence here.
 	AddJournalEvidence = Policy{Operation: "addJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
@@ -530,7 +532,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
-	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid,
+	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

@@ -31,6 +31,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills` (createBill): Save a draft bill
 - `GET /v1/bills/{bill_id}` (getBill): Get a bill
 - `PUT /v1/bills/{bill_id}` (replaceBill): Change a draft bill
+- `POST /v1/bills/{bill_id}/edit` (editBill): Edit a posted bill
+- `POST /v1/bills/{bill_id}/edit-approval` (requestBillEdit): Ask for approval to edit a posted bill
 - `POST /v1/bills/{bill_id}/post` (postBill): Post a draft bill
 - `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill

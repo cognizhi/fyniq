@@ -972,6 +972,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return err
 	case approval.OpJournalEdit:
 		return a.executeEdit(ctx, u, r, s)
+	case approval.OpBillEdit:
+		return a.executeBillEdit(ctx, u, r, s)
 	case approval.OpOpeningEdit:
 		return a.executeOpeningEdit(ctx, u, r, s)
 	}

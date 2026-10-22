@@ -60,6 +60,13 @@ func (e *env) billDraft(net, gst string) map[string]any {
 	}
 }
 
+// billEdit is an edit of the supplier's rent bill to net plus GST, with a reason.
+func (e *env) billEdit(net, gst, reason string) map[string]any {
+	d := e.billDraft(net, gst)
+	d["reason"] = reason
+	return d
+}
+
 // createBill saves a draft bill as an Accountant and returns its ID and ETag.
 func (e *env) createBill(net, gst string) (id, etag string) {
 	e.t.Helper()
@@ -159,6 +166,23 @@ func TestBillsThroughTheAPI(t *testing.T) {
 		t.Fatalf("after the void: %s", g.Raw)
 	}
 
+	// Founder mode: an edit is refused, then asked for, listed line by line, and approved; it posts as the approver.
+	small, smallTag := e.postedBill("100.00", "9.00")
+	e.problemIs(e.call(http.MethodPost, "/v1/bills/"+small+"/edit", ahkow, e.billEdit("90.00", "8.10", "One seat less"), "If-Match", smallTag),
+		"editBill", 409, CodeBillEditApproval)
+	asked = e.call(http.MethodPost, "/v1/bills/"+small+"/edit-approval", ahkow, e.billEdit("90.00", "8.10", "One seat less"), "If-Match", smallTag)
+	if asked.Status != 202 || asked.str("operation") != approval.OpBillEdit || !strings.Contains(asked.Raw, `"field":"payable","before":"109.00","after":"98.10"`) ||
+		!strings.Contains(asked.Raw, `"field":"line 1"`) {
+		t.Fatalf("asking to edit: %d %s", asked.Status, asked.Raw)
+	}
+	if a := f.decide(weiling, asked.str("id"), "approve", hashOf(asked)); a.Status != 200 {
+		t.Fatalf("approving the edit: %d %s", a.Status, a.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/bills/"+small, weiling, nil); g.str("status") != "posted" || g.Body["version"] != float64(2) ||
+		g.str("payable", "amount") != "98.10" || g.str("prepared_by", "id") != f.ahkow || g.str("posted_by", "id") != f.weiling {
+		t.Fatalf("after the edit: %s", g.Raw)
+	}
+
 	// A bill the rules refuse lists every problem; the list shows each bill.
 	bad := e.billDraft("10.00", "0.90")
 	bad["supplier_id"] = nil
@@ -171,7 +195,7 @@ func TestBillsThroughTheAPI(t *testing.T) {
 		t.Errorf("a bad draft's checks: %s", g.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/bills/"+r.str("id")+"/post", ahkow, nil, "If-Match", r.Header.Get("ETag")), "postBill", 422, bill.CodeSupplier)
-	if l := e.call(http.MethodGet, "/v1/bills?status=posted", weiling, nil); l.Status != 200 || len(l.Body["items"].([]any)) != 1 {
+	if l := e.call(http.MethodGet, "/v1/bills?status=posted", weiling, nil); l.Status != 200 || len(l.Body["items"].([]any)) != 2 {
 		t.Errorf("the posted bills: %d %s", l.Status, l.Raw)
 	}
 }

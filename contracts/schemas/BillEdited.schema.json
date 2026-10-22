@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bill": {
+      "$ref": "Bill.schema.json",
+      "description": "The bill at its new version, still posted, with whoever posted the edit."
+    },
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry of the new version, on its date."
+    },
+    "reversal": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry that reverses the one the bill had, dated on that entry's date."
+    }
+  },
+  "required": [
+    "bill",
+    "reversal",
+    "entry"
+  ],
+  "title": "BillEdited",
+  "type": "object"
+}

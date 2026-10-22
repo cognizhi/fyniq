@@ -296,6 +296,7 @@ var codeFacts = map[string]struct {
 	CodeBillNeedsApproval:         {409, "The bill needs another person's approval"},
 	CodeBillVoidApproval:          {409, "Voiding needs a second person"},
 	CodeOwnBill:                   {403, "You prepared it, so another person approves it"},
+	CodeBillEditApproval:          {409, "Editing needs a second person"},
 	ledger.CodeBillTotal:          {422, "A bill's total is more than zero"},
 	ledger.CodeSystemRole:         {422, "A system account is missing"},
 	ledger.CodeRuleAccount:        {422, "The line is on an account the rule posts to"},

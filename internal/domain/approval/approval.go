@@ -42,7 +42,7 @@ const (
 	ObjectPeriod     = "period"               // a closed accounting period to reopen (FR-GL-08, FM-1); its key is the period's id
 	ObjectJournal    = "journal"              // a manual journal to post above the threshold, to void or to edit (FR-GL-01, FR-GL-12, FM-1, FM-2); its key is its id
 	ObjectOpening    = "opening_balance"      // the posted opening balances to change (FR-GL-06, FM-1); its key is their document's id
-	ObjectBill       = "bill"                 // a supplier's bill to post above the threshold, or to void (FR-AP-02, FM-1, FM-2); its key is its id
+	ObjectBill       = "bill"                 // a supplier's bill to post above the threshold, to void or to edit (FR-AP-02, FR-GL-12, FM-1, FM-2); its key is its id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -64,6 +64,7 @@ const (
 	OpOpeningEdit    = "opening_balance.edit"
 	OpBillPost       = "bill.post"
 	OpBillVoid       = "bill.void"
+	OpBillEdit       = "bill.edit"
 )
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
