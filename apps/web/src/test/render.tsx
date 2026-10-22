@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { render } from "@testing-library/react";
 import type { ComponentType } from "react";
-import type { Session } from "../api/client";
+import type { Organisation, Session } from "../api/client";
 import type { Mode } from "../registry";
 import { SignedInProvider } from "../session";
 import { StepUpProvider } from "../stepup";
@@ -15,9 +15,10 @@ interface Options {
   route?: string; // the route's pattern, such as "/approvals/$approvalId"; the address by default
   session?: Session;
   mode?: Mode;
+  organisation?: Organisation; // its base currency and team mode, when the page reads them
 }
 
-export function renderPage(Page: ComponentType, { path = "/", session = ownerSession as Session, mode = "expert", route }: Options = {}) {
+export function renderPage(Page: ComponentType, { path = "/", session = ownerSession as Session, mode = "expert", route, organisation }: Options = {}) {
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const root = createRootRoute();
   const page = createRoute({
@@ -25,7 +26,7 @@ export function renderPage(Page: ComponentType, { path = "/", session = ownerSes
     path: route ?? path,
     component: () => (
       <QueryClientProvider client={queries}>
-        <SignedInProvider value={{ session, mode }}>
+        <SignedInProvider value={{ session, mode, organisation }}>
           <StepUpProvider provider={session.provider}>
             <Page />
           </StepUpProvider>

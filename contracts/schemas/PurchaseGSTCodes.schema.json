@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "codes": {
+      "description": "The codes for purchases, in the pack's order.",
+      "items": {
+        "$ref": "GSTCode.schema.json"
+      },
+      "type": "array"
+    },
+    "rate": {
+      "description": "The standard rate of GST on the day, as a fraction.",
+      "examples": [
+        "0.09"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The sg-gst version they come from (ENG-31).",
+      "examples": [
+        "sg-gst@2026.1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "version",
+    "codes"
+  ],
+  "title": "PurchaseGSTCodes",
+  "type": "object"
+}

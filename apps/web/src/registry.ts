@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { BookCheck, BookOpen, Building, Contact, House, Inbox, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { BookCheck, BookOpen, Building, Contact, House, Inbox, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -60,6 +60,9 @@ export const routes = [
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
   { kind: "route", id: "items", path: "/items", mode: "basic", signedIn: true, help: "items.overview", guide: "contacts.manage#items-and-prices" },
+  { kind: "route", id: "bills", path: "/purchases/bills", mode: "basic", signedIn: true, help: "purchases.bills", guide: "purchases.bills" },
+  { kind: "route", id: "bill-new", path: "/purchases/bills/new", mode: "basic", signedIn: true, help: "bill.new", guide: "purchases.bills#enter-a-bill" },
+  { kind: "route", id: "bill", path: "/purchases/bills/$billId", mode: "basic", signedIn: true, help: "purchases.bill", guide: "purchases.bills#check-and-post-a-bill" },
   { kind: "route", id: "accounting", path: "/accounting", mode: "expert", signedIn: true, help: "nav.accounting", guide: "accounting.journals" },
   { kind: "route", id: "journals", path: "/accounting/journals", mode: "expert", signedIn: true, help: "accounting.journals", guide: "accounting.journals" },
   { kind: "route", id: "journal-new", path: "/accounting/journals/new", mode: "expert", signedIn: true, help: "journal.new", guide: "accounting.journals#prepare-a-journal" },
@@ -115,6 +118,14 @@ export const actions = [
   { kind: "action", id: "item.add", mode: "basic", help: "item.add", guide: "contacts.manage#items-and-prices" },
   { kind: "action", id: "chart.add", mode: "expert", help: "chart.add", guide: "accounting.chart#add-an-account" },
   { kind: "action", id: "chart.load-standard", mode: "expert", help: "chart.load-standard", guide: "accounting.chart#start-from-the-standard-chart" },
+  { kind: "action", id: "bill.save", mode: "basic", help: "bill.save", guide: "purchases.bills#enter-a-bill" },
+  { kind: "action", id: "bill.post", mode: "basic", help: "bill.post", guide: "purchases.bills#check-and-post-a-bill" },
+  { kind: "action", id: "bill.ask-approval", mode: "basic", help: "bill.ask-approval", guide: "purchases.bills#bills-above-the-self-approval-threshold" },
+  { kind: "action", id: "bill.void", mode: "basic", help: "bill.void", guide: "purchases.bills#void-or-edit-a-posted-bill" },
+  { kind: "action", id: "bill.ask-void", mode: "basic", help: "bill.ask-void", guide: "purchases.bills#void-or-edit-a-posted-bill" },
+  { kind: "action", id: "bill.edit", mode: "basic", help: "bill.edit", guide: "purchases.bills#void-or-edit-a-posted-bill" },
+  { kind: "action", id: "bill.post-edit", mode: "basic", help: "bill.post-edit", guide: "purchases.bills#void-or-edit-a-posted-bill" },
+  { kind: "action", id: "bill.ask-edit", mode: "basic", help: "bill.ask-edit", guide: "purchases.bills#void-or-edit-a-posted-bill" },
   { kind: "action", id: "journal.save", mode: "expert", help: "journal.save", guide: "accounting.journals#prepare-a-journal" },
   { kind: "action", id: "journal.check", mode: "expert", help: "journal.check", guide: "accounting.journals#check-and-post-a-journal" },
   { kind: "action", id: "journal.post", mode: "expert", help: "journal.post", guide: "accounting.journals#check-and-post-a-journal" },
@@ -167,6 +178,7 @@ export const nav = [
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "auditor", "tax_agent", "dpo"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
+  { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["approver", "bookkeeper", "ap_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];

@@ -369,6 +369,33 @@ func gstVersion(ctx context.Context, u storage.UnitOfWork, on time.Time) (pack.V
 	return pack.Version{}, fmt.Errorf("this release carries no sg-gst version in force on %s", day(on))
 }
 
+// Codes are the GST codes a bill dated on a day is read with: the sg-gst version in force then, its standard rate, and
+// its codes for purchases.
+type Codes struct {
+	Version string
+	Rate    string // the standard rate then, as a fraction; empty before GST
+	Codes   []pack.GSTCode
+}
+
+// PurchaseCodes are the GST codes for purchases a bill dated on would be read with (ENG-31): from the organisation's
+// active sg-gst version in force then, else the one this release carries.
+func PurchaseCodes(ctx context.Context, u storage.UnitOfWork, on time.Time) (Codes, error) {
+	v, err := gstVersion(ctx, u, on)
+	if err != nil {
+		return Codes{}, err
+	}
+	out := Codes{Version: v.ID}
+	if !on.IsZero() {
+		out.Rate, _ = pack.RateOn(v, on)
+	}
+	for _, row := range v.Tables["codes"].Rows {
+		if c, ok := pack.Code(v, row[0]); ok && c.Direction == pack.DirPurchase {
+			out.Codes = append(out.Codes, c)
+		}
+	}
+	return out, nil
+}
+
 // warnings are a readable bill's ⚠: its stated GST against RND-GST-EXCL's, a duplicate of another bill, and a foreign
 // claimable line with no SGD GST stated.
 func warnings(ctx context.Context, u storage.UnitOfWork, doc storage.Document, d Draft, b ledger.Bill, base money.Currency, v pack.Version) ([]Warning, error) {

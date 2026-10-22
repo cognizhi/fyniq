@@ -228,6 +228,54 @@
       "label": "Journal",
       "tooltip": "One journal: its lines as entered, who prepared and posted it, and what posting writes."
     },
+    "nav.purchases": {
+      "label": "Purchases",
+      "tooltip": "What the company buys: suppliers' bills, what is owed to them, and paying them."
+    },
+    "purchases.bills": {
+      "label": "Bills",
+      "tooltip": "Every bill from a supplier: its total, when it falls due, and whether it is posted, waiting for approval or voided."
+    },
+    "purchases.bill": {
+      "label": "Bill",
+      "tooltip": "One bill: its lines as the supplier's invoice states them, its states, and what posting it writes."
+    },
+    "bill.new": {
+      "label": "New bill",
+      "tooltip": "Enter a supplier's invoice: who sent it, its number and date, and its lines with their GST."
+    },
+    "bill.save": {
+      "label": "Save as a draft",
+      "tooltip": "Keep it as a draft (✎); nothing posts until it is posted."
+    },
+    "bill.post": {
+      "label": "Post",
+      "tooltip": "Post it to the ledger on its date: it adds its total to what the company owes the supplier."
+    },
+    "bill.ask-approval": {
+      "label": "Ask for approval",
+      "tooltip": "Its total is above the self-approval threshold: another person, who did not prepare it, approves it and it posts then."
+    },
+    "bill.void": {
+      "label": "Void",
+      "tooltip": "Post a reversing entry on a date you choose, with a reason; the bill stays in the books, marked voided."
+    },
+    "bill.ask-void": {
+      "label": "Ask to void",
+      "tooltip": "In Founder mode another founder approves a void first; it posts on the date you choose once they approve."
+    },
+    "bill.edit": {
+      "label": "Edit",
+      "tooltip": "Correct a posted bill: the entry it has is reversed and the new version posts, in one step, with a reason."
+    },
+    "bill.post-edit": {
+      "label": "Post the edit",
+      "tooltip": "Reverse the entry the bill has, on its date, and post the new version: its month must be open."
+    },
+    "bill.ask-edit": {
+      "label": "Ask to post the edit",
+      "tooltip": "In Founder mode another founder approves an edit first; it posts when they approve it."
+    },
     "journal.new": {
       "label": "New journal",
       "tooltip": "Prepare a journal: its date, what it is for and its lines, whose debits equal their credits."

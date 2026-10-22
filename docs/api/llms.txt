@@ -117,6 +117,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/periods/{period_id}/variances/{account_id}/explanation` (explainVariance): Explain a variance
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
+- `GET /v1/purchases/gst-codes` (getPurchaseGSTCodes): Get the GST codes for purchases
 - `GET /v1/recurring-journals` (listRecurringJournals): List the recurring journals
 - `POST /v1/recurring-journals` (createRecurringJournal): Add a recurring journal
 - `GET /v1/recurring-journals/{recurring_journal_id}` (getRecurringJournal): Get a recurring journal

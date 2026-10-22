@@ -34,11 +34,15 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 2. Bill screens
 
-- [ ] 2.1 Bills list and the bill editor (`bill-editor`): lines, GST codes, the plain summary in Basic and
+- [x] 2.1 Bills list and the bill editor (`bill-editor`): lines, GST codes, the plain summary in Basic and
   the ledger impact in Expert, the five frames in light and dark; help keys, `docs/user-guide/bills.md`
   compiled into `kb/`
+  (22 Oct 2026: Purchases › Bills and the bill page; `getPurchaseGSTCodes` gives a line its codes from the pack in
+  force on the bill's date. Tests `bills.test.tsx`)
 - [ ] 2.2 The bill record (`bill-record`): state chips, actions, tabs (details, lines, ledger impact,
   attachments, activity, related)
+  (22 Oct 2026, part: the posted bill on the same page, read-only, with its states, ledger impact, and Void and Edit,
+  asked for in Founder mode. **Left:** the tabs for attachments, activity and related records, with attachments)
 
 ## 3. Payments recorded by hand (the owner's decision of 22 Oct 2026)
 

@@ -1684,6 +1684,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/purchases/gst-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the GST codes for purchases
+         * @description The GST codes a bill dated on the day given is read with (FR-AP-02, ENG-31): the organisation's active sg-gst version in force then, else the one this release carries; its standard rate on the day; and each code for purchases with whether its input tax can be claimed. Read-only; no side effects.
+         */
+        get: operations["getPurchaseGSTCodes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/recurring-journals": {
         parameters: {
             query?: never;
@@ -4684,6 +4704,23 @@ export interface components {
              */
             through: string;
         };
+        GSTCode: {
+            /**
+             * @description Whether input tax on it can be claimed (it has an input-tax box in the GST F5 return), once the organisation is GST-registered on the bill's date (FR-AP-20).
+             * @example true
+             */
+            claimable: boolean;
+            /**
+             * @description The code, as a bill line takes it.
+             * @example TX
+             */
+            code: string;
+            /**
+             * @description What it is for, in the pack's words.
+             * @example Standard-rated purchase whose GST can be claimed
+             */
+            description: string;
+        };
         GSTPeriod: {
             /**
              * Format: date
@@ -6390,6 +6427,20 @@ export interface components {
              * @example https://northwind.example
              */
             website?: string;
+        };
+        PurchaseGSTCodes: {
+            /** @description The codes for purchases, in the pack's order. */
+            codes: components["schemas"]["GSTCode"][];
+            /**
+             * @description The standard rate of GST on the day, as a fraction.
+             * @example 0.09
+             */
+            rate?: string;
+            /**
+             * @description The sg-gst version they come from (ENG-31).
+             * @example sg-gst@2026.1
+             */
+            version: string;
         };
         RecoveredSuperAdmin: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work. */
@@ -20501,6 +20552,84 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPurchaseGSTCodes: {
+        parameters: {
+            query?: {
+                /** @description The bill's date; left out, the codes of the newest version. */
+                on?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseGSTCodes"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
