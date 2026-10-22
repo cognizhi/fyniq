@@ -98,8 +98,8 @@ func (q *Queries) GetMemberInvitation(ctx context.Context, id uuid.UUID) (GetMem
 }
 
 const insertMemberInvitation = `-- name: InsertMemberInvitation :one
-INSERT INTO fyniq.member_invitation (code_hash, display_name, roles, roles_expire_at, expires_at)
-VALUES ($1, $2, $3::text[], $4, $5)
+INSERT INTO fyniq.member_invitation (code_hash, display_name, roles, roles_expire_at, expires_at, created_at)
+VALUES ($1, $2, $3::text[], $4, $5, $6)
 RETURNING id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at
 `
 
@@ -109,6 +109,7 @@ type InsertMemberInvitationParams struct {
 	Roles         []string
 	RolesExpireAt *time.Time
 	ExpiresAt     time.Time
+	CreatedAt     time.Time
 }
 
 type InsertMemberInvitationRow struct {
@@ -122,6 +123,7 @@ type InsertMemberInvitationRow struct {
 	WithdrawnAt   *time.Time
 }
 
+// Both times come from the API's clock (000073), as an idempotency key's do.
 func (q *Queries) InsertMemberInvitation(ctx context.Context, arg InsertMemberInvitationParams) (InsertMemberInvitationRow, error) {
 	row := q.db.QueryRow(ctx, insertMemberInvitation,
 		arg.CodeHash,
@@ -129,6 +131,7 @@ func (q *Queries) InsertMemberInvitation(ctx context.Context, arg InsertMemberIn
 		arg.Roles,
 		arg.RolesExpireAt,
 		arg.ExpiresAt,
+		arg.CreatedAt,
 	)
 	var i InsertMemberInvitationRow
 	err := row.Scan(

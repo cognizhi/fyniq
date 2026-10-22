@@ -34,6 +34,9 @@ type NewMemberInvitation struct {
 	Roles         []string
 	RolesExpireAt *time.Time // for an external user: when their roles end
 	ExpiresAt     time.Time
+	// CreatedAt is when it is made, by the clock that set ExpiresAt: the database compares the two, so they must not
+	// come from two clocks (DEV-05; rev 0.75's fix, as 000016 for idempotency keys). Required.
+	CreatedAt time.Time
 }
 
 // MemberInvitations are the organisation's invitations. Every change is audited.

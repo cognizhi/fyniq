@@ -75,8 +75,11 @@ func (r invitations) Create(ctx context.Context, n storage.NewMemberInvitation) 
 	if err := r.u.check(); err != nil {
 		return storage.MemberInvitation{}, err
 	}
+	if n.CreatedAt.IsZero() { // a zero time would pass the database's check from year 1: refuse it instead
+		return storage.MemberInvitation{}, &storage.Error{Code: storage.CodeInvalid, Message: "an invitation names when it was made"}
+	}
 	row, err := r.u.q.InsertMemberInvitation(ctx, sqlcdb.InsertMemberInvitationParams{CodeHash: n.CodeHash, DisplayName: n.DisplayName,
-		Roles: n.Roles, RolesExpireAt: n.RolesExpireAt, ExpiresAt: n.ExpiresAt})
+		Roles: n.Roles, RolesExpireAt: n.RolesExpireAt, ExpiresAt: n.ExpiresAt, CreatedAt: n.CreatedAt})
 	if err != nil {
 		return storage.MemberInvitation{}, mapError(err)
 	}
