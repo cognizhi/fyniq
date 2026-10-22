@@ -23,7 +23,7 @@
       "type": "string"
     },
     "fx_rate": {
-      "description": "Only for a line not in the base currency: base currency per unit of the line's currency. A base-currency line takes none; posting refuses one (ENG-03).",
+      "description": "Only for a line not in the base currency: base currency per unit of the line's currency, the document's own rate. Left out, the line takes the rate the cascade finds for the journal's date when its checks run and when it posts, with that rate's source, as lookupFxRate shows it; with none anywhere the line has FX-01 (ENG-40; PRD-001 rev 0.71). A base-currency line takes none; posting refuses one (ENG-03).",
       "examples": [
         "1.3472"
       ],

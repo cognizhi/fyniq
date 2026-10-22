@@ -291,8 +291,19 @@ func RecurringStatuses(ctx context.Context, u storage.UnitOfWork, rs []storage.R
 		if err != nil {
 			return nil, err
 		}
+		// The draft takes its rates when it posts, from the cascade as it then is: a rate not in it yet is no problem now.
+		all, err := draftStatuses(doc, settings, open, func(j *ledger.Journal) (ledger.Problems, error) {
+			_, err := rated(ctx, u, j, settings.Base)
+			return nil, err
+		})
+		if err != nil {
+			return nil, err
+		}
 		var st []Status
-		for _, x := range draftStatuses(doc, settings, open) {
+		for _, x := range all {
+			if x.Code == ledger.CodeMissingRate {
+				continue
+			}
 			if x.Severity == SeverityError {
 				st = append(st, x)
 			}

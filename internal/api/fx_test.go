@@ -11,7 +11,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // feedOf is a daily feed that published the quotes it holds, by date.
@@ -155,4 +157,92 @@ func TestExchangeRatesAndTheCascade(t *testing.T) {
 	e.problemIs(e.call(http.MethodGet, "/v1/fx/rates", e.as(authz.ARSpecialist), nil), "listFxRates", 403, CodeForbidden)
 	e.problemIs(e.call(http.MethodPost, "/v1/fx/rates", auditor, map[string]any{"kind": "day", "currency": "EUR", "on": "2026-10-15", "quote": "1.5"}),
 		"createFxRate", 403, CodeForbidden)
+}
+
+// A manual journal's foreign-currency line without a rate of its own takes the cascade's rate for the journal's date
+// when its checks run and when it posts, with that rate's source (ENG-40, FR-GL-05; rev 0.71); a typed rate stays the
+// document's. A line with no rate anywhere has FX-01 in its checks, and posting is refused with it. Replay reads the rate
+// from the entry, so a rate withdrawn later changes nothing.
+// req: ENG-40
+// req: FR-GL-05
+func TestForeignCurrencyJournalsTakeTheCascadesRate(t *testing.T) {
+	e := newEnv(t)
+	accountant := e.as(authz.Accountant)
+	rate := e.call(http.MethodPost, "/v1/fx/rates", accountant, map[string]any{"kind": "day", "currency": "USD", "on": "2026-10-14", "quote": "1.35"})
+	if rate.Status != 201 {
+		t.Fatalf("createFxRate: %d %s", rate.Status, rate.Raw)
+	}
+	usd := func(date, cur, rate string) map[string]any {
+		line := func(acc storage.Account, amount string) map[string]any {
+			l := map[string]any{"account_id": acc.ID.String(), "amount": map[string]any{"amount": amount, "currency": cur}}
+			if rate != "" {
+				l["fx_rate"] = rate
+			}
+			return l
+		}
+		return map[string]any{"date": date, "memo": "Client paid in " + cur, "lines": []map[string]any{line(e.books.Bank, "100.00"), line(e.books.Sales, "-100.00")}}
+	}
+	create := func(body map[string]any) response {
+		t.Helper()
+		r := e.call(http.MethodPost, "/v1/journals", accountant, body)
+		if r.Status != 201 {
+			t.Fatalf("createJournal: %d %s", r.Status, r.Raw)
+		}
+		return e.call(http.MethodGet, "/v1/journals/"+r.str("id"), accountant, nil)
+	}
+	firstCheck := func(j response) map[string]any {
+		checks, _ := j.Body["checks"].([]any)
+		if len(checks) == 0 {
+			t.Fatalf("no checks: %s", j.Raw)
+		}
+		return checks[0].(map[string]any)
+	}
+
+	// The cascade's rate: the draft is OK, and the entry records the rate and where it came from.
+	j := create(usd("2026-10-14", "USD", ""))
+	if c := firstCheck(j); c["code"] != journal.StatusReady {
+		t.Errorf("a USD draft with the day's rate: %v", c)
+	}
+	p := e.call(http.MethodPost, "/v1/journals/"+j.str("id")+"/post", accountant, nil, "If-Match", j.Header.Get("ETag"))
+	entry, _ := p.Body["entry"].(map[string]any)
+	lines, _ := entry["lines"].([]any)
+	if p.Status != 200 || len(lines) != 2 {
+		t.Fatalf("postJournal: %d %s", p.Status, p.Raw)
+	}
+	if l := lines[0].(map[string]any); l["fx_rate"] != "1.35" || l["fx_rate_source"] != "organisation rate of 2026-10-14" ||
+		l["base_amount"].(map[string]any)["amount"] != "135.00" {
+		t.Errorf("the line took %v", l)
+	}
+
+	// A typed rate is the document's own.
+	typed := create(usd("2026-10-14", "USD", "1.36"))
+	p = e.call(http.MethodPost, "/v1/journals/"+typed.str("id")+"/post", accountant, nil, "If-Match", typed.Header.Get("ETag"))
+	if l := p.Body["entry"].(map[string]any)["lines"].([]any)[0].(map[string]any); l["fx_rate"] != "1.36" || l["fx_rate_source"] != "document" {
+		t.Errorf("a typed rate: %v", l)
+	}
+
+	// No rate anywhere: FX-01 on each line, in its checks and when posting.
+	eur := create(usd("2026-10-14", "EUR", ""))
+	if c := firstCheck(eur); c["code"] != fx.CodeNoRate || c["field"] != "lines[1].fx_rate" || c["title"] != "No exchange rate for this currency" {
+		t.Errorf("a EUR draft without a rate: %v", c)
+	}
+	refused := e.call(http.MethodPost, "/v1/journals/"+eur.str("id")+"/post", accountant, nil, "If-Match", eur.Header.Get("ETag"))
+	e.problemIs(refused, "postJournal", 422, fx.CodeNoRate)
+	if errs, _ := refused.Body["errors"].([]any); len(errs) != 2 || errs[1].(map[string]any)["field"] != "lines[1].fx_rate" {
+		t.Errorf("FX-01 per line: %s", refused.Raw)
+	}
+
+	// Withdrawing the rate later changes nothing posted: replay reads the rate the entry kept.
+	if w := e.call(http.MethodPost, "/v1/fx/rates/"+rate.str("id")+"/withdraw", accountant, map[string]any{"reason": "Test"}, "If-Match", `"1"`); w.Status != 200 {
+		t.Fatalf("withdrawFxRate: %d %s", w.Status, w.Raw)
+	}
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		r, err := journal.Replay(ctx, u)
+		if err == nil && len(r.Mismatches) != 0 {
+			t.Errorf("replay after the rate was withdrawn: %+v", r.Mismatches)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
 }

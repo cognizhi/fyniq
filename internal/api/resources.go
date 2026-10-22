@@ -232,7 +232,7 @@ func registerAccounts(a *API) {
 type JournalLineDraft struct {
 	AccountID    string `json:"account_id" format:"uuid" doc:"The account to post to: a leaf account, active." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	Amount       Money  `json:"amount" doc:"Debit positive, credit negative, in the line's currency."`
-	FXRate       string `json:"fx_rate,omitempty" pattern:"^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?$" doc:"Only for a line not in the base currency: base currency per unit of the line's currency. A base-currency line takes none; posting refuses one (ENG-03)." example:"1.3472"`
+	FXRate       string `json:"fx_rate,omitempty" pattern:"^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?$" doc:"Only for a line not in the base currency: base currency per unit of the line's currency, the document's own rate. Left out, the line takes the rate the cascade finds for the journal's date when its checks run and when it posts, with that rate's source, as lookupFxRate shows it; with none anywhere the line has FX-01 (ENG-40; PRD-001 rev 0.71). A base-currency line takes none; posting refuses one (ENG-03)." example:"1.3472"`
 	FXRateSource string `json:"fx_rate_source,omitempty" maxLength:"100" doc:"Where the rate came from. A rate you send is the document's, so its source is document, set for you when you leave it out; any other source is refused (ENG-03, ENG-40)." example:"document"`
 	Description  string `json:"description,omitempty" maxLength:"500" doc:"What the line is for." example:"October office rent"`
 }

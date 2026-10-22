@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -61,6 +62,7 @@ var titles = map[string]string{
 	ledger.CodeUnbalancedCur:   "Entry does not balance",
 	CodeReverseOn:              "Date the reversal after the journal",
 	CodeBadDraft:               "Save the journal again",
+	fx.CodeNoRate:              "No exchange rate for this currency",
 	storage.CodeNoPeriod:       "Dated before books start, or in a year not open yet",
 	storage.CodePeriodClosed:   "The month is closed",
 	StatusReady:                "OK",
@@ -113,7 +115,11 @@ func Statuses(ctx context.Context, u storage.UnitOfWork, docs []storage.Document
 		}
 		switch doc.Status {
 		case storage.DocumentDraft:
-			out[doc.ID] = draftStatuses(doc, settings, periodOf)
+			if out[doc.ID], err = draftStatuses(doc, settings, periodOf, func(j *ledger.Journal) (ledger.Problems, error) {
+				return rated(ctx, u, j, settings.Base)
+			}); err != nil {
+				return nil, err
+			}
 		case storage.DocumentPosted:
 			saved, err := ReadSaved(doc)
 			if err != nil {
@@ -143,7 +149,10 @@ func Statuses(ctx context.Context, u storage.UnitOfWork, docs []storage.Document
 	return out, nil
 }
 
-func draftStatuses(doc storage.Document, settings ledger.Settings, periodOf func(time.Time) *storage.Period) []Status {
+// draftStatuses are a draft's statuses. rate gives its foreign-currency lines the cascade's rates and returns FX-01 for
+// each it found none for (ENG-40).
+func draftStatuses(doc storage.Document, settings ledger.Settings, periodOf func(time.Time) *storage.Period,
+	rate func(j *ledger.Journal) (ledger.Problems, error)) ([]Status, error) {
 	j, err := decode(doc, settings.Base)
 	var je *Error
 	if errors.As(err, &je) {
@@ -151,16 +160,21 @@ func draftStatuses(doc storage.Document, settings ledger.Settings, periodOf func
 		if je.Code == CodeReverseOn {
 			field = "reverse_on"
 		}
-		return []Status{status(SeverityError, je.Code, field, je.Message, je.Fix)}
+		return []Status{status(SeverityError, je.Code, field, je.Message, je.Fix)}, nil
 	}
 	if err != nil {
-		return []Status{status(SeverityError, CodeBadDraft, "", err.Error(), "Save the journal again")}
+		return []Status{status(SeverityError, CodeBadDraft, "", err.Error(), "Save the journal again")}, nil
+	}
+	missing, err := rate(&j)
+	if err != nil {
+		return nil, err
 	}
 	var out []Status
 	if _, err := ledger.PostJournal(j, settings); err != nil {
+		err = withMissingRates(err, missing)
 		var problems ledger.Problems
 		if !errors.As(err, &problems) {
-			return []Status{status(SeverityError, CodeBadDraft, "", err.Error(), "Save the journal again")}
+			return []Status{status(SeverityError, CodeBadDraft, "", err.Error(), "Save the journal again")}, nil
 		}
 		for _, p := range problems {
 			out = append(out, status(SeverityError, p.Code, p.Field, p.Message, p.Fix))
@@ -179,5 +193,5 @@ func draftStatuses(doc storage.Document, settings ledger.Settings, periodOf func
 	if len(out) == 0 {
 		out = append(out, status(SeverityOK, StatusReady, "", "It balances and its month is open: it can post.", ""))
 	}
-	return out
+	return out, nil
 }

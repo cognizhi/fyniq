@@ -117,6 +117,7 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	if doc.Type == storage.DocumentOpeningBalance && o.Profile.BooksStart != nil {
 		j.Date = *o.Profile.BooksStart // as PostOpening dates them: the books start, fixed once a period exists
 	}
+	ratedAs(&j, stored, s.Base) // the cascade's rates, as the entry keeps them (ENG-14, ENG-40)
 	want, err := ledger.Replay(e.RuleVersion, j, s)
 	if err != nil {
 		return err.Error(), nil

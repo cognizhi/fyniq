@@ -195,7 +195,7 @@ func (s Service) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, er
 		if err != nil {
 			return err
 		}
-		entry, err := ledger.PostJournal(j, settings)
+		entry, err := postRated(ctx, u, j, settings)
 		if err != nil {
 			return err
 		}
@@ -303,7 +303,7 @@ func (s Service) Edit(ctx context.Context, org, id uuid.UUID, d Draft, reason, p
 		if err != nil {
 			return err
 		}
-		entry, err := ledger.PostJournal(j, settings)
+		entry, err := postRated(ctx, u, j, settings)
 		if err != nil {
 			return err
 		}
@@ -541,7 +541,7 @@ func (s Service) Debits(ctx context.Context, org, id uuid.UUID) (money.Money, er
 		if err != nil {
 			return err
 		}
-		entry, err := ledger.PostJournal(j, settings)
+		entry, err := postRated(ctx, u, j, settings)
 		if err != nil {
 			return err
 		}
@@ -576,7 +576,7 @@ func (s Service) EditDebits(ctx context.Context, org, id uuid.UUID, d Draft) (mo
 		if err != nil {
 			return err
 		}
-		entry, err := ledger.PostJournal(j, settings)
+		entry, err := postRated(ctx, u, j, settings)
 		if err != nil {
 			return err
 		}
