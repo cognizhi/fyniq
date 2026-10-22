@@ -461,6 +461,17 @@ var (
 		Note: "Needs the right to view the journal as well."}
 	RemoveJournalEvidence = Policy{Operation: "removeJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
 		Note: "Needs the right to view the journal as well; only while the journal is a draft (FR-DOC-07)."}
+	// A bill's evidence, such as the supplier's invoice, as a journal's (FR-DOC-05; rev 0.86): the evidence right and the
+	// right to view bills.
+	AddBillEvidence = Policy{Operation: "addBillEvidence", Capability: Evidence, Need: Create, Parent: Bills,
+		Note: "Needs the right to view bills as well. AI and MCP clients only propose attaching a document (doc.attach), " +
+			"which a person approves; the evidence rules per activity (FR-DOC-06) arrive later in P1."}
+	ListBillEvidence = Policy{Operation: "listBillEvidence", Capability: Evidence, Need: View, Parent: Bills,
+		Note: "Needs the right to view bills as well."}
+	GetBillEvidence = Policy{Operation: "getBillEvidence", Capability: Evidence, Need: View, Parent: Bills,
+		Note: "Needs the right to view bills as well."}
+	RemoveBillEvidence = Policy{Operation: "removeBillEvidence", Capability: Evidence, Need: Create, Parent: Bills,
+		Note: "Needs the right to view bills as well; only while the bill is a draft (FR-DOC-07)."}
 )
 
 const approvalNote = "Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6)."
@@ -563,7 +574,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
-	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
+	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,

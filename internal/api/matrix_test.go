@@ -237,6 +237,17 @@ func matrixEvidence(e *env) (journalID, evidenceID string) {
 	return journalID, r.str("id")
 }
 
+// matrixBillEvidence attaches a file to a new draft bill, as an Accountant, and returns both IDs.
+func matrixBillEvidence(e *env) (billID, evidenceID string) {
+	billID, _ = e.createBill("10.00", "0.90")
+	r := e.upload("/v1/bills/"+billID+"/evidence", e.as(authz.Accountant), map[string]string{"evidence_type": "invoice"},
+		"invoice.pdf", []byte("%PDF-1.7 matrix invoice"), "If-Match", "*")
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("addBillEvidence = %d: %s", r.Status, r.Raw)
+	}
+	return billID, r.str("id")
+}
+
 // matrixCalls has one request per operation; an operation without one fails the test.
 var matrixCalls = map[string]matrixCall{
 	"addJournalEvidence": func(e *env, tok string) (response, func() bool) {
@@ -262,6 +273,31 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodDelete, "/v1/journals/"+id+"/evidence/"+ev, tok, nil, "If-Match", "*")
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/journals/"+id+"/evidence/"+ev, e.as(authz.Accountant), nil).str("state") == "attached"
+		}
+	},
+	"addBillEvidence": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createBill("10.00", "0.90")
+		r := e.upload("/v1/bills/"+id+"/evidence", tok, map[string]string{"evidence_type": "invoice"}, "invoice.pdf",
+			[]byte("%PDF-1.7 matrix invoice"), "If-Match", "*")
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/bills/"+id+"/evidence", e.as(authz.Accountant), nil)
+			items, _ := l.Body["items"].([]any)
+			return l.Status == http.StatusOK && len(items) == 0
+		}
+	},
+	"listBillEvidence": func(e *env, tok string) (response, func() bool) {
+		id, _ := matrixBillEvidence(e)
+		return e.call(http.MethodGet, "/v1/bills/"+id+"/evidence", tok, nil), nil
+	},
+	"getBillEvidence": func(e *env, tok string) (response, func() bool) {
+		id, ev := matrixBillEvidence(e)
+		return e.call(http.MethodGet, "/v1/bills/"+id+"/evidence/"+ev, tok, nil), nil
+	},
+	"removeBillEvidence": func(e *env, tok string) (response, func() bool) {
+		id, ev := matrixBillEvidence(e)
+		r := e.call(http.MethodDelete, "/v1/bills/"+id+"/evidence/"+ev, tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/bills/"+id+"/evidence/"+ev, e.as(authz.Accountant), nil).str("state") == "attached"
 		}
 	},
 	"sendTestEmail": func(e *env, tok string) (response, func() bool) {

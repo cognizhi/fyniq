@@ -185,6 +185,55 @@ func (a *API) commitEvidence(ctx context.Context, u storage.UnitOfWork, doc stor
 	return nil
 }
 
+// upload reads and checks an uploaded file and what was said about it (FR-DOC-08, FR-DOC-11): the file as it would be
+// stored, and its details; an invalid field, an unreadable file or a scan that is not available is a refusal.
+func (a *API) upload(ctx context.Context, up *EvidenceUpload) (evidence.File, evidence.Details, error) {
+	if a.deps.Staging == nil || a.deps.Scanner == nil {
+		return evidence.File{}, evidence.Details{}, problem(CodeUnavailable, "Files cannot be attached here: no evidence store or malware scanner is configured.",
+			"Ask your administrator to configure them (FR-DOC-01).")
+	}
+	if up == nil || up.File.File == nil {
+		return evidence.File{}, evidence.Details{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.file", Message: "is missing", Fix: "Send the file in the form field file"}})
+	}
+	defer up.File.Close()
+	data, err := io.ReadAll(io.LimitReader(up.File, evidence.MaxBytes+1))
+	if err != nil {
+		return evidence.File{}, evidence.Details{}, problem(CodeMalformed, "The file could not be read in full.", "Send it again.")
+	}
+	p, _ := authn.From(ctx)
+	d := evidence.Details{EvidenceType: strings.TrimSpace(up.EvidenceType), Note: strings.TrimSpace(up.Note),
+		Source: storage.EvidenceSource(up.Source), DataClass: storage.DataClass(up.DataClass)}
+	if d.Source == "" {
+		d.Source = storage.SourceUpload
+	}
+	if p.Class == authn.ClassIntegration {
+		d.Source = storage.SourceAPI
+	}
+	if d.DataClass == "" {
+		d.DataClass = storage.ClassGeneral
+	}
+	var bad []FieldProblem
+	if up.RelatesOn != "" {
+		t, err := time.Parse(time.DateOnly, up.RelatesOn)
+		if err != nil {
+			bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "body.relates_on", Message: "is not a date", Fix: "Send YYYY-MM-DD"})
+		}
+		d.RelatesOn = &t
+	}
+	file, problems, err := evidence.Check(ctx, a.deps.Scanner, up.File.Filename, data)
+	if err != nil {
+		logFailure(ctx, err)
+		return evidence.File{}, evidence.Details{}, problem(CodeUnavailable, "The malware scan is not available, so the file was not attached.", "Try again in a few minutes.")
+	}
+	for _, x := range append(problems, evidence.CheckDetails(d)...) {
+		bad = append(bad, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})
+	}
+	if len(bad) > 0 {
+		return evidence.File{}, evidence.Details{}, invalid(bad)
+	}
+	return file, d, nil
+}
+
 // limitUploads caps a multipart request's body (FR-DOC-08): huma applies an operation's MaxBodyBytes only to
 // JSON bodies, and parses a multipart form before the handler sees it.
 type limitUploads struct{ humago.Mux }
@@ -224,49 +273,10 @@ func registerEvidence(a *API) {
 			if err != nil {
 				return nil, err
 			}
-			if a.deps.Staging == nil || a.deps.Scanner == nil {
-				return nil, problem(CodeUnavailable, "Files cannot be attached here: no evidence store or malware scanner is configured.",
-					"Ask your administrator to configure them (FR-DOC-01).")
-			}
-			up := in.RawBody.Data()
-			if up == nil || up.File.File == nil {
-				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.file", Message: "is missing", Fix: "Send the file in the form field file"}})
-			}
-			defer up.File.Close()
-			data, err := io.ReadAll(io.LimitReader(up.File, evidence.MaxBytes+1))
-			if err != nil {
-				return nil, problem(CodeMalformed, "The file could not be read in full.", "Send it again.")
-			}
 			p, _ := authn.From(ctx)
-			d := evidence.Details{EvidenceType: strings.TrimSpace(up.EvidenceType), Note: strings.TrimSpace(up.Note),
-				Source: storage.EvidenceSource(up.Source), DataClass: storage.DataClass(up.DataClass)}
-			if d.Source == "" {
-				d.Source = storage.SourceUpload
-			}
-			if p.Class == authn.ClassIntegration {
-				d.Source = storage.SourceAPI
-			}
-			if d.DataClass == "" {
-				d.DataClass = storage.ClassGeneral
-			}
-			var bad []FieldProblem
-			if up.RelatesOn != "" {
-				t, err := time.Parse(time.DateOnly, up.RelatesOn)
-				if err != nil {
-					bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "body.relates_on", Message: "is not a date", Fix: "Send YYYY-MM-DD"})
-				}
-				d.RelatesOn = &t
-			}
-			file, problems, err := evidence.Check(ctx, a.deps.Scanner, up.File.Filename, data)
+			file, d, err := a.upload(ctx, in.RawBody.Data())
 			if err != nil {
-				logFailure(ctx, err)
-				return nil, problem(CodeUnavailable, "The malware scan is not available, so the file was not attached.", "Try again in a few minutes.")
-			}
-			for _, x := range append(problems, evidence.CheckDetails(d)...) {
-				bad = append(bad, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})
-			}
-			if len(bad) > 0 {
-				return nil, invalid(bad)
+				return nil, err
 			}
 			// The request's identity for Idempotency-Key: the journal, the file's hash and what was said about it.
 			request := struct {

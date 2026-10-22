@@ -38,6 +38,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/bills/{bill_id}` (replaceBill): Change a draft bill
 - `POST /v1/bills/{bill_id}/edit` (editBill): Edit a posted bill
 - `POST /v1/bills/{bill_id}/edit-approval` (requestBillEdit): Ask for approval to edit a posted bill
+- `GET /v1/bills/{bill_id}/evidence` (listBillEvidence): List a bill's evidence
+- `POST /v1/bills/{bill_id}/evidence` (addBillEvidence): Attach evidence to a bill
+- `GET /v1/bills/{bill_id}/evidence/{evidence_id}` (getBillEvidence): Get a bill's evidence file
+- `DELETE /v1/bills/{bill_id}/evidence/{evidence_id}` (removeBillEvidence): Remove evidence from a draft bill
 - `POST /v1/bills/{bill_id}/post` (postBill): Post a draft bill
 - `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill

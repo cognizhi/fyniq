@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Organisation, Session } from "../../api/client";
 import type { components } from "../../api/schema";
-import { answer, ownerSession, problem } from "../../test/api";
+import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { BillPage, check } from "./BillPage";
@@ -169,6 +169,49 @@ describe("A bill", () => {
     for (const [months, from, field] of [["0", "", "spread_months"], ["121", "", "spread_months"], ["", "2026-09", "spread_months"], ["12", "Sept", "spread_from"]] as const) {
       expect(check(form(months, from), "SGD").errors[`l1.${field}`], `${months} from ${from}`).toBeTruthy();
     }
+  });
+
+  // req: FR-DOC-05
+  // req: FR-DOC-07
+  it("attaches the supplier's invoice to a draft at the version read; axe finds nothing", async () => {
+    let files: components["schemas"]["BillEvidence"][] = [];
+    const invoice: components["schemas"]["BillEvidence"] = {
+      id: "ev1",
+      bill_id: "b1",
+      evidence_type: "invoice",
+      file_name: "AU-1182.pdf",
+      media_type: "application/pdf",
+      size_bytes: 48213,
+      sha256: "a".repeat(64),
+      original_sha256: "a".repeat(64),
+      source: "upload",
+      data_class: "general",
+      uploaded_by: "user:u1",
+      uploaded_at: "2026-10-14T01:00:00Z",
+      state: "attached",
+      version: 1,
+    };
+    answer({
+      ...reads,
+      "GET /v1/bills/b1": read(draft),
+      "GET /v1/bills/b1/evidence": () => ({ status: 200, body: { items: files } }),
+      "POST /v1/bills/b1/evidence": () => {
+        files = [invoice];
+        return { status: 201, body: invoice };
+      },
+    });
+    const { container } = renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    expect(await screen.findByText("No files are attached.")).toBeTruthy();
+    expect(screen.getByText(/The supplier's invoice, and any other file the bill rests on/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("File"), { target: { files: [new File(["%PDF"], "AU-1182.pdf", { type: "application/pdf" })] } });
+    fireEvent.change(screen.getByLabelText("What it is"), { target: { value: "invoice" } });
+    fireEvent.click(screen.getByRole("button", { name: "Attach" }));
+    expect(await screen.findByText("Attached AU-1182.pdf. It can come off while the bill is a draft.")).toBeTruthy();
+    const sent = seen.find((x) => x.method === "POST" && x.path === "/v1/bills/b1/evidence")!;
+    expect(sent.headers.get("If-Match")).toBe(`"1-draft"`);
+    expect(sent.body).toMatchObject({ evidence_type: "invoice", data_class: "general", source: "upload" });
+    expect(within(await screen.findByRole("list", { name: "Files attached" })).getByText("AU-1182.pdf")).toBeTruthy();
+    await noViolations(container);
   });
 
   // req: FR-GL-03

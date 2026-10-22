@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill; recurring bills; spreading a prepaid cost; recording and voiding payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:51b4c2d4b99d28d64d1955fa4920044cd03b0d49f2f1af24005eb337a87bfb02
+  - docs/user-guide/bills.md sha256:0b3d42042bd5ba368aaac69e0236b1680463052c03314ec4551aa3edfe4746f3
 data_class: general
 taint: trusted
 status: draft
@@ -47,6 +47,9 @@ aliases:
   - recurring bill
   - monthly rent bill
   - repeating bill
+  - attach the invoice
+  - bill attachment
+  - supplier invoice file
 ---
 
 # Bills
@@ -73,6 +76,13 @@ aliases:
 - A bill in another currency takes the rate for its invoice date unless one is typed ([[accounting.currencies]]), and its **GST stated in SGD**, as the tax invoice states it, is the input tax claimed.
 
 (src: docs/user-guide/bills.md#enter-a-bill)
+
+## Attach the supplier's invoice
+
+- Under **Evidence** on a saved bill or credit note: choose the file, say what it is (such as the invoice or a receipt) and select **Attach**. PDF, image, CSV, text, XLSX, DOCX and email files of up to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location.
+- While the bill is a draft a file can come off again; once it is posted its files are kept with it and never deleted, for as long as the records are, and a file added later is kept the same way.
+
+(src: docs/user-guide/bills.md#attach-the-suppliers-invoice)
 
 ## Check and post
 
