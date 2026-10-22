@@ -48,6 +48,15 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **WHEN** a bill's payment state is shown
 - **THEN** it is unscheduled, in a batch, paid or written off
 
+#### Scenario: Built in part: the bill and its approval (rev 0.76)
+- **WHEN** a bill is posted
+- **THEN** it is numbered from the gap-free BILL- sequence and posted by bill@1 through the posting service, voided by a reversal with a reason, or corrected by an edit
+- **AND** above the self-approval threshold another person who holds A on "Bills, vendor credits" approves its post, never whoever prepared it, and in Founder mode a void needs a second person
+
+#### Scenario: Warnings a bill posts with (rev 0.76)
+- **WHEN** a bill is checked
+- **THEN** it shows ⚠ when the stated GST differs from RND-GST-EXCL by a cent or more, when another bill of the supplier has the same number and total within 60 days, and when a foreign line states no SGD GST
+
 ### Requirement: FR-AP-03 Vendor credits and refunds
 The system SHALL support vendor credits and refunds from vendors.
 

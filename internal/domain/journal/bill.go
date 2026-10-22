@@ -125,6 +125,19 @@ func (s Bills) Revise(ctx context.Context, org, id uuid.UUID, d bill.Draft) (sto
 	return out, err
 }
 
+// CheckBill runs the rules over doc, a version of a bill, in u, and writes nothing: what Check answers, inside a unit of
+// work already open.
+func CheckBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (Checked, error) {
+	if err := isBill(doc); err != nil {
+		return Checked{}, err
+	}
+	settings, err := loadSettings(ctx, u)
+	if err != nil {
+		return Checked{}, err
+	}
+	return checkBill(ctx, u, doc, settings)
+}
+
 // Check runs the rules over a bill's current version, or its edit d when d is not nil, and writes nothing: the
 // ledger impact a person sees before posting, the problems that would stop it, its warnings, and its total.
 func (s Bills) Check(ctx context.Context, org, id uuid.UUID, d *bill.Draft) (Checked, error) {

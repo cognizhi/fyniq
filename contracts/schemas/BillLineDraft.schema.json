@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The expense or asset account the line costs.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "description": {
+      "description": "What the line is for.",
+      "examples": [
+        "Confluence, 10 seats, October"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The line's GST as the supplier states it, in the bill's currency; 0 when none is charged."
+    },
+    "gst_code": {
+      "description": "The line's GST code for purchases, from the sg-gst pack: TX, IM, ZP, BL, NR, EP or OP.",
+      "examples": [
+        "TX"
+      ],
+      "pattern": "^[A-Z]{2,4}$",
+      "type": "string"
+    },
+    "net": {
+      "$ref": "Money.schema.json",
+      "description": "The line's amount before GST, in the bill's currency."
+    },
+    "stated_gst": {
+      "$ref": "Money.schema.json",
+      "description": "For a bill in another currency: the GST the tax invoice states in the base currency, which is the input tax claimed (ENG-42). Without it the input tax is not claimed and stays in the cost (⚠)."
+    }
+  },
+  "required": [
+    "account_id",
+    "net",
+    "gst_code",
+    "gst"
+  ],
+  "title": "BillLineDraft",
+  "type": "object"
+}

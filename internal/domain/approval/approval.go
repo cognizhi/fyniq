@@ -42,6 +42,7 @@ const (
 	ObjectPeriod     = "period"               // a closed accounting period to reopen (FR-GL-08, FM-1); its key is the period's id
 	ObjectJournal    = "journal"              // a manual journal to post above the threshold, to void or to edit (FR-GL-01, FR-GL-12, FM-1, FM-2); its key is its id
 	ObjectOpening    = "opening_balance"      // the posted opening balances to change (FR-GL-06, FM-1); its key is their document's id
+	ObjectBill       = "bill"                 // a supplier's bill to post above the threshold, to void or to edit (FR-AP-02, FR-GL-12, FM-1, FM-2); its key is its id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -61,6 +62,9 @@ const (
 	OpJournalReverse = "journal.reverse"
 	OpJournalEdit    = "journal.edit"
 	OpOpeningEdit    = "opening_balance.edit"
+	OpBillPost       = "bill.post"
+	OpBillVoid       = "bill.void"
+	OpBillEdit       = "bill.edit"
 )
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -85,6 +89,8 @@ var Dependencies = map[string][]string{
 	ObjectJournal: {"journal_version", "status", "debits"},
 	// the opening balances' version and status, and their debits in the base currency
 	ObjectOpening: {"opening_version", "status", "debits"},
+	// the bill's version and status, and what it adds to accounts payable in the base currency
+	ObjectBill: {"bill_version", "status", "payable"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -99,6 +105,7 @@ var Rows = map[string]string{
 	ObjectPeriod:     "Period close / reopen",
 	ObjectJournal:    "Journals",
 	ObjectOpening:    "Journals",
+	ObjectBill:       "Bills, vendor credits",
 }
 
 // The limits of a policy.
@@ -142,6 +149,7 @@ var Policies = map[string]Policy{
 	ObjectPeriod:     {ObjectType: ObjectPeriod, Version: "founder/period@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
 	ObjectJournal:    {ObjectType: ObjectJournal, Version: "founder/journal@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
 	ObjectOpening:    {ObjectType: ObjectOpening, Version: "founder/opening_balance@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
+	ObjectBill:       {ObjectType: ObjectBill, Version: "founder/bill@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

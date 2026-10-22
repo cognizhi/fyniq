@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_asked": {
+      "description": "getBill only: the pending request to post or void it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "getBill only: what stops a draft posting (✖), and the warnings it posts with (⚠).",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The bill's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "date": {
+      "description": "The bill's date.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "due_date": {
+      "description": "When it falls due: as entered, or from the payment terms.",
+      "examples": [
+        "2026-11-13"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "The rate typed on the document, if one was.",
+      "examples": [
+        "1.34"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The bill's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ledger_impact": {
+      "description": "getBill only: the lines posting it writes (a draft), or wrote (posted): debits positive.",
+      "items": {
+        "$ref": "EntryLine.schema.json"
+      },
+      "type": "array"
+    },
+    "lines": {
+      "description": "The lines as entered.",
+      "items": {
+        "$ref": "BillLineDraft.schema.json"
+      },
+      "type": "array"
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "Annual renewal"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number from the bill sequence: given when it posts, or when it is saved if the sequence is not gap-free (FR-ORG-04).",
+      "examples": [
+        "BILL-0007"
+      ],
+      "type": "string"
+    },
+    "payable": {
+      "$ref": "Money.schema.json",
+      "description": "What it adds to accounts payable in the base currency: as posted, or as posting would post it; absent while it cannot post."
+    },
+    "posted_at": {
+      "description": "When it was posted.",
+      "examples": [
+        "2026-10-14T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "posted_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who posted it."
+    },
+    "prepared_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who saved the current version."
+    },
+    "states": {
+      "$ref": "BillStates.schema.json",
+      "description": "Its approval, ledger, payment and due states."
+    },
+    "status": {
+      "description": "Draft (✎), posted, or reversed by a void.",
+      "enum": [
+        "draft",
+        "posted",
+        "reversed"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
+    },
+    "supplier": {
+      "$ref": "BillSupplier.schema.json",
+      "description": "The supplier, with its name."
+    },
+    "supplier_ref": {
+      "description": "The supplier's own number for it.",
+      "examples": [
+        "AU-1182"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Every line's net and GST, in the bill's currency."
+    },
+    "version": {
+      "description": "The version of its content; with the status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "currency",
+    "lines",
+    "total",
+    "states",
+    "checks",
+    "ledger_impact"
+  ],
+  "title": "Bill",
+  "type": "object"
+}

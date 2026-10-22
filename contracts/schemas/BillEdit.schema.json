@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The bill's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "date": {
+      "description": "The bill's date: its tax point.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "due_date": {
+      "description": "When it falls due; left out, the supplier's payment terms, else the organisation's (FR-ORG-04).",
+      "examples": [
+        "2026-11-13"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "For a bill in another currency: base currency per one unit, as typed on the document. Left out, the bill takes the cascade's rate for its date (ENG-40).",
+      "examples": [
+        "1.34"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "The bill's lines.",
+      "items": {
+        "$ref": "BillLineDraft.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "notes": {
+      "description": "Notes kept with the bill.",
+      "examples": [
+        "Annual renewal, 10 seats"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12).",
+      "examples": [
+        "The supplier credited one seat"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    },
+    "supplier_id": {
+      "description": "The supplier: a contact marked as a vendor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "supplier_ref": {
+      "description": "The supplier's own number for the bill, as on their invoice.",
+      "examples": [
+        "AU-1182"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "currency",
+    "lines"
+  ],
+  "title": "BillEdit",
+  "type": "object"
+}

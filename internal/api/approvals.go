@@ -440,6 +440,27 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.Dependencies["opening_version"] = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["debits"] = debits
+	case approval.ObjectBill:
+		id, err := uuid.Parse(c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		v, err := a.billView(ctx, u)
+		if err != nil {
+			return nil, err
+		}
+		payable, err := a.billPayable(ctx, u, v, doc)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = doc.Version
+		e.Dependencies["bill_version"] = doc.Version
+		e.Dependencies["status"] = string(doc.Status)
+		e.Dependencies["payable"] = payable
 	}
 	return e.Canonical()
 }
@@ -774,6 +795,19 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 			return err
 		}
 		return nil
+	case approval.OpBillPost: // SOD-3: whoever prepared the bill never approves its post
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if doc.SavedBy == (storage.Actor{Type: "user", ID: signer.String()}).String() {
+			return problem(CodeOwnBill, "You prepared this bill, so another person approves it (SOD-3).", "Ask another person who holds the approval right")
+		}
+		return nil
 	case approval.OpJournalPost: // SOD-3: whoever prepared the journal never approves it
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -917,8 +951,29 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		}
 		_, err = a.journals.Reverse(ctx, o.ID, id, date, text("reason"))
 		return err
+	case approval.OpBillPost, approval.OpBillVoid:
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		if r.Operation == approval.OpBillPost {
+			_, err = a.bills.Post(ctx, o.ID, id)
+			return err
+		}
+		date, err := time.Parse(time.DateOnly, text("date"))
+		if err != nil {
+			return err
+		}
+		_, err = a.bills.Void(ctx, o.ID, id, date, text("reason"))
+		return err
 	case approval.OpJournalEdit:
 		return a.executeEdit(ctx, u, r, s)
+	case approval.OpBillEdit:
+		return a.executeBillEdit(ctx, u, r, s)
 	case approval.OpOpeningEdit:
 		return a.executeOpeningEdit(ctx, u, r, s)
 	}
@@ -1010,7 +1065,7 @@ func registerApprovals(a *API) {
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership},
 		append(append(append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...), PasskeyCodes...),
-			JournalApprovalCodes()...)...),
+			append(JournalApprovalCodes(), BillApprovalCodes()...)...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
 			id, err := parseID("approval_id", in.ApprovalID)
 			if err != nil {

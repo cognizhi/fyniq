@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bill": {
+      "$ref": "Bill.schema.json",
+      "description": "The bill after the command."
+    },
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry the command posted: the bill's entry, or its reversing entry."
+    }
+  },
+  "required": [
+    "bill",
+    "entry"
+  ],
+  "title": "BillPosting",
+  "type": "object"
+}
