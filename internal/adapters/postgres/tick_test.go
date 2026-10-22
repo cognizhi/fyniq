@@ -5,6 +5,7 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -56,6 +57,28 @@ func ticker(t *testing.T, c *clock.Frozen, jobs *recordingJobs, schedules []outb
 	api := store(t, "fyniq_api", postgres.WithClock(c))
 	return outbox.Ticker{Store: api, Platform: api, Jobs: jobs, Clock: c, Holder: "tick-test", Schedules: schedules,
 		Dispatcher: outbox.Dispatcher{Store: api, Queue: local.NewMemory(), Clock: c}}
+}
+
+// Every platform job the tick runs claims its slot and starts: a name the database refuses would leave that job never
+// running, as journals.auto-reverse's hyphen did until 000079 (FR-AUT-01, FR-GL-02).
+// req: Scheduler tick
+// req: FR-AUT-01
+func TestEveryPlatformJobClaimsItsSlotAndStarts(t *testing.T) {
+	ctx := context.Background()
+	c := clock.NewFrozen(time.Date(2031, 1, 6, 23, 59, 0, 0, time.UTC)) // after every slot the other tests use
+	jobs := &recordingJobs{}
+	r, err := ticker(t, c, jobs, outbox.PlatformSchedules).Tick(ctx)
+	if err != nil {
+		t.Fatalf("the tick: %v", err)
+	}
+	if len(jobs.started) != len(outbox.PlatformSchedules) {
+		t.Errorf("started %d of %d platform jobs: %v (busy %v)", len(jobs.started), len(outbox.PlatformSchedules), jobs.started, r.Busy)
+	}
+	for _, s := range outbox.PlatformSchedules {
+		if !slices.ContainsFunc(jobs.started, func(x string) bool { return strings.HasPrefix(x, s.Job+"@") }) {
+			t.Errorf("%s did not start", s.Job)
+		}
+	}
 }
 
 // req: Scheduler tick

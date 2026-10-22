@@ -1089,7 +1089,7 @@ item_price | item_price_unit_price_valid | CHECK (((unit_price <> 'NaN'::numeric
 item_price | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 job_slot | job_slot_claimed_at_not_null | NOT NULL claimed_at
 job_slot | job_slot_detail_length | CHECK ((length(detail) <= 2000))
-job_slot | job_slot_job_format | CHECK (((job ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'::text) AND (length(job) <= 100)))
+job_slot | job_slot_job_format | CHECK (((job ~ '^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+$'::text) AND (length(job) <= 100)))
 job_slot | job_slot_job_not_null | NOT NULL job
 job_slot | job_slot_lease_whole | CHECK (((state = 'running'::text) = (lease_expires_at IS NOT NULL)))
 job_slot | job_slot_pkey | PRIMARY KEY (job, slot)
