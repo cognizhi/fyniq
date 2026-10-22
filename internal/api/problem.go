@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/accounting"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
@@ -284,6 +285,21 @@ var codeFacts = map[string]struct {
 	CodeVoidApproval:              {409, "Reversing needs a second person"},
 	CodeOwnJournal:                {403, "You prepared it, so another person approves it"},
 	CodeEditApproval:              {409, "Editing needs a second person"},
+	bill.CodeNotBill:              {404, "Not a bill"},
+	bill.CodeNotDraft:             {409, "The bill is not a draft"},
+	bill.CodeNotPosted:            {409, "The bill is not posted"},
+	bill.CodeBadDraft:             {422, "The saved bill cannot be read"},
+	bill.CodeSupplier:             {422, "The bill's supplier is not an active vendor"},
+	bill.CodeGSTCode:              {422, "Not a GST code for purchases"},
+	bill.CodeDueDate:              {422, "The due date is before the bill's date"},
+	bill.CodeTooLong:              {422, "A text of the bill is too long"},
+	CodeBillNeedsApproval:         {409, "The bill needs another person's approval"},
+	CodeBillVoidApproval:          {409, "Voiding needs a second person"},
+	CodeOwnBill:                   {403, "You prepared it, so another person approves it"},
+	ledger.CodeBillTotal:          {422, "A bill's total is more than zero"},
+	ledger.CodeSystemRole:         {422, "A system account is missing"},
+	ledger.CodeRuleAccount:        {422, "The line is on an account the rule posts to"},
+	ledger.CodeLineCurrency:       {422, "A line is in another currency"},
 	journal.CodeNotOpening:        {404, "Not the opening balances"},
 	journal.CodeNoBooksStart:      {409, "The books start is not set"},
 	ledger.CodeNoDate:             {422, "The journal has no date"},
@@ -460,6 +476,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		se  huma.StatusError
 		lp  ledger.Problems
 		je  *journal.Error
+		be  *bill.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -479,6 +496,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 			"Correct the draft and post it again.", fields...)
 	case errors.As(err, &je):
 		return problem(je.Code, sentence(je.Message), sentence(je.Fix))
+	case errors.As(err, &be):
+		return problem(be.Code, sentence(be.Message), sentence(be.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &ae):

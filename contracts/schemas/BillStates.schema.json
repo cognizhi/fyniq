@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval": {
+      "description": "draft until it is posted or asked for; awaiting_approval while a request to post it waits; approved once posted; rejected when the latest request was rejected and it is still a draft.",
+      "enum": [
+        "draft",
+        "awaiting_approval",
+        "approved",
+        "rejected"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
+    },
+    "due": {
+      "description": "overdue once its due date has passed while it is posted and unpaid; not_due otherwise.",
+      "enum": [
+        "not_due",
+        "overdue"
+      ],
+      "examples": [
+        "not_due"
+      ],
+      "type": "string"
+    },
+    "ledger": {
+      "description": "not_posted, posted, or voided by a reversal.",
+      "enum": [
+        "not_posted",
+        "posted",
+        "voided"
+      ],
+      "examples": [
+        "not_posted"
+      ],
+      "type": "string"
+    },
+    "payment": {
+      "description": "What has been paid of it. Payments arrive with p1-purchases' payments slice; until then a posted bill is unpaid.",
+      "enum": [
+        "unpaid",
+        "scheduled",
+        "part_paid",
+        "paid",
+        "written_off"
+      ],
+      "examples": [
+        "unpaid"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "approval",
+    "ledger",
+    "payment",
+    "due"
+  ],
+  "title": "BillStates",
+  "type": "object"
+}

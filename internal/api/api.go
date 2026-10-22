@@ -60,6 +60,7 @@ type API struct {
 	deps     Deps
 	policies map[string]authz.Policy
 	journals journal.Service
+	bills    journal.Bills
 	closing  closing.Service
 	passkeys *passkey.RelyingParty // nil without an origin
 }
@@ -120,6 +121,7 @@ func Config(version string) huma.Config {
 		{Name: "Organisation", Description: "The organisation your session is in."},
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
 		{Name: "Journals", Description: "Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12)."},
+		{Name: "Purchases", Description: "Bills from suppliers: drafted, approved, posted and voided; posted history never changes (FR-AP-02, FR-GL-12)."},
 		{Name: "Periods", Description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."},
 		{Name: "Exchange rates", Description: "Rates into the base currency: the daily feed, the organisation's own rates for a day and its monthly table, and the cascade a posting takes its rate from (FR-GL-05, ENG-40)."},
 		{Name: "Reports", Description: "Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive."},
@@ -150,7 +152,8 @@ func New(mux humago.Mux, d Deps) *API {
 	if d.Store == nil {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
-	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store},
+		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -159,6 +162,7 @@ func New(mux humago.Mux, d Deps) *API {
 		a.passkeys = rp
 	}
 	a.journals.AfterPosting = a.commitEvidence // a posted journal's files go to the locked store (FR-DOC-13)
+	a.bills.AfterPosting = a.commitEvidence
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -195,6 +199,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerDevices(a)
 	registerReviewLog(a)
 	registerJournals(a)
+	registerBills(a)
 	registerRecurringJournals(a)
 	registerAccounting(a)
 	registerEvidence(a)

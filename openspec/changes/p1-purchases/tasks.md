@@ -19,12 +19,16 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `// req: ledger/posting-rules Amounts of a posted bill`, G4-023 and G4-024
   (22 Oct 2026: `ledger.PostBill`, `testdata/replay/bill@1.golden`; the replay reads the rate and each line's
   claimed input tax from the stored entry, so a later rate or registration change never makes an old bill differ)
-- [ ] 1.4 Post, void and edit through the posting service: FM-2's threshold, FM-1 for a void, SOD-3, the
+- [x] 1.4 Post, void and edit through the posting service: FM-2's threshold, FM-1 for a void, SOD-3, the
   journal's edit rule (FR-GL-12); the four states. Tests `// req: FR-AP-02`, `// req: FM-2`, `// req: SOD-3`
-  (22 Oct 2026, part: `journal.Bills` posts, voids and edits in one transaction each; the approvals and the
-  states with the API, 1.5)
+  (22 Oct 2026: `journal.Bills` posts, voids and edits in one transaction each; through the API the post and the
+  void with their approvals, the approval engine's object `bill` (000077, 000078) and the four states, PRD rev 0.76.
+  Test `TestBillsThroughTheAPI`. **Left:** the edit through the API, with its approval)
 - [ ] 1.5 The API: list, get, create, revise, post, void, edit and preview bills, with ETags, idempotency
   and the matrix rows; Spectral clean. Tests `// req: FR-INT-01`
+  (22 Oct 2026, part: `listBills`, `getBill` (states, checks, ledger impact), `createBill`, `replaceBill`, `postBill`,
+  `voidBill`, `requestBillPost`, `requestBillVoid`, each with Prefer: return=preview, and their matrix rows. **Left:**
+  `editBill` and `requestBillEdit`; bill evidence (attachments))
 - [ ] 1.6 The AP sub-ledger: open documents by supplier, equal to 2010 (INV-07), shown at the close.
   Tests `// req: INV-07`
 

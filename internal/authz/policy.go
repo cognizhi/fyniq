@@ -99,8 +99,8 @@ const (
 // ApprovalRows are the Appendix D rows of the objects the approval engine covers: organisation settings under dual
 // control, and members' roles and invitations after the founder bootstrap (rev 0.36); approval policies (rev 0.40);
 // activating statutory pack versions (rev 0.41); reopening a closed period (rev 0.51); posting a journal above the
-// self-approval threshold, and voiding one (rev 0.53).
-var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals}
+// self-approval threshold, and voiding one (rev 0.53); posting a bill above the threshold, and voiding one (p1-purchases).
+var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -405,6 +405,17 @@ var (
 		Note: "The Accountant's amount limit and SOD-3 arrive with the approval engine (P1)."}
 	ReverseJournal = Policy{Operation: "reverseJournal", Capability: Journals, Need: Post,
 		Note: "A reversal voids a posted journal; FM-1's second person arrives with the approval engine (P1)."}
+	// Bills (FR-AP-02; p1-purchases): read under V, prepared under C (the Bookkeeper, the AP specialist, the Accountant),
+	// posted and voided under P (the Accountant), as journals are; asking for approval to post or void is posting (P),
+	// and another person who holds A approves it through the approval engine (FM-1, FM-2, SOD-3).
+	ListBills       = Policy{Operation: "listBills", Capability: Bills, Need: View}
+	GetBill         = Policy{Operation: "getBill", Capability: Bills, Need: View}
+	CreateBill      = Policy{Operation: "createBill", Capability: Bills, Need: Create}
+	ReplaceBill     = Policy{Operation: "replaceBill", Capability: Bills, Need: Create}
+	PostBill        = Policy{Operation: "postBill", Capability: Bills, Need: Post}
+	VoidBill        = Policy{Operation: "voidBill", Capability: Bills, Need: Post}
+	RequestBillPost = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
+	RequestBillVoid = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
 	// A journal's evidence needs the evidence right and the right to view the journal (FR-DOC-05, FR-DOC-11).
 	// The AI's cell is a proposal (doc.attach): an AI or MCP client never uploads, lists or reads evidence here.
 	AddJournalEvidence = Policy{Operation: "addJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
@@ -519,6 +530,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
+	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

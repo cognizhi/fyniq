@@ -1068,6 +1068,67 @@ var matrixCalls = map[string]matrixCall{
 		}
 		return r, func() bool { return requestsOf(e, "journal") == was }
 	},
+	// Bills (FR-AP-02): read under V, prepared under C, posted and voided under P; asking for approval is posting.
+	"listBills": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/bills", tok, nil), nil
+	},
+	"getBill": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createBill("10.00", "0.90")
+		return e.call(http.MethodGet, "/v1/bills/"+id, tok, nil), nil
+	},
+	"createBill": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/bills", tok, e.billDraft("10.00", "0.90")), nil
+	},
+	"replaceBill": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createBill("10.00", "0.90")
+		r := e.call(http.MethodPut, "/v1/bills/"+id, tok, e.billDraft("11.00", "0.99"), "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Accountant), nil).Body["version"] == float64(1)
+		}
+	},
+	"postBill": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.createBill("10.00", "0.90")
+		r := e.call(http.MethodPost, "/v1/bills/"+id+"/post", tok, nil, "If-Match", tag)
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Accountant), nil).str("status") == "draft"
+		}
+	},
+	"requestBillPost": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "bill")
+		id, tag := e.createBill("2500.00", "225.00")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/bills/"+id+"/post-approval", person, nil, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "bill") == was }
+	},
+	"requestBillVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "bill")
+		id, tag := e.postedBill("10.00", "0.90")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/bills/"+id+"/void-approval", person, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "bill") == was }
+	},
+	// A void in Founder mode is asked for (requestBillVoid), so the row voids in an organisation in Standard mode.
+	"voidBill": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.postedBill("10.00", "0.90")
+		r := s.call(http.MethodPost, "/v1/bills/"+id+"/void", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/bills/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
+		}
+	},
 	// A void in Founder mode is asked for (requestJournalReversal), so the row reverses in an organisation in Standard mode.
 	"reverseJournal": func(e *env, tok string) (response, func() bool) {
 		s := inStandardMode(e)

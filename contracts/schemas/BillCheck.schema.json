@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The rule's stable code (ENG-23).",
+      "examples": [
+        "BILL-GST-DIFFERS"
+      ],
+      "type": "string"
+    },
+    "field": {
+      "description": "The field it is about.",
+      "examples": [
+        "lines"
+      ],
+      "type": "string"
+    },
+    "fix": {
+      "description": "How to fix it.",
+      "examples": [
+        "Check the GST against the supplier's invoice"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "What is wrong, or why it is flagged.",
+      "examples": [
+        "the stated GST 2.73 SGD differs by 0.01 SGD from the recomputation"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "error (✖): it cannot post until fixed; warning (⚠): it posts, and is reviewed.",
+      "enum": [
+        "error",
+        "warning"
+      ],
+      "examples": [
+        "warning"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "severity",
+    "code",
+    "message"
+  ],
+  "title": "BillCheck",
+  "type": "object"
+}

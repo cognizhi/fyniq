@@ -27,6 +27,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/approvals/{approval_id}/challenge` (challengeApproval): Start signing a request with a passkey
 - `POST /v1/approvals/{approval_id}/reject` (rejectApproval): Reject a request
 - `POST /v1/approvals/{approval_id}/withdraw` (withdrawApproval): Withdraw your request
+- `GET /v1/bills` (listBills): List the bills
+- `POST /v1/bills` (createBill): Save a draft bill
+- `GET /v1/bills/{bill_id}` (getBill): Get a bill
+- `PUT /v1/bills/{bill_id}` (replaceBill): Change a draft bill
+- `POST /v1/bills/{bill_id}/post` (postBill): Post a draft bill
+- `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
+- `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill
+- `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
 - `GET /v1/contacts` (listContacts): List the contacts
