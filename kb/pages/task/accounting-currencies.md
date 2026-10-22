@@ -104,6 +104,6 @@ aliases:
 - FX-05, the period is not open: revalue a month while it is open, or ask for it to be reopened.
 - FX-06, the period has not ended: revalue the month from its last day; until then, look at its preview.
 - FX-07, no account takes unrealised FX: load 7040 Unrealised FX gain or loss from the standard chart.
-- Related: closing the month ([[accounting.periods]]).
+- Related: closing the month ([[accounting.periods]]); a bill in another currency ([[purchases.bills]]).
 
 (src: docs/user-guide/currencies.md#common-problems) (src: docs/user-guide/currencies.md#related)

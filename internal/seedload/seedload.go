@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/seed"
@@ -52,6 +53,23 @@ func AccountType(code string) storage.AccountType {
 // periods of 2026, and its journals, posted, with the first reversed the day after, as the golden
 // scenarios do. An organisation that has a chart already is refused, so a load never mixes with
 // real or earlier data.
+// standardRoles are the standard chart's system roles by code (FR-COA-03): an account of the sample company without a
+// role of its own takes the role of the standard account with its code, so the rules that post to a system account,
+// such as a bill to 2010 and 2200, find it as they do in a chart loaded from the standard one.
+func standardRoles() (map[string]storage.AccountRole, error) {
+	std, err := chart.Standard()
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]storage.AccountRole{}
+	for _, a := range std {
+		if a.Role != "" && a.Role != storage.RoleShareCapital {
+			out[a.Code] = a.Role
+		}
+	}
+	return out, nil
+}
+
 func Load(ctx context.Context, store storage.Store, org uuid.UUID, c seed.Company) (Result, error) {
 	ctx = storage.WithAudit(ctx, storage.AuditContext{Actor: &Actor, Reason: "the sample company (DEV-04)"})
 	var r Result
@@ -77,8 +95,16 @@ func Load(ctx context.Context, store storage.Store, org uuid.UUID, c seed.Compan
 		if len(existing) > 0 {
 			return fmt.Errorf("the organisation has a chart of accounts already (%d accounts): load the sample company into a new installation (make reset)", len(existing))
 		}
+		roles, err := standardRoles()
+		if err != nil {
+			return err
+		}
 		for _, a := range c.Accounts {
-			acc, err := u.Accounts().Create(ctx, storage.NewAccount{Code: a.Code, Name: a.Name, Type: AccountType(a.Code), Role: storage.AccountRole(a.Role)})
+			role := storage.AccountRole(a.Role)
+			if role == "" {
+				role = roles[a.Code]
+			}
+			acc, err := u.Accounts().Create(ctx, storage.NewAccount{Code: a.Code, Name: a.Name, Type: AccountType(a.Code), Role: role})
 			if err != nil {
 				return fmt.Errorf("account %s: %w", a.Code, err)
 			}

@@ -1069,6 +1069,9 @@ var matrixCalls = map[string]matrixCall{
 		return r, func() bool { return requestsOf(e, "journal") == was }
 	},
 	// Bills (FR-AP-02): read under V, prepared under C, posted and voided under P; asking for approval is posting.
+	"getPurchaseGSTCodes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/purchases/gst-codes?on=2026-10-14", tok, nil), nil
+	},
 	"listBills": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/bills", tok, nil), nil
 	},

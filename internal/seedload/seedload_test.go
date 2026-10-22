@@ -16,9 +16,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/seedload"
 )
 
-// The sample company loads into an organisation through the engine, its share-capital accounts marked
-// (INV-13), and its trial balance equals the seed's own totals; a second load into the same
-// organisation is refused rather than mixed in (QA-LOCAL-01, DEV-04).
+// The sample company loads into an organisation through the engine, its share-capital accounts marked (INV-13) and the
+// standard chart's system roles on the accounts with their codes, and its trial balance equals the seed's own totals; a
+// second load into the same organisation is refused rather than mixed in (QA-LOCAL-01, DEV-04).
 // req: DEV-04
 // req: QA-LOCAL-01
 // req: INV-13
@@ -56,7 +56,16 @@ func TestTheSampleCompanyLoadsAndBalances(t *testing.T) {
 		if err == nil && a.Role != storage.RoleShareCapital {
 			t.Errorf("3010 is not marked share capital: %+v", a)
 		}
-		return err
+		if err != nil {
+			return err
+		}
+		// The standard chart's system roles, so a bill finds 2010 and 2200 (FR-COA-03).
+		for code, role := range map[string]storage.AccountRole{"2010": "accounts-payable", "2200": "gst-control", "7030": "fx-rounding", "1100": "accounts-receivable"} {
+			if a, err := u.Accounts().ByCode(ctx, code); err != nil || a.Role != role {
+				t.Errorf("%s: want the role %s, got %+v %v", code, role, a, err)
+			}
+		}
+		return nil
 	}); err != nil {
 		t.Fatal(err)
 	}

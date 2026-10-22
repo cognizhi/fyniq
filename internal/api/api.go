@@ -200,6 +200,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerReviewLog(a)
 	registerJournals(a)
 	registerBills(a)
+	registerGSTCodes(a)
 	registerRecurringJournals(a)
 	registerAccounting(a)
 	registerEvidence(a)

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claimable": {
+      "description": "Whether input tax on it can be claimed (it has an input-tax box in the GST F5 return), once the organisation is GST-registered on the bill's date (FR-AP-20).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "code": {
+      "description": "The code, as a bill line takes it.",
+      "examples": [
+        "TX"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What it is for, in the pack's words.",
+      "examples": [
+        "Standard-rated purchase whose GST can be claimed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "description",
+    "claimable"
+  ],
+  "title": "GSTCode",
+  "type": "object"
+}
