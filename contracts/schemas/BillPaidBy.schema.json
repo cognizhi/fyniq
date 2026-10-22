@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it settled, in the bill's currency."
+    },
+    "date": {
+      "description": "The day it settled the bill.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "payment_id": {
+      "description": "The payment.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "payment_number": {
+      "description": "Its number.",
+      "examples": [
+        "PAY-0003"
+      ],
+      "type": "string"
+    },
+    "realised_fx": {
+      "$ref": "Money.schema.json",
+      "description": "The realised gain (positive) or loss (negative) it made, in the base currency (ENG-41)."
+    },
+    "voided": {
+      "description": "true once the payment was voided: it no longer settles the bill.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "payment_id",
+    "date",
+    "amount",
+    "realised_fx",
+    "voided"
+  ],
+  "title": "BillPaidBy",
+  "type": "object"
+}

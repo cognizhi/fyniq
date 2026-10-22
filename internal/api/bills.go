@@ -46,7 +46,7 @@ var BillCodes = []string{bill.CodeSupplier, bill.CodeGSTCode, bill.CodeDueDate, 
 
 // BillApprovalCodes are the codes an approval of a bill's post or void may answer: SOD-3, and the posting's own.
 func BillApprovalCodes() []string {
-	return append([]string{CodeOwnBill, bill.CodeNotBill, bill.CodeNotDraft, bill.CodeNotPosted, bill.CodeBadDraft}, BillCodes...)
+	return append([]string{CodeOwnBill, bill.CodeNotBill, bill.CodeNotDraft, bill.CodeNotPosted, bill.CodeBadDraft, bill.CodePaid}, BillCodes...)
 }
 
 // BillLineDraft is one line of a bill as entered.
@@ -82,8 +82,8 @@ type BillSupplier struct {
 type BillStates struct {
 	Approval string `json:"approval" enum:"draft,awaiting_approval,approved,rejected" doc:"draft until it is posted or asked for; awaiting_approval while a request to post it waits; approved once posted; rejected when the latest request was rejected and it is still a draft." example:"draft"`
 	Ledger   string `json:"ledger" enum:"not_posted,posted,voided" doc:"not_posted, posted, or voided by a reversal." example:"not_posted"`
-	Payment  string `json:"payment" enum:"unpaid,scheduled,part_paid,paid,written_off" doc:"What has been paid of it. Payments arrive with p1-purchases' payments slice; until then a posted bill is unpaid." example:"unpaid"`
-	Due      string `json:"due" enum:"not_due,overdue" doc:"overdue once its due date has passed while it is posted and unpaid; not_due otherwise." example:"not_due"`
+	Payment  string `json:"payment" enum:"unpaid,scheduled,part_paid,paid,written_off" doc:"What has been paid of it, from the payments recorded against it net of their voids (FR-AR-18): unpaid, part_paid or paid. scheduled and written_off arrive with payment batches and write-offs." example:"unpaid"`
+	Due      string `json:"due" enum:"not_due,overdue" doc:"overdue once its due date has passed while it is posted and not paid in full; not_due otherwise." example:"not_due"`
 }
 
 // BillCheck is one of a bill's statuses: an error (✖) that stops it posting, or a warning (⚠) it posts with and the
@@ -112,6 +112,8 @@ type Bill struct {
 	Notes         string          `json:"notes,omitempty" doc:"Its notes." example:"Annual renewal"`
 	Total         Money           `json:"total" doc:"Every line's net and GST, in the bill's currency."`
 	Payable       *Money          `json:"payable,omitempty" doc:"What it adds to accounts payable in the base currency: as posted, or as posting would post it; absent while it cannot post."`
+	Open          *Money          `json:"open,omitempty" doc:"A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."`
+	Payments      []BillPaidBy    `json:"payments" nullable:"false" doc:"getBill only: the payments that settle it, earliest first, each marked when it was voided."`
 	States        BillStates      `json:"states" doc:"Its approval, ledger, payment and due states."`
 	Checks        []BillCheck     `json:"checks" nullable:"false" doc:"getBill only: what stops a draft posting (✖), and the warnings it posts with (⚠)."`
 	LedgerImpact  []EntryLine     `json:"ledger_impact" nullable:"false" doc:"getBill only: the lines posting it writes (a draft), or wrote (posted): debits positive."`
@@ -119,6 +121,16 @@ type Bill struct {
 	PostedBy      *Person         `json:"posted_by,omitempty" doc:"Who posted it."`
 	PostedAt      *time.Time      `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-14T09:30:00Z"`
 	ApprovalAsked string          `json:"approval_asked,omitempty" format:"uuid" doc:"getBill only: the pending request to post or void it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
+}
+
+// BillPaidBy is a payment that settles a bill: its allocation (FR-AR-18).
+type BillPaidBy struct {
+	PaymentID     string `json:"payment_id" format:"uuid" doc:"The payment." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
+	PaymentNumber string `json:"payment_number,omitempty" doc:"Its number." example:"PAY-0003"`
+	Date          string `json:"date" format:"date" doc:"The day it settled the bill." example:"2026-10-20"`
+	Amount        Money  `json:"amount" doc:"What it settled, in the bill's currency."`
+	RealisedFX    Money  `json:"realised_fx" doc:"The realised gain (positive) or loss (negative) it made, in the base currency (ENG-41)."`
+	Voided        bool   `json:"voided" doc:"true once the payment was voided: it no longer settles the bill." example:"false"`
 }
 
 // BillPage is a page of bills, newest date first.
@@ -386,7 +398,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 	}
 	out := Bill{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, SupplierRef: d.SupplierRef,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: []BillLineDraft{}, Checks: []BillCheck{},
-		LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
+		LedgerImpact: []EntryLine{}, Payments: []BillPaidBy{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
 	if d.Rate != nil {
 		out.FXRate = d.Rate.String()
 	}
@@ -465,10 +477,65 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 			out.DueDate = dayText(c.Prepared.DueDate)
 		}
 	}
-	if doc.Status == storage.DocumentPosted && out.DueDate != "" && out.DueDate < dateOf(v.today) {
+	if err := billPaid(ctx, u, &out, total, withChecks); err != nil {
+		return Bill{}, err
+	}
+	if doc.Status == storage.DocumentPosted && out.States.Payment != "paid" && out.DueDate != "" && out.DueDate < dateOf(v.today) {
 		out.States.Due = "overdue"
 	}
 	return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
+}
+
+// billPaid fills a posted or voided bill's payments: what is open of it, its payment state, and with withPayments the
+// payments that settle it, from its allocations net of their voids (FR-AR-18).
+func billPaid(ctx context.Context, u storage.UnitOfWork, b *Bill, total money.Money, withPayments bool) error {
+	id, err := uuid.Parse(b.ID)
+	if err != nil {
+		return err
+	}
+	allocs, err := u.Allocations().OfDocument(ctx, id)
+	if err != nil {
+		return err
+	}
+	open := total
+	voided := map[uuid.UUID]bool{}
+	for _, x := range allocs {
+		if x.ReversesID != nil {
+			voided[*x.ReversesID] = true
+		}
+		amount, err := money.ParseStored(string(x.Amount), total.Currency())
+		if err != nil {
+			return err
+		}
+		if open, err = open.Sub(amount); err != nil {
+			return err
+		}
+	}
+	if b.Status == string(storage.DocumentPosted) {
+		o := moneyOut(open)
+		b.Open = &o
+		switch {
+		case open.Sign() <= 0:
+			b.States.Payment = "paid"
+		case !open.Equal(total):
+			b.States.Payment = "part_paid"
+		}
+	}
+	if !withPayments {
+		return nil
+	}
+	for _, x := range allocs {
+		if x.ReversesID != nil {
+			continue
+		}
+		p := BillPaidBy{PaymentID: x.SourceID.String(), Date: dayText(x.On), Amount: storedOut(x.Amount, x.Currency),
+			RealisedFX: storedOut(x.RealisedFX, x.BaseCurrency), Voided: voided[x.ID]}
+		if doc, err := u.Documents().Get(ctx, x.SourceID); err == nil {
+			p.PaymentNumber = doc.Number
+		}
+		b.Payments = append(b.Payments, p)
+	}
+	return nil
 }
 
 // impactOf is an unwritten entry's lines as the API shows them.
@@ -792,6 +859,9 @@ func (a *API) billRequest(ctx context.Context, rawID, key, ifMatch, prefer strin
 			}
 			return Approval{}, problem(code, fmt.Sprintf("The bill is %s.", doc.Status), "Ask for approval of a bill in the state it needs")
 		}
+		if b.Open != nil && b.Open.Amount != b.Total.Amount {
+			return Approval{}, problem(bill.CodePaid, "Payments settle the bill.", "Void its payments first, then void it")
+		}
 		payable, err := a.billPayable(ctx, u, v, doc)
 		if err != nil {
 			return Approval{}, err
@@ -996,7 +1066,7 @@ func registerBills(a *API) {
 			return &billOutput{Status: http.StatusOK, ETag: billETag(w.Body), Body: w.Body}, nil
 		})
 
-	postCodes := append(append([]string{bill.CodeNotDraft, bill.CodeNotPosted, CodeBillNeedsApproval, CodeBillVoidApproval, CodeMalformed, CodeTooLarge,
+	postCodes := append(append([]string{bill.CodeNotDraft, bill.CodeNotPosted, bill.CodePaid, CodeBillNeedsApproval, CodeBillVoidApproval, CodeMalformed, CodeTooLarge,
 		CodeMediaType}, postingCodes()...), append(BillCodes, readCodes...)...)
 
 	register(a, authz.PostBill, huma.Operation{
@@ -1045,7 +1115,7 @@ func registerBills(a *API) {
 
 	requestCodes := append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
 		CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval, bill.CodeNotBill, bill.CodeNotDraft, bill.CodeNotPosted,
-		bill.CodeBadDraft, storage.CodeRetry, storage.CodeLockTimeout, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, append(BillCodes, LedgerCodes...)...)
+		bill.CodeBadDraft, bill.CodePaid, storage.CodeRetry, storage.CodeLockTimeout, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, append(BillCodes, LedgerCodes...)...)
 
 	register(a, authz.RequestBillPost, huma.Operation{
 		OperationID: "requestBillPost", Method: http.MethodPost, Path: "/v1/bills/{bill_id}/post-approval", Tags: []string{"Purchases"},
@@ -1179,6 +1249,9 @@ func registerBills(a *API) {
 			}
 			if doc.Status != storage.DocumentPosted {
 				return Approval{}, problem(bill.CodeNotPosted, fmt.Sprintf("The bill is %s.", doc.Status), "Ask for approval of a bill in the state it needs")
+			}
+			if b.Open != nil && b.Open.Amount != b.Total.Amount {
+				return Approval{}, problem(bill.CodePaid, "Payments settle the bill.", "Void its payments first, then edit it")
 			}
 			d, err := billDraftOf(in.Body.BillDraft, v.base)
 			if err != nil {

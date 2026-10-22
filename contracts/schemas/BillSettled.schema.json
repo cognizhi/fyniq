@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it settled, in the bill's currency."
+    },
+    "base": {
+      "$ref": "Money.schema.json",
+      "description": "The bill's carrying amount it cleared, in the base currency: the amount at the bill's stored rate, and for the part that settles what is left of a bill, what was left (ENG-14)."
+    },
+    "bill_id": {
+      "description": "The bill.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "bill_number": {
+      "description": "The bill's number.",
+      "examples": [
+        "BILL-0007"
+      ],
+      "type": "string"
+    },
+    "realised_fx": {
+      "$ref": "Money.schema.json",
+      "description": "The realised gain (positive) or loss (negative) in the base currency: the amount at the payment's rate against the bill's stored rate, with no tolerance (ENG-41)."
+    }
+  },
+  "required": [
+    "bill_id",
+    "amount",
+    "base",
+    "realised_fx"
+  ],
+  "title": "BillSettled",
+  "type": "object"
+}

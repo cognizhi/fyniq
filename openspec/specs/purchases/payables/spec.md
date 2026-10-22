@@ -57,6 +57,21 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **WHEN** a bill is checked
 - **THEN** it shows ⚠ when the stated GST differs from RND-GST-EXCL by a cent or more, when another bill of the supplier has the same number and total within 60 days, and when a foreign line states no SGD GST
 
+#### Scenario: Built in part: payments recorded by hand (rev 0.77)
+- **WHEN** a payment of the supplier's posted bills is recorded with its date, money account, currency and what it settles of each bill
+- **THEN** it posts at once by bill_payment@1, numbered from the gap-free PAY- sequence, with an allocation per bill and no approval asked
+- **AND** a part above what a bill has open is refused (BILLPAY-05), and what it paid beyond the bills stays a credit with the supplier
+
+#### Scenario: Voiding a payment (rev 0.77)
+- **WHEN** a recorded payment is voided on a date not before its own, with a reason
+- **THEN** its entry is reversed and each allocation is undone by a reversing allocation, which reopens the bills
+- **AND** in Founder mode the void needs a second person who holds A on "Bills, vendor credits" (FM-1)
+
+#### Scenario: Payment state from allocations (rev 0.77)
+- **WHEN** a posted bill is shown
+- **THEN** its payment state is unpaid, part paid or paid from its allocations net of their voids, with what is still open
+- **AND** it is overdue only while it is not paid in full, and it is voided or edited only once its payments are voided (BILL-13)
+
 ### Requirement: FR-AP-03 Vendor credits and refunds
 The system SHALL support vendor credits and refunds from vendors.
 

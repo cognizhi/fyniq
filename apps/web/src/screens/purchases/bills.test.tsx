@@ -54,6 +54,7 @@ const draft: Bill = {
     { line_no: 1, account_id: "a6120", amount: { amount: "1090.00", currency: "SGD" }, fx_rate: "1", fx_rate_source: "base", base_amount: { amount: "1090.00", currency: "SGD" } },
     { line_no: 2, account_id: "a2010", amount: { amount: "-1090.00", currency: "SGD" }, fx_rate: "1", fx_rate_source: "base", base_amount: { amount: "-1090.00", currency: "SGD" } },
   ],
+  payments: [],
 };
 const posted: Bill = { ...draft, number: "BILL-0007", status: "posted", states: states({ approval: "approved", ledger: "posted", due: "overdue" }), checks: [] };
 const read = (b: Bill) => ({ status: 200, body: b, headers: { ETag: `"${b.version}-${b.status}"` } });

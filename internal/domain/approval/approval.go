@@ -43,6 +43,7 @@ const (
 	ObjectJournal    = "journal"              // a manual journal to post above the threshold, to void or to edit (FR-GL-01, FR-GL-12, FM-1, FM-2); its key is its id
 	ObjectOpening    = "opening_balance"      // the posted opening balances to change (FR-GL-06, FM-1); its key is their document's id
 	ObjectBill       = "bill"                 // a supplier's bill to post above the threshold, to void or to edit (FR-AP-02, FR-GL-12, FM-1, FM-2); its key is its id
+	ObjectPayment    = "bill_payment"         // a payment of bills recorded by hand, to void (FR-AP-02, FR-GL-12, FM-1); its key is its id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -65,7 +66,17 @@ const (
 	OpBillPost       = "bill.post"
 	OpBillVoid       = "bill.void"
 	OpBillEdit       = "bill.edit"
+	OpPaymentVoid    = "bill_payment.void"
 )
+
+// Operations are every operation, with the object type it changes: what the database's approval_request_object_known
+// allows, and what the API's enums list.
+var Operations = map[string]string{
+	OpSettingChange: ObjectSetting, OpRoleAssign: ObjectMembership, OpRoleRevoke: ObjectMembership, OpInvite: ObjectInvitation,
+	OpPolicyChange: ObjectPolicy, OpPackActivate: ObjectPack, OpTeamModeChange: ObjectTeamMode, OpPeriodReopen: ObjectPeriod,
+	OpJournalPost: ObjectJournal, OpJournalReverse: ObjectJournal, OpJournalEdit: ObjectJournal, OpOpeningEdit: ObjectOpening,
+	OpBillPost: ObjectBill, OpBillVoid: ObjectBill, OpBillEdit: ObjectBill, OpPaymentVoid: ObjectPayment,
+}
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
 // of them differs at execution, the envelope differs and nothing executes (FR-APR-05, G4-055). A test changes
@@ -91,6 +102,8 @@ var Dependencies = map[string][]string{
 	ObjectOpening: {"opening_version", "status", "debits"},
 	// the bill's version and status, and what it adds to accounts payable in the base currency
 	ObjectBill: {"bill_version", "status", "payable"},
+	// the payment's status, and what it paid in the base currency
+	ObjectPayment: {"status", "paid"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -106,6 +119,7 @@ var Rows = map[string]string{
 	ObjectJournal:    "Journals",
 	ObjectOpening:    "Journals",
 	ObjectBill:       "Bills, vendor credits",
+	ObjectPayment:    "Bills, vendor credits",
 }
 
 // The limits of a policy.
@@ -150,6 +164,7 @@ var Policies = map[string]Policy{
 	ObjectJournal:    {ObjectType: ObjectJournal, Version: "founder/journal@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
 	ObjectOpening:    {ObjectType: ObjectOpening, Version: "founder/opening_balance@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
 	ObjectBill:       {ObjectType: ObjectBill, Version: "founder/bill@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPayment:    {ObjectType: ObjectPayment, Version: "founder/bill_payment@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

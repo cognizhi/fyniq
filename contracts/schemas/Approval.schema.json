@@ -83,7 +83,9 @@
         "team_mode",
         "period",
         "journal",
-        "opening_balance"
+        "opening_balance",
+        "bill",
+        "bill_payment"
       ],
       "examples": [
         "organisation_setting"
@@ -104,7 +106,11 @@
         "journal.post",
         "journal.reverse",
         "journal.edit",
-        "opening_balance.edit"
+        "opening_balance.edit",
+        "bill.post",
+        "bill.void",
+        "bill.edit",
+        "bill_payment.void"
       ],
       "examples": [
         "organisation_setting.change"

@@ -83,10 +83,15 @@ func legsOf(t *testing.T, s storage.Store, org uuid.UUID, e storage.Entry) strin
 	}); err != nil {
 		t.Fatal(err)
 	}
+	trim := func(d storage.Decimal) string {
+		if s := strings.TrimRight(strings.TrimRight(string(d), "0"), "."); s != "" {
+			return s
+		}
+		return "0"
+	}
 	var parts []string
 	for _, l := range e.Lines {
-		parts = append(parts, codes[l.AccountID]+" "+strings.TrimRight(strings.TrimRight(string(l.Amount), "0"), ".")+" "+l.Currency+" = "+
-			strings.TrimRight(strings.TrimRight(string(l.BaseAmount), "0"), "."))
+		parts = append(parts, codes[l.AccountID]+" "+trim(l.Amount)+" "+l.Currency+" = "+trim(l.BaseAmount))
 	}
 	return strings.Join(parts, "; ")
 }

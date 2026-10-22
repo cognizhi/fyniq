@@ -77,8 +77,9 @@ type SequenceSettings struct {
 
 // DefaultSequences are each document type's sequence before it is set up: gap-free, from 1, four digits.
 var DefaultSequences = map[DocumentType]SequenceSettings{
-	DocumentJournal: {Prefix: "JNL-", NextNumber: 1, Digits: 4, GapFree: true},
-	DocumentBill:    {Prefix: "BILL-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentJournal:     {Prefix: "JNL-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentBill:        {Prefix: "BILL-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentBillPayment: {Prefix: "PAY-", NextNumber: 1, Digits: 4, GapFree: true},
 }
 
 // FormatNumber is a document number as the sequence s prints it: its prefix and the number, zero-padded.

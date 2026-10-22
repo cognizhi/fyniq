@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bills": {
+      "description": "What it settles of each bill.",
+      "items": {
+        "$ref": "BillPaymentPart.schema.json"
+      },
+      "maxItems": 100,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "currency": {
+      "description": "The bills' currency.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "date": {
+      "description": "The day the money left the account.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "For bills in another currency paid from an account in that currency: base currency per one unit, as on the bank's advice. Left out, the cascade's rate for the date (ENG-40).",
+      "examples": [
+        "1.30"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The bank, card or wallet account it left: an active money account in the bills' currency or in the base currency.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Notes kept with it.",
+      "examples": [
+        "Paid in two parts, as agreed"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "paid": {
+      "$ref": "Money.schema.json",
+      "description": "For bills in another currency paid from a base-currency account: what the account paid, in the base currency, as the statement shows it; the payment settles at the rate it implies. Required then, and only then (LEDGER-27)."
+    },
+    "reference": {
+      "description": "The bank's reference for it.",
+      "examples": [
+        "FAST 88231"
+      ],
+      "maxLength": 140,
+      "type": "string"
+    },
+    "supplier_id": {
+      "description": "The supplier paid; left out, the first bill's supplier. Every bill is the supplier's.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "unapplied": {
+      "$ref": "Money.schema.json",
+      "description": "What it paid beyond the bills, in their currency: kept as a credit with the supplier (FR-AR-18). Left out, nothing."
+    }
+  },
+  "required": [
+    "date",
+    "money_account_id",
+    "currency",
+    "bills"
+  ],
+  "title": "BillPaymentDraft",
+  "type": "object"
+}

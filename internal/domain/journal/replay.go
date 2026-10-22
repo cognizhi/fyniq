@@ -122,6 +122,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
+	if doc.Type == storage.DocumentBillPayment { // a payment of bills, with the rates and carrying amounts it kept (FR-AP-02)
+		want, err := replayBillPayment(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	if doc.Type == storage.DocumentBill { // a supplier's bill, with the rate and input tax its entry kept (FR-AP-02)
 		want, err := replayBill(ctx, u, doc, s, e)
 		if err != nil {

@@ -122,6 +122,15 @@ Source: PRD-001 §10.2
 - **WHEN** a supplier payment is posted
 - **THEN** it posts Dr AP 2010; Cr Bank
 
+#### Scenario: Built as bill_payment@1 (rev 0.77)
+- **WHEN** a payment of bills is recorded
+- **THEN** it posts Dr 2010 with each bill's part at that bill's stored rate and any unapplied amount at the payment's rate, Cr the money account at the payment's rate or with what a base-currency account paid, and to 7030 each part's realised FX (ENG-41) and the cent RND-FX leaves between the lines
+
+#### Scenario: The residual of a bill paid in parts (rev 0.77)
+- **GIVEN** a bill whose parts' RND-FX does not sum to its carrying amount
+- **WHEN** the part that settles what is left of it is recorded
+- **THEN** a base-only line on 2010 of at most S$1.00 clears the residual, against 7030, in the month of the last payment
+
 ### Requirement: Customer refunds and deposits
 Customer refunds and deposits received and applied (FR-AR-18, FR-AR-09) SHALL post through allocation records and SHALL never be netted against AP without an approved contra.
 

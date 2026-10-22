@@ -70,7 +70,7 @@ Source: PRD-001 §10.7
 - **THEN** both fail at the database
 
 ### Requirement: INV-05 Amounts at minor-unit scale and consistent with RND-FX
-Amounts SHALL have the currency's minor-unit scale, and base amounts SHALL be consistent with amount × rate under `RND-FX`, with one exception: base-only lines from FX revaluation.
+Amounts SHALL have the currency's minor-unit scale, and base amounts SHALL be consistent with amount × rate under `RND-FX`, with two exceptions: base-only lines from FX revaluation, and the residual a payment of bills clears on accounts payable.
 
 Source: PRD-001 §10.7
 
@@ -97,6 +97,12 @@ Source: PRD-001 §10.7
 - **GIVEN** a base-only line
 - **WHEN** it comes from another source, or posts to an account not flagged as a monetary foreign-currency item, or its entry's base-only lines are not offset by the unrealised-FX account
 - **THEN** a separate trigger for base-only lines rejects it
+
+#### Scenario: The residual of a bill paid in parts (rev 0.77)
+- **GIVEN** a base-only line from a payment of bills
+- **WHEN** it is on the accounts-payable account and at most 1.00 in the base currency
+- **THEN** `journal_line_base_only` accepts it
+- **AND** on any other account, or above 1.00, it refuses it (FY008)
 
 #### Scenario: Built as a check at commit (rev 0.72)
 - **WHEN** an entry with a base-only line commits

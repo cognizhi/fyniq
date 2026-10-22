@@ -3,6 +3,7 @@ package journal
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -208,6 +209,24 @@ func (s Bills) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, erro
 	return out, err
 }
 
+// unpaid refuses to void or edit a bill a payment settles (FR-AR-18): its payments are voided first, which reopens it,
+// so a void never leaves a payment settling nothing and an edit never changes what a payment carried.
+func unpaid(ctx context.Context, u storage.UnitOfWork, doc storage.Document, what string) error {
+	settled, err := u.Allocations().Settled(ctx, []uuid.UUID{doc.ID})
+	if err != nil {
+		return err
+	}
+	if x, ok := settled[doc.ID]; ok && !isZeroDecimal(string(x)) {
+		return &bill.Error{Code: bill.CodePaid, Message: fmt.Sprintf("payments settle %s of the bill", x),
+			Fix: fmt.Sprintf("Void its payments first, then %s it", what)}
+	}
+	return nil
+}
+
+func isZeroDecimal(s string) bool {
+	return isZero(strings.TrimPrefix(s, "-"))
+}
+
 // postedEntry is the entry of a posted bill's current version.
 func postedEntry(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (storage.Entry, error) {
 	return u.Ledger().ByIdentity(ctx, ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill))
@@ -230,6 +249,9 @@ func (s Bills) Void(ctx context.Context, org, id uuid.UUID, date time.Time, reas
 		}
 		if doc.Status != storage.DocumentPosted {
 			return &bill.Error{Code: bill.CodeNotPosted, Message: fmt.Sprintf("the bill is %s, not posted", doc.Status), Fix: "Only a posted bill is voided; a draft is simply not posted"}
+		}
+		if err := unpaid(ctx, u, doc, "void"); err != nil {
+			return err
 		}
 		settings, err := loadSettings(ctx, u)
 		if err != nil {
@@ -282,6 +304,9 @@ func (s Bills) Edit(ctx context.Context, org, id uuid.UUID, d bill.Draft, reason
 		}
 		if doc.Status != storage.DocumentPosted {
 			return &bill.Error{Code: bill.CodeNotPosted, Message: fmt.Sprintf("the bill is %s, not posted", doc.Status), Fix: "Only a posted bill is edited this way; change a draft as it is"}
+		}
+		if err := unpaid(ctx, u, doc, "edit"); err != nil {
+			return err
 		}
 		settings, err := loadSettings(ctx, u)
 		if err != nil {

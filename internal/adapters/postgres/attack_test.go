@@ -481,6 +481,35 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"fx_feed_rate.quote": func(t *testing.T, b porttest.Books, v string) error {
 		return rawFeedRate(t, "1.35", v)
 	},
+	"allocation.amount": func(t *testing.T, b porttest.Books, v string) error {
+		return rawAllocation(t, b, v, "1.00", "0.00")
+	},
+	"allocation.base_amount": func(t *testing.T, b porttest.Books, v string) error {
+		return rawAllocation(t, b, "1.00", v, "0.00")
+	},
+	"allocation.realised_fx": func(t *testing.T, b porttest.Books, v string) error {
+		return rawAllocation(t, b, "1.00", "1.00", v)
+	},
+}
+
+// rawAllocation settles a bill from a bill payment as the owner, both made in the same transaction, so only the
+// allocation's own checks can fail.
+func rawAllocation(t *testing.T, b porttest.Books, amount, base, fx string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
+		var payment, bill uuid.UUID
+		if err := tx.QueryRow(ctx, "INSERT INTO fyniq.document (type) VALUES ('bill_payment') RETURNING id").Scan(&payment); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, "INSERT INTO fyniq.document (type) VALUES ('bill') RETURNING id").Scan(&bill); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.allocation (source_id, source_version, document_id, on_date, currency, minor_units, amount,
+  base_currency, base_minor_units, base_amount, realised_fx, written_by, written_at)
+VALUES ($1, 1, $2, '2026-10-14', 'SGD', 2, $3::numeric, 'SGD', 2, $4::numeric, $5::numeric, 'user:attack-test', now())`, payment, bill, amount, base, fx)
+		return err
+	})
 }
 
 // rawFXRate enters a USD rate for a day as the API role, so only the rate's own checks can fail.

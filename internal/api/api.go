@@ -61,6 +61,7 @@ type API struct {
 	policies map[string]authz.Policy
 	journals journal.Service
 	bills    journal.Bills
+	payments journal.BillPayments
 	closing  closing.Service
 	passkeys *passkey.RelyingParty // nil without an origin
 }
@@ -153,7 +154,8 @@ func New(mux humago.Mux, d Deps) *API {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store},
-		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+		payments: journal.BillPayments{Store: d.Store},
+		closing:  closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -163,6 +165,7 @@ func New(mux humago.Mux, d Deps) *API {
 	}
 	a.journals.AfterPosting = a.commitEvidence // a posted journal's files go to the locked store (FR-DOC-13)
 	a.bills.AfterPosting = a.commitEvidence
+	a.payments.AfterPosting = a.commitEvidence
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -200,6 +203,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerReviewLog(a)
 	registerJournals(a)
 	registerBills(a)
+	registerBillPayments(a)
 	registerGSTCodes(a)
 	registerRecurringJournals(a)
 	registerAccounting(a)

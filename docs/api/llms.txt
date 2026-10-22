@@ -27,6 +27,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/approvals/{approval_id}/challenge` (challengeApproval): Start signing a request with a passkey
 - `POST /v1/approvals/{approval_id}/reject` (rejectApproval): Reject a request
 - `POST /v1/approvals/{approval_id}/withdraw` (withdrawApproval): Withdraw your request
+- `GET /v1/bill-payments` (listBillPayments): List the payments of bills
+- `POST /v1/bill-payments` (recordBillPayment): Record a payment of bills
+- `GET /v1/bill-payments/{payment_id}` (getBillPayment): Get a payment of bills
+- `POST /v1/bill-payments/{payment_id}/void` (voidBillPayment): Void a payment of bills
+- `POST /v1/bill-payments/{payment_id}/void-approval` (requestBillPaymentVoid): Ask for approval to void a payment of bills
 - `GET /v1/bills` (listBills): List the bills
 - `POST /v1/bills` (createBill): Save a draft bill
 - `GET /v1/bills/{bill_id}` (getBill): Get a bill

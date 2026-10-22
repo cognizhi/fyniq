@@ -12,6 +12,8 @@ fyniq_api       UPDATE    accounting_framework (confirmed_at, confirmed_by)
 fyniq_api       INSERT    accounting_policy (area, from_on, version, wording, written_by)
 fyniq_api       SELECT    accounting_policy
 fyniq_api       UPDATE    accounting_policy (approved_at, approved_by)
+fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, written_at, written_by)
+fyniq_api       SELECT    allocation
 fyniq_api       INSERT    approval_policy (created_at, created_by, object_type, request_id, steps, version)
 fyniq_api       SELECT    approval_policy
 fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_steps, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
@@ -162,6 +164,7 @@ fyniq_api       EXECUTE   webauthn_credential_register()
 fyniq_api       EXECUTE   webauthn_credential_revoke()
 fyniq_api       EXECUTE   webauthn_credentials()
 fyniq_executor  SELECT    account
+fyniq_executor  SELECT    allocation
 fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request
 fyniq_executor  SELECT    approval_signature
@@ -217,6 +220,7 @@ fyniq_executor  SELECT    team_mode
 fyniq_readonly  SELECT    account
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
+fyniq_readonly  SELECT    allocation
 fyniq_readonly  SELECT    approval_policy
 fyniq_readonly  SELECT    approval_request
 fyniq_readonly  SELECT    approval_signature
@@ -270,6 +274,7 @@ fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    team_mode
 fyniq_readonly  SELECT    user_membership
 fyniq_worker    SELECT    account
+fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    approval_policy
 fyniq_worker    SELECT    approval_request
 fyniq_worker    SELECT    approval_signature

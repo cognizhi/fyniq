@@ -16,7 +16,7 @@
       "type": "string"
     },
     "due": {
-      "description": "overdue once its due date has passed while it is posted and unpaid; not_due otherwise.",
+      "description": "overdue once its due date has passed while it is posted and not paid in full; not_due otherwise.",
       "enum": [
         "not_due",
         "overdue"
@@ -39,7 +39,7 @@
       "type": "string"
     },
     "payment": {
-      "description": "What has been paid of it. Payments arrive with p1-purchases' payments slice; until then a posted bill is unpaid.",
+      "description": "What has been paid of it, from the payments recorded against it net of their voids (FR-AR-18): unpaid, part_paid or paid. scheduled and written_off arrive with payment batches and write-offs.",
       "enum": [
         "unpaid",
         "scheduled",

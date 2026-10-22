@@ -83,9 +83,20 @@
       ],
       "type": "string"
     },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."
+    },
     "payable": {
       "$ref": "Money.schema.json",
       "description": "What it adds to accounts payable in the base currency: as posted, or as posting would post it; absent while it cannot post."
+    },
+    "payments": {
+      "description": "getBill only: the payments that settle it, earliest first, each marked when it was voided.",
+      "items": {
+        "$ref": "BillPaidBy.schema.json"
+      },
+      "type": "array"
     },
     "posted_at": {
       "description": "When it was posted.",
@@ -150,6 +161,7 @@
     "currency",
     "lines",
     "total",
+    "payments",
     "states",
     "checks",
     "ledger_impact"

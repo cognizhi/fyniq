@@ -46,10 +46,11 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 3. Payments recorded by hand (the owner's decision of 22 Oct 2026)
 
-- [ ] 3.1 `bill_payment`: a money account, a date, an amount, applied to the supplier's bills; Dr 2010 /
+- [x] 3.1 `bill_payment`: a money account, a date, an amount, applied to the supplier's bills; Dr 2010 /
   Cr the money account; realised FX per bill (ENG-41); an unapplied amount kept as a supplier credit;
   void reopens. Tests `// req: ledger/posting-rules Customer and supplier payments` (supplier),
-  `// req: ENG-41`
+  `// req: ENG-41` (rev 0.77: `bill_payment@1`, allocations, the residual of a bill paid in parts on a
+  base-only 2010 line, the API and the void's approval)
 - [ ] 3.2 Record payment on the bill record; the payment state; help and guide
 
 ## 4. Vendor credits and refunds
