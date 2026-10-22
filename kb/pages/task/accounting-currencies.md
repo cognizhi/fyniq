@@ -4,7 +4,7 @@ type: task
 title: Exchange rates
 summary: Where a posting in another currency takes its rate from, your own rates, and revaluing a month's foreign-currency balances
 sources:
-  - docs/user-guide/currencies.md sha256:e940bce5bb12c75839cae9fb22ef4cc7b4757ce88def57928b801171ec4bb404
+  - docs/user-guide/currencies.md sha256:2333988d65a60f594514adb77c735c69d97acc1d8fb9706a901a9b97d93dc907
 data_class: general
 taint: trusted
 status: draft
@@ -30,6 +30,8 @@ aliases:
   - unrealised FX
   - unrealised gain or loss
   - foreign currency bank account
+  - automatic revaluation
+  - scheduler revaluation
 ---
 
 # Exchange rates
@@ -83,6 +85,14 @@ aliases:
 - The month's close refuses a month with balances to revalue that is not revalued since its last posting ([[accounting.periods]]).
 
 (src: docs/user-guide/currencies.md#revalue-a-month)
+
+## Fyniq revalues each month by itself
+
+- Each night, after the daily feed's rates arrive, Fyniq revalues every open month that has ended and has balances to revalue, once each currency has a rate for the month's last day; the **Revaluation** tab then says **Last revalued by Scheduler**.
+- A month already revalued is left alone; a month with a posting added after its run is revalued again. A month whose currency has no rate yet waits, and Fyniq tries again the next night.
+- Revalue a month yourself after adding a rate for its last day after Fyniq's run: your run posts only the difference.
+
+(src: docs/user-guide/currencies.md#fyniq-revalues-each-month-by-itself)
 
 ## Common problems
 

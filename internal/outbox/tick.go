@@ -52,6 +52,9 @@ var PlatformSchedules = []Schedule{
 	{Job: "journals.recurring", Every: time.Hour, Offset: 10 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Daily at 02:25 in Singapore, the feed's rates of the last week's days that have none yet (FR-GL-05; rev 0.70).
 	{Job: "fx.feed", Every: 24 * time.Hour, Offset: 18*time.Hour + 25*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Daily at 03:05 in Singapore, after the feed: the month-end revaluations due whose last day's rates are in
+	// (FR-GL-04, FR-AUT-01; rev 0.75).
+	{Job: "fx.revalue", Every: 24 * time.Hour, Offset: 19*time.Hour + 5*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Hourly, the reversals of month-end revaluations that waited for their next period to open (FR-GL-04; rev 0.73).
 	{Job: "fx.reversals", Every: time.Hour, Offset: 35 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 }

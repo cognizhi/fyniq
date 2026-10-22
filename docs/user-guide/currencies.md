@@ -101,6 +101,15 @@ posted after the month is revalued, revalue it again: the new run posts only wha
 month's close refuses a month that has balances to revalue and is not revalued since its last
 posting.
 
+### Fyniq revalues each month by itself
+
+Each night, after the daily feed's rates arrive, Fyniq revalues every open month that has ended and
+has balances to revalue, once each currency has a rate for the month's last day. The Revaluation
+tab then says **Last revalued by Scheduler**. A month already revalued is left alone; a month with
+a posting added after its run is revalued again. If a currency has no rate yet, the month waits and
+Fyniq tries again the next night. Revalue a month yourself when you add a rate for its last day
+after Fyniq's run: your run posts only the difference.
+
 ## Common problems
 
 | Message | What to do |

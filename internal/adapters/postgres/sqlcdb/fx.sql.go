@@ -13,6 +13,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createScheduledRevaluation = `-- name: CreateScheduledRevaluation :one
+SELECT fyniq.create_scheduled_revaluation($1::uuid, $2::jsonb, $3::timestamptz)::uuid AS id
+`
+
+type CreateScheduledRevaluationParams struct {
+	PeriodID uuid.UUID
+	Payload  []byte
+	PostedAt time.Time
+}
+
+// The scheduler's one way to make a document of a month-end revaluation (FR-GL-04, FR-AUT-02; rev 0.75): a posted
+// fx_revaluation of an open period, saved and posted by scheduler:fx.revalue (FY169 otherwise).
+func (q *Queries) CreateScheduledRevaluation(ctx context.Context, arg CreateScheduledRevaluationParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createScheduledRevaluation, arg.PeriodID, arg.Payload, arg.PostedAt)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const feedDays = `-- name: FeedDays :many
 SELECT DISTINCT on_date FROM fyniq.fx_feed_rates
 WHERE base_currency = $1::text AND on_date BETWEEN $2::date AND $3::date

@@ -171,6 +171,12 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** the revaluation runs again
 - **THEN** it posts the difference since, against the carrying value the earlier runs left, so the period ends at the rate
 
+#### Scenario: The scheduler runs it by itself (rev 0.75)
+- **GIVEN** an open period that has ended, with balances to revalue and no current run
+- **WHEN** the scheduler's daily `fx.revalue` finds a rate for every currency on the period's last day
+- **THEN** it posts the same revaluation a person's run would, saved and posted by `scheduler:fx.revalue`
+- **AND** without a rate it waits, with an audit event that says why; a current run is left alone, and a stale one runs again
+
 #### Scenario: G4-039 USD invoice revalued, part-settled and revalued again
 - **GIVEN** a USD invoice of USD 10,000 at 1.35 (S$13,500.00); 31 Mar rate 1.30; 15 Apr USD 4,000 received at 1.32; 30 Apr rate 1.33
 - **WHEN** March and April are revalued and the receipt is posted

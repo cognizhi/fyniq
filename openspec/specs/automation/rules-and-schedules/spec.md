@@ -37,6 +37,11 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** the tick runs the platform jobs
 - **THEN** `fx.feed` stores the daily rate feed's missing days of the last week, daily, and `fx.reversals` posts the month-end revaluations' reversals that waited for their next period to open, hourly
 
+#### Scenario: The month-end revaluation runs daily (rev 0.75)
+- **WHEN** the tick runs `fx.revalue`, daily at 03:05 in Singapore after the feed
+- **THEN** it revalues each open period that ended before the organisation's today and is due, once every currency has a rate for its last day
+- **AND** one without a rate waits, with an audit event that says why, and the next day's run tries again
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 
@@ -72,6 +77,11 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** the scheduler makes a recurring journal's draft under the worker's role
 - **THEN** it calls `create_scheduled_draft`, which makes the version-1 draft journal of an active recurring journal's next occurrence from its current version, once (FY057)
 - **AND** the role holds no INSERT on `document` or `document_version`, and may otherwise only move a recurring journal's next occurrence
+
+#### Scenario: The scheduler posts the month-end revaluation through one function (rev 0.75)
+- **WHEN** the scheduler revalues a period under the worker's role
+- **THEN** it calls `create_scheduled_revaluation`, which saves the run as a posted `fx_revaluation` of an open period whose last day and the day after are the payload's, by `scheduler:fx.revalue` (FY169 otherwise)
+- **AND** the role still holds no INSERT on documents and cannot name who posted any other document
 
 ### Requirement: FR-AUT-03 Workflow rules without code
 The system SHALL let users configure workflow rules ("when a bill over S$5,000 is created, notify X") without code.

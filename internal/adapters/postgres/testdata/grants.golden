@@ -284,6 +284,7 @@ fyniq_worker    SELECT    close_checklist_template
 fyniq_worker    SELECT    contact
 fyniq_worker    EXECUTE   count_super_admins()
 fyniq_worker    EXECUTE   create_scheduled_draft()
+fyniq_worker    EXECUTE   create_scheduled_revaluation()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
 fyniq_worker    SELECT    document

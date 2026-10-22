@@ -49,6 +49,7 @@ var fyCodes = map[string]string{
 	"FY166": storage.CodeFXRate,
 	"FY167": storage.CodeFXRate,
 	"FY168": storage.CodeFXRate,
+	"FY169": storage.CodeFXRevaluation,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,
