@@ -2,9 +2,9 @@
 key: purchases.bills
 type: task
 title: Bills
-summary: Entering, posting and approving a supplier's bill and its warnings; recording and voiding its payments; voiding or editing a posted bill
+summary: Entering, posting and approving a supplier's bill; spreading a prepaid cost over months; recording and voiding payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:e2361a5816b0044999e43e4158a29c2c5db9d26ace33cb40a454fbdd2cc5f594
+  - docs/user-guide/bills.md sha256:b202b41117902877625f52fe091bcad1f9224ed4a73530cd5efc74923c9f2f29
 data_class: general
 taint: trusted
 status: draft
@@ -40,6 +40,10 @@ aliases:
   - supplier credit
   - apply a credit
   - supplier refund
+  - spread a cost
+  - prepayment
+  - prepaid subscription
+  - spread over months
 ---
 
 # Bills
@@ -74,6 +78,16 @@ aliases:
 - Input tax is claimed only once the company is GST-registered on the bill's date, for codes such as TX; until then the GST is part of the cost.
 
 (src: docs/user-guide/bills.md#check-and-post-a-bill)
+
+## Spread a cost over months
+
+- A cost paid ahead, such as a year's subscription or insurance, is spread over the months it covers: in Expert mode a line takes **Spread over** (1 to 120 months) and **Spread from** (the month the service starts, blank for the invoice's month); a line with a spread shows both in Basic mode too.
+- Posting puts the line's cost in **1210 Prepayments**, in SGD, and claims the GST in full at once; each month one even part moves to the line's account, the rounding cents falling in different months so the parts add up exactly to the cost.
+- A part posts on the first day of its month, or on the invoice date for the months before it; Fyniq posts it by itself once its date comes, in the company's time zone, never a month ahead, and a part whose month has no open period waits until it opens.
+- **Spread over months** on the bill lists each part as posted, due but not posted yet, or projected (not in the books). Voiding the bill reverses the posted parts on the void's date; editing reverses them on their own dates and posts the new version's.
+- Only an expense line's cost is spread, and never a credit note's lines.
+
+(src: docs/user-guide/bills.md#spread-a-cost-over-months)
 
 ## Approval above the threshold
 
@@ -125,6 +139,7 @@ aliases:
 - BILL-13, payments settle the bill: void its payments first, then void or edit the bill.
 - CREDIT-05, more than the bill has open or the credit has left: apply or refund at most what is open on both.
 - CREDIT-08, the credit is applied to bills: void its applications and refunds first.
+- LEDGER-28, the spread cannot be used: spread an expense line over 1 to 120 months; a credit note's lines are not spread.
 
 (src: docs/user-guide/bills.md#common-problems)
 

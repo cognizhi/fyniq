@@ -170,6 +170,8 @@
   **Out of scope:** the AI-drafted explanation (an AI catalogue task type, wave 6) and budget variances (`p1-planning`).
   The page's Variances section joins 7.2.)
 - [ ] 6.4 Schedules for prepayments and deferred revenue, with the first source that spreads over months (`p1-purchases` bills). Tests `// req: FR-GL-03`
+  (23 Oct 2026, prepayments from bills: `p1-purchases` 6.1, PRD-001 rev 0.83. Deferred revenue waits for `p1-sales`;
+  bank lines' spreads and the reconciliation of open schedules with 1210 and 2400 follow)
 
 ## 7. Screens
 

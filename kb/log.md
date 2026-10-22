@@ -129,3 +129,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-23] compile | docs/user-guide/bills.md → purchases.bills (what the company owes: the next 30 days' cash and the AP ageing; rev 0.79)
 
 ## [2026-10-23] compile | docs/user-guide/bills.md → purchases.bills (credit notes: entering, applying to bills, refunds; rev 0.82)
+
+## [2026-10-23] compile | docs/user-guide/bills.md → purchases.bills (spreading a prepaid cost over months, LEDGER-28; rev 0.83)

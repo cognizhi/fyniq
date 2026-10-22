@@ -5,6 +5,7 @@ export const timeZone = "Asia/Singapore";
 
 const day = new Intl.DateTimeFormat("en-SG", { day: "numeric", month: "short", year: "numeric", timeZone });
 const time = new Intl.DateTimeFormat("en-SG", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone });
+const monthYear = new Intl.DateTimeFormat("en-SG", { month: "short", year: "numeric", timeZone });
 
 function parse(iso: string | undefined | null): Date | null {
   if (!iso) return null;
@@ -16,6 +17,12 @@ function parse(iso: string | undefined | null): Date | null {
 export function date(iso: string | undefined | null): string {
   const d = parse(iso);
   return d ? day.format(d) : "";
+}
+
+// month is "Nov 2026" for the month "2026-11"; "" for none.
+export function month(ym: string | undefined | null): string {
+  const d = parse(ym ? `${ym}-01` : null);
+  return d ? monthYear.format(d) : "";
 }
 
 export function dateTime(iso: string | undefined | null): string {

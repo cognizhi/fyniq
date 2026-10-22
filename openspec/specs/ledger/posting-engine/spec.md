@@ -91,6 +91,12 @@ Source: PRD-001 §10.1 · Priority M · Phase P1
 - **THEN** its scheduled amounts are computed and flagged as projections
 - **AND** they are never mixed with actuals
 
+#### Scenario: Built for bills' spreads (rev 0.83)
+- **GIVEN** a posted bill with a line spread over months
+- **WHEN** a release's date comes in the organisation's time zone
+- **THEN** it posts under the scheduler's principal, at once when the bill posts or is edited and otherwise by the hourly job, and one whose date no open period covers waits with an audit event
+- **AND** the bill lists each release as posted, waiting, projected (not in the ledger) or reversed
+
 ### Requirement: ENG-06 Versioned posting rules
 Rule changes SHALL be versioned, and re-running a rule version over the same document SHALL reproduce the original entries exactly.
 

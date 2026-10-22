@@ -471,6 +471,14 @@ func (r documents) DueReversals(ctx context.Context, day string, limit int) ([]u
 	return ids, mapError(err)
 }
 
+func (r documents) SpreadBills(ctx context.Context, from string, afterID *uuid.UUID, limit int) ([]uuid.UUID, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	ids, err := r.u.q.SpreadBills(ctx, sqlcdb.SpreadBillsParams{FromDay: from, AfterID: afterID, MaxRows: int32(min(max(limit, 1), 10000))}) // #nosec G115 -- 1 to 10,000
+	return ids, mapError(err)
+}
+
 func (r documents) WaitingReversals(ctx context.Context, afterOn string, afterID *uuid.UUID, limit int) ([]storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

@@ -86,10 +86,17 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 6. Prepayment spreads (the owner's decision of 22 Oct 2026)
 
-- [ ] 6.1 A spread line posts to 1210; `bills.releases` posts each due month's release (`ALLOC-EVEN`) up
+- [x] 6.1 A spread line posts to 1210; `bills.releases` posts each due month's release (`ALLOC-EVEN`) up
   to the current month, waiting while a month is closed; a void or an edit reverses the releases with
   the bill. Tests `// req: FR-GL-03`, `// req: ENG-05`, `// req: ledger/posting-rules Spreading an invoice or bill` (bill),
   G4-022's bill half. Closes `p1-general-ledger-close` 6.4 for bills
+  (23 Oct 2026, PRD-001 rev 0.83, provisional: the spread line in `bill@1` on 1210 in the base currency;
+  `bill_release@1` dated the first of its month, or the bill's date for months before it; releases already due
+  post at once when the bill posts or is edited, the hourly `bills.releases` posts the rest and a month with no
+  open period waits with an audit event; a void reverses them on its date, an edit on their own; migration 000089
+  (FY172, and FY055/FY056 not counting a release as the bill's entry); `spread_months`, `spread_from` and
+  `releases` in the API; the spread fields and **Spread over months** on the bill screen. Follows: the 1210
+  reconciliation and a close check for releases not posted, INV-07)
 
 ## 7. Recurring bills (the owner's decision of 22 Oct 2026)
 

@@ -1466,6 +1466,11 @@ components:
         prepared_by:
           $ref: "#/components/schemas/Person"
           description: Who saved the current version.
+        releases:
+          description: "getBill only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05)."
+          items:
+            $ref: "#/components/schemas/BillRelease"
+          type: array
         states:
           $ref: "#/components/schemas/BillStates"
           description: Its approval, ledger, payment and due states.
@@ -1504,6 +1509,7 @@ components:
         - lines
         - total
         - payments
+        - releases
         - states
         - checks
         - ledger_impact
@@ -1724,6 +1730,20 @@ components:
         net:
           $ref: "#/components/schemas/Money"
           description: The line's amount before GST, in the bill's currency.
+        spread_from:
+          description: "The spread's first month, as any day of it: when the service starts. Left out, the bill's month. Months before the bill's date release on the bill's date."
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        spread_months:
+          description: "Spread the line's cost over this many months (FR-GL-03): the bill puts the cost on 1210 Prepayments in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05). Only an expense line's cost is spread, and never a vendor credit's (LEDGER-28)."
+          examples:
+            - 12
+          format: int64
+          maximum: 120
+          minimum: 1
+          type: integer
         stated_gst:
           $ref: "#/components/schemas/Money"
           description: "For a bill in another currency: the GST the tax invoice states in the base currency, which is the input tax claimed (ENG-42). Without it the input tax is not claimed and stays in the cost (⚠)."
@@ -2042,6 +2062,67 @@ components:
       required:
         - bill
         - entry
+      type: object
+    BillRelease:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "What it moves from 1210 Prepayments to the line's account, in the base currency: its ALLOC-EVEN part of the line's cost."
+        date:
+          description: "The day it posts: the first of its month, or the bill's date when that is later."
+          examples:
+            - "2026-11-01"
+          format: date
+          type: string
+        entry_id:
+          description: Its entry, once posted.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70
+          format: uuid
+          type: string
+        line:
+          description: The bill's line it releases, from 1.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        month:
+          description: The month it releases.
+          examples:
+            - 2026-11
+          pattern: ^[0-9]{4}-[0-9]{2}$
+          type: string
+        of:
+          description: How many months the line is spread over.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        part:
+          description: Which month of the spread it is, from 1.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        status:
+          description: "posted; waiting: due by the organisation's today but not in the ledger yet (the hourly job posts it, or waits for its period to open); projected: in the future, or of a draft, and not in the ledger (ENG-05); reversed by a void or an edit of the bill."
+          enum:
+            - posted
+            - waiting
+            - projected
+            - reversed
+          examples:
+            - posted
+          type: string
+      required:
+        - line
+        - month
+        - part
+        - of
+        - date
+        - amount
+        - status
       type: object
     BillSettled:
       additionalProperties: false
@@ -10346,7 +10427,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
         "428":
           content:
             application/problem+json:
@@ -10475,6 +10556,7 @@ paths:
         - LEDGER-22
         - LEDGER-23
         - LEDGER-24
+        - LEDGER-28
         - MEM-01
         - MEM-02
         - MEM-03
@@ -12920,7 +13002,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
         "428":
           content:
             application/problem+json:
@@ -13023,6 +13105,7 @@ paths:
         - LEDGER-22
         - LEDGER-23
         - LEDGER-24
+        - LEDGER-28
         - STORAGE-DOC-02
         - STORAGE-DOC-04
         - STORAGE-DUPLICATE-01
@@ -13194,7 +13277,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow."
         "428":
           content:
             application/problem+json:
@@ -13294,6 +13377,7 @@ paths:
         - LEDGER-22
         - LEDGER-23
         - LEDGER-24
+        - LEDGER-28
         - STORAGE-APPROVAL-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
@@ -13429,7 +13513,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
         "428":
           content:
             application/problem+json:
@@ -13531,6 +13615,7 @@ paths:
         - LEDGER-22
         - LEDGER-23
         - LEDGER-24
+        - LEDGER-28
         - STORAGE-DOC-02
         - STORAGE-DUPLICATE-01
         - STORAGE-INV-01
@@ -13695,7 +13780,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow."
         "428":
           content:
             application/problem+json:
@@ -13795,6 +13880,7 @@ paths:
         - LEDGER-22
         - LEDGER-23
         - LEDGER-24
+        - LEDGER-28
         - STORAGE-APPROVAL-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
@@ -13936,7 +14022,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital."
         "428":
           content:
             application/problem+json:
@@ -14038,6 +14124,7 @@ paths:
         - LEDGER-22
         - LEDGER-23
         - LEDGER-24
+        - LEDGER-28
         - STORAGE-DOC-02
         - STORAGE-DUPLICATE-01
         - STORAGE-INV-01
@@ -14208,7 +14295,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `FX-01` No exchange rate for this currency; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow."
         "428":
           content:
             application/problem+json:
@@ -14308,6 +14395,7 @@ paths:
         - LEDGER-22
         - LEDGER-23
         - LEDGER-24
+        - LEDGER-28
         - STORAGE-APPROVAL-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01

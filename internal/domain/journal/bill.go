@@ -13,6 +13,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -24,6 +26,22 @@ type Bills struct {
 	Store storage.Store
 	// AfterPosting runs inside the unit of work after an entry (or its reversal) is written and the document updated.
 	AfterPosting func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document, entry storage.Entry) error
+	// Clock, when set, makes posting or editing a bill post at once the releases of its spread already due by the
+	// organisation's today (FR-GL-03), so its cost is never held on 1210 until the hourly job; nil leaves them to it.
+	Clock ports.Clock
+}
+
+// releaseNow posts a just-posted bill's releases due by the organisation's today, after its unit of work commits. What
+// it cannot post the hourly job bills.releases posts, so it never fails the posting.
+func (s Bills) releaseNow(ctx context.Context, org, id uuid.UUID) {
+	if s.Clock == nil {
+		return
+	}
+	day, err := todayIn(ctx, s.Store, org, s.Clock.Now())
+	if err != nil {
+		return
+	}
+	_, _ = Releases{Store: s.Store}.ReleaseBill(ctx, org, id, day)
 }
 
 // Checked is a bill version as posting it would post it, written nowhere: what the rules read, the entry, and the
@@ -229,6 +247,9 @@ func (s Bills) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, erro
 		doc.Status = storage.DocumentPosted
 		return s.after(ctx, u, doc, out)
 	})
+	if err == nil {
+		s.releaseNow(ctx, org, id)
+	}
 	return out, err
 }
 
@@ -299,6 +320,11 @@ func (s Bills) Void(ctx context.Context, org, id uuid.UUID, date time.Time, reas
 		if out, err = u.Ledger().Append(ctx, toStorage(reversal, &stored.ID)); err != nil {
 			return err
 		}
+		// Its spread's releases go back on the void's date, or on their own when later (FR-GL-03): 1210 and the line's
+		// account are left as if nothing had posted.
+		if err := reverseReleases(ctx, u, doc, settings, func(e ledger.Entry) time.Time { return later(reversal.PostingDate, e.PostingDate) }, reason); err != nil {
+			return err
+		}
 		if err := u.Documents().SetStatus(ctx, id, storage.DocumentReversed); err != nil {
 			return err
 		}
@@ -360,6 +386,10 @@ func (s Bills) Edit(ctx context.Context, org, id uuid.UUID, d bill.Draft, reason
 		if err != nil {
 			return err
 		}
+		// The releases of the version it had go back on their own dates; the new version's are posted after (FR-GL-03).
+		if err := reverseReleases(ctx, u, doc, settings, func(e ledger.Entry) time.Time { return e.PostingDate }, reason); err != nil {
+			return err
+		}
 		edited, err := u.Documents().Edit(ctx, id, b, preparer)
 		if err != nil {
 			return err
@@ -376,7 +406,18 @@ func (s Bills) Edit(ctx context.Context, org, id uuid.UUID, d bill.Draft, reason
 		}
 		return s.after(ctx, u, edited, out.Entry)
 	})
+	if err == nil {
+		s.releaseNow(ctx, org, id)
+	}
 	return out, err
+}
+
+// later is the later of two dates.
+func later(a, b time.Time) time.Time {
+	if b.After(a) {
+		return b
+	}
+	return a
 }
 
 func (s Bills) after(ctx context.Context, u storage.UnitOfWork, doc storage.Document, e storage.Entry) error {
@@ -386,10 +427,23 @@ func (s Bills) after(ctx context.Context, u storage.UnitOfWork, doc storage.Docu
 	return s.AfterPosting(ctx, u, doc, e)
 }
 
+// baseOf is x in the base currency at rate (RND-FX), x itself when it is in the base currency, and x when there is no
+// rate to convert it at (it then matches no stored base amount).
+func baseOf(x money.Money, rate *money.Rate, base money.Currency) money.Money {
+	if x.Currency() == base || rate == nil {
+		return x
+	}
+	b, err := rounding.FX(x, *rate)
+	if err != nil {
+		return x
+	}
+	return b
+}
+
 // replayBill posts a stored bill version again under the rule that posted e (ENG-06), with the rate and the claimable
 // lines the entry kept: the rate the cascade gave it (ENG-14), and each line's input tax as it was decided then, read
 // from the line's cost (its net when claimed, net and GST when not), so a later change of the organisation's GST
-// registration never makes an old bill differ.
+// registration never makes an old bill differ. A spread line's cost is read from 1210, at its base amount.
 func replayBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
 	p, _, err := bill.Prepare(ctx, u, doc, s.Base)
 	if err != nil {
@@ -417,15 +471,28 @@ func replayBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 			}
 		}
 	}
+	var prepay uuid.UUID
+	for _, a := range s.Accounts {
+		if a.Role == ledger.RolePrepayments {
+			prepay = a.ID
+		}
+	}
 	k := 0 // the next stored line that is a bill line's cost
 	for i := range b.Lines {
 		l := &b.Lines[i]
 		gross, _ := l.Net.Add(l.GST)
+		acc, cost := l.AccountID, func(x money.Money) money.Money { return x }
+		if l.Spread != nil { // a spread line's cost is on 1210 at its base amount (FR-GL-03; rev 0.83)
+			acc, cost = prepay, func(x money.Money) money.Money { return baseOf(x, b.Rate, s.Base) }
+		}
+		next := k < len(stored.Lines) && stored.Lines[k].AccountID == acc
 		switch {
-		case k < len(stored.Lines) && stored.Lines[k].AccountID == l.AccountID && stored.Lines[k].Amount.Equal(gross) && !l.GST.IsZero():
+		case next && l.Spread != nil && cost(gross).Equal(cost(l.Net)) && stored.Lines[k].Amount.Equal(cost(l.Net)):
+			k++ // GST under a cent of the base currency: the cost cannot tell, and the reading of the bill's date stands
+		case next && stored.Lines[k].Amount.Equal(cost(gross)) && !l.GST.IsZero():
 			l.Claimable = false
 			k++
-		case k < len(stored.Lines) && stored.Lines[k].AccountID == l.AccountID && stored.Lines[k].Amount.Equal(l.Net):
+		case next && stored.Lines[k].Amount.Equal(cost(l.Net)):
 			l.Claimable = !l.GST.IsZero()
 			k++
 		case l.Net.IsZero():

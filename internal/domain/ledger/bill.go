@@ -23,6 +23,7 @@ const (
 	RoleAccountsPayable = "accounts-payable"
 	RoleGSTControl      = "gst-control"
 	RoleFXRounding      = "fx-rounding"
+	RolePrepayments     = "prepayments"
 )
 
 // The bill rule's validation codes (ENG-22, ENG-23).
@@ -31,7 +32,19 @@ const (
 	CodeSystemRole   = "LEDGER-22" // the chart has no account with a system role the rule posts to
 	CodeRuleAccount  = "LEDGER-23" // a line on an account the rule posts to itself (AP, GST control)
 	CodeLineCurrency = "LEDGER-24" // a line in another currency than its document's
+	CodeSpread       = "LEDGER-28" // a spread that is not 1 to MaxSpreadMonths months of an expense line's cost (FR-GL-03)
 )
+
+// MaxSpreadMonths is the most months a bill line's cost is spread over (FR-GL-03): ten years.
+const MaxSpreadMonths = 120
+
+// Spread is a bill line's cost spread over months (FR-GL-03, Appendix B.2): the bill debits 1210 Prepayments with it,
+// and each month from From, the first day of its month, releases its ALLOC-EVEN part to the line's account
+// (bill_release@1).
+type Spread struct {
+	From   time.Time
+	Months int
+}
 
 // BillLine is one line of a bill as the rules read it: the account it costs, its net and its GST as the supplier
 // states them in the bill's currency, and whether the line's input tax is claimable (FR-AP-20: from its facts and the
@@ -44,6 +57,7 @@ type BillLine struct {
 	GST         money.Money
 	Claimable   bool
 	StatedBase  *money.Money
+	Spread      *Spread // nil: the cost goes to the line's account on the bill's date
 }
 
 // Bill is one version of a supplier's bill as the rules read it.
@@ -76,6 +90,10 @@ func (s Settings) byRole(role string) (Account, bool) {
 //   - Dr each line's account with its net, at the bill's rate under RND-FX; a line whose input tax is not claimable
 //     keeps its GST in the cost, net plus GST (code BL, a private share, no valid tax invoice, or an organisation not
 //     GST-registered at the bill's date: FR-AP-20);
+//   - but Dr 1210 Prepayments, in the base currency, with the base amount of the cost of a line spread over months
+//     (FR-GL-03, Appendix B.2; rev 0.83): a prepayment is not monetary, so it keeps its base amount and is never
+//     revalued, and its releases (bill_release@1) move that amount to the line's account month by month. Only an
+//     expense line's cost is spread (B.1: P&L categories only);
 //   - Dr 2200 GST control with the claimable GST: as stated in the base currency for a bill in another currency
 //     (ENG-42), else the line's GST;
 //   - Cr 2010 Accounts payable with the total, net plus GST, at the bill's rate;
@@ -118,6 +136,8 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 		add(CodeSystemRole, "lines", "the chart has no accounts payable account", "Load the standard chart's 2010 Accounts payable, or give a liability account the role")
 	}
 	gstControl, hasGST := s.byRole(RoleGSTControl)
+	prepay, hasPrepay := s.byRole(RolePrepayments)
+	spread := false
 
 	var lines []Line
 	total := money.Zero(b.Currency)
@@ -143,6 +163,18 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 		}
 		if len(l.Description) > MaxDescription {
 			add(CodeTooLong, f("description"), fmt.Sprintf("the description has %d characters; the most is %d", len(l.Description), MaxDescription), "Shorten it")
+		}
+		if x := l.Spread; x != nil {
+			spread = true
+			switch {
+			case x.Months < 1 || x.Months > MaxSpreadMonths:
+				add(CodeSpread, f("spread_months"), fmt.Sprintf("the line is spread over %d months", x.Months), fmt.Sprintf("Spread it over 1 to %d months", MaxSpreadMonths))
+			case x.From.IsZero():
+				add(CodeSpread, f("spread_from"), "the spread has no first month", "Enter the month the service starts")
+			case ok && acc.Type != "expense":
+				add(CodeSpread, f("spread_months"), fmt.Sprintf("account %s is not an expense account, so its cost is not spread", acc.Code),
+					"Spread only a cost that is used up over months, on an expense account; leave an asset's cost unspread")
+			}
 		}
 		if l.Net.Currency() != b.Currency || l.GST.Currency() != b.Currency {
 			add(CodeLineCurrency, f("net"), fmt.Sprintf("the line is in %s and its GST in %s; the bill is in %s", l.Net.Currency(), l.GST.Currency(), b.Currency),
@@ -180,6 +212,9 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 			}
 			claimed = true
 		}
+		if cost.Sign() <= 0 && l.Spread != nil {
+			add(CodeSpread, f("spread_months"), fmt.Sprintf("the line's cost is %s %s, so there is nothing to spread", cost, b.Currency), "Spread a line with a cost, or remove its spread")
+		}
 		if cost.IsZero() || !rated {
 			continue // a line of claimable GST alone posts its GST to 2200; without a rate nothing converts
 		}
@@ -189,7 +224,14 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 			continue
 		}
 		baseTotal, _ = baseTotal.Add(base)
+		if l.Spread != nil {
+			lines = append(lines, Line{AccountID: prepay.ID, Amount: base, Rate: money.Identity(s.Base), Base: base, Description: l.Description})
+			continue
+		}
 		lines = append(lines, Line{AccountID: l.AccountID, Amount: cost, Rate: rate, Base: base, Description: l.Description})
+	}
+	if spread && !hasPrepay {
+		add(CodeSystemRole, "lines", "the chart has no prepayments account for the spread cost", "Load the standard chart's 1210 Prepayments, or give an asset account the role")
 	}
 	if claimed && !hasGST {
 		add(CodeSystemRole, "lines", "the chart has no GST control account for the input tax", "Load the standard chart's 2200 GST control, or give a liability account the role")

@@ -20,3 +20,23 @@ line 1 0192f1a0-0000-7000-8000-000000006120 1000.00 USD × 1.34 USD→SGD (docum
 line 2 0192f1a0-0000-7000-8000-000000002200 121.50 SGD × 1 SGD→SGD (base) = 121.50 SGD "Input tax"
 line 3 0192f1a0-0000-7000-8000-000000002010 -1090.00 USD × 1.34 USD→SGD (document) = -1460.60 SGD "Vercel INV-77"
 line 4 0192f1a0-0000-7000-8000-000000007030 -0.90 SGD × 1 SGD→SGD (base) = -0.90 SGD "GST as stated against the book rate"
+== G4-022's bill half: a year's subscription spread, its GST claimed at once
+posting_date 2026-10-14
+source bill 0192f1a0-0000-7000-8000-0000000b1110 v1
+rule_version bill@1
+posting_identity bill:0192f1a0-0000-7000-8000-0000000b1110:v1:bill@1
+memo "Atlassian AU-1182"
+line 1 0192f1a0-0000-7000-8000-000000001210 13080.00 SGD × 1 SGD→SGD (base) = 13080.00 SGD "Line 6120"
+line 2 0192f1a0-0000-7000-8000-000000005010 54.50 SGD × 1 SGD→SGD (base) = 54.50 SGD "Line 5010"
+line 3 0192f1a0-0000-7000-8000-000000002200 1177.20 SGD × 1 SGD→SGD (base) = 1177.20 SGD "Input tax"
+line 4 0192f1a0-0000-7000-8000-000000002010 -14311.70 SGD × 1 SGD→SGD (base) = -14311.70 SGD "Atlassian AU-1182"
+== a USD line spread, at its base amount
+posting_date 2026-10-14
+source bill 0192f1a0-0000-7000-8000-0000000b1110 v3
+rule_version bill@1
+posting_identity bill:0192f1a0-0000-7000-8000-0000000b1110:v3:bill@1
+memo "Vercel INV-78"
+line 1 0192f1a0-0000-7000-8000-000000001210 1340.00 SGD × 1 SGD→SGD (base) = 1340.00 SGD "Line 6120"
+line 2 0192f1a0-0000-7000-8000-000000002200 121.50 SGD × 1 SGD→SGD (base) = 121.50 SGD "Input tax"
+line 3 0192f1a0-0000-7000-8000-000000002010 -1090.00 USD × 1.34 USD→SGD (document) = -1460.60 SGD "Vercel INV-78"
+line 4 0192f1a0-0000-7000-8000-000000007030 -0.90 SGD × 1 SGD→SGD (base) = -0.90 SGD "GST as stated against the book rate"

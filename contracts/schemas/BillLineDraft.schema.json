@@ -34,6 +34,24 @@
       "$ref": "Money.schema.json",
       "description": "The line's amount before GST, in the bill's currency."
     },
+    "spread_from": {
+      "description": "The spread's first month, as any day of it: when the service starts. Left out, the bill's month. Months before the bill's date release on the bill's date.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "spread_months": {
+      "description": "Spread the line's cost over this many months (FR-GL-03): the bill puts the cost on 1210 Prepayments in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05). Only an expense line's cost is spread, and never a vendor credit's (LEDGER-28).",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "maximum": 120,
+      "minimum": 1,
+      "type": "integer"
+    },
     "stated_gst": {
       "$ref": "Money.schema.json",
       "description": "For a bill in another currency: the GST the tax invoice states in the base currency, which is the input tax claimed (ENG-42). Without it the input tax is not claimed and stays in the cost (⚠)."

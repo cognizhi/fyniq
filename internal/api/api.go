@@ -155,7 +155,7 @@ func New(mux humago.Mux, d Deps) *API {
 	if d.Store == nil {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
-	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store},
+	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
 		refunds: journal.SupplierRefunds{Store: d.Store},
 		closing: closing.Service{Store: d.Store, Clock: d.Clock}}

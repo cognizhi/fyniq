@@ -81,14 +81,33 @@ type Draft struct {
 
 // Line is one line of a bill: the account it costs, its net, its GST code, and its GST as the supplier states it, all
 // in the bill's currency. StatedGST is the GST the tax invoice states in the base currency, for a bill in another
-// currency (ENG-42).
+// currency (ENG-42). SpreadMonths spreads the line's cost over months from the month of SpreadFrom (FR-GL-03; zero,
+// the bill's month): 0 for a line that is not spread.
 type Line struct {
-	AccountID   uuid.UUID
-	Description string
-	Net         money.Money
-	GSTCode     string
-	GST         money.Money
-	StatedGST   *money.Money
+	AccountID    uuid.UUID
+	Description  string
+	Net          money.Money
+	GSTCode      string
+	GST          money.Money
+	StatedGST    *money.Money
+	SpreadMonths int
+	SpreadFrom   time.Time
+}
+
+// Spread is the line's spread as the rules read it, nil for a line that is not spread; date is the bill's.
+func (l Line) Spread(date time.Time) *ledger.Spread {
+	if l.SpreadMonths == 0 && l.SpreadFrom.IsZero() {
+		return nil
+	}
+	from := l.SpreadFrom
+	if from.IsZero() {
+		from = date
+	}
+	if !from.IsZero() {
+		y, m, _ := from.Date()
+		from = time.Date(y, m, 1, 0, 0, 0, 0, time.UTC)
+	}
+	return &ledger.Spread{From: from, Months: l.SpreadMonths}
 }
 
 // payload is a bill as a document version stores it: dates as text, amounts with their currency.
@@ -105,12 +124,14 @@ type payload struct {
 }
 
 type payloadLine struct {
-	AccountID   uuid.UUID    `json:"account_id"`
-	Description string       `json:"description,omitempty"`
-	Net         money.Money  `json:"net"`
-	GSTCode     string       `json:"gst_code"`
-	GST         money.Money  `json:"gst"`
-	StatedGST   *money.Money `json:"stated_gst,omitempty"`
+	AccountID    uuid.UUID    `json:"account_id"`
+	Description  string       `json:"description,omitempty"`
+	Net          money.Money  `json:"net"`
+	GSTCode      string       `json:"gst_code"`
+	GST          money.Money  `json:"gst"`
+	StatedGST    *money.Money `json:"stated_gst,omitempty"`
+	SpreadMonths int          `json:"spread_months,omitempty"`
+	SpreadFrom   string       `json:"spread_from,omitempty"`
 }
 
 func day(t time.Time) string {
@@ -134,7 +155,8 @@ func Encode(d Draft) ([]byte, error) {
 		p.FXRate, p.FXRateSource = d.Rate.String(), d.Rate.Source
 	}
 	for _, l := range d.Lines {
-		p.Lines = append(p.Lines, payloadLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST})
+		p.Lines = append(p.Lines, payloadLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST,
+			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom)})
 	}
 	return json.Marshal(p)
 }
@@ -190,7 +212,13 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		d.Rate = &r
 	}
 	for _, l := range p.Lines {
-		d.Lines = append(d.Lines, Line{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST})
+		line := Line{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST, SpreadMonths: l.SpreadMonths}
+		if l.SpreadFrom != "" {
+			if line.SpreadFrom, err = time.Parse(time.DateOnly, l.SpreadFrom); err != nil {
+				return Draft{}, bad(fmt.Sprintf("the spread's first month %q", l.SpreadFrom))
+			}
+		}
+		d.Lines = append(d.Lines, line)
 	}
 	return d, nil
 }
@@ -306,7 +334,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 				"Choose the GST code on the supplier's invoice, such as TX, BL or NR")
 		}
 		b.Lines = append(b.Lines, ledger.BillLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GST: l.GST, StatedBase: l.StatedGST,
-			Claimable: ok && registered && code.Direction == pack.DirPurchase && code.GSTBox > 0})
+			Claimable: ok && registered && code.Direction == pack.DirPurchase && code.GSTBox > 0, Spread: l.Spread(d.Date)})
 	}
 	out.Bill = b
 	if len(probs) == 0 && !d.Date.IsZero() {

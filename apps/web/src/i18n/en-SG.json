@@ -288,6 +288,14 @@
       "label": "Record refund",
       "tooltip": "Record money the supplier paid back against the credit: the date, the account it came into and how much. It posts at once."
     },
+    "bill.spread": {
+      "label": "Spread over months",
+      "tooltip": "For a cost paid ahead, such as a year's subscription: it goes to Prepayments, and one part a month moves to the cost. Leave blank to cost it on the invoice date."
+    },
+    "bill.releases": {
+      "label": "Spread over months",
+      "tooltip": "Each month's part of a spread cost, moved from Prepayments to the cost on its date. Months to come are projections, not in the books yet."
+    },
     "bill.record-payment": {
       "label": "Record payment",
       "tooltip": "Record money already paid to the supplier for this bill: the date, the account it left and how much. It posts at once."

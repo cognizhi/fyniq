@@ -329,6 +329,7 @@ var codeFacts = map[string]struct {
 	ledger.CodeSystemRole:         {422, "A system account is missing"},
 	ledger.CodeRuleAccount:        {422, "The line is on an account the rule posts to"},
 	ledger.CodeLineCurrency:       {422, "A line is in another currency"},
+	ledger.CodeSpread:             {422, "A line's spread is not one the rules allow"},
 	journal.CodeNotOpening:        {404, "Not the opening balances"},
 	journal.CodeNoBooksStart:      {409, "The books start is not set"},
 	ledger.CodeNoDate:             {422, "The journal has no date"},

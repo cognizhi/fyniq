@@ -42,6 +42,11 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **THEN** it revalues each open period that ended before the organisation's today and is due, once every currency has a rate for its last day
 - **AND** one without a rate waits, with an audit event that says why, and the next day's run tries again
 
+#### Scenario: Releases of bills' spread costs run hourly (rev 0.83)
+- **WHEN** the tick runs `bills.releases`, hourly at twenty to
+- **THEN** it posts the releases of bills' spread costs due by each organisation's own today (FR-GL-03, ENG-05), as `scheduler:bills.releases`
+- **AND** one whose date no open period covers waits, with an audit event, and the next run tries again
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 

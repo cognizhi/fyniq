@@ -437,6 +437,51 @@ func (q *Queries) SetDocumentVersion(ctx context.Context, arg SetDocumentVersion
 	return err
 }
 
+const spreadBills = `-- name: SpreadBills :many
+SELECT d.id
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+WHERE d.type = 'bill' AND d.status = 'posted'
+  AND EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v.payload->'lines') l
+    WHERE coalesce(l->>'spread_months', '') <> ''
+      AND (v.payload->>'date' >= $1::text
+        OR to_char(to_date(coalesce(nullif(l->>'spread_from', ''), v.payload->>'date'), 'YYYY-MM-DD')
+                   + make_interval(months => (l->>'spread_months')::int), 'YYYY-MM-DD') > $1::text))
+  AND ($2::uuid IS NULL OR d.id > $2::uuid)
+ORDER BY d.id
+LIMIT $3
+`
+
+type SpreadBillsParams struct {
+	FromDay string
+	AfterID *uuid.UUID
+	MaxRows int32
+}
+
+// Posted bills whose current version spreads a line's cost over months (FR-GL-03, ENG-05; rev 0.83) with releases a
+// period from from_day on may still take: a spread that runs past that day, or a bill dated on or after it, whose
+// earlier months release on its date. By ID after a cursor. A spread with no first month starts in the bill's month.
+func (q *Queries) SpreadBills(ctx context.Context, arg SpreadBillsParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, spreadBills, arg.FromDay, arg.AfterID, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const waitingReversals = `-- name: WaitingReversals :many
 SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
        coalesce(v.payload->>'date', '')::text AS date
