@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Payments of suppliers' bills recorded by hand: FR-AP-02, FR-AR-18, ENG-41, INV-05, FM-1, FR-GL-12 (PRD-001 rev 0.77, provisional) |
+| Feature and requirement IDs | Payments of suppliers' bills recorded by hand, and supplier credits applied to bills: FR-AP-02, FR-AP-03, FR-AR-18, ENG-41, INV-05, FM-1, FR-GL-12 (PRD-001 rev 0.77 and 0.81, provisional) |
 | Author, reviewer, date | Claude Code for the founders, 23 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
 | Data and its class | The money account a payment left, its date, amounts and the bank's reference (internal); the bills it settles; who recorded and who voided it, with the reason. No bank account numbers, payee bank details or secrets |
 | Who acts | The Accountant (P on "Bills, vendor credits") records and voids; in Founder mode another member who holds A on that row approves a void; the API's database role `fyniq_api` |
@@ -29,6 +29,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
 | T5 | API ↔ database | Tampering: the base-only line that clears a bill's residual is used to move a balance without an amount (INV-05) | A base value changed with no transaction behind it | Low |
 | T6 | person ↔ API | Spoofing: the AI or an integration records or voids a payment | A posting no person stands behind | Low |
 | T7 | person ↔ API | Tampering: a retried request records the payment twice | A bill settled twice and the bank credited twice | Medium |
+| T8 | person ↔ API | Tampering (rev 0.81): a credit is applied to a bill beyond what either has open, or applied twice, or the credit or payment behind it is voided while it stands | A bill shown settled by a credit that no longer exists; 2010 and the sub-ledger apart | Low |
 
 ## 3. What we do about it
 
@@ -41,6 +42,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
 | T5 | `journal_line_base_only` accepts a base-only line from a bill payment only on the accounts-payable account and at most 1.00 in the base currency (FY008); every other line keeps INV-05's RND-FX check | `TestAttackAllocationsAndBaseOnlyResiduals`, `TestTheLastPartOfABillClearsWhatIsLeft` |
 | T6 | Recording and voiding need a person or a client with P on the row; the AI holds no write on bills (§9.6) | `TestAuthorisationMatrix` |
 | T7 | `recordBillPayment` takes an Idempotency-Key: a retry gets the saved answer and records nothing; a second record of the same money is still possible without the key, and the bank reconciliation shows it | The API conventions' idempotency tests |
+| T8 | An application locks the bill and the credit, refuses more than either has open (CREDIT-05), and records both allocations in one transaction; a vendor credit or a payment whose credit is applied is voided only once its applications are (CREDIT-08); the database reverses an application that posted nothing only with the reversal of its allocations (FY056); the close's INV-07 check sees any posting and document that disagree | `TestCreditsAreAppliedToBills`, `TestCreditApplicationsThroughTheAPI` |
 
 ## 4. What remains
 

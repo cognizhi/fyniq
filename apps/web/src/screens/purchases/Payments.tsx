@@ -263,13 +263,29 @@ function VoidPayment({ open, payment, minDate, ask, onClose, onDone }: { open: b
     if (!reason.trim()) return setMissing(true);
     setBusy(true);
     setProblem(null);
+    const body = { date: on, reason: reason.trim() };
+    if (payment.via === "application") {
+      // A credit applied to the bill (FR-AP-03): voided through the application, which reopens the bill and the credit.
+      const path = { application_id: payment.payment_id };
+      const read = await api.GET("/v1/credit-applications/{application_id}", { params: { path } });
+      if (!read.data) {
+        setBusy(false);
+        return setProblem(problemOf(read.error));
+      }
+      const params = { path, header: { "If-Match": read.response.headers.get("ETag") ?? "", "Idempotency-Key": newKey() } };
+      const out = ask
+        ? await guarded(confirm, () => api.POST("/v1/credit-applications/{application_id}/void-approval", { params, body }))
+        : await guarded(confirm, () => api.POST("/v1/credit-applications/{application_id}/void", { params, body }));
+      setBusy(false);
+      if (!out.data) return setProblem(problemOf(out.error));
+      return onDone(ask ? "Asked for approval: the credit is unapplied when another person approves it." : "Voided: the bill and the credit are open again by what was applied.");
+    }
     const read = await api.GET("/v1/bill-payments/{payment_id}", { params: { path: { payment_id: payment.payment_id } } });
     if (!read.data) {
       setBusy(false);
       return setProblem(problemOf(read.error));
     }
     const params = { path: { payment_id: payment.payment_id }, header: { "If-Match": read.response.headers.get("ETag") ?? "", "Idempotency-Key": newKey() } };
-    const body = { date: on, reason: reason.trim() };
     if (ask) {
       const out = await guarded(confirm, () => api.POST("/v1/bill-payments/{payment_id}/void-approval", { params, body }));
       setBusy(false);
@@ -391,7 +407,7 @@ export function Payments({ bill, mayVoid, ask, onDone }: { bill: Bill; mayVoid: 
                 ) : (
                   <span className="fy-chip fy-chip--good">
                     <Icon of={Banknote} />
-                    Recorded
+                    {p.via === "application" ? "Applied" : "Recorded"}
                   </span>
                 )}
               </td>

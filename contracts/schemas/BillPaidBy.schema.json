@@ -15,7 +15,7 @@
       "type": "string"
     },
     "payment_id": {
-      "description": "The payment.",
+      "description": "The payment, or the application.",
       "examples": [
         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"
       ],
@@ -23,7 +23,7 @@
       "type": "string"
     },
     "payment_number": {
-      "description": "Its number.",
+      "description": "The payment's number; for an application, the other document's: the credit's on a bill, the bill's on a credit.",
       "examples": [
         "PAY-0003"
       ],
@@ -32,6 +32,17 @@
     "realised_fx": {
       "$ref": "Money.schema.json",
       "description": "The realised gain (positive) or loss (negative) it made, in the base currency (ENG-41)."
+    },
+    "via": {
+      "description": "payment: a payment of bills; application: a supplier credit applied (FR-AP-03).",
+      "enum": [
+        "payment",
+        "application"
+      ],
+      "examples": [
+        "payment"
+      ],
+      "type": "string"
     },
     "voided": {
       "description": "true once the payment was voided: it no longer settles the bill.",
@@ -42,6 +53,7 @@
     }
   },
   "required": [
+    "via",
     "payment_id",
     "date",
     "amount",

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
+	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -201,6 +202,14 @@ func (s BillPayments) Void(ctx context.Context, org, id uuid.UUID, date time.Tim
 		}
 		if err := lockBills(ctx, u, partIDs(d)); err != nil {
 			return err
+		}
+		applied, err := u.Allocations().Settled(ctx, []uuid.UUID{doc.ID}) // its unapplied amount applied to bills since
+		if err != nil {
+			return err
+		}
+		if x, ok := applied[doc.ID]; ok && !isZeroDecimal(string(x)) {
+			return &credits.Error{Code: credits.CodeApplied, Message: fmt.Sprintf("%s of what the payment left unapplied is applied to bills", x),
+				Fix: "Void those applications first, then void the payment"}
 		}
 		stored, err := u.Ledger().ByIdentity(ctx, ledger.BillPaymentIdentity(doc.ID, doc.Version, ledger.RuleBillPayment))
 		if err != nil {

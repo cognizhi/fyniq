@@ -431,6 +431,12 @@ var (
 	RequestBillPaymentVoid = Policy{Operation: "requestBillPaymentVoid", Capability: Bills, Need: Post}
 	// AP ageing and the bills to pay (FR-AP-06) are read under V on "Bills, vendor credits", as the bills are.
 	GetPayables = Policy{Operation: "getPayables", Capability: Bills, Need: View}
+	// Applying a supplier credit to a bill (FR-AP-03, FR-AR-18) may post the realised FX, so it is posting (P); voiding one is
+	// FM-1's void of a posted document, asked for and approved by another person who holds A in Founder mode.
+	GetCreditApplication         = Policy{Operation: "getCreditApplication", Capability: Bills, Need: View}
+	ApplyCredit                  = Policy{Operation: "applyCredit", Capability: Bills, Need: Post}
+	VoidCreditApplication        = Policy{Operation: "voidCreditApplication", Capability: Bills, Need: Post}
+	RequestCreditApplicationVoid = Policy{Operation: "requestCreditApplicationVoid", Capability: Bills, Need: Post}
 	// A journal's evidence needs the evidence right and the right to view the journal (FR-DOC-05, FR-DOC-11).
 	// The AI's cell is a proposal (doc.attach): an AI or MCP client never uploads, lists or reads evidence here.
 	AddJournalEvidence = Policy{Operation: "addJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
@@ -547,6 +553,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
+	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

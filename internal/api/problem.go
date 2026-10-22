@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
+	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
@@ -309,6 +310,15 @@ var codeFacts = map[string]struct {
 	billpayment.CodeTooLong:       {422, "A text of the payment is too long"},
 	billpayment.CodeTooMany:       {422, "The payment settles too many bills"},
 	CodePaymentVoidApproval:       {409, "Voiding needs a second person"},
+	credits.CodeNotApplication:    {404, "Not a credit application"},
+	credits.CodeBadDraft:          {422, "The saved application cannot be read"},
+	credits.CodeCredit:            {422, "Not a posted vendor credit or a payment with an amount unapplied"},
+	credits.CodeBill:              {422, "Not a posted bill of the credit's supplier in its currency"},
+	credits.CodeTooMuch:           {422, "More than the bill has open or the credit has left"},
+	credits.CodeNotPosted:         {409, "The application is not posted"},
+	credits.CodeVoidDate:          {422, "The void is dated before the application"},
+	credits.CodeApplied:           {409, "The credit is applied to bills"},
+	CodeApplicationVoidApproval:   {409, "Voiding needs a second person"},
 	ledger.CodeNotMoneyAccount:    {422, "Not an active money account"},
 	ledger.CodePaymentAmount:      {422, "A payment's amount is not positive or not in its currency"},
 	ledger.CodePaidAmount:         {422, "What a base-currency account paid is missing or not wanted"},
@@ -495,6 +505,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		je  *journal.Error
 		be  *bill.Error
 		bpe *billpayment.Error
+		cre *credits.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -518,6 +529,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(be.Code, sentence(be.Message), sentence(be.Fix))
 	case errors.As(err, &bpe):
 		return problem(bpe.Code, sentence(bpe.Message), sentence(bpe.Fix))
+	case errors.As(err, &cre):
+		return problem(cre.Code, sentence(cre.Message), sentence(cre.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &ae):

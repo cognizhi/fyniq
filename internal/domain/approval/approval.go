@@ -33,17 +33,18 @@ const Schema = "fyniq.approval-envelope/1"
 
 // The object types approvals cover in this slice.
 const (
-	ObjectSetting    = "organisation_setting" // an organisation setting under dual control (FR-ORG-08, FM-1)
-	ObjectMembership = "membership"           // a member's roles after the founder bootstrap (FR-ADM-01, FM-1)
-	ObjectInvitation = "member_invitation"    // an invitation with roles after the founder bootstrap (FR-ADM-01, FM-1)
-	ObjectPolicy     = "approval_policy"      // an object type's approval policy (FR-APR-09, SOD-8); its key is that object type
-	ObjectPack       = "statutory_pack"       // a statutory pack version the organisation activates (ENG-32, SOD-10); its key is the version's id
-	ObjectTeamMode   = "team_mode"            // the organisation's team mode (§6.4, FR-ADM-04); its key is TeamModeKey
-	ObjectPeriod     = "period"               // a closed accounting period to reopen (FR-GL-08, FM-1); its key is the period's id
-	ObjectJournal    = "journal"              // a manual journal to post above the threshold, to void or to edit (FR-GL-01, FR-GL-12, FM-1, FM-2); its key is its id
-	ObjectOpening    = "opening_balance"      // the posted opening balances to change (FR-GL-06, FM-1); its key is their document's id
-	ObjectBill       = "bill"                 // a supplier's bill to post above the threshold, to void or to edit (FR-AP-02, FR-GL-12, FM-1, FM-2); its key is its id
-	ObjectPayment    = "bill_payment"         // a payment of bills recorded by hand, to void (FR-AP-02, FR-GL-12, FM-1); its key is its id
+	ObjectSetting     = "organisation_setting" // an organisation setting under dual control (FR-ORG-08, FM-1)
+	ObjectMembership  = "membership"           // a member's roles after the founder bootstrap (FR-ADM-01, FM-1)
+	ObjectInvitation  = "member_invitation"    // an invitation with roles after the founder bootstrap (FR-ADM-01, FM-1)
+	ObjectPolicy      = "approval_policy"      // an object type's approval policy (FR-APR-09, SOD-8); its key is that object type
+	ObjectPack        = "statutory_pack"       // a statutory pack version the organisation activates (ENG-32, SOD-10); its key is the version's id
+	ObjectTeamMode    = "team_mode"            // the organisation's team mode (§6.4, FR-ADM-04); its key is TeamModeKey
+	ObjectPeriod      = "period"               // a closed accounting period to reopen (FR-GL-08, FM-1); its key is the period's id
+	ObjectJournal     = "journal"              // a manual journal to post above the threshold, to void or to edit (FR-GL-01, FR-GL-12, FM-1, FM-2); its key is its id
+	ObjectOpening     = "opening_balance"      // the posted opening balances to change (FR-GL-06, FM-1); its key is their document's id
+	ObjectBill        = "bill"                 // a supplier's bill to post above the threshold, to void or to edit (FR-AP-02, FR-GL-12, FM-1, FM-2); its key is its id
+	ObjectPayment     = "bill_payment"         // a payment of bills recorded by hand, to void (FR-AP-02, FR-GL-12, FM-1); its key is its id
+	ObjectApplication = "credit_application"   // a supplier credit applied to a bill, to void (FR-AP-03, FR-GL-12, FM-1); its key is its id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -51,22 +52,23 @@ const TeamModeKey = "organisation"
 
 // The operations: what executes on the final approval.
 const (
-	OpSettingChange  = "organisation_setting.change"
-	OpRoleAssign     = "role.assign"
-	OpRoleRevoke     = "role.revoke"
-	OpInvite         = "member_invitation.create"
-	OpPolicyChange   = "approval_policy.change"
-	OpPackActivate   = "statutory_pack.activate"
-	OpTeamModeChange = "team_mode.change"
-	OpPeriodReopen   = "period.reopen"
-	OpJournalPost    = "journal.post"
-	OpJournalReverse = "journal.reverse"
-	OpJournalEdit    = "journal.edit"
-	OpOpeningEdit    = "opening_balance.edit"
-	OpBillPost       = "bill.post"
-	OpBillVoid       = "bill.void"
-	OpBillEdit       = "bill.edit"
-	OpPaymentVoid    = "bill_payment.void"
+	OpSettingChange   = "organisation_setting.change"
+	OpRoleAssign      = "role.assign"
+	OpRoleRevoke      = "role.revoke"
+	OpInvite          = "member_invitation.create"
+	OpPolicyChange    = "approval_policy.change"
+	OpPackActivate    = "statutory_pack.activate"
+	OpTeamModeChange  = "team_mode.change"
+	OpPeriodReopen    = "period.reopen"
+	OpJournalPost     = "journal.post"
+	OpJournalReverse  = "journal.reverse"
+	OpJournalEdit     = "journal.edit"
+	OpOpeningEdit     = "opening_balance.edit"
+	OpBillPost        = "bill.post"
+	OpBillVoid        = "bill.void"
+	OpBillEdit        = "bill.edit"
+	OpPaymentVoid     = "bill_payment.void"
+	OpApplicationVoid = "credit_application.void"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -75,7 +77,7 @@ var Operations = map[string]string{
 	OpSettingChange: ObjectSetting, OpRoleAssign: ObjectMembership, OpRoleRevoke: ObjectMembership, OpInvite: ObjectInvitation,
 	OpPolicyChange: ObjectPolicy, OpPackActivate: ObjectPack, OpTeamModeChange: ObjectTeamMode, OpPeriodReopen: ObjectPeriod,
 	OpJournalPost: ObjectJournal, OpJournalReverse: ObjectJournal, OpJournalEdit: ObjectJournal, OpOpeningEdit: ObjectOpening,
-	OpBillPost: ObjectBill, OpBillVoid: ObjectBill, OpBillEdit: ObjectBill, OpPaymentVoid: ObjectPayment,
+	OpBillPost: ObjectBill, OpBillVoid: ObjectBill, OpBillEdit: ObjectBill, OpPaymentVoid: ObjectPayment, OpApplicationVoid: ObjectApplication,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -104,22 +106,25 @@ var Dependencies = map[string][]string{
 	ObjectBill: {"bill_version", "status", "payable"},
 	// the payment's status, and what it paid in the base currency
 	ObjectPayment: {"status", "paid"},
+	// the application's status, and the amount it applied
+	ObjectApplication: {"status", "applied"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
 // person see a request. A policy narrows who signs among them and never adds anyone.
 var Rows = map[string]string{
-	ObjectSetting:    "Organisation profile, financial year, defaults (rev 0.29)",
-	ObjectMembership: "Users, roles, team mode",
-	ObjectInvitation: "Users, roles, team mode",
-	ObjectPolicy:     "Approval policies, AI catalogue",
-	ObjectPack:       "Statutory parameters",
-	ObjectTeamMode:   "Users, roles, team mode",
-	ObjectPeriod:     "Period close / reopen",
-	ObjectJournal:    "Journals",
-	ObjectOpening:    "Journals",
-	ObjectBill:       "Bills, vendor credits",
-	ObjectPayment:    "Bills, vendor credits",
+	ObjectSetting:     "Organisation profile, financial year, defaults (rev 0.29)",
+	ObjectMembership:  "Users, roles, team mode",
+	ObjectInvitation:  "Users, roles, team mode",
+	ObjectPolicy:      "Approval policies, AI catalogue",
+	ObjectPack:        "Statutory parameters",
+	ObjectTeamMode:    "Users, roles, team mode",
+	ObjectPeriod:      "Period close / reopen",
+	ObjectJournal:     "Journals",
+	ObjectOpening:     "Journals",
+	ObjectBill:        "Bills, vendor credits",
+	ObjectPayment:     "Bills, vendor credits",
+	ObjectApplication: "Bills, vendor credits",
 }
 
 // The limits of a policy.
@@ -154,17 +159,18 @@ func Label(objectType string, n int) string { return fmt.Sprintf("%s/v%d", objec
 // the Controller for policies and statutory packs, Appendix D). The policy for approval policies is fixed, so no change can lock an
 // organisation out of changing its policies (rev 0.40).
 var Policies = map[string]Policy{
-	ObjectSetting:    {ObjectType: ObjectSetting, Version: "founder/organisation_setting@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
-	ObjectMembership: {ObjectType: ObjectMembership, Version: "founder/membership@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
-	ObjectInvitation: {ObjectType: ObjectInvitation, Version: "founder/member_invitation@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
-	ObjectPolicy:     {ObjectType: ObjectPolicy, Version: "founder/approval_policy@2026-10-20.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
-	ObjectPack:       {ObjectType: ObjectPack, Version: "founder/statutory_pack@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
-	ObjectTeamMode:   {ObjectType: ObjectTeamMode, Version: "founder/team_mode@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
-	ObjectPeriod:     {ObjectType: ObjectPeriod, Version: "founder/period@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
-	ObjectJournal:    {ObjectType: ObjectJournal, Version: "founder/journal@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
-	ObjectOpening:    {ObjectType: ObjectOpening, Version: "founder/opening_balance@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
-	ObjectBill:       {ObjectType: ObjectBill, Version: "founder/bill@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
-	ObjectPayment:    {ObjectType: ObjectPayment, Version: "founder/bill_payment@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
+	ObjectSetting:     {ObjectType: ObjectSetting, Version: "founder/organisation_setting@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectMembership:  {ObjectType: ObjectMembership, Version: "founder/membership@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectInvitation:  {ObjectType: ObjectInvitation, Version: "founder/member_invitation@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPolicy:      {ObjectType: ObjectPolicy, Version: "founder/approval_policy@2026-10-20.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
+	ObjectPack:        {ObjectType: ObjectPack, Version: "founder/statutory_pack@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectTeamMode:    {ObjectType: ObjectTeamMode, Version: "founder/team_mode@2026-10-20.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPeriod:      {ObjectType: ObjectPeriod, Version: "founder/period@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
+	ObjectJournal:     {ObjectType: ObjectJournal, Version: "founder/journal@2026-10-21.1", Steps: []Step{{Quorum: 1}}},
+	ObjectOpening:     {ObjectType: ObjectOpening, Version: "founder/opening_balance@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
+	ObjectBill:        {ObjectType: ObjectBill, Version: "founder/bill@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPayment:     {ObjectType: ObjectPayment, Version: "founder/bill_payment@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
+	ObjectApplication: {ObjectType: ObjectApplication, Version: "founder/credit_application@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
