@@ -69,7 +69,10 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `TestPostCreditApplication`, `TestCreditsAreAppliedToBills`, `TestCreditApplicationsThroughTheAPI`. 23 Oct 2026, rev
   0.82: refunds by `supplier_refund@1`, `journal.SupplierRefunds`, the API and the void's approval. Tests
   `TestPostSupplierRefund`, `TestSuppliersRefundCredits`, `TestSupplierRefundsThroughTheAPI`)
-- [ ] 4.2 The credit variant of the bill record: apply or refund
+- [x] 4.2 The credit variant of the bill record: apply or refund
+  (23 Oct 2026: New credit note and the Credit notes list on Purchases › Bills; on a posted credit note, Apply to a
+  bill and Record refund; Part applied and Applied; its applications and refunds under Payments. Tests
+  `bills.test.tsx` "A credit note"; checked in a browser at the five frames)
 
 ## 5. Ageing, the board and paying on time
 

@@ -251,3 +251,76 @@ describe("A bill's payments", () => {
     expect(paymentOf(posted, "SGD", { ...f, amount: "0" }).errors.amount).toBe("Enter what was paid of the bill in SGD, such as 400.00.");
   });
 });
+
+// req: FR-AP-03
+describe("A credit note", () => {
+  const credit: Bill = {
+    ...posted,
+    id: "c9",
+    kind: "vendor_credit",
+    number: "VC-0001",
+    supplier_ref: "CN-12",
+    total: { amount: "218.00", currency: "SGD" },
+    payable: { amount: "218.00", currency: "SGD" },
+    open: { amount: "218.00", currency: "SGD" },
+    states: states({ approval: "approved", ledger: "posted" }),
+  };
+  const openBill: Bill = { ...posted, id: "b7", number: "BILL-0007", open: { amount: "100.00", currency: "SGD" } };
+  const other: Bill = { ...posted, id: "b8", number: "BILL-0008", supplier: { id: "c2", name: "Vercel Inc" }, open: { amount: "50.00", currency: "SGD" } };
+
+  it("is entered as a bill is and saved with its kind", async () => {
+    const sent = answer({ ...reads, "POST /v1/bills": { status: 201, body: { ...credit, status: "draft" } } });
+    renderPage(BillPage, { path: "/purchases/credits/new", session: accountant, organisation: standard });
+    expect(await screen.findByRole("heading", { name: "New credit note" })).toBeTruthy();
+    await screen.findByRole("option", { name: "Atlassian Pty Ltd" });
+    fireEvent.change(screen.getByLabelText("Supplier"), { target: { value: "c1" } });
+    fireEvent.change(screen.getByLabelText("Their credit note number"), { target: { value: "CN-12" } });
+    expect(screen.queryByLabelText("Due date")).toBeNull();
+    await screen.findByRole("option", { name: /6120 Software subscriptions/ });
+    fireEvent.change(screen.getByLabelText("What it is for"), { target: { value: "a6120" } });
+    await screen.findByRole("option", { name: /^TX:/ });
+    fireEvent.change(screen.getByLabelText("Amount before GST (SGD)"), { target: { value: "200.00" } });
+    fireEvent.change(screen.getByLabelText("GST as stated (SGD)"), { target: { value: "18.00" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as a draft" }));
+    await waitFor(() => expect(sent.some((x) => x.method === "POST" && x.path === "/v1/bills")).toBe(true));
+    expect(sent.find((x) => x.method === "POST")!.body).toMatchObject({ kind: "vendor_credit", supplier_ref: "CN-12" });
+  });
+
+  it("is applied to one of its supplier's open bills, the lesser of the two by default; axe finds nothing", async () => {
+    const sent = answer({
+      ...reads,
+      "GET /v1/bills/c9": read(credit),
+      "GET /v1/bills": { status: 200, body: { items: [openBill, other] } },
+      "POST /v1/credit-applications": { status: 201, body: { application: { amount: { amount: "100.00", currency: "SGD" }, bill: { id: "b7", kind: "bill", number: "BILL-0007" } } } },
+    });
+    const { container } = renderPage(BillPage, { path: "/purchases/bills/c9", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    expect(await screen.findByText(/218.00 SGD left/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Record payment…" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Apply to a bill…" }));
+    const dialog = await screen.findByRole("dialog");
+    await within(dialog).findByRole("option", { name: /BILL-0007/ });
+    expect(within(dialog).queryByRole("option", { name: /BILL-0008/ })).toBeNull(); // another supplier's
+    fireEvent.change(within(dialog).getByLabelText("Bill"), { target: { value: "b7" } });
+    expect((within(dialog).getByLabelText("Amount to apply (SGD)") as HTMLInputElement).value).toBe("100.00");
+    await noViolations(container);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Apply to a bill" }));
+    await waitFor(() => expect(sent.some((x) => x.path === "/v1/credit-applications")).toBe(true));
+    expect(sent.find((x) => x.path === "/v1/credit-applications")!.body).toMatchObject({ credit_id: "c9", bill_id: "b7", amount: { amount: "100.00", currency: "SGD" } });
+  });
+
+  it("records a refund from the supplier into a money account", async () => {
+    const sent = answer({
+      ...reads,
+      "GET /v1/bills/c9": read(credit),
+      "POST /v1/supplier-refunds": { status: 201, body: { refund: { number: "RF-0001", amount: { amount: "218.00", currency: "SGD" } }, entry: {} } },
+    });
+    renderPage(BillPage, { path: "/purchases/bills/c9", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    fireEvent.click(await screen.findByRole("button", { name: "Record refund…" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading", { name: "Record a refund of this credit note" })).toBeTruthy();
+    expect((within(dialog).getByLabelText("Amount refunded (SGD)") as HTMLInputElement).value).toBe("218.00");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record refund" }));
+    await waitFor(() => expect(sent.some((x) => x.path === "/v1/supplier-refunds")).toBe(true));
+    expect(sent.find((x) => x.path === "/v1/supplier-refunds")!.body).toMatchObject({ credit_id: "c9", money_account_id: "a1010", amount: { amount: "218.00", currency: "SGD" } });
+  });
+});

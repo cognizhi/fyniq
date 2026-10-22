@@ -1,4 +1,5 @@
-import { Banknote, Undo2, UserCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Banknote, Link2, Undo2, UserCheck } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -7,7 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
-import { typed } from "../../format/decimal";
+import { minus, sign, typed } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
@@ -34,6 +35,7 @@ export function paymentOf(
   bill: Bill,
   base: string,
   f: { date: string; account: string; accountCurrency: string; amount: string; rate: string; paid: string; reference: string },
+  refund = false,
 ): { payment?: PaymentDraft; errors: Errors } {
   const errors: Errors = {};
   const amount = typed(f.amount);
@@ -41,11 +43,12 @@ export function paymentOf(
   const fromBase = foreign && f.accountCurrency === base;
   const rate = f.rate.trim();
   const paid = typed(f.paid);
-  if (!f.date) errors.date = "Enter the day the money left the account.";
-  if (!f.account) errors.account = "Choose the account the money left.";
-  if (amount === null || amount === "" || /^-|^0(\.0*)?$/.test(amount)) errors.amount = `Enter what was paid of the bill in ${bill.currency}, such as 400.00.`;
+  if (!f.date) errors.date = refund ? "Enter the day the money came into the account." : "Enter the day the money left the account.";
+  if (!f.account) errors.account = refund ? "Choose the account the money came into." : "Choose the account the money left.";
+  if (amount === null || amount === "" || /^-|^0(\.0*)?$/.test(amount))
+    errors.amount = refund ? `Enter what the supplier paid back in ${bill.currency}, such as 100.00.` : `Enter what was paid of the bill in ${bill.currency}, such as 400.00.`;
   if (foreign && !fromBase && rate && !/^(0|[1-9]\d{0,9})(\.\d{1,10})?$/.test(rate)) errors.rate = `Enter the rate as ${base} for 1 ${bill.currency}, such as 1.3472, or leave it blank to take the day's rate.`;
-  if (fromBase && (paid === null || paid === "")) errors.paid = `Enter what the account paid in ${base}, as the statement shows it.`;
+  if (fromBase && (paid === null || paid === "")) errors.paid = `Enter what the account ${refund ? "received" : "paid"} in ${base}, as the statement shows it.`;
   if (Object.keys(errors).length > 0) return { errors };
   return {
     errors,
@@ -62,13 +65,39 @@ export function paymentOf(
   };
 }
 
+// The words of a payment of a bill, and of a refund of a credit note: the same form, money going the other way.
+const paymentWords = {
+  help: "bill.record-payment",
+  title: "Record a payment of this bill",
+  description: (who: string) => `For money that has already left the bank. It posts at once: what the company owes ${who} goes down by what was paid.`,
+  refused: "The payment was not recorded",
+  date: "Date paid",
+  account: "Paid from",
+  amount: "Amount paid of the bill",
+  amountHelp: "Pay part of it, or all that is open.",
+  received: "What the account paid",
+};
+const refundWords = {
+  help: "credit.refund",
+  title: "Record a refund of this credit note",
+  description: (who: string) => `For money ${who} has already paid back. It posts at once: the credit with them goes down by what came in.`,
+  refused: "The refund was not recorded",
+  date: "Date received",
+  account: "Paid into",
+  amount: "Amount refunded",
+  amountHelp: "Record part of it, or all that is left.",
+  received: "What the account received",
+};
+
 // RecordPayment records a payment the company made of a bill, by hand (FR-AP-02; the owner's decision of 22 Oct 2026):
-// the date, the money account it left and what it paid of the bill. It posts at once: the money has left already.
+// the date, the money account it left and what it paid of the bill. It posts at once: the money has left already. With
+// refund, it records money the supplier paid back against a credit note the same way (FR-AP-03).
 export function RecordPayment({
   open,
   bill,
   base,
   accounts,
+  refund = false,
   onClose,
   onDone,
 }: {
@@ -76,9 +105,11 @@ export function RecordPayment({
   bill: Bill;
   base: string;
   accounts: readonly Account[];
+  refund?: boolean;
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
+  const w = refund ? refundWords : paymentWords;
   const confirm = useConfirm();
   const id = useId();
   const choices = payable(accounts, bill, base);
@@ -86,7 +117,7 @@ export function RecordPayment({
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
-  const h = helpText("bill.record-payment");
+  const h = helpText(w.help);
   const accountCurrency = accounts.find((a) => a.id === f.account)?.currency || base;
   const foreign = bill.currency !== base;
   const fromBase = foreign && Boolean(f.account) && accountCurrency === base;
@@ -101,11 +132,20 @@ export function RecordPayment({
 
   const run = async (e: FormEvent) => {
     e.preventDefault();
-    const { payment, errors: errs } = paymentOf(bill, base, { ...f, accountCurrency });
+    const { payment, errors: errs } = paymentOf(bill, base, { ...f, accountCurrency }, refund);
     setErrors(errs);
     if (!payment) return;
     setBusy(true);
     setProblem(null);
+    if (refund) {
+      const body = { credit_id: bill.id, date: payment.date, money_account_id: payment.money_account_id, fx_rate: payment.fx_rate, received: payment.paid,
+        reference: payment.reference, amount: payment.bills?.[0]?.amount ?? { amount: "0", currency: bill.currency } };
+      const out = await guarded(confirm, () => api.POST("/v1/supplier-refunds", { params: { header: { "Idempotency-Key": newKey() } }, body }));
+      setBusy(false);
+      if (!out.data) return setProblem(problemOf(out.error));
+      const r = out.data.refund;
+      return onDone(`Recorded ${r.number ?? "the refund"}: ${formatAmount(r.amount.amount)} ${r.amount.currency} refunded.`);
+    }
     const out = await guarded(confirm, () => api.POST("/v1/bill-payments", { params: { header: { "Idempotency-Key": newKey() } }, body: payment }));
     setBusy(false);
     if (!out.data) return setProblem(problemOf(out.error));
@@ -119,14 +159,14 @@ export function RecordPayment({
       onOpenChange={(o) => !o && onClose()}
       dismissible={!busy}
       eyebrow={bill.number}
-      title="Record a payment of this bill"
-      description={`For money that has already left the bank. It posts at once: what the company owes ${bill.supplier?.name ?? "the supplier"} goes down by what was paid.`}
+      title={w.title}
+      description={w.description(bill.supplier?.name ?? "the supplier")}
     >
-      {problem && <Refusal problem={problem} title="The payment was not recorded" />}
+      {problem && <Refusal problem={problem} title={w.refused} />}
       <form className="fy-stack fy-stack--3" onSubmit={(e) => void run(e)} noValidate>
         <div className="fy-field">
           <label className="fy-label" htmlFor={`${id}-date`}>
-            Date paid
+            {w.date}
           </label>
           <input
             className="fy-input"
@@ -142,7 +182,7 @@ export function RecordPayment({
         </div>
         <div className="fy-field">
           <label className="fy-label" htmlFor={`${id}-account`}>
-            Paid from
+            {w.account}
           </label>
           <select
             className="fy-select"
@@ -168,7 +208,7 @@ export function RecordPayment({
         </div>
         <div className="fy-field">
           <label className="fy-label" htmlFor={`${id}-amount`}>
-            Amount paid of the bill ({bill.currency})
+            {w.amount} ({bill.currency})
           </label>
           <input
             className="fy-input fy-num"
@@ -181,7 +221,8 @@ export function RecordPayment({
           />
           {err("amount") ?? (
             <span className="fy-help" id={`${id}-amount-help`}>
-              {bill.open ? `${formatAmount(bill.open.amount)} ${bill.open.currency} is open. ` : ""}Pay part of it, or all that is open.
+              {bill.open ? `${formatAmount(bill.open.amount)} ${bill.open.currency} is ${refund ? "left" : "open"}. ` : ""}
+              {w.amountHelp}
             </span>
           )}
         </div>
@@ -209,7 +250,7 @@ export function RecordPayment({
         {fromBase && (
           <div className="fy-field">
             <label className="fy-label" htmlFor={`${id}-paid`}>
-              What the account paid ({base})
+              {w.received} ({base})
             </label>
             <input
               className="fy-input fy-num"
@@ -239,6 +280,134 @@ export function RecordPayment({
           </Button>
           <Button variant="primary" type="submit" disabled={busy} title={h.tooltip}>
             <Icon of={Banknote} />
+            {h.label}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+// ApplyCredit applies a credit note to one of its supplier's open bills in its currency (FR-AP-03): both go down by the
+// amount, at most what each has open (the server refuses more: CREDIT-05). In the base currency it posts nothing; across
+// rates the realised FX.
+export function ApplyCredit({ open, credit, onClose, onDone }: { open: boolean; credit: Bill; onClose: () => void; onDone: (message: string) => void }) {
+  const confirm = useConfirm();
+  const id = useId();
+  const h = helpText("credit.apply");
+  const left = credit.open?.amount ?? "0";
+  const bills = useQuery({
+    queryKey: ["bills", "open", credit.supplier?.id, credit.currency],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/bills", { params: { query: { status: "posted", page_size: 500 } } });
+      if (error) throw error;
+      return (data.items ?? []).filter((b) => b.supplier?.id === credit.supplier?.id && b.currency === credit.currency && b.open && sign(b.open.amount) > 0);
+    },
+  });
+  const [billId, setBillId] = useState("");
+  const [amount, setAmount] = useState(left);
+  const [on, setOn] = useState(today);
+  const [errors, setErrors] = useState<Errors>({});
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const choose = (bid: string) => {
+    setBillId(bid);
+    const b = (bills.data ?? []).find((x) => x.id === bid);
+    if (b?.open) setAmount(sign(minus(b.open.amount, left)) < 0 ? b.open.amount : left); // the lesser of the two
+  };
+  const run = async (e: FormEvent) => {
+    e.preventDefault();
+    const typedAmount = typed(amount);
+    const errs: Errors = {};
+    if (!billId) errs.bill = "Choose the bill the credit settles.";
+    if (typedAmount === null || typedAmount === "" || sign(typedAmount) <= 0) errs.amount = `Enter what to apply in ${credit.currency}, such as 100.00.`;
+    if (!on) errs.date = "Enter the day the credit is applied.";
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/credit-applications", {
+        params: { header: { "Idempotency-Key": newKey() } },
+        body: { credit_id: credit.id, bill_id: billId, date: on, amount: { amount: typedAmount ?? "0", currency: credit.currency } },
+      }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    const x = out.data.application;
+    onDone(`Applied ${formatAmount(x.amount.amount)} ${x.amount.currency} to ${x.bill.number ?? "the bill"}.`);
+  };
+  const err = (k: string) =>
+    errors[k] ? (
+      <span className="fy-error" id={`${id}-${k}-error`}>
+        {errors[k]}
+      </span>
+    ) : null;
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      dismissible={!busy}
+      eyebrow={credit.number}
+      title="Apply this credit to a bill"
+      description={`The bill and the credit both go down by the amount. ${formatAmount(left)} ${credit.currency} of the credit is left.`}
+    >
+      {problem && <Refusal problem={problem} title="The credit was not applied" />}
+      <form className="fy-stack fy-stack--3" onSubmit={(e) => void run(e)} noValidate>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-bill`}>
+            Bill
+          </label>
+          <select
+            className="fy-select"
+            id={`${id}-bill`}
+            value={billId}
+            onChange={(e) => choose(e.target.value)}
+            aria-invalid={Boolean(errors.bill) || undefined}
+            aria-describedby={errors.bill ? `${id}-bill-error` : `${id}-bill-help`}
+          >
+            <option value="">Choose a bill</option>
+            {(bills.data ?? []).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.number ?? "A bill"}
+                {b.supplier_ref ? ` (${b.supplier_ref})` : ""} · {formatAmount(b.open?.amount ?? "0")} {b.currency} open
+              </option>
+            ))}
+          </select>
+          {err("bill") ?? (
+            <span className="fy-help" id={`${id}-bill-help`}>
+              {bills.data && bills.data.length === 0 ? `${credit.supplier?.name ?? "The supplier"} has no open bill in ${credit.currency}.` : `${credit.supplier?.name ?? "The supplier"}'s posted bills in ${credit.currency} with something open.`}
+            </span>
+          )}
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-amount`}>
+            Amount to apply ({credit.currency})
+          </label>
+          <input
+            className="fy-input fy-num"
+            id={`${id}-amount`}
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            aria-invalid={Boolean(errors.amount) || undefined}
+            aria-describedby={errors.amount ? `${id}-amount-error` : undefined}
+          />
+          {err("amount")}
+        </div>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-date`}>
+            Date applied
+          </label>
+          <input className="fy-input" id={`${id}-date`} type="date" value={on} min={credit.date} onChange={(e) => setOn(e.target.value)} aria-describedby={errors.date ? `${id}-date-error` : undefined} />
+          {err("date")}
+        </div>
+        <div className="fy-row justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="primary" type="submit" disabled={busy} title={h.tooltip}>
+            <Icon of={Link2} />
             {h.label}
           </Button>
         </div>
@@ -386,7 +555,7 @@ export function Payments({ bill, mayVoid, ask, onDone }: { bill: Bill; mayVoid: 
         </h2>
         {bill.open && (
           <span className="fy-small fy-muted">
-            {formatAmount(bill.open.amount)} {bill.open.currency} open
+            {formatAmount(bill.open.amount)} {bill.open.currency} {bill.kind === "vendor_credit" ? "left" : "open"}
           </span>
         )}
       </div>

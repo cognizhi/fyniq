@@ -30,7 +30,7 @@ const filters: [Status | "", string][] = [
 
 // StateChips are a bill's separate states (FR-AP-02): where its approval stands, whether it is posted or voided, what
 // payments settle of it, and whether it is overdue. Each chip carries its icon and its words: colour never says it alone.
-export function StateChips({ states }: { states: States }) {
+export function StateChips({ states, credit = false }: { states: States; credit?: boolean }) {
   return (
     <span className="fy-row fy-row--wrap gap-2">
       {states.ledger === "posted" && (
@@ -66,13 +66,13 @@ export function StateChips({ states }: { states: States }) {
       {states.ledger === "posted" && states.payment === "part_paid" && (
         <span className="fy-chip fy-chip--info">
           <Icon of={Wallet} />
-          Part paid
+          {credit ? "Part applied" : "Part paid"}
         </span>
       )}
       {states.ledger === "posted" && states.payment === "paid" && (
         <span className="fy-chip fy-chip--good">
           <Icon of={Banknote} />
-          Paid
+          {credit ? "Applied" : "Paid"}
         </span>
       )}
       {states.due === "overdue" && (
@@ -94,14 +94,15 @@ export const total = (b: Bill) => `${formatAmount(b.total.amount)} ${b.total.cur
 export function Bills() {
   const { session, organisation } = useSignedIn();
   const [status, setStatus] = useState<Status | "">("");
+  const [kind, setKind] = useState<Bill["kind"]>("bill");
   const [find, setFind] = useState("");
   const findId = useId();
   const q = find.trim();
   const list = useInfiniteQuery({
-    queryKey: ["bills", status, q],
+    queryKey: ["bills", kind, status, q],
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
-      const { data, error } = await api.GET("/v1/bills", { params: { query: { page_size: 50, cursor: pageParam, status: status || undefined, q: q || undefined } } });
+      const { data, error } = await api.GET("/v1/bills", { params: { query: { page_size: 50, cursor: pageParam, status: status || undefined, q: q || undefined, kind } } });
       if (error) throw error;
       return data;
     },
@@ -110,6 +111,7 @@ export function Bills() {
   const items = list.data?.pages.flatMap((p) => p.items ?? []) ?? [];
   const may = (session.roles ?? []).some((r) => preparers.includes(r));
   const add = helpText("bill.new");
+  const addCredit = helpText("credit.new");
   const base = organisation?.base_currency ?? "SGD";
   const overdue = items.filter((b) => b.states.due === "overdue").length;
 
@@ -129,6 +131,10 @@ export function Bills() {
               <Icon of={Plus} />
               {add.label}
             </Link>
+            <Link className="fy-btn" to="/purchases/credits/new" title={addCredit.tooltip}>
+              <Icon of={Plus} />
+              {addCredit.label}
+            </Link>
           </div>
         )}
       </div>
@@ -144,6 +150,18 @@ export function Bills() {
         </div>
       )}
       <div className="fy-row fy-row--wrap fy-row--between gap-3">
+        <div className="fy-chipset" role="group" aria-label="Kind">
+          {(
+            [
+              ["bill", "Bills"],
+              ["vendor_credit", "Credit notes"],
+            ] as const
+          ).map(([k, label]) => (
+            <button key={k} type="button" className="fy-filter" aria-pressed={kind === k} onClick={() => setKind(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="fy-chipset" role="group" aria-label="Status">
           {filters.map(([s, label]) => (
             <button key={label} type="button" className="fy-filter" aria-pressed={status === s} onClick={() => setStatus(s)}>
@@ -233,7 +251,7 @@ export function Bills() {
                     {b.payable ? formatAmount(b.payable.amount) : "—"}
                   </td>
                   <td data-card="status">
-                    <StateChips states={b.states} />
+                    <StateChips states={b.states} credit={b.kind === "vendor_credit"} />
                   </td>
                 </tr>
               ))}

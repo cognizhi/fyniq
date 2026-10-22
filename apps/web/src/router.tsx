@@ -31,6 +31,7 @@ const screens: Record<RouteId, RouteComponent> = {
   items: lazyRouteComponent(() => import("./screens/contacts/Items"), "Items"),
   bills: lazyRouteComponent(() => import("./screens/purchases/Bills"), "Bills"),
   "bill-new": lazyRouteComponent(() => import("./screens/purchases/BillPage"), "BillPage"),
+  "credit-new": lazyRouteComponent(() => import("./screens/purchases/BillPage"), "BillPage"),
   bill: lazyRouteComponent(() => import("./screens/purchases/BillPage"), "BillPage"),
   accounting: lazyRouteComponent(() => import("./screens/accounting/Accounting"), "Accounting"),
   journals: lazyRouteComponent(() => import("./screens/accounting/Journals"), "Journals"),

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { Banknote, CircleX, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
+import { Link, useLocation, useNavigate, useParams } from "@tanstack/react-router";
+import { Banknote, CircleX, Link2, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -18,7 +18,7 @@ import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, postable, type Account } from "../accounting/data";
 import { who } from "../accounting/Journals";
 import { preparers, StateChips, total, type Bill } from "./Bills";
-import { Payments, RecordPayment } from "./Payments";
+import { ApplyCredit, Payments, RecordPayment } from "./Payments";
 
 type Draft = components["schemas"]["BillDraft"];
 type Check = components["schemas"]["BillCheck"];
@@ -166,11 +166,12 @@ function Impact({ bill, lines, accounts, base }: { bill: Bill; lines: EntryLine[
   if (!bill.payable) return null;
   const owed = `${base} ${formatAmount(bill.payable.amount)}`;
   const posted = bill.status !== "draft";
+  const credit = bill.kind === "vendor_credit";
   return (
     <>
       <p className="fy-plain fy-basic-only fy-small">
-        {posted ? "This bill added " : "This bill adds "}
-        {owed} to what we owe {bill.supplier?.name ?? "the supplier"}
+        {credit ? (posted ? "This credit note took " : "This credit note takes ") : posted ? "This bill added " : "This bill adds "}
+        {owed} {credit ? "off" : "to"} what we owe {bill.supplier?.name ?? "the supplier"}
         {bill.currency !== base ? ` (${total(bill)})` : ""}.
       </p>
       {lines.length > 0 && (
@@ -310,6 +311,7 @@ function Void({ open, bill, etag, ask, onClose, onDone }: { open: boolean; bill:
 // and approved by another person (FM-1, FM-2, SOD-3).
 export function BillPage() {
   const { billId } = useParams({ strict: false }) as { billId?: string };
+  const { pathname } = useLocation();
   const isNew = !billId;
   const { session, organisation } = useSignedIn();
   const base = organisation?.base_currency ?? "SGD";
@@ -341,6 +343,8 @@ export function BillPage() {
     },
   });
   const bill = one.data?.bill;
+  // A supplier's credit note (FR-AP-03) is entered and posted as a bill is, and applied to bills or refunded once posted.
+  const credit = bill ? bill.kind === "vendor_credit" : pathname.endsWith("/purchases/credits/new");
   const [form, setForm] = useState<Form | null>(null);
   const [editing, setEditing] = useState(false);
   const [reason, setReason] = useState("");
@@ -352,6 +356,8 @@ export function BillPage() {
   const [status, setStatus] = useState("");
   const [voiding, setVoiding] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [refunding, setRefunding] = useState(false);
 
   const editable = isNew || (bill?.status === "draft" && mayPrepare) || editing;
   const f: Form | null = form ?? (isNew ? { supplier_id: "", supplier_ref: "", date: today(), due_date: "", currency: base, fx_rate: "", notes: "", lines: [newLine()] } : bill ? formOf(bill) : null);
@@ -385,7 +391,7 @@ export function BillPage() {
     setProblem(null);
     setFailed("The bill was not saved");
     if (isNew) {
-      const out = await api.POST("/v1/bills", { params: { header: { "Idempotency-Key": newKey() } }, body: draft });
+      const out = await api.POST("/v1/bills", { params: { header: { "Idempotency-Key": newKey() } }, body: credit ? { ...draft, kind: "vendor_credit" } : draft });
       setBusy(false);
       if (!out.data) return setProblem(problemOf(out.error));
       await queries.invalidateQueries({ queryKey: ["bills"] });
@@ -454,11 +460,13 @@ export function BillPage() {
   if (!f) return null;
 
   const h = (k: string) => helpText(k);
-  const title = isNew ? "New bill" : `${bill?.supplier?.name ?? "Bill"}${bill?.supplier_ref ? ` · ${bill.supplier_ref}` : ""}`;
+  const title = isNew ? (credit ? "New credit note" : "New bill") : `${bill?.supplier?.name ?? (credit ? "Credit note" : "Bill")}${bill?.supplier_ref ? ` · ${bill.supplier_ref}` : ""}`;
   const foreign = (f.currency.trim() || base).toUpperCase() !== base;
   const needsApproval = problem?.code === overThreshold && bill?.status === "draft";
   // A posted bill with something still open is paid by recording the payment (FR-AP-02); the server refuses more than is open.
   const open = bill?.status === "posted" && bill.open && !bill.open.amount.startsWith("-") && !/^0(\.0*)?$/.test(bill.open.amount) ? bill.open : undefined;
+  // A document payments, applications or refunds settle is voided or edited only once they are voided (BILL-13, CREDIT-08).
+  const settled = Boolean(bill?.open && bill.open.amount !== bill.total.amount);
   const err = (k: string) =>
     errors[k] ? (
       <span className="fy-error" id={`${id}-${k}-error`}>
@@ -478,16 +486,16 @@ export function BillPage() {
           </nav>
           <div className="fy-row fy-row--wrap">
             <h1 className="fy-h1">{title}</h1>
-            {bill && <StateChips states={bill.states} />}
+            {bill && <StateChips states={bill.states} credit={credit} />}
           </div>
           {bill && (
             <p className="fy-secondary">
               {bill.number ? `${bill.number} · ` : ""}
               {bill.date ? `Dated ${date(bill.date)}` : "No date"}
-              {bill.due_date ? ` · due ${date(bill.due_date)}` : ""}
+              {bill.due_date && !credit ? ` · due ${date(bill.due_date)}` : ""}
               {bill.prepared_by ? ` · prepared by ${who(bill.prepared_by)}` : ""}
               {bill.posted_by ? ` · posted by ${who(bill.posted_by)}` : ""}
-              {open ? ` · ${formatAmount(open.amount)} ${open.currency} open` : ""}
+              {open ? ` · ${formatAmount(open.amount)} ${open.currency} ${credit ? "left" : "open"}` : ""}
             </p>
           )}
         </div>
@@ -560,25 +568,27 @@ export function BillPage() {
             </div>
             <div className="fy-field">
               <label className="fy-label" htmlFor={`${id}-ref`}>
-                Their invoice number
+                {credit ? "Their credit note number" : "Their invoice number"}
               </label>
               <input className="fy-input" id={`${id}-ref`} value={f.supplier_ref} maxLength={60} disabled={!editable} onChange={(e) => set({ supplier_ref: e.target.value })} />
             </div>
             <div className="fy-field">
               <label className="fy-label" htmlFor={`${id}-date`}>
-                Invoice date
+                {credit ? "Credit note date" : "Invoice date"}
               </label>
               <input className="fy-input" id={`${id}-date`} type="date" value={f.date} disabled={!editable} onChange={(e) => set({ date: e.target.value })} />
             </div>
-            <div className="fy-field">
-              <label className="fy-label" htmlFor={`${id}-due`}>
-                Due date
-              </label>
-              <input className="fy-input" id={`${id}-due`} type="date" value={f.due_date} disabled={!editable} onChange={(e) => set({ due_date: e.target.value })} aria-describedby={`${id}-due-help`} />
-              <span className="fy-help" id={`${id}-due-help`}>
-                {bill?.due_date && !f.due_date ? `Due ${date(bill.due_date)} by the payment terms. ` : ""}Leave it blank for the supplier's terms, or the organisation's.
-              </span>
-            </div>
+            {!credit && (
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-due`}>
+                  Due date
+                </label>
+                <input className="fy-input" id={`${id}-due`} type="date" value={f.due_date} disabled={!editable} onChange={(e) => set({ due_date: e.target.value })} aria-describedby={`${id}-due-help`} />
+                <span className="fy-help" id={`${id}-due-help`}>
+                  {bill?.due_date && !f.due_date ? `Due ${date(bill.due_date)} by the payment terms. ` : ""}Leave it blank for the supplier's terms, or the organisation's.
+                </span>
+              </div>
+            )}
             <div className="fy-field">
               <label className="fy-label" htmlFor={`${id}-currency`}>
                 Currency
@@ -625,7 +635,7 @@ export function BillPage() {
             <h2 className="fy-h3" id={`${id}-lines`}>
               Lines
             </h2>
-            <span className="fy-small fy-muted">As the supplier's invoice states them</span>
+            <span className="fy-small fy-muted">As the supplier's {credit ? "credit note" : "invoice"} states them</span>
           </div>
           <div className="fy-card__body fy-stack fy-stack--4">
             {f.lines.map((l, i) => (
@@ -811,20 +821,36 @@ export function BillPage() {
           )}
           {bill?.status === "posted" && mayPost && !editing && (
             <>
-              {open && (
+              {open && !credit && (
                 <Button variant="primary" type="button" onClick={() => setPaying(true)} title={h("bill.record-payment").tooltip}>
                   <Icon of={Banknote} />
                   {h("bill.record-payment").label}…
                 </Button>
               )}
-              <Button type="button" onClick={() => setEditing(true)} title={h("bill.edit").tooltip}>
-                <Icon of={Pencil} />
-                {h("bill.edit").label}
-              </Button>
-              <Button type="button" onClick={() => setVoiding(true)} title={h(founder ? "bill.ask-void" : "bill.void").tooltip}>
-                <Icon of={founder ? UserCheck : Undo2} />
-                {h(founder ? "bill.ask-void" : "bill.void").label}…
-              </Button>
+              {open && credit && (
+                <>
+                  <Button variant="primary" type="button" onClick={() => setApplying(true)} title={h("credit.apply").tooltip}>
+                    <Icon of={Link2} />
+                    {h("credit.apply").label}…
+                  </Button>
+                  <Button type="button" onClick={() => setRefunding(true)} title={h("credit.refund").tooltip}>
+                    <Icon of={Banknote} />
+                    {h("credit.refund").label}…
+                  </Button>
+                </>
+              )}
+              {!settled && (
+                <>
+                  <Button type="button" onClick={() => setEditing(true)} title={h("bill.edit").tooltip}>
+                    <Icon of={Pencil} />
+                    {h("bill.edit").label}
+                  </Button>
+                  <Button type="button" onClick={() => setVoiding(true)} title={h(founder ? "bill.ask-void" : "bill.void").tooltip}>
+                    <Icon of={founder ? UserCheck : Undo2} />
+                    {h(founder ? "bill.ask-void" : "bill.void").label}…
+                  </Button>
+                </>
+              )}
             </>
           )}
           {editing && (
@@ -853,6 +879,31 @@ export function BillPage() {
       </form>
 
       {bill && !editing && !form && <Impact bill={bill} lines={bill.ledger_impact ?? []} accounts={byId} base={base} />}
+      {bill && applying && (
+        <ApplyCredit
+          open={applying}
+          credit={bill}
+          onClose={() => setApplying(false)}
+          onDone={(message) => {
+            setApplying(false);
+            void refresh().then(() => setStatus(message));
+          }}
+        />
+      )}
+      {bill && refunding && (
+        <RecordPayment
+          open={refunding}
+          bill={bill}
+          base={base}
+          accounts={accounts.data ?? []}
+          refund
+          onClose={() => setRefunding(false)}
+          onDone={(message) => {
+            setRefunding(false);
+            void refresh().then(() => setStatus(message));
+          }}
+        />
+      )}
       {bill && paying && (
         <RecordPayment
           open={paying}
