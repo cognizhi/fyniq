@@ -53,19 +53,23 @@ func AccountType(code string) storage.AccountType {
 // periods of 2026, and its journals, posted, with the first reversed the day after, as the golden
 // scenarios do. An organisation that has a chart already is refused, so a load never mixes with
 // real or earlier data.
-// standardRoles are the standard chart's system roles by code (FR-COA-03): an account of the sample company without a
-// role of its own takes the role of the standard account with its code, so the rules that post to a system account,
-// such as a bill to 2010 and 2200, find it as they do in a chart loaded from the standard one.
-func standardRoles() (map[string]storage.AccountRole, error) {
+// standardAccounts are the standard chart's accounts by code: an account of the sample company takes the system role of
+// the standard account with its code (FR-COA-03), unless it has a role of its own, and its attributes when it is of the
+// same type, so the rules find what they look for as they do in a chart loaded from the standard one: a bill its 2010
+// and 2200, a payment its money account (FR-COA-02). The guidance is the standard account's own words, so it is not
+// taken.
+func standardAccounts() (map[string]chart.Account, error) {
 	std, err := chart.Standard()
 	if err != nil {
 		return nil, err
 	}
-	out := map[string]storage.AccountRole{}
+	out := map[string]chart.Account{}
 	for _, a := range std {
-		if a.Role != "" && a.Role != storage.RoleShareCapital {
-			out[a.Code] = a.Role
+		if a.Role == storage.RoleShareCapital {
+			a.Role = ""
 		}
+		a.Guidance = ""
+		out[a.Code] = a
 	}
 	return out, nil
 }
@@ -95,16 +99,21 @@ func Load(ctx context.Context, store storage.Store, org uuid.UUID, c seed.Compan
 		if len(existing) > 0 {
 			return fmt.Errorf("the organisation has a chart of accounts already (%d accounts): load the sample company into a new installation (make reset)", len(existing))
 		}
-		roles, err := standardRoles()
+		standard, err := standardAccounts()
 		if err != nil {
 			return err
 		}
 		for _, a := range c.Accounts {
-			role := storage.AccountRole(a.Role)
-			if role == "" {
-				role = roles[a.Code]
+			n := storage.NewAccount{Code: a.Code, Name: a.Name, Type: AccountType(a.Code), Role: storage.AccountRole(a.Role)}
+			if std, ok := standard[a.Code]; ok {
+				if n.Role == "" {
+					n.Role = std.Role
+				}
+				if std.Type == n.Type { // the attributes of an account of the same kind only, such as a money account's
+					n.AccountAttributes = std.AccountAttributes
+				}
 			}
-			acc, err := u.Accounts().Create(ctx, storage.NewAccount{Code: a.Code, Name: a.Name, Type: AccountType(a.Code), Role: role})
+			acc, err := u.Accounts().Create(ctx, n)
 			if err != nil {
 				return fmt.Errorf("account %s: %w", a.Code, err)
 			}

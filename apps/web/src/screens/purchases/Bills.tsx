@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CircleCheck, Clock, PencilLine, Plus, ReceiptText, Search, TriangleAlert, Undo2, UserCheck, XCircle } from "lucide-react";
+import { Banknote, CircleCheck, Clock, PencilLine, Plus, ReceiptText, Search, TriangleAlert, Undo2, UserCheck, Wallet, XCircle } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -27,8 +27,8 @@ const filters: [Status | "", string][] = [
   ["reversed", "Voided"],
 ];
 
-// StateChips are a bill's separate states (FR-AP-02): where its approval stands, whether it is posted or voided, and
-// whether it is overdue. Each chip carries its icon and its words: colour never says it alone.
+// StateChips are a bill's separate states (FR-AP-02): where its approval stands, whether it is posted or voided, what
+// payments settle of it, and whether it is overdue. Each chip carries its icon and its words: colour never says it alone.
 export function StateChips({ states }: { states: States }) {
   return (
     <span className="fy-row fy-row--wrap gap-2">
@@ -60,6 +60,18 @@ export function StateChips({ states }: { states: States }) {
         <span className="fy-chip fy-chip--critical">
           <Icon of={XCircle} />
           Rejected
+        </span>
+      )}
+      {states.ledger === "posted" && states.payment === "part_paid" && (
+        <span className="fy-chip fy-chip--info">
+          <Icon of={Wallet} />
+          Part paid
+        </span>
+      )}
+      {states.ledger === "posted" && states.payment === "paid" && (
+        <span className="fy-chip fy-chip--good">
+          <Icon of={Banknote} />
+          Paid
         </span>
       )}
       {states.due === "overdue" && (

@@ -7,6 +7,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { BillPage, check } from "./BillPage";
 import { Bills } from "./Bills";
+import { paymentOf } from "./Payments";
 
 type Bill = components["schemas"]["Bill"];
 
@@ -20,6 +21,8 @@ const accounts = {
     items: [
       { id: "a6120", code: "6120", name: "Software subscriptions", type: "expense", active: true, group: false, version: 1, default_gst_code: "TX" },
       { id: "a2010", code: "2010", name: "Accounts payable", type: "liability", active: true, group: false, version: 1 },
+      { id: "a1010", code: "1010", name: "DBS current", type: "asset", active: true, group: false, version: 1, money_account: true, currency: "SGD" },
+      { id: "a1021", code: "1021", name: "Wise USD", type: "asset", active: true, group: false, version: 1, money_account: true, currency: "USD" },
     ],
   },
 };
@@ -56,7 +59,13 @@ const draft: Bill = {
   ],
   payments: [],
 };
-const posted: Bill = { ...draft, number: "BILL-0007", status: "posted", states: states({ approval: "approved", ledger: "posted", due: "overdue" }), checks: [] };
+const posted: Bill = { ...draft, number: "BILL-0007", status: "posted", states: states({ approval: "approved", ledger: "posted", due: "overdue" }), checks: [], open: { amount: "1090.00", currency: "SGD" } };
+const partPaid: Bill = {
+  ...posted,
+  states: states({ approval: "approved", ledger: "posted", payment: "part_paid" }),
+  open: { amount: "690.00", currency: "SGD" },
+  payments: [{ payment_id: "p1", payment_number: "PAY-0001", date: "2026-10-20", amount: { amount: "400.00", currency: "SGD" }, realised_fx: { amount: "0.00", currency: "SGD" }, voided: false }],
+};
 const read = (b: Bill) => ({ status: 200, body: b, headers: { ETag: `"${b.version}-${b.status}"` } });
 const reads = { "GET /v1/accounts": accounts, "GET /v1/contacts": vendors, "GET /v1/purchases/gst-codes": codes };
 
@@ -163,5 +172,58 @@ describe("A bill", () => {
     fireEvent.click(screen.getByRole("button", { name: "Post the edit" }));
     await waitFor(() => expect(sent.some((s) => s.path === "/v1/bills/b1/edit")).toBe(true));
     expect(sent.find((s) => s.path === "/v1/bills/b1/edit")!.body).toMatchObject({ reason: "One seat less", lines: [{ net: { amount: "900.00" } }] });
+  });
+});
+
+// req: FR-AP-02
+// req: FR-AR-18
+// req: FM-1
+describe("A bill's payments", () => {
+  it("are recorded by hand, in part, from a money account; axe finds nothing", async () => {
+    const sent = answer({ ...reads, "GET /v1/bills/b1": read(posted), "POST /v1/bill-payments": { status: 201, body: { payment: { number: "PAY-0001", total: { amount: "400.00", currency: "SGD" } }, entry: {} } } });
+    const { container } = renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    expect(await screen.findByText(/1,090.00 SGD open/)).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Record payment…" }));
+    const dialog = await screen.findByRole("dialog");
+    expect((within(dialog).getByLabelText("Amount paid of the bill (SGD)") as HTMLInputElement).value).toBe("1090.00");
+    expect(within(dialog).queryByRole("option", { name: /Wise USD/ })).toBeNull(); // an SGD bill is not paid from a USD wallet
+    await noViolations(container);
+    fireEvent.change(within(dialog).getByLabelText("Amount paid of the bill (SGD)"), { target: { value: "400" } });
+    fireEvent.change(within(dialog).getByLabelText("Bank reference (optional)"), { target: { value: "FAST 88231" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record payment" }));
+    await waitFor(() => expect(sent.some((x) => x.method === "POST" && x.path === "/v1/bill-payments")).toBe(true));
+    const body = sent.find((x) => x.path === "/v1/bill-payments")!.body as components["schemas"]["BillPaymentDraft"];
+    expect(body).toMatchObject({ money_account_id: "a1010", currency: "SGD", reference: "FAST 88231", supplier_id: "c1", bills: [{ bill_id: "b1", amount: { amount: "400", currency: "SGD" } }] });
+    expect(sent.find((x) => x.path === "/v1/bill-payments")!.headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
+  it("are listed on the bill, which is part paid, and in Founder mode a void is asked for", async () => {
+    const sent = answer({
+      ...reads,
+      "GET /v1/bills/b1": read(partPaid),
+      "GET /v1/bill-payments/p1": { status: 200, body: { id: "p1", status: "posted", version: 1 }, headers: { ETag: '"1-posted"' } },
+      "POST /v1/bill-payments/p1/void-approval": { status: 202, body: { id: "ap3" } },
+    });
+    renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: founder });
+    expect(await screen.findByText("Part paid")).toBeTruthy();
+    const table = await screen.findByRole("table", { name: "Payments" });
+    expect(within(table).getByText("PAY-0001")).toBeTruthy();
+    fireEvent.click(within(table).getByRole("button", { name: "Ask to void PAY-0001" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Why it is voided"), { target: { value: "Paid from the wrong account" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ask to void" }));
+    await waitFor(() => expect(sent.some((x) => x.path === "/v1/bill-payments/p1/void-approval")).toBe(true));
+    const asked = sent.find((x) => x.path === "/v1/bill-payments/p1/void-approval")!;
+    expect(asked.headers.get("If-Match")).toBe('"1-posted"');
+    expect(asked.body).toMatchObject({ reason: "Paid from the wrong account" });
+  });
+
+  it("say what to fix: a bill in another currency paid from an SGD account names what the account paid", () => {
+    const usd: Bill = { ...posted, currency: "USD", total: { amount: "1090.00", currency: "USD" }, open: { amount: "1090.00", currency: "USD" } };
+    const f = { date: "2026-10-20", account: "a1010", accountCurrency: "SGD", amount: "1090.00", rate: "", paid: "", reference: "" };
+    expect(paymentOf(usd, "SGD", f).errors.paid).toBe("Enter what the account paid in SGD, as the statement shows it.");
+    expect(paymentOf(usd, "SGD", { ...f, paid: "1,420.00" }).payment).toMatchObject({ paid: { amount: "1420.00", currency: "SGD" }, fx_rate: undefined });
+    expect(paymentOf(usd, "SGD", { ...f, account: "a1021", accountCurrency: "USD", rate: "1.30" }).payment).toMatchObject({ fx_rate: "1.30", paid: undefined });
+    expect(paymentOf(posted, "SGD", { ...f, amount: "0" }).errors.amount).toBe("Enter what was paid of the bill in SGD, such as 400.00.");
   });
 });

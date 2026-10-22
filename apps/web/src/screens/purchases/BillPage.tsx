@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { CircleX, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
+import { Banknote, CircleX, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -18,6 +18,7 @@ import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, postable, type Account } from "../accounting/data";
 import { who } from "../accounting/Journals";
 import { preparers, StateChips, total, type Bill } from "./Bills";
+import { Payments, RecordPayment } from "./Payments";
 
 type Draft = components["schemas"]["BillDraft"];
 type Check = components["schemas"]["BillCheck"];
@@ -350,6 +351,7 @@ export function BillPage() {
   const [failed, setFailed] = useState("");
   const [status, setStatus] = useState("");
   const [voiding, setVoiding] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   const editable = isNew || (bill?.status === "draft" && mayPrepare) || editing;
   const f: Form | null = form ?? (isNew ? { supplier_id: "", supplier_ref: "", date: today(), due_date: "", currency: base, fx_rate: "", notes: "", lines: [newLine()] } : bill ? formOf(bill) : null);
@@ -455,6 +457,8 @@ export function BillPage() {
   const title = isNew ? "New bill" : `${bill?.supplier?.name ?? "Bill"}${bill?.supplier_ref ? ` · ${bill.supplier_ref}` : ""}`;
   const foreign = (f.currency.trim() || base).toUpperCase() !== base;
   const needsApproval = problem?.code === overThreshold && bill?.status === "draft";
+  // A posted bill with something still open is paid by recording the payment (FR-AP-02); the server refuses more than is open.
+  const open = bill?.status === "posted" && bill.open && !bill.open.amount.startsWith("-") && !/^0(\.0*)?$/.test(bill.open.amount) ? bill.open : undefined;
   const err = (k: string) =>
     errors[k] ? (
       <span className="fy-error" id={`${id}-${k}-error`}>
@@ -483,6 +487,7 @@ export function BillPage() {
               {bill.due_date ? ` · due ${date(bill.due_date)}` : ""}
               {bill.prepared_by ? ` · prepared by ${who(bill.prepared_by)}` : ""}
               {bill.posted_by ? ` · posted by ${who(bill.posted_by)}` : ""}
+              {open ? ` · ${formatAmount(open.amount)} ${open.currency} open` : ""}
             </p>
           )}
         </div>
@@ -521,6 +526,16 @@ export function BillPage() {
         </div>
       )}
       {bill && !form && !editing && <Checks checks={bill.checks ?? []} />}
+      {bill && bill.status !== "draft" && !editing && (
+        <Payments
+          bill={bill}
+          mayVoid={mayPost}
+          ask={founder}
+          onDone={(message) => {
+            void refresh().then(() => setStatus(message));
+          }}
+        />
+      )}
       <form className="fy-stack fy-stack--6" onSubmit={(e) => void save(e)} noValidate>
         <section className="fy-card" aria-labelledby={`${id}-supp`}>
           <div className="fy-card__head">
@@ -796,6 +811,12 @@ export function BillPage() {
           )}
           {bill?.status === "posted" && mayPost && !editing && (
             <>
+              {open && (
+                <Button variant="primary" type="button" onClick={() => setPaying(true)} title={h("bill.record-payment").tooltip}>
+                  <Icon of={Banknote} />
+                  {h("bill.record-payment").label}…
+                </Button>
+              )}
               <Button type="button" onClick={() => setEditing(true)} title={h("bill.edit").tooltip}>
                 <Icon of={Pencil} />
                 {h("bill.edit").label}
@@ -832,6 +853,19 @@ export function BillPage() {
       </form>
 
       {bill && !editing && !form && <Impact bill={bill} lines={bill.ledger_impact ?? []} accounts={byId} base={base} />}
+      {bill && paying && (
+        <RecordPayment
+          open={paying}
+          bill={bill}
+          base={base}
+          accounts={accounts.data ?? []}
+          onClose={() => setPaying(false)}
+          onDone={(message) => {
+            setPaying(false);
+            void refresh().then(() => setStatus(message));
+          }}
+        />
+      )}
       {bill && voiding && one.data && (
         <Void
           open={voiding}

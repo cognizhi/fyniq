@@ -121,3 +121,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-22] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (GST rounding per line or per subtotal, RND-GST-EXCL)
 
 ## [2026-10-22] compile | docs/user-guide/bills.md → purchases.bills (new: entering, posting, approving, voiding and editing bills); accounting.currencies links it
+
+## [2026-10-23] compile | docs/user-guide/bills.md → purchases.bills (payments recorded by hand: recording, part payments, foreign bills, voids; rev 0.77)

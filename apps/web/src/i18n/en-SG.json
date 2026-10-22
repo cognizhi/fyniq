@@ -276,6 +276,18 @@
       "label": "Ask to post the edit",
       "tooltip": "In Founder mode another founder approves an edit first; it posts when they approve it."
     },
+    "bill.record-payment": {
+      "label": "Record payment",
+      "tooltip": "Record money already paid to the supplier for this bill: the date, the account it left and how much. It posts at once."
+    },
+    "bill-payment.void": {
+      "label": "Void",
+      "tooltip": "Post a reversing entry on a date you choose, with a reason; the bill is open again by what the payment paid."
+    },
+    "bill-payment.ask-void": {
+      "label": "Ask to void",
+      "tooltip": "In Founder mode another founder approves a payment's void first; the bill reopens once they approve."
+    },
     "journal.new": {
       "label": "New journal",
       "tooltip": "Prepare a journal: its date, what it is for and its lines, whose debits equal their credits."
