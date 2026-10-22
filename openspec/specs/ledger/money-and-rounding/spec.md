@@ -180,6 +180,11 @@ Source: PRD-001 §10.4
 - **WHEN** a rate is quoted as foreign currency per one unit of the base currency
 - **THEN** it is stored as round(1 ÷ quote, 10), half-up
 
+#### Scenario: Every stored rate is checked against its quote (rev 0.70)
+- **WHEN** a rate of the feed or of an organisation is stored
+- **THEN** its quote and its form (base-per-unit, base-per-100, foreign-per-base) are kept beside it
+- **AND** the database refuses a stored rate that is not its quote under `RND-RATE`
+
 #### Scenario: The original quote is kept
 - **WHEN** a converted rate is stored
 - **THEN** the original quote and its form are kept beside it

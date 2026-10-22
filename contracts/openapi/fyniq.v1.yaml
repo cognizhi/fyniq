@@ -2451,6 +2451,281 @@ components:
         - previous
         - explanation
       type: object
+    FXRate:
+      additionalProperties: false
+      properties:
+        base_currency:
+          description: The organisation's base currency, which the rate converts into.
+          examples:
+            - SGD
+          type: string
+        currency:
+          description: The foreign currency, as an ISO 4217 code; never the base currency.
+          examples:
+            - USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        entered_at:
+          description: When it was entered.
+          examples:
+            - "2026-10-16T08:30:00Z"
+          format: date-time
+          type: string
+        entered_by:
+          $ref: "#/components/schemas/Person"
+          description: Who entered it.
+        id:
+          description: The rate's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+          format: uuid
+          type: string
+        kind:
+          description: "day: the rate for one day, which overrides the daily feed's on that date and replaces the organisation's earlier rate for it; month: a rate of the monthly table, used for a date with neither (ENG-40)."
+          enum:
+            - day
+            - month
+          examples:
+            - day
+          type: string
+        note:
+          description: Where the rate came from, such as the bank's board rate.
+          examples:
+            - DBS board rate at 4 pm
+          maxLength: 200
+          type: string
+        "on":
+          description: The day; for a month, the month's first day.
+          examples:
+            - "2026-10-16"
+          format: date
+          type: string
+        quote:
+          description: The rate as the source quotes it, a decimal string of up to 10 decimal places (ENG-12, ENG-44).
+          examples:
+            - "1.2953"
+          type: string
+        quote_form:
+          default: base-per-unit
+          description: "How the quote is given: base currency per one unit (stored as it is), per 100 units, or foreign currency per one unit of the base. Fyniq stores base per one unit under RND-RATE: round(quote ÷ 100, 10) or round(1 ÷ quote, 10), half away from zero."
+          enum:
+            - base-per-unit
+            - base-per-100
+            - foreign-per-base
+          examples:
+            - base-per-unit
+          type: string
+        rate:
+          description: Base currency per one unit of currency, as stored under RND-RATE (up to 10 decimal places).
+          examples:
+            - "1.2953"
+          type: string
+        version:
+          description: "1 while the rate is current, 2 once it is withdrawn: the only change a rate has. Its ETag is the version."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        withdrawn:
+          description: "The rate is withdrawn: the cascade no longer finds it."
+          examples:
+            - false
+          type: boolean
+        withdrawn_at:
+          description: When it was withdrawn.
+          examples:
+            - "2026-10-17T02:00:00Z"
+          format: date-time
+          type: string
+        withdrawn_by:
+          $ref: "#/components/schemas/Person"
+          description: Who withdrew it.
+        withdrawn_reason:
+          description: Why it was withdrawn.
+          examples:
+            - Replaced by a new rate for the same day
+          type: string
+      required:
+        - id
+        - version
+        - rate
+        - base_currency
+        - entered_at
+        - withdrawn
+        - kind
+        - currency
+        - "on"
+        - quote
+      type: object
+    FXRateEntries:
+      additionalProperties: false
+      properties:
+        items:
+          description: Up to 250 rates, each entered on its own (FR-INT-11).
+          items:
+            $ref: "#/components/schemas/FXRateEntry"
+          maxItems: 250
+          minItems: 1
+          type:
+            - array
+            - "null"
+      required:
+        - items
+      type: object
+    FXRateEntry:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The foreign currency, as an ISO 4217 code; never the base currency.
+          examples:
+            - USD
+          pattern: ^[A-Z]{3}$
+          type: string
+        kind:
+          description: "day: the rate for one day, which overrides the daily feed's on that date and replaces the organisation's earlier rate for it; month: a rate of the monthly table, used for a date with neither (ENG-40)."
+          enum:
+            - day
+            - month
+          examples:
+            - day
+          type: string
+        note:
+          description: Where the rate came from, such as the bank's board rate.
+          examples:
+            - DBS board rate at 4 pm
+          maxLength: 200
+          type: string
+        "on":
+          description: The day; for a month, the month's first day.
+          examples:
+            - "2026-10-16"
+          format: date
+          type: string
+        quote:
+          description: The rate as the source quotes it, a decimal string of up to 10 decimal places (ENG-12, ENG-44).
+          examples:
+            - "1.2953"
+          type: string
+        quote_form:
+          default: base-per-unit
+          description: "How the quote is given: base currency per one unit (stored as it is), per 100 units, or foreign currency per one unit of the base. Fyniq stores base per one unit under RND-RATE: round(quote ÷ 100, 10) or round(1 ÷ quote, 10), half away from zero."
+          enum:
+            - base-per-unit
+            - base-per-100
+            - foreign-per-base
+          examples:
+            - base-per-unit
+          type: string
+      required:
+        - kind
+        - currency
+        - "on"
+        - quote
+      type: object
+    FXRateLookup:
+      additionalProperties: false
+      properties:
+        base_currency:
+          description: The organisation's base currency.
+          examples:
+            - SGD
+          type: string
+        currency:
+          description: The foreign currency.
+          examples:
+            - USD
+          type: string
+        date:
+          description: The date asked about.
+          examples:
+            - "2026-10-18"
+          format: date
+          type: string
+        entries:
+          description: How many monthly-table rates it is the average of; 1 otherwise. An average never sets a GST amount (ENG-42).
+          examples:
+            - 1
+          format: int64
+          type: integer
+        of:
+          description: "The date the rate is of: the day, the feed's earlier date, or the month's first day."
+          examples:
+            - "2026-10-16"
+          format: date
+          type: string
+        rate:
+          description: "Base currency per one unit of currency: the rate a posting on the date takes when its document has no rate of its own."
+          examples:
+            - "1.2953"
+          type: string
+        source:
+          description: Where the rate comes from, as a converted amount records it.
+          examples:
+            - MAS daily feed of 2026-10-16
+          type: string
+        step:
+          description: "The cascade's step: the organisation's rate for the day, the daily feed (on the date or up to 7 days before), or the monthly table."
+          enum:
+            - organisation
+            - feed
+            - month
+          examples:
+            - feed
+          type: string
+      required:
+        - currency
+        - base_currency
+        - date
+        - rate
+        - source
+        - step
+        - of
+        - entries
+      type: object
+    FXRateMonth:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The currency.
+          examples:
+            - USD
+          type: string
+        month:
+          description: The month's first day.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+      required:
+        - currency
+        - month
+      type: object
+    FXRatePage:
+      additionalProperties: false
+      properties:
+        duplicates:
+          description: "⚠ Months of the monthly table, within the filter, with more than one current rate of a currency: the cascade uses their average, which never sets a GST amount, until all but one are withdrawn (ENG-40; checks C.1 #9)."
+          items:
+            $ref: "#/components/schemas/FXRateMonth"
+          type:
+            - array
+            - "null"
+        items:
+          description: The rates, by currency, date and the order they were entered.
+          items:
+            $ref: "#/components/schemas/FXRate"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Pass as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMDAifQ
+          type: string
+      required:
+        - items
+        - duplicates
+      type: object
     Features:
       additionalProperties: false
       properties:
@@ -2485,6 +2760,76 @@ components:
         - projects
         - portals
         - ai_assistant
+      type: object
+    FeedRate:
+      additionalProperties: false
+      properties:
+        base_currency:
+          description: The currency the rate converts into.
+          examples:
+            - SGD
+          type: string
+        currency:
+          description: The foreign currency.
+          examples:
+            - USD
+          type: string
+        feed:
+          description: The feed's name.
+          examples:
+            - MAS
+          type: string
+        "on":
+          description: The day the feed published it for.
+          examples:
+            - "2026-10-16"
+          format: date
+          type: string
+        quote:
+          description: As the feed published it.
+          examples:
+            - "1.2953"
+          type: string
+        quote_form:
+          description: How the feed quoted it.
+          enum:
+            - base-per-unit
+            - base-per-100
+            - foreign-per-base
+          examples:
+            - base-per-unit
+          type: string
+        rate:
+          description: Base currency per one unit of currency, under RND-RATE.
+          examples:
+            - "1.2953"
+          type: string
+      required:
+        - currency
+        - base_currency
+        - "on"
+        - rate
+        - quote
+        - quote_form
+        - feed
+      type: object
+    FeedRatePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The rates, by currency and date.
+          items:
+            $ref: "#/components/schemas/FeedRate"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Pass as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMDAifQ
+          type: string
+      required:
+        - items
       type: object
     FieldProblem:
       additionalProperties: false
@@ -6610,6 +6955,19 @@ components:
         - unexplained
         - items
       type: object
+    WithdrawFXRateRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why the rate is wrong or no longer used.
+          examples:
+            - Typed per 100 units by mistake
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
     YearEnd:
       additionalProperties: false
       properties:
@@ -9965,6 +10323,1103 @@ paths:
         - STORAGE-VERSION-01
       x-fyniq-permission:
         capability: Contacts and items (rev 0.33)
+        right: C
+  /v1/fx/feed:
+    get:
+      description: "The daily rate feed's rates into the organisation's base currency between two dates, at most 366 days apart (FR-GL-05; PRD-001 rev 0.70): the same for every organisation, each as published, with its RND-RATE rate. The feed publishes business days only. Locally the feed is a directory of rates files; MAS's rates arrive at the cloud gate. A page at a time. Read-only; no side effects."
+      operationId: listFeedRates
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only this currency's rates.
+          explode: false
+          in: query
+          name: currency
+          schema:
+            description: Only this currency's rates.
+            examples:
+              - USD
+            pattern: ^[A-Z]{3}$
+            type: string
+        - description: The first day.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: The first day.
+            examples:
+              - "2026-10-01"
+            format: date
+            type: string
+        - description: The last day, at most 366 days after the first.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: The last day, at most 366 days after the first.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedRatePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the daily feed's rates
+      tags:
+        - Exchange rates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: V
+  /v1/fx/rate:
+    get:
+      description: "The rate the cascade finds for a currency and a date (ENG-40; PRD-001 rev 0.70, provisional), as a posting on that date takes it when its document has no rate of its own: the organisation's rate for the day; else the daily feed's for the day, or its latest up to 7 days before (weekends and public holidays); else the monthly table for the month, the average of its rates when there are several. source is what a converted amount records. Refused with FX-01 when there is no rate anywhere. Read-only; no side effects."
+      operationId: lookupFxRate
+      parameters:
+        - description: The foreign currency.
+          explode: false
+          in: query
+          name: currency
+          required: true
+          schema:
+            description: The foreign currency.
+            examples:
+              - USD
+            pattern: ^[A-Z]{3}$
+            type: string
+        - description: The date of the posting.
+          explode: false
+          in: query
+          name: date
+          required: true
+          schema:
+            description: The date of the posting.
+            examples:
+              - "2026-10-18"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FXRateLookup"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Find the rate a posting takes
+      tags:
+        - Exchange rates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - FX-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: V
+  /v1/fx/rates:
+    get:
+      description: "The organisation's own rates (FR-GL-05; PRD-001 rev 0.70, provisional): rates for a day, which override the daily feed's on that date, and the monthly table, used for a date with neither (ENG-40). Every rate is base currency per one unit of the currency, converted from its quote under RND-RATE, with the quote kept. Current rates only, unless withdrawn is true. duplicates lists the months of the monthly table with more than one current rate of a currency (⚠ until all but one are withdrawn). A page at a time. Read-only; no side effects."
+      operationId: listFxRates
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only this currency's rates.
+          explode: false
+          in: query
+          name: currency
+          schema:
+            description: Only this currency's rates.
+            examples:
+              - USD
+            pattern: ^[A-Z]{3}$
+            type: string
+        - description: Only rates for a day, or only the monthly table.
+          explode: false
+          in: query
+          name: kind
+          schema:
+            description: Only rates for a day, or only the monthly table.
+            enum:
+              - day
+              - month
+            examples:
+              - month
+            type: string
+        - description: Only rates dated on or after this day.
+          explode: false
+          in: query
+          name: from
+          schema:
+            description: Only rates dated on or after this day.
+            examples:
+              - "2026-10-01"
+            format: date
+            type: string
+        - description: Only rates dated on or before this day.
+          explode: false
+          in: query
+          name: to
+          schema:
+            description: Only rates dated on or before this day.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+        - description: Include withdrawn rates.
+          explode: false
+          in: query
+          name: withdrawn
+          schema:
+            description: Include withdrawn rates.
+            examples:
+              - false
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FXRatePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the organisation's exchange rates
+      tags:
+        - Exchange rates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: V
+    post:
+      description: "Enters a rate for a day or for the monthly table (FR-GL-05, ENG-40; PRD-001 rev 0.70, provisional). The quote is stored as base currency per one unit under RND-RATE, with the quote and its form kept. A day's rate replaces the organisation's current rate for that currency and day, which is withdrawn with the reason \"Replaced by a new rate for the same day\"; the monthly table keeps every rate, and a second one for a month makes the cascade average them (⚠). A rate is never changed: withdraw it and enter another. Refused for the base currency, or a monthly rate not dated on its month's first day (FX-02). Postings already made keep the rate they took (ENG-14). Side effects: the rate, any rate it replaces, and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: createFxRate
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FXRateEntry"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FXRate"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FXRate"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The rate's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The rate's URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FX-03` The rate is withdrawn already; `STORAGE-DUPLICATE-01` Already done; `STORAGE-FX-01` The exchange rate does not change that way; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-02` The exchange rate is not valid; `FX-04` Withdrawing a rate needs a reason."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Enter an exchange rate
+      tags:
+        - Exchange rates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - FX-02
+        - FX-03
+        - FX-04
+        - STORAGE-DUPLICATE-01
+        - STORAGE-FX-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: C
+  /v1/fx/rates/{rate_id}:
+    get:
+      description: One of the organisation's rates, withdrawn or not (FR-GL-05). Read-only; no side effects.
+      operationId: getFxRate
+      parameters:
+        - description: The rate's ID.
+          in: path
+          name: rate_id
+          required: true
+          schema:
+            description: The rate's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FXRate"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The rate's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get an exchange rate
+      tags:
+        - Exchange rates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: V
+  /v1/fx/rates/{rate_id}/withdraw:
+    post:
+      description: "Withdraws one of the organisation's rates with a reason (FR-GL-05): the cascade no longer finds it, and it stays listed with who withdrew it, when and why. Needs If-Match with the rate's ETag. A rate never changes otherwise. Postings that took it keep it (ENG-14). Refused when it is withdrawn already (FX-03). Side effects: the withdrawal and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: withdrawFxRate
+      parameters:
+        - description: The rate's ID.
+          in: path
+          name: rate_id
+          required: true
+          schema:
+            description: The rate's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawFXRateRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FXRate"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The rate's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FX-03` The rate is withdrawn already; `STORAGE-DUPLICATE-01` Already done; `STORAGE-FX-01` The exchange rate does not change that way; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-02` The exchange rate is not valid; `FX-04` Withdrawing a rate needs a reason."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Withdraw an exchange rate
+      tags:
+        - Exchange rates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - FX-02
+        - FX-03
+        - FX-04
+        - STORAGE-DUPLICATE-01
+        - STORAGE-FX-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: C
+  /v1/fx/rates:bulk:
+    post:
+      description: "Enters each rate on its own, as createFxRate does, such as the rows of a rates file, and answers with one result per item in the order sent (FR-INT-11): 201 with the rate's ID, or the item's problem details. An item that is refused takes no other item with it, and is never left out. Items run in order, so a later rate for the same day replaces an earlier one. Side effects: each rate, any rate it replaces, and their audit events. Idempotent with Idempotency-Key, which covers the whole request; with Prefer: return=preview every item is checked and none is saved."
+      operationId: bulkCreateFxRates
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FXRateEntries"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkResults"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Enter up to 250 exchange rates
+      tags:
+        - Exchange rates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Period close / reopen
         right: C
   /v1/items:
     get:
@@ -24684,6 +26139,8 @@ tags:
     name: Journals
   - description: "Accounting periods and financial years: a posting's period is the month of its date (FR-ORG-02, FR-GL-08)."
     name: Periods
+  - description: "Rates into the base currency: the daily feed, the organisation's own rates for a day and its monthly table, and the cascade a posting takes its rate from (FR-GL-05, ENG-40)."
+    name: Exchange rates
   - description: "Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive."
     name: Reports
   - description: Customers and vendors (FR-CT-01).

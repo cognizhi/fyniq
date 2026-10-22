@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_currency": {
+      "description": "The currency the rate converts into.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The foreign currency.",
+      "examples": [
+        "USD"
+      ],
+      "type": "string"
+    },
+    "feed": {
+      "description": "The feed's name.",
+      "examples": [
+        "MAS"
+      ],
+      "type": "string"
+    },
+    "on": {
+      "description": "The day the feed published it for.",
+      "examples": [
+        "2026-10-16"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "quote": {
+      "description": "As the feed published it.",
+      "examples": [
+        "1.2953"
+      ],
+      "type": "string"
+    },
+    "quote_form": {
+      "description": "How the feed quoted it.",
+      "enum": [
+        "base-per-unit",
+        "base-per-100",
+        "foreign-per-base"
+      ],
+      "examples": [
+        "base-per-unit"
+      ],
+      "type": "string"
+    },
+    "rate": {
+      "description": "Base currency per one unit of currency, under RND-RATE.",
+      "examples": [
+        "1.2953"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "base_currency",
+    "on",
+    "rate",
+    "quote",
+    "quote_form",
+    "feed"
+  ],
+  "title": "FeedRate",
+  "type": "object"
+}

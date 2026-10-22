@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -18,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/item"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -179,6 +182,12 @@ var codeFacts = map[string]struct {
 	storage.CodeClose:             {409, "The close is not attested that way"},
 	storage.CodeVariance:          {409, "The variance is not explained that way"},
 	storage.CodeChecklist:         {409, "The checklist does not change that way"},
+	storage.CodeFXRate:            {409, "The exchange rate does not change that way"},
+	fx.CodeNoRate:                 {422, "No exchange rate for this currency"},
+	fx.CodeEntry:                  {422, "The exchange rate is not valid"},
+	fx.CodeWithdrawn:              {409, "The rate is withdrawn already"},
+	fx.CodeReason:                 {422, "Withdrawing a rate needs a reason"},
+	fx.CodeTooMany:                {422, "Too many rates for one answer"},
 	contact.CodeName:              {422, "The legal name is not valid"},
 	contact.CodeRole:              {422, "Neither a customer nor a vendor"},
 	contact.CodeEmail:             {422, "Not an email address"},
@@ -334,6 +343,7 @@ var storageFixes = map[string]string{
 	storage.CodeAccounting:   "Record a new version instead; another member who holds the Accountant role confirms or approves it",
 	storage.CodeVariance:     "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
 	storage.CodeChecklist:    "Mark checklist tasks while the period is open; save a new template version rather than changing one",
+	storage.CodeFXRate:       "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
 }
 
 // problem builds a Problem for one of the catalogue's codes.
@@ -412,7 +422,8 @@ func sentence(s string) string {
 	if s == "" {
 		return s
 	}
-	s = strings.ToUpper(s[:1]) + s[1:]
+	r, n := utf8.DecodeRuneInString(s) // the first character, not byte: a message may start with ✖ or ⚠
+	s = string(unicode.ToUpper(r)) + s[n:]
 	if !strings.HasSuffix(s, ".") {
 		s += "."
 	}
@@ -446,6 +457,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
+		fe  *fx.Error
 		me  *money.Error
 		ste *storage.Error
 	)
@@ -467,6 +479,11 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(ae.Code, sentence(ae.Message), sentence(ae.Fix))
 	case errors.As(err, &ce):
 		return problem(ce.Code, sentence(ce.Message), sentence(ce.Fix))
+	case errors.As(err, &fe):
+		if fe.Field != "" {
+			return problem(fe.Code, sentence(fe.Message), sentence(fe.Fix), FieldProblem{Code: fe.Code, Field: fe.Field, Message: fe.Message, Fix: fe.Fix})
+		}
+		return problem(fe.Code, sentence(fe.Message), sentence(fe.Fix))
 	case errors.As(err, &me):
 		return problem(me.Code, sentence(me.Message), sentence(me.Fix),
 			FieldProblem{Code: me.Code, Field: me.Field, Message: me.Message, Fix: me.Fix})

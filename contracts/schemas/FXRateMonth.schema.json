@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The currency.",
+      "examples": [
+        "USD"
+      ],
+      "type": "string"
+    },
+    "month": {
+      "description": "The month's first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "month"
+  ],
+  "title": "FXRateMonth",
+  "type": "object"
+}

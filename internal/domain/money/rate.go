@@ -23,21 +23,57 @@ type Rate struct {
 	Source string
 }
 
-// ParseRate reads a rate strictly (ENG-44): a positive plain decimal with at most RateScale
-// decimals, from one currency into another, with its source.
-func ParseRate(s string, from, to Currency, source string) (Rate, error) {
-	d, err := parseDecimal(s, "fx_rate", RateScale, "an exchange rate")
+// QuoteForm is how a source quotes a rate (RND-RATE, PRD-001 §10.4): the form Fyniq stores, base currency per one unit
+// of the foreign currency; base currency per 100 units, as MAS quotes some currencies [verify]; or foreign currency per
+// one unit of the base.
+type QuoteForm string
+
+// The quote forms.
+const (
+	QuoteBasePerUnit    QuoteForm = "base-per-unit"
+	QuoteBasePer100     QuoteForm = "base-per-100"
+	QuoteForeignPerBase QuoteForm = "foreign-per-base"
+)
+
+// Known reports whether f is one of the quote forms.
+func (f QuoteForm) Known() bool {
+	return f == QuoteBasePerUnit || f == QuoteBasePer100 || f == QuoteForeignPerBase
+}
+
+// ParseQuote reads a rate as a source quoted it, in any form, as strictly as a rate (ENG-44): a positive plain decimal
+// with at most RateScale decimals and RateIntegerDigits digits before the point.
+func ParseQuote(s, field string) (*apd.Decimal, error) {
+	d, err := parseRateValue(s, field, "quote")
 	if err != nil {
-		return Rate{}, err
+		return nil, err
+	}
+	return &d, nil
+}
+
+// parseRateValue reads a positive decimal that fits NUMERIC(20,10); what names it in messages.
+func parseRateValue(s, field, what string) (apd.Decimal, error) {
+	d, err := parseDecimal(s, field, RateScale, "an exchange rate")
+	if err != nil {
+		return d, err
 	}
 	if digits := int(d.NumDigits()) + int(d.Exponent); digits > RateIntegerDigits {
-		return Rate{}, &Error{Code: CodeRange, Field: "fx_rate",
-			Message: fmt.Sprintf("the exchange rate %s has %d digits before the decimal point; the most is %d", s, digits, RateIntegerDigits),
+		return d, &Error{Code: CodeRange, Field: field,
+			Message: fmt.Sprintf("the exchange %s %s has %d digits before the decimal point; the most is %d", what, s, digits, RateIntegerDigits),
 			Fix:     "Check the rate and its direction: it is the base currency per unit of the line's currency"}
 	}
 	if d.Sign() <= 0 {
-		return Rate{}, &Error{Code: CodeRate, Field: "fx_rate", Message: fmt.Sprintf("the exchange rate %s is not positive", s),
+		return d, &Error{Code: CodeRate, Field: field, Message: fmt.Sprintf("the exchange %s %s is not positive", what, s),
 			Fix: "Enter a rate above zero"}
+	}
+	return d, nil
+}
+
+// ParseRate reads a rate strictly (ENG-44): a positive plain decimal with at most RateScale
+// decimals, from one currency into another, with its source.
+func ParseRate(s string, from, to Currency, source string) (Rate, error) {
+	d, err := parseRateValue(s, "fx_rate", "rate")
+	if err != nil {
+		return Rate{}, err
 	}
 	if source == "" {
 		return Rate{}, &Error{Code: CodeRate, Field: "fx_rate_source", Message: "the exchange rate has no source",

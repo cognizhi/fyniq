@@ -42,6 +42,7 @@ never put a real secret in a committed file (SEC-12).
 | Pub/Sub (P2) | Pub/Sub emulator | Same client library |
 | Load balancer, Cloud Armor, CDN | Caddy, one origin (`templates/Caddyfile.example`) | Same cookies and CSP; WAF tested in staging |
 | Email provider | Mailpit (`http://localhost:8025`) | Templates and links end to end |
+| Daily exchange-rate feed (MAS, FR-GL-05; rev 0.70) | `local.RateFiles`: one CSV of synthetic rates per date in `.data/fx/` (`base,currency,quote,form`) | The job, stored rates and cascade are the same; MAS's API is tested in staging at the cloud gate |
 | Slack, Zoho Cliq (rev 0.6, P2) | A message sink at `/dev/messages` in the local `api`, with the same payloads | Routing and content level end to end |
 | Sign-in providers (rev 0.6) | (as built) One provider, `local`, on the dev issuer's page, with the dev tokens' issuer, so a page sign-in and a dev token with the same subject are one identity. *Superseded:* the Firebase Authentication emulator's mock page for any provider ID; real provider sign-in (Google, Zoho) is tested in staging | Provider linking, the provider's own issuer (FR-ADM-08 is unit-tested against several), MFA after sign-in |
 | Malware scanning | EICAR-rejecting stub; `scan` profile runs real ClamAV | — |

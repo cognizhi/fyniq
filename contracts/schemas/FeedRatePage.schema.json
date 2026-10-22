@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The rates, by currency and date.",
+      "items": {
+        "$ref": "FeedRate.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "next_cursor": {
+      "description": "Pass as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjEwMDAifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "FeedRatePage",
+  "type": "object"
+}

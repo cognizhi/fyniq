@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "duplicates": {
+      "description": "⚠ Months of the monthly table, within the filter, with more than one current rate of a currency: the cascade uses their average, which never sets a GST amount, until all but one are withdrawn (ENG-40; checks C.1 #9).",
+      "items": {
+        "$ref": "FXRateMonth.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "items": {
+      "description": "The rates, by currency, date and the order they were entered.",
+      "items": {
+        "$ref": "FXRate.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "next_cursor": {
+      "description": "Pass as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjEwMDAifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items",
+    "duplicates"
+  ],
+  "title": "FXRatePage",
+  "type": "object"
+}

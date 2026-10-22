@@ -469,6 +469,38 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"period_variance_explanation.previous_amount": func(t *testing.T, b porttest.Books, v string) error {
 		return rawExplanation(t, b, "0", v)
 	},
+	"fx_rate.rate": func(t *testing.T, b porttest.Books, v string) error {
+		return rawFXRate(t, b, v, "1.35")
+	},
+	"fx_rate.quote": func(t *testing.T, b porttest.Books, v string) error {
+		return rawFXRate(t, b, "1.35", v)
+	},
+	"fx_feed_rate.rate": func(t *testing.T, b porttest.Books, v string) error {
+		return rawFeedRate(t, v, "1.35")
+	},
+	"fx_feed_rate.quote": func(t *testing.T, b porttest.Books, v string) error {
+		return rawFeedRate(t, "1.35", v)
+	},
+}
+
+// rawFXRate enters a USD rate for a day as the API role, so only the rate's own checks can fail.
+func rawFXRate(t *testing.T, b porttest.Books, rate, quote string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.fx_rate (kind, currency, on_date, rate, quote, quote_form, entered_by, entered_at)
+VALUES ('day', 'USD', '2026-10-16', $1::numeric, $2::numeric, 'base-per-unit', 'user:attack-test', now())`, rate, quote)
+		return err
+	})
+}
+
+// rawFeedRate stores a feed rate as the owner, as no application role writes the table but through record_feed_rate.
+func rawFeedRate(t *testing.T, rate, quote string) error {
+	t.Helper()
+	ctx := context.Background()
+	_, err := conn(t, "fyniq_migrator").Exec(ctx, `INSERT INTO fyniq.fx_feed_rate (base_currency, currency, on_date, rate, quote, quote_form, feed)
+VALUES ('SGD', 'EUR', '1999-01-04', $1::numeric, $2::numeric, 'base-per-unit', 'Attack')`, rate, quote)
+	return err
 }
 
 // rawExplanation explains rent's November variance as the API role, so only the amounts' own checks can fail.

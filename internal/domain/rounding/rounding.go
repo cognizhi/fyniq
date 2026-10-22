@@ -19,6 +19,7 @@ const (
 	AllocEvenName    = "ALLOC-EVEN"
 	AllocProRataName = "ALLOC-PRORATA"
 	PercentName      = "RND-PERCENT"
+	RateName         = "RND-RATE"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -49,6 +50,40 @@ func FX(amount money.Money, rate money.Rate) (money.Money, error) {
 		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "amount", Message: err.Error()}
 	}
 	return money.FromRounded(halfAwayFromZero(&product, rate.To.MinorUnits), rate.To)
+}
+
+// Rate is RND-RATE (PRD-001 §10.4, rev 0.24): a quote turned into the one form Fyniq stores, base currency per one
+// unit of the foreign currency. A quote per 100 units is round(quote ÷ 100, 10); a quote of foreign currency per one
+// unit of the base is round(1 ÷ quote, 10); half away from zero, computed to 60 digits before its one rounding. The
+// error of 10 places is open question 30's bound. A quote so large that its inverse rounds to zero has no rate.
+func Rate(quote *apd.Decimal, form money.QuoteForm, from, to money.Currency, source string) (money.Rate, error) {
+	var r apd.Decimal
+	switch form {
+	case money.QuoteBasePerUnit:
+		r.Set(quote)
+	case money.QuoteBasePer100:
+		if _, err := work.Quo(&r, quote, apd.New(100, 0)); err != nil {
+			return money.Rate{}, &money.Error{Code: money.CodeRate, Field: "quote", Message: err.Error()}
+		}
+	case money.QuoteForeignPerBase:
+		if quote.Sign() <= 0 {
+			return money.Rate{}, &money.Error{Code: money.CodeRate, Field: "quote", Message: fmt.Sprintf("the quote %s is not positive", quote.Text('f'))}
+		}
+		if _, err := work.Quo(&r, apd.New(1, 0), quote); err != nil {
+			return money.Rate{}, &money.Error{Code: money.CodeRate, Field: "quote", Message: err.Error()}
+		}
+	default:
+		return money.Rate{}, &money.Error{Code: money.CodeRate, Field: "quote_form", Message: fmt.Sprintf("%q is not a way to quote a rate", form),
+			Fix: "Use base-per-unit, base-per-100 or foreign-per-base"}
+	}
+	rounded := halfAwayFromZero(&r, money.RateScale)
+	if rounded.Sign() <= 0 {
+		return money.Rate{}, &money.Error{Code: money.CodeRate, Field: "quote",
+			Message: fmt.Sprintf("the quote %s gives a rate below 0.0000000001 %s per %s, the smallest rate Fyniq holds", quote.Text('f'), to, from),
+			Fix:     "Check the quote and its form"}
+	}
+	rounded.Reduce(rounded)
+	return money.ParseRate(rounded.Text('f'), from, to, source)
 }
 
 // Percent is RND-PERCENT (PRD-001 rev 0.65): part as a percentage of whole = round(part ÷ |whole| × 100, 1 decimal), half

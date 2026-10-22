@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_currency": {
+      "description": "The organisation's base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The foreign currency.",
+      "examples": [
+        "USD"
+      ],
+      "type": "string"
+    },
+    "date": {
+      "description": "The date asked about.",
+      "examples": [
+        "2026-10-18"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "entries": {
+      "description": "How many monthly-table rates it is the average of; 1 otherwise. An average never sets a GST amount (ENG-42).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "of": {
+      "description": "The date the rate is of: the day, the feed's earlier date, or the month's first day.",
+      "examples": [
+        "2026-10-16"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "rate": {
+      "description": "Base currency per one unit of currency: the rate a posting on the date takes when its document has no rate of its own.",
+      "examples": [
+        "1.2953"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "Where the rate comes from, as a converted amount records it.",
+      "examples": [
+        "MAS daily feed of 2026-10-16"
+      ],
+      "type": "string"
+    },
+    "step": {
+      "description": "The cascade's step: the organisation's rate for the day, the daily feed (on the date or up to 7 days before), or the monthly table.",
+      "enum": [
+        "organisation",
+        "feed",
+        "month"
+      ],
+      "examples": [
+        "feed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "base_currency",
+    "date",
+    "rate",
+    "source",
+    "step",
+    "of",
+    "entries"
+  ],
+  "title": "FXRateLookup",
+  "type": "object"
+}

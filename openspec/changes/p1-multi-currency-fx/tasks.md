@@ -2,10 +2,28 @@
 
 ## 1. Exchange rates
 
-- [ ] 1.1 `RND-RATE`: a quote per one unit, per 100 units, or of foreign currency per one unit of the base, stored as base per one unit to 10 places, half away from zero, with the quote and its form kept. Tests `// req: RND-RATE`
-- [ ] 1.2 The organisation's rates: a day's rate and the monthly table, entered or imported from a file, listed, withdrawn with a reason, never changed, audited; duplicates in the monthly table shown with ⚠. Tests `// req: FR-GL-05`
-- [ ] 1.3 The daily feed: the `RateFeed` port, the local adapter reading a rates file per date, the platform job `fx.feed` storing missing days of the last 7 in the global feed table. Tests `// req: FR-GL-05`
-- [ ] 1.4 The cascade for a currency and a date: the organisation's rate for the day, the feed's (up to 7 days earlier), the monthly table (the average of duplicates, "average of n entries"), otherwise `FX-01`; whether the rate is an average; a look-up operation that shows what a posting would take. Tests `// req: ENG-40` (including G4-025)
+- [x] 1.1 `RND-RATE`: a quote per one unit, per 100 units, or of foreign currency per one unit of the base, stored as base per one unit to 10 places, half away from zero, with the quote and its form kept. Tests `// req: RND-RATE`
+  (22 Oct 2026, PRD rev 0.70: `rounding.Rate` with the forms `money.QuoteBasePerUnit`, `QuoteBasePer100` and
+  `QuoteForeignPerBase`, computed to 60 digits and rounded once; `money.ParseQuote` reads a quote as strictly as a rate.
+  The database checks every stored rate against its quote (`fx_rate_rnd_rate`, `fx_feed_rate_rnd_rate`). Tests:
+  `TestRateTurnsEveryQuoteIntoBasePerUnit` (hand-worked cases, two ties), `TestRateIsWithinHalfAUnitOfTheTenthPlace`.)
+- [x] 1.2 The organisation's rates: a day's rate and the monthly table, entered or imported from a file, listed, withdrawn with a reason, never changed, audited; duplicates in the monthly table shown with ⚠. Tests `// req: FR-GL-05`
+  (22 Oct 2026, PRD rev 0.70: migration 000070's `fx_rate`, never of the base currency and a month on its first day
+  (FY166), withdrawn once and never changed (FY167), one current rate per currency and day. `fx.Enter` withdraws the
+  day's earlier rate; `fx.Withdraw` needs a reason. `listFxRates` (with `duplicates`), `getFxRate` (ETag),
+  `createFxRate`, `bulkCreateFxRates` (up to 250: a file's rows, which the web app reads) and `withdrawFxRate`
+  (If-Match). Tests: `TestAttackExchangeRatesAreWithdrawnNeverChanged`, `TestExchangeRatesAndTheCascade`, matrix rows.)
+- [x] 1.3 The daily feed: the `RateFeed` port, the local adapter reading a rates file per date, the platform job `fx.feed` storing missing days of the last 7 in the global feed table. Tests `// req: FR-GL-05`
+  (22 Oct 2026, PRD rev 0.70: `ports.RateFeed`; `local.RateFiles` reads `.data/fx/<date>.csv`; `fx.RecordFeed` runs
+  daily at 02:25 in Singapore as `fx.feed`, a no-op until a feed is configured in the release build; `fx_feed_rate` is
+  global, read through `fx_feed_rates`, written by the worker only through `record_feed_rate`, never changed (FY168).
+  `listFeedRates` lists it. Tests: `TestRateFilesReadOneFilePerDate`, `TestTheDailyFeedIsTheWorkersAndNeverChanges`,
+  `TestExchangeRatesAndTheCascade`.)
+- [x] 1.4 The cascade for a currency and a date: the organisation's rate for the day, the feed's (up to 7 days earlier), the monthly table (the average of duplicates, "average of n entries"), otherwise `FX-01`; whether the rate is an average; a look-up operation that shows what a posting would take. Tests `// req: ENG-40` (including G4-025)
+  (22 Oct 2026, PRD rev 0.70: `fx.Lookup` returns the rate, its source ("organisation rate of 2026-10-18", "MAS daily
+  feed of 2026-10-16", "monthly table 2026-10, average of 2 entries"), its step, its date and how many entries it
+  averages; `lookupFxRate` shows it. The checks catalogue's C.1 #9 waits for `p1-checks`. Test:
+  `TestExchangeRatesAndTheCascade`, including G4-025's two October rates.)
 
 ## 2. Manual journals
 

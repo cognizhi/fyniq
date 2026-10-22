@@ -50,6 +50,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "journals.auto-reverse", Every: time.Hour, Offset: 20 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Hourly, the drafts of the recurring journals due by each organisation's own today (FR-GL-02, FR-AUT-01; rev 0.60).
 	{Job: "journals.recurring", Every: time.Hour, Offset: 10 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Daily at 02:25 in Singapore, the feed's rates of the last week's days that have none yet (FR-GL-05; rev 0.70).
+	{Job: "fx.feed", Every: 24 * time.Hour, Offset: 18*time.Hour + 25*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 }
 
 // TickInterval is how often Cloud Scheduler (locally the API's own loop) calls the tick; a setting.

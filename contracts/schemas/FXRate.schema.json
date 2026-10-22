@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_currency": {
+      "description": "The organisation's base currency, which the rate converts into.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The foreign currency, as an ISO 4217 code; never the base currency.",
+      "examples": [
+        "USD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "entered_at": {
+      "description": "When it was entered.",
+      "examples": [
+        "2026-10-16T08:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "entered_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who entered it."
+    },
+    "id": {
+      "description": "The rate's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "day: the rate for one day, which overrides the daily feed's on that date and replaces the organisation's earlier rate for it; month: a rate of the monthly table, used for a date with neither (ENG-40).",
+      "enum": [
+        "day",
+        "month"
+      ],
+      "examples": [
+        "day"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Where the rate came from, such as the bank's board rate.",
+      "examples": [
+        "DBS board rate at 4 pm"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "on": {
+      "description": "The day; for a month, the month's first day.",
+      "examples": [
+        "2026-10-16"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "quote": {
+      "description": "The rate as the source quotes it, a decimal string of up to 10 decimal places (ENG-12, ENG-44).",
+      "examples": [
+        "1.2953"
+      ],
+      "type": "string"
+    },
+    "quote_form": {
+      "default": "base-per-unit",
+      "description": "How the quote is given: base currency per one unit (stored as it is), per 100 units, or foreign currency per one unit of the base. Fyniq stores base per one unit under RND-RATE: round(quote ÷ 100, 10) or round(1 ÷ quote, 10), half away from zero.",
+      "enum": [
+        "base-per-unit",
+        "base-per-100",
+        "foreign-per-base"
+      ],
+      "examples": [
+        "base-per-unit"
+      ],
+      "type": "string"
+    },
+    "rate": {
+      "description": "Base currency per one unit of currency, as stored under RND-RATE (up to 10 decimal places).",
+      "examples": [
+        "1.2953"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "1 while the rate is current, 2 once it is withdrawn: the only change a rate has. Its ETag is the version.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "withdrawn": {
+      "description": "The rate is withdrawn: the cascade no longer finds it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "withdrawn_at": {
+      "description": "When it was withdrawn.",
+      "examples": [
+        "2026-10-17T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "withdrawn_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who withdrew it."
+    },
+    "withdrawn_reason": {
+      "description": "Why it was withdrawn.",
+      "examples": [
+        "Replaced by a new rate for the same day"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "rate",
+    "base_currency",
+    "entered_at",
+    "withdrawn",
+    "kind",
+    "currency",
+    "on",
+    "quote"
+  ],
+  "title": "FXRate",
+  "type": "object"
+}

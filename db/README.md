@@ -81,6 +81,10 @@ so decimals stay exact), read by every service through `statutory_pack_versions`
 FY110) and no value marked `[verify]` is stored. Each organisation's activation of a version is a tenant
 row, `statutory_pack_activation` (000034): insert-only, audited, approved by someone other than its
 proposer (SOD-10); no role may insert one until the approval engine lands.
+The daily exchange-rate feed (000070, FR-GL-05): `fx_feed_rate` (one rate per base currency, currency and date, as
+published and under `RND-RATE`), read by every service through `fx_feed_rates` and written only by the worker's feed
+job through `record_feed_rate`; a feed rate never changes or goes, and a different rate for a stored date is refused
+(`FY168`).
 Add one only with its access model here and in the test's list.
 - **The installation organisation** (`organisation.kind = 'installation'`, one per installation,
   created by first-run setup) holds only the installation's audit trail: setup and Super-admin events.
@@ -128,6 +132,7 @@ Add one only with its access model here and in the test's list.
 | The close (FR-GL-07, FM-4, AUD-04; rev 0.50) | `period_close_check` and `period_close` never change (`FY152`); `period_close_guard` refuses an attestation by the one who ran the checks, on unclean checks or another period's, or before them (`FY153`); `period_close_snapshot_hash` recomputes the snapshot's SHA-256; the stale-check refusal (G4-053) runs in the API under the ledger lock | `TestAttackTheCloseIsAttestedByAnotherOnItsOwnChecks`, `TestRaceBackDatedPostingAgainstTheAttestedClose` |
 | Reopening (FR-GL-08, FM-1; rev 0.51) | `period_reopen` never changes (`FY154`); `period_reopen_guard` ties it to the period's latest close and an approved request to reopen that period, signed by the one who reopens it (`FY155`); `period_reopen_after_hash` recomputes the after snapshot's SHA-256 | `TestAttackAReopeningIsTheApprovedRequest` |
 | Variance explanations (FR-GL-14; rev 0.65) | `period_variance_explanation` is append-only: `period_variance_explanation_guard` refuses an update, a delete or a truncate, even for the table's owner (`FY163`), and an explanation in a period that is not open (read FOR SHARE, so it never interleaves with the close) or of an account that is not an income or expense account (`FY162`); the totals it explains are checked against the balance service by the domain, which also judges whether it is current | `TestAttackVarianceExplanationsAreAppendOnlyAndOnlyInAnOpenPeriod` |
+| Exchange rates (FR-GL-05, `RND-RATE`; rev 0.70) | `fx_rate` keeps the organisation's rates for a day and its monthly table: `fx_rate_guard` refuses a rate of the base currency or a monthly rate not on its month's first day (`FY166`), and any change but one withdrawal with who, when and why, even for the table's owner (`FY167`); `fx_rate_day_current` keeps one current rate per currency and day; `fx_rate_rnd_rate` and `fx_feed_rate_rnd_rate` check each rate against its quote and form; the feed as above (`FY168`) | `TestAttackExchangeRatesAreWithdrawnNeverChanged`, `TestTheDailyFeedIsTheWorkersAndNeverChanges` |
 | The close checklist (FR-GL-07; rev 0.68) | `close_checklist_template` versions and `close_checklist_entry` marks never change or go, even for the tables' owner (`FY165`); `close_checklist_guard` refuses a mark in a period that is not open, reading it FOR SHARE so a mark and the close never interleave (`FY164`); a skipped mark names its reason, and a template is one to 40 tasks | `TestAttackTheCloseChecklistIsAppendOnlyAndOnlyInAnOpenMonth` |
 
 INV-07, INV-10 and INV-11 arrive with their modules in P1, as do INV-13's per-person sub-ledgers and its
@@ -171,6 +176,9 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY163 | STORAGE-CLOSE-02 | An explanation of a variance never changes or goes: a new one replaces it |
 | FY164 | STORAGE-CLOSE-03 | A checklist task is marked only while its period is open |
 | FY165 | STORAGE-CLOSE-03 | A checklist template version or mark never changes or goes: save a new version, or mark the task again |
+| FY166 | STORAGE-FX-01 | An exchange rate is never of the base currency, and a monthly rate is dated on its month's first day |
+| FY167 | STORAGE-FX-01 | An organisation's exchange rate never changes or goes; it is withdrawn once |
+| FY168 | STORAGE-FX-01 | A rate of the daily feed never changes or goes |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

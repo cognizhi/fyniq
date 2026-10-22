@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cockroachdb/apd/v3"
 	"pgregory.net/rapid"
 
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -272,4 +273,84 @@ func TestPercentPinnedCases(t *testing.T) {
 	if got, err := Percent(m(t, "1", jpy), m(t, "3", jpy)); err != nil || got != "33.3" {
 		t.Errorf("Percent of yen = %q, %v", got, err)
 	}
+}
+
+// req: RND-RATE
+// The cases are worked by hand (60-digit decimal arithmetic, then half away from zero to 10 places), never by running
+// the code under test.
+func TestRateTurnsEveryQuoteIntoBasePerUnit(t *testing.T) {
+	cases := []struct {
+		quote string
+		form  money.QuoteForm
+		from  money.Currency
+		want  string
+	}{
+		{"1.3472", money.QuoteBasePerUnit, usd, "1.3472"},
+		{"90.4512", money.QuoteBasePer100, jpy, "0.904512"},
+		{"123.4567890123", money.QuoteBasePer100, jpy, "1.2345678901"},
+		{"0.0000000050", money.QuoteBasePer100, jpy, "0.0000000001"}, // a tie, away from zero
+		{"0.7432", money.QuoteForeignPerBase, usd, "1.345532831"},
+		{"1.5", money.QuoteForeignPerBase, usd, "0.6666666667"},
+		{"12000", money.QuoteForeignPerBase, usd, "0.0000833333"},
+		{"2048", money.QuoteForeignPerBase, usd, "0.0004882813"}, // 1 ÷ 2048 = 0.00048828125 exactly: a tie
+	}
+	for _, c := range cases {
+		q, err := money.ParseQuote(c.quote, "quote")
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, err := Rate(q, c.form, c.from, sgd, "test")
+		if err != nil {
+			t.Fatalf("%s %s: %v", c.quote, c.form, err)
+		}
+		if r.String() != c.want || r.From != c.from || r.To != sgd || r.Source != "test" {
+			t.Errorf("%s %s: want %s %s→SGD, got %s %s→%s from %q", c.quote, c.form, c.want, c.from, r, r.From, r.To, r.Source)
+		}
+	}
+	q, _ := money.ParseQuote("0.0000000049", "quote")
+	if _, err := Rate(q, money.QuoteBasePer100, jpy, sgd, "test"); err == nil || !strings.Contains(err.Error(), "smallest rate") {
+		t.Errorf("a quote whose rate rounds to zero: want refused, got %v", err)
+	}
+	q, _ = money.ParseQuote("1.3", "quote")
+	if _, err := Rate(q, "per-pound", usd, sgd, "test"); err == nil {
+		t.Error("an unknown quote form: want refused")
+	}
+	for _, s := range []string{"0", "-1.3", "1.00000000001", "12345678901", "1e3"} {
+		if _, err := money.ParseQuote(s, "quote"); err == nil {
+			t.Errorf("ParseQuote(%q): want refused", s)
+		}
+	}
+}
+
+// req: RND-RATE
+// Properties: the stored rate is within half a unit of the 10th place of the exact one, so a quote per 100 units and
+// its inverse agree with the exact rate to open question 30's bound. A rate is refused only when it rounds to zero, or
+// when it has more than 10 digits before the point, which NUMERIC(20,10) cannot hold.
+func TestRateIsWithinHalfAUnitOfTheTenthPlace(t *testing.T) {
+	half, _, _ := apd.NewFromString("0.00000000005")
+	tooLarge := apd.New(1, money.RateIntegerDigits)
+	rapid.Check(t, func(t *rapid.T) {
+		units := rapid.Int64Range(1, 99_999_999_999_999).Draw(t, "units") // a quote of up to 10 places
+		q := apd.New(units, -10)
+		form := rapid.SampledFrom([]money.QuoteForm{money.QuoteBasePer100, money.QuoteForeignPerBase}).Draw(t, "form")
+		r, err := Rate(q, form, usd, sgd, "test")
+		var exact apd.Decimal
+		if form == money.QuoteBasePer100 {
+			work.Quo(&exact, q, apd.New(100, 0))
+		} else {
+			work.Quo(&exact, apd.New(1, 0), q)
+		}
+		if err != nil {
+			if exact.Cmp(half) >= 0 && exact.Cmp(tooLarge) < 0 {
+				t.Fatalf("%s %s: refused a rate of %s: %v", q.Text('f'), form, exact.Text('f'), err)
+			}
+			return
+		}
+		var diff apd.Decimal
+		work.Sub(&diff, r.Decimal(), &exact)
+		diff.Abs(&diff)
+		if diff.Cmp(half) > 0 {
+			t.Fatalf("%s %s: stored %s, exact %s, off by %s", q.Text('f'), form, r, exact.Text('f'), diff.Text('f'))
+		}
+	})
 }

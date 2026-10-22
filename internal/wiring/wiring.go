@@ -25,4 +25,7 @@ type Kit struct {
 	// Email sends outbound mail (FR-INT-21), from MailFrom; nil when no provider is configured.
 	Email    ports.Email
 	MailFrom string
+	// Rates is the daily exchange-rate feed (FR-GL-05); nil until one is configured: the MAS adapter arrives at the
+	// cloud gate, and until then organisations enter their own rates.
+	Rates ports.RateFeed
 }

@@ -60,6 +60,10 @@ fyniq_api       INSERT    evidence (data_class, document_id, evidence_type, file
 fyniq_api       SELECT    evidence
 fyniq_api       UPDATE    evidence (removed_at, state, version)
 fyniq_api       EXECUTE   finish_job_slot()
+fyniq_api       SELECT    fx_feed_rates
+fyniq_api       INSERT    fx_rate (currency, entered_at, entered_by, kind, note, on_date, quote, quote_form, rate)
+fyniq_api       SELECT    fx_rate
+fyniq_api       UPDATE    fx_rate (withdrawn_at, withdrawn_by, withdrawn_reason)
 fyniq_api       INSERT    gst_registration (accounting_basis, deregistered_from, gst_number, quarter_start_month, recorded_at, registered_from, return_frequency)
 fyniq_api       SELECT    gst_registration
 fyniq_api       UPDATE    gst_registration (accounting_basis, deregistered_from, gst_number, quarter_start_month, recorded_at, registered_from, return_frequency, version)
@@ -179,6 +183,8 @@ fyniq_executor  UPDATE    document_sequence (next_number)
 fyniq_executor  INSERT    document_version (created_by, document_id, payload, version)
 fyniq_executor  SELECT    document_version
 fyniq_executor  SELECT    evidence
+fyniq_executor  SELECT    fx_feed_rates
+fyniq_executor  SELECT    fx_rate
 fyniq_executor  SELECT    gst_registration
 fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
@@ -229,6 +235,8 @@ fyniq_readonly  SELECT    document_sequence
 fyniq_readonly  SELECT    document_version
 fyniq_readonly  SELECT    email_message
 fyniq_readonly  SELECT    evidence
+fyniq_readonly  SELECT    fx_feed_rates
+fyniq_readonly  SELECT    fx_rate
 fyniq_readonly  SELECT    gst_registration
 fyniq_readonly  SELECT    heartbeats
 fyniq_readonly  SELECT    idempotency_key
@@ -288,6 +296,8 @@ fyniq_worker    UPDATE    email_message (accepted_at, attempt_started_at, attemp
 fyniq_worker    SELECT    evidence
 fyniq_worker    UPDATE    evidence (finalised_at, locked_key, retain_until, state, version)
 fyniq_worker    EXECUTE   finish_job_slot()
+fyniq_worker    SELECT    fx_feed_rates
+fyniq_worker    SELECT    fx_rate
 fyniq_worker    SELECT    gst_registration
 fyniq_worker    SELECT    heartbeats
 fyniq_worker    DELETE    idempotency_key
@@ -317,6 +327,7 @@ fyniq_worker    SELECT    period_variance_explanation
 fyniq_worker    DELETE    rate_limit_window
 fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()
+fyniq_worker    EXECUTE   record_feed_rate()
 fyniq_worker    SELECT    recurring_journal
 fyniq_worker    UPDATE    recurring_journal (next_on)
 fyniq_worker    SELECT    recurring_journal_version
