@@ -85,7 +85,8 @@
         "journal",
         "opening_balance",
         "bill",
-        "bill_payment"
+        "bill_payment",
+        "credit_application"
       ],
       "examples": [
         "organisation_setting"
@@ -110,7 +111,8 @@
         "bill.post",
         "bill.void",
         "bill.edit",
-        "bill_payment.void"
+        "bill_payment.void",
+        "credit_application.void"
       ],
       "examples": [
         "organisation_setting.change"

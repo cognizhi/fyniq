@@ -246,7 +246,24 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		add(d.SupplierID, Item{Kind: KindCredit, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, Total: total, Open: total.Neg(), Carrying: debited.Neg()})
+		allocs, err := u.Allocations().OfDocument(ctx, doc.ID) // its applications to bills (FR-AP-03)
+		if err != nil {
+			return err
+		}
+		applied, appliedBase, err := settled(allocs, d.Currency, base, asAt, nil)
+		if err != nil {
+			return err
+		}
+		it := Item{Kind: KindCredit, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, Total: total}
+		if it.Open, err = applied.Sub(total); err != nil {
+			return err
+		}
+		if it.Carrying, err = appliedBase.Sub(debited); err != nil {
+			return err
+		}
+		if !it.Open.IsZero() || !it.Carrying.IsZero() {
+			add(d.SupplierID, it)
+		}
 		return nil
 	})
 	if err != nil {
@@ -287,12 +304,27 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		it := Item{Kind: KindCredit, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, Total: total, Open: d.Unapplied.Neg()}
+		later, err := u.Allocations().OfDocument(ctx, doc.ID) // the applications of its unapplied amount to bills (FR-AR-18)
+		if err != nil {
+			return err
+		}
+		used, usedBase, err := settled(later, d.Currency, base, asAt, nil)
+		if err != nil {
+			return err
+		}
+		it := Item{Kind: KindCredit, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, Total: total}
+		if it.Open, err = used.Sub(d.Unapplied); err != nil {
+			return err
+		}
 		if it.Carrying, err = debited.Sub(appliedBase); err != nil {
 			return err
 		}
-		it.Carrying = it.Carrying.Neg()
-		add(d.SupplierID, it)
+		if it.Carrying, err = usedBase.Sub(it.Carrying); err != nil {
+			return err
+		}
+		if !it.Open.IsZero() || !it.Carrying.IsZero() {
+			add(d.SupplierID, it)
+		}
 		return nil
 	})
 	if err != nil {
@@ -386,7 +418,8 @@ func Reconcile(ctx context.Context, u storage.UnitOfWork, base money.Currency, a
 		if out.Base.Control, err = out.Base.Control.Add(owedBase); err != nil {
 			return out, l, err
 		}
-		if t.SourceType == ledger.SourceBill || t.SourceType == ledger.SourceBillPayment || t.SourceType == ledger.SourceVendorCredit {
+		if t.SourceType == ledger.SourceBill || t.SourceType == ledger.SourceBillPayment || t.SourceType == ledger.SourceVendorCredit ||
+			t.SourceType == ledger.SourceCreditApplication {
 			continue
 		}
 		c.Explained = append(c.Explained, Explained{SourceType: t.SourceType, Amount: owed, Base: owedBase})

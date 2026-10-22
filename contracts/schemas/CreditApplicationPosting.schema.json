@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "application": {
+      "$ref": "CreditApplication.schema.json",
+      "description": "The application after the command."
+    },
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry the command posted: the realised FX, or its reversal; absent when nothing posted."
+    }
+  },
+  "required": [
+    "application"
+  ],
+  "title": "CreditApplicationPosting",
+  "type": "object"
+}

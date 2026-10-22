@@ -261,6 +261,10 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** its allocation records the payment and its version, the bill, the date, the amount in the bill's currency, the carrying amount cleared in the base currency and the realised FX
 - **AND** it never changes or goes, and a reversing allocation negates it exactly, once, on or after its date (FY170, FY171)
 
+#### Scenario: Supplier credits applied later, built (rev 0.81)
+- **WHEN** a supplier credit is applied to a bill
+- **THEN** one allocation settles the bill and one the credit, each with the carrying amount it cleared
+
 #### Scenario: G4-054 Two receipts allocated at once to one invoice
 - **WHEN** two S$1,000 receipts are allocated at the same time to one S$1,000 invoice
 - **THEN** one settles the invoice

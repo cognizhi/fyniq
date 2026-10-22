@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What is applied, in their currency: at most what the bill has open and what is left of the credit (CREDIT-05)."
+    },
+    "bill_id": {
+      "description": "The bill: a posted bill of the credit's supplier, in its currency.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "credit_id": {
+      "description": "The credit: a posted vendor credit, or a payment of bills with an amount unapplied.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The day the credit is applied.",
+      "examples": [
+        "2026-10-21"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "credit_id",
+    "bill_id",
+    "date",
+    "amount"
+  ],
+  "title": "CreditApplicationDraft",
+  "type": "object"
+}

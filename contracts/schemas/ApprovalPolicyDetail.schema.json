@@ -47,7 +47,8 @@
         "journal",
         "opening_balance",
         "bill",
-        "bill_payment"
+        "bill_payment",
+        "credit_application"
       ],
       "examples": [
         "organisation_setting"

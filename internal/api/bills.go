@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -83,7 +84,7 @@ type BillSupplier struct {
 type BillStates struct {
 	Approval string `json:"approval" enum:"draft,awaiting_approval,approved,rejected" doc:"draft until it is posted or asked for; awaiting_approval while a request to post it waits; approved once posted; rejected when the latest request was rejected and it is still a draft." example:"draft"`
 	Ledger   string `json:"ledger" enum:"not_posted,posted,voided" doc:"not_posted, posted, or voided by a reversal." example:"not_posted"`
-	Payment  string `json:"payment" enum:"unpaid,scheduled,part_paid,paid,written_off" doc:"What has been paid of it, from the payments recorded against it net of their voids (FR-AR-18): unpaid, part_paid or paid. scheduled and written_off arrive with payment batches and write-offs." example:"unpaid"`
+	Payment  string `json:"payment" enum:"unpaid,scheduled,part_paid,paid,written_off" doc:"What has been paid of it, from the payments and credits applied to it net of their voids (FR-AR-18): unpaid, part_paid or paid; for a vendor credit, what is applied of it to bills. scheduled and written_off arrive with payment batches and write-offs." example:"unpaid"`
 	Due      string `json:"due" enum:"not_due,overdue" doc:"overdue once its due date has passed while it is posted and not paid in full; not_due otherwise." example:"not_due"`
 }
 
@@ -125,10 +126,12 @@ type Bill struct {
 	ApprovalAsked string          `json:"approval_asked,omitempty" format:"uuid" doc:"getBill only: the pending request to post or void it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
 }
 
-// BillPaidBy is a payment that settles a bill: its allocation (FR-AR-18).
+// BillPaidBy is a payment that settles a bill, or an application of a credit that settles a bill or a vendor credit:
+// its allocation (FR-AR-18).
 type BillPaidBy struct {
-	PaymentID     string `json:"payment_id" format:"uuid" doc:"The payment." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
-	PaymentNumber string `json:"payment_number,omitempty" doc:"Its number." example:"PAY-0003"`
+	Via           string `json:"via" enum:"payment,application" doc:"payment: a payment of bills; application: a supplier credit applied (FR-AP-03)." example:"payment"`
+	PaymentID     string `json:"payment_id" format:"uuid" doc:"The payment, or the application." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
+	PaymentNumber string `json:"payment_number,omitempty" doc:"The payment's number; for an application, the other document's: the credit's on a bill, the bill's on a credit." example:"PAY-0003"`
 	Date          string `json:"date" format:"date" doc:"The day it settled the bill." example:"2026-10-20"`
 	Amount        Money  `json:"amount" doc:"What it settled, in the bill's currency."`
 	RealisedFX    Money  `json:"realised_fx" doc:"The realised gain (positive) or loss (negative) it made, in the base currency (ENG-41)."`
@@ -554,10 +557,20 @@ func billPaid(ctx context.Context, u storage.UnitOfWork, b *Bill, total money.Mo
 		if x.ReversesID != nil {
 			continue
 		}
-		p := BillPaidBy{PaymentID: x.SourceID.String(), Date: dayText(x.On), Amount: storedOut(x.Amount, x.Currency),
+		p := BillPaidBy{Via: "payment", PaymentID: x.SourceID.String(), Date: dayText(x.On), Amount: storedOut(x.Amount, x.Currency),
 			RealisedFX: storedOut(x.RealisedFX, x.BaseCurrency), Voided: voided[x.ID]}
 		if doc, err := u.Documents().Get(ctx, x.SourceID); err == nil {
 			p.PaymentNumber = doc.Number
+			if d, err := credits.Read(doc); err == nil { // an application: name the other document
+				p.Via = "application"
+				other := d.CreditID
+				if other == id {
+					other = d.BillID
+				}
+				if o, err := u.Documents().Get(ctx, other); err == nil {
+					p.PaymentNumber = o.Number
+				}
+			}
 		}
 		b.Payments = append(b.Payments, p)
 	}

@@ -65,7 +65,7 @@ const partPaid: Bill = {
   ...posted,
   states: states({ approval: "approved", ledger: "posted", payment: "part_paid" }),
   open: { amount: "690.00", currency: "SGD" },
-  payments: [{ payment_id: "p1", payment_number: "PAY-0001", date: "2026-10-20", amount: { amount: "400.00", currency: "SGD" }, realised_fx: { amount: "0.00", currency: "SGD" }, voided: false }],
+  payments: [{ via: "payment", payment_id: "p1", payment_number: "PAY-0001", date: "2026-10-20", amount: { amount: "400.00", currency: "SGD" }, realised_fx: { amount: "0.00", currency: "SGD" }, voided: false }],
 };
 const read = (b: Bill) => ({ status: 200, body: b, headers: { ETag: `"${b.version}-${b.status}"` } });
 const reads = { "GET /v1/accounts": accounts, "GET /v1/contacts": vendors, "GET /v1/purchases/gst-codes": codes };

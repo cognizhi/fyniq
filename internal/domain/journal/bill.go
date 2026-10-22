@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -239,6 +240,10 @@ func unpaid(ctx context.Context, u storage.UnitOfWork, doc storage.Document, wha
 		return err
 	}
 	if x, ok := settled[doc.ID]; ok && !isZeroDecimal(string(x)) {
+		if doc.Type == storage.DocumentVendorCredit {
+			return &credits.Error{Code: credits.CodeApplied, Message: fmt.Sprintf("%s of the credit note is applied to bills", x),
+				Fix: fmt.Sprintf("Void its applications first, then %s it", what)}
+		}
 		return &bill.Error{Code: bill.CodePaid, Message: fmt.Sprintf("payments settle %s of the bill", x),
 			Fix: fmt.Sprintf("Void its payments first, then %s it", what)}
 	}

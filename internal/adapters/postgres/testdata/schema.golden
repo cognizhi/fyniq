@@ -745,7 +745,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -773,7 +773,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))))
+approval_request | approval_request_object_known | CHECK (((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -930,7 +930,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text])))
 document | document_type_not_null | NOT NULL type
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_number | document_number_created_at_not_null | NOT NULL created_at
@@ -1962,7 +1962,7 @@ accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_sub
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
-allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6d100e2231e82010d4ed7bfb24451c99
+allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 388ef6f2e3afcb192b15d843e681364b
 approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54bfd8bf483ebb04da99069f2b6836cf
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
@@ -1989,7 +1989,7 @@ create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a01747c115d9a2d30df18c0df49e146f
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
-document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 66154a552b8791ce6929984a33bab7d1
+document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 07ee1d98374e820d45cb71cf56e1da6e
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_version_created_by() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b35b5285220973313c6224ad1d90dd81
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
@@ -2008,7 +2008,7 @@ issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now tim
 journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
-journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | dad4fb069f70b12e5e2e834126833a44
+journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 06dd03404c4734738f5900217e016bbc
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b6767cda9357653aa644d5c1fa3c7de0
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2

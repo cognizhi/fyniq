@@ -90,6 +90,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **THEN** it is a vendor_credit document, entered as a bill is, numbered from the gap-free VC- sequence, posted by vendor_credit@1 as a bill's legs reversed, and approved on the size of its total
 - **AND** the AP sub-ledger holds it as a credit with the supplier
 
+#### Scenario: Applying a credit to a bill (rev 0.81)
+- **WHEN** a posted vendor credit, or a payment's unapplied amount, is applied to a posted bill of the supplier in its currency
+- **THEN** an application settles both by the amount, at most what each has open, and posts only the realised FX between their stored rates, nothing in the base currency
+- **AND** voiding it reopens both, with a second person in Founder mode, and an applied credit is voided only once its applications are
+
 ### Requirement: FR-AP-04 Bill capture
 The system SHALL capture bills forwarded to a per-organisation email address or uploaded or photographed, as part of FR-DOC-12 (now P1).
 

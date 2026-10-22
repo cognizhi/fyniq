@@ -57,13 +57,14 @@ type Deps struct {
 // API is the registered API.
 type API struct {
 	huma.API
-	deps     Deps
-	policies map[string]authz.Policy
-	journals journal.Service
-	bills    journal.Bills
-	payments journal.BillPayments
-	closing  closing.Service
-	passkeys *passkey.RelyingParty // nil without an origin
+	deps         Deps
+	policies     map[string]authz.Policy
+	journals     journal.Service
+	bills        journal.Bills
+	payments     journal.BillPayments
+	applications journal.CreditApplications
+	closing      closing.Service
+	passkeys     *passkey.RelyingParty // nil without an origin
 }
 
 func init() {
@@ -154,8 +155,8 @@ func New(mux humago.Mux, d Deps) *API {
 		d.Auth = authn.NotYet{} // without a database nobody gets past authentication
 	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store},
-		payments: journal.BillPayments{Store: d.Store},
-		closing:  closing.Service{Store: d.Store, Clock: d.Clock}}
+		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
+		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -166,6 +167,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.journals.AfterPosting = a.commitEvidence // a posted journal's files go to the locked store (FR-DOC-13)
 	a.bills.AfterPosting = a.commitEvidence
 	a.payments.AfterPosting = a.commitEvidence
+	a.applications.AfterPosting = a.commitEvidence
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -205,6 +207,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBills(a)
 	registerBillPayments(a)
 	registerPayables(a)
+	registerCreditApplications(a)
 	registerGSTCodes(a)
 	registerRecurringJournals(a)
 	registerAccounting(a)

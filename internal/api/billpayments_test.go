@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
+	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -160,4 +161,85 @@ func TestPayablesThroughTheAPI(t *testing.T) {
 		t.Fatalf("at 30 November: %s", g.Raw)
 	}
 	e.problemIs(e.call(http.MethodGet, "/v1/payables?as_at=31-10-2026", e.as(authz.Auditor), nil), "getPayables", 422, CodeInvalid)
+}
+
+// postedCredit saves and posts a vendor credit of net plus GST as an Accountant and returns its ID.
+func (e *env) postedCredit(net, gst string) string {
+	e.t.Helper()
+	d := e.billDraft(net, gst)
+	d["kind"], d["supplier_ref"] = "vendor_credit", "CN-"+net
+	r := e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), d)
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("a credit: %d %s", r.Status, r.Raw)
+	}
+	p := e.call(http.MethodPost, "/v1/bills/"+r.str("id")+"/post", e.as(authz.Accountant), nil, "If-Match", r.Header.Get("ETag"))
+	if p.Status != http.StatusOK {
+		e.t.Fatalf("posting the credit: %d %s", p.Status, p.Raw)
+	}
+	return r.str("id")
+}
+
+// appliedCredit applies a posted credit of S$10.90 to a posted bill of S$10.90 as an Accountant and returns the
+// application's ID and ETag.
+func (e *env) appliedCredit() (id, etag string) {
+	e.t.Helper()
+	b, _ := e.postedBill("10.00", "0.90")
+	c := e.postedCredit("10.00", "0.90")
+	r := e.call(http.MethodPost, "/v1/credit-applications", e.as(authz.Accountant), map[string]any{"credit_id": c, "bill_id": b, "date": "2026-10-20",
+		"amount": map[string]any{"amount": "10.90", "currency": "SGD"}})
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("applyCredit = %d: %s", r.Status, r.Raw)
+	}
+	return r.str("application", "id"), r.Header.Get("ETag")
+}
+
+// FR-AP-03 and FR-AR-18 through the API (p1-purchases task 4.1): a vendor credit of S$32.70 applied to a bill of
+// S$109.00 settles both by S$32.70 and, in the base currency, posts nothing; the bill lists it among its payments with
+// the credit's number, and the credit with the bill's; more than is left is refused; in Founder mode a void is asked for
+// and approved by a second person (FM-1), which reopens both.
+// req: FR-AP-03
+// req: FR-AR-18
+// req: FM-1
+func TestCreditApplicationsThroughTheAPI(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Accountant, authz.Controller)
+	weiling := f.as(f.weiling, authz.Accountant, authz.Controller)
+	b, _ := e.postedBill("100.00", "9.00")
+	c := e.postedCredit("30.00", "2.70")
+	apply := func(amount string) response {
+		return e.call(http.MethodPost, "/v1/credit-applications", ahkow, map[string]any{"credit_id": c, "bill_id": b, "date": "2026-10-20",
+			"amount": map[string]any{"amount": amount, "currency": "SGD"}})
+	}
+	r := apply("32.70")
+	if r.Status != 201 || r.Body["entry"] != nil || r.str("application", "credit", "number") != "VC-0001" || r.str("application", "bill", "number") != "BILL-0001" ||
+		r.str("application", "realised_fx", "amount") != "0.00" {
+		t.Fatalf("applying the credit: %d %s", r.Status, r.Raw)
+	}
+	id, tag := r.str("application", "id"), r.Header.Get("ETag")
+	if g := e.call(http.MethodGet, "/v1/bills/"+b, weiling, nil); g.str("states", "payment") != "part_paid" || g.str("open", "amount") != "76.30" ||
+		!strings.Contains(g.Raw, `"via":"application","payment_id":"`+id+`","payment_number":"VC-0001"`) {
+		t.Fatalf("the bill: %s", g.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/bills/"+c, weiling, nil); g.str("states", "payment") != "paid" || g.str("open", "amount") != "0.00" ||
+		!strings.Contains(g.Raw, `"payment_number":"BILL-0001"`) {
+		t.Fatalf("the credit: %s", g.Raw)
+	}
+	e.problemIs(apply("0.01"), "applyCredit", 422, credits.CodeTooMuch)
+
+	void := map[string]any{"date": "2026-10-21", "reason": "Applied to the wrong bill"}
+	e.problemIs(e.call(http.MethodPost, "/v1/credit-applications/"+id+"/void", ahkow, void, "If-Match", tag), "voidCreditApplication", 409, CodeApplicationVoidApproval)
+	asked := e.call(http.MethodPost, "/v1/credit-applications/"+id+"/void-approval", ahkow, void, "If-Match", tag)
+	if asked.Status != 202 || asked.str("operation") != approval.OpApplicationVoid || !strings.Contains(asked.str("envelope"), `"applied":"32.70 SGD"`) {
+		t.Fatalf("asking to void: %d %s", asked.Status, asked.Raw)
+	}
+	if a := f.decide(weiling, asked.str("id"), "approve", hashOf(asked)); a.Status != 200 || a.str("status") != "approved" {
+		t.Fatalf("approving the void: %d %s", a.Status, a.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/credit-applications/"+id, weiling, nil); g.str("status") != "reversed" {
+		t.Fatalf("the application after the void: %s", g.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/bills/"+b, weiling, nil); g.str("open", "amount") != "109.00" || g.str("states", "payment") != "unpaid" {
+		t.Fatalf("the bill after the void: %s", g.Raw)
+	}
 }

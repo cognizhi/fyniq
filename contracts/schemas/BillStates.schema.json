@@ -39,7 +39,7 @@
       "type": "string"
     },
     "payment": {
-      "description": "What has been paid of it, from the payments recorded against it net of their voids (FR-AR-18): unpaid, part_paid or paid. scheduled and written_off arrive with payment batches and write-offs.",
+      "description": "What has been paid of it, from the payments and credits applied to it net of their voids (FR-AR-18): unpaid, part_paid or paid; for a vendor credit, what is applied of it to bills. scheduled and written_off arrive with payment batches and write-offs.",
       "enum": [
         "unpaid",
         "scheduled",

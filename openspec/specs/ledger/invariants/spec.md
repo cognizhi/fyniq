@@ -100,7 +100,7 @@ Source: PRD-001 §10.7
 
 #### Scenario: The residual of a bill paid in parts (rev 0.77)
 - **GIVEN** a base-only line from a payment of bills
-- **WHEN** it is on the accounts-payable account and at most 1.00 in the base currency
+- **WHEN** it is on the accounts-payable account and at most 1.00 in the base currency, or comes on the same terms from a credit application (rev 0.81)
 - **THEN** `journal_line_base_only` accepts it
 - **AND** on any other account, or above 1.00, it refuses it (FY008)
 
