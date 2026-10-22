@@ -3,7 +3,7 @@ key: purchases.bills
 title: Bills
 mode: basic
 roles: [bookkeeper, ap_specialist, accountant, controller, approver, owner, auditor, tax_agent]
-requirements: [FR-AP-02, RND-GST-EXCL, ENG-42, FM-1, FM-2, SOD-3]
+requirements: [FR-AP-02, FR-AR-18, RND-GST-EXCL, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
 status: draft            # written with the bill screens (P1, p1-purchases); reviewed with the accountant
 ---
 
@@ -19,7 +19,8 @@ A bill has separate states:
 - **Draft** until it is posted; **Awaiting approval** while another person is asked to approve it;
   **Rejected** when they said no;
 - **Posted** once it is in the books, or **Voided** once it is reversed;
-- **Overdue** once its due date has passed while it is still unpaid.
+- **Part paid** or **Paid** once payments are recorded against it;
+- **Overdue** once its due date has passed while it is not paid in full.
 
 A Bookkeeper, an AP specialist or an Accountant enters bills. An Accountant posts, voids and edits
 them. The Owner, the Auditor and the Tax agent can see them.
@@ -75,6 +76,41 @@ A posted bill is never changed in place.
 In Founder mode another founder approves a void or an edit first: the buttons say **Ask to void**
 and **Ask to post the edit**.
 
+## Record a payment
+
+When the company has paid a supplier, record the payment on the bill. Bank import will match
+payments later; until then they are recorded by hand.
+
+1. Open the posted bill and select **Record payment**.
+2. Enter the **Date paid** and choose the account it was **Paid from**: a bank, card or wallet
+   account in the bill's currency or in SGD.
+3. Enter the **Amount paid of the bill**. It starts at what is still open; enter less to record a
+   part payment. A payment never settles more than is open.
+4. Enter the **Bank reference** if there is one, and select **Record payment**.
+
+The payment posts at once, numbered from the payment sequence (PAY-0001 onwards): what the company
+owes the supplier goes down, and so does the account it was paid from. The bill shows **Part paid**
+or **Paid**, what is still open, and its payments.
+
+For a bill in another currency:
+
+- paid from an account in that currency, the payment takes the rate for the date paid, or the rate
+  you enter from the bank's advice;
+- paid from an SGD account, enter **What the account paid** in SGD as the statement shows it.
+
+The difference between what the bill carried at its own rate and what the payment cost is the
+exchange gain or loss, posted to FX & rounding differences. A bill paid in parts can leave a cent
+of rounding; the last part clears it.
+
+## Void a payment
+
+A payment recorded by mistake is voided, never deleted. Select **Void** beside it under
+**Payments**, with a date and a reason: a reversing entry posts and the bill is open again by what
+the payment paid. In Founder mode another founder approves the void first: the button says **Ask to
+void**.
+
+A bill that payments settle is not voided or edited until its payments are voided.
+
 ## Common problems
 
 | Message | What to do |
@@ -84,6 +120,9 @@ and **Ask to post the edit**.
 | The due date is before the bill's date (BILL-07) | Enter a due date on or after the invoice date, or leave it blank |
 | The bill needs another person's approval (BILL-09) | Select **Ask for approval** |
 | A system account is missing (LEDGER-22) | Load the standard chart, which has 2010 Accounts payable and 2200 GST control |
+| More than the bill has open (BILLPAY-05) | Enter at most what is open; void a payment entered twice |
+| What the account paid is missing (LEDGER-27) | For a bill in another currency paid from an SGD account, enter what the account paid in SGD |
+| Payments settle the bill (BILL-13) | Void its payments first, then void or edit the bill |
 
 ## Related
 

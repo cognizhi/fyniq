@@ -59,11 +59,15 @@ func TestTheSampleCompanyLoadsAndBalances(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		// The standard chart's system roles, so a bill finds 2010 and 2200 (FR-COA-03).
+		// The standard chart's system roles, so a bill finds 2010 and 2200 (FR-COA-03), and its attributes, so a payment
+		// finds its money account (FR-COA-02).
 		for code, role := range map[string]storage.AccountRole{"2010": "accounts-payable", "2200": "gst-control", "7030": "fx-rounding", "1100": "accounts-receivable"} {
 			if a, err := u.Accounts().ByCode(ctx, code); err != nil || a.Role != role {
 				t.Errorf("%s: want the role %s, got %+v %v", code, role, a, err)
 			}
+		}
+		if a, err := u.Accounts().ByCode(ctx, "1010"); err != nil || !a.MoneyAccount || !a.Revalue || a.Guidance != "" || a.Name == "Petty cash" {
+			t.Errorf("1010: want the sample company's money account with the standard attributes, got %+v %v", a, err)
 		}
 		return nil
 	}); err != nil {

@@ -51,7 +51,8 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   void reopens. Tests `// req: ledger/posting-rules Customer and supplier payments` (supplier),
   `// req: ENG-41` (rev 0.77: `bill_payment@1`, allocations, the residual of a bill paid in parts on a
   base-only 2010 line, the API and the void's approval)
-- [ ] 3.2 Record payment on the bill record; the payment state; help and guide
+- [x] 3.2 Record payment on the bill record; the payment state; help and guide (the Payments card with
+  each payment's void; the sample company's money accounts from the standard chart)
 
 ## 4. Vendor credits and refunds
 
