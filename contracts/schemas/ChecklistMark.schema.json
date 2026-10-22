@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "description": "What was done; for a skipped task, why it does not apply this month.",
+      "examples": [
+        "4 statements agreed"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "state": {
+      "description": "done; skipped for the month, with a reason in note; or open again.",
+      "enum": [
+        "done",
+        "skipped",
+        "open"
+      ],
+      "examples": [
+        "done"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "title": "ChecklistMark",
+  "type": "object"
+}

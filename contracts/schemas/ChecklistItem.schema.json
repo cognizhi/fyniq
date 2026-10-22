@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-06T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "by": {
+      "$ref": "Person.schema.json",
+      "description": "Who marked it last."
+    },
+    "detail": {
+      "description": "More about it.",
+      "examples": [
+        "Each balance agrees with its statement at the month's end"
+      ],
+      "type": "string"
+    },
+    "due_on": {
+      "description": "When it is due: the month's end plus the template's due days.",
+      "examples": [
+        "2026-11-07"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "key": {
+      "description": "The task's key.",
+      "examples": [
+        "bank"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "What was done, or why it was skipped.",
+      "examples": [
+        "4 statements agreed"
+      ],
+      "type": "string"
+    },
+    "owner_role": {
+      "description": "The role that usually does it.",
+      "examples": [
+        "accountant"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "open until it is done, or skipped for the month with a reason; the close checks refuse the close while one is open.",
+      "enum": [
+        "open",
+        "done",
+        "skipped"
+      ],
+      "examples": [
+        "done"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What the task is.",
+      "examples": [
+        "Bank, card and wallet accounts reconciled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "title",
+    "due_on",
+    "state"
+  ],
+  "title": "ChecklistItem",
+  "type": "object"
+}

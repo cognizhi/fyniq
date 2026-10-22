@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "More about it.",
+      "examples": [
+        "Each balance agrees with its statement at the month's end"
+      ],
+      "type": "string"
+    },
+    "due_days": {
+      "description": "Due this many days after the month's end.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "maximum": 60,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "key": {
+      "description": "The task's key: the month's checklist marks it by it.",
+      "examples": [
+        "bank"
+      ],
+      "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+      "type": "string"
+    },
+    "owner_role": {
+      "description": "The role that usually does it.",
+      "enum": [
+        "owner",
+        "controller",
+        "accountant",
+        "bookkeeper",
+        "ar_specialist",
+        "ap_specialist",
+        "payroll_administrator",
+        "tax_agent"
+      ],
+      "examples": [
+        "accountant"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What the task is.",
+      "examples": [
+        "Bank, card and wallet accounts reconciled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "title",
+    "due_days"
+  ],
+  "title": "ChecklistTask",
+  "type": "object"
+}

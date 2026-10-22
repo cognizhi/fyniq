@@ -28,7 +28,7 @@ var CloseCodes = []string{closing.CodeNotOpen, closing.CodeStale, closing.CodeOr
 
 // CloseCheckItem is one close check's outcome.
 type CloseCheckItem struct {
-	Key      string `json:"key" doc:"Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances or opening; more join as their modules arrive." example:"drafts"`
+	Key      string `json:"key" doc:"Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances, checklist or opening; more join as their modules arrive." example:"drafts"`
 	Severity string `json:"severity" enum:"ok,warning,error" doc:"ok; warning (⚠) lets the close go on; error (✖) refuses it." example:"warning"`
 	Title    string `json:"title" doc:"What the check found." example:"Draft journals are dated in the period"`
 	Detail   string `json:"detail,omitempty" doc:"More about it, and what to do." example:"2 draft journal(s): once the period closes they cannot post on those dates"`
@@ -234,7 +234,8 @@ func registerClose(a *API) {
 			"period closed (✖), the balances agreeing with the ledger (✖), the trial balance at the period end netting to zero (✖), " +
 			"draft journals dated in the period (⚠), automatic reversals not posted (⚠), recurring journals without their drafts (⚠, or ✖ " +
 			"when the scheduler failed) or with content the posting rules refuse (⚠), variances against the previous month above both " +
-			"thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances) and, in the period the books " +
+			"thresholds with no explanation of their totals as they are (✖, FR-GL-14; listPeriodVariances), checklist tasks neither done " +
+			"nor skipped with a reason (✖, FR-GL-07; getPeriodChecklist) and, in the period the books " +
 			"start in, opening balances not posted (⚠). " +
 			"Side effects: the record of the run and its audit event. Needs If-Match with the period's ETag. Idempotent with " +
 			"Idempotency-Key; Prefer: return=preview runs them and records nothing.",

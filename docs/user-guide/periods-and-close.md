@@ -54,6 +54,7 @@ closes the month.
    - income and expense accounts that moved against the previous month by more than both
      thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
      explanation of their totals as they are now (✖; see [Explain the variances](#explain-the-variances));
+   - the month's close checklist: every task done, or skipped for the month with a reason (✖);
    - in the month the books start, the opening balances are posted (⚠).
 3. Another founder, an Owner or a Controller who did not run the checks, reads them, says what they
    attest and selects **Attest and close**. Fyniq asks them to confirm it's them first.

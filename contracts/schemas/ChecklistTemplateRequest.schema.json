@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "tasks": {
+      "description": "Every task, in order: a task left out is no longer on the checklist.",
+      "items": {
+        "$ref": "ChecklistTaskInput.schema.json"
+      },
+      "maxItems": 40,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "tasks"
+  ],
+  "title": "ChecklistTemplateRequest",
+  "type": "object"
+}

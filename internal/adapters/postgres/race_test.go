@@ -430,6 +430,7 @@ func TestRaceBackDatedPostingAgainstTheAttestedClose(t *testing.T) {
 	}
 	checked := func(b porttest.Books) storage.CloseCheck {
 		t.Helper()
+		checklistDone(t, s, b.Org, b.Oct.ID)
 		c, err := svc.RunChecks(as(context.Background(), "preparer"), b.Org, b.Oct.ID)
 		if err != nil || !c.Clean {
 			t.Fatalf("the checks: %v %+v", err, c)

@@ -250,6 +250,17 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** a period closes
 - **THEN** the trial balance at the period end is recorded as canonical JSON with its SHA-256, which the database recomputes
 
+#### Scenario: An unfinished checklist refuses the close (rev 0.68)
+- **GIVEN** a month's close checklist, from the organisation's template or, until it saves one, the platform's recommended template
+- **WHEN** a task is neither done nor skipped for the month with a reason
+- **THEN** the close checks refuse the close (Appendix C.2 #58)
+- **AND** each mark is kept, append-only, and the database refuses one in a month that is not open
+
+#### Scenario: Who changes the checklist template (rev 0.68)
+- **WHEN** the Accountant or the Controller saves the template, every task in order with its owner role and due day
+- **THEN** it becomes a new version that never changes, and its change is audited
+- **AND** the tasks it keeps keep their marks in the months already worked on
+
 ### Requirement: FR-GL-08 Period lock
 The database SHALL enforce the **period lock**: no posting with a date in a **closed** period (the hard lock), by anyone; the soft locks of FR-GL-09 are weaker states.
 

@@ -27,6 +27,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/approvals/{approval_id}/challenge` (challengeApproval): Start signing a request with a passkey
 - `POST /v1/approvals/{approval_id}/reject` (rejectApproval): Reject a request
 - `POST /v1/approvals/{approval_id}/withdraw` (withdrawApproval): Withdraw your request
+- `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
+- `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
 - `GET /v1/contacts` (listContacts): List the contacts
 - `POST /v1/contacts` (createContact): Add a contact
 - `GET /v1/contacts/{contact_id}` (getContact): Get a contact
@@ -85,6 +87,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PATCH /v1/organisation/settings/{key}` (updateSetting): Change an organisation setting
 - `GET /v1/periods` (listPeriods): List the periods
 - `GET /v1/periods/{period_id}` (getPeriod): Get a period
+- `GET /v1/periods/{period_id}/checklist` (getPeriodChecklist): Get a month's close checklist
+- `POST /v1/periods/{period_id}/checklist/{task_key}` (markChecklistTask): Mark a task of a month's close checklist
 - `GET /v1/periods/{period_id}/close` (getPeriodClose): Get a period's close
 - `POST /v1/periods/{period_id}/close` (closePeriod): Attest and close a period
 - `POST /v1/periods/{period_id}/close-checks` (runCloseChecks): Run a period's close checks

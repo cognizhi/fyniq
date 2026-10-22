@@ -782,6 +782,20 @@ Source: PRD-001 §C.2
 - **WHEN** no automatic reversal is due by the period's end and none from the period waits
 - **THEN** the check passes
 
+### Requirement: C.2 #58 Close checklist not finished
+The system SHALL refuse the close (✖) while a task of the month's close checklist is neither done nor skipped for the month with a reason (FR-GL-07; the founders' decision of 22 Oct 2026).
+
+Source: PRD-001 §C.2
+
+#### Scenario: A task left open
+- **GIVEN** a task of the month's close checklist that is neither done nor skipped
+- **WHEN** the period's close checks run
+- **THEN** the check refuses the close (✖)
+
+#### Scenario: Every task done or skipped with a reason
+- **WHEN** every task of the month's checklist is done, or skipped for the month with a reason
+- **THEN** the check passes
+
 ### Requirement: C.2 #57 Variances without an explanation
 The system SHALL refuse the close (✖) while an income or expense account's total for the period differs from its total for the previous period by more than both the variance amount and the variance percentage of the organisation's settings (the amount alone when the previous total is zero), and has no explanation of the two totals as they are (FR-GL-14).
 

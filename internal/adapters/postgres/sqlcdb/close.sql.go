@@ -58,6 +58,91 @@ func (q *Queries) GetCloseCheck(ctx context.Context, id uuid.UUID) (GetCloseChec
 	return i, err
 }
 
+const insertChecklistEntry = `-- name: InsertChecklistEntry :one
+INSERT INTO fyniq.close_checklist_entry (period_id, task_key, template_version, state, note, written_by, written_at)
+VALUES ($1, $2, $3, $4, $7, $5, $6)
+RETURNING id, period_id, task_key, template_version, state, note, written_by, written_at
+`
+
+type InsertChecklistEntryParams struct {
+	PeriodID        uuid.UUID
+	TaskKey         string
+	TemplateVersion int32
+	State           string
+	WrittenBy       string
+	WrittenAt       time.Time
+	Note            *string
+}
+
+type InsertChecklistEntryRow struct {
+	ID              uuid.UUID
+	PeriodID        uuid.UUID
+	TaskKey         string
+	TemplateVersion int32
+	State           string
+	Note            *string
+	WrittenBy       string
+	WrittenAt       time.Time
+}
+
+func (q *Queries) InsertChecklistEntry(ctx context.Context, arg InsertChecklistEntryParams) (InsertChecklistEntryRow, error) {
+	row := q.db.QueryRow(ctx, insertChecklistEntry,
+		arg.PeriodID,
+		arg.TaskKey,
+		arg.TemplateVersion,
+		arg.State,
+		arg.WrittenBy,
+		arg.WrittenAt,
+		arg.Note,
+	)
+	var i InsertChecklistEntryRow
+	err := row.Scan(
+		&i.ID,
+		&i.PeriodID,
+		&i.TaskKey,
+		&i.TemplateVersion,
+		&i.State,
+		&i.Note,
+		&i.WrittenBy,
+		&i.WrittenAt,
+	)
+	return i, err
+}
+
+const insertChecklistTemplate = `-- name: InsertChecklistTemplate :one
+INSERT INTO fyniq.close_checklist_template (version, tasks, written_by, written_at)
+VALUES ((SELECT coalesce(max(version), 0) + 1 FROM fyniq.close_checklist_template), $1, $2, $3)
+RETURNING id, version, tasks, written_by, written_at
+`
+
+type InsertChecklistTemplateParams struct {
+	Tasks     []byte
+	WrittenBy string
+	WrittenAt time.Time
+}
+
+type InsertChecklistTemplateRow struct {
+	ID        uuid.UUID
+	Version   int32
+	Tasks     []byte
+	WrittenBy string
+	WrittenAt time.Time
+}
+
+// The next version of the organisation's close checklist template (FR-GL-07); two at once collide on the version.
+func (q *Queries) InsertChecklistTemplate(ctx context.Context, arg InsertChecklistTemplateParams) (InsertChecklistTemplateRow, error) {
+	row := q.db.QueryRow(ctx, insertChecklistTemplate, arg.Tasks, arg.WrittenBy, arg.WrittenAt)
+	var i InsertChecklistTemplateRow
+	err := row.Scan(
+		&i.ID,
+		&i.Version,
+		&i.Tasks,
+		&i.WrittenBy,
+		&i.WrittenAt,
+	)
+	return i, err
+}
+
 const insertCloseCheck = `-- name: InsertCloseCheck :one
 INSERT INTO fyniq.period_close_check (period_id, checked_by, checked_at, ledger_revision, result, clean)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -249,6 +334,78 @@ func (q *Queries) InsertVarianceExplanation(ctx context.Context, arg InsertVaria
 		&i.CurrentAmount,
 		&i.PreviousAmount,
 		&i.Explanation,
+		&i.WrittenBy,
+		&i.WrittenAt,
+	)
+	return i, err
+}
+
+const latestChecklistEntries = `-- name: LatestChecklistEntries :many
+SELECT DISTINCT ON (task_key) id, period_id, task_key, template_version, state, note, written_by, written_at
+FROM fyniq.close_checklist_entry WHERE period_id = $1
+ORDER BY task_key, written_at DESC, id DESC
+`
+
+type LatestChecklistEntriesRow struct {
+	ID              uuid.UUID
+	PeriodID        uuid.UUID
+	TaskKey         string
+	TemplateVersion int32
+	State           string
+	Note            *string
+	WrittenBy       string
+	WrittenAt       time.Time
+}
+
+// Each task's latest entry for the period: its state (FR-GL-07).
+func (q *Queries) LatestChecklistEntries(ctx context.Context, periodID uuid.UUID) ([]LatestChecklistEntriesRow, error) {
+	rows, err := q.db.Query(ctx, latestChecklistEntries, periodID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LatestChecklistEntriesRow
+	for rows.Next() {
+		var i LatestChecklistEntriesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PeriodID,
+			&i.TaskKey,
+			&i.TemplateVersion,
+			&i.State,
+			&i.Note,
+			&i.WrittenBy,
+			&i.WrittenAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const latestChecklistTemplate = `-- name: LatestChecklistTemplate :one
+SELECT id, version, tasks, written_by, written_at FROM fyniq.close_checklist_template ORDER BY version DESC LIMIT 1
+`
+
+type LatestChecklistTemplateRow struct {
+	ID        uuid.UUID
+	Version   int32
+	Tasks     []byte
+	WrittenBy string
+	WrittenAt time.Time
+}
+
+func (q *Queries) LatestChecklistTemplate(ctx context.Context) (LatestChecklistTemplateRow, error) {
+	row := q.db.QueryRow(ctx, latestChecklistTemplate)
+	var i LatestChecklistTemplateRow
+	err := row.Scan(
+		&i.ID,
+		&i.Version,
+		&i.Tasks,
 		&i.WrittenBy,
 		&i.WrittenAt,
 	)

@@ -173,8 +173,12 @@ var codeFacts = map[string]struct {
 	closing.CodeLater:             {409, "A later period is closed"},
 	closing.CodeNoVariance:        {409, "The account has no variance to explain"},
 	closing.CodeMoved:             {409, "The totals changed since they were read"},
+	closing.CodeTemplate:          {422, "The checklist template is not valid"},
+	closing.CodeNoTask:            {409, "No such task on the checklist"},
+	closing.CodeSkipReason:        {422, "Skipping a task needs a reason"},
 	storage.CodeClose:             {409, "The close is not attested that way"},
 	storage.CodeVariance:          {409, "The variance is not explained that way"},
+	storage.CodeChecklist:         {409, "The checklist does not change that way"},
 	contact.CodeName:              {422, "The legal name is not valid"},
 	contact.CodeRole:              {422, "Neither a customer nor a vendor"},
 	contact.CodeEmail:             {422, "Not an email address"},
@@ -329,6 +333,7 @@ var storageFixes = map[string]string{
 	storage.CodeEvidence:     "Files can be removed only while the record is a draft; add a newer file instead",
 	storage.CodeAccounting:   "Record a new version instead; another member who holds the Accountant role confirms or approves it",
 	storage.CodeVariance:     "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
+	storage.CodeChecklist:    "Mark checklist tasks while the period is open; save a new template version rather than changing one",
 }
 
 // problem builds a Problem for one of the catalogue's codes.
