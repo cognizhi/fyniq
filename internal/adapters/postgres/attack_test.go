@@ -974,7 +974,7 @@ func TestAttackMembersNamesInvitationsAndTheLastOwner(t *testing.T) {
 	hash[0] = 7
 	if err := st.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		_, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: "Only in A", Roles: []string{"owner"},
-			ExpiresAt: clock.System{}.Now().Add(time.Hour)})
+			ExpiresAt: clock.System{}.Now().Add(time.Hour), CreatedAt: clock.System{}.Now()})
 		return err
 	}); err != nil {
 		t.Fatal(err)

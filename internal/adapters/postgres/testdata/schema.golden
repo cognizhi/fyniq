@@ -349,7 +349,7 @@ member_invitation | code_hash | bytea | not null |
 member_invitation | display_name | text | not null | 
 member_invitation | roles | text[] | not null | 
 member_invitation | roles_expire_at | timestamp with time zone | null | 
-member_invitation | created_at | timestamp with time zone | not null | now()
+member_invitation | created_at | timestamp with time zone | not null | 
 member_invitation | expires_at | timestamp with time zone | not null | 
 member_invitation | accepted_at | timestamp with time zone | null | 
 member_invitation | accepted_by | uuid | null | 

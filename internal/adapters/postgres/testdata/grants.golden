@@ -87,7 +87,7 @@ fyniq_api       SELECT    journal_line
 fyniq_api       EXECUTE   latest_job_slot()
 fyniq_api       SELECT    ledger_revision
 fyniq_api       EXECUTE   lock_ledger()
-fyniq_api       INSERT    member_invitation (code_hash, display_name, expires_at, roles, roles_expire_at)
+fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name, expires_at, roles, roles_expire_at)
 fyniq_api       SELECT    member_invitation
 fyniq_api       UPDATE    member_invitation (withdrawn_at)
 fyniq_api       EXECUTE   member_names()

@@ -873,8 +873,9 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 			}
 			expires = &t
 		}
+		now := a.deps.Clock.Now()
 		_, err = u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: text("display_name"), Roles: roles,
-			RolesExpireAt: expires, ExpiresAt: a.deps.Clock.Now().Add(InvitationTTL)})
+			RolesExpireAt: expires, ExpiresAt: now.Add(InvitationTTL), CreatedAt: now})
 		return err
 	case approval.OpPolicyChange:
 		c, err := policyChangeOf(x)

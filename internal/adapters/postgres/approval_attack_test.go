@@ -27,7 +27,7 @@ func founder(t *testing.T, st *postgres.Store, org uuid.UUID, n byte, now time.T
 	hash[0], hash[1], hash[2] = 9, n, org[15]
 	if err := st.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		_, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: "Founder", Roles: []string{"owner"},
-			ExpiresAt: now.Add(time.Hour)})
+			ExpiresAt: now.Add(time.Hour), CreatedAt: now})
 		return err
 	}); err != nil {
 		t.Fatal(err)

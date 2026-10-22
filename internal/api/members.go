@@ -409,7 +409,7 @@ func registerMembers(a *API) {
 					return err
 				}
 				inv, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: name, Roles: roles,
-					RolesExpireAt: b.RolesExpireAt, ExpiresAt: now.Add(InvitationTTL)})
+					RolesExpireAt: b.RolesExpireAt, ExpiresAt: now.Add(InvitationTTL), CreatedAt: now})
 				if err != nil {
 					return err
 				}

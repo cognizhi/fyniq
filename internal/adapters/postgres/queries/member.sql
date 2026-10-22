@@ -20,8 +20,9 @@ SELECT pg_advisory_xact_lock(hashtextextended('fyniq.members:' || fyniq.current_
 SELECT count(*) FROM fyniq.user_membership WHERE status = 'active';
 
 -- name: InsertMemberInvitation :one
-INSERT INTO fyniq.member_invitation (code_hash, display_name, roles, roles_expire_at, expires_at)
-VALUES (sqlc.arg(code_hash), sqlc.arg(display_name), sqlc.arg(roles)::text[], sqlc.narg(roles_expire_at), sqlc.arg(expires_at))
+-- Both times come from the API's clock (000073), as an idempotency key's do.
+INSERT INTO fyniq.member_invitation (code_hash, display_name, roles, roles_expire_at, expires_at, created_at)
+VALUES (sqlc.arg(code_hash), sqlc.arg(display_name), sqlc.arg(roles)::text[], sqlc.narg(roles_expire_at), sqlc.arg(expires_at), sqlc.arg(created_at))
 RETURNING id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at;
 
 -- name: PendingMemberInvitations :many
