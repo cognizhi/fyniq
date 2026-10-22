@@ -13,8 +13,8 @@ import (
 
 // The credit application's source type and rule version (FR-AP-03, FR-AR-18; ENG-41).
 const (
-	SourceCreditApplication = "credit_application"
-	RuleCreditApplication   = "credit_application@1"
+	SourceCreditApplication = "credit_application"   // #nosec G101 -- a source type's name, not a credential
+	RuleCreditApplication   = "credit_application@1" // #nosec G101 -- a rule version's name, not a credential
 )
 
 // CreditApplication is one version of a supplier credit applied to one of the supplier's bills, as the rule reads it:

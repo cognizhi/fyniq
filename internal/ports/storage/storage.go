@@ -375,7 +375,7 @@ const (
 	// DocumentVendorCredit is a supplier's credit note (FR-AP-03; p1-purchases).
 	DocumentVendorCredit DocumentType = "vendor_credit"
 	// DocumentCreditApplication applies a supplier credit to a bill (FR-AP-03, FR-AR-18; p1-purchases).
-	DocumentCreditApplication DocumentType = "credit_application"
+	DocumentCreditApplication DocumentType = "credit_application" // #nosec G101 -- a document type's name, not a credential
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
