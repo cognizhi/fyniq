@@ -714,6 +714,11 @@ export function Currencies() {
                     Entered by
                   </th>
                   <th scope="col">Status</th>
+                  {mayEnter && (
+                    <th scope="col" className="w-px">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -734,30 +739,32 @@ export function Currencies() {
                       {who(r.entered_by)}
                     </td>
                     <td data-card="status">
-                      <span className="fy-row fy-row--wrap gap-2">
-                        {r.withdrawn ? (
-                          <span className="fy-chip fy-chip--neutral" title={r.withdrawn_reason}>
-                            <Icon of={Undo2} />
-                            Withdrawn
-                          </span>
-                        ) : isDup(r) ? (
-                          <span className="fy-chip fy-chip--warning">
-                            <Icon of={TriangleAlert} />
-                            Averaged with another
-                          </span>
-                        ) : (
-                          <span className="fy-chip fy-chip--good">
-                            <Icon of={CircleCheck} />
-                            In use
-                          </span>
-                        )}
-                        {mayEnter && !r.withdrawn && (
+                      {r.withdrawn ? (
+                        <span className="fy-chip fy-chip--neutral" title={r.withdrawn_reason}>
+                          <Icon of={Undo2} />
+                          Withdrawn
+                        </span>
+                      ) : isDup(r) ? (
+                        <span className="fy-chip fy-chip--warning">
+                          <Icon of={TriangleAlert} />
+                          Averaged with another
+                        </span>
+                      ) : (
+                        <span className="fy-chip fy-chip--good">
+                          <Icon of={CircleCheck} />
+                          In use
+                        </span>
+                      )}
+                    </td>
+                    {mayEnter && (
+                      <td data-card="status">
+                        {!r.withdrawn && (
                           <Button variant="ghost" size="sm" onClick={() => setWithdrawing(r)} aria-label={`Withdraw the ${r.currency} rate for ${r.kind === "month" ? monthName(r.on) : date(r.on)}`}>
                             Withdraw
                           </Button>
                         )}
-                      </span>
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
