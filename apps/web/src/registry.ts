@@ -143,6 +143,7 @@ export const actions = [
   { kind: "action", id: "close.mark-task", mode: "expert", help: "close.mark-task", guide: "accounting.periods#work-through-the-checklist" },
   { kind: "action", id: "close.skip-task", mode: "expert", help: "close.skip-task", guide: "accounting.periods#work-through-the-checklist" },
   { kind: "action", id: "close.edit-template", mode: "expert", help: "close.edit-template", guide: "accounting.periods#change-the-checklist-template" },
+  { kind: "action", id: "close.year-end", mode: "expert", help: "close.year-end", guide: "accounting.periods#year-end" },
   { kind: "action", id: "ledger.export", mode: "expert", help: "ledger.export", guide: "reports.general-ledger#export-it" },
   { kind: "action", id: "mode", mode: "basic", help: "shell.mode", guide: "preferences.security#basic-and-expert-mode" },
   { kind: "action", id: "step-up", mode: "basic", help: "session.step-up", guide: "auth.sign-in#confirm-its-you-with-a-passkey" },

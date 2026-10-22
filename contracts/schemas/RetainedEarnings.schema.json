@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account with the retained-earnings role.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "3100"
+      ],
+      "type": "string"
+    },
+    "end": {
+      "$ref": "Money.schema.json",
+      "description": "start + posted + the year's result: its balance on the next year's first day, which the balance service works out whenever it reads one."
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Retained earnings"
+      ],
+      "type": "string"
+    },
+    "posted": {
+      "$ref": "Money.schema.json",
+      "description": "What was posted to it in the year, such as the opening balances at the books start."
+    },
+    "start": {
+      "$ref": "Money.schema.json",
+      "description": "Its balance on the year's first day: every earlier year's result and what was posted to it before. A credit, so negative, is accumulated profit."
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "start",
+    "posted",
+    "end"
+  ],
+  "title": "RetainedEarnings",
+  "type": "object"
+}

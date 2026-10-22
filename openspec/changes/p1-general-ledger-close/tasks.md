@@ -212,8 +212,16 @@
   with its progress, each task's owner and due date or who marked it; those who run the checks mark a task **Done**,
   **Skip** it for the month with a reason, or open it again, and **Change the template** (reorder, add, remove; owner and
   due day). Guide `periods-and-close.md` "Work through the checklist" and "Change the checklist template".
-  **Left:** reconciliations, year end
-  (1.4), open items (with `p1-sales`, `p1-purchases`), changes after posting (2.3).)
+  (22 Oct 2026, PRD rev 0.69, provisional) Year end (1.4): `balance.Year` gives a financial year's revenue, expenses and
+  result from its own periods, and retained earnings at its start, posted in it and carried into the next year;
+  `getYearEnd` (`GET /v1/periods/{period_id}/year-end`, V) answers for the year that holds the period, with how many of
+  its periods are closed and its last one, retained earnings left out without the role, PERIOD-01 without the years.
+  The page's **Year end** card, in the aside: the months closed or "Year closed", income, expenses and the profit or loss
+  so far, and retained earnings from the start of the year to the next; a warning without a retained-earnings account.
+  Guide `periods-and-close.md` "Year end". Tests: `TestTheYearEndOfAPeriod`, `TestYearEndFoldsEarlierYearsIntoRetainedEarnings`,
+  the matrix row, `YearEnd.test.tsx`. Director balance confirmations (FR-EQ-12) arrive with the director accounts; the
+  optional closing entry waits for open question 31.
+  **Left:** reconciliations, open items (with `p1-sales`, `p1-purchases`).)
 - [x] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
   (21 Oct 2026: Accounting › General ledger (`/reports/general-ledger`): accounts chosen one at a time (up to 20), a
   range of dates from the first of the month to today, each account's opening balance, lines with the running balance
@@ -228,5 +236,11 @@
 
 ## 9. Finish
 
-- [ ] 9.1 Every new operation in the contract (`make openapi`), with its authorisation-matrix rows
+- [x] 9.1 Every new operation in the contract (`make openapi`), with its authorisation-matrix rows
+  (22 Oct 2026: the contract's 116 operations each have a row in `TestAuthorisationMatrix`, which fails on an operation
+  without one, so the operations the blocked tasks add later are held to it too.)
 - [ ] 9.2 Finish with `make check`, `make test` and `make test-e2e`
+  (22 Oct 2026, at #134: all three pass in CI, and `make test-e2e` and `make check` locally. Left until the tasks that
+  wait on other changes land: 5.1 and 5.2 (fixed assets, multi-currency, schedules), 6.4 and 7.4 (`p1-purchases`),
+  7.1's dimensions (`p1-organisation-chart` 3.3), 7.2's reconciliations (bank import) and open items (`p1-sales`,
+  `p1-purchases`), and 8.1 (the oracle session). The change is archived after them.)

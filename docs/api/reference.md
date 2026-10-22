@@ -1821,6 +1821,26 @@ Records why an income or expense account's total for an open period moved agains
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLOSE-01`, `CLOSE-09`, `CLOSE-10`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `STORAGE-CLOSE-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/periods/{period_id}/year-end`
+
+**Get the year end of a period's financial year** (`getYearEnd`)
+
+The year end of the financial year that holds the period (FR-GL-10; PRD-001 rev 0.69, provisional): how many of its periods are closed, its income, expenses and result so far from the balance service, and the retained earnings it carries forward. Year end is computed, never posted: on the next year's first day revenue and expense accounts start from nothing and the account with the retained-earnings role opens with every earlier year's result, so there is no closing entry and nothing to carry forward; the optional closing entry for statutory presentation waits for the accountant. Amounts are in the base currency as in the trial balance, debits positive. Refused while the financial years are not set (PERIOD-01). Read-only; no side effects.
+
+- **Permission:** View on Period close / reopen
+- **Parameters:**
+  - `period_id` (path, required): The period's ID.
+- **Responses:**
+  - `200` OK [`YearEnd`](../../contracts/schemas/YearEnd.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `PERIOD-01` The financial years are not set.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PERIOD-01`
+
 ### `POST /v1/periods:open-year`
 
 **Open the next financial year** (`openFinancialYear`)

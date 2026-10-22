@@ -2,16 +2,16 @@
 key: accounting.periods
 type: task
 title: Open the financial year and close the periods
-summary: What accounting periods are, opening the next financial year, closing a month with two people, and explaining its variances
+summary: What accounting periods are, opening the next financial year, closing a month with two people, explaining its variances, and year end
 sources:
-  - docs/user-guide/periods-and-close.md sha256:a6f29721311705ff314019081e8cf11ff2ce369d3e294c15db137bb2db581ace
+  - docs/user-guide/periods-and-close.md sha256:8f0658d616bd00242cce2ec041de7993ddcf45f39b1843c29ddc02d3364c9a34
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-21
+compiled_at: 2026-10-22
 aliases:
   - period
   - accounting period
@@ -26,6 +26,9 @@ aliases:
   - variance
   - flux analysis
   - close checklist
+  - year end
+  - retained earnings
+  - closing entry
 ---
 
 # Open the financial year and close the periods
@@ -83,6 +86,15 @@ aliases:
 - **Show every income and expense account** also lists those that moved within the thresholds. Totals are shown as in the trial balance, so income is negative. The first month of the books has nothing to compare.
 
 (src: docs/user-guide/periods-and-close.md#explain-the-variances)
+
+## Year end
+
+- Nothing is posted at year end and there is no closing entry to make: whenever a balance is read in a new financial year, income and expense accounts start the year from nothing, and the earlier years' profit or loss is in the account with the retained-earnings role (3100 Retained earnings in the standard chart, [[accounting.chart]]); balance-sheet accounts carry on.
+- Each month's close page shows **Year end** for the financial year that holds the month: how many of its months are closed (the year is closed once its last month closes, and months close in order); its income, expenses and profit or loss, so far until it is closed; and retained earnings at the start of the year, posted to it in the year (such as the opening balances, [[accounting.opening-balances]]), the year's profit or loss, and what goes into the next year.
+- Without an account with the retained-earnings role, the page says so, and income and expense accounts carry on from year to year until one has it.
+- The general ledger reads one financial year at a time, so a range across the start of a year is refused ([[reports.general-ledger]]).
+
+(src: docs/user-guide/periods-and-close.md#year-end)
 
 ## Reopen a month
 

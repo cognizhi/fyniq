@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	fy "github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/seed"
@@ -549,6 +550,23 @@ func TestYearEndFoldsEarlierYearsIntoRetainedEarnings(t *testing.T) {
 		}
 		if nov := position(b.Nov); nov[b.Sales.ID] != "-200.00" || nov[re.ID] != "-1000.00" || nov[b.Bank.ID] != "1200.00" {
 			t.Errorf("the position at the end of November: %v", nov)
+		}
+		// Each year's result, and the retained earnings it carries: the first year's profit is what the second opens with,
+		// as the position at November's end has it.
+		first, last := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), porttest.Day(10, 31)
+		cal, err := fy.CalendarOf(storage.OrganisationProfile{BooksStart: &first, FirstYearEnd: &last})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for n, want := range map[int][5]string{1: {"-1000.00", "-1000.00", "0.00", "0.00", "-1000.00"}, 2: {"-200.00", "-200.00", "-1000.00", "0.00", "-1200.00"}} {
+			y, err := balance.Year(ctx, u, sgd, periods, cal.Year(n).Span)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := [5]string{y.Income.String(), y.Result.String(), y.RetainedStart.String(), y.RetainedPosted.String(), y.RetainedEnd.String()}
+			if got != want || !y.Folds || y.RetainedID != re.ID || !y.Expenses.IsZero() {
+				t.Errorf("year %d: income, result and retained earnings at its start, posted and at its end are %v, want %v (%+v)", n, got, want, y)
+			}
 		}
 		return nil
 	}); err != nil {

@@ -339,6 +339,16 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** nothing is posted to close it, and a general ledger range across its start stays refused
 - **AND** the optional closing entry waits for open question 31
 
+#### Scenario: Year end on the close page (rev 0.69)
+- **GIVEN** a period of a financial year, with an account that has the retained-earnings role
+- **WHEN** its close page is shown
+- **THEN** it shows how many of the year's periods are closed, the year closed once its last month closes, and the year's income, expenses and result so far
+- **AND** retained earnings at the year's start, posted in the year, the year's result and the balance the next year opens with, nothing posted
+
+#### Scenario: No retained-earnings account at year end (rev 0.69)
+- **WHEN** no account has the retained-earnings role
+- **THEN** the year end shows the year's result without retained earnings, and says nothing folds
+
 ### Requirement: FR-GL-11 General ledger report
 The system SHALL provide a general ledger report for any account or accounts and any date range, with running balance, export and drill to source.
 

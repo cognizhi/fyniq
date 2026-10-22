@@ -29,6 +29,11 @@ const at = (route = "/accounting/close/p10") => ({ path: route, route: "/account
 const firstMonth = {
   "GET /v1/periods/p10/variances": { status: 200, body: { period, threshold_amount: { amount: "1000.00", currency: "SGD" }, threshold_percent: "10", unexplained: 0, items: [] } },
   "GET /v1/periods/p10/checklist": { status: 200, body: { period, template_version: 0, done: 0, skipped: 0, open: 0, tasks: [] } },
+  "GET /v1/periods/p10/year-end": {
+    status: 200,
+    body: { number: 1, starts_on: "2026-10-01", ends_on: "2027-09-30", periods: 12, periods_closed: 0, closed: false, last_period: { ...period, id: "p09" },
+      income: { amount: "0.00", currency: "SGD" }, expenses: { amount: "0.00", currency: "SGD" }, result: { amount: "0.00", currency: "SGD" } },
+  },
 };
 
 // req: FR-GL-07

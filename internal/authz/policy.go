@@ -381,6 +381,8 @@ var (
 	ReplaceCloseChecklistTemplate = Policy{Operation: "replaceCloseChecklistTemplate", Capability: PeriodClose, Need: Create}
 	GetPeriodChecklist            = Policy{Operation: "getPeriodChecklist", Capability: PeriodClose, Need: View}
 	MarkChecklistTask             = Policy{Operation: "markChecklistTask", Capability: PeriodClose, Need: Create}
+	// Year end (FR-GL-10; rev 0.69) is read with the close (V): it is computed, so there is nothing to write.
+	GetYearEnd = Policy{Operation: "getYearEnd", Capability: PeriodClose, Need: View}
 	// Asking to reopen is preparing it (C); a second person who holds A approves it through the approval engine (FM-1).
 	RequestPeriodReopen = Policy{Operation: "requestPeriodReopen", Capability: PeriodClose, Need: Create,
 		Note: "A person stepped up in the last 5 minutes; the approval engine has another person who holds A approve it (FM-1)."}
@@ -499,7 +501,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
-	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask,
+	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
