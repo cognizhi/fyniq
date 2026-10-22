@@ -132,6 +132,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **WHEN** a user views the cash requirement forecast
 - **THEN** it shows the cash needed to pay the open bills as they fall due
 
+#### Scenario: Built from the AP sub-ledger (rev 0.79)
+- **WHEN** AP ageing is produced as at a day
+- **THEN** each supplier's open bills are bucketed by days past due (current with the due day, 1–30, 31–60, 61–90, 90+) with credits apart, by currency
+- **AND** the bills to pay are those overdue or due within the window, by due date, with the cash they need by currency
+
 ### Requirement: FR-AP-09 Recurring bills
 The system SHALL create recurring bills.
 

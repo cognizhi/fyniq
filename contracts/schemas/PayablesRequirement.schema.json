@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "carrying": {
+      "$ref": "Money.schema.json",
+      "description": "The total's carrying amount in the base currency, at the bills' own rates: a foreign bill costs what its rate on the day it is paid makes it."
+    },
+    "currency": {
+      "description": "The currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "overdue": {
+      "$ref": "Money.schema.json",
+      "description": "Due before the day."
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Both."
+    },
+    "within": {
+      "$ref": "Money.schema.json",
+      "description": "Due on the day or within the window after it."
+    }
+  },
+  "required": [
+    "currency",
+    "overdue",
+    "within",
+    "total",
+    "carrying"
+  ],
+  "title": "PayablesRequirement",
+  "type": "object"
+}

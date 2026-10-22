@@ -36,7 +36,7 @@ type Item struct {
 	DocumentID uuid.UUID
 	Number     string
 	Date       time.Time
-	DueDate    time.Time // a bill's; zero for a credit
+	DueDate    time.Time // a bill's: as entered, else from the payment terms (bill.Due); zero for a credit
 	Total      money.Money
 	Open       money.Money
 	Carrying   money.Money
@@ -146,6 +146,18 @@ func settled(allocs []storage.Allocation, cur, base money.Currency, asAt time.Ti
 func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uuid.UUID, asAt time.Time) (Ledger, error) {
 	out := Ledger{AsAt: asAt}
 	bySupplier := map[uuid.UUID]*Supplier{}
+	contacts := map[uuid.UUID]storage.Contact{}
+	contact := func(id uuid.UUID) (storage.Contact, error) {
+		if c, ok := contacts[id]; ok || id == uuid.Nil {
+			return c, nil
+		}
+		c, err := u.Contacts().Get(ctx, id)
+		if err != nil && !errors.Is(err, ports.ErrNotFound) {
+			return c, err
+		}
+		contacts[id] = c
+		return c, nil
+	}
 	add := func(supplier uuid.UUID, it Item) {
 		s := bySupplier[supplier]
 		if s == nil {
@@ -186,7 +198,15 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		it := Item{Kind: KindBill, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, DueDate: d.DueDate, Total: total}
+		supplier, err := contact(d.SupplierID)
+		if err != nil {
+			return err
+		}
+		due, err := bill.Due(ctx, u, d, supplier)
+		if err != nil {
+			return err
+		}
+		it := Item{Kind: KindBill, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, DueDate: due, Total: total}
 		if it.Open, err = total.Sub(paid); err != nil {
 			return err
 		}
@@ -248,11 +268,11 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		return Ledger{}, err
 	}
 	for id, s := range bySupplier {
-		if id != uuid.Nil {
-			if c, err := u.Contacts().Get(ctx, id); err == nil {
-				s.Name = c.LegalName
-			}
+		c, err := contact(id)
+		if err != nil {
+			return Ledger{}, err
 		}
+		s.Name = c.LegalName
 		slices.SortFunc(s.Items, func(a, b Item) int {
 			if c := a.Date.Compare(b.Date); c != 0 {
 				return c

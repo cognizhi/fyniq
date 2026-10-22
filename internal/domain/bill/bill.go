@@ -248,15 +248,8 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 	}
 
 	// The due date: as entered, else the supplier's terms, else the organisation's (FR-ORG-04).
-	out.DueDate = d.DueDate
-	if !d.Date.IsZero() && out.DueDate.IsZero() {
-		days := 0
-		if out.Supplier.PaymentTermsDays != nil {
-			days = *out.Supplier.PaymentTermsDays
-		} else if days, err = termsDays(ctx, u, d.Date); err != nil {
-			return Prepared{}, nil, err
-		}
-		out.DueDate = d.Date.AddDate(0, 0, days)
+	if out.DueDate, err = Due(ctx, u, d, out.Supplier); err != nil {
+		return Prepared{}, nil, err
 	}
 	if !d.Date.IsZero() && !out.DueDate.IsZero() && out.DueDate.Before(d.Date) {
 		add(CodeDueDate, "due_date", fmt.Sprintf("the bill falls due on %s, before its date %s", day(out.DueDate), day(d.Date)), "Enter a due date on or after the bill's date")
@@ -318,6 +311,24 @@ func memo(c storage.Contact, d Draft) string {
 		return c.LegalName
 	}
 	return d.SupplierRef
+}
+
+// Due is when a bill falls due: its due date as entered, else its date plus the supplier's payment terms, else the
+// organisation's in force on its date (FR-ORG-04); zero for a bill with no date. supplier is the bill's, as read.
+func Due(ctx context.Context, u storage.UnitOfWork, d Draft, supplier storage.Contact) (time.Time, error) {
+	if !d.DueDate.IsZero() || d.Date.IsZero() {
+		return d.DueDate, nil
+	}
+	days := 0
+	if supplier.PaymentTermsDays != nil {
+		days = *supplier.PaymentTermsDays
+	} else {
+		var err error
+		if days, err = termsDays(ctx, u, d.Date); err != nil {
+			return time.Time{}, err
+		}
+	}
+	return d.Date.AddDate(0, 0, days), nil
 }
 
 // termsDays is the organisation's payment terms for bills in force on day (FR-ORG-04).

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "requirement": {
+      "description": "The cash those bills need, by currency. Supplier credits are not taken off: they are applied to a bill first.",
+      "items": {
+        "$ref": "PayablesRequirement.schema.json"
+      },
+      "type": "array"
+    },
+    "suppliers": {
+      "description": "Each supplier with something open, by name.",
+      "items": {
+        "$ref": "PayablesSupplier.schema.json"
+      },
+      "type": "array"
+    },
+    "to_pay": {
+      "description": "The open bills overdue or due within the window, by due date.",
+      "items": {
+        "$ref": "PayableBill.schema.json"
+      },
+      "type": "array"
+    },
+    "totals": {
+      "description": "The ageing's totals, a row per currency.",
+      "items": {
+        "$ref": "PayablesRow.schema.json"
+      },
+      "type": "array"
+    },
+    "within": {
+      "description": "The window, in days after the day, of the bills to pay.",
+      "examples": [
+        30
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "as_at",
+    "within",
+    "suppliers",
+    "totals",
+    "to_pay",
+    "requirement"
+  ],
+  "title": "Payables",
+  "type": "object"
+}

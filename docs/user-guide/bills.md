@@ -3,7 +3,7 @@ key: purchases.bills
 title: Bills
 mode: basic
 roles: [bookkeeper, ap_specialist, accountant, controller, approver, owner, auditor, tax_agent]
-requirements: [FR-AP-02, FR-AR-18, RND-GST-EXCL, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
+requirements: [FR-AP-02, FR-AP-06, FR-AR-18, RND-GST-EXCL, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
 status: draft            # written with the bill screens (P1, p1-purchases); reviewed with the accountant
 ---
 
@@ -24,6 +24,16 @@ A bill has separate states:
 
 A Bookkeeper, an AP specialist or an Accountant enters bills. An Accountant posts, voids and edits
 them. The Owner, the Auditor and the Tax agent can see them.
+
+## What the company owes
+
+At the top of **Purchases → Bills**, **What we owe suppliers** says how much the bills due in the
+next 30 days need, in each currency, and how much of it is overdue. A bill falls due on its due
+date, or by the payment terms when it has none. Credits with suppliers are not taken off: apply them
+to a bill first.
+
+In Expert mode it also shows the ageing: what is owed by how long it is past due (not yet due,
+1–30, 31–60, 61–90 and over 90 days), with the credits apart.
 
 ## Enter a bill
 
