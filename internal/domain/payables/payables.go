@@ -419,7 +419,7 @@ func Reconcile(ctx context.Context, u storage.UnitOfWork, base money.Currency, a
 			return out, l, err
 		}
 		if t.SourceType == ledger.SourceBill || t.SourceType == ledger.SourceBillPayment || t.SourceType == ledger.SourceVendorCredit ||
-			t.SourceType == ledger.SourceCreditApplication {
+			t.SourceType == ledger.SourceCreditApplication || t.SourceType == ledger.SourceSupplierRefund {
 			continue
 		}
 		c.Explained = append(c.Explained, Explained{SourceType: t.SourceType, Amount: owed, Base: owedBase})

@@ -123,6 +123,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
+	if doc.Type == storage.DocumentSupplierRefund { // money a supplier paid back, with the rates and carrying amount it kept (FR-AP-03)
+		want, err := replaySupplierRefund(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	if doc.Type == storage.DocumentCreditApplication { // a credit applied to a bill, with the rates and amounts it cleared (FR-AP-03)
 		want, err := replayCreditApplication(ctx, u, doc, s, e)
 		if err != nil {

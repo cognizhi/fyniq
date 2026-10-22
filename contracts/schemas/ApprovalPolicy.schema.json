@@ -38,7 +38,8 @@
         "opening_balance",
         "bill",
         "bill_payment",
-        "credit_application"
+        "credit_application",
+        "supplier_refund"
       ],
       "examples": [
         "organisation_setting"

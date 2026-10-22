@@ -1199,6 +1199,45 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/credit-applications/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	// Refunds from suppliers (FR-AP-03): read under V, recorded and voided under P; asking to void is posting.
+	"getSupplierRefund": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.refundedCredit()
+		return e.call(http.MethodGet, "/v1/supplier-refunds/"+id, tok, nil), nil
+	},
+	"recordSupplierRefund": func(e *env, tok string) (response, func() bool) {
+		c := e.postedCredit("10.00", "0.90")
+		r := e.call(http.MethodPost, "/v1/supplier-refunds", tok, map[string]any{"credit_id": c, "date": "2026-10-22", "money_account_id": e.moneyAccount(),
+			"amount": map[string]any{"amount": "10.90", "currency": "SGD"}})
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/bills/"+c, e.as(authz.Accountant), nil).str("open", "amount") == "10.90"
+		}
+	},
+	"requestSupplierRefundVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "supplier_refund")
+		id, tag := e.refundedCredit()
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/supplier-refunds/"+id+"/void-approval", person, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "supplier_refund") == was }
+	},
+	// A void in Founder mode is asked for (requestSupplierRefundVoid), so the row voids in an organisation in Standard mode.
+	"voidSupplierRefund": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.refundedCredit()
+		r := s.call(http.MethodPost, "/v1/supplier-refunds/"+id+"/void", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/supplier-refunds/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
+		}
+	},
 	"getPayables": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/payables?as_at=2026-10-31", tok, nil), nil
 	},

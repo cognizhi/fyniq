@@ -166,3 +166,109 @@ func TestCreditsAreAppliedToBills(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// FR-AP-03 (p1-purchases task 4.1): money a supplier pays back against a credit is recorded as a refund, numbered RF-,
+// which settles the credit. Worked by hand: an SGD credit note of S$218.00 refunded S$100.00 (Dr 1010 100.00, Cr 2010
+// 100.00) then the other S$118.00; more than is left is refused; a USD credit of 100.00 booked at 1.30 refunded into
+// the SGD account, which received S$128.00: Dr 1010 128.00, Cr 2010 130.00, Dr 7030 2.00. What a payment left
+// unapplied is refunded too. A credit is not voided while a refund settles it; a void reopens it. The sub-ledger agrees
+// with 2010, and the replay reproduces every entry.
+// req: FR-AP-03
+// req: ENG-41
+// req: INV-07
+func TestSuppliersRefundCredits(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "accountant"}})
+	s := store(t, "fyniq_api")
+	b := newPurchasesBooks(t, ctx, s, "Refunds Pte Ltd")
+	bills, payments, refunds := journal.Bills{Store: s}, journal.BillPayments{Store: s}, journal.SupplierRefunds{Store: s}
+	sgd, usd := money.MustLookup("SGD"), money.MustLookup("USD")
+	var current storage.Account
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if current, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1010", Name: "DBS current", Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{MoneyAccount: true, Currency: "SGD"}}); err != nil {
+			return err
+		}
+		_, err = fx.Enter(ctx, u, storage.NewFXRate{Kind: storage.FXRateDay, Currency: "USD", On: porttest.Day(10, 20), Rate: "1.30", Quote: "1.30", QuoteForm: "base-per-unit"})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	credit := func(cur money.Currency, net, gst string) storage.Document {
+		t.Helper()
+		doc, err := bills.CreateCredit(ctx, b.Org, bill.Draft{SupplierID: b.Supplier.ID, Date: porttest.Day(10, 20), Currency: cur,
+			Lines: []bill.Line{{AccountID: b.Rent.ID, Net: moneyOf(t, net, cur.Code), GSTCode: "TX", GST: moneyOf(t, gst, cur.Code)}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := bills.Post(ctx, b.Org, doc.ID); err != nil {
+			t.Fatal(err)
+		}
+		return doc
+	}
+	refund := func(c uuid.UUID, amount string, cur money.Currency, received string) (journal.Refunded, error) {
+		d := credits.RefundDraft{CreditID: c, Date: porttest.Day(10, 22), AccountID: current.ID, Reference: "FAST 99102", Amount: moneyOf(t, amount, cur.Code)}
+		if received != "" {
+			x := sgdOf(t, received)
+			d.Received = &x
+		}
+		return refunds.Record(ctx, b.Org, d)
+	}
+	sgdCredit := credit(sgd, "200.00", "18.00")
+	first, err := refund(sgdCredit.ID, "100.00", sgd, "")
+	if err != nil || legsOf(t, s, b.Org, first.Entry) != "2010 -100 SGD = -100; 1010 100 SGD = 100" || first.Refund.Number != "RF-0001" ||
+		first.Allocation.DocumentID != sgdCredit.ID {
+		t.Fatalf("a part refunded: %s %+v %v", legsOf(t, s, b.Org, first.Entry), first.Refund, err)
+	}
+	if _, err := refund(sgdCredit.ID, "200.00", sgd, ""); !sameSet(problemCodes(err), []string{credits.CodeTooMuch}) {
+		t.Errorf("more than is left: %v", err)
+	}
+	if _, err := refund(sgdCredit.ID, "118.00", sgd, ""); err != nil {
+		t.Fatal(err)
+	}
+	usdCredit := credit(usd, "100.00", "0.00")
+	loss, err := refund(usdCredit.ID, "100.00", usd, "128.00")
+	if err != nil || legsOf(t, s, b.Org, loss.Entry) != "2010 -100 USD = -130; 1010 128 SGD = 128; 7030 2 SGD = 2" || loss.Allocation.RealisedFX != "-2.0000" {
+		t.Fatalf("a USD credit into the SGD account: %s %+v %v", legsOf(t, s, b.Org, loss.Entry), loss.Allocation, err)
+	}
+	rent := func() storage.Document {
+		doc, err := bills.Create(ctx, b.Org, bill.Draft{SupplierID: b.Supplier.ID, Date: porttest.Day(10, 15), Currency: sgd,
+			Lines: []bill.Line{{AccountID: b.Rent.ID, Net: sgdOf(t, "100.00"), GSTCode: "TX", GST: money.Zero(sgd)}}})
+		if err == nil {
+			_, err = bills.Post(ctx, b.Org, doc.ID)
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		return doc
+	}()
+	paid, err := payments.Record(ctx, b.Org, billpayment.Draft{SupplierID: b.Supplier.ID, Date: porttest.Day(10, 20), AccountID: current.ID, Currency: sgd,
+		Bills: []billpayment.Part{{BillID: rent.ID, Amount: sgdOf(t, "100.00")}}, Unapplied: sgdOf(t, "25.00")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := refund(paid.Payment.ID, "25.00", sgd, ""); err != nil {
+		t.Errorf("refunding what a payment left unapplied: %v", err)
+	}
+	if _, err := bills.Void(ctx, b.Org, sgdCredit.ID, porttest.Day(10, 25), "Entered twice"); !creditCode(err, credits.CodeApplied) {
+		t.Errorf("voiding a refunded credit: %v", err)
+	}
+	if _, err := refunds.Void(ctx, b.Org, first.Refund.ID, porttest.Day(10, 23), "Bounced"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		r, l, err := payables.Reconcile(ctx, u, sgd, b.AP.ID, porttest.Day(10, 31))
+		if err != nil {
+			return err
+		}
+		if r.Unexplained() || len(l.Suppliers) != 1 || len(l.Suppliers[0].Items) != 1 || l.Suppliers[0].Items[0].Open.String() != "-100.00" {
+			t.Errorf("after the void, S$100.00 of the credit is open again: %+v %+v", r, l)
+		}
+		rep, err := journal.Replay(ctx, u)
+		if err == nil && len(rep.Mismatches) > 0 {
+			t.Errorf("the replay: %+v", rep.Mismatches)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+}

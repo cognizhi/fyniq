@@ -243,3 +243,59 @@ func TestCreditApplicationsThroughTheAPI(t *testing.T) {
 		t.Fatalf("the bill after the void: %s", g.Raw)
 	}
 }
+
+// refundedCredit records a refund of a posted credit of S$10.90 in full as an Accountant and returns the refund's ID
+// and ETag.
+func (e *env) refundedCredit() (id, etag string) {
+	e.t.Helper()
+	c := e.postedCredit("10.00", "0.90")
+	r := e.call(http.MethodPost, "/v1/supplier-refunds", e.as(authz.Accountant), map[string]any{"credit_id": c, "date": "2026-10-22",
+		"money_account_id": e.moneyAccount(), "amount": map[string]any{"amount": "10.90", "currency": "SGD"}})
+	if r.Status != http.StatusCreated {
+		e.t.Fatalf("recordSupplierRefund = %d: %s", r.Status, r.Raw)
+	}
+	return r.str("refund", "id"), r.Header.Get("ETag")
+}
+
+// FR-AP-03 through the API (p1-purchases task 4.1): a supplier pays back S$20.00 of a credit note of S$32.70, recorded
+// as a refund (RF-0001) that posts Dr the current account, Cr 2010; the credit lists it and has S$12.70 left; more
+// than is left is refused; in Founder mode a void is asked for and approved by a second person, which reopens it.
+// req: FR-AP-03
+// req: FM-1
+func TestSupplierRefundsThroughTheAPI(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Accountant, authz.Controller)
+	weiling := f.as(f.weiling, authz.Accountant, authz.Controller)
+	c := e.postedCredit("30.00", "2.70")
+	record := func(amount string) response {
+		return e.call(http.MethodPost, "/v1/supplier-refunds", ahkow, map[string]any{"credit_id": c, "date": "2026-10-22", "money_account_id": e.moneyAccount(),
+			"reference": "FAST 99102", "amount": map[string]any{"amount": amount, "currency": "SGD"}})
+	}
+	r := record("20.00")
+	if r.Status != 201 || r.str("refund", "number") != "RF-0001" || r.str("refund", "credit", "number") != "VC-0001" ||
+		len(r.Body["entry"].(map[string]any)["lines"].([]any)) != 2 || r.str("refund", "money_account", "code") != "1010" {
+		t.Fatalf("recording a refund: %d %s", r.Status, r.Raw)
+	}
+	id, tag := r.str("refund", "id"), r.Header.Get("ETag")
+	if g := e.call(http.MethodGet, "/v1/bills/"+c, weiling, nil); g.str("open", "amount") != "12.70" || !strings.Contains(g.Raw, `"via":"refund","payment_id":"`+id+`","payment_number":"RF-0001"`) {
+		t.Fatalf("the credit: %s", g.Raw)
+	}
+	e.problemIs(record("12.71"), "recordSupplierRefund", 422, credits.CodeTooMuch)
+
+	void := map[string]any{"date": "2026-10-23", "reason": "Bounced"}
+	e.problemIs(e.call(http.MethodPost, "/v1/supplier-refunds/"+id+"/void", ahkow, void, "If-Match", tag), "voidSupplierRefund", 409, CodeRefundVoidApproval)
+	asked := e.call(http.MethodPost, "/v1/supplier-refunds/"+id+"/void-approval", ahkow, void, "If-Match", tag)
+	if asked.Status != 202 || asked.str("operation") != approval.OpRefundVoid || !strings.Contains(asked.str("envelope"), `"refunded":"20.00 SGD"`) {
+		t.Fatalf("asking to void: %d %s", asked.Status, asked.Raw)
+	}
+	if a := f.decide(weiling, asked.str("id"), "approve", hashOf(asked)); a.Status != 200 || a.str("status") != "approved" {
+		t.Fatalf("approving the void: %d %s", a.Status, a.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/supplier-refunds/"+id, weiling, nil); g.str("status") != "reversed" {
+		t.Fatalf("the refund after the void: %s", g.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/bills/"+c, weiling, nil); g.str("open", "amount") != "32.70" {
+		t.Fatalf("the credit after the void: %s", g.Raw)
+	}
+}

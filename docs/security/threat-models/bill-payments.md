@@ -30,6 +30,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
 | T6 | person ↔ API | Spoofing: the AI or an integration records or voids a payment | A posting no person stands behind | Low |
 | T7 | person ↔ API | Tampering: a retried request records the payment twice | A bill settled twice and the bank credited twice | Medium |
 | T8 | person ↔ API | Tampering (rev 0.81): a credit is applied to a bill beyond what either has open, or applied twice, or the credit or payment behind it is voided while it stands | A bill shown settled by a credit that no longer exists; 2010 and the sub-ledger apart | Low |
+| T9 | person ↔ API | Tampering (rev 0.82): a refund recorded that never came in, to clear a credit and hide that the supplier still owes it | A credit shown settled; the bank in the books above the statement until reconciled | Medium |
 
 ## 3. What we do about it
 
@@ -43,6 +44,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
 | T6 | Recording and voiding need a person or a client with P on the row; the AI holds no write on bills (§9.6) | `TestAuthorisationMatrix` |
 | T7 | `recordBillPayment` takes an Idempotency-Key: a retry gets the saved answer and records nothing; a second record of the same money is still possible without the key, and the bank reconciliation shows it | The API conventions' idempotency tests |
 | T8 | An application locks the bill and the credit, refuses more than either has open (CREDIT-05), and records both allocations in one transaction; a vendor credit or a payment whose credit is applied is voided only once its applications are (CREDIT-08); the database reverses an application that posted nothing only with the reversal of its allocations (FY056); the close's INV-07 check sees any posting and document that disagree | `TestCreditsAreAppliedToBills`, `TestCreditApplicationsThroughTheAPI` |
+| T9 | Recording a refund needs P and is audited with the actor; it settles at most what is left of the credit (CREDIT-05); the bank reconciliation compares the money account with the statement; a void in Founder mode needs a second person (FM-1) | `TestSuppliersRefundCredits`, `TestSupplierRefundsThroughTheAPI` |
 
 ## 4. What remains
 

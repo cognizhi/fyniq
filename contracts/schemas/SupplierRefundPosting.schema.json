@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry the command posted: the refund's, or its reversal."
+    },
+    "refund": {
+      "$ref": "SupplierRefund.schema.json",
+      "description": "The refund after the command."
+    }
+  },
+  "required": [
+    "refund",
+    "entry"
+  ],
+  "title": "SupplierRefundPosting",
+  "type": "object"
+}

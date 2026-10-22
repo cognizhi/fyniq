@@ -60,13 +60,15 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 4. Vendor credits and refunds
 
-- [ ] 4.1 `vendor_credit` (the reverse of a bill's legs), applied to bills (realised FX across rates),
+- [x] 4.1 `vendor_credit` (the reverse of a bill's legs), applied to bills (realised FX across rates),
   refunded into a money account. Tests `// req: FR-AP-03`
   (23 Oct 2026, part, rev 0.80: the credit note, `vendor_credit@1`, `VC-`, the bill service and API with `kind`, the
   sub-ledger's credits. Tests `TestPostVendorCreditReversesABillsLegs`, `TestVendorCreditsPostAsABillReversed`,
   `TestVendorCreditsThroughTheAPI`. 23 Oct 2026, part, rev 0.81: applying credits (vendor credits and payments'
   unapplied amounts) by `credit_application@1`, `journal.CreditApplications`, the API and the void's approval. Tests
-  `TestPostCreditApplication`, `TestCreditsAreAppliedToBills`, `TestCreditApplicationsThroughTheAPI`. **Left:** refunds)
+  `TestPostCreditApplication`, `TestCreditsAreAppliedToBills`, `TestCreditApplicationsThroughTheAPI`. 23 Oct 2026, rev
+  0.82: refunds by `supplier_refund@1`, `journal.SupplierRefunds`, the API and the void's approval. Tests
+  `TestPostSupplierRefund`, `TestSuppliersRefundCredits`, `TestSupplierRefundsThroughTheAPI`)
 - [ ] 4.2 The credit variant of the bill record: apply or refund
 
 ## 5. Ageing, the board and paying on time

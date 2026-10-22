@@ -280,6 +280,22 @@ function VoidPayment({ open, payment, minDate, ask, onClose, onDone }: { open: b
       if (!out.data) return setProblem(problemOf(out.error));
       return onDone(ask ? "Asked for approval: the credit is unapplied when another person approves it." : "Voided: the bill and the credit are open again by what was applied.");
     }
+    if (payment.via === "refund") {
+      // Money the supplier paid back against the credit (FR-AP-03): voided through the refund, which reopens the credit.
+      const path = { refund_id: payment.payment_id };
+      const read = await api.GET("/v1/supplier-refunds/{refund_id}", { params: { path } });
+      if (!read.data) {
+        setBusy(false);
+        return setProblem(problemOf(read.error));
+      }
+      const params = { path, header: { "If-Match": read.response.headers.get("ETag") ?? "", "Idempotency-Key": newKey() } };
+      const out = ask
+        ? await guarded(confirm, () => api.POST("/v1/supplier-refunds/{refund_id}/void-approval", { params, body }))
+        : await guarded(confirm, () => api.POST("/v1/supplier-refunds/{refund_id}/void", { params, body }));
+      setBusy(false);
+      if (!out.data) return setProblem(problemOf(out.error));
+      return onDone(ask ? "Asked for approval: the refund is voided when another person approves it." : "Voided: the credit is open again by what was refunded.");
+    }
     const read = await api.GET("/v1/bill-payments/{payment_id}", { params: { path: { payment_id: payment.payment_id } } });
     if (!read.data) {
       setBusy(false);
@@ -407,7 +423,7 @@ export function Payments({ bill, mayVoid, ask, onDone }: { bill: Bill; mayVoid: 
                 ) : (
                   <span className="fy-chip fy-chip--good">
                     <Icon of={Banknote} />
-                    {p.via === "application" ? "Applied" : "Recorded"}
+                    {p.via === "application" ? "Applied" : p.via === "refund" ? "Refunded" : "Recorded"}
                   </span>
                 )}
               </td>

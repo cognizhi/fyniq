@@ -95,6 +95,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **THEN** an application settles both by the amount, at most what each has open, and posts only the realised FX between their stored rates, nothing in the base currency
 - **AND** voiding it reopens both, with a second person in Founder mode, and an applied credit is voided only once its applications are
 
+#### Scenario: A refund from a supplier, built (rev 0.82)
+- **WHEN** a supplier pays back money against a credit
+- **THEN** it is recorded as a refund numbered RF-, posted at once as a payment's legs the other way with the realised FX, settling at most what is left of the credit
+- **AND** voiding it reopens the credit, with a second person in Founder mode
+
 ### Requirement: FR-AP-04 Bill capture
 The system SHALL capture bills forwarded to a per-organisation email address or uploaded or photographed, as part of FR-DOC-12 (now P1).
 
