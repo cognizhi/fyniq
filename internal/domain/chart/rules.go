@@ -21,6 +21,7 @@ const (
 	CodeRole        = "COA-07" // not a system role
 	CodeProtected   = "COA-08" // the control or payroll-cost flag changes only with approval
 	CodeSystem      = "COA-09" // a system account stays active
+	CodeRevalue     = "COA-10" // only a monetary asset or liability is revalued at month end
 )
 
 // Problem is one rule that failed.
@@ -59,6 +60,19 @@ func checkAttributes(name string, a storage.AccountAttributes, add func(code, fi
 	}
 }
 
+// checkRevalue refuses month-end revaluation on an account that is not a monetary item (FR-GL-04; rev 0.72): only an
+// asset or a liability, never prepayments or deferred revenue, whose amounts are not settled in money.
+func checkRevalue(t storage.AccountType, role storage.AccountRole, revalue bool, add func(code, field, message, fix string)) {
+	switch {
+	case !revalue:
+	case t != storage.Asset && t != storage.Liability:
+		add(CodeRevalue, "revalue", fmt.Sprintf("a %s account is not revalued at month end", t), "Revalue only asset and liability accounts settled in money")
+	case role == "prepayments" || role == "deferred-revenue":
+		add(CodeRevalue, "revalue", fmt.Sprintf("the %s account is not settled in money, so it is not revalued", role),
+			"Leave it at the rate it was recorded at (FR-GL-04)")
+	}
+}
+
 // CheckAccount returns every rule a new account breaks, or nil.
 func CheckAccount(a storage.NewAccount) []Problem {
 	var out []Problem
@@ -73,6 +87,7 @@ func CheckAccount(a storage.NewAccount) []Problem {
 		add(CodeRole, "role", fmt.Sprintf("%q is not a system role", a.Role), "Leave the role empty; system roles come with the standard chart")
 	}
 	checkAttributes(a.Name, a.AccountAttributes, add)
+	checkRevalue(a.Type, a.Role, a.Revalue, add)
 	return out
 }
 
@@ -83,6 +98,7 @@ func CheckChange(before storage.Account, c storage.AccountChange) []Problem {
 	var out []Problem
 	add := func(code, field, message, fix string) { out = append(out, Problem{code, field, message, fix}) }
 	checkAttributes(c.Name, c.AccountAttributes, add)
+	checkRevalue(before.Type, before.Role, c.Revalue, add)
 	if c.Control != before.Control {
 		add(CodeProtected, "control", "changes only with an approval", "Ask for the change once approvals are available (p1-approval-engine)")
 	}

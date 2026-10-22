@@ -74,8 +74,10 @@ func TestTheStandardChart(t *testing.T) {
 	for name, c := range map[string]struct {
 		got, want []string
 	}{
-		"payroll cost":  {flagged(func(a Account) bool { return a.PayrollCost }), []string{"5050", "6011", "6012", "6013", "6020", "6030", "6050"}},
-		"control":       {flagged(func(a Account) bool { return a.Control }), []string{"1100", "2010", "2120", "2500"}},
+		"payroll cost": {flagged(func(a Account) bool { return a.PayrollCost }), []string{"5050", "6011", "6012", "6013", "6020", "6030", "6050"}},
+		"control":      {flagged(func(a Account) bool { return a.Control }), []string{"1100", "2010", "2120", "2500"}},
+		"revalue": {flagged(func(a Account) bool { return a.Revalue }), []string{"1010", "1020", "1030", "1040", "1050", "1100", "1250", "2010", "2030",
+			"2120", "2500"}},
 		"share capital": {flagged(func(a Account) bool { return a.Role == storage.RoleShareCapital }), []string{"3010", "3020"}},
 		"system": {flagged(func(a Account) bool { return a.Role != "" }), []string{"1100", "1210", "1590", "2010", "2100", "2110", "2120",
 			"2150", "2200", "2300", "2400", "2500", "2999", "3010", "3020", "3100", "3300", "6020", "6030", "6610", "7030", "7040", "8010"}},

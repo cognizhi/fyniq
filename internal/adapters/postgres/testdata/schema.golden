@@ -21,6 +21,7 @@ account | currency | text | null |
 account | is_control | boolean | not null | false
 account | is_payroll_cost | boolean | not null | false
 account | guidance | text | null | 
+account | revalue | boolean | not null | false
 accounting_framework | organisation_id | uuid | not null | current_org()
 accounting_framework | id | uuid | not null | uuidv7()
 accounting_framework | version | integer | not null | 
@@ -645,6 +646,8 @@ account | account_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES o
 account | account_organisation_id_not_null | NOT NULL organisation_id
 account | account_parent_fkey | FOREIGN KEY (organisation_id, parent_id) REFERENCES account(organisation_id, id)
 account | account_pkey | PRIMARY KEY (organisation_id, id)
+account | account_revalue_monetary | CHECK (((NOT revalue) OR ((type = ANY (ARRAY['asset'::text, 'liability'::text])) AND (role IS DISTINCT FROM 'prepayments'::text) AND (role IS DISTINCT FROM 'deferred-revenue'::text))))
+account | account_revalue_not_null | NOT NULL revalue
 account | account_role_known | CHECK ((role = ANY (ARRAY['accounts-receivable'::text, 'accounts-payable'::text, 'gst-control'::text, 'fx-rounding'::text, 'unrealised-fx'::text, 'deferred-revenue'::text, 'prepayments'::text, 'salaries-payable'::text, 'cpf-sdl-payable'::text, 'employer-cpf'::text, 'sdl'::text, 'depreciation'::text, 'accumulated-depreciation'::text, 'suspense'::text, 'retained-earnings'::text, 'expense-claims-payable'::text, 'income-tax-payable'::text, 'income-tax-expense'::text, 'director-loan'::text, 'deferred-remuneration'::text, 'share-capital'::text, 'capital-contribution'::text])))
 account | account_type_known | CHECK ((type = ANY (ARRAY['asset'::text, 'liability'::text, 'equity'::text, 'revenue'::text, 'expense'::text])))
 account | account_type_not_null | NOT NULL type
@@ -883,7 +886,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text])))
 document | document_type_not_null | NOT NULL type
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_number | document_number_created_at_not_null | NOT NULL created_at
@@ -1128,12 +1131,13 @@ journal_line | journal_line_amount_not_null | NOT NULL amount
 journal_line | journal_line_amount_scale | CHECK (((amount <> 'NaN'::numeric) AND (amount = trunc(amount, (minor_units)::integer))))
 journal_line | journal_line_balanced | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_line | journal_line_base_amount_not_null | NOT NULL base_amount
-journal_line | journal_line_base_amount_rnd_fx | CHECK ((base_amount = round((amount * fx_rate), (base_minor_units)::integer)))
+journal_line | journal_line_base_amount_rnd_fx | CHECK (((base_amount = round((amount * fx_rate), (base_minor_units)::integer)) OR ((amount = (0)::numeric) AND (base_amount <> (0)::numeric) AND (currency <> base_currency))))
 journal_line | journal_line_base_amount_scale | CHECK (((base_amount <> 'NaN'::numeric) AND (base_amount = trunc(base_amount, (base_minor_units)::integer))))
 journal_line | journal_line_base_currency_fkey | FOREIGN KEY (base_currency, base_minor_units) REFERENCES currency(code, minor_units)
 journal_line | journal_line_base_currency_not_null | NOT NULL base_currency
 journal_line | journal_line_base_currency_rate | CHECK (((currency <> base_currency) OR (fx_rate = (1)::numeric)))
 journal_line | journal_line_base_minor_units_not_null | NOT NULL base_minor_units
+journal_line | journal_line_base_only | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_line | journal_line_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
 journal_line | journal_line_currency_not_null | NOT NULL currency
 journal_line | journal_line_description_length | CHECK ((length(description) <= 500))
@@ -1733,6 +1737,7 @@ CREATE CONSTRAINT TRIGGER document_edit_posted AFTER UPDATE OF current_version O
 CREATE CONSTRAINT TRIGGER document_reversed_posted AFTER UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.status = 'posted'::text) AND (new.status = 'reversed'::text))) EXECUTE FUNCTION document_reversed_posted()
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
+CREATE CONSTRAINT TRIGGER journal_line_base_only AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.amount = (0)::numeric) AND (new.base_amount <> (0)::numeric))) EXECUTE FUNCTION journal_line_base_only()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
@@ -1949,6 +1954,7 @@ issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now tim
 journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
+journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f844349095c8623435dbd29af6a4613d
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b6767cda9357653aa644d5c1fa3c7de0
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2

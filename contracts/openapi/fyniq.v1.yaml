@@ -92,6 +92,11 @@ components:
           examples:
             - Premises & office
           type: string
+        revalue:
+          description: "Its foreign-currency balances are revalued at month end: a monetary item, such as a bank account, AR or AP (FR-GL-04; PRD-001 rev 0.72)."
+          examples:
+            - false
+          type: boolean
         role:
           description: A role the rules treat specially, such as share-capital.
           examples:
@@ -126,6 +131,7 @@ components:
         - money_account
         - control
         - payroll_cost
+        - revalue
       type: object
     AccountChanges:
       additionalProperties: false
@@ -199,6 +205,11 @@ components:
             - Premises & office
           maxLength: 60
           type: string
+        revalue:
+          description: "Revalue its foreign-currency balances at month end: only an asset or a liability settled in money (FR-GL-04; COA-10). Months already revalued keep what they posted."
+          examples:
+            - true
+          type: boolean
       type: object
     AccountDraft:
       additionalProperties: false
@@ -273,6 +284,11 @@ components:
             - Premises & office
           maxLength: 60
           type: string
+        revalue:
+          description: "Revalue its foreign-currency balances at month end: only an asset or a liability settled in money, never prepayments or deferred revenue (FR-GL-04; COA-10)."
+          examples:
+            - false
+          type: boolean
         role:
           description: "A system role (FR-COA-03); it never changes. Usually left empty: the standard chart sets them."
           examples:
@@ -7318,7 +7334,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end."
         "429":
           content:
             application/problem+json:
@@ -7384,6 +7400,7 @@ paths:
         - COA-07
         - COA-08
         - COA-09
+        - COA-10
         - STORAGE-ACCOUNT-01
         - STORAGE-ACCOUNT-02
         - STORAGE-DUPLICATE-01
@@ -7630,7 +7647,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active."
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end."
         "428":
           content:
             application/problem+json:
@@ -7702,6 +7719,7 @@ paths:
         - COA-07
         - COA-08
         - COA-09
+        - COA-10
         - STORAGE-ACCOUNT-01
         - STORAGE-ACCOUNT-02
         - STORAGE-LOCK-01

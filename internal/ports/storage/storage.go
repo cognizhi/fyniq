@@ -280,6 +280,7 @@ type AccountAttributes struct {
 	Control        bool   // has a sub-ledger (AR, AP, a director's account)
 	PayrollCost    bool
 	Guidance       string // shown when someone picks the account
+	Revalue        bool   // its foreign-currency balances are revalued at month end: a monetary item (FR-GL-04)
 }
 
 // AccountRole marks an account the rules treat specially; empty for most accounts.
@@ -291,6 +292,9 @@ const RoleShareCapital AccountRole = "share-capital"
 
 // RoleRetainedEarnings is the account that carries the profit or loss of every earlier financial year (FR-GL-10).
 const RoleRetainedEarnings AccountRole = "retained-earnings"
+
+// RoleUnrealisedFX is the account the month-end revaluation posts its gains and losses to (FR-GL-04; 7040).
+const RoleUnrealisedFX AccountRole = "unrealised-fx"
 
 // SystemRoles are the roles of B.5's system accounts (FR-COA-03, rev 0.32): each is on one account,
 // share capital on two or more. The engine finds a system account by its role.

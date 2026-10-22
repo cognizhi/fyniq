@@ -24,7 +24,7 @@ type Account struct {
 }
 
 var header = []string{"code", "name", "type", "report_group", "cash_flow_line", "function", "money_account", "default_gst_code",
-	"control_account", "payroll_cost", "role", "source", "guidance"}
+	"control_account", "payroll_cost", "role", "source", "guidance", "revalue"}
 
 var types = []storage.AccountType{storage.Asset, storage.Liability, storage.Equity, storage.Revenue, storage.Expense}
 
@@ -64,6 +64,9 @@ func Standard() ([]Account, error) {
 			return nil, err
 		}
 		if a.PayrollCost, err = flag(a.Code, "payroll_cost", f[9]); err != nil {
+			return nil, err
+		}
+		if a.Revalue, err = flag(a.Code, "revalue", f[13]); err != nil {
 			return nil, err
 		}
 		out = append(out, a)

@@ -98,6 +98,11 @@ Source: PRD-001 §10.7
 - **WHEN** it comes from another source, or posts to an account not flagged as a monetary foreign-currency item, or its entry's base-only lines are not offset by the unrealised-FX account
 - **THEN** a separate trigger for base-only lines rejects it
 
+#### Scenario: Built as a check at commit (rev 0.72)
+- **WHEN** an entry with a base-only line commits
+- **THEN** `journal_line_base_only` refuses it (FY008) unless its source is `fx_revaluation`, the line's account is marked revalue, the line is in a foreign currency, and every other line is a base-currency line on the unrealised-FX account
+- **AND** the row check accepts a base-only line only in a foreign currency
+
 ### Requirement: INV-06 Tenant isolation on every row
 Every row SHALL carry its organisation ID and SHALL be visible only through row-level security.
 

@@ -252,6 +252,7 @@ var codeFacts = map[string]struct {
 	chart.CodeRole:                {422, "Not a system role"},
 	chart.CodeProtected:           {422, "Changes only with an approval"},
 	chart.CodeSystem:              {422, "A system account stays active"},
+	chart.CodeRevalue:             {422, "The account is not revalued at month end"},
 	storage.CodeAccountFixed:      {409, "The account cannot change that way"},
 	storage.CodeMembership:        {409, "The membership or role cannot change that way"},
 	storage.CodeAccountTree:       {409, "The account cannot sit there"},

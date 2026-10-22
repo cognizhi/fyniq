@@ -35,9 +35,21 @@
 
 ## 3. Month-end revaluation
 
-- [ ] 3.1 The `revalue` flag on asset and liability accounts, refused on prepayments and deferred revenue; the standard chart's defaults. Tests `// req: FR-GL-04`
-- [ ] 3.2 Base-only lines in the database: the `RND-FX` CHECK accepts amount 0; a deferred trigger accepts a base-only line only from `fx_revaluation` or its reversal, on a `revalue` account, in a foreign currency, offset by the `unrealised-fx` account. Attack tests `// req: INV-05`
-- [ ] 3.3 The revaluation rule: per `revalue` account and currency, unrealised = `RND-FX`(open amount × period-end rate) − carrying base, base-only lines against 7040; G4-039's figures at account level. Tests `// req: FR-GL-04`, `// req: ENG-41` and `// req: ledger/posting-rules FX revaluation`
+- [x] 3.1 The `revalue` flag on asset and liability accounts, refused on prepayments and deferred revenue; the standard chart's defaults. Tests `// req: FR-GL-04`
+  (22 Oct 2026, PRD rev 0.72: migration 000071's `account.revalue` with `account_revalue_monetary`; COA-10 in the
+  chart's rules; the standard chart's `revalue` column on 1010 to 1050, 2030, 1100, 2010, 1250, 2500 and 2120; the
+  account resource, createAccount and updateAccount carry it. Accounts loaded before keep it off. Tests:
+  `TestOnlyAMonetaryItemIsRevalued`, `TestTheStandardChart`, the chart API tests. The chart screen's checkbox comes
+  with 5.2.)
+- [x] 3.2 Base-only lines in the database: the `RND-FX` CHECK accepts amount 0; a deferred trigger accepts a base-only line only from `fx_revaluation` or its reversal, on a `revalue` account, in a foreign currency, offset by the `unrealised-fx` account. Attack tests `// req: INV-05`
+  (22 Oct 2026, PRD rev 0.72: 000071 replaces the check NOT VALID and adds `journal_line_base_only` (FY008); 000072
+  validates. Test: `TestAttackBaseOnlyLinesComeOnlyFromTheRevaluation`; the INV-05 attack test now expects FY008 for a
+  manual journal's base-only line.)
+- [x] 3.3 The revaluation rule: per `revalue` account and currency, unrealised = `RND-FX`(open amount × period-end rate) − carrying base, base-only lines against 7040; G4-039's figures at account level. Tests `// req: FR-GL-04`, `// req: ENG-41` and `// req: ledger/posting-rules FX revaluation`
+  (22 Oct 2026, PRD rev 0.72: `ledger.Revalue`, rule version `fx_revaluation@1` in `RevaluationRules`, with
+  `ReplayRevaluation` and its golden file; 7040 takes one line for the losses and one for the gains. Tests:
+  `TestRevalueTakesEachItemToThePeriodEndRate`, `TestRevalueRefusesWhatIsNotAMonetaryForeignItem`,
+  `TestEveryRevaluationRuleVersionReplaysItsGoldenEntries`.)
 - [ ] 3.4 A period's revaluation: preview, post with its reversal on day 1 of the next period (or waiting until that period opens), the revision it read, run again as a reversal and replacement when stale; the platform job `fx.revalue` under the system principal. Tests `// req: FR-GL-04`, `// req: FR-AUT-01` and `// req: FR-AUT-02`
 - [ ] 3.5 The close check: ✖ a period with a foreign-currency balance on a `revalue` account and no current revaluation, naming a missing rate. Tests `// req: FR-GL-07` and `// req: FR-GL-04`
 - [ ] 3.6 AR and AP documents and unapplied credits revalued one by one against their stored rates, replacing the control accounts' lines (with `p1-sales` and `p1-purchases`). Tests `// req: FR-GL-04` (G4-039 in full)

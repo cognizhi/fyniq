@@ -185,7 +185,7 @@ func toAccount(r accountRow) storage.Account {
 		Group: r.IsGroup, Active: r.IsActive, Version: int(r.Version), AccountAttributes: storage.AccountAttributes{
 			ReportGroup: str(r.ReportGroup), CashFlowLine: str(r.CashFlowLine), Function: str(r.Function), MoneyAccount: r.IsMoneyAccount,
 			DefaultGSTCode: str(r.DefaultGstCode), Currency: str(r.Currency), Control: r.IsControl, PayrollCost: r.IsPayrollCost,
-			Guidance: str(r.Guidance)}}
+			Guidance: str(r.Guidance), Revalue: r.Revalue}}
 	if r.Role != nil {
 		a.Role = storage.AccountRole(*r.Role)
 	}
@@ -203,7 +203,7 @@ func (r accounts) Create(ctx context.Context, a storage.NewAccount) (storage.Acc
 	row, err := r.u.q.InsertAccount(ctx, sqlcdb.InsertAccountParams{Code: a.Code, Name: a.Name, Type: string(a.Type),
 		ParentID: a.ParentID, IsGroup: a.Group, Role: role, ReportGroup: opt(a.ReportGroup), CashFlowLine: opt(a.CashFlowLine),
 		Function: opt(a.Function), IsMoneyAccount: a.MoneyAccount, DefaultGstCode: opt(a.DefaultGSTCode), Currency: opt(a.Currency),
-		IsControl: a.Control, IsPayrollCost: a.PayrollCost, Guidance: opt(a.Guidance)})
+		IsControl: a.Control, IsPayrollCost: a.PayrollCost, Guidance: opt(a.Guidance), Revalue: a.Revalue})
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
@@ -213,7 +213,8 @@ func (r accounts) Create(ctx context.Context, a storage.NewAccount) (storage.Acc
 		"parent_id": {nil, row.ParentID}, "is_group": {nil, row.IsGroup}, "is_active": {nil, row.IsActive}, "role": {nil, row.Role},
 		"report_group": {nil, row.ReportGroup}, "cash_flow_line": {nil, row.CashFlowLine}, "function": {nil, row.Function},
 		"is_money_account": {nil, row.IsMoneyAccount}, "default_gst_code": {nil, row.DefaultGstCode}, "currency": {nil, row.Currency},
-		"is_control": {nil, row.IsControl}, "is_payroll_cost": {nil, row.IsPayrollCost}, "guidance": {nil, row.Guidance}}); err != nil {
+		"is_control": {nil, row.IsControl}, "is_payroll_cost": {nil, row.IsPayrollCost}, "guidance": {nil, row.Guidance},
+		"revalue": {nil, row.Revalue}}); err != nil {
 		return storage.Account{}, err
 	}
 	return toAccount(accountRow(row)), nil
@@ -313,7 +314,7 @@ func (r accounts) Update(ctx context.Context, id uuid.UUID, version int, c stora
 	row, err := r.u.q.UpdateAccount(ctx, sqlcdb.UpdateAccountParams{ID: id, Name: c.Name, ParentID: c.ParentID, IsGroup: c.Group,
 		IsActive: c.Active, ReportGroup: opt(c.ReportGroup), CashFlowLine: opt(c.CashFlowLine), Function: opt(c.Function),
 		IsMoneyAccount: c.MoneyAccount, DefaultGstCode: opt(c.DefaultGSTCode), Currency: opt(c.Currency), IsControl: c.Control,
-		IsPayrollCost: c.PayrollCost, Guidance: opt(c.Guidance)})
+		IsPayrollCost: c.PayrollCost, Guidance: opt(c.Guidance), Revalue: c.Revalue})
 	if err != nil {
 		return storage.Account{}, mapError(err)
 	}
@@ -343,6 +344,7 @@ func (r accounts) Update(ctx context.Context, id uuid.UUID, version int, c stora
 	diff("is_control", before.Control, after.Control)
 	diff("is_payroll_cost", before.PayrollCost, after.PayrollCost)
 	diff("guidance", before.Guidance, after.Guidance)
+	diff("revalue", before.Revalue, after.Revalue)
 	if err := r.u.event(ctx, "account.updated", "account", after.ID, &after.Version, changes); err != nil {
 		return storage.Account{}, err
 	}

@@ -46,6 +46,11 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 - **WHEN** a user changes an account's payroll-cost flag
 - **THEN** the change is protected like a change to the control-account flag
 
+#### Scenario: Revalue flag (rev 0.72)
+- **WHEN** an account is marked revalue
+- **THEN** its foreign-currency balances are revalued at month end (FR-GL-04)
+- **AND** only an asset or a liability is marked, never prepayments or deferred revenue (COA-10); the standard chart marks the money accounts, 1100, 2010, 1250, 2500 and 2120
+
 ### Requirement: FR-COA-03 Protected system accounts
 **System accounts** SHALL be protected: they cannot be deleted, retyped or, where the engine owns them, posted to manually.
 

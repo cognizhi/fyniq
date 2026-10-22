@@ -113,7 +113,7 @@ Add one only with its access model here and in the test's list.
 | INV-02 posted history immutable | No UPDATE, DELETE or TRUNCATE grant; `journal_immutable` triggers for every role, the owner included; lines join an entry only in the transaction that posted it | `TestAttackPostedHistoryCannotChange` |
 | INV-03 no posting into a closed period | `journal_entry_assign` reads the period `FOR SHARE` after the ledger lock | `TestAttackPostingIntoAClosedPeriodFails`, `TestRacePostingAgainstCloseOfTheSamePeriod` |
 | INV-04 active leaf accounts of the organisation | Composite foreign keys; `journal_line_check` reads the account `FOR SHARE` | `TestAttackPostingToGroupInactiveOrForeignAccountsFails` |
-| INV-05 minor-unit scale, RND-FX base amounts | Row CHECKs; base-only lines are refused until FX revaluation (FR-GL-04, P1) adds its own trigger | `TestAttackAmountsOffScaleNaNOrOutOfRangeFail` |
+| INV-05 minor-unit scale, RND-FX base amounts | Row CHECKs; (rev 0.72) a base-only line (a foreign currency, amount 0) passes the row check and `journal_line_base_only`, deferred to commit, accepts it only from `fx_revaluation`, on an account marked `revalue`, offset by base-currency lines on the unrealised-FX account (`FY008`); `account_revalue_monetary` marks only assets and liabilities that are not prepayments or deferred revenue | `TestAttackAmountsOffScaleNaNOrOutOfRangeFail`, `TestAttackBaseOnlyLinesComeOnlyFromTheRevaluation` |
 | INV-06 tenant isolation | RLS as above | `TestEveryTenantTableForcesRowLevelSecurity`, `TestAttackCrossTenantReadsAndWritesFail`, `TestAttackPooledConnectionWithoutTenantSeesNothing` |
 | INV-08 balances cache = lines | `journal_line_balances` in the posting statement; `balance_differences()`, `rebuild_balances()` | `TestRandomPostingsKeepTheCacheAndTrialBalanceExact` |
 | INV-09 trial balance nets to zero | Follows from INV-01 | the same test |
@@ -151,6 +151,7 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY004 | STORAGE-INV-04 | The account is missing, a group or inactive |
 | FY005 | STORAGE-INV-05 | The currency is unknown |
 | FY006 | STORAGE-INV-06 | No organisation is set for the transaction |
+| FY008 | STORAGE-INV-05 | A base-only line comes only from the FX revaluation, on an account marked for it, against the unrealised-FX account |
 | FY014 | STORAGE-ORG-01 | The base currency cannot change |
 | FY021 | STORAGE-INV-06 | The entry is not in this organisation |
 | FY030 | STORAGE-PERIOD-01 | No period covers the posting date |
