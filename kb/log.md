@@ -115,3 +115,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (revalue a month; FX-05 to FX-07); docs/user-guide/periods-and-close.md → accounting.periods (the revaluation close check); docs/user-guide/chart-of-accounts.md → accounting.chart (the revalued-at-month-end flag; COA-10)
 
 ## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (the money accounts in other currencies, in both currencies)
+
+## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (the scheduler revalues each ended month by itself, rev 0.75)

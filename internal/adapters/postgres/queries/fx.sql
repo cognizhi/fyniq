@@ -41,3 +41,8 @@ SELECT fyniq.record_feed_rate(sqlc.arg(base)::text, sqlc.arg(currency)::text, sq
 SELECT DISTINCT on_date FROM fyniq.fx_feed_rates
 WHERE base_currency = sqlc.arg(base)::text AND on_date BETWEEN sqlc.arg(from_on)::date AND sqlc.arg(to_on)::date
 ORDER BY on_date;
+
+-- name: CreateScheduledRevaluation :one
+-- The scheduler's one way to make a document of a month-end revaluation (FR-GL-04, FR-AUT-02; rev 0.75): a posted
+-- fx_revaluation of an open period, saved and posted by scheduler:fx.revalue (FY169 otherwise).
+SELECT fyniq.create_scheduled_revaluation(sqlc.arg(period_id)::uuid, sqlc.arg(payload)::jsonb, sqlc.arg(posted_at)::timestamptz)::uuid AS id;

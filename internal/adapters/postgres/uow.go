@@ -513,6 +513,35 @@ func (r documents) Page(ctx context.Context, f storage.DocumentFilter) ([]storag
 	return out, nil
 }
 
+func (r documents) ScheduledRevaluation(ctx context.Context, periodID uuid.UUID, payload []byte) (storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Document{}, err
+	}
+	id, err := r.u.q.CreateScheduledRevaluation(ctx, sqlcdb.CreateScheduledRevaluationParams{PeriodID: periodID, Payload: payload,
+		PostedAt: r.u.store.clock.Now()})
+	if err != nil {
+		return storage.Document{}, mapError(err)
+	}
+	doc, err := r.Get(ctx, id)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	value, err := jsonValue(payload)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	// The same events as a person's run: the document made, then posted.
+	if err := r.u.event(ctx, "document.created", "document", doc.ID, &doc.Version, map[string][2]any{
+		"type": {nil, string(doc.Type)}, "status": {nil, string(storage.DocumentDraft)}, "payload": {nil, value}}); err != nil {
+		return storage.Document{}, err
+	}
+	if err := r.u.event(ctx, "document.posted", "document", doc.ID, nil, map[string][2]any{
+		"status": {string(storage.DocumentDraft), string(storage.DocumentPosted)}}); err != nil {
+		return storage.Document{}, err
+	}
+	return doc, nil
+}
+
 func (r documents) Get(ctx context.Context, id uuid.UUID) (storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return storage.Document{}, err

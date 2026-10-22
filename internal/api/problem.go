@@ -184,6 +184,7 @@ var codeFacts = map[string]struct {
 	storage.CodeVariance:          {409, "The variance is not explained that way"},
 	storage.CodeChecklist:         {409, "The checklist does not change that way"},
 	storage.CodeFXRate:            {409, "The exchange rate does not change that way"},
+	storage.CodeFXRevaluation:     {409, "The scheduler cannot save that revaluation"},
 	fx.CodeNoRate:                 {422, "No exchange rate for this currency"},
 	fx.CodeEntry:                  {422, "The exchange rate is not valid"},
 	fx.CodeWithdrawn:              {409, "The rate is withdrawn already"},
@@ -335,19 +336,20 @@ var codeFacts = map[string]struct {
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
 var storageFixes = map[string]string{
-	storage.CodeOverlap:      "Change the dates so they neither overlap another version nor end before they start",
-	storage.CodeOrganisation: "Correct the value the message names and send the change again",
-	storage.CodeVersion:      "Read the record again, check what changed, and send your change with its new ETag",
-	storage.CodeMembership:   "Check the member's roles: the organisation keeps an Owner, and each role is held once",
-	storage.CodeSequence:     "Move the next number forward, or use another prefix; a number is never issued twice",
-	storage.CodeDuplicate:    "Check whether it was done already; for a new record, use a code or key not in use",
-	storage.CodeInvalid:      "Correct the value the message names and send it again",
-	storage.CodeApproval:     "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
-	storage.CodeEvidence:     "Files can be removed only while the record is a draft; add a newer file instead",
-	storage.CodeAccounting:   "Record a new version instead; another member who holds the Accountant role confirms or approves it",
-	storage.CodeVariance:     "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
-	storage.CodeChecklist:    "Mark checklist tasks while the period is open; save a new template version rather than changing one",
-	storage.CodeFXRate:       "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
+	storage.CodeOverlap:       "Change the dates so they neither overlap another version nor end before they start",
+	storage.CodeOrganisation:  "Correct the value the message names and send the change again",
+	storage.CodeVersion:       "Read the record again, check what changed, and send your change with its new ETag",
+	storage.CodeMembership:    "Check the member's roles: the organisation keeps an Owner, and each role is held once",
+	storage.CodeSequence:      "Move the next number forward, or use another prefix; a number is never issued twice",
+	storage.CodeDuplicate:     "Check whether it was done already; for a new record, use a code or key not in use",
+	storage.CodeInvalid:       "Correct the value the message names and send it again",
+	storage.CodeApproval:      "Read the request again: it is signed once, by someone other than its requester, with a second factor, while it is pending",
+	storage.CodeEvidence:      "Files can be removed only while the record is a draft; add a newer file instead",
+	storage.CodeAccounting:    "Record a new version instead; another member who holds the Accountant role confirms or approves it",
+	storage.CodeVariance:      "Explain an income or expense account's variance while its period is open; a new explanation replaces the earlier one",
+	storage.CodeChecklist:     "Mark checklist tasks while the period is open; save a new template version rather than changing one",
+	storage.CodeFXRate:        "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
+	storage.CodeFXRevaluation: "Revalue the period while it is open, from its own last day; the scheduler saves only the revaluation the application worked out",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

@@ -76,6 +76,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := fx.RecordFeed(ctx, k.Store, k.Rates, clock.Now())
 			return err
 		},
+		"fx.revalue": func(ctx context.Context) error {
+			_, err := journal.RevalueDueAll(ctx, k.Store, clock.Now())
+			return err
+		},
 		"fx.reversals": func(ctx context.Context) error {
 			_, err := journal.ReverseRevaluationsAll(ctx, k.Store, clock.Now())
 			return err

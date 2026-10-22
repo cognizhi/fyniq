@@ -124,6 +124,12 @@ type Documents interface {
 	Edit(ctx context.Context, id uuid.UUID, payload []byte, preparer string) (Document, error)
 	// Page lists documents of a type at their current version, newest date first, after a cursor.
 	Page(ctx context.Context, f DocumentFilter) ([]Document, error)
+	// ScheduledRevaluation saves a period's month-end revaluation as the scheduler does (FR-GL-04, FR-AUT-02; the
+	// database's create_scheduled_revaluation): a posted fx_revaluation document whose version 1 is payload, saved and
+	// posted by "scheduler:fx.revalue" at the clock's now. CodeFXRevaluation when the period is not open, or the payload
+	// is not that period's revaluation (its period_id, date and reverse_on). The caller appends its entry in the same
+	// unit of work.
+	ScheduledRevaluation(ctx context.Context, periodID uuid.UUID, payload []byte) (Document, error)
 	// DueReversals lists the posted journals whose automatic reversal is dated on or before day (YYYY-MM-DD), earliest
 	// first, at most limit (FR-GL-02).
 	DueReversals(ctx context.Context, day string, limit int) ([]uuid.UUID, error)
@@ -502,6 +508,7 @@ const (
 	CodeVariance       = "STORAGE-CLOSE-02"      // a variance explained in a period that is not open, or of an account not income or expense; or an explanation changed
 	CodeChecklist      = "STORAGE-CLOSE-03"      // a checklist task marked in a period that is not open; or a checklist record changed
 	CodeFXRate         = "STORAGE-FX-01"         // a rate of the base currency, a monthly rate not on a month's first day, a rate changed, or a feed rate changed
+	CodeFXRevaluation  = "STORAGE-FX-02"         // the scheduler saves a revaluation only of an open period, as that period's
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

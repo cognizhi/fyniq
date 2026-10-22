@@ -198,7 +198,9 @@ func registerRevaluation(a *API) {
 			"that changes, and the losses and gains on the unrealised-FX account (fx_revaluation@1). The entry reverses on the next " +
 			"period's first day, at once when that period is open, else when it opens (the scheduler's fx.reversals). A run with nothing " +
 			"to change posts no entry and still records the revaluation. Run again after a posting dated in or before the period: the " +
-			"new run posts what changed since. Refused while the period is not open (FX-05), before its last day (FX-06), without an " +
+			"new run posts what changed since. The scheduler also runs it by itself (fx.revalue, daily; rev 0.75) once the period has " +
+			"ended and every currency has a rate for its last day, as scheduler:fx.revalue, so a person's run is needed only for a rate " +
+			"entered later. Refused while the period is not open (FX-05), before its last day (FX-06), without an " +
 			"unrealised-FX account (FX-07), or with a currency that has no rate (FX-01). Needs If-Match with the period's ETag, as " +
 			"getFxRevaluation or getPeriod gives it. Answers the revaluation as it then stands. " +
 			"Side effects: the document, its entry, its reversal, and their audit events. Idempotent with Idempotency-Key; Prefer: " +

@@ -24,6 +24,14 @@ var RevaluationReverser = storage.Actor{Type: "scheduler", ID: "fx.reversals"}
 // RevaluationReversalReason is the reason a revaluation's reversal carries.
 const RevaluationReversalReason = "FX revaluation reversed on the next period's first day"
 
+// RevaluationScheduler is the scheduler's principal for the month-end revaluations it runs itself (FR-AUT-01,
+// FR-AUT-02; rev 0.75), recorded as "scheduler:fx.revalue" on everything it posts; the database saves its runs under
+// the same name (create_scheduled_revaluation).
+var RevaluationScheduler = storage.Actor{Type: "scheduler", ID: "fx.revalue"}
+
+// RevaluationReason is the reason the scheduler's revaluations carry.
+const RevaluationReason = "Month-end FX revaluation run by the scheduler"
+
 // PostRevaluation revalues a period (FR-GL-04) in u: under the ledger lock it works out the plan, records it as a
 // revaluation document, posts its entry dated the period's last day, and the entry's reversal on the next period's first
 // day when that period is open; otherwise the reversal waits for the scheduler (ReverseRevaluations). A run with nothing
@@ -48,6 +56,13 @@ func PostRevaluation(ctx context.Context, u storage.UnitOfWork, periodID uuid.UU
 	if err != nil {
 		return fx.Run{}, err
 	}
+	return postRun(ctx, u, plan, doc)
+}
+
+// postRun posts a revaluation document's entry, as its saved payload gives it, then the document itself when it is
+// still a draft (the scheduler's are saved posted), and the entry's reversal on the next period's first day when that
+// period is open; otherwise the reversal waits for the scheduler (ReverseRevaluations).
+func postRun(ctx context.Context, u storage.UnitOfWork, plan fx.Plan, doc storage.Document) (fx.Run, error) {
 	run := fx.Run{Document: doc, Revision: plan.Revision, ReverseOn: plan.ReverseOn, Current: true}
 	if len(plan.Entry.Lines) > 0 {
 		r, settings, err := fx.ReadRevaluation(ctx, u, doc)
@@ -64,10 +79,12 @@ func PostRevaluation(ctx context.Context, u storage.UnitOfWork, periodID uuid.UU
 		}
 		run.Entry = &stored
 	}
-	if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
-		return fx.Run{}, err
+	if doc.Status == storage.DocumentDraft {
+		if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
+			return fx.Run{}, err
+		}
+		run.Document.Status = storage.DocumentPosted
 	}
-	run.Document.Status = storage.DocumentPosted
 	if run.Entry == nil {
 		return run, nil
 	}
@@ -84,6 +101,107 @@ func PostRevaluation(ctx context.Context, u storage.UnitOfWork, periodID uuid.UU
 		}
 	}
 	return run, nil
+}
+
+// Revaluations is what a run of the scheduled month-end revaluations did in one organisation.
+type Revaluations struct {
+	Organisation uuid.UUID
+	Revalued     int // periods revalued
+	Waiting      int // periods due that wait for a rate or an unrealised-FX account
+}
+
+// RevalueDue revalues each open period of org that ended before day and whose revaluation is due (balances to revalue
+// and no current run: fx.Plan.Due), each in its own transaction under the ledger lock, as the scheduler (FR-GL-04,
+// FR-AUT-01; rev 0.75): the same plan a person's run posts, saved through create_scheduled_revaluation. A period with
+// a currency that has no rate for its last day (FX-01), or no account for unrealised FX (FX-07), waits with an audit
+// event that says why, and the next run tries it again. A period revalued and current is left alone, so a person's run
+// is never repeated.
+func RevalueDue(ctx context.Context, store storage.Store, org uuid.UUID, day time.Time) (Revaluations, error) {
+	ctx = storage.WithAudit(ctx, storage.AuditContext{Actor: &RevaluationScheduler, Reason: RevaluationReason})
+	run := Revaluations{Organisation: org}
+	var ended []uuid.UUID
+	if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		all, err := u.Periods().List(ctx)
+		for _, p := range all {
+			if p.Status == storage.PeriodOpen && p.EndsOn.Before(day) {
+				ended = append(ended, p.ID)
+			}
+		}
+		return err
+	}); err != nil {
+		return run, err
+	}
+	for _, id := range ended {
+		var waiting *fx.Error
+		revalued := false
+		err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			if _, err := u.Ledger().Lock(ctx); err != nil { // ENG-47, as a person's run
+				return err
+			}
+			plan, err := fx.Prepare(ctx, u, id)
+			if err != nil || !plan.Due() {
+				return err
+			}
+			if err := plan.Refusal(day); err != nil {
+				if fe := (*fx.Error)(nil); errors.As(err, &fe) && (fe.Code == fx.CodeNoRate || fe.Code == fx.CodeUnrealised) {
+					waiting = fe
+					return nil
+				}
+				return err
+			}
+			payload, err := plan.Record()
+			if err != nil {
+				return err
+			}
+			doc, err := u.Documents().ScheduledRevaluation(ctx, id, payload)
+			if err != nil {
+				return err
+			}
+			_, err = postRun(ctx, u, plan, doc)
+			revalued = err == nil
+			return err
+		})
+		if err != nil {
+			return run, fmt.Errorf("revaluation of period %s: %w", id, err)
+		}
+		if revalued {
+			run.Revalued++
+		}
+		if waiting != nil {
+			run.Waiting++
+			if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+				return u.Audit().Record(ctx, storage.AuditRecord{Action: "fx_revaluation.waiting", ObjectType: "period", ObjectID: id,
+					Changes: map[string][2]any{"waiting_for": {nil, waiting.Code}, "why": {nil, waiting.Message}}})
+			}); err != nil {
+				return run, err
+			}
+		}
+	}
+	return run, nil
+}
+
+// RevalueDueAll runs the scheduled revaluations of every organisation up to its own today, in its time zone, at now
+// (the platform job fx.revalue). An organisation that fails does not stop the others; their errors come back together.
+func RevalueDueAll(ctx context.Context, store storage.Store, now time.Time) ([]Revaluations, error) {
+	orgs, err := store.Organisations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var runs []Revaluations
+	var errs []error
+	for _, org := range orgs {
+		day, err := todayIn(ctx, store, org, now)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
+			continue
+		}
+		r, err := RevalueDue(ctx, store, org, day)
+		runs = append(runs, r)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
+		}
+	}
+	return runs, errors.Join(errs...)
 }
 
 // reverseRevaluation posts the reversal of a revaluation's entry on on, and marks the document reversed.
