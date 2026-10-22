@@ -372,6 +372,8 @@ const (
 	DocumentBill DocumentType = "bill"
 	// DocumentBillPayment is a payment of suppliers' bills recorded by hand (FR-AP-02, FR-AR-18; p1-purchases).
 	DocumentBillPayment DocumentType = "bill_payment"
+	// DocumentVendorCredit is a supplier's credit note (FR-AP-03; p1-purchases).
+	DocumentVendorCredit DocumentType = "vendor_credit"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

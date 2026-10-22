@@ -3311,6 +3311,12 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
              */
             id: string;
+            /**
+             * @description bill, or vendor_credit: a supplier's credit note, posted as a bill's reverse (FR-AP-03).
+             * @example bill
+             * @enum {string}
+             */
+            kind: "bill" | "vendor_credit";
             /** @description getBill only: the lines posting it writes (a draft), or wrote (posted): debits positive. */
             ledger_impact: components["schemas"]["EntryLine"][];
             /** @description The lines as entered. */
@@ -3327,7 +3333,7 @@ export interface components {
             number?: string;
             /** @description A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18). */
             open?: components["schemas"]["Money"];
-            /** @description What it adds to accounts payable in the base currency: as posted, or as posting would post it; absent while it cannot post. */
+            /** @description What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post. */
             payable?: components["schemas"]["Money"];
             /** @description getBill only: the payments that settle it, earliest first, each marked when it was voided. */
             payments: components["schemas"]["BillPaidBy"][];
@@ -3416,6 +3422,12 @@ export interface components {
              * @example 1.34
              */
             fx_rate?: string;
+            /**
+             * @description bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved.
+             * @example bill
+             * @enum {string}
+             */
+            kind?: "bill" | "vendor_credit";
             /** @description The bill's lines. */
             lines: components["schemas"]["BillLineDraft"][] | null;
             /**
@@ -3458,6 +3470,12 @@ export interface components {
              * @example 1.34
              */
             fx_rate?: string;
+            /**
+             * @description bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved.
+             * @example bill
+             * @enum {string}
+             */
+            kind?: "bill" | "vendor_credit";
             /** @description The bill's lines. */
             lines: components["schemas"]["BillLineDraft"][] | null;
             /**
@@ -10600,6 +10618,8 @@ export interface operations {
                 page_size?: number;
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
+                /** @description Bills, the default, or vendor credits. */
+                kind?: "bill" | "vendor_credit";
                 /** @description Only bills with this status. */
                 status?: "draft" | "posted" | "reversed";
                 /** @description Only bills dated on or after this day. */

@@ -55,6 +55,17 @@
       "format": "uuid",
       "type": "string"
     },
+    "kind": {
+      "description": "bill, or vendor_credit: a supplier's credit note, posted as a bill's reverse (FR-AP-03).",
+      "enum": [
+        "bill",
+        "vendor_credit"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
     "ledger_impact": {
       "description": "getBill only: the lines posting it writes (a draft), or wrote (posted): debits positive.",
       "items": {
@@ -89,7 +100,7 @@
     },
     "payable": {
       "$ref": "Money.schema.json",
-      "description": "What it adds to accounts payable in the base currency: as posted, or as posting would post it; absent while it cannot post."
+      "description": "What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."
     },
     "payments": {
       "description": "getBill only: the payments that settle it, earliest first, each marked when it was voided.",
@@ -156,6 +167,7 @@
   },
   "required": [
     "id",
+    "kind",
     "status",
     "version",
     "currency",

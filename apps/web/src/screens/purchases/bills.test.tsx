@@ -41,6 +41,7 @@ const codes = {
 const states = (extra: Partial<Bill["states"]> = {}): Bill["states"] => ({ approval: "draft", ledger: "not_posted", payment: "unpaid", due: "not_due", ...extra });
 const draft: Bill = {
   id: "b1",
+  kind: "bill",
   status: "draft",
   version: 1,
   supplier: { id: "c1", name: "Atlassian Pty Ltd" },
