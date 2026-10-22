@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account, marked revalue.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "carrying": {
+      "$ref": "Money.schema.json",
+      "description": "What that balance is in the books in the base currency, from the balance service."
+    },
+    "change": {
+      "$ref": "Money.schema.json",
+      "description": "RND-FX(open × rate) − carrying: an unrealised gain when positive on an asset, a loss when negative; absent without a rate."
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "1100"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Accounts receivable"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "Its balance in the currency at the period end: debit positive."
+    },
+    "rate": {
+      "description": "The period-end rate the cascade finds (ENG-40), base currency per unit; absent when there is none.",
+      "examples": [
+        "1.33"
+      ],
+      "type": "string"
+    },
+    "rate_source": {
+      "description": "Where the rate comes from.",
+      "examples": [
+        "MAS daily feed of 2026-10-30"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "open",
+    "carrying"
+  ],
+  "title": "RevaluationItem",
+  "type": "object"
+}

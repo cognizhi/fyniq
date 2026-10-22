@@ -18,6 +18,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -190,6 +191,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 	} else {
 		out = append(out, Check{"reversals", OK, "No automatic reversal is waiting", ""})
 	}
+	reval, err := revaluationCheck(ctx, u, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, reval)
 	recurring, err := recurringChecks(ctx, u, p, today)
 	if err != nil {
 		return nil, err
@@ -217,6 +223,29 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		}
 	}
 	return out, nil
+}
+
+// revaluationCheck refuses the close of a period with foreign-currency balances on accounts marked revalue and no
+// revaluation run since the last posting dated in or before it (FR-GL-04; rev 0.73), naming a currency with no rate.
+func revaluationCheck(ctx context.Context, u storage.UnitOfWork, p storage.Period) (Check, error) {
+	plan, err := fx.Prepare(ctx, u, p.ID)
+	if err != nil {
+		return Check{}, err
+	}
+	switch {
+	case len(plan.Items) == 0:
+		return Check{"revaluation", OK, "No foreign-currency balance to revalue", ""}, nil
+	case !plan.Due():
+		return Check{"revaluation", OK, "Foreign-currency balances are revalued", ""}, nil
+	}
+	detail := fmt.Sprintf("%d balance(s) in foreign currencies: revalue them in Accounting › Currencies", len(plan.Items))
+	if plan.Latest != nil {
+		detail = "A posting dated in or before the period came after the revaluation: revalue it again in Accounting › Currencies"
+	}
+	for _, m := range plan.Missing {
+		detail += "; " + strings.TrimPrefix(m.Message, "✖ ")
+	}
+	return Check{"revaluation", Failed, "Foreign-currency balances are not revalued", detail}, nil
 }
 
 func clean(checks []Check) bool {

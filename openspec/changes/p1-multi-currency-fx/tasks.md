@@ -50,9 +50,20 @@
   `ReplayRevaluation` and its golden file; 7040 takes one line for the losses and one for the gains. Tests:
   `TestRevalueTakesEachItemToThePeriodEndRate`, `TestRevalueRefusesWhatIsNotAMonetaryForeignItem`,
   `TestEveryRevaluationRuleVersionReplaysItsGoldenEntries`.)
-- [ ] 3.4 A period's revaluation: preview, post with its reversal on day 1 of the next period (or waiting until that period opens), the revision it read, run again as a reversal and replacement when stale; the platform job `fx.revalue` under the system principal. Tests `// req: FR-GL-04`, `// req: FR-AUT-01` and `// req: FR-AUT-02`
-- [ ] 3.5 The close check: ✖ a period with a foreign-currency balance on a `revalue` account and no current revaluation, naming a missing rate. Tests `// req: FR-GL-07` and `// req: FR-GL-04`
+- [x] 3.4 A period's revaluation: preview, post with its reversal on day 1 of the next period (or waiting until that period opens), the revision it read, run again as a reversal and replacement when stale; the platform job `fx.revalue` under the system principal. Tests `// req: FR-GL-04`, `// req: FR-AUT-01` and `// req: FR-AUT-02`
+  (22 Oct 2026, PRD rev 0.73, but for the scheduler's own run, now 3.7: `balance.Foreign`; `fx.Prepare`, and `journal.PostRevaluation`
+  under the ledger lock (the posting service, the one posting path), a document of type `fx_revaluation` per run recording what it read; a stale run is followed by
+  one that posts the difference since (provisional, in place of a reversal and replacement: the day-1 reversal already
+  reverses the entry once). The reversal posts at once when the next period is open, else the hourly platform job
+  `fx.reversals` posts it under `scheduler:fx.reversals`. The nightly replay re-runs a revaluation from its document.
+  `getFxRevaluation` and `postFxRevaluation` (If-Match with the period's ETag). Tests: `TestTheMonthEndRevaluation`
+  (G4-039's October at account level, a back-dated posting, November's missing rate and waiting reversal, replay), two
+  authorisation-matrix rows.)
+- [x] 3.5 The close check: ✖ a period with a foreign-currency balance on a `revalue` account and no current revaluation, naming a missing rate. Tests `// req: FR-GL-07` and `// req: FR-GL-04`
+  (22 Oct 2026, PRD rev 0.73: close check `revaluation`, Appendix C.2 #59, after the reversals. Test:
+  `TestTheMonthEndRevaluation`.)
 - [ ] 3.6 AR and AP documents and unapplied credits revalued one by one against their stored rates, replacing the control accounts' lines (with `p1-sales` and `p1-purchases`). Tests `// req: FR-GL-04` (G4-039 in full)
+- [ ] 3.7 The scheduler runs a period's revaluation itself once its last day's rates are in, under the system principal (FR-AUT-01, FR-AUT-02): the worker needs the right to write revaluation documents, a change to its grants reviewed with the security checklist. Tests `// req: FR-AUT-01`
 
 ## 4. Realised FX, GST and money accounts
 

@@ -1372,6 +1372,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/periods/{period_id}/fx-revaluation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview a period's FX revaluation
+         * @description The month-end revaluation of the period (FR-GL-04; PRD-001 rev 0.73, provisional): every account marked revalue with a balance in a foreign currency at the period end, from the balance service, at the rate the cascade finds for the period's last day (ENG-40), with its change, RND-FX(open × rate) − carrying; the currencies with no rate; the foreign-currency balances on accounts not marked revalue, which stay as recorded; what a run would post now; and the latest run, with whether a posting dated in or before the period came after it. Read-only; no side effects.
+         */
+        get: operations["getFxRevaluation"];
+        put?: never;
+        /**
+         * Revalue a period's foreign-currency balances
+         * @description Runs the period's month-end revaluation (FR-GL-04; PRD-001 rev 0.73, provisional) under the ledger lock: records what it read as a revaluation document and posts its entry, dated the period's last day: a base-only line per account and currency that changes, and the losses and gains on the unrealised-FX account (fx_revaluation@1). The entry reverses on the next period's first day, at once when that period is open, else when it opens (the scheduler's fx.reversals). A run with nothing to change posts no entry and still records the revaluation. Run again after a posting dated in or before the period: the new run posts what changed since. Refused while the period is not open (FX-05), before its last day (FX-06), without an unrealised-FX account (FX-07), or with a currency that has no rate (FX-01). Needs If-Match with the period's ETag, as getFxRevaluation or getPeriod gives it. Answers the revaluation as it then stands. Side effects: the document, its entry, its reversal, and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and posts nothing.
+         */
+        post: operations["postFxRevaluation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/periods/{period_id}/reopen": {
         parameters: {
             query?: never;
@@ -3977,6 +4001,38 @@ export interface components {
              */
             next_cursor?: string;
         };
+        FXRevaluation: {
+            /** @description The accounts marked revalue with a foreign-currency balance at the period end, by account and currency. */
+            balances: components["schemas"]["RevaluationItem"][] | null;
+            /**
+             * Format: date
+             * @description The revaluation's date: the period's last day.
+             * @example 2026-10-31
+             */
+            date: string;
+            /** @description The period's latest run, if any. */
+            latest?: components["schemas"]["RevaluationRun"];
+            /** @description What a run would post now: a base-only line per item that changes, and the losses and gains on the unrealised-FX account. Empty when nothing changes or a rate is missing. */
+            lines: components["schemas"]["RevaluationLine"][] | null;
+            /** @description Currencies with no rate on the period's last day: nothing posts until each has one (FX-01). */
+            missing: components["schemas"]["RevaluationMissing"][] | null;
+            /** @description Foreign-currency balances on accounts not marked revalue, which keep the rates they were recorded at. */
+            not_revalued: components["schemas"]["NotRevaluedBalance"][] | null;
+            /** @description The period. */
+            period: components["schemas"]["Period"];
+            /**
+             * Format: date
+             * @description The day its entry reverses: the next period's first.
+             * @example 2026-11-01
+             */
+            reverse_on: string;
+            /**
+             * @description nothing: no foreign-currency balance on an account marked revalue; due: no run yet, or a posting dated in or before the period came after the latest (the close refuses it); revalued: the latest run is current.
+             * @example due
+             * @enum {string}
+             */
+            state: "nothing" | "due" | "revalued";
+        };
         Features: {
             /**
              * @description The AI assistant.
@@ -5025,6 +5081,28 @@ export interface components {
              */
             user_id: string;
         };
+        NotRevaluedBalance: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62
+             */
+            account_id: string;
+            /** @description Its balance in the currency. */
+            amount: components["schemas"]["Money"];
+            /** @description Its value in the books in the base currency. */
+            carrying: components["schemas"]["Money"];
+            /**
+             * @description Its code.
+             * @example 1210
+             */
+            code: string;
+            /**
+             * @description Its name.
+             * @example Prepayments
+             */
+            name: string;
+        };
         OneTimeCode: {
             /**
              * @description The one-time code. It is shown once and cannot be shown again; give it to the person it is for by a channel you trust. Case, spaces and dashes do not matter.
@@ -5981,6 +6059,118 @@ export interface components {
             posted: components["schemas"]["Money"];
             /** @description Its balance on the year's first day: every earlier year's result and what was posted to it before. A credit, so negative, is accumulated profit. */
             start: components["schemas"]["Money"];
+        };
+        RevaluationItem: {
+            /**
+             * Format: uuid
+             * @description The account, marked revalue.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            account_id: string;
+            /** @description What that balance is in the books in the base currency, from the balance service. */
+            carrying: components["schemas"]["Money"];
+            /** @description RND-FX(open × rate) − carrying: an unrealised gain when positive on an asset, a loss when negative; absent without a rate. */
+            change?: components["schemas"]["Money"];
+            /**
+             * @description Its code.
+             * @example 1100
+             */
+            code: string;
+            /**
+             * @description Its name.
+             * @example Accounts receivable
+             */
+            name: string;
+            /** @description Its balance in the currency at the period end: debit positive. */
+            open: components["schemas"]["Money"];
+            /**
+             * @description The period-end rate the cascade finds (ENG-40), base currency per unit; absent when there is none.
+             * @example 1.33
+             */
+            rate?: string;
+            /**
+             * @description Where the rate comes from.
+             * @example MAS daily feed of 2026-10-30
+             */
+            rate_source?: string;
+        };
+        RevaluationLine: {
+            /**
+             * Format: uuid
+             * @description The account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+             */
+            account_id: string;
+            /** @description In the line's currency: 0 on a base-only line (INV-05). */
+            amount: components["schemas"]["Money"];
+            /** @description In the base currency: debit positive, credit negative. */
+            base: components["schemas"]["Money"];
+            /**
+             * @description Its code.
+             * @example 7040
+             */
+            code: string;
+            /**
+             * @description What the line is.
+             * @example Unrealised FX loss
+             */
+            description: string;
+            /**
+             * @description Its name.
+             * @example Unrealised FX gain or loss
+             */
+            name: string;
+        };
+        RevaluationMissing: {
+            /**
+             * @description The currency.
+             * @example AUD
+             */
+            currency: string;
+            /**
+             * @description FX-01's message.
+             * @example ✖ No exchange rate for AUD on 31 Oct 2026
+             */
+            detail: string;
+        };
+        RevaluationRun: {
+            /**
+             * @description No posting dated in or before the period came after it.
+             * @example true
+             */
+            current: boolean;
+            /**
+             * Format: uuid
+             * @description The revaluation document.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+             */
+            document_id: string;
+            /**
+             * Format: uuid
+             * @description Its entry, dated the period's last day; absent when nothing changed.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21
+             */
+            entry_id?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-01T02:00:00Z
+             */
+            posted_at?: string;
+            /** @description Who ran it. */
+            posted_by?: components["schemas"]["Person"];
+            /**
+             * Format: uuid
+             * @description The entry's reversal on the next period's first day; absent while it waits for that period to open.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e22
+             */
+            reversal_id?: string;
+            /**
+             * Format: int64
+             * @description The ledger revision it read (ENG-46).
+             * @example 318
+             */
+            revision: number;
         };
         Reversal: {
             /**
@@ -17256,6 +17446,240 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFxRevaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The period's ID. */
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FXRevaluation"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    postFxRevaluation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The period's ID. */
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FXRevaluation"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FXRevaluation"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `FX-05` The period is not open; `FX-06` The period has not ended; `FX-07` No account takes unrealised FX; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency. */
             422: {
                 headers: {
                     [name: string]: unknown;

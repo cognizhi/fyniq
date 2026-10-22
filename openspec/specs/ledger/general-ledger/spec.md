@@ -160,6 +160,17 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** each item with a change has a base-only line on its account at the period-end rate, and 7040 takes one line for the losses and one for the gains
 - **AND** an item already at the period-end rate posts nothing; the accounts revalued are those marked revalue (FR-COA-02)
 
+#### Scenario: A person runs it from the period's last day (rev 0.73)
+- **GIVEN** a period with foreign-currency balances on accounts marked revalue
+- **WHEN** a member with C on "Period close / reopen" runs its revaluation, while the period is open and from its last day
+- **THEN** a revaluation document records the balances, rates and revision it read, and its entry posts dated the period's last day
+- **AND** the entry reverses on the next period's first day, at once when that period is open, else when it opens
+
+#### Scenario: Run again after a back-dated posting (rev 0.73)
+- **GIVEN** a posting dated in or before a revalued period, after its latest run
+- **WHEN** the revaluation runs again
+- **THEN** it posts the difference since, against the carrying value the earlier runs left, so the period ends at the rate
+
 #### Scenario: G4-039 USD invoice revalued, part-settled and revalued again
 - **GIVEN** a USD invoice of USD 10,000 at 1.35 (S$13,500.00); 31 Mar rate 1.30; 15 Apr USD 4,000 received at 1.32; 30 Apr rate 1.33
 - **WHEN** March and April are revalued and the receipt is posted

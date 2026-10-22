@@ -33,6 +33,10 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **THEN** the draft of each occurrence due by its organisation's own today is made, each in its own transaction
 - **AND** a run makes at most 12 missed occurrences of one recurring journal, and the next run takes the rest
 
+#### Scenario: Exchange-rate jobs (rev 0.73)
+- **WHEN** the tick runs the platform jobs
+- **THEN** `fx.feed` stores the daily rate feed's missing days of the last week, daily, and `fx.reversals` posts the month-end revaluations' reversals that waited for their next period to open, hourly
+
 ### Requirement: FR-AUT-02 Automated postings under a system principal
 Every automated posting SHALL run under a named system principal with its own audit identity, and SHALL respect period locks and approval policies.
 

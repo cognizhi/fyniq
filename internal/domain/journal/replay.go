@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -109,6 +110,17 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	}
 	if err != nil {
 		return "", err
+	}
+	if doc.Type == fx.DocumentFXRevaluation { // the month-end revaluation, from what its run recorded (FR-GL-04)
+		r, rs, err := fx.ReadRevaluation(ctx, u, doc)
+		if err != nil {
+			return err.Error(), nil
+		}
+		want, err := ledger.ReplayRevaluation(e.RuleVersion, r, rs)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
 	j, err := decode(doc, s.Base)
 	if err != nil {

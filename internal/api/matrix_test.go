@@ -767,6 +767,38 @@ var matrixCalls = map[string]matrixCall{
 		return e.call(http.MethodPost, "/v1/fx/rates/"+r.ID.String()+"/withdraw", tok, map[string]any{"reason": "Matrix"}, "If-Match", `"1"`),
 			func() bool { return len(matrixRates(e, on)) == 1 }
 	},
+	// The revaluation (rev 0.73): each run is of a September of its own, ended by the matrix's clock, with no foreign-currency
+	// balance, so it records the revaluation and posts nothing; a refused call leaves no revaluation document.
+	"getFxRevaluation": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/periods/"+e.books.Oct.ID.String()+"/fx-revaluation", tok, nil), nil
+	},
+	"postFxRevaluation": func(e *env, tok string) (response, func() bool) {
+		b := porttest.NewBooks(e.t, e.store, "Matrix revaluation "+uuid.NewString()[:8])
+		var sep storage.Period
+		if err := e.store.Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			sep, err = u.Periods().Create(ctx, storage.NewPeriod{StartsOn: porttest.Day(9, 1), EndsOn: porttest.Day(9, 30)})
+			return err
+		}); err != nil {
+			panic(err)
+		}
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation != uuid.Nil {
+			p.Organisation = b.Org
+		}
+		runs := func() int {
+			var n int
+			_ = e.store.Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+				docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: "fx_revaluation", Limit: 10})
+				n = len(docs)
+				return err
+			})
+			return n
+		}
+		return e.call(http.MethodPost, "/v1/periods/"+sep.ID.String()+"/fx-revaluation", e.principal(p), nil, "If-Match", "*"),
+			func() bool { return runs() == 0 }
+	},
 	// Year end needs the financial years, so each call reads it in an organisation of its own whose books start on 1 October
 	// 2026.
 	"getYearEnd": func(e *env, tok string) (response, func() bool) {

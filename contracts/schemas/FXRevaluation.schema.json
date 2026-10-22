@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "balances": {
+      "description": "The accounts marked revalue with a foreign-currency balance at the period end, by account and currency.",
+      "items": {
+        "$ref": "RevaluationItem.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "date": {
+      "description": "The revaluation's date: the period's last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "latest": {
+      "$ref": "RevaluationRun.schema.json",
+      "description": "The period's latest run, if any."
+    },
+    "lines": {
+      "description": "What a run would post now: a base-only line per item that changes, and the losses and gains on the unrealised-FX account. Empty when nothing changes or a rate is missing.",
+      "items": {
+        "$ref": "RevaluationLine.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "missing": {
+      "description": "Currencies with no rate on the period's last day: nothing posts until each has one (FX-01).",
+      "items": {
+        "$ref": "RevaluationMissing.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "not_revalued": {
+      "description": "Foreign-currency balances on accounts not marked revalue, which keep the rates they were recorded at.",
+      "items": {
+        "$ref": "NotRevaluedBalance.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "period": {
+      "$ref": "Period.schema.json",
+      "description": "The period."
+    },
+    "reverse_on": {
+      "description": "The day its entry reverses: the next period's first.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "state": {
+      "description": "nothing: no foreign-currency balance on an account marked revalue; due: no run yet, or a posting dated in or before the period came after the latest (the close refuses it); revalued: the latest run is current.",
+      "enum": [
+        "nothing",
+        "due",
+        "revalued"
+      ],
+      "examples": [
+        "due"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "period",
+    "date",
+    "reverse_on",
+    "state",
+    "balances",
+    "missing",
+    "not_revalued",
+    "lines"
+  ],
+  "title": "FXRevaluation",
+  "type": "object"
+}

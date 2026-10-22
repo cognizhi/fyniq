@@ -392,6 +392,10 @@ var (
 	CreateFxRate      = Policy{Operation: "createFxRate", Capability: PeriodClose, Need: Create}
 	BulkCreateFxRates = Policy{Operation: "bulkCreateFxRates", Capability: PeriodClose, Need: Create}
 	WithdrawFxRate    = Policy{Operation: "withdrawFxRate", Capability: PeriodClose, Need: Create}
+	// The month-end revaluation (FR-GL-04; rev 0.73) is close work too: previewed with the close (V), run by the members
+	// who run its checks (C).
+	GetFxRevaluation  = Policy{Operation: "getFxRevaluation", Capability: PeriodClose, Need: View}
+	PostFxRevaluation = Policy{Operation: "postFxRevaluation", Capability: PeriodClose, Need: Create}
 	// Asking to reopen is preparing it (C); a second person who holds A approves it through the approval engine (FM-1).
 	RequestPeriodReopen = Policy{Operation: "requestPeriodReopen", Capability: PeriodClose, Need: Create,
 		Note: "A person stepped up in the last 5 minutes; the approval engine has another person who holds A approve it (FM-1)."}
@@ -511,7 +515,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
-	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate,
+	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
