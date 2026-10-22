@@ -67,6 +67,11 @@ function Flags({ a }: { a: Account }) {
       )}
       {a.control && <span className="fy-tag">Control</span>}
       {a.payroll_cost && <span className="fy-tag">Payroll cost</span>}
+      {a.revalue && (
+        <span className="fy-tag" title="Its foreign-currency balances are revalued at month end (FR-GL-04).">
+          Revalued
+        </span>
+      )}
       {!a.active && <span className="fy-chip fy-chip--neutral">Inactive</span>}
     </span>
   );
@@ -86,9 +91,10 @@ interface Draft {
   currency: string;
   guidance: string;
   active: boolean;
+  revalue: boolean;
 }
 
-const blank: Draft = { code: "", name: "", type: "expense", parent_id: "", group: false, report_group: "", cash_flow_line: "", function: "", default_gst_code: "", money_account: false, currency: "", guidance: "", active: true };
+const blank: Draft = { code: "", name: "", type: "expense", parent_id: "", group: false, report_group: "", cash_flow_line: "", function: "", default_gst_code: "", money_account: false, currency: "", guidance: "", active: true, revalue: false };
 
 function draftOf(a: Account): Draft {
   return {
@@ -105,6 +111,7 @@ function draftOf(a: Account): Draft {
     currency: a.currency ?? "",
     guidance: a.guidance ?? "",
     active: a.active,
+    revalue: a.revalue,
   };
 }
 
@@ -165,6 +172,7 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
         default_gst_code: text(d.default_gst_code),
         currency: d.money_account ? text(d.currency) : undefined,
         guidance: text(d.guidance),
+        revalue: d.revalue || undefined,
       };
       const out = await guarded(confirm, () => api.POST("/v1/accounts", { params: { header: { "Idempotency-Key": key } }, body }));
       setBusy(false);
@@ -176,7 +184,7 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
     if (!one.data || !base) return setBusy(false);
     // Only the fields changed go: a field left out keeps its value.
     const changes: Record<string, string | boolean> = {};
-    for (const k of ["name", "parent_id", "group", "report_group", "cash_flow_line", "function", "default_gst_code", "guidance", "active", "money_account", "currency"] as const) {
+    for (const k of ["name", "parent_id", "group", "report_group", "cash_flow_line", "function", "default_gst_code", "guidance", "active", "money_account", "currency", "revalue"] as const) {
       if (d[k] !== base[k]) changes[k] = typeof d[k] === "string" ? (d[k] as string).trim() : d[k];
     }
     if (Object.keys(changes).length === 0) {
@@ -290,6 +298,12 @@ function AccountForm({ editing, accounts, onClose, onSaved }: { editing: Account
               <input type="checkbox" checked={d.money_account} onChange={(e) => set("money_account", e.target.checked)} />
               A money account (bank, card or cash)
             </label>
+            {(d.type === "asset" || d.type === "liability") && (
+              <label className="fy-row gap-2">
+                <input type="checkbox" checked={d.revalue} onChange={(e) => set("revalue", e.target.checked)} />
+                Revalued at month end: its foreign-currency balances are settled in money
+              </label>
+            )}
             {!isNew && !current?.role && (
               <label className="fy-row gap-2">
                 <input type="checkbox" checked={d.active} onChange={(e) => set("active", e.target.checked)} />

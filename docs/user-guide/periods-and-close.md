@@ -3,7 +3,7 @@ key: accounting.periods
 title: Open the financial year and close the periods
 mode: expert
 roles: [accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-ORG-02, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04]
+requirements: [FR-ORG-02, FR-GL-04, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04]
 status: draft            # written with the periods page (P1, p1-general-ledger-close); the close joins it
 ---
 
@@ -48,6 +48,9 @@ closes the month.
    - draft journals dated in the month (⚠: once the month closes they cannot post on those dates);
    - automatic reversals that have not posted: dated on or before the month's end, or of a journal
      dated in the month and waiting for a month that is not open (⚠);
+   - balances in other currencies on accounts revalued at month end, not revalued for the month
+     since the last posting dated in it or before (✖); see
+     [Exchange rates](currencies.md#revalue-a-month);
    - recurring journals due in the month with no draft yet (⚠), or a draft more than a day late,
      which means the scheduler failed (✖);
    - active recurring journals whose lines would not post (⚠);

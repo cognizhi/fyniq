@@ -388,6 +388,10 @@
       "label": "Withdraw",
       "tooltip": "Postings no longer take the rate; postings that took it keep it. The rate stays listed with who withdrew it and why."
     },
+    "fx.revalue": {
+      "label": "Revalue",
+      "tooltip": "Restate the month's foreign-currency balances at its last day's rate. The gain or loss posts on the month's last day and reverses on the next month's first."
+    },
     "close.year-end": {
       "label": "Year end",
       "tooltip": "Nothing is posted at year end: Fyniq moves the year's result into retained earnings whenever it reads the next year's balances."

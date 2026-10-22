@@ -82,7 +82,14 @@
   sent to `bulkCreateFxRates`, each refused line listed) and **Withdraw**. Help keys `accounting.currencies`,
   `fx.find-rate`, `fx.add-rate`, `fx.import-rates`, `fx.withdraw-rate`; guide `docs/user-guide/currencies.md`, compiled
   as `accounting.currencies`. Tests: `Currencies.test.tsx`, with axe.)
-- [ ] 5.2 The month's revaluation on the same page: the items, their rates and sources, the preview and the post, what is not revalued and why; the close page's check. Tests `// req: FR-GL-04`
+- [x] 5.2 The month's revaluation on the same page: the items, their rates and sources, the preview and the post, what is not revalued and why; the close page's check. Tests `// req: FR-GL-04`
+  (22 Oct 2026: the **Revaluation** tab on `/accounting/fx` (`Revaluation.tsx`): the month, starting on the latest open
+  one that has ended; each balance with its rate, source and gain or loss; the posting preview as debits and credits;
+  what is not revalued; the latest run; **Revalue** with the period's ETag; a missing rate as a banner whose **Add a
+  rate** opens the dialog for that currency and day. The chart's edit dialog ticks **Revalued at month end** on assets
+  and liabilities, and the chart shows it. The close page shows the check as it shows every check. Help key
+  `fx.revalue`; the guides for currencies, the close and the chart, recompiled. Tests: `Revaluation.test.tsx`, the
+  chart's revaluation test, with axe.)
 - [x] 5.3 The journal editor shows the rate a foreign-currency line will take and where from. Tests `// req: ENG-40`
   (22 Oct 2026: a line's rate is optional; left blank, the editor shows the rate `lookupFxRate` finds for the journal's
   date and its source, or that there is none; the recurring editor says each draft takes its own date's. The journals

@@ -91,4 +91,28 @@ describe("the chart of accounts", () => {
     expect(patch?.body).toEqual({ active: false });
     expect(patch?.headers.get("If-Match")).toBe('"1"');
   });
+
+  // req: FR-GL-04
+  it("marks an asset or a liability for month-end revaluation, and offers it on nothing else", async () => {
+    const wise = acc("a5", "1030", "Wise USD", { type: "asset", money_account: true, currency: "USD", revalue: false });
+    const seen = answer({
+      "GET /v1/accounts": { status: 200, body: { items: [office, rent, wise] } },
+      "GET /v1/accounts/a1": { status: 200, body: rent, headers: { ETag: '"1"' } },
+      "GET /v1/accounts/a5": { status: 200, body: wise, headers: { ETag: '"1"' } },
+      "PATCH /v1/accounts/a5": { status: 200, body: { ...wise, revalue: true, version: 2 } },
+    });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Change 6110 Rent" }));
+    let dialog = await screen.findByRole("dialog");
+    await within(dialog).findByLabelText(/Active: takes new postings/);
+    expect(within(dialog).queryByLabelText(/Revalued at month end/)).toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Change 1030 Wise USD" }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.click(await within(dialog).findByLabelText(/Revalued at month end/));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the account" }));
+    await waitFor(() => expect(calls()).toContain("PATCH /v1/accounts/a5"));
+    expect(seen.find((s) => s.method === "PATCH")?.body).toEqual({ revalue: true });
+  });
 });

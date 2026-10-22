@@ -3,7 +3,7 @@ key: accounting.chart
 title: Set up and keep the chart of accounts
 mode: expert
 roles: [accountant, tax_agent, controller, owner, auditor]
-requirements: [FR-COA-01, FR-COA-02, FR-COA-03, FR-COA-04, FR-COA-05]
+requirements: [FR-COA-01, FR-COA-02, FR-COA-03, FR-COA-04, FR-COA-05, FR-GL-04]
 status: draft            # written with the chart of accounts screen (P1); reviewed with the accountant's CoA review
 ---
 
@@ -48,6 +48,12 @@ Select the pencil next to an account, change what you need, and select **Save th
 - Clear **Active** to stop new postings to it. Its history stays.
 - The control and payroll-cost flags change only with an approval, which arrives with the approval
   engine.
+- Tick **Revalued at month end** on an asset or a liability settled in money, such as a bank
+  account in another currency, receivables or a director's loan: its balances in other currencies
+  are restated each month at the month-end rate. The standard chart ticks it on the money accounts,
+  accounts receivable and payable, staff and director advances, the director's loan and deferred
+  remuneration. Prepayments, deferred revenue and equity, income and expense accounts are never
+  revalued.
 
 ## System accounts
 
@@ -62,8 +68,10 @@ role the books rely on. Their code, type and role never change, and they stay ac
 | Not the form of a GST code (COA-05) | Use the code's capital letters, such as TX |
 | The control or payroll-cost flag changes only with approval (COA-08) | Leave the flag as it is for now |
 | A system account stays active (COA-09) | Keep it active; use another account for new postings |
+| The account is not revalued at month end (COA-10) | Tick it only on an asset or a liability settled in money |
 
 ## Related
 
 - [Organisation settings](organisation-settings.md)
 - [Keep your contacts, items and prices](contacts-and-items.md)
+- [Exchange rates](currencies.md)
