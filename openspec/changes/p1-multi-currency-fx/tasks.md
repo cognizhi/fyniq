@@ -53,8 +53,17 @@
 ## 5. Screens
 
 - [ ] 5.1 Accounting › Currencies (`fx-revaluation`): the rates with duplicates ⚠, entering, importing and withdrawing a rate, the look-up, the foreign-currency money accounts. Expert mode; help keys; a guide page compiled into the knowledge base. Tests `// req: FR-GL-05`, `// req: ENG-40` and `// req: ENG-43`
+  (22 Oct 2026: built but for the money accounts, which wait for 4.4. `/accounting/fx` (`Currencies.tsx`): the
+  organisation's rates with ⚠ for a month's duplicates, the daily feed's last fortnight, **Find the rate a posting
+  takes**, and for the Accountant and the Controller **Add a rate**, **Import a file** (a CSV read on the page and
+  sent to `bulkCreateFxRates`, each refused line listed) and **Withdraw**. Help keys `accounting.currencies`,
+  `fx.find-rate`, `fx.add-rate`, `fx.import-rates`, `fx.withdraw-rate`; guide `docs/user-guide/currencies.md`, compiled
+  as `accounting.currencies`. Tests: `Currencies.test.tsx`, with axe.)
 - [ ] 5.2 The month's revaluation on the same page: the items, their rates and sources, the preview and the post, what is not revalued and why; the close page's check. Tests `// req: FR-GL-04`
-- [ ] 5.3 The journal editor shows the rate a foreign-currency line will take and where from. Tests `// req: ENG-40`
+- [x] 5.3 The journal editor shows the rate a foreign-currency line will take and where from. Tests `// req: ENG-40`
+  (22 Oct 2026: a line's rate is optional; left blank, the editor shows the rate `lookupFxRate` finds for the journal's
+  date and its source, or that there is none; the recurring editor says each draft takes its own date's. The journals
+  guide says so. Test: "says which rate a foreign-currency line left blank takes…" in `JournalPage.test.tsx`.)
 
 ## 6. The oracle (for the oracle session; never written from the engine)
 

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarRange, ChevronRight, NotebookPen, Scale, ScrollText, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarRange, ChevronRight, Coins, NotebookPen, Scale, ScrollText, type LucideIcon } from "lucide-react";
 import { helpText } from "../../i18n";
 import { Icon } from "../../ui";
 
@@ -7,6 +7,7 @@ const pages: { to: string; help: string; icon: LucideIcon }[] = [
   { to: "/accounting/journals", help: "accounting.journals", icon: NotebookPen },
   { to: "/accounting/close", help: "accounting.periods", icon: CalendarRange },
   { to: "/accounting/opening-balances", help: "accounting.opening-balances", icon: Scale },
+  { to: "/accounting/fx", help: "accounting.currencies", icon: Coins },
   { to: "/reports/general-ledger", help: "reports.general-ledger", icon: ScrollText },
   { to: "/accounting/chart-of-accounts", help: "accounting.chart", icon: BookOpen },
 ];

@@ -4,14 +4,14 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:196d782a67b4c97f2828f4809288f4a7083a953e78211197230caa9fc809f18a
+  - docs/user-guide/journals.md sha256:cb6460d3070d29f7b89499e8c614cf8f67a6e1297fac5338ebafa20388770c75
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-21
+compiled_at: 2026-10-22
 aliases:
   - journal
   - manual journal
@@ -39,6 +39,8 @@ aliases:
   - attach a file
   - supporting document
   - journal evidence
+  - foreign currency journal
+  - exchange rate on a journal
 ---
 
 # Prepare, post and reverse journals
@@ -57,7 +59,8 @@ aliases:
 - **New journal**: the **Date** and a **Description**, then each line's account, an optional description, and the amount under **Debit** or **Credit**, never both; **Add a line** for more.
 - The balance under the lines says **Balanced** once debits equal credits in each currency; then **Save as a draft**.
 - Changing a draft and selecting **Save the changes** keeps the earlier version in its history; Fyniq records who saved each version.
-- Type amounts without a sign, as `1,234.56` or `S$1,234.56`; a credit goes under **Credit**. A line in another currency takes its currency code and the rate: how much of the base currency one unit buys.
+- Type amounts without a sign, as `1,234.56` or `S$1,234.56`; a credit goes under **Credit**. A line in another currency takes its currency code; its **Rate** is how much of the base currency one unit buys.
+- Leave the rate blank and the line takes the rate for the journal's date from **Accounting → Currencies** when it is checked and posted; Fyniq says under the field which rate and where from. A typed rate is the journal's own and is used instead ([[accounting.currencies]]).
 
 (src: docs/user-guide/journals.md#prepare-a-journal)
 
@@ -147,6 +150,7 @@ aliases:
 - LEDGER-02 or LEDGER-03: at least two lines, each with an amount.
 - LEDGER-05 or LEDGER-06: choose an active account that is not a group.
 - LEDGER-07 or LEDGER-13: a rate only on a line in another currency.
+- FX-01, no exchange rate for this currency: type the rate on the line, or add the rate for the day or the month in **Accounting → Currencies**.
 - LEDGER-16: date a reversal on or after the journal's date.
 - JOURNAL-11, the automatic reversal is not after the journal: date it after the journal's date, such as the first of the next month.
 - JOURNAL-02, not a draft: a posted journal is reversed, not changed.

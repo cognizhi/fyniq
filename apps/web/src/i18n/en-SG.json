@@ -368,6 +368,26 @@
       "label": "Save the template",
       "tooltip": "Save the tasks every month's checklist has, as a new version. Months already worked on keep their marks."
     },
+    "accounting.currencies": {
+      "label": "Currencies",
+      "tooltip": "Exchange rates into the base currency: the daily feed, your own rates, and the rate a posting in another currency takes."
+    },
+    "fx.find-rate": {
+      "label": "Find the rate a posting takes",
+      "tooltip": "A posting without a rate of its own takes your rate for its date, else the daily feed's from that day or up to 7 days before, else your monthly rate."
+    },
+    "fx.add-rate": {
+      "label": "Add a rate",
+      "tooltip": "Enter a rate for a day, which overrides the daily feed and replaces your earlier rate for that day, or for a month of the monthly table."
+    },
+    "fx.import-rates": {
+      "label": "Import a file",
+      "tooltip": "Enter the rates of a CSV file at once, each on its own: a row that cannot be entered is listed with why, and the others are kept."
+    },
+    "fx.withdraw-rate": {
+      "label": "Withdraw",
+      "tooltip": "Postings no longer take the rate; postings that took it keep it. The rate stays listed with who withdrew it and why."
+    },
     "close.year-end": {
       "label": "Year end",
       "tooltip": "Nothing is posted at year end: Fyniq moves the year's result into retained earnings whenever it reads the next year's balances."

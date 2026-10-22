@@ -107,3 +107,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-22] compile | docs/user-guide/periods-and-close.md → accounting.periods (working through the close checklist and changing its template, FR-GL-07)
 
 ## [2026-10-22] compile | docs/user-guide/periods-and-close.md → accounting.periods (year end on the close page, rev 0.69)
+
+## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (new: exchange rates, the cascade, adding, importing and withdrawing rates); docs/user-guide/journals.md → accounting.journals (a line's rate left blank takes the cascade's; FX-01)
+
+## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (new: exchange rates, the cascade, adding, importing and withdrawing rates); docs/user-guide/journals.md → accounting.journals (a line's rate left blank takes the cascade's; FX-01)
