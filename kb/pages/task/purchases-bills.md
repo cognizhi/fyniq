@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill and its warnings; recording and voiding its payments; voiding or editing a posted bill
 sources:
-  - docs/user-guide/bills.md sha256:5fb5729dd5c118537bbf4ed15b94a59fb083b47d590f2598681cc1af87b20535
+  - docs/user-guide/bills.md sha256:3993d3b683607593edc913934d09fb1616fc66ee59507ea9798905153bb8cfe8
 data_class: general
 taint: trusted
 status: draft
@@ -31,6 +31,10 @@ aliases:
   - part payment
   - bill paid
   - void a payment
+  - AP ageing
+  - what we owe suppliers
+  - bills due
+  - cash requirement
 ---
 
 # Bills
@@ -42,6 +46,13 @@ aliases:
 - A Bookkeeper, an AP specialist or an Accountant enters bills; an Accountant posts, voids and edits them; the Owner, the Auditor and the Tax agent can see them.
 
 (src: docs/user-guide/bills.md#what-it-is)
+
+## What the company owes
+
+- At the top of **Purchases → Bills**, **What we owe suppliers** gives, in each currency, what the bills due in the next 30 days need and how much of it is overdue; a bill falls due on its due date, or by the payment terms when it has none. Credits with suppliers are not taken off: they are applied to a bill first.
+- In Expert mode it also shows the ageing: what is owed by how long it is past due (not yet due, 1–30, 31–60, 61–90 and over 90 days), with the credits apart.
+
+(src: docs/user-guide/bills.md#what-the-company-owes)
 
 ## Enter a bill
 

@@ -108,6 +108,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/organisation/settings` (listSettings): List the organisation settings
 - `GET /v1/organisation/settings/{key}` (getSetting): Get an organisation setting
 - `PATCH /v1/organisation/settings/{key}` (updateSetting): Change an organisation setting
+- `GET /v1/payables` (getPayables): Get AP ageing and the bills to pay
 - `GET /v1/periods` (listPeriods): List the periods
 - `GET /v1/periods/{period_id}` (getPeriod): Get a period
 - `GET /v1/periods/{period_id}/checklist` (getPeriodChecklist): Get a month's close checklist

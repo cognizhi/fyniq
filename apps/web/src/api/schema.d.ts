@@ -1520,6 +1520,26 @@ export interface paths {
         patch: operations["updateSetting"];
         trace?: never;
     };
+    "/v1/payables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get AP ageing and the bills to pay
+         * @description What the company owes its suppliers as at a day (FR-AP-06), from the AP sub-ledger (INV-07): each supplier's open bills by days past due (current, 1–30, 31–60, 61–90, 90+) and unapplied credits, by currency, with the totals and their carrying amounts in the base currency; the open bills overdue or due within the window after the day, by due date; and the cash they need by currency. A bill falls due on its due date as entered, else by the supplier's or the organisation's payment terms. Read-only; no side effects.
+         */
+        get: operations["getPayables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/periods": {
         parameters: {
             query?: never;
@@ -6375,6 +6395,124 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTI4ZjZlIn0
              */
             next_cursor?: string;
+        };
+        PayableBill: {
+            /**
+             * Format: uuid
+             * @description The bill.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+             */
+            bill_id: string;
+            /**
+             * Format: date
+             * @description The bill's date.
+             * @example 2026-10-14
+             */
+            date: string;
+            /**
+             * Format: date
+             * @description When it falls due: as entered, else from the payment terms.
+             * @example 2026-11-13
+             */
+            due_date?: string;
+            /**
+             * @description Its number.
+             * @example BILL-0007
+             */
+            number?: string;
+            /** @description What is still to pay of it, in its currency. */
+            open: components["schemas"]["Money"];
+            /**
+             * @description true when its due date is before the day.
+             * @example false
+             */
+            overdue: boolean;
+            /**
+             * Format: uuid
+             * @description Its supplier.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+             */
+            supplier_id: string;
+            /**
+             * @description The supplier's legal name.
+             * @example Atlassian Pty Ltd
+             */
+            supplier_name: string;
+        };
+        Payables: {
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-10-31
+             */
+            as_at: string;
+            /** @description The cash those bills need, by currency. Supplier credits are not taken off: they are applied to a bill first. */
+            requirement: components["schemas"]["PayablesRequirement"][];
+            /** @description Each supplier with something open, by name. */
+            suppliers: components["schemas"]["PayablesSupplier"][];
+            /** @description The open bills overdue or due within the window, by due date. */
+            to_pay: components["schemas"]["PayableBill"][];
+            /** @description The ageing's totals, a row per currency. */
+            totals: components["schemas"]["PayablesRow"][];
+            /**
+             * Format: int64
+             * @description The window, in days after the day, of the bills to pay.
+             * @example 30
+             */
+            within: number;
+        };
+        PayablesRequirement: {
+            /** @description The total's carrying amount in the base currency, at the bills' own rates: a foreign bill costs what its rate on the day it is paid makes it. */
+            carrying: components["schemas"]["Money"];
+            /**
+             * @description The currency.
+             * @example SGD
+             */
+            currency: string;
+            /** @description Due before the day. */
+            overdue: components["schemas"]["Money"];
+            /** @description Both. */
+            total: components["schemas"]["Money"];
+            /** @description Due on the day or within the window after it. */
+            within: components["schemas"]["Money"];
+        };
+        PayablesRow: {
+            /** @description The total's carrying amount in the base currency, at the bills' own rates (ENG-14). */
+            carrying: components["schemas"]["Money"];
+            /** @description Unapplied credits with suppliers, negative: what payments left over (FR-AR-18 mirrored). */
+            credits: components["schemas"]["Money"];
+            /**
+             * @description The currency.
+             * @example SGD
+             */
+            currency: string;
+            /** @description Not yet due, or due on the day. */
+            current: components["schemas"]["Money"];
+            /** @description 1 to 30 days past due. */
+            days_1_30: components["schemas"]["Money"];
+            /** @description 31 to 60 days past due. */
+            days_31_60: components["schemas"]["Money"];
+            /** @description 61 to 90 days past due. */
+            days_61_90: components["schemas"]["Money"];
+            /** @description More than 90 days past due. */
+            days_90_plus: components["schemas"]["Money"];
+            /** @description Every bucket and the credits. */
+            total: components["schemas"]["Money"];
+        };
+        PayablesSupplier: {
+            /**
+             * Format: uuid
+             * @description The supplier's contact ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+             */
+            id: string;
+            /**
+             * @description The supplier's legal name.
+             * @example Atlassian Pty Ltd
+             */
+            name: string;
+            /** @description A row per currency. */
+            rows: components["schemas"]["PayablesRow"][];
         };
         Period: {
             /**
@@ -19877,6 +20015,86 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPayables: {
+        parameters: {
+            query?: {
+                /** @description The day; left out, the organisation's today. */
+                as_at?: string;
+                /** @description The window of the bills to pay and the cash requirement, in days after the day. */
+                within?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payables"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

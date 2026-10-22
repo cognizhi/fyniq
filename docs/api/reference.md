@@ -1950,6 +1950,25 @@ Asks for another person's approval to void a posted bill with a reversing entry 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `BILL-01`, `BILL-02`, `BILL-03`, `BILL-04`, `BILL-05`, `BILL-06`, `BILL-07`, `BILL-08`, `BILL-13`, `FX-01`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-21`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/payables`
+
+**Get AP ageing and the bills to pay** (`getPayables`)
+
+What the company owes its suppliers as at a day (FR-AP-06), from the AP sub-ledger (INV-07): each supplier's open bills by days past due (current, 1–30, 31–60, 61–90, 90+) and unapplied credits, by currency, with the totals and their carrying amounts in the base currency; the open bills overdue or due within the window after the day, by due date; and the cash they need by currency. A bill falls due on its due date as entered, else by the supplier's or the organisation's payment terms. Read-only; no side effects.
+
+- **Permission:** View on Bills, vendor credits
+- **Parameters:**
+  - `as_at` (query): The day; left out, the organisation's today.
+  - `within` (query): The window of the bills to pay and the cash requirement, in days after the day.
+- **Responses:**
+  - `200` OK [`Payables`](../../contracts/schemas/Payables.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ### `GET /v1/purchases/gst-codes`
 
 **Get the GST codes for purchases** (`getPurchaseGSTCodes`)

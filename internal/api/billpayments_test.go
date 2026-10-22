@@ -137,3 +137,27 @@ func TestBillPaymentsThroughTheAPI(t *testing.T) {
 		t.Errorf("the posted payments: %s", l.Raw)
 	}
 }
+
+// FR-AP-06 through the API (p1-purchases task 5.1): a bill of S$1,090.00 dated 14 October, due 13 November by the
+// supplier's 30 days, paid S$400.00: at 31 October S$690.00 is current and due within 30 days; at 30 November it is
+// 17 days past due (1–30) and overdue; the totals and the cash requirement say the same.
+// req: FR-AP-06
+func TestPayablesThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	b, _ := e.postedBill("1000.00", "90.00")
+	if r := e.call(http.MethodPost, "/v1/bill-payments", e.as(authz.Accountant), e.payment(b, "400.00")); r.Status != 201 {
+		t.Fatalf("the payment: %d %s", r.Status, r.Raw)
+	}
+	g := e.call(http.MethodGet, "/v1/payables?as_at=2026-10-31&within=30", e.as(authz.Auditor), nil)
+	if g.Status != 200 || !strings.Contains(g.Raw, `"current":{"amount":"690.00","currency":"SGD"}`) ||
+		!strings.Contains(g.Raw, `"due_date":"2026-11-13","open":{"amount":"690.00","currency":"SGD"},"overdue":false`) ||
+		!strings.Contains(g.Raw, `"within":{"amount":"690.00","currency":"SGD"}`) {
+		t.Fatalf("at 31 October: %d %s", g.Status, g.Raw)
+	}
+	g = e.call(http.MethodGet, "/v1/payables?as_at=2026-11-30", e.as(authz.Auditor), nil)
+	if !strings.Contains(g.Raw, `"days_1_30":{"amount":"690.00","currency":"SGD"}`) || !strings.Contains(g.Raw, `"overdue":true`) ||
+		!strings.Contains(g.Raw, `"overdue":{"amount":"690.00","currency":"SGD"}`) || !strings.Contains(g.Raw, `"name":"Atlassian Pty Ltd"`) {
+		t.Fatalf("at 30 November: %s", g.Raw)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/payables?as_at=31-10-2026", e.as(authz.Auditor), nil), "getPayables", 422, CodeInvalid)
+}

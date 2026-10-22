@@ -11,6 +11,7 @@ import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { PayablesSummary } from "./Payables";
 
 export type Bill = components["schemas"]["Bill"];
 type Status = Bill["status"];
@@ -88,7 +89,8 @@ export const total = (b: Bill) => `${formatAmount(b.total.amount)} ${b.total.cur
 
 // Bills is Purchases › Bills (docs/design/screens BillsBoard's list view; FR-AP-02): every bill, newest first, with
 // its supplier, dates, total and states, narrowed by status and by text in its number. A posted bill is never edited in
-// place: an edit reverses and posts it again. The board, the due-date calendar and the ageing arrive with their tasks.
+// place: an edit reverses and posts it again. Above them, what the company owes its suppliers: the cash the next 30 days
+// need, and in Expert mode the AP ageing (FR-AP-06). The board and the due-date calendar arrive with their task.
 export function Bills() {
   const { session, organisation } = useSignedIn();
   const [status, setStatus] = useState<Status | "">("");
@@ -131,6 +133,7 @@ export function Bills() {
         )}
       </div>
       <ReviewBanner screen="bills-board" />
+      <PayablesSummary />
       {overdue > 0 && (
         <div className="fy-banner fy-banner--warning" role="status">
           <Icon of={TriangleAlert} size={20} />

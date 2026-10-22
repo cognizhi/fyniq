@@ -66,8 +66,10 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 5. Ageing, the board and paying on time
 
-- [ ] 5.1 AP ageing, bills to pay by due date and the cash requirement for the next 30 days, from the
+- [x] 5.1 AP ageing, bills to pay by due date and the cash requirement for the next 30 days, from the
   open documents. Tests `// req: FR-AP-06`
+  (23 Oct 2026, rev 0.79: `payables.Age`, `payables.ToPay`, `bill.Due`, `getPayables`, the summary on Purchases ›
+  Bills. Tests `TestAgeingBucketsByDaysPastDue`, `TestBillsToPayAndTheCashTheyNeed`, `TestPayablesThroughTheAPI`)
 - [ ] 5.2 The bills board (`bills-board`): by status, the due-date calendar, scheduling a payment date,
   early-payment discounts shown, reminders before due dates in the Inbox. Tests `// req: FR-AP-13`
   **Left:** remittance advice email (`p1-templates-email`); "in a batch" (FR-BNK-12)

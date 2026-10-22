@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bill_id": {
+      "description": "The bill.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The bill's date.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "due_date": {
+      "description": "When it falls due: as entered, else from the payment terms.",
+      "examples": [
+        "2026-11-13"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "BILL-0007"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "What is still to pay of it, in its currency."
+    },
+    "overdue": {
+      "description": "true when its due date is before the day.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "supplier_id": {
+      "description": "Its supplier.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "supplier_name": {
+      "description": "The supplier's legal name.",
+      "examples": [
+        "Atlassian Pty Ltd"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "bill_id",
+    "supplier_id",
+    "supplier_name",
+    "date",
+    "open",
+    "overdue"
+  ],
+  "title": "PayableBill",
+  "type": "object"
+}

@@ -85,6 +85,29 @@ describe("Purchases › Bills", () => {
     await noViolations(container);
   });
 
+  it("says what the company owes suppliers: the next 30 days' cash and, in Expert mode, the ageing (FR-AP-06)", async () => {
+    const sgd = (amount: string) => ({ amount, currency: "SGD" });
+    answer({
+      "GET /v1/bills": { status: 200, body: { items: [posted] } },
+      "GET /v1/payables": {
+        status: 200,
+        body: {
+          as_at: "2026-11-30",
+          within: 30,
+          suppliers: [],
+          totals: [{ currency: "SGD", current: sgd("0.00"), days_1_30: sgd("690.00"), days_31_60: sgd("0.00"), days_61_90: sgd("0.00"), days_90_plus: sgd("0.00"), credits: sgd("-25.00"), total: sgd("665.00"), carrying: sgd("665.00") }],
+          to_pay: [],
+          requirement: [{ currency: "SGD", overdue: sgd("690.00"), within: sgd("0.00"), total: sgd("690.00"), carrying: sgd("690.00") }],
+        },
+      },
+    });
+    renderPage(Bills, { path: "/purchases/bills", session: accountant });
+    const card = await screen.findByRole("region", { name: "What we owe suppliers" });
+    expect(card.textContent).toContain("690.00 SGD to pay in the next 30 days, 690.00 of it overdue.");
+    const ageing = within(card).getByRole("table", { name: "AP ageing" });
+    expect(within(ageing).getAllByRole("row")[1]!.textContent).toBe("SGD—690.00———−25.00665.00");
+  });
+
   it("offers no new bill to a person who only reads them", async () => {
     answer({ "GET /v1/bills": { status: 200, body: { items: [] } } });
     renderPage(Bills, { path: "/purchases/bills", session: auditor });

@@ -429,6 +429,8 @@ var (
 	RecordBillPayment      = Policy{Operation: "recordBillPayment", Capability: Bills, Need: Post}
 	VoidBillPayment        = Policy{Operation: "voidBillPayment", Capability: Bills, Need: Post}
 	RequestBillPaymentVoid = Policy{Operation: "requestBillPaymentVoid", Capability: Bills, Need: Post}
+	// AP ageing and the bills to pay (FR-AP-06) are read under V on "Bills, vendor credits", as the bills are.
+	GetPayables = Policy{Operation: "getPayables", Capability: Bills, Need: View}
 	// A journal's evidence needs the evidence right and the right to view the journal (FR-DOC-05, FR-DOC-11).
 	// The AI's cell is a proposal (doc.attach): an AI or MCP client never uploads, lists or reads evidence here.
 	AddJournalEvidence = Policy{Operation: "addJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
@@ -544,7 +546,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
-	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid,
+	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

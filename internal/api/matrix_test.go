@@ -1159,6 +1159,9 @@ var matrixCalls = map[string]matrixCall{
 		}
 	},
 	// Payments of bills recorded by hand (FR-AP-02): read under V, recorded and voided under P; asking to void is posting.
+	"getPayables": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/payables?as_at=2026-10-31", tok, nil), nil
+	},
 	"listBillPayments": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/bill-payments", tok, nil), nil
 	},
