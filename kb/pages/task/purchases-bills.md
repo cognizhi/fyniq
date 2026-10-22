@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill and its warnings; recording and voiding its payments; voiding or editing a posted bill
 sources:
-  - docs/user-guide/bills.md sha256:3993d3b683607593edc913934d09fb1616fc66ee59507ea9798905153bb8cfe8
+  - docs/user-guide/bills.md sha256:e2361a5816b0044999e43e4158a29c2c5db9d26ace33cb40a454fbdd2cc5f594
 data_class: general
 taint: trusted
 status: draft
@@ -35,6 +35,11 @@ aliases:
   - what we owe suppliers
   - bills due
   - cash requirement
+  - credit note
+  - vendor credit
+  - supplier credit
+  - apply a credit
+  - supplier refund
 ---
 
 # Bills
@@ -93,6 +98,14 @@ aliases:
 
 (src: docs/user-guide/bills.md#void-a-payment)
 
+## Credit notes
+
+- A supplier's credit note is entered with **New credit note** under **Purchases → Bills**, line by line with its GST, as a bill is; posting it takes it off what the company owes the supplier, numbered from its own sequence (VC-0001 onwards). The list's **Credit notes** shows them.
+- **Apply to a bill** settles one of the supplier's open bills in its currency, both going down by the amount: nothing posts in SGD, and in another currency the difference between the two rates is the exchange gain or loss. **Record refund** records money the supplier paid back, posted at once and numbered from the refund sequence (RF-0001 onwards).
+- What a payment paid beyond a bill is a credit too, applied or refunded the same way. A credit note shows **Part applied** or **Applied** and what is left; each application or refund is voided under **Payments**, and a credit note is not voided or edited while applied or refunded.
+
+(src: docs/user-guide/bills.md#credit-notes)
+
 ## Void or edit a posted bill
 
 - A posted bill is never changed in place: **Void** posts a reversing entry on a chosen date, with a reason, and the bill stays marked voided; **Edit** reverses its entry and posts the new version in one step, with a reason, keeping its number.
@@ -110,6 +123,8 @@ aliases:
 - BILLPAY-05, more than the bill has open: enter at most what is open, and void a payment entered twice.
 - LEDGER-27, what the account paid is missing: for a bill in another currency paid from an SGD account, enter what it paid in SGD.
 - BILL-13, payments settle the bill: void its payments first, then void or edit the bill.
+- CREDIT-05, more than the bill has open or the credit has left: apply or refund at most what is open on both.
+- CREDIT-08, the credit is applied to bills: void its applications and refunds first.
 
 (src: docs/user-guide/bills.md#common-problems)
 

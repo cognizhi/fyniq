@@ -276,6 +276,18 @@
       "label": "Ask to post the edit",
       "tooltip": "In Founder mode another founder approves an edit first; it posts when they approve it."
     },
+    "credit.new": {
+      "label": "New credit note",
+      "tooltip": "Enter a supplier's credit note: what they credit the company, line by line, with its GST. Posting it takes it off what is owed."
+    },
+    "credit.apply": {
+      "label": "Apply to a bill",
+      "tooltip": "Use the credit to settle one of the supplier's open bills in its currency: both go down by the amount."
+    },
+    "credit.refund": {
+      "label": "Record refund",
+      "tooltip": "Record money the supplier paid back against the credit: the date, the account it came into and how much. It posts at once."
+    },
     "bill.record-payment": {
       "label": "Record payment",
       "tooltip": "Record money already paid to the supplier for this bill: the date, the account it left and how much. It posts at once."
