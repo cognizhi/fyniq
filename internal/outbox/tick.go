@@ -57,6 +57,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "fx.revalue", Every: 24 * time.Hour, Offset: 19*time.Hour + 5*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Hourly, the reversals of month-end revaluations that waited for their next period to open (FR-GL-04; rev 0.73).
 	{Job: "fx.reversals", Every: time.Hour, Offset: 35 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Hourly, the draft bills of the recurring bills due by each organisation's own today (FR-AP-09, FR-AUT-01; rev 0.84).
+	{Job: "bills.recurring", Every: time.Hour, Offset: 15 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Hourly, the releases of bills' spread costs due by each organisation's own today (FR-GL-03, ENG-05; rev 0.83).
 	{Job: "bills.releases", Every: time.Hour, Offset: 40 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 }

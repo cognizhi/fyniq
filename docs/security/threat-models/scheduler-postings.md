@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Automatic reversals and recurring journals: FR-GL-02, FR-AUT-01, FR-AUT-02, SOD-3, FM-1, FM-2 (PRD-001 rev 0.55, the founders' decisions of rev 0.58, rev 0.59 and rev 0.60); the month-end revaluation: FR-GL-04 (rev 0.75, the founder's decision of 22 Oct 2026) |
-| Author, reviewer, date | Claude Code for the founders, 21 Oct 2026, revaluation 22 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
-| Data and its class | Journal amounts, accounts and memos (confidential); no personal data, bank numbers or secrets |
-| Who acts | The platform jobs `journals.auto-reverse`, `journals.recurring` and `fx.revalue`, as the principals `scheduler:journals.auto-reverse`, `scheduler:journals.recurring` and `scheduler:fx.revalue`, with the worker's database role `fyniq_worker`; the people who keep recurring journals and post their drafts |
+| Feature and requirement IDs | Automatic reversals and recurring journals: FR-GL-02, FR-AUT-01, FR-AUT-02, SOD-3, FM-1, FM-2 (PRD-001 rev 0.55, the founders' decisions of rev 0.58, rev 0.59 and rev 0.60); the month-end revaluation: FR-GL-04 (rev 0.75, the founder's decision of 22 Oct 2026); the releases of bills' spread costs: FR-GL-03, ENG-05 (rev 0.83); recurring bills: FR-AP-09 (rev 0.84, the owner's decision of 22 Oct 2026) |
+| Author, reviewer, date | Claude Code for the founders, 21 Oct 2026, revaluation 22 Oct 2026, releases and recurring bills 23 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
+| Data and its class | Journal and bill amounts, accounts, suppliers and memos (confidential); no personal data, bank numbers or secrets |
+| Who acts | The platform jobs `journals.auto-reverse`, `journals.recurring`, `fx.revalue`, `bills.releases` and `bills.recurring`, as the principals `scheduler:journals.auto-reverse`, `scheduler:journals.recurring`, `scheduler:fx.revalue`, `scheduler:bills.releases` and `scheduler:bills.recurring`, with the worker's database role `fyniq_worker`; the people who keep recurring journals and recurring bills and post their drafts |
 
 ## 1. What we are building
 
@@ -14,8 +14,11 @@ The tick (Cloud Scheduler; locally the API's loop) starts the platform jobs thro
 `journals.recurring` makes the draft journal of each recurring journal's occurrence that has come. Daily,
 `fx.revalue` revalues each ended, open month that is due, once its last day's rates are in, and posts it: unlike
 a recurring journal nobody writes its content, which the engine works out from the ledger and the rates (the
-founder's decision of 22 Oct 2026). All three run in the worker with `fyniq_worker`, which also sends email and
-finalises evidence.
+founder's decision of 22 Oct 2026). Hourly, `bills.releases` posts each month's part of a bill's spread cost
+whose date has come (rev 0.83): Dr the line's account, Cr 1210, from the bill's own posted entry; and
+`bills.recurring` makes the draft bill of each recurring bill's occurrence that has come (rev 0.84), which a person
+completes with the supplier's number and posts. All of them run in the worker with `fyniq_worker`, which also sends
+email and finalises evidence.
 
 Trust boundaries: **tick ↔ worker** (an authenticated task, SEC-12); **worker ↔ database** (the
 `fyniq_worker` role, RLS per organisation); **draft ↔ person** (a person posts a scheduler's draft
@@ -36,6 +39,9 @@ under the usual approvals: nothing recurring posts by itself, the founders' deci
 | T9 | worker ↔ database | Tampering: the worker saves a revaluation it made up, or one of another period, and posts it | Wrong unrealised FX in a month | Low |
 | T10 | worker ↔ database | Elevation of privilege: the revaluation function becomes a general way for the worker to make or post documents | The T1 and T2 controls bypassed | Low |
 | T11 | the job | Tampering: the scheduler revalues a month a person already revalued, or one whose rates are not in | Double or wrong revaluation | Medium |
+| T12 | worker ↔ database | Tampering: the worker posts a "release" that moves an amount out of 1210 that no bill spread, or releases a voided or replaced bill again | Costs moved between months with no bill behind them | Low |
+| T13 | worker ↔ database | Spoofing and tampering: the worker makes or posts a bill as a person, or with content nobody wrote | A bill owed to a supplier that no person entered | Low |
+| T14 | draft ↔ person | Elevation of privilege: the author of a recurring bill approves the posting of its drafts | SOD-3 bypassed through the template | Medium |
 
 ## 3. What we do about it
 
@@ -52,6 +58,9 @@ under the usual approvals: nothing recurring posts by itself, the founders' deci
 | T9 | `create_scheduled_revaluation` saves only an `fx_revaluation` of an open period whose `period_id`, last day and day after are the payload's (FY169). The worker could already append any balanced entry (since 000004, for the reversals); the database's checks still apply to it: balanced, base-only lines only on a revaluation and only on accounts marked revalue against the unrealised-FX account (FY008), nothing in a closed period. The run records what it read, and the replay re-runs `fx_revaluation@1` over it (ENG-06) | `TestTheSchedulerRevaluesAnEndedMonth` (SEC-03; V13.2.2), `TestAttackBaseOnlyLinesComeOnlyFromTheRevaluation` |
 | T10 | The function fixes the type, the version (1) and the actor (`scheduler:fx.revalue`); EXECUTE is granted to `fyniq_worker` only; the role still holds no INSERT on `document` and no UPDATE of `posted_by` | `TestTheSchedulerRevaluesAnEndedMonth`, `TestEachRoleHoldsExactlyItsGrants` |
 | T11 | The job takes the ledger lock and revalues only a period whose plan is due (balances to revalue and no current run); a currency without a rate for the last day, or no unrealised-FX account, makes it wait with an audit event (`fx_revaluation.waiting`). A rate entered after the run is taken by a person's run, which posts the difference | `TestTheSchedulerRevaluesAnEndedMonth` |
+| T12 | A release's entry must name a posted bill at its current version (`journal_entry_bill_release`, FY172); its amount comes from `ALLOC-EVEN` of the 1210 line the bill's own entry posted, and the nightly replay re-runs `bill_release@1` from that entry (ENG-06). A void reverses the releases with the bill and an edit reverses the old version's, in the same transaction; the edit and void guards do not count a release as the bill's own entry (FY055, FY056). Releases are posted under the bill's lock, so a void and a release never interleave | `TestTheSchedulerReleasesASpreadBill`, `TestAttackAReleaseIsNotTheBillsEntry` (V2.2.3, V13.2.2) |
+| T13 | The worker's one way to make a bill is `create_scheduled_bill_draft` (EXECUTE for `fyniq_worker` only), which copies the content of the recurring bill's current version, written by a person, adds only the date and the version it came from, and saves it as `scheduler:bills.recurring`, once per occurrence (FY057). The worker still holds no INSERT on documents and cannot set `posted_by` (FY053); content versions never change or go (FY058) and hold no date, due date or supplier's number | `TestRecurringBillsMakeDraftsTheSchedulerCannotPost` (SEC-03; V13.2.2), `TestEachRoleHoldsExactlyItsGrants` |
+| T14 | The approval of a bill's post refuses whoever wrote the recurring bill's version a draft came from, read from `recurring_bill_version`, never from the draft; every later version of the draft keeps naming it (BILL-11) | `TestTheAuthorOfARecurringBillDoesNotApproveItsDrafts` (SOD-3) |
 
 ## 4. What remains
 
@@ -60,5 +69,8 @@ under the usual approvals: nothing recurring posts by itself, the founders' deci
   role of their own (PRD-001 §17.5 item 5), `create_scheduled_revaluation` with them.
 - The scheduler posts a revaluation with no person's click, as it posts automatic reversals. The close
   check (C.2 #59) and the Revaluation tab show each run and who made it.
-- A recurring journal's content is checked by the posting rules when it is read, not when it is saved;
-  an incomplete one is kept and shown, and the close warns of it while it is active.
+- A recurring journal's or recurring bill's content is checked by the posting rules when it is read, not when it is
+  saved; an incomplete one is kept and shown, and the close warns of a recurring journal while it is active (the
+  close checks for recurring bills follow with their board, `p1-purchases` 7.2).
+- A release that waits (no open period) is audited but not yet a close check: the reconciliation of open spreads with
+  1210 and a check for releases not posted follow (INV-07).

@@ -145,12 +145,11 @@ func (s Bills) create(ctx context.Context, org uuid.UUID, t storage.DocumentType
 
 // Revise saves a draft bill's new content as its next version, recording who saved it (FR-GL-01's preparer).
 func (s Bills) Revise(ctx context.Context, org, id uuid.UUID, d bill.Draft) (storage.Document, error) {
-	b, err := bill.Encode(d)
-	if err != nil {
+	if _, err := bill.Encode(d); err != nil {
 		return storage.Document{}, err
 	}
 	var out storage.Document
-	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		doc, err := u.Documents().Lock(ctx, id) // ENG-47 step 1
 		if err != nil {
 			return err
@@ -161,10 +160,23 @@ func (s Bills) Revise(ctx context.Context, org, id uuid.UUID, d bill.Draft) (sto
 		if err := billDraft(doc, "Only a draft changes; edit a posted bill instead"); err != nil {
 			return err
 		}
+		b, err := keepRecurring(doc, d)
+		if err != nil {
+			return err
+		}
 		out, err = u.Documents().Revise(ctx, id, b)
 		return err
 	})
 	return out, err
+}
+
+// keepRecurring is d as a new version of doc stores it: a bill the scheduler made from a recurring bill keeps naming
+// that recurring bill's version in every later version (SOD-3; FR-AP-09).
+func keepRecurring(doc storage.Document, d bill.Draft) ([]byte, error) {
+	if d.RecurringBill == nil {
+		d.RecurringBill = bill.RecurringOf(doc)
+	}
+	return bill.Encode(d)
 }
 
 // CheckBill runs the rules over doc, a version of a bill, in u, and writes nothing: what Check answers, inside a unit of
@@ -363,6 +375,9 @@ func (s Bills) Edit(ctx context.Context, org, id uuid.UUID, d bill.Draft, reason
 		}
 		settings, err := loadSettings(ctx, u)
 		if err != nil {
+			return err
+		}
+		if b, err = keepRecurring(doc, d); err != nil {
 			return err
 		}
 		next := doc

@@ -76,6 +76,7 @@ type UnitOfWork interface {
 	Outbox() Outbox
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals
+	RecurringBills() RecurringBills
 	AccountingBasis() AccountingBasis
 	FXRates() FXRates
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a

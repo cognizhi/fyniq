@@ -162,6 +162,12 @@ Source: PRD-001 §8.6 · Priority S · Phase P1
 - **WHEN** its next date arrives
 - **THEN** a bill is created from it
 
+#### Scenario: Built: the scheduler drafts, a person posts (rev 0.84)
+- **GIVEN** an active recurring bill: a supplier, currency, lines and notes, with immutable content versions, and a schedule as a recurring journal's
+- **WHEN** an occurrence comes
+- **THEN** the scheduler makes its draft bill, dated on it, saved by scheduler:bills.recurring and naming the version it came from, once
+- **AND** a person adds the supplier's number and posts it under the usual approvals; whoever wrote that version never approves its post (SOD-3)
+
 ### Requirement: FR-AP-10 Vendor statement reconciliation
 The system SHALL reconcile a vendor's statement with the vendor's balance and documents in Fyniq.
 

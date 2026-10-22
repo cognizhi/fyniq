@@ -201,6 +201,12 @@ func matrixRecurring(e *env) string {
 		e.recurring("Matrix "+uuid.NewString()[:8], "10.00", monthly(1, "2026-11-01"))).str("id")
 }
 
+// matrixRecurringBill adds an active recurring bill, as an Accountant, and returns its ID.
+func matrixRecurringBill(e *env) string {
+	return e.call(http.MethodPost, "/v1/recurring-bills", e.as(authz.Accountant),
+		e.recurringBill("Matrix "+uuid.NewString()[:8], "10.00", monthly(1, "2026-11-01"))).str("id")
+}
+
 // matrixMember returns the ID of a member of e's organisation, inviting and adding one first if needed. The
 // organisation keeps one member at most, so role changes stay in the founder bootstrap (FR-ADM-01).
 func matrixMember(e *env) string {
@@ -961,6 +967,42 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPost, "/v1/recurring-journals/"+id+"/resume", tok, nil, "If-Match", "*")
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/recurring-journals/"+id, e.as(authz.Accountant), nil).str("status") == "paused"
+		}
+	},
+	"listRecurringBills": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/recurring-bills", tok, nil), nil
+	},
+	"getRecurringBill": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/recurring-bills/"+matrixRecurringBill(e), tok, nil), nil
+	},
+	"createRecurringBill": func(e *env, tok string) (response, func() bool) {
+		name := "Matrix " + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/recurring-bills", tok, e.recurringBill(name, "10.00", monthly(1, "2026-11-01")))
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/recurring-bills?page_size=500", e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"name":"`+name+`"`)
+		}
+	},
+	"replaceRecurringBill": func(e *env, tok string) (response, func() bool) {
+		id, name := matrixRecurringBill(e), "Matrix "+uuid.NewString()[:8]
+		r := e.call(http.MethodPut, "/v1/recurring-bills/"+id, tok, e.recurringBill(name, "10.00", monthly(1, "2026-11-01")), "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-bills/"+id, e.as(authz.Accountant), nil).str("name") != name
+		}
+	},
+	"pauseRecurringBill": func(e *env, tok string) (response, func() bool) {
+		id := matrixRecurringBill(e)
+		r := e.call(http.MethodPost, "/v1/recurring-bills/"+id+"/pause", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-bills/"+id, e.as(authz.Accountant), nil).str("status") == "active"
+		}
+	},
+	"resumeRecurringBill": func(e *env, tok string) (response, func() bool) {
+		id := matrixRecurringBill(e)
+		e.call(http.MethodPost, "/v1/recurring-bills/"+id+"/pause", e.as(authz.Accountant), nil, "If-Match", "*")
+		r := e.call(http.MethodPost, "/v1/recurring-bills/"+id+"/resume", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-bills/"+id, e.as(authz.Accountant), nil).str("status") == "paused"
 		}
 	},
 	"replaceJournal": func(e *env, tok string) (response, func() bool) {

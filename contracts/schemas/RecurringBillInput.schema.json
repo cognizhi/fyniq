@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The currency of each draft. One in another currency takes the cascade's rate for its date when it posts (ENG-40).",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "lines": {
+      "description": "The lines of each draft, as on a bill.",
+      "items": {
+        "$ref": "BillLineDraft.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "name": {
+      "description": "What it is, as the list shows it.",
+      "examples": [
+        "Office rent"
+      ],
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    },
+    "notes": {
+      "description": "The notes of each draft.",
+      "examples": [
+        "Monthly rent, unit 05-12"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "schedule": {
+      "$ref": "RecurringSchedule.schema.json"
+    },
+    "supplier_id": {
+      "description": "The supplier of each draft: a contact marked as a vendor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "schedule",
+    "currency",
+    "lines"
+  ],
+  "title": "RecurringBillInput",
+  "type": "object"
+}

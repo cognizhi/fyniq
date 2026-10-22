@@ -77,6 +77,26 @@ type Draft struct {
 	Rate        *money.Rate // as typed; nil takes the cascade's rate for the bill's date (ENG-40)
 	Lines       []Line
 	Notes       string
+	// RecurringBill is the recurring bill version the scheduler made it from (FR-AP-09; rev 0.84), nil for one a person
+	// made. The database's create_scheduled_bill_draft writes it, and every later version keeps it.
+	RecurringBill *RecurringRef
+}
+
+// RecurringRef names the recurring bill, and the version of its content, that a bill was made from.
+type RecurringRef struct {
+	ID      uuid.UUID `json:"id"`
+	Version int       `json:"version"`
+}
+
+// RecurringOf is the recurring bill a document's version was made from, nil when none (or it cannot be read).
+func RecurringOf(doc storage.Document) *RecurringRef {
+	var p struct {
+		RecurringBill *RecurringRef `json:"recurring_bill"`
+	}
+	if json.Unmarshal(doc.Payload, &p) != nil {
+		return nil
+	}
+	return p.RecurringBill
 }
 
 // Line is one line of a bill: the account it costs, its net, its GST code, and its GST as the supplier states it, all
@@ -112,15 +132,16 @@ func (l Line) Spread(date time.Time) *ledger.Spread {
 
 // payload is a bill as a document version stores it: dates as text, amounts with their currency.
 type payload struct {
-	SupplierID   uuid.UUID     `json:"supplier_id"`
-	SupplierRef  string        `json:"supplier_ref,omitempty"`
-	Date         string        `json:"date,omitempty"`
-	DueDate      string        `json:"due_date,omitempty"`
-	Currency     string        `json:"currency"`
-	FXRate       string        `json:"fx_rate,omitempty"`
-	FXRateSource string        `json:"fx_rate_source,omitempty"`
-	Lines        []payloadLine `json:"lines"`
-	Notes        string        `json:"notes,omitempty"`
+	SupplierID    uuid.UUID     `json:"supplier_id"`
+	SupplierRef   string        `json:"supplier_ref,omitempty"`
+	Date          string        `json:"date,omitempty"`
+	DueDate       string        `json:"due_date,omitempty"`
+	Currency      string        `json:"currency"`
+	FXRate        string        `json:"fx_rate,omitempty"`
+	FXRateSource  string        `json:"fx_rate_source,omitempty"`
+	Lines         []payloadLine `json:"lines"`
+	Notes         string        `json:"notes,omitempty"`
+	RecurringBill *RecurringRef `json:"recurring_bill,omitempty"`
 }
 
 type payloadLine struct {
@@ -150,7 +171,7 @@ func Encode(d Draft) ([]byte, error) {
 		return nil, &Error{CodeTooLong, fmt.Sprintf("the notes have %d characters; the most is %d", len(d.Notes), MaxNotes), "Shorten them"}
 	}
 	p := payload{SupplierID: d.SupplierID, SupplierRef: d.SupplierRef, Date: day(d.Date), DueDate: day(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes,
-		Lines: []payloadLine{}}
+		Lines: []payloadLine{}, RecurringBill: d.RecurringBill}
 	if d.Rate != nil {
 		p.FXRate, p.FXRateSource = d.Rate.String(), d.Rate.Source
 	}
@@ -192,7 +213,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	if err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{SupplierID: p.SupplierID, SupplierRef: p.SupplierRef, Currency: cur, Notes: p.Notes}
+	d := Draft{SupplierID: p.SupplierID, SupplierRef: p.SupplierRef, Currency: cur, Notes: p.Notes, RecurringBill: p.RecurringBill}
 	for _, x := range []struct {
 		text string
 		to   *time.Time
