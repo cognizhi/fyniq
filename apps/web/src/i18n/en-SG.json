@@ -356,6 +356,18 @@
       "label": "Ask to reopen",
       "tooltip": "Ask for the month to take postings again, with a reason; another founder approves it."
     },
+    "close.mark-task": {
+      "label": "Done",
+      "tooltip": "Mark the task done for this month. Run the checks again afterwards so they see it."
+    },
+    "close.skip-task": {
+      "label": "Skip",
+      "tooltip": "Skip the task for this month only, with a reason. The founder who attests the close reads it."
+    },
+    "close.edit-template": {
+      "label": "Save the template",
+      "tooltip": "Save the tasks every month's checklist has, as a new version. Months already worked on keep their marks."
+    },
     "close.explain-variance": {
       "label": "Explain",
       "tooltip": "Say why the account moved against the previous month. It explains these totals: if either changes, the close asks again."

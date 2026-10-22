@@ -208,8 +208,11 @@
   (22 Oct 2026, founder decisions, PRD rev 0.68) The close checklist's API: the template (`getCloseChecklistTemplate`,
   `replaceCloseChecklistTemplate`; the recommended six tasks until the organisation saves its own), each month's
   checklist (`getPeriodChecklist`) and its marks (`markChecklistTask`: done, skipped with a reason, open again); the
-  close check `checklist` (C.2 #58, ✖). Migration 000069, FY164, FY165. The page follows.
-  **Left:** the checklist's page, reconciliations, year end
+  close check `checklist` (C.2 #58, ✖). Migration 000069, FY164, FY165. The page: **Checklist** above the close checks,
+  with its progress, each task's owner and due date or who marked it; those who run the checks mark a task **Done**,
+  **Skip** it for the month with a reason, or open it again, and **Change the template** (reorder, add, remove; owner and
+  due day). Guide `periods-and-close.md` "Work through the checklist" and "Change the checklist template".
+  **Left:** reconciliations, year end
   (1.4), open items (with `p1-sales`, `p1-purchases`), changes after posting (2.3).)
 - [x] 7.3 Build the general ledger report (its screen belongs to `p1-reports`; built early so the founders see what they post)
   (21 Oct 2026: Accounting › General ledger (`/reports/general-ledger`): accounts chosen one at a time (up to 20), a

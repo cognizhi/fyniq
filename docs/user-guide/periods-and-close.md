@@ -54,7 +54,8 @@ closes the month.
    - income and expense accounts that moved against the previous month by more than both
      thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
      explanation of their totals as they are now (✖; see [Explain the variances](#explain-the-variances));
-   - the month's close checklist: every task done, or skipped for the month with a reason (✖);
+   - the month's close checklist: every task done, or skipped for the month with a reason (✖; see
+     [Work through the checklist](#work-through-the-checklist));
    - in the month the books start, the opening balances are posted (⚠).
 3. Another founder, an Owner or a Controller who did not run the checks, reads them, says what they
    attest and selects **Attest and close**. Fyniq asks them to confirm it's them first.
@@ -63,6 +64,35 @@ If anything dated in or before the month posts after the checks ran, the checks 
 the close is refused: run them again. A closed month refuses every posting dated in it, by anyone.
 The close keeps a fingerprint (a SHA-256 hash) of the trial balance at the month's end, and the
 ledger revision it closed at.
+
+## Work through the checklist
+
+Each month's close page starts with its **Checklist**: the tasks every month's close needs, such as
+reconciling the bank accounts or reviewing accruals, each with who usually does it and when it is
+due.
+
+1. An Accountant or a Controller selects **Done** beside a task once it is done.
+2. A task that does not apply this month, such as payroll before there are employees, is skipped
+   with **Skip** and a reason. The founder who attests the close reads it.
+3. Run the checks again: they refuse the close while a task is neither done nor skipped.
+
+- A task marked by mistake is opened again with the undo button beside it.
+- Fyniq keeps every mark: who marked the task, when, and the note or reason.
+- Until the company changes it, the checklist is Fyniq's recommended one: the month's documents
+  entered, the bank, card and wallet accounts reconciled, payroll and CPF posted, accruals and
+  prepayments reviewed, foreign-currency balances revalued, and the month reviewed.
+
+## Change the checklist template
+
+1. On a month's close page, select **Change the template** under the checklist.
+2. Change, add, remove or reorder the tasks. For each, say who usually does it and how many days
+   after the month's end it is due.
+3. Select **Save the template**.
+
+- An Accountant or a Controller changes it. Every change is kept as a new version, with who saved
+  it.
+- Open months use the new template at once. A task the template keeps keeps its marks; a task it
+  drops no longer counts.
 
 ## Explain the variances
 
@@ -113,6 +143,9 @@ fingerprint as the one before, and takes a new one of the trial balance as the o
 | A later period is closed (CLOSE-08) | Reopen the latest closed month first |
 | The account has no variance to explain (CLOSE-09) | Explain one of the accounts under **Variances to explain** |
 | The totals changed since they were read (CLOSE-10) | Reload the page and explain the totals as they are now |
+| The checklist template is not valid (CLOSE-11) | Give each task a title, and a due day from 0 to 60 |
+| No such task on the checklist (CLOSE-12) | Reload the page: the template changed |
+| Skipping a task needs a reason (CLOSE-13) | Say why the task does not apply this month |
 | A change to this record is waiting for approval already (APR-06) | Approve or reject the waiting request first |
 
 ## Related

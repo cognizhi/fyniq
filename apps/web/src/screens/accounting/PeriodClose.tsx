@@ -15,6 +15,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { who } from "./Journals";
 import { monthOf } from "./Periods";
+import { Checklist } from "./Checklist";
 import { Variances } from "./Variances";
 
 type State = components["schemas"]["PeriodCloseState"];
@@ -112,8 +113,8 @@ function CheckRow({ c }: { c: Item }) {
 // PeriodClose closes a month (docs/design/screens PeriodClose; FR-GL-07, FR-GL-08, FM-4, AUD-04): one person runs the
 // close checks, which record the ledger revision they saw; another, who did not run them, attests and closes, after
 // confirming it's them. The period then refuses every posting, and the close keeps its snapshot's hash. The variances
-// against the previous month are explained beside the checks (FR-GL-14). The checklist template, reconciliations and
-// year end arrive with their tasks.
+// against the previous month are explained beside the checks (FR-GL-14), and the month's checklist is worked through
+// above them (FR-GL-07). Reconciliations and year end arrive with their tasks.
 export function PeriodClose() {
   const { periodId } = useParams({ strict: false }) as { periodId: string };
   const { session } = useSignedIn();
@@ -252,6 +253,7 @@ export function PeriodClose() {
       {s && (
         <div className="fy-split">
           <div className="fy-stack fy-stack--6">
+            <Checklist periodId={periodId} open={open} mayMark={mayCheck} onChanged={setStatus} />
             <section className="fy-card" aria-labelledby={`${id}-checks`}>
               <div className="fy-card__head">
                 <h2 className="fy-h3" id={`${id}-checks`}>
