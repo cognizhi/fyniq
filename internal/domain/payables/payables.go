@@ -26,7 +26,7 @@ import (
 // The kinds of open items.
 const (
 	KindBill   = "bill"
-	KindCredit = "credit" // a payment's unapplied amount: a credit with the supplier (FR-AR-18 mirrored)
+	KindCredit = "credit" // a supplier credit: a vendor credit (FR-AP-03), or a payment's unapplied amount (FR-AR-18 mirrored)
 )
 
 // Item is one open document of the sub-ledger as at a day: what is owed on it in its currency (a credit negative) and
@@ -141,7 +141,8 @@ func settled(allocs []storage.Allocation, cur, base money.Currency, asAt time.Ti
 }
 
 // Open is the AP sub-ledger as at a day: each posted bill dated on or before it and not voided by then, less what was
-// allocated to it by then; and each payment dated on or before it and not voided by then that left an amount unapplied.
+// allocated to it by then; each posted vendor credit dated on or before it and not voided by then; and each payment dated
+// on or before it and not voided by then that left an amount unapplied.
 // ap is the accounts-payable account, whose lines carry a document's carrying amount.
 func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uuid.UUID, asAt time.Time) (Ledger, error) {
 	out := Ledger{AsAt: asAt}
@@ -216,6 +217,36 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if !it.Open.IsZero() || !it.Carrying.IsZero() {
 			add(d.SupplierID, it)
 		}
+		return nil
+	})
+	if err != nil {
+		return Ledger{}, err
+	}
+	err = pages(ctx, u, storage.DocumentVendorCredit, asAt, func(doc storage.Document) error {
+		if doc.Status == storage.DocumentDraft {
+			return nil
+		}
+		identity := ledger.VendorCreditIdentity(doc.ID, doc.Version, ledger.RuleVendorCredit)
+		if gone, err := voidedBy(ctx, u, identity, asAt); err != nil || gone {
+			return err
+		}
+		d, err := bill.Read(doc, base)
+		if err != nil {
+			return err
+		}
+		total, err := d.Total()
+		if err != nil {
+			return err
+		}
+		e, err := u.Ledger().ByIdentity(ctx, identity)
+		if err != nil {
+			return err
+		}
+		_, debited, err := apLines(e, ap, d.Currency, base)
+		if err != nil {
+			return err
+		}
+		add(d.SupplierID, Item{Kind: KindCredit, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, Total: total, Open: total.Neg(), Carrying: debited.Neg()})
 		return nil
 	})
 	if err != nil {
@@ -355,7 +386,7 @@ func Reconcile(ctx context.Context, u storage.UnitOfWork, base money.Currency, a
 		if out.Base.Control, err = out.Base.Control.Add(owedBase); err != nil {
 			return out, l, err
 		}
-		if t.SourceType == ledger.SourceBill || t.SourceType == ledger.SourceBillPayment {
+		if t.SourceType == ledger.SourceBill || t.SourceType == ledger.SourceBillPayment || t.SourceType == ledger.SourceVendorCredit {
 			continue
 		}
 		c.Explained = append(c.Explained, Explained{SourceType: t.SourceType, Amount: owed, Base: owedBase})

@@ -108,6 +108,10 @@ Source: PRD-001 §10.2
 - **WHEN** a vendor credit is posted
 - **THEN** it posts the reverse of the bill legs
 
+#### Scenario: Built as vendor_credit@1 (rev 0.80)
+- **WHEN** a credit note is posted
+- **THEN** every line is the line bill@1 posts for the same content, amount and base amount negated, so the negation is exact under RND-FX
+
 ### Requirement: Customer and supplier payments
 A customer payment SHALL debit the bank and credit AR 1100, matched to documents, and a supplier payment SHALL debit AP 2010 and credit the bank.
 

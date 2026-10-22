@@ -199,3 +199,33 @@ func TestBillsThroughTheAPI(t *testing.T) {
 		t.Errorf("the posted bills: %d %s", l.Status, l.Raw)
 	}
 }
+
+// FR-AP-03 through the API: a supplier's credit note is a bill of kind vendor_credit, saved, checked and posted as a
+// bill is, numbered VC-; it is listed apart from the bills; and its kind never changes.
+// req: FR-AP-03
+func TestVendorCreditsThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	credit := e.billDraft("200.00", "18.00")
+	credit["kind"], credit["supplier_ref"] = "vendor_credit", "CN-12"
+	r := e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), credit)
+	if r.Status != 201 || r.str("kind") != "vendor_credit" {
+		t.Fatalf("saving a credit: %d %s", r.Status, r.Raw)
+	}
+	id, tag := r.str("id"), r.Header.Get("ETag")
+	if g := e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Accountant), nil); g.str("payable", "amount") != "218.00" || !strings.Contains(g.Raw, `"amount":{"amount":"218.00","currency":"SGD"}`) {
+		t.Fatalf("the credit's check: %s", g.Raw)
+	}
+	again := e.billDraft("200.00", "18.00")
+	again["kind"] = "bill"
+	e.problemIs(e.call(http.MethodPut, "/v1/bills/"+id, e.as(authz.Accountant), again, "If-Match", tag), "replaceBill", 422, CodeInvalid)
+	p := e.call(http.MethodPost, "/v1/bills/"+id+"/post", e.as(authz.Accountant), nil, "If-Match", tag)
+	if p.Status != 200 || p.str("bill", "number") != "VC-0001" || p.str("entry", "rule_version") != "vendor_credit@1" {
+		t.Fatalf("posting the credit: %d %s", p.Status, p.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/bills?kind=vendor_credit", e.as(authz.Auditor), nil); len(l.Body["items"].([]any)) != 1 {
+		t.Errorf("the credits: %s", l.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/bills", e.as(authz.Auditor), nil); len(l.Body["items"].([]any)) != 0 {
+		t.Errorf("the bills list the credit: %s", l.Raw)
+	}
+}

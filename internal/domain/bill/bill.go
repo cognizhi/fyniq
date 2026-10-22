@@ -29,7 +29,7 @@ import (
 
 // The stable codes of a bill's refusals (ENG-23).
 const (
-	CodeNotBill   = "BILL-01" // the document is not a bill
+	CodeNotBill   = "BILL-01" // the document is not a bill or a vendor credit
 	CodeNotDraft  = "BILL-02" // only a draft changes or posts
 	CodeNotPosted = "BILL-03" // only a posted bill is voided or edited
 	CodeBadDraft  = "BILL-04" // the saved bill cannot be read
@@ -139,9 +139,24 @@ func Encode(d Draft) ([]byte, error) {
 	return json.Marshal(p)
 }
 
-// Read reads a bill version as it was saved; base is the organisation's base currency, which a typed rate converts into.
+// Kind is what a document of this package is: a bill, or a supplier's credit note (FR-AP-03), whose content is a bill's
+// and whose entry is a bill's legs reversed.
+func Kind(doc storage.Document) string {
+	if doc.Type == storage.DocumentVendorCredit {
+		return "credit note"
+	}
+	return "bill"
+}
+
+// IsBill says whether a document is a bill or a vendor credit: what this package reads.
+func IsBill(doc storage.Document) bool {
+	return doc.Type == storage.DocumentBill || doc.Type == storage.DocumentVendorCredit
+}
+
+// Read reads a bill or vendor credit version as it was saved; base is the organisation's base currency, which a typed
+// rate converts into.
 func Read(doc storage.Document, base money.Currency) (Draft, error) {
-	if doc.Type != storage.DocumentBill {
+	if !IsBill(doc) {
 		return Draft{}, &Error{CodeNotBill, fmt.Sprintf("document %s is a %s, not a bill", doc.ID, doc.Type), "Open it with its own module"}
 	}
 	bad := func(what string) error {
@@ -464,13 +479,14 @@ func warnings(ctx context.Context, u storage.UnitOfWork, doc storage.Document, d
 				"Check the GST against the supplier's invoice: input tax is the GST as stated, and the approver acknowledges the difference"})
 		}
 	}
-	// A duplicate: another bill of the supplier with its number and total, dated within the window, not reversed.
+	// A duplicate: another document of its kind from the supplier with its number and total, dated within the window, not
+	// reversed.
 	if d.SupplierRef != "" && d.SupplierID != uuid.Nil {
 		total, err := d.Total()
 		if err != nil {
 			return nil, err
 		}
-		others, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: storage.DocumentBill,
+		others, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: doc.Type,
 			From: day(d.Date.Add(-DuplicateWindow)), To: day(d.Date.Add(DuplicateWindow)), Limit: 500})
 		if err != nil {
 			return nil, err
@@ -488,8 +504,8 @@ func warnings(ctx context.Context, u storage.UnitOfWork, doc storage.Document, d
 				if label == "" {
 					label = "a draft"
 				}
-				out = append(out, Warning{WarnDuplicate, "supplier_ref", fmt.Sprintf("bill %s has the same supplier, number %s and total, dated %s", label, d.SupplierRef, day(od.Date)),
-					"Check it is not the same bill entered twice; void one if it is"})
+				out = append(out, Warning{WarnDuplicate, "supplier_ref", fmt.Sprintf("%s %s has the same supplier, number %s and total, dated %s", Kind(doc), label, d.SupplierRef, day(od.Date)),
+					fmt.Sprintf("Check it is not the same %s entered twice; void one if it is", Kind(doc))})
 				break
 			}
 		}

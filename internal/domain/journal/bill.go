@@ -43,7 +43,11 @@ func checkBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 		return Checked{}, err
 	}
 	out := Checked{Prepared: p, Problems: probs}
-	entry, err := ledger.PostBill(p.Bill, s)
+	post := ledger.PostBill
+	if doc.Type == storage.DocumentVendorCredit {
+		post = ledger.PostVendorCredit
+	}
+	entry, err := post(p.Bill, s)
 	if ps, ok := err.(ledger.Problems); ok {
 		for _, x := range ps {
 			if x.Code == ledger.CodeMissingRate && probs.Has(fx.CodeNoRate) {
@@ -67,10 +71,18 @@ func checkBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 }
 
 func isBill(doc storage.Document) error {
-	if doc.Type != storage.DocumentBill {
+	if !bill.IsBill(doc) {
 		return &bill.Error{Code: bill.CodeNotBill, Message: fmt.Sprintf("document %s is a %s, not a bill", doc.ID, doc.Type), Fix: "Open it with its own module"}
 	}
 	return nil
+}
+
+// BillIdentityOf is the posting identity of a bill's or a vendor credit's version under its rule.
+func BillIdentityOf(doc storage.Document) string {
+	if doc.Type == storage.DocumentVendorCredit {
+		return ledger.VendorCreditIdentity(doc.ID, doc.Version, ledger.RuleVendorCredit)
+	}
+	return ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill)
 }
 
 func billDraft(doc storage.Document, what string) error {
@@ -82,21 +94,31 @@ func billDraft(doc storage.Document, what string) error {
 
 // Create saves a draft bill (✎). It is checked when it posts; Check shows what posting it would do.
 func (s Bills) Create(ctx context.Context, org uuid.UUID, d bill.Draft) (storage.Document, error) {
+	return s.create(ctx, org, storage.DocumentBill, d)
+}
+
+// CreateCredit saves a draft vendor credit (✎, FR-AP-03): a supplier's credit note, entered as a bill is and posted as
+// its reverse.
+func (s Bills) CreateCredit(ctx context.Context, org uuid.UUID, d bill.Draft) (storage.Document, error) {
+	return s.create(ctx, org, storage.DocumentVendorCredit, d)
+}
+
+func (s Bills) create(ctx context.Context, org uuid.UUID, t storage.DocumentType, d bill.Draft) (storage.Document, error) {
 	b, err := bill.Encode(d)
 	if err != nil {
 		return storage.Document{}, err
 	}
 	var doc storage.Document
 	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		if doc, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentBill, Payload: b}); err != nil {
+		if doc, err = u.Documents().Create(ctx, storage.NewDocument{Type: t, Payload: b}); err != nil {
 			return err
 		}
-		// A sequence that is not gap-free numbers a bill when it is saved (FR-ORG-04).
-		seq, err := u.Sequences().Get(ctx, storage.DocumentBill)
+		// A sequence that is not gap-free numbers a document when it is saved (FR-ORG-04).
+		seq, err := u.Sequences().Get(ctx, t)
 		if err != nil || seq.GapFree {
 			return err
 		}
-		doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentBill)
+		doc.Number, err = u.Sequences().Number(ctx, doc.ID, t)
 		return err
 	})
 	return doc, err
@@ -194,7 +216,7 @@ func (s Bills) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, erro
 		if len(c.Problems) > 0 {
 			return c.Problems
 		}
-		if doc.Number, err = u.Sequences().Number(ctx, id, storage.DocumentBill); err != nil {
+		if doc.Number, err = u.Sequences().Number(ctx, id, doc.Type); err != nil {
 			return err
 		}
 		if out, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
@@ -229,7 +251,7 @@ func isZeroDecimal(s string) bool {
 
 // postedEntry is the entry of a posted bill's current version.
 func postedEntry(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (storage.Entry, error) {
-	return u.Ledger().ByIdentity(ctx, ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill))
+	return u.Ledger().ByIdentity(ctx, BillIdentityOf(doc))
 }
 
 // Void undoes a posted bill with a reversing entry dated date, with a reason (FR-GL-12: a void is a reversal); the bill
@@ -372,6 +394,12 @@ func replayBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 	if err != nil {
 		return ledger.Entry{}, err
 	}
+	credit := doc.Type == storage.DocumentVendorCredit
+	if credit { // a credit's lines are a bill's negated: read them as the bill's
+		for i := range stored.Lines {
+			stored.Lines[i].Amount, stored.Lines[i].Base = stored.Lines[i].Amount.Neg(), stored.Lines[i].Base.Neg()
+		}
+	}
 	b := p.Bill
 	b.Memo = stored.Memo // it names the supplier as it was named then
 	if p.Draft.Rate == nil && b.Currency != s.Base {
@@ -398,6 +426,9 @@ func replayBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 		case l.Net.IsZero():
 			l.Claimable = true // a claimable line of GST alone posts no cost
 		}
+	}
+	if credit {
+		return ledger.ReplayVendorCredit(e.RuleVersion, b, s)
 	}
 	return ledger.ReplayBill(e.RuleVersion, b, s)
 }

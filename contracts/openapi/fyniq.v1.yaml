@@ -1380,6 +1380,14 @@ components:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
           format: uuid
           type: string
+        kind:
+          description: "bill, or vendor_credit: a supplier's credit note, posted as a bill's reverse (FR-AP-03)."
+          enum:
+            - bill
+            - vendor_credit
+          examples:
+            - bill
+          type: string
         ledger_impact:
           description: "getBill only: the lines posting it writes (a draft), or wrote (posted): debits positive."
           items:
@@ -1405,7 +1413,7 @@ components:
           description: "A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."
         payable:
           $ref: "#/components/schemas/Money"
-          description: "What it adds to accounts payable in the base currency: as posted, or as posting would post it; absent while it cannot post."
+          description: "What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."
         payments:
           description: "getBill only: the payments that settle it, earliest first, each marked when it was voided."
           items:
@@ -1454,6 +1462,7 @@ components:
           type: integer
       required:
         - id
+        - kind
         - status
         - version
         - currency
@@ -1526,6 +1535,14 @@ components:
           examples:
             - "1.34"
           type: string
+        kind:
+          description: "bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved."
+          enum:
+            - bill
+            - vendor_credit
+          examples:
+            - bill
+          type: string
         lines:
           description: The bill's lines.
           items:
@@ -1581,6 +1598,14 @@ components:
           description: "For a bill in another currency: base currency per one unit, as typed on the document. Left out, the bill takes the cascade's rate for its date (ENG-40)."
           examples:
             - "1.34"
+          type: string
+        kind:
+          description: "bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved."
+          enum:
+            - bill
+            - vendor_credit
+          examples:
+            - bill
           type: string
         lines:
           description: The bill's lines.
@@ -11776,6 +11801,19 @@ paths:
             examples:
               - eyJhZnRlciI6IjEwMDAifQ
             maxLength: 1000
+            type: string
+        - description: Bills, the default, or vendor credits.
+          explode: false
+          in: query
+          name: kind
+          schema:
+            default: bill
+            description: Bills, the default, or vendor credits.
+            enum:
+              - bill
+              - vendor_credit
+            examples:
+              - bill
             type: string
         - description: Only bills with this status.
           explode: false

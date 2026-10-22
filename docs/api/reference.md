@@ -1681,6 +1681,7 @@ The organisation's bills at their current version, newest date first (a draft wi
 - **Parameters:**
   - `page_size` (query): How many items per page, up to 500.
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `kind` (query): Bills, the default, or vendor credits.
   - `status` (query): Only bills with this status.
   - `from` (query): Only bills dated on or after this day.
   - `to` (query): Only bills dated on or before this day.

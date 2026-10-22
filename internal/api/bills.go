@@ -61,6 +61,7 @@ type BillLineDraft struct {
 
 // BillDraft is a bill as entered: checked for its form when saved, and by the posting rules when it posts.
 type BillDraft struct {
+	Kind        string          `json:"kind,omitempty" enum:"bill,vendor_credit" doc:"bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved." example:"bill"`
 	SupplierID  string          `json:"supplier_id,omitempty" format:"uuid" doc:"The supplier: a contact marked as a vendor." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"`
 	SupplierRef string          `json:"supplier_ref,omitempty" maxLength:"60" doc:"The supplier's own number for the bill, as on their invoice." example:"AU-1182"`
 	Date        string          `json:"date,omitempty" format:"date" doc:"The bill's date: its tax point." example:"2026-10-14"`
@@ -99,6 +100,7 @@ type BillCheck struct {
 // Bill is a supplier's bill: its current version, its states and what posting it does.
 type Bill struct {
 	ID            string          `json:"id" format:"uuid" doc:"The bill's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"`
+	Kind          string          `json:"kind" enum:"bill,vendor_credit" doc:"bill, or vendor_credit: a supplier's credit note, posted as a bill's reverse (FR-AP-03)." example:"bill"`
 	Number        string          `json:"number,omitempty" doc:"Its number from the bill sequence: given when it posts, or when it is saved if the sequence is not gap-free (FR-ORG-04)." example:"BILL-0007"`
 	Status        string          `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed by a void." example:"draft"`
 	Version       int             `json:"version" doc:"The version of its content; with the status it makes the ETag." example:"1"`
@@ -111,7 +113,7 @@ type Bill struct {
 	Lines         []BillLineDraft `json:"lines" nullable:"false" doc:"The lines as entered."`
 	Notes         string          `json:"notes,omitempty" doc:"Its notes." example:"Annual renewal"`
 	Total         Money           `json:"total" doc:"Every line's net and GST, in the bill's currency."`
-	Payable       *Money          `json:"payable,omitempty" doc:"What it adds to accounts payable in the base currency: as posted, or as posting would post it; absent while it cannot post."`
+	Payable       *Money          `json:"payable,omitempty" doc:"What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."`
 	Open          *Money          `json:"open,omitempty" doc:"A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."`
 	Payments      []BillPaidBy    `json:"payments" nullable:"false" doc:"getBill only: the payments that settle it, earliest first, each marked when it was voided."`
 	States        BillStates      `json:"states" doc:"Its approval, ledger, payment and due states."`
@@ -146,6 +148,7 @@ type BillPath struct {
 
 type billListInput struct {
 	PageQuery
+	Kind   string `query:"kind" enum:"bill,vendor_credit" default:"bill" doc:"Bills, the default, or vendor credits." example:"bill"`
 	Status string `query:"status" enum:"draft,posted,reversed" doc:"Only bills with this status." example:"draft"`
 	From   string `query:"from" format:"date" doc:"Only bills dated on or after this day." example:"2026-10-01"`
 	To     string `query:"to" format:"date" doc:"Only bills dated on or before this day." example:"2026-10-31"`
@@ -331,6 +334,28 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 	return d, nil
 }
 
+// billType is the document type of a kind of bill; kindOf the kind of a document.
+func billType(kind string) storage.DocumentType {
+	if kind == "vendor_credit" {
+		return storage.DocumentVendorCredit
+	}
+	return storage.DocumentBill
+}
+
+func kindOf(doc storage.Document) string {
+	if doc.Type == storage.DocumentVendorCredit {
+		return "vendor_credit"
+	}
+	return "bill"
+}
+
+func abs(m money.Money) money.Money {
+	if m.Sign() < 0 {
+		return m.Neg()
+	}
+	return m
+}
+
 // billView is what showing bills reads once per request: the base currency, the organisation's today, the accounts
 // payable account, and the pending and rejected requests about bills.
 type billView struct {
@@ -396,7 +421,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 	if err != nil {
 		return Bill{}, err
 	}
-	out := Bill{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, SupplierRef: d.SupplierRef,
+	out := Bill{ID: doc.ID.String(), Kind: kindOf(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, SupplierRef: d.SupplierRef,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: []BillLineDraft{}, Checks: []BillCheck{},
 		LedgerImpact: []EntryLine{}, Payments: []BillPaidBy{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy), PostedAt: utc(doc.PostedAt)}
 	if d.Rate != nil {
@@ -452,14 +477,15 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 			}
 		}
 		if len(c.Problems) == 0 {
-			out.Payable = &Money{Amount: c.Payable.String(), Currency: c.Payable.Currency().Code}
+			payable := abs(c.Payable)
+			out.Payable = &Money{Amount: payable.String(), Currency: payable.Currency().Code}
 			if withChecks {
 				out.LedgerImpact = impactOf(c.Entry)
 			}
 		}
 		return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
 	}
-	e, err := u.Ledger().ByIdentity(ctx, ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill))
+	e, err := u.Ledger().ByIdentity(ctx, journal.BillIdentityOf(doc))
 	if err != nil {
 		return Bill{}, err
 	}
@@ -580,7 +606,7 @@ func (a *API) gateBillPost(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 	if len(c.Problems) > 0 {
 		return false, total, billProblems(c.Problems)
 	}
-	total = c.Payable
+	total = abs(c.Payable) // a vendor credit's size, as a bill's, is what the threshold judges (FM-2)
 	threshold, err := selfApprovalThreshold(ctx, a, u, total.Currency())
 	if err != nil {
 		return false, total, err
@@ -656,6 +682,7 @@ func (a *API) gateBillEdit(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 	if len(c.Problems) > 0 {
 		return billProblems(c.Problems)
 	}
+	c.Payable = abs(c.Payable)
 	threshold, err := selfApprovalThreshold(ctx, a, u, c.Payable.Currency())
 	if err != nil {
 		return err
@@ -908,7 +935,7 @@ func registerBills(a *API) {
 		p, _ := authn.From(ctx)
 		out := billListOutput{Body: BillPage{Items: []Bill{}}}
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: storage.DocumentBill, Status: storage.DocumentStatus(in.Status),
+			docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: billType(in.Kind), Status: storage.DocumentStatus(in.Status),
 				From: in.From, To: in.To, Search: strings.TrimSpace(in.Q), AfterDate: afterDate, AfterID: afterID, Limit: in.PageSize + 1})
 			if err != nil {
 				return err
@@ -956,7 +983,11 @@ func registerBills(a *API) {
 				if err != nil {
 					return Bill{}, err
 				}
-				doc, err := a.bills.Create(ctx, p.Organisation, d)
+				create := a.bills.Create
+				if in.Body.Kind == "vendor_credit" {
+					create = a.bills.CreateCredit
+				}
+				doc, err := create(ctx, p.Organisation, d)
 				if err != nil {
 					return Bill{}, err
 				}
@@ -1038,6 +1069,10 @@ func registerBills(a *API) {
 				}
 				if err := checkIfMatch(in.IfMatch, billETag(before)); err != nil {
 					return Bill{}, err
+				}
+				if in.Body.Kind != "" && in.Body.Kind != before.Kind {
+					return Bill{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.kind", Message: "is " + before.Kind + " and never changes",
+						Fix: "Leave it out, or save a new document of the other kind"}})
 				}
 				org, err := u.Organisation(ctx)
 				if err != nil {

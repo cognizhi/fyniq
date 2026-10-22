@@ -85,6 +85,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **WHEN** a vendor refunds the company
 - **THEN** the refund is recorded against the vendor credit it settles
 
+#### Scenario: Built in part: the credit note (rev 0.80)
+- **WHEN** a supplier's credit note is entered and posted
+- **THEN** it is a vendor_credit document, entered as a bill is, numbered from the gap-free VC- sequence, posted by vendor_credit@1 as a bill's legs reversed, and approved on the size of its total
+- **AND** the AP sub-ledger holds it as a credit with the supplier
+
 ### Requirement: FR-AP-04 Bill capture
 The system SHALL capture bills forwarded to a per-organisation email address or uploaded or photographed, as part of FR-DOC-12 (now P1).
 

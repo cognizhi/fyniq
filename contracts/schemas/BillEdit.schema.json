@@ -33,6 +33,17 @@
       ],
       "type": "string"
     },
+    "kind": {
+      "description": "bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved.",
+      "enum": [
+        "bill",
+        "vendor_credit"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
     "lines": {
       "description": "The bill's lines.",
       "items": {

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -129,7 +130,7 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
-	if doc.Type == storage.DocumentBill { // a supplier's bill, with the rate and input tax its entry kept (FR-AP-02)
+	if bill.IsBill(doc) { // a supplier's bill or credit note, with the rate and input tax its entry kept (FR-AP-02, FR-AP-03)
 		want, err := replayBill(ctx, u, doc, s, e)
 		if err != nil {
 			return err.Error(), nil

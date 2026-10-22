@@ -204,3 +204,69 @@ VALUES ($1, 1, $2, '2026-10-21', 'SGD', 2, 100.00, 'SGD', 2, 100.00, 0, 'user:at
 		t.Errorf("after the forged allocation: %+v", c)
 	}
 }
+
+// FR-AP-03 (p1-purchases task 4.1): a supplier's credit note is entered as a bill is, numbered VC- when it posts, and
+// posts the bill's legs reversed: S$200.00 net and S$18.00 of GST from a registered company, Dr 2010 218.00, Cr the
+// expense 200.00, Cr 2200 18.00. The AP sub-ledger holds it as a credit with the supplier, and 2010 agrees; voided,
+// it is gone; the replay reproduces it.
+// req: FR-AP-03
+// req: INV-07
+func TestVendorCreditsPostAsABillReversed(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "accountant"}})
+	s := store(t, "fyniq_api")
+	b := newPurchasesBooks(t, ctx, s, "Credits Pte Ltd")
+	bills := journal.Bills{Store: s}
+	sgd := money.MustLookup("SGD")
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.GSTRegistrations().Create(ctx, storage.NewGSTRegistration{RegisteredFrom: porttest.Day(10, 1), GSTNumber: "202612345K",
+			ReturnFrequency: "quarterly", QuarterStartMonth: 1, AccountingBasis: "invoice", RecordedAt: porttest.Day(10, 14)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := bills.CreateCredit(ctx, b.Org, bill.Draft{SupplierID: b.Supplier.ID, SupplierRef: "CN-12", Date: porttest.Day(10, 20), Currency: sgd,
+		Lines: []bill.Line{{AccountID: b.Rent.ID, Net: sgdOf(t, "200.00"), GSTCode: "TX", GST: sgdOf(t, "18.00")}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c, err := bills.Check(ctx, b.Org, doc.ID, nil); err != nil || len(c.Problems) > 0 || c.Payable.String() != "-218.00" {
+		t.Fatalf("the check: %+v %v", c, err)
+	}
+	e, err := bills.Post(ctx, b.Org, doc.ID)
+	if err != nil || legsOf(t, s, b.Org, e) != "6100 -200 SGD = -200; 2200 -18 SGD = -18; 2010 218 SGD = 218" || e.RuleVersion != ledger.RuleVendorCredit {
+		t.Fatalf("the credit: %s %v", legsOf(t, s, b.Org, e), err)
+	}
+	var r payables.Reconciliation
+	var l payables.Ledger
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if doc, err = u.Documents().Get(ctx, doc.ID); err != nil {
+			return err
+		}
+		r, l, err = payables.Reconcile(ctx, u, sgd, b.AP.ID, porttest.Day(10, 31))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if doc.Number != "VC-0001" || r.Unexplained() || len(l.Suppliers) != 1 || l.Suppliers[0].Items[0].Kind != payables.KindCredit ||
+		l.Suppliers[0].Items[0].Open.String() != "-218.00" || r.Base.Control.String() != "-218.00" {
+		t.Fatalf("the credit in the sub-ledger: %s %+v %+v", doc.Number, r, l)
+	}
+	if _, err := bills.Void(ctx, b.Org, doc.ID, porttest.Day(10, 25), "Entered twice"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if r, l, err = payables.Reconcile(ctx, u, sgd, b.AP.ID, porttest.Day(10, 31)); err != nil {
+			return err
+		}
+		if len(l.Suppliers) != 0 || r.Unexplained() {
+			t.Errorf("after the void: %+v %+v", r, l)
+		}
+		rep, err := journal.Replay(ctx, u)
+		if err == nil && len(rep.Mismatches) > 0 {
+			t.Errorf("the replay: %+v", rep.Mismatches)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
