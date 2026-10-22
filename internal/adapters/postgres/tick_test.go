@@ -66,6 +66,13 @@ func ticker(t *testing.T, c *clock.Frozen, jobs *recordingJobs, schedules []outb
 func TestEveryPlatformJobClaimsItsSlotAndStarts(t *testing.T) {
 	ctx := context.Background()
 	c := clock.NewFrozen(time.Date(2031, 1, 6, 23, 59, 0, 0, time.UTC)) // after every slot the other tests use
+	// A job's later slot stops the tick from starting an earlier one, so the slots this test claims go when it ends,
+	// and the tests that tick in 2026 still start theirs.
+	t.Cleanup(func() {
+		if _, err := conn(t, "fyniq_migrator").Exec(context.Background(), "DELETE FROM fyniq.job_slot WHERE slot >= '2031-01-01'"); err != nil {
+			t.Errorf("removing the 2031 slots: %v", err)
+		}
+	})
 	jobs := &recordingJobs{}
 	r, err := ticker(t, c, jobs, outbox.PlatformSchedules).Tick(ctx)
 	if err != nil {
