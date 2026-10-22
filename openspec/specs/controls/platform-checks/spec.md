@@ -31,6 +31,12 @@ Source: PRD-001 §C.2
 - **WHEN** every subledger equals its control account
 - **THEN** the check passes
 
+#### Scenario: Accounts payable, built (rev 0.78)
+- **GIVEN** 2010 holds amounts from opening balances or manual journals that no bill supports
+- **WHEN** the close checks run
+- **THEN** those amounts show ⚠, named by their source
+- **AND** only a difference no source explains fails the check and blocks the close
+
 ### Requirement: C.2 #3 Audit hash chain intact and anchored
 The system SHALL check nightly that the audit hash chain is intact and anchored (INV-12); a failure blocks the close.
 
