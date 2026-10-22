@@ -367,6 +367,8 @@ const (
 	DocumentJournal DocumentType = "journal"
 	// DocumentOpeningBalance is the organisation's opening balances, one at most (FR-GL-06).
 	DocumentOpeningBalance DocumentType = "opening_balance"
+	// DocumentBill is a supplier's bill (FR-AP-02; p1-purchases).
+	DocumentBill DocumentType = "bill"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

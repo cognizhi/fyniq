@@ -5,16 +5,24 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 1. Bills: the document, its rule and its approval
 
-- [ ] 1.1 `RND-GST-EXCL` as a named policy, per GST-code subtotal (the per-line option an organisation
-  setting), with property tests and mutation coverage. Tests `// req: ledger/money-and-rounding RND-GST-EXCL`
-- [ ] 1.2 The bill document: versions, the payload of `design.md`, the supplier's number and ours (the
+- [x] 1.1 `RND-GST-EXCL` as a named policy, per GST-code subtotal (the per-line option an organisation
+  setting), with property tests and mutation coverage. Tests `// req: RND-GST-EXCL`
+  (22 Oct 2026: `rounding.GSTExcl`, #148; the setting `gst.round_per_line` with the bills)
+- [x] 1.2 The bill document: versions, the payload of `design.md`, the supplier's number and ours (the
   bill sequence, numbered when it posts), due date from terms, the duplicate ⚠. Tests `// req: FR-AP-02`
-- [ ] 1.3 The posting rule `bill@1`: net to the account or 1210, claimable GST as stated to 2200, the rest
+  (22 Oct 2026: `internal/domain/bill`; document type and sequence `bill` (000075, 000076); input tax claimable
+  for a purchase code with an input-tax box once the organisation is GST-registered on the bill's date, the
+  facts of 9.2 to follow. Test `TestBillsPostThroughThePostingService`)
+- [x] 1.3 The posting rule `bill@1`: net to the account or 1210, claimable GST as stated to 2200, the rest
   in the cost, 2010 the total; a foreign bill through `ForeignInputTax`; the ⚠ when the stated GST
   differs from `RND-GST-EXCL`; a replay golden. Tests `// req: ledger/posting-rules Posting a bill`,
   `// req: ledger/posting-rules Amounts of a posted bill`, G4-023 and G4-024
+  (22 Oct 2026: `ledger.PostBill`, `testdata/replay/bill@1.golden`; the replay reads the rate and each line's
+  claimed input tax from the stored entry, so a later rate or registration change never makes an old bill differ)
 - [ ] 1.4 Post, void and edit through the posting service: FM-2's threshold, FM-1 for a void, SOD-3, the
   journal's edit rule (FR-GL-12); the four states. Tests `// req: FR-AP-02`, `// req: FM-2`, `// req: SOD-3`
+  (22 Oct 2026, part: `journal.Bills` posts, voids and edits in one transaction each; the approvals and the
+  states with the API, 1.5)
 - [ ] 1.5 The API: list, get, create, revise, post, void, edit and preview bills, with ETags, idempotency
   and the matrix rows; Spectral clean. Tests `// req: FR-INT-01`
 - [ ] 1.6 The AP sub-ledger: open documents by supplier, equal to 2010 (INV-07), shown at the close.

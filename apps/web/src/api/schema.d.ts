@@ -6395,7 +6395,7 @@ export interface components {
              * @example journal
              * @enum {string}
              */
-            document_type: "journal";
+            document_type: "journal" | "bill";
             /**
              * @description The number the next document takes, as printed.
              * @example JNL-0042
@@ -16276,7 +16276,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description The document type. */
-                document_type: "journal";
+                document_type: "journal" | "bill";
             };
             cookie?: never;
         };
@@ -16360,7 +16360,7 @@ export interface operations {
             };
             path: {
                 /** @description The document type. */
-                document_type: "journal";
+                document_type: "journal" | "bill";
             };
             cookie?: never;
         };

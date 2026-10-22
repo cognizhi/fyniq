@@ -75,6 +75,15 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
   after its date.
 - A contact's own payment terms always win over these.
 
+## GST rounding
+
+- **Round GST per line** is off: the GST of a document is worked out once for each GST code, on
+  the code's total, and rounded to the cent. Turned on, each line's GST is rounded and the results
+  added.
+- IRAS accepts either, as long as the company uses the same one on every document.
+- On a bill, the input tax is the GST the supplier states. Fyniq works it out again by the method
+  chosen here, and shows ⚠ when the two differ, even by a cent, for the approver to check.
+
 ## Settlement tolerances
 
 When a payment differs a little from its invoice or bill, the difference can clear to **FX and
