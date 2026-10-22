@@ -3,7 +3,7 @@ key: accounting.journals
 title: Prepare, post and reverse journals
 mode: expert
 roles: [accountant, tax_agent, controller, owner, auditor]
-requirements: [FR-GL-01, FR-GL-02, FR-GL-12, FR-AUT-01, FR-INT-14, ENG-20, ENG-21, ENG-24, FM-1, FM-2, SOD-3]
+requirements: [FR-GL-01, FR-GL-02, FR-GL-12, FR-AUT-01, FR-INT-14, ENG-20, ENG-21, ENG-24, FM-1, FM-2, SOD-3, FR-DOC-05, FR-DOC-07]
 status: draft            # written with the journal screens (P1, p1-general-ledger-close); reviewed with the accountant
 ---
 
@@ -157,6 +157,23 @@ and the new one.
 In Founder mode an edit needs a second person: the button says **Ask to post the edit**, and another
 founder approves it in **Inbox → To approve**, where each changed line is listed. An edit whose new
 debits are above the self-approval threshold needs another person's approval in any mode.
+
+## Attach evidence
+
+Attach the files a journal rests on, such as the calculation of an accrual, an invoice or a board
+resolution, under **Evidence** on the journal's page.
+
+1. Choose the file: a PDF, an image, a CSV or text file, an XLSX or DOCX file, or an email, up to
+   25 MB.
+2. Say what it is, such as "calculation" or "invoice", and add a note if it helps.
+3. Say whether it holds personal data or bank details, then select **Attach**.
+
+- Fyniq decides the file's type from its content, scans it for malware, and strips image metadata
+  such as location before keeping it.
+- While the journal is a draft, a file can come off again. Once the journal is posted, its files are
+  kept, and never deleted, for as long as the records are; a file added later is kept the same way.
+- The Owner, the Controller, the Accountant and the Tax agent attach files; everyone who can see the
+  journal sees them.
 
 ## Common problems
 

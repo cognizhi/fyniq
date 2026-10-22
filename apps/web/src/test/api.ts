@@ -33,12 +33,30 @@ export function calls(): string[] {
   return seen.map((s) => `${s.method} ${s.path}`);
 }
 
+// formOf reads a multipart form as an upload sends it: each field's text, and a file as its name and size. It parses
+// the text itself, since the test DOM's File is not the one the runtime's form parser accepts.
+function formOf(text: string, type: string): Record<string, unknown> {
+  const boundary = /boundary=(.+)$/.exec(type)?.[1] ?? "";
+  const out: Record<string, unknown> = {};
+  for (const part of text.split(`--${boundary}`)) {
+    const at = part.indexOf("\r\n\r\n");
+    if (at < 0) continue;
+    const head = part.slice(0, at);
+    const value = part.slice(at + 4).replace(/\r\n$/, "");
+    const name = /name="([^"]*)"/.exec(head)?.[1];
+    const file = /filename="([^"]*)"/.exec(head)?.[1];
+    if (name) out[name] = file === undefined ? value : { name: file, size: new TextEncoder().encode(value).length };
+  }
+  return out;
+}
+
 export async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const req = input instanceof Request ? input : new Request(input, init);
   const url = new URL(req.url);
   const path = decodeURIComponent(url.pathname).replace(/^\/api/, "");
+  const type = req.headers.get("Content-Type") ?? "";
   const text = await req.text();
-  const body: unknown = text ? JSON.parse(text) : undefined;
+  const body: unknown = type.startsWith("multipart/form-data") ? formOf(text, type) : text ? JSON.parse(text) : undefined;
   seen.push({ method: req.method, path, query: url.search, body, headers: req.headers });
   const h = handlers[`${req.method} ${path}`];
   if (!h) return new Response(`no fixture for ${req.method} ${path}`, { status: 599 });

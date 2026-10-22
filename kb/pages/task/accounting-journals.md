@@ -2,9 +2,9 @@
 key: accounting.journals
 type: task
 title: Prepare, post and reverse journals
-summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, set up recurring journals, and fix automatic reversals that wait
+summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:e088e2b989eb6168dbe23aff40370ada8515272b531fa696ce9f57ae17bda8db
+  - docs/user-guide/journals.md sha256:196d782a67b4c97f2828f4809288f4a7083a953e78211197230caa9fc809f18a
 data_class: general
 taint: trusted
 status: draft
@@ -36,6 +36,9 @@ aliases:
   - pause a recurring journal
   - automatic reversal waiting
   - reversal waiting
+  - attach a file
+  - supporting document
+  - journal evidence
 ---
 
 # Prepare, post and reverse journals
@@ -125,6 +128,16 @@ aliases:
 - In Founder mode an edit needs a second person: **Ask to post the edit**, and another founder approves it in **Inbox → To approve**, where each changed line is listed. An edit whose new debits are above the self-approval threshold needs another person's approval in any mode.
 
 (src: docs/user-guide/journals.md#edit-a-posted-journal)
+
+## Attach evidence
+
+- Under **Evidence** on a journal's page, attach the files it rests on, such as an accrual's calculation, an invoice or a board resolution: a PDF, an image, a CSV or text file, an XLSX or DOCX file, or an email, up to 25 MB.
+- Say what the file is, add a note if it helps, and whether it holds personal data or bank details, then select **Attach**.
+- Fyniq decides the file's type from its content, scans it for malware and strips image metadata such as location before keeping it.
+- On a draft a file can come off again; once the journal is posted its files are kept, and never deleted, for as long as the records are, as is a file added later.
+- The Owner, the Controller, the Accountant and the Tax agent attach files; everyone who can see the journal sees them.
+
+(src: docs/user-guide/journals.md#attach-evidence)
 
 ## Common problems
 

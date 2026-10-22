@@ -18,6 +18,7 @@ import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, postable, type Account } from "./data";
 import { CheckChip, preparers, StatusChip, who, type Check } from "./Journals";
 import { accountLabel, balances, checkLines, LineEditor, newLine, toLines, type Errors, type Line } from "./lines";
+import { attachers, JournalEvidence } from "./JournalEvidence";
 
 export { balances, type Balance, type Errors, type Line } from "./lines";
 
@@ -275,7 +276,8 @@ function Reverse({ open, journal, etag, ask, onClose, onDone, onAsked }: { open:
 // reason. What was typed is added up exactly as it is entered; the server's check gives the base-currency entry
 // before anything posts. A journal above the self-approval threshold, and in Founder mode a reversal, is asked for and
 // approved by another person (FM-1, FM-2, SOD-3). A journal the scheduler made from a recurring journal links to it, and
-// a posted one whose automatic reversal waits says why (FR-GL-02). Evidence arrives with its task.
+// a posted one whose automatic reversal waits says why (FR-GL-02). Its evidence is listed and attached below it
+// (FR-DOC-05, FR-DOC-11).
 export function JournalPage() {
   const { journalId } = useParams({ strict: false }) as { journalId?: string };
   const isNew = !journalId;
@@ -783,6 +785,10 @@ export function JournalPage() {
             lines={(j.lines ?? []).map((l) => ({ account_id: l.account_id, description: l.description, amount: l.amount.amount, currency: l.amount.currency, rate: l.fx_rate }))}
           />
         </section>
+      )}
+
+      {j && journalId && one.data && (
+        <JournalEvidence journalId={journalId} journalEtag={one.data.etag} draft={j.status === "draft"} mayAttach={roles.some((r) => attachers.includes(r))} onChanged={setStatus} />
       )}
 
       {preview && (
