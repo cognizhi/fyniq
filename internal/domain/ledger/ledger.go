@@ -44,6 +44,9 @@ type Account struct {
 	// account the revaluation posts against (FR-GL-04; rev 0.72).
 	Revalue      bool
 	UnrealisedFX bool
+	// Role is the account's system role (FR-COA-03), by which a rule finds the account it posts to, such as
+	// "accounts-payable"; empty for most accounts.
+	Role string
 }
 
 // Settings are the organisation's settings and master data the rules read.

@@ -97,8 +97,8 @@ the slice that builds it.
   - Cr 2010 with the total.
   - A foreign bill takes `ForeignInputTax`: the claimable GST as stated in SGD, and the difference to
     7030.
-  - The stated GST differing from `RND-GST-EXCL` over the claimable net by more than S$0.01 per
-    subtotal is ⚠ (G4-024), which the approver acknowledges.
+  - The stated GST differing from `RND-GST-EXCL` over the claimable net at all, a cent included, is ⚠
+    (G4-024: "differs by S$0.01 from the recomputation"), which the approver acknowledges.
   - `RND-GST-EXCL` (per GST-code subtotal) is built here as a named policy with its property tests.
 - **AP sub-ledger:** the open amounts of posted bills, credits and payments by supplier. It adds up to
   2010's balance (INV-07). The check compares the two, and the close shows a difference. Journal lines

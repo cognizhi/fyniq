@@ -6154,6 +6154,7 @@ components:
           description: The documents it numbers.
           enum:
             - journal
+            - bill
           examples:
             - journal
           type: string
@@ -19671,6 +19672,7 @@ paths:
             description: The document type.
             enum:
               - journal
+              - bill
             examples:
               - journal
             type: string
@@ -19774,6 +19776,7 @@ paths:
             description: The document type.
             enum:
               - journal
+              - bill
             examples:
               - journal
             type: string

@@ -1,0 +1,472 @@
+// Package bill is a supplier's bill (FR-AP-02; PRD-001 §8.6): its content as each version saves it, and what the
+// posting rules need from it. Reading a bill for the rules happens here: the supplier and its terms, the GST codes of
+// the sg-gst pack in force at the bill's date, the organisation's GST registration that decides whether input tax is
+// claimable (FR-AP-20), the rate the bill takes (ENG-40), and the warnings a bill carries (ENG-21). The posting
+// service in package journal writes it (the one posting path).
+package bill
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/domain/fx"
+	"github.com/cognizhi/fyniq/internal/domain/gst"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
+	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/packs"
+)
+
+// The stable codes of a bill's refusals (ENG-23).
+const (
+	CodeNotBill   = "BILL-01" // the document is not a bill
+	CodeNotDraft  = "BILL-02" // only a draft changes or posts
+	CodeNotPosted = "BILL-03" // only a posted bill is voided or edited
+	CodeBadDraft  = "BILL-04" // the saved bill cannot be read
+	CodeSupplier  = "BILL-05" // no supplier, or one that is not an active vendor
+	CodeGSTCode   = "BILL-06" // a GST code that is not a purchase code of the sg-gst pack
+	CodeDueDate   = "BILL-07" // a due date before the bill's date
+	CodeTooLong   = "BILL-08" // the supplier's number or the notes are too long
+)
+
+// The codes of a bill's warnings (⚠, ENG-21): it posts, and the approver sees them.
+const (
+	WarnGSTDiffers = "BILL-GST-DIFFERS" // the stated GST differs from RND-GST-EXCL's (G4-024)
+	WarnDuplicate  = "BILL-DUPLICATE"   // another bill of the supplier with its number and total, within DuplicateWindow
+	WarnNoSGDGST   = "BILL-NO-SGD-GST"  // a foreign bill's claimable line states no SGD GST: its input tax is not claimed
+)
+
+// DuplicateWindow is how far apart two bills of a supplier with the same number and total may be dated and still be
+// taken for one (FR-AP-12's date window; 60 days, provisional until the accountant's sign-off).
+const DuplicateWindow = 60 * 24 * time.Hour
+
+// MaxSupplierRef and MaxNotes are the longest supplier's number and notes a bill keeps.
+const (
+	MaxSupplierRef = 60
+	MaxNotes       = 2000
+)
+
+// Error is a bill command's refusal with a stable code.
+type Error struct {
+	Code    string
+	Message string
+	Fix     string
+}
+
+func (e *Error) Error() string { return fmt.Sprintf("%s: %s (%s)", e.Code, e.Message, e.Fix) }
+
+// Draft is a bill as entered: the supplier and its own number for the bill, the bill's date (its tax point) and due
+// date, the currency and its rate, the lines and notes.
+type Draft struct {
+	SupplierID  uuid.UUID
+	SupplierRef string
+	Date        time.Time
+	DueDate     time.Time // zero: the supplier's payment terms, else the organisation's
+	Currency    money.Currency
+	Rate        *money.Rate // as typed; nil takes the cascade's rate for the bill's date (ENG-40)
+	Lines       []Line
+	Notes       string
+}
+
+// Line is one line of a bill: the account it costs, its net, its GST code, and its GST as the supplier states it, all
+// in the bill's currency. StatedGST is the GST the tax invoice states in the base currency, for a bill in another
+// currency (ENG-42).
+type Line struct {
+	AccountID   uuid.UUID
+	Description string
+	Net         money.Money
+	GSTCode     string
+	GST         money.Money
+	StatedGST   *money.Money
+}
+
+// payload is a bill as a document version stores it: dates as text, amounts with their currency.
+type payload struct {
+	SupplierID   uuid.UUID     `json:"supplier_id"`
+	SupplierRef  string        `json:"supplier_ref,omitempty"`
+	Date         string        `json:"date,omitempty"`
+	DueDate      string        `json:"due_date,omitempty"`
+	Currency     string        `json:"currency"`
+	FXRate       string        `json:"fx_rate,omitempty"`
+	FXRateSource string        `json:"fx_rate_source,omitempty"`
+	Lines        []payloadLine `json:"lines"`
+	Notes        string        `json:"notes,omitempty"`
+}
+
+type payloadLine struct {
+	AccountID   uuid.UUID    `json:"account_id"`
+	Description string       `json:"description,omitempty"`
+	Net         money.Money  `json:"net"`
+	GSTCode     string       `json:"gst_code"`
+	GST         money.Money  `json:"gst"`
+	StatedGST   *money.Money `json:"stated_gst,omitempty"`
+}
+
+func day(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Format(time.DateOnly)
+}
+
+// Encode is a draft as a document version stores it.
+func Encode(d Draft) ([]byte, error) {
+	if len(d.SupplierRef) > MaxSupplierRef {
+		return nil, &Error{CodeTooLong, fmt.Sprintf("the supplier's number has %d characters; the most is %d", len(d.SupplierRef), MaxSupplierRef), "Shorten it"}
+	}
+	if len(d.Notes) > MaxNotes {
+		return nil, &Error{CodeTooLong, fmt.Sprintf("the notes have %d characters; the most is %d", len(d.Notes), MaxNotes), "Shorten them"}
+	}
+	p := payload{SupplierID: d.SupplierID, SupplierRef: d.SupplierRef, Date: day(d.Date), DueDate: day(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes,
+		Lines: []payloadLine{}}
+	if d.Rate != nil {
+		p.FXRate, p.FXRateSource = d.Rate.String(), d.Rate.Source
+	}
+	for _, l := range d.Lines {
+		p.Lines = append(p.Lines, payloadLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST})
+	}
+	return json.Marshal(p)
+}
+
+// Read reads a bill version as it was saved; base is the organisation's base currency, which a typed rate converts into.
+func Read(doc storage.Document, base money.Currency) (Draft, error) {
+	if doc.Type != storage.DocumentBill {
+		return Draft{}, &Error{CodeNotBill, fmt.Sprintf("document %s is a %s, not a bill", doc.ID, doc.Type), "Open it with its own module"}
+	}
+	bad := func(what string) error {
+		return &Error{CodeBadDraft, fmt.Sprintf("the saved bill cannot be read: %s", what), "Save the bill again"}
+	}
+	var p payload
+	if err := json.Unmarshal(doc.Payload, &p); err != nil {
+		return Draft{}, bad(err.Error())
+	}
+	cur, err := money.Lookup(p.Currency)
+	if err != nil {
+		return Draft{}, bad(err.Error())
+	}
+	d := Draft{SupplierID: p.SupplierID, SupplierRef: p.SupplierRef, Currency: cur, Notes: p.Notes}
+	for _, x := range []struct {
+		text string
+		to   *time.Time
+	}{{p.Date, &d.Date}, {p.DueDate, &d.DueDate}} {
+		if x.text == "" {
+			continue
+		}
+		if *x.to, err = time.Parse(time.DateOnly, x.text); err != nil {
+			return Draft{}, bad(fmt.Sprintf("the date %q", x.text))
+		}
+	}
+	if p.FXRate != "" {
+		r, err := money.ParseRate(p.FXRate, cur, base, p.FXRateSource)
+		if err != nil {
+			return Draft{}, bad(err.Error())
+		}
+		d.Rate = &r
+	}
+	for _, l := range p.Lines {
+		d.Lines = append(d.Lines, Line{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST})
+	}
+	return d, nil
+}
+
+// Total is the bill's total in its currency: every line's net and GST.
+func (d Draft) Total() (money.Money, error) {
+	out := money.Zero(d.Currency)
+	for _, l := range d.Lines {
+		var err error
+		if out, err = out.Add(l.Net); err != nil {
+			return money.Money{}, err
+		}
+		if out, err = out.Add(l.GST); err != nil {
+			return money.Money{}, err
+		}
+	}
+	return out, nil
+}
+
+// Warning is one ⚠ of a bill: it posts, and the approver sees why it is flagged.
+type Warning struct {
+	Code    string
+	Field   string
+	Message string
+	Fix     string
+}
+
+// Prepared is a bill version as the rules read it, with what it shows beside its entry: its supplier, its due date,
+// the GST method in force, and its warnings.
+type Prepared struct {
+	Draft    Draft
+	Bill     ledger.Bill
+	Supplier storage.Contact
+	DueDate  time.Time
+	Warnings []Warning
+}
+
+// Prepare reads one version of a bill for the rules: its supplier, its due date, its rate (the typed one, else the
+// cascade's for its date), and each line's claimable input tax (FR-AP-20 in its P1 form: a purchase code with an
+// input-tax box, from an organisation GST-registered on the bill's date). Problems the rules would refuse come back
+// as ledger.Problems with the engine's own, from PostBill; the warnings come back on the Prepared.
+func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, base money.Currency) (Prepared, ledger.Problems, error) {
+	d, err := Read(doc, base)
+	if err != nil {
+		return Prepared{}, nil, err
+	}
+	out := Prepared{Draft: d}
+	var probs ledger.Problems
+	add := func(code, field, msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix})
+	}
+
+	// The supplier.
+	if d.SupplierID == uuid.Nil {
+		add(CodeSupplier, "supplier_id", "the bill has no supplier", "Choose the supplier who sent the bill")
+	} else {
+		c, err := u.Contacts().Get(ctx, d.SupplierID)
+		switch {
+		case errors.Is(err, ports.ErrNotFound):
+			add(CodeSupplier, "supplier_id", "the supplier does not exist in this organisation", "Choose a supplier from your contacts")
+		case err != nil:
+			return Prepared{}, nil, err
+		case !c.Vendor:
+			add(CodeSupplier, "supplier_id", fmt.Sprintf("%s is not a supplier", c.LegalName), "Mark the contact as a supplier, or choose another")
+		case !c.Active:
+			add(CodeSupplier, "supplier_id", fmt.Sprintf("%s is inactive", c.LegalName), "Reactivate the contact, or choose another")
+		default:
+			out.Supplier = c
+		}
+	}
+
+	// The due date: as entered, else the supplier's terms, else the organisation's (FR-ORG-04).
+	out.DueDate = d.DueDate
+	if !d.Date.IsZero() && out.DueDate.IsZero() {
+		days := 0
+		if out.Supplier.PaymentTermsDays != nil {
+			days = *out.Supplier.PaymentTermsDays
+		} else if days, err = termsDays(ctx, u, d.Date); err != nil {
+			return Prepared{}, nil, err
+		}
+		out.DueDate = d.Date.AddDate(0, 0, days)
+	}
+	if !d.Date.IsZero() && !out.DueDate.IsZero() && out.DueDate.Before(d.Date) {
+		add(CodeDueDate, "due_date", fmt.Sprintf("the bill falls due on %s, before its date %s", day(out.DueDate), day(d.Date)), "Enter a due date on or after the bill's date")
+	}
+
+	// The rate: as typed, else the cascade's for the bill's date (ENG-40).
+	b := ledger.Bill{ID: doc.ID, Version: doc.Version, Date: d.Date, Currency: d.Currency, Rate: d.Rate, Memo: memo(out.Supplier, d)}
+	if d.Currency != base && d.Rate == nil && !d.Date.IsZero() {
+		f, err := fx.Lookup(ctx, u, base, d.Currency, d.Date)
+		var fe *fx.Error
+		switch {
+		case errors.As(err, &fe):
+			add(fe.Code, "fx_rate", fe.Message, fe.Fix)
+		case err != nil:
+			return Prepared{}, nil, err
+		default:
+			r := f.Rate
+			b.Rate = &r
+		}
+	}
+
+	// Each line's GST code, and whether its input tax is claimable.
+	version, err := gstVersion(ctx, u, d.Date)
+	if err != nil {
+		return Prepared{}, nil, err
+	}
+	registered := false
+	if !d.Date.IsZero() {
+		regs, err := u.GSTRegistrations().List(ctx)
+		if err != nil {
+			return Prepared{}, nil, err
+		}
+		_, registered = gst.StatusOn(regs, d.Date)
+	}
+	for i, l := range d.Lines {
+		code, ok := pack.Code(version, l.GSTCode)
+		if !ok || code.Direction != pack.DirPurchase {
+			add(CodeGSTCode, fmt.Sprintf("lines[%d].gst_code", i+1), fmt.Sprintf("%q is not a GST code for purchases", l.GSTCode),
+				"Choose the GST code on the supplier's invoice, such as TX, BL or NR")
+		}
+		b.Lines = append(b.Lines, ledger.BillLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GST: l.GST, StatedBase: l.StatedGST,
+			Claimable: ok && registered && code.Direction == pack.DirPurchase && code.GSTBox > 0})
+	}
+	out.Bill = b
+	if len(probs) == 0 && !d.Date.IsZero() {
+		if out.Warnings, err = warnings(ctx, u, doc, d, b, base, version); err != nil {
+			return Prepared{}, nil, err
+		}
+	}
+	return out, probs, nil
+}
+
+// memo names a bill in its entry: the supplier and the supplier's number.
+func memo(c storage.Contact, d Draft) string {
+	switch {
+	case c.LegalName != "" && d.SupplierRef != "":
+		return c.LegalName + " " + d.SupplierRef
+	case c.LegalName != "":
+		return c.LegalName
+	}
+	return d.SupplierRef
+}
+
+// termsDays is the organisation's payment terms for bills in force on day (FR-ORG-04).
+func termsDays(ctx context.Context, u storage.UnitOfWork, on time.Time) (int, error) {
+	d, _ := settings.Lookup("purchases.payment_terms_days")
+	changes, err := u.Settings().Changes(ctx, d.Key)
+	if err != nil {
+		return 0, err
+	}
+	var n int
+	if _, err := fmt.Sscan(settings.On(d, changes, on).Value, &n); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// releasePacks are the pack versions this release carries.
+var releasePacks = func() ([]pack.Version, error) { return pack.LoadAll(packs.FS) }
+
+// gstVersion is the sg-gst version in force on the bill's date among the organisation's active versions, else among
+// the versions this release carries: the GST codes and rates the bill is read with (ENG-31).
+func gstVersion(ctx context.Context, u storage.UnitOfWork, on time.Time) (pack.Version, error) {
+	all, err := releasePacks()
+	if err != nil {
+		return pack.Version{}, err
+	}
+	if on.IsZero() { // a bill without a date has no tax point yet: its codes are read from the newest version
+		for _, v := range all {
+			if v.Pack == "sg-gst" && v.EffectiveFrom.After(on) {
+				on = v.EffectiveFrom
+			}
+		}
+	}
+	acts, err := u.Packs().Activations(ctx)
+	if err != nil {
+		return pack.Version{}, err
+	}
+	var active []pack.Version
+	for _, v := range all {
+		if slices.ContainsFunc(acts, func(a storage.PackActivation) bool { return a.VersionID == v.ID }) {
+			active = append(active, v)
+		}
+	}
+	if v, ok := pack.At(active, "sg-gst", on); ok {
+		return v, nil
+	}
+	if v, ok := pack.At(all, "sg-gst", on); ok {
+		return v, nil
+	}
+	return pack.Version{}, fmt.Errorf("this release carries no sg-gst version in force on %s", day(on))
+}
+
+// warnings are a readable bill's ⚠: its stated GST against RND-GST-EXCL's, a duplicate of another bill, and a foreign
+// claimable line with no SGD GST stated.
+func warnings(ctx context.Context, u storage.UnitOfWork, doc storage.Document, d Draft, b ledger.Bill, base money.Currency, v pack.Version) ([]Warning, error) {
+	var out []Warning
+	// RND-GST-EXCL over the claimable lines' nets in the base currency, by the organisation's method, against the
+	// GST the supplier stated (in SGD for a foreign bill).
+	method := rounding.GSTPerSubtotal
+	if perLine, err := setting(ctx, u, "gst.round_per_line", d.Date); err != nil {
+		return nil, err
+	} else if perLine == "true" {
+		method = rounding.GSTPerLine
+	}
+	rate, ok := pack.RateOn(v, d.Date)
+	var nets []rounding.GSTNet
+	stated := money.Zero(base)
+	for i, l := range b.Lines {
+		if !l.Claimable || l.GST.IsZero() {
+			continue
+		}
+		if b.Currency != base && l.StatedBase == nil {
+			out = append(out, Warning{WarnNoSGDGST, fmt.Sprintf("lines[%d].stated_gst", i+1), "no SGD GST is stated on the tax invoice: the input tax is not claimed, and stays in the cost",
+				"Enter the GST in SGD as the supplier's tax invoice states it"})
+			continue
+		}
+		net, s := l.Net, l.GST
+		if b.Currency != base {
+			if b.Rate == nil {
+				continue
+			}
+			var err error
+			if net, err = rounding.FX(l.Net, *b.Rate); err != nil {
+				return nil, err
+			}
+			s = *l.StatedBase
+		}
+		nets = append(nets, rounding.GSTNet{Code: d.Lines[i].GSTCode, Rate: rate, Net: net})
+		stated, _ = stated.Add(s)
+	}
+	if ok && len(nets) > 0 {
+		subtotals, err := rounding.GSTExcl(nets, method)
+		if err != nil {
+			return nil, err
+		}
+		recomputed := money.Zero(base)
+		for _, s := range subtotals {
+			recomputed, _ = recomputed.Add(s.GST)
+		}
+		if diff, _ := stated.Sub(recomputed); !diff.IsZero() {
+			if diff.Sign() < 0 {
+				diff = diff.Neg()
+			}
+			out = append(out, Warning{WarnGSTDiffers, "lines", fmt.Sprintf("the stated GST %s %s differs by %s %s from the recomputation (%s, %s)",
+				stated, base, diff, base, rounding.GSTExclName, method),
+				"Check the GST against the supplier's invoice: input tax is the GST as stated, and the approver acknowledges the difference"})
+		}
+	}
+	// A duplicate: another bill of the supplier with its number and total, dated within the window, not reversed.
+	if d.SupplierRef != "" && d.SupplierID != uuid.Nil {
+		total, err := d.Total()
+		if err != nil {
+			return nil, err
+		}
+		others, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: storage.DocumentBill,
+			From: day(d.Date.Add(-DuplicateWindow)), To: day(d.Date.Add(DuplicateWindow)), Limit: 500})
+		if err != nil {
+			return nil, err
+		}
+		for _, o := range others {
+			if o.ID == doc.ID || o.Status == storage.DocumentReversed {
+				continue
+			}
+			od, err := Read(o, base)
+			if err != nil || od.SupplierID != d.SupplierID || od.SupplierRef != d.SupplierRef || od.Currency != d.Currency {
+				continue
+			}
+			if ot, err := od.Total(); err == nil && ot.Equal(total) {
+				label := o.Number
+				if label == "" {
+					label = "a draft"
+				}
+				out = append(out, Warning{WarnDuplicate, "supplier_ref", fmt.Sprintf("bill %s has the same supplier, number %s and total, dated %s", label, d.SupplierRef, day(od.Date)),
+					"Check it is not the same bill entered twice; void one if it is"})
+				break
+			}
+		}
+	}
+	return out, nil
+}
+
+// setting is a setting's value on a day.
+func setting(ctx context.Context, u storage.UnitOfWork, key string, on time.Time) (string, error) {
+	d, ok := settings.Lookup(key)
+	if !ok {
+		return "", fmt.Errorf("no setting %s", key)
+	}
+	changes, err := u.Settings().Changes(ctx, d.Key)
+	if err != nil {
+		return "", err
+	}
+	return settings.On(d, changes, on).Value, nil
+}

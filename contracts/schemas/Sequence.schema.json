@@ -13,7 +13,8 @@
     "document_type": {
       "description": "The documents it numbers.",
       "enum": [
-        "journal"
+        "journal",
+        "bill"
       ],
       "examples": [
         "journal"

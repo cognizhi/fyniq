@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and their recommended values: features, payment terms, tolerances, thresholds, close variances, data region, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:405cbe2e1ff08e55c243158833ca2d69f38b76fc999e0a2146988566410de740
+  - docs/user-guide/organisation-settings.md sha256:d285b89b67358ef0f53158d8f84430cb99761ef4dd9c075f1a2ed90b792525ef
 data_class: general
 taint: trusted
 status: draft
@@ -49,6 +49,14 @@ aliases:
 - A contact's own payment terms always win.
 
 (src: docs/user-guide/organisation-settings.md#payment-terms)
+
+## GST rounding
+
+- **Round GST per line** is off: a document's GST is worked out once per GST code, on the code's total, and rounded to the cent; turned on, each line's GST is rounded and the results added.
+- IRAS accepts either, as long as the company uses the same one on every document.
+- On a bill, the input tax is the GST the supplier states; Fyniq works it out again by the chosen method and shows ⚠ when the two differ, even by a cent, for the approver to check.
+
+(src: docs/user-guide/organisation-settings.md#gst-rounding)
 
 ## Settlement tolerances
 
