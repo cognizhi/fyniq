@@ -3,7 +3,7 @@ key: accounting.currencies
 title: Exchange rates
 mode: expert
 roles: [accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-GL-05, ENG-40, RND-RATE]
+requirements: [FR-GL-04, FR-GL-05, ENG-40, RND-RATE]
 status: draft            # written with the Currencies page (P1, p1-multi-currency-fx); reviewed with the accountant
 ---
 
@@ -21,8 +21,10 @@ Rates come from two places:
 - **your rates**: a rate for a day, which overrides the feed's for that day, and the **monthly
   table**, a rate for a whole month.
 
-An Accountant or a Controller adds and withdraws rates. The Owner, the Auditor and the Tax agent
-can see them. The page is in Expert mode.
+The **Revaluation** tab restates each month's balances in other currencies at the month-end rate.
+
+An Accountant or a Controller adds and withdraws rates and revalues a month. The Owner, the
+Auditor and the Tax agent can see them. The page is in Expert mode.
 
 ## How a posting finds its rate
 
@@ -73,6 +75,29 @@ Select **Withdraw** beside the rate, say why, and select **Withdraw** again. Pos
 take it; postings that took it keep it. **Show withdrawn rates** lists it with who withdrew it,
 when and why.
 
+## Revalue a month
+
+At each month's end, balances in other currencies on accounts revalued at month end, such as a
+USD bank account or a receivable in euros, are restated at the rate for the month's last day.
+Which accounts are revalued is set in the chart ([Chart of accounts](chart-of-accounts.md)).
+
+1. Open the **Revaluation** tab and choose the **Month**: it starts on the latest open month that
+   has ended.
+2. Check each balance: what it is in its currency, what it is in the books, the month-end rate and
+   where it comes from, and the gain or loss. **Posting preview** shows the entry, and **Not
+   revalued** lists the balances that stay at the rates they were recorded at.
+3. Select **Revalue** with the month's name.
+
+The gain or loss posts on the month's last day against 7040 Unrealised FX gain or loss, and
+reverses on the next month's first day, so a later payment measures its realised gain or loss
+against the invoice's own rate. If the next month is not open yet, the reversal posts once it is.
+
+A month can be revalued from its last day while it is open. If a currency has no rate for that
+day, Fyniq says which, and **Add a rate** enters it. If anything dated in the month or before is
+posted after the month is revalued, revalue it again: the new run posts only what changed. The
+month's close refuses a month that has balances to revalue and is not revalued since its last
+posting.
+
 ## Common problems
 
 | Message | What to do |
@@ -82,8 +107,12 @@ when and why.
 | The rate is withdrawn already (FX-03) | Nothing to do: postings no longer take it |
 | Withdrawing a rate needs a reason (FX-04) | Say why the rate is wrong or no longer used |
 | The exchange rate does not change that way (STORAGE-FX-01) | Withdraw the rate and add another |
+| The period is not open (FX-05) | Revalue a month while it is open, or ask for it to be reopened |
+| The period has not ended (FX-06) | Revalue the month from its last day; until then, look at its preview |
+| No account takes unrealised FX (FX-07) | Load 7040 Unrealised FX gain or loss from the standard chart |
 
 ## Related
 
 - [Prepare, post and reverse journals](journals.md)
 - [Open the financial year and close the periods](periods-and-close.md)
+- [Set up and keep the chart of accounts](chart-of-accounts.md)

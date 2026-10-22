@@ -149,6 +149,7 @@ export const actions = [
   { kind: "action", id: "fx.add-rate", mode: "expert", help: "fx.add-rate", guide: "accounting.currencies#add-a-rate" },
   { kind: "action", id: "fx.import-rates", mode: "expert", help: "fx.import-rates", guide: "accounting.currencies#import-rates-from-a-file" },
   { kind: "action", id: "fx.withdraw-rate", mode: "expert", help: "fx.withdraw-rate", guide: "accounting.currencies#withdraw-a-rate" },
+  { kind: "action", id: "fx.revalue", mode: "expert", help: "fx.revalue", guide: "accounting.currencies#revalue-a-month" },
   { kind: "action", id: "ledger.export", mode: "expert", help: "ledger.export", guide: "reports.general-ledger#export-it" },
   { kind: "action", id: "mode", mode: "basic", help: "shell.mode", guide: "preferences.security#basic-and-expert-mode" },
   { kind: "action", id: "step-up", mode: "basic", help: "session.step-up", guide: "auth.sign-in#confirm-its-you-with-a-passkey" },

@@ -14,6 +14,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { who } from "./Journals";
+import { Revaluation } from "./Revaluation";
 
 type Rate = components["schemas"]["FXRate"];
 type Entry = components["schemas"]["FXRateEntry"];
@@ -86,13 +87,13 @@ export function parseRates(text: string, kind: Entry["kind"], form: Form): { row
 
 // AddRate enters one rate: for a day, which overrides the daily feed's and replaces the organisation's earlier rate for
 // that day, or for a month of the monthly table (FR-GL-05, ENG-40).
-function AddRate({ base, onClose, onDone }: { base: string; onClose: () => void; onDone: () => void }) {
+function AddRate({ base, initial, onClose, onDone }: { base: string; initial?: { currency: string; on: string }; onClose: () => void; onDone: () => void }) {
   const confirm = useConfirm();
   const id = useId();
   const h = helpText("fx.add-rate");
   const [kind, setKind] = useState<Entry["kind"]>("day");
-  const [currency, setCurrency] = useState("");
-  const [on, setOn] = useState(today());
+  const [currency, setCurrency] = useState(initial?.currency ?? "");
+  const [on, setOn] = useState(initial?.on ?? today());
   const [month, setMonth] = useState(today().slice(0, 7));
   const [quote, setQuote] = useState("");
   const [form, setForm] = useState<Form>("base-per-unit");
@@ -515,7 +516,8 @@ export function Currencies() {
   const mayEnter = (session.roles ?? []).some((r) => enterers.includes(r));
   const [filter, setFilter] = useState("");
   const [withdrawn, setWithdrawn] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState<false | { currency: string; on: string } | true>(false);
+  const [tab, setTab] = useState<"rates" | "revaluation">("rates");
   const [importing, setImporting] = useState(false);
   const [withdrawing, setWithdrawing] = useState<Rate | null>(null);
   const cur = /^[A-Z]{3}$/.test(filter.trim().toUpperCase()) ? filter.trim().toUpperCase() : undefined;
@@ -536,7 +538,7 @@ export function Currencies() {
       return r.data;
     },
   });
-  const changed = () => void queries.invalidateQueries({ predicate: (q) => ["fx-rates", "fx-rate"].includes(String(q.queryKey[0])) });
+  const changed = () => void queries.invalidateQueries({ predicate: (q) => ["fx-rates", "fx-rate", "fx-revaluation"].includes(String(q.queryKey[0])) });
   const add = helpText("fx.add-rate");
   const imp = helpText("fx.import-rates");
   const items = rates.data?.items ?? [];
@@ -569,6 +571,24 @@ export function Currencies() {
         )}
       </div>
       <ReviewBanner screen="fx-revaluation" />
+      <div className="fy-tabs" role="tablist" aria-label="Currency views">
+        {(
+          [
+            ["rates", "Rates"],
+            ["revaluation", "Revaluation"],
+          ] as const
+        ).map(([key, label]) => (
+          <button key={key} type="button" role="tab" id={`${id}-tab-${key}`} aria-selected={tab === key} aria-controls={`${id}-panel-${key}`} onClick={() => setTab(key)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === "revaluation" ? (
+        <div role="tabpanel" id={`${id}-panel-revaluation`} aria-labelledby={`${id}-tab-revaluation`}>
+          <Revaluation today={until} mayRun={mayEnter} onAddRate={(currency, on) => setAdding({ currency, on })} />
+        </div>
+      ) : (
+        <div role="tabpanel" id={`${id}-panel-rates`} aria-labelledby={`${id}-tab-rates`} className="fy-stack fy-stack--4">
       {dups.length > 0 && (
         <div className="fy-banner fy-banner--warning" role="status">
           <Icon of={TriangleAlert} size={20} />
@@ -720,7 +740,9 @@ export function Currencies() {
           </div>
         )}
       </section>
-      {adding && <AddRate base={base} onClose={() => setAdding(false)} onDone={() => (setAdding(false), changed())} />}
+        </div>
+      )}
+      {adding && <AddRate base={base} initial={adding === true ? undefined : adding} onClose={() => setAdding(false)} onDone={() => (setAdding(false), changed())} />}
       {importing && <ImportRates base={base} onClose={() => setImporting(false)} onDone={changed} />}
       {withdrawing && <Withdraw rate={withdrawing} base={base} onClose={() => setWithdrawing(null)} onDone={() => (setWithdrawing(null), changed())} />}
     </div>

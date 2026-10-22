@@ -2,9 +2,9 @@
 key: accounting.currencies
 type: task
 title: Exchange rates
-summary: Where a posting in another currency takes its rate from, and adding, importing and withdrawing your own rates
+summary: Where a posting in another currency takes its rate from, your own rates, and revaluing a month's foreign-currency balances
 sources:
-  - docs/user-guide/currencies.md sha256:ef586a12aeef8785cc5638f85cdb129219eef089c75648870cb83983cce7a68c
+  - docs/user-guide/currencies.md sha256:9943ef8f9d48b802b641ebf79c38f17da302989dd2df9a9b4799be58a81f3e08
 data_class: general
 taint: trusted
 status: draft
@@ -25,6 +25,10 @@ aliases:
   - rate cascade
   - import rates
   - withdraw a rate
+  - revaluation
+  - revalue a month
+  - unrealised FX
+  - unrealised gain or loss
 ---
 
 # Exchange rates
@@ -33,7 +37,8 @@ aliases:
 
 - **Accounting → Currencies** (Expert mode) keeps the rates that turn other currencies into the base currency; every rate is how much of the base currency one unit buys, kept to 10 decimal places.
 - Rates come from the **daily feed**, the same for every company and published for business days only, and from **your rates**: a rate for a day, which overrides the feed's for that day, and the **monthly table**, a rate for a whole month.
-- An Accountant or a Controller adds and withdraws rates; the Owner, the Auditor and the Tax agent can see them.
+- The **Revaluation** tab restates each month's balances in other currencies at the month-end rate.
+- An Accountant or a Controller adds and withdraws rates and revalues a month; the Owner, the Auditor and the Tax agent can see them.
 
 (src: docs/user-guide/currencies.md#what-it-is)
 
@@ -67,6 +72,16 @@ aliases:
 
 (src: docs/user-guide/currencies.md#withdraw-a-rate)
 
+## Revalue a month
+
+- At each month's end, balances in other currencies on accounts revalued at month end (such as a USD bank account or a receivable in euros) are restated at the rate for the month's last day; which accounts are revalued is set in the chart ([[accounting.chart]]).
+- On the **Revaluation** tab, choose the **Month** (it starts on the latest open month that has ended), check each balance in its currency and in the books, the month-end rate and its source, and the gain or loss, with the **Posting preview** and the balances **Not revalued**; then **Revalue** with the month's name.
+- The gain or loss posts on the month's last day against 7040 Unrealised FX gain or loss and reverses on the next month's first day, so a later payment measures its realised gain or loss against the invoice's own rate; if the next month is not open yet, the reversal posts once it is.
+- A month is revalued from its last day while it is open. A currency with no rate for that day is named, and **Add a rate** enters it. Anything dated in the month or before posted after the revaluation means revaluing it again; the new run posts only what changed.
+- The month's close refuses a month with balances to revalue that is not revalued since its last posting ([[accounting.periods]]).
+
+(src: docs/user-guide/currencies.md#revalue-a-month)
+
 ## Common problems
 
 - FX-01, no exchange rate for this currency: add the rate for the day or the month, or type the rate on the journal line.
@@ -74,6 +89,9 @@ aliases:
 - FX-03, the rate is withdrawn already: nothing to do.
 - FX-04, withdrawing a rate needs a reason: say why the rate is wrong or no longer used.
 - STORAGE-FX-01, the exchange rate does not change that way: withdraw the rate and add another.
+- FX-05, the period is not open: revalue a month while it is open, or ask for it to be reopened.
+- FX-06, the period has not ended: revalue the month from its last day; until then, look at its preview.
+- FX-07, no account takes unrealised FX: load 7040 Unrealised FX gain or loss from the standard chart.
 - Related: closing the month ([[accounting.periods]]).
 
 (src: docs/user-guide/currencies.md#common-problems) (src: docs/user-guide/currencies.md#related)
