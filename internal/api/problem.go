@@ -319,6 +319,8 @@ var codeFacts = map[string]struct {
 	credits.CodeVoidDate:          {422, "The void is dated before the application"},
 	credits.CodeApplied:           {409, "The credit is applied to bills"},
 	CodeApplicationVoidApproval:   {409, "Voiding needs a second person"},
+	credits.CodeNotRefund:         {404, "Not a supplier refund"},
+	CodeRefundVoidApproval:        {409, "Voiding needs a second person"},
 	ledger.CodeNotMoneyAccount:    {422, "Not an active money account"},
 	ledger.CodePaymentAmount:      {422, "A payment's amount is not positive or not in its currency"},
 	ledger.CodePaidAmount:         {422, "What a base-currency account paid is missing or not wanted"},

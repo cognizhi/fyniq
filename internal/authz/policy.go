@@ -437,6 +437,11 @@ var (
 	ApplyCredit                  = Policy{Operation: "applyCredit", Capability: Bills, Need: Post}
 	VoidCreditApplication        = Policy{Operation: "voidCreditApplication", Capability: Bills, Need: Post}
 	RequestCreditApplicationVoid = Policy{Operation: "requestCreditApplicationVoid", Capability: Bills, Need: Post}
+	// Recording a refund from a supplier (FR-AP-03) posts (P), as recording a payment does; voiding one is FM-1's void.
+	GetSupplierRefund         = Policy{Operation: "getSupplierRefund", Capability: Bills, Need: View}
+	RecordSupplierRefund      = Policy{Operation: "recordSupplierRefund", Capability: Bills, Need: Post}
+	VoidSupplierRefund        = Policy{Operation: "voidSupplierRefund", Capability: Bills, Need: Post}
+	RequestSupplierRefundVoid = Policy{Operation: "requestSupplierRefundVoid", Capability: Bills, Need: Post}
 	// A journal's evidence needs the evidence right and the right to view the journal (FR-DOC-05, FR-DOC-11).
 	// The AI's cell is a proposal (doc.attach): an AI or MCP client never uploads, lists or reads evidence here.
 	AddJournalEvidence = Policy{Operation: "addJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
@@ -554,6 +559,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
+	GetSupplierRefund, RecordSupplierRefund, VoidSupplierRefund, RequestSupplierRefundVoid,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

@@ -34,10 +34,11 @@
       "description": "The realised gain (positive) or loss (negative) it made, in the base currency (ENG-41)."
     },
     "via": {
-      "description": "payment: a payment of bills; application: a supplier credit applied (FR-AP-03).",
+      "description": "payment: a payment of bills; application: a supplier credit applied (FR-AP-03); refund: money a supplier paid back against a credit.",
       "enum": [
         "payment",
-        "application"
+        "application",
+        "refund"
       ],
       "examples": [
         "payment"

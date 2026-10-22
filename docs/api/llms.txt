@@ -158,5 +158,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/super-admins/recovery` (recoverSuperAdmin): Recover your Super admin access
 - `POST /v1/super-admins/recovery-codes` (replaceSuperAdminRecoveryCodes): Replace your recovery codes
 - `POST /v1/super-admins/{user_id}/recovery-confirmations` (confirmSuperAdminRecovery): Confirm the other Super admin's recovery
+- `POST /v1/supplier-refunds` (recordSupplierRefund): Record a refund from a supplier
+- `GET /v1/supplier-refunds/{refund_id}` (getSupplierRefund): Get a refund from a supplier
+- `POST /v1/supplier-refunds/{refund_id}/void` (voidSupplierRefund): Void a refund from a supplier
+- `POST /v1/supplier-refunds/{refund_id}/void-approval` (requestSupplierRefundVoid): Ask for approval to void a refund from a supplier
 - `GET /v1/team-mode` (getTeamMode): Get the team mode
 - `PATCH /v1/team-mode` (switchTeamMode): Ask to switch the team mode

@@ -129,7 +129,7 @@ type Bill struct {
 // BillPaidBy is a payment that settles a bill, or an application of a credit that settles a bill or a vendor credit:
 // its allocation (FR-AR-18).
 type BillPaidBy struct {
-	Via           string `json:"via" enum:"payment,application" doc:"payment: a payment of bills; application: a supplier credit applied (FR-AP-03)." example:"payment"`
+	Via           string `json:"via" enum:"payment,application,refund" doc:"payment: a payment of bills; application: a supplier credit applied (FR-AP-03); refund: money a supplier paid back against a credit." example:"payment"`
 	PaymentID     string `json:"payment_id" format:"uuid" doc:"The payment, or the application." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
 	PaymentNumber string `json:"payment_number,omitempty" doc:"The payment's number; for an application, the other document's: the credit's on a bill, the bill's on a credit." example:"PAY-0003"`
 	Date          string `json:"date" format:"date" doc:"The day it settled the bill." example:"2026-10-20"`
@@ -561,6 +561,9 @@ func billPaid(ctx context.Context, u storage.UnitOfWork, b *Bill, total money.Mo
 			RealisedFX: storedOut(x.RealisedFX, x.BaseCurrency), Voided: voided[x.ID]}
 		if doc, err := u.Documents().Get(ctx, x.SourceID); err == nil {
 			p.PaymentNumber = doc.Number
+			if doc.Type == storage.DocumentSupplierRefund {
+				p.Via = "refund"
+			}
 			if d, err := credits.Read(doc); err == nil { // an application: name the other document
 				p.Via = "application"
 				other := d.CreditID

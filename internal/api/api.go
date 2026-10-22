@@ -63,6 +63,7 @@ type API struct {
 	bills        journal.Bills
 	payments     journal.BillPayments
 	applications journal.CreditApplications
+	refunds      journal.SupplierRefunds
 	closing      closing.Service
 	passkeys     *passkey.RelyingParty // nil without an origin
 }
@@ -156,6 +157,7 @@ func New(mux humago.Mux, d Deps) *API {
 	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
+		refunds: journal.SupplierRefunds{Store: d.Store},
 		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
@@ -168,6 +170,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.bills.AfterPosting = a.commitEvidence
 	a.payments.AfterPosting = a.commitEvidence
 	a.applications.AfterPosting = a.commitEvidence
+	a.refunds.AfterPosting = a.commitEvidence
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -208,6 +211,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBillPayments(a)
 	registerPayables(a)
 	registerCreditApplications(a)
+	registerSupplierRefunds(a)
 	registerGSTCodes(a)
 	registerRecurringJournals(a)
 	registerAccounting(a)

@@ -45,6 +45,7 @@ const (
 	ObjectBill        = "bill"                 // a supplier's bill to post above the threshold, to void or to edit (FR-AP-02, FR-GL-12, FM-1, FM-2); its key is its id
 	ObjectPayment     = "bill_payment"         // a payment of bills recorded by hand, to void (FR-AP-02, FR-GL-12, FM-1); its key is its id
 	ObjectApplication = "credit_application"   // a supplier credit applied to a bill, to void (FR-AP-03, FR-GL-12, FM-1); its key is its id
+	ObjectRefund      = "supplier_refund"      // a refund from a supplier recorded by hand, to void (FR-AP-03, FR-GL-12, FM-1); its key is its id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -69,6 +70,7 @@ const (
 	OpBillEdit        = "bill.edit"
 	OpPaymentVoid     = "bill_payment.void"
 	OpApplicationVoid = "credit_application.void"
+	OpRefundVoid      = "supplier_refund.void"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -78,6 +80,7 @@ var Operations = map[string]string{
 	OpPolicyChange: ObjectPolicy, OpPackActivate: ObjectPack, OpTeamModeChange: ObjectTeamMode, OpPeriodReopen: ObjectPeriod,
 	OpJournalPost: ObjectJournal, OpJournalReverse: ObjectJournal, OpJournalEdit: ObjectJournal, OpOpeningEdit: ObjectOpening,
 	OpBillPost: ObjectBill, OpBillVoid: ObjectBill, OpBillEdit: ObjectBill, OpPaymentVoid: ObjectPayment, OpApplicationVoid: ObjectApplication,
+	OpRefundVoid: ObjectRefund,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -108,6 +111,8 @@ var Dependencies = map[string][]string{
 	ObjectPayment: {"status", "paid"},
 	// the application's status, and the amount it applied
 	ObjectApplication: {"status", "applied"},
+	// the refund's status, and what it settled of the credit
+	ObjectRefund: {"status", "refunded"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -125,6 +130,7 @@ var Rows = map[string]string{
 	ObjectBill:        "Bills, vendor credits",
 	ObjectPayment:     "Bills, vendor credits",
 	ObjectApplication: "Bills, vendor credits",
+	ObjectRefund:      "Bills, vendor credits",
 }
 
 // The limits of a policy.
@@ -171,6 +177,7 @@ var Policies = map[string]Policy{
 	ObjectBill:        {ObjectType: ObjectBill, Version: "founder/bill@2026-10-22.1", Steps: []Step{{Quorum: 1}}},
 	ObjectPayment:     {ObjectType: ObjectPayment, Version: "founder/bill_payment@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
 	ObjectApplication: {ObjectType: ObjectApplication, Version: "founder/credit_application@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
+	ObjectRefund:      {ObjectType: ObjectRefund, Version: "founder/supplier_refund@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

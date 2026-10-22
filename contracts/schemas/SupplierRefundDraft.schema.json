@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the refund settles of the credit, in its currency: at most what is left of it (CREDIT-05)."
+    },
+    "credit_id": {
+      "description": "The credit refunded: a posted vendor credit, or a payment of bills with an amount unapplied.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The day the money came in.",
+      "examples": [
+        "2026-10-22"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "For a credit in another currency refunded into an account in that currency: base currency per one unit, as on the bank's advice. Left out, the cascade's rate for the date (ENG-40).",
+      "examples": [
+        "1.34"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The bank, card or wallet account it came into: an active money account in the credit's currency or in the base currency.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "received": {
+      "$ref": "Money.schema.json",
+      "description": "For a credit in another currency refunded into a base-currency account: what the account received, in the base currency. Required then, and only then (LEDGER-27)."
+    },
+    "reference": {
+      "description": "The bank's reference for it.",
+      "examples": [
+        "FAST 99102"
+      ],
+      "maxLength": 140,
+      "type": "string"
+    }
+  },
+  "required": [
+    "credit_id",
+    "date",
+    "money_account_id",
+    "amount"
+  ],
+  "title": "SupplierRefundDraft",
+  "type": "object"
+}

@@ -86,7 +86,8 @@
         "opening_balance",
         "bill",
         "bill_payment",
-        "credit_application"
+        "credit_application",
+        "supplier_refund"
       ],
       "examples": [
         "organisation_setting"
@@ -112,7 +113,8 @@
         "bill.void",
         "bill.edit",
         "bill_payment.void",
-        "credit_application.void"
+        "credit_application.void",
+        "supplier_refund.void"
       ],
       "examples": [
         "organisation_setting.change"
