@@ -34,10 +34,11 @@ func (e *CrossesYear) Error() string {
 // yearEnd is what the fold needs: the organisation's years, its revenue and expense accounts, and its
 // retained-earnings account. ok is false when either is not set.
 type yearEnd struct {
-	cal period.Calendar
-	pl  map[uuid.UUID]bool
-	re  uuid.UUID
-	ok  bool
+	cal     period.Calendar
+	pl      map[uuid.UUID]bool
+	revenue map[uuid.UUID]bool
+	re      uuid.UUID
+	ok      bool
 }
 
 func yearEndOf(ctx context.Context, u storage.UnitOfWork) (yearEnd, error) {
@@ -53,10 +54,13 @@ func yearEndOf(ctx context.Context, u storage.UnitOfWork) (yearEnd, error) {
 	if err != nil {
 		return yearEnd{}, err
 	}
-	y := yearEnd{cal: cal, pl: map[uuid.UUID]bool{}}
+	y := yearEnd{cal: cal, pl: map[uuid.UUID]bool{}, revenue: map[uuid.UUID]bool{}}
 	for _, a := range accounts {
 		if a.Type == storage.Revenue || a.Type == storage.Expense {
 			y.pl[a.ID] = true
+		}
+		if a.Type == storage.Revenue {
+			y.revenue[a.ID] = true
 		}
 		if a.Role == storage.RoleRetainedEarnings {
 			y.re, y.ok = a.ID, true
@@ -144,4 +148,78 @@ func Position(ctx context.Context, u storage.UnitOfWork, base money.Currency, al
 	}
 	sortRows(out.Rows)
 	return out, nil
+}
+
+// YearResult is a financial year's result and what it does to retained earnings, year-end applied (FR-GL-10; PRD-001
+// rev 0.69, provisional). Every amount is in the base currency as in the trial balance, debits positive and credits
+// negative, so income and a profit are negative. Nothing is posted for it.
+type YearResult struct {
+	Income   money.Money // the year's revenue
+	Expenses money.Money // the year's expenses
+	Result   money.Money // income and expenses together: negative is a profit, positive a loss
+	// Retained earnings, while the organisation has an account with the retained-earnings role (Folds); otherwise
+	// nothing folds and these are zero.
+	Folds          bool
+	RetainedID     uuid.UUID
+	RetainedStart  money.Money // on the year's first day: every earlier year's result, and what was posted to it before
+	RetainedPosted money.Money // posted to the account in the year, such as the opening balances
+	RetainedEnd    money.Money // start, posted and the year's result: what the next year opens with
+}
+
+// Year is the result of the financial year y from the periods all, as posted so far: the year's own periods, and
+// those before it for retained earnings at its start.
+func Year(ctx context.Context, u storage.UnitOfWork, base money.Currency, all []storage.Period, y period.Span) (YearResult, error) {
+	ye, err := yearEndOf(ctx, u)
+	if err != nil {
+		return YearResult{}, err
+	}
+	var in, before []uuid.UUID
+	for _, p := range all {
+		switch {
+		case p.EndsOn.Before(y.StartsOn):
+			before = append(before, p.ID)
+		case !p.StartsOn.Before(y.StartsOn) && !p.EndsOn.After(y.EndsOn):
+			in = append(in, p.ID)
+		}
+	}
+	out := YearResult{Income: money.Zero(base), Expenses: money.Zero(base), Result: money.Zero(base), Folds: ye.ok, RetainedID: ye.re,
+		RetainedStart: money.Zero(base), RetainedPosted: money.Zero(base), RetainedEnd: money.Zero(base)}
+	year, err := Trial(ctx, u, base, in...)
+	if err != nil {
+		return YearResult{}, err
+	}
+	for _, r := range year.Rows {
+		switch {
+		case ye.revenue[r.AccountID]:
+			out.Income, err = out.Income.Add(r.Base)
+		case ye.pl[r.AccountID]:
+			out.Expenses, err = out.Expenses.Add(r.Base)
+		case ye.ok && r.AccountID == ye.re:
+			out.RetainedPosted, err = out.RetainedPosted.Add(r.Base)
+		}
+		if err != nil {
+			return YearResult{}, err
+		}
+	}
+	if out.Result, err = out.Income.Add(out.Expenses); err != nil {
+		return YearResult{}, err
+	}
+	if !ye.ok {
+		return out, nil
+	}
+	earlier, err := Trial(ctx, u, base, before...)
+	if err != nil {
+		return YearResult{}, err
+	}
+	for _, r := range earlier.Rows {
+		if ye.pl[r.AccountID] || r.AccountID == ye.re {
+			if out.RetainedStart, err = out.RetainedStart.Add(r.Base); err != nil {
+				return YearResult{}, err
+			}
+		}
+	}
+	if out.RetainedEnd, err = out.RetainedStart.Add(out.RetainedPosted); err == nil {
+		out.RetainedEnd, err = out.RetainedEnd.Add(out.Result)
+	}
+	return out, err
 }

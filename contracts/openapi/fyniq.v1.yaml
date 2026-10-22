@@ -5224,6 +5224,42 @@ components:
       required:
         - reason
       type: object
+    RetainedEarnings:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: The account with the retained-earnings role.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+          format: uuid
+          type: string
+        code:
+          description: Its code.
+          examples:
+            - "3100"
+          type: string
+        end:
+          $ref: "#/components/schemas/Money"
+          description: "start + posted + the year's result: its balance on the next year's first day, which the balance service works out whenever it reads one."
+        name:
+          description: Its name.
+          examples:
+            - Retained earnings
+          type: string
+        posted:
+          $ref: "#/components/schemas/Money"
+          description: What was posted to it in the year, such as the opening balances at the books start.
+        start:
+          $ref: "#/components/schemas/Money"
+          description: "Its balance on the year's first day: every earlier year's result and what was posted to it before. A credit, so negative, is accumulated profit."
+      required:
+        - account_id
+        - code
+        - name
+        - start
+        - posted
+        - end
+      type: object
     Reversal:
       additionalProperties: false
       properties:
@@ -6573,6 +6609,71 @@ components:
         - threshold_percent
         - unexplained
         - items
+      type: object
+    YearEnd:
+      additionalProperties: false
+      properties:
+        closed:
+          description: "Every period of the year is closed: its last month's close closes the year, as periods close in order."
+          examples:
+            - false
+          type: boolean
+        ends_on:
+          description: Its last day.
+          examples:
+            - "2027-03-31"
+          format: date
+          type: string
+        expenses:
+          $ref: "#/components/schemas/Money"
+          description: "The year's expenses so far: debits, so positive."
+        income:
+          $ref: "#/components/schemas/Money"
+          description: "The year's revenue so far in the base currency, as in the trial balance: credits, so negative."
+        last_period:
+          $ref: "#/components/schemas/Period"
+          description: The year's last period, whose close is the year-end close.
+        number:
+          description: The financial year, 1 for the first.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        periods:
+          description: "How many of its periods there are: a year opens whole, so all of its months."
+          examples:
+            - 13
+          format: int64
+          type: integer
+        periods_closed:
+          description: How many of them are closed.
+          examples:
+            - 6
+          format: int64
+          type: integer
+        result:
+          $ref: "#/components/schemas/Money"
+          description: "income + expenses: negative is a profit, which credits retained earnings; positive is a loss."
+        retained_earnings:
+          $ref: "#/components/schemas/RetainedEarnings"
+          description: "Absent while no account has the retained-earnings role: then nothing folds, and revenue and expense accounts carry on from year to year."
+        starts_on:
+          description: "Its first day: the books start for the first year."
+          examples:
+            - "2026-03-15"
+          format: date
+          type: string
+      required:
+        - number
+        - starts_on
+        - ends_on
+        - periods
+        - periods_closed
+        - closed
+        - last_period
+        - income
+        - expenses
+        - result
       type: object
   securitySchemes:
     bearer:
@@ -20007,6 +20108,118 @@ paths:
       x-fyniq-permission:
         capability: Period close / reopen
         right: C
+  /v1/periods/{period_id}/year-end:
+    get:
+      description: "The year end of the financial year that holds the period (FR-GL-10; PRD-001 rev 0.69, provisional): how many of its periods are closed, its income, expenses and result so far from the balance service, and the retained earnings it carries forward. Year end is computed, never posted: on the next year's first day revenue and expense accounts start from nothing and the account with the retained-earnings role opens with every earlier year's result, so there is no closing entry and nothing to carry forward; the optional closing entry for statutory presentation waits for the accountant. Amounts are in the base currency as in the trial balance, debits positive. Refused while the financial years are not set (PERIOD-01). Read-only; no side effects."
+      operationId: getYearEnd
+      parameters:
+        - description: The period's ID.
+          in: path
+          name: period_id
+          required: true
+          schema:
+            description: The period's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d61
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YearEnd"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PERIOD-01` The financial years are not set."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get the year end of a period's financial year
+      tags:
+        - Periods
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PERIOD-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: V
   /v1/periods:open-year:
     post:
       description: "Creates the periods of the next financial year: the first year runs from the books start to the first year end, each later one the twelve months after; its periods are calendar months, the first one short when the books start mid-month (FR-ORG-02; PRD-001 rev 0.47, provisional). The body names the year's first day, as listPeriods' next_year gives it, and any other year is refused, as is a year that starts more than a year after the one that holds today. Once a period exists, when the books start and how the years run no longer change. Side effects: the periods and an audit event for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."

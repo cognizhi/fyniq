@@ -1308,6 +1308,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/periods/{period_id}/year-end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the year end of a period's financial year
+         * @description The year end of the financial year that holds the period (FR-GL-10; PRD-001 rev 0.69, provisional): how many of its periods are closed, its income, expenses and result so far from the balance service, and the retained earnings it carries forward. Year end is computed, never posted: on the next year's first day revenue and expense accounts start from nothing and the account with the retained-earnings role opens with every earlier year's result, so there is no closing entry and nothing to carry forward; the optional closing entry for statutory presentation waits for the accountant. Amounts are in the base currency as in the trial balance, debits positive. Refused while the financial years are not set (PERIOD-01). Read-only; no side effects.
+         */
+        get: operations["getYearEnd"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/periods:open-year": {
         parameters: {
             query?: never;
@@ -5557,6 +5577,30 @@ export interface components {
              */
             reason: string;
         };
+        RetainedEarnings: {
+            /**
+             * Format: uuid
+             * @description The account with the retained-earnings role.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d70
+             */
+            account_id: string;
+            /**
+             * @description Its code.
+             * @example 3100
+             */
+            code: string;
+            /** @description start + posted + the year's result: its balance on the next year's first day, which the balance service works out whenever it reads one. */
+            end: components["schemas"]["Money"];
+            /**
+             * @description Its name.
+             * @example Retained earnings
+             */
+            name: string;
+            /** @description What was posted to it in the year, such as the opening balances at the books start. */
+            posted: components["schemas"]["Money"];
+            /** @description Its balance on the year's first day: every earlier year's result and what was posted to it before. A credit, so negative, is accumulated profit. */
+            start: components["schemas"]["Money"];
+        };
         Reversal: {
             /**
              * Format: date
@@ -6501,6 +6545,53 @@ export interface components {
              * @example 1
              */
             unexplained: number;
+        };
+        YearEnd: {
+            /**
+             * @description Every period of the year is closed: its last month's close closes the year, as periods close in order.
+             * @example false
+             */
+            closed: boolean;
+            /**
+             * Format: date
+             * @description Its last day.
+             * @example 2027-03-31
+             */
+            ends_on: string;
+            /** @description The year's expenses so far: debits, so positive. */
+            expenses: components["schemas"]["Money"];
+            /** @description The year's revenue so far in the base currency, as in the trial balance: credits, so negative. */
+            income: components["schemas"]["Money"];
+            /** @description The year's last period, whose close is the year-end close. */
+            last_period: components["schemas"]["Period"];
+            /**
+             * Format: int64
+             * @description The financial year, 1 for the first.
+             * @example 1
+             */
+            number: number;
+            /**
+             * Format: int64
+             * @description How many of its periods there are: a year opens whole, so all of its months.
+             * @example 13
+             */
+            periods: number;
+            /**
+             * Format: int64
+             * @description How many of them are closed.
+             * @example 6
+             */
+            periods_closed: number;
+            /** @description income + expenses: negative is a profit, which credits retained earnings; positive is a loss. */
+            result: components["schemas"]["Money"];
+            /** @description Absent while no account has the retained-earnings role: then nothing folds, and revenue and expense accounts carry on from year to year. */
+            retained_earnings?: components["schemas"]["RetainedEarnings"];
+            /**
+             * Format: date
+             * @description Its first day: the books start for the first year.
+             * @example 2026-03-15
+             */
+            starts_on: string;
         };
     };
     responses: never;
@@ -16449,6 +16540,102 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getYearEnd: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The period's ID. */
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YearEnd"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PERIOD-01` The financial years are not set. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

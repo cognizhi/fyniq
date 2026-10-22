@@ -368,6 +368,10 @@
       "label": "Save the template",
       "tooltip": "Save the tasks every month's checklist has, as a new version. Months already worked on keep their marks."
     },
+    "close.year-end": {
+      "label": "Year end",
+      "tooltip": "Nothing is posted at year end: Fyniq moves the year's result into retained earnings whenever it reads the next year's balances."
+    },
     "close.explain-variance": {
       "label": "Explain",
       "tooltip": "Say why the account moved against the previous month. It explains these totals: if either changes, the close asks again."

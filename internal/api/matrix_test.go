@@ -700,6 +700,12 @@ var matrixCalls = map[string]matrixCall{
 			return n == 0
 		}
 	},
+	// Year end needs the financial years, so each call reads it in an organisation of its own whose books start on 1 October
+	// 2026.
+	"getYearEnd": func(e *env, tok string) (response, func() bool) {
+		b, p := matrixOpening(e, tok, false)
+		return e.call(http.MethodGet, "/v1/periods/"+b.Oct.ID.String()+"/year-end", e.principal(p), nil), nil
+	},
 	"getPeriodClose": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/periods/"+e.books.Oct.ID.String()+"/close", tok, nil), nil
 	},

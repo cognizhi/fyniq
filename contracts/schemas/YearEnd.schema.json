@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "closed": {
+      "description": "Every period of the year is closed: its last month's close closes the year, as periods close in order.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "ends_on": {
+      "description": "Its last day.",
+      "examples": [
+        "2027-03-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "expenses": {
+      "$ref": "Money.schema.json",
+      "description": "The year's expenses so far: debits, so positive."
+    },
+    "income": {
+      "$ref": "Money.schema.json",
+      "description": "The year's revenue so far in the base currency, as in the trial balance: credits, so negative."
+    },
+    "last_period": {
+      "$ref": "Period.schema.json",
+      "description": "The year's last period, whose close is the year-end close."
+    },
+    "number": {
+      "description": "The financial year, 1 for the first.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "periods": {
+      "description": "How many of its periods there are: a year opens whole, so all of its months.",
+      "examples": [
+        13
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "periods_closed": {
+      "description": "How many of them are closed.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "result": {
+      "$ref": "Money.schema.json",
+      "description": "income + expenses: negative is a profit, which credits retained earnings; positive is a loss."
+    },
+    "retained_earnings": {
+      "$ref": "RetainedEarnings.schema.json",
+      "description": "Absent while no account has the retained-earnings role: then nothing folds, and revenue and expense accounts carry on from year to year."
+    },
+    "starts_on": {
+      "description": "Its first day: the books start for the first year.",
+      "examples": [
+        "2026-03-15"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "number",
+    "starts_on",
+    "ends_on",
+    "periods",
+    "periods_closed",
+    "closed",
+    "last_period",
+    "income",
+    "expenses",
+    "result"
+  ],
+  "title": "YearEnd",
+  "type": "object"
+}

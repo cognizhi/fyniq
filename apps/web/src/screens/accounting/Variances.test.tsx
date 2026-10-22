@@ -37,6 +37,11 @@ const at = { path: "/accounting/close/p11", route: "/accounting/close/$periodId"
 const close = {
   "GET /v1/periods/p11/close": { status: 200, body: { period: nov, you_may_attest: false }, headers: { ETag: `"1-open"` } },
   "GET /v1/periods/p11/checklist": { status: 200, body: { period: nov, template_version: 0, done: 0, skipped: 0, open: 0, tasks: [] } },
+  "GET /v1/periods/p11/year-end": {
+    status: 200,
+    body: { number: 1, starts_on: "2026-10-01", ends_on: "2027-09-30", periods: 12, periods_closed: 0, closed: false, last_period: { ...nov, id: "p09" },
+      income: { amount: "0.00", currency: "SGD" }, expenses: { amount: "0.00", currency: "SGD" }, result: { amount: "0.00", currency: "SGD" } },
+  },
 };
 
 // req: FR-GL-14

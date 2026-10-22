@@ -3,7 +3,7 @@ key: accounting.periods
 title: Open the financial year and close the periods
 mode: expert
 roles: [accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-ORG-02, FR-GL-07, FR-GL-08, FR-GL-14, FM-4, AUD-04]
+requirements: [FR-ORG-02, FR-GL-07, FR-GL-08, FR-GL-10, FR-GL-14, FM-4, AUD-04]
 status: draft            # written with the periods page (P1, p1-general-ledger-close); the close joins it
 ---
 
@@ -114,6 +114,27 @@ previous month's total is zero, the amount alone decides.
   thresholds.
 - Totals are shown as in the trial balance, so income is negative.
 - The first month of the books has no earlier month, so nothing is compared.
+
+## Year end
+
+Nothing is posted at year end, and there is no closing entry to make. Whenever Fyniq reads a
+balance in a new financial year, income and expense accounts start the year from nothing, and the
+earlier years' profit or loss is in the account with the retained-earnings role (3100 Retained
+earnings in the standard chart). Balance-sheet accounts carry on as they are.
+
+Each month's close page shows **Year end** for the financial year that holds the month:
+
+- how many of the year's months are closed. The year is closed once its last month closes, and
+  months close in order;
+- the year's income, expenses and profit or loss, so far until the year is closed;
+- retained earnings at the start of the year, what was posted to it in the year (such as the
+  opening balances), the year's profit or loss, and what goes into the next year.
+
+If no account has the retained-earnings role, the page says so, and income and expense accounts
+carry on from year to year until one does.
+
+The general ledger reads one financial year at a time, so a range of dates that crosses the start
+of a year is refused.
 
 ## Reopen a month
 

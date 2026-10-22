@@ -17,6 +17,7 @@ import { who } from "./Journals";
 import { monthOf } from "./Periods";
 import { Checklist } from "./Checklist";
 import { Variances } from "./Variances";
+import { YearEnd } from "./YearEnd";
 
 type State = components["schemas"]["PeriodCloseState"];
 type Item = components["schemas"]["CloseCheckItem"];
@@ -278,7 +279,7 @@ export function PeriodClose() {
             <Variances periodId={periodId} month={month} open={open} mayExplain={mayCheck} onExplained={setStatus} />
           </div>
 
-          <aside className="fy-stack fy-stack--6" aria-label="Attestation">
+          <aside className="fy-stack fy-stack--6" aria-label="Attestation and year end">
             {open && (
               <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-attest`}>
                 <h2 className="fy-h3" id={`${id}-attest`}>
@@ -368,6 +369,7 @@ export function PeriodClose() {
                 )}
               </section>
             )}
+            <YearEnd periodId={periodId} />
           </aside>
         </div>
       )}
