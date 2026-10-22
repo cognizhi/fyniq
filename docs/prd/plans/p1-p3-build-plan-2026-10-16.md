@@ -160,6 +160,11 @@ claims, fixed assets and projects.
 needs; its proposal names them, and what it leaves open there.
 `p1-multi-currency-fx` is proposed (22 Oct 2026), on the built parts of `p1-general-ledger-close`; what
 waits for invoices, bills and bank import stays open in its tasks.
+`p1-purchases` is proposed (22 Oct 2026) **before `p1-sales`, by the owner's decision of that day**:
+its "After" changes are built far enough, while `p1-sales` needs `p1-templates-email`, which has not
+started. By the owner's decisions of the same day it also records supplier payments by hand until bank
+import, spreads prepayments with releases the scheduler posts, and has the scheduler draft recurring
+bills.
 
 **Wave 3 · Money in and out.** Connectors, bank import and reconciliation, payment files and payment
 providers.
