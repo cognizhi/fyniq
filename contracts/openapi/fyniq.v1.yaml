@@ -2996,6 +2996,69 @@ components:
         - year
         - periods
       type: object
+    ForeignMoneyAccount:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: "The money account: a bank, card, cash or wallet account."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d64
+          format: uuid
+          type: string
+        balance:
+          $ref: "#/components/schemas/Money"
+          description: "Its balance in the currency: debit positive."
+        code:
+          description: Its code.
+          examples:
+            - "1030"
+          type: string
+        in_books:
+          $ref: "#/components/schemas/Money"
+          description: "What that balance is in the books, in the base currency: the rates it was recorded at, and the month-end revaluations still in force."
+        name:
+          description: Its name.
+          examples:
+            - Wise USD
+          type: string
+        revalue:
+          description: It is revalued at month end (FR-GL-04).
+          examples:
+            - true
+          type: boolean
+      required:
+        - account_id
+        - code
+        - name
+        - revalue
+        - balance
+        - in_books
+      type: object
+    ForeignMoneyAccountPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The money accounts' balances in currencies other than the base, by account and currency.
+          items:
+            $ref: "#/components/schemas/ForeignMoneyAccount"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          description: Pass as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMDAifQ
+          type: string
+        through:
+          description: The balances are at the end of the period that holds today, or the last period.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+      required:
+        - through
+        - items
+      type: object
     GSTPeriod:
       additionalProperties: false
       properties:
@@ -10719,6 +10782,119 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
       summary: List the daily feed's rates
+      tags:
+        - Exchange rates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Period close / reopen
+        right: V
+  /v1/fx/money-accounts:
+    get:
+      description: Each bank, card, cash or wallet account's balance in each currency other than the base, with what it is in the books in the base currency, from the balance service (ENG-43; PRD-001 rev 0.74), at the end of the period that holds today, or of the last period when none does. Reconciliation is in the account's currency, with bank import. A page at a time. Read-only; no side effects.
+      operationId: listForeignMoneyAccounts
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForeignMoneyAccountPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the money accounts' balances in other currencies
       tags:
         - Exchange rates
       x-fyniq-error-codes:

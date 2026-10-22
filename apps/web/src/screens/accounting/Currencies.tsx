@@ -8,6 +8,7 @@ import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
+import { formatAmount } from "../../format/amount";
 import { date, timeZone } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
@@ -504,6 +505,72 @@ function FindRate({ base }: { base: string }) {
   );
 }
 
+// MoneyAccounts lists the bank, card, cash and wallet accounts' balances in other currencies, in the currency and in the
+// books (ENG-43): both are the server's.
+function MoneyAccounts({ base }: { base: string }) {
+  const id = useId();
+  const q = useQuery({
+    queryKey: ["fx-money-accounts"],
+    queryFn: async () => {
+      const r = await api.GET("/v1/fx/money-accounts", { params: { query: { page_size: 500 } } });
+      if (r.error) throw r.error;
+      return r.data;
+    },
+  });
+  const items = q.data?.items ?? [];
+  if (q.data && items.length === 0) return null;
+  return (
+    <section className="fy-card" aria-labelledby={`${id}-money`}>
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id={`${id}-money`}>
+          Money accounts in other currencies
+        </h2>
+        {q.data?.through && <span className="fy-small fy-muted">At {date(q.data.through)}</span>}
+      </div>
+      {q.isError && <Refusal problem={problemOf(q.error)} title="The money accounts could not be listed" />}
+      {items.length > 0 && (
+        <div className="fy-tablewrap" style={{ border: 0, borderRadius: 0 }}>
+          <table className="fy-table fy-table--cards fy-table--compact">
+            <thead>
+              <tr>
+                <th scope="col">Account</th>
+                <th scope="col" className="fy-num">
+                  Balance
+                </th>
+                <th scope="col" className="fy-num">
+                  In the books ({base})
+                </th>
+                <th scope="col" className="fy-from-medium">
+                  Month end
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((m) => (
+                <tr key={`${m.account_id} ${m.balance.currency}`}>
+                  <td data-card="title">
+                    <span className="fy-acct">{m.code}</span>
+                    {m.name}
+                  </td>
+                  <td data-card="amount" className="fy-num">
+                    {m.balance.currency} {formatAmount(m.balance.amount)}
+                  </td>
+                  <td data-card="meta" className="fy-num">
+                    {formatAmount(m.in_books.amount)}
+                  </td>
+                  <td data-card="meta" className="fy-from-medium">
+                    {m.revalue ? "Revalued" : <span className="fy-muted">Not revalued: mark it in the chart</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // Currencies is Accounting › Currencies (docs/design/screens Currencies, fx-revaluation; FR-GL-05, ENG-40; PRD-001 rev
 // 0.70): what rate a posting takes and where from, the organisation's own rates, and the daily feed's last fortnight.
 // The month-end revaluation joins it with its task. Every rate is the server's, stored under RND-RATE: the page shows
@@ -698,6 +765,7 @@ export function Currencies() {
           </div>
         )}
       </section>
+      <MoneyAccounts base={base} />
       <section className="fy-card" aria-labelledby={`${id}-feed`}>
         <div className="fy-card__head">
           <h2 className="fy-h3" id={`${id}-feed`}>

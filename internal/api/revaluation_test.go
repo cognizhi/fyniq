@@ -217,3 +217,44 @@ func TestTheMonthEndRevaluation(t *testing.T) {
 		"postFxRevaluation", 403, CodeForbidden)
 	_ = fxAcc
 }
+
+// A money account in another currency keeps its balance in the currency and in the books (ENG-43; rev 0.74): USD 100.00
+// received at 1.35 is S$135.00 in the books. Balances on accounts that are not money accounts are left out.
+// req: ENG-43
+func TestForeignMoneyAccountsKeepBothBalances(t *testing.T) {
+	e := newEnv(t)
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	var wise, ar storage.Account
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if wise, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1030", Name: "Wise USD", Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{MoneyAccount: true, Currency: "USD", Revalue: true}}); err != nil {
+			return err
+		}
+		ar, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1100", Name: "Accounts receivable", Type: storage.Asset})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, acc := range []storage.Account{wise, ar} {
+		id := uuid.NewString()
+		if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Ledger().Append(ctx, storage.NewEntry{PostingDate: porttest.Day(10, 7), PostingIdentity: id, RuleVersion: "test@1",
+				Source: storage.Source{Type: "manual_journal", ID: id, Version: 1}, Lines: []storage.NewLine{
+					{AccountID: acc.ID, Currency: "USD", Amount: "100.00", FXRate: "1.35", FXRateSource: "document", BaseAmount: "135.00"},
+					{AccountID: e.books.Sales.ID, Currency: "SGD", Amount: "-135.00", FXRate: "1", FXRateSource: "base", BaseAmount: "-135.00"}}})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := e.call(http.MethodGet, "/v1/fx/money-accounts", e.as(authz.Accountant), nil)
+	items, _ := r.Body["items"].([]any)
+	if r.Status != 200 || r.str("through") != "2026-10-31" || len(items) != 1 {
+		t.Fatalf("listForeignMoneyAccounts: %d %s", r.Status, r.Raw)
+	}
+	it := items[0].(map[string]any)
+	if it["code"] != "1030" || it["revalue"] != true || it["balance"].(map[string]any)["amount"] != "100.00" || it["balance"].(map[string]any)["currency"] != "USD" ||
+		it["in_books"].(map[string]any)["amount"] != "135.00" || it["in_books"].(map[string]any)["currency"] != "SGD" {
+		t.Errorf("Wise USD: %v", it)
+	}
+}

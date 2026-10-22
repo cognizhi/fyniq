@@ -75,6 +75,10 @@ Source: PRD-001 §10.8 · Priority M · Phase P1
 - **WHEN** a month ends with open foreign-currency items
 - **THEN** the unrealised FX is revalued as FR-GL-04 sets out
 
+#### Scenario: Built as the engine's rule (rev 0.74)
+- **WHEN** a settlement of a foreign-currency document posts
+- **THEN** its realised FX is `RND-FX`(the amount settled × the settlement rate) − `RND-FX`(the amount settled × the stored rate), with no tolerance
+
 ### Requirement: ENG-42 GST on foreign-currency documents
 The system SHALL report GST on foreign-currency documents in SGD: on sales, converted at the organisation's GST exchange-rate source; on purchases, the SGD GST stated on the supplier's tax invoice or the import permit.
 
@@ -115,6 +119,12 @@ Source: PRD-001 §10.8 · Priority M · Phase P1
 - **AND** the entry balances
 - **AND** Box 7 shows 121.50
 
+#### Scenario: The difference keeps the entry balanced (rev 0.74)
+- **GIVEN** a foreign-currency bill with a stated SGD GST
+- **WHEN** it posts
+- **THEN** the difference to 7030 is the net at the book rate + the stated GST − the gross at the book rate, so a cent of `RND-FX` between them goes to 7030 too
+- **AND** the sales' half waits for `RND-GST-EXCL` (with `p1-sales`)
+
 ### Requirement: ENG-43 Foreign-currency bank accounts
 Bank accounts in foreign currency SHALL keep both currency and base balances, and SHALL be reconciled in the account currency.
 
@@ -127,3 +137,7 @@ Source: PRD-001 §10.8 · Priority M · Phase P1
 #### Scenario: Reconciliation in the account currency
 - **WHEN** a foreign-currency bank account is reconciled
 - **THEN** the reconciliation is in the account currency
+
+#### Scenario: Shown in both currencies (rev 0.74)
+- **WHEN** Accounting › Currencies or `listForeignMoneyAccounts` is read
+- **THEN** each money account's balance in each other currency shows in the currency and in the books, at the end of the period that holds today

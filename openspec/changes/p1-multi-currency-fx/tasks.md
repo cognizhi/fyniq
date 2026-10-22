@@ -67,16 +67,24 @@
 
 ## 4. Realised FX, GST and money accounts
 
-- [ ] 4.1 Realised FX on settlement: the currency amount settled × (settlement rate − stored rate), under `RND-FX`, to 7030, with no tolerance; G4-039's receipt. Tests `// req: ENG-41`
+- [x] 4.1 Realised FX on settlement: the currency amount settled × (settlement rate − stored rate), under `RND-FX`, to 7030, with no tolerance; G4-039's receipt. Tests `// req: ENG-41`
+  (22 Oct 2026, PRD rev 0.74: `ledger.RealisedFX` = `RND-FX`(amount × settlement rate) − `RND-FX`(amount × stored
+  rate). Test: `TestRealisedFXIsTheSettledAmountAtTheTwoRates`.)
 - [ ] 4.2 GST on foreign-currency documents: sales at the GST exchange-rate source, then `RND-FX` and `RND-GST-EXCL`; purchases at the stated SGD GST with the difference to 7030, or none stated with the GST in the cost and ⚠; an average rate refused. Tests `// req: ENG-42` (G4-023)
+  (22 Oct 2026, PRD rev 0.74: the purchases' half is built, `ledger.ForeignInputTax`, the difference being net + stated
+  GST − gross so the entry balances; test `TestForeignInputTaxIsAsStatedInSGD` (G4-023). Left: the sales' half, which
+  needs `RND-GST-EXCL` and the GST exchange-rate source setting, both with `p1-sales`.)
 - [ ] 4.3 Settlements and documents call 4.1 and 4.2 (with `p1-sales`, `p1-purchases` and `p1-bank-import-reconcile`). Tests `// req: ENG-41` and `// req: ENG-42`
-- [ ] 4.4 Foreign-currency money accounts show the currency balance and the base balance. Tests `// req: ENG-43`
+- [x] 4.4 Foreign-currency money accounts show the currency balance and the base balance. Tests `// req: ENG-43`
+  (22 Oct 2026, PRD rev 0.74: `listForeignMoneyAccounts` from `balance.Foreign`, at the end of the period that holds
+  today; the Currencies page's **Money accounts in other currencies**. Tests: `TestForeignMoneyAccountsKeepBothBalances`,
+  `Currencies.test.tsx`, a matrix row.)
 - [ ] 4.5 Reconciliation in the account currency (with `p1-bank-import-reconcile`). Tests `// req: ENG-43`
 
 ## 5. Screens
 
-- [ ] 5.1 Accounting › Currencies (`fx-revaluation`): the rates with duplicates ⚠, entering, importing and withdrawing a rate, the look-up, the foreign-currency money accounts. Expert mode; help keys; a guide page compiled into the knowledge base. Tests `// req: FR-GL-05`, `// req: ENG-40` and `// req: ENG-43`
-  (22 Oct 2026: built but for the money accounts, which wait for 4.4. `/accounting/fx` (`Currencies.tsx`): the
+- [x] 5.1 Accounting › Currencies (`fx-revaluation`): the rates with duplicates ⚠, entering, importing and withdrawing a rate, the look-up, the foreign-currency money accounts. Expert mode; help keys; a guide page compiled into the knowledge base. Tests `// req: FR-GL-05`, `// req: ENG-40` and `// req: ENG-43`
+  (22 Oct 2026; the money accounts with 4.4. `/accounting/fx` (`Currencies.tsx`): the
   organisation's rates with ⚠ for a month's duplicates, the daily feed's last fortnight, **Find the rate a posting
   takes**, and for the Accountant and the Controller **Add a rate**, **Import a file** (a CSV read on the page and
   sent to `bulkCreateFxRates`, each refused line listed) and **Withdraw**. Help keys `accounting.currencies`,
@@ -101,6 +109,11 @@
 
 ## 7. Finish
 
-- [ ] 7.1 Every new operation in the contract (`make openapi`), with its authorisation-matrix rows
+- [x] 7.1 Every new operation in the contract (`make openapi`), with its authorisation-matrix rows
+  (22 Oct 2026: the ten operations of #136, #140 and this change's last slice are in `contracts/openapi/fyniq.v1.yaml`
+  with their schemas and reference, pass Spectral, and each has its row: `TestAuthorisationMatrix` fails on an operation
+  without one.)
 - [ ] 7.2 The MAS adapter of `RateFeed` at the cloud gate, once MAS confirms redistribution (FR-GL-05 [verify])
 - [ ] 7.3 Finish with `make check`, `make test` and `make test-e2e`
+  (22 Oct 2026: all three pass on the last slice, `make test-e2e` 16 of 16. Left open until 3.6, 3.7, 4.2's sales half,
+  4.3, 4.5, 6.1 and 7.2 land.)

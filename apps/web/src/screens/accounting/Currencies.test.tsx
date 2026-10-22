@@ -32,6 +32,10 @@ const eur1 = rate("r2", { kind: "month", currency: "EUR", on: "2026-10-01", quot
 const eur2 = rate("r3", { kind: "month", currency: "EUR", on: "2026-10-01", quote: "0.68", quote_form: "foreign-per-base", rate: "1.4705882353" });
 const list = { status: 200, body: { items: [eur1, eur2, usd], duplicates: [{ currency: "EUR", month: "2026-10-01" }] } };
 const feed = { status: 200, body: { items: [{ currency: "USD", base_currency: "SGD", on: "2026-10-16", rate: "1.2953", quote: "1.2953", quote_form: "base-per-unit", feed: "MAS" }] } };
+const money = {
+  status: 200,
+  body: { through: "2026-10-31", items: [{ account_id: "a1030", code: "1030", name: "Wise USD", revalue: true, balance: { amount: "16240.00", currency: "USD" }, in_books: { amount: "20803.44", currency: "SGD" } }] },
+};
 const at = { path: "/accounting/fx" };
 
 // req: FR-GL-05
@@ -39,7 +43,7 @@ const at = { path: "/accounting/fx" };
 // req: RND-RATE
 describe("Accounting › Currencies", () => {
   it("lists the organisation's rates with the monthly duplicates ⚠ and the daily feed; axe finds nothing", async () => {
-    answer({ "GET /v1/fx/rates": list, "GET /v1/fx/feed": feed });
+    answer({ "GET /v1/fx/rates": list, "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money });
     renderPage(Currencies, { ...at, session: accountant });
     const own = within((await screen.findByRole("heading", { name: "Your rates" })).closest("section")!);
     expect(await own.findByText("Bank's board rate", { exact: false })).toBeTruthy();
@@ -52,6 +56,10 @@ describe("Accounting › Currencies", () => {
     expect(rows[3]!.textContent).toContain("In use");
     expect(screen.getByText("A month has more than one rate")).toBeTruthy();
     expect(screen.getByText(/EUR in October 2026: postings take the average/)).toBeTruthy();
+    // req: ENG-43
+    const accounts = within((await screen.findByRole("heading", { name: "Money accounts in other currencies" })).closest("section")!);
+    expect(accounts.getByText("Wise USD").closest("tr")!.textContent).toContain("USD 16,240.00");
+    expect(accounts.getByText("Wise USD").closest("tr")!.textContent).toContain("20,803.44");
     const daily = within(screen.getByRole("heading", { name: "Daily feed, last two weeks" }).closest("section")!);
     expect(daily.getByText("MAS")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add a rate" })).toBeTruthy();
@@ -60,7 +68,7 @@ describe("Accounting › Currencies", () => {
   });
 
   it("shows the Auditor the rates without the buttons that change them", async () => {
-    answer({ "GET /v1/fx/rates": list, "GET /v1/fx/feed": feed });
+    answer({ "GET /v1/fx/rates": list, "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money });
     renderPage(Currencies, { ...at, session: auditor });
     expect(await screen.findByText("Bank's board rate", { exact: false })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Add a rate" })).toBeNull();
@@ -70,7 +78,7 @@ describe("Accounting › Currencies", () => {
   it("adds a rate for a day as it is quoted, and withdraws one with a reason and its version", async () => {
     const sent = answer({
       "GET /v1/fx/rates": list,
-      "GET /v1/fx/feed": feed,
+      "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money,
       "POST /v1/fx/rates": { status: 201, body: rate("r9", { currency: "JPY", quote: "90.45", quote_form: "base-per-100", rate: "0.9045" }) },
       "POST /v1/fx/rates/r1/withdraw": { status: 200, body: { ...usd, version: 2, withdrawn: true } },
     });
@@ -100,7 +108,7 @@ describe("Accounting › Currencies", () => {
   });
 
   it("refuses a rate of the base currency before sending it", async () => {
-    answer({ "GET /v1/fx/rates": list, "GET /v1/fx/feed": feed });
+    answer({ "GET /v1/fx/rates": list, "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money });
     renderPage(Currencies, { ...at, session: accountant });
     fireEvent.click(await screen.findByRole("button", { name: "Add a rate" }));
     const dialog = within(await screen.findByRole("dialog"));
@@ -114,7 +122,7 @@ describe("Accounting › Currencies", () => {
   it("finds the rate a posting takes, and says when there is none", async () => {
     answer({
       "GET /v1/fx/rates": list,
-      "GET /v1/fx/feed": feed,
+      "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money,
       "GET /v1/fx/rate": (_body, req) =>
         new URL(req.url).searchParams.get("currency") === "USD"
           ? { status: 200, body: { currency: "USD", base_currency: "SGD", date: "2026-10-18", rate: "1.2953", source: "MAS daily feed of 2026-10-16", step: "feed", of: "2026-10-16", entries: 1 } }
@@ -139,7 +147,7 @@ describe("Accounting › Currencies", () => {
   it("imports a file's rates, each on its own, and lists the lines it could not read or enter", async () => {
     const sent = answer({
       "GET /v1/fx/rates": list,
-      "GET /v1/fx/feed": feed,
+      "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money,
       "POST /v1/fx/rates:bulk": {
         status: 200,
         body: {

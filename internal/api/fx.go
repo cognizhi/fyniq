@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -507,6 +509,101 @@ func registerFX(a *API) {
 			}
 			out.Body = FXRateLookup{Currency: cur.Code, BaseCurrency: base.Code, Date: on.Format(time.DateOnly), Rate: f.Rate.String(),
 				Source: f.Rate.Source, Step: f.Step, Of: f.Of.Format(time.DateOnly), Entries: f.Entries}
+			return nil
+		})
+		return &out, err
+	})
+}
+
+// ForeignMoneyAccount is a money account's balance in one foreign currency: in the currency, and in the books in the
+// base currency (ENG-43).
+type ForeignMoneyAccount struct {
+	AccountID string `json:"account_id" format:"uuid" doc:"The money account: a bank, card, cash or wallet account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d64"`
+	Code      string `json:"code" doc:"Its code." example:"1030"`
+	Name      string `json:"name" doc:"Its name." example:"Wise USD"`
+	Revalue   bool   `json:"revalue" doc:"It is revalued at month end (FR-GL-04)." example:"true"`
+	Balance   Money  `json:"balance" doc:"Its balance in the currency: debit positive."`
+	InBooks   Money  `json:"in_books" doc:"What that balance is in the books, in the base currency: the rates it was recorded at, and the month-end revaluations still in force."`
+}
+
+// ForeignMoneyAccountPage is a page of the money accounts' foreign-currency balances.
+type ForeignMoneyAccountPage struct {
+	Through    string                `json:"through" format:"date" doc:"The balances are at the end of the period that holds today, or the last period." example:"2026-10-31"`
+	Items      []ForeignMoneyAccount `json:"items" doc:"The money accounts' balances in currencies other than the base, by account and currency."`
+	NextCursor string                `json:"next_cursor,omitempty" doc:"Pass as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjEwMDAifQ"`
+}
+
+type foreignMoneyAccountsInput struct {
+	PageQuery
+}
+
+type foreignMoneyAccountsOutput struct {
+	Body ForeignMoneyAccountPage
+}
+
+func registerForeignMoneyAccounts(a *API) {
+	register(a, authz.ListForeignMoneyAccounts, huma.Operation{
+		OperationID: "listForeignMoneyAccounts", Method: http.MethodGet, Path: "/v1/fx/money-accounts", Tags: []string{"Exchange rates"},
+		Summary: "List the money accounts' balances in other currencies",
+		Description: "Each bank, card, cash or wallet account's balance in each currency other than the base, with what it is in the " +
+			"books in the base currency, from the balance service (ENG-43; PRD-001 rev 0.74), at the end of the period that holds " +
+			"today, or of the last period when none does. Reconciliation is in the account's currency, with bank import. A page at a " +
+			"time. Read-only; no side effects.",
+	}, []string{CodeCursor}, func(ctx context.Context, in *foreignMoneyAccountsInput) (*foreignMoneyAccountsOutput, error) {
+		p, _ := authn.From(ctx)
+		out := foreignMoneyAccountsOutput{Body: ForeignMoneyAccountPage{Items: []ForeignMoneyAccount{}}}
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			base, err := baseOf(ctx, u)
+			if err != nil {
+				return err
+			}
+			today, err := orgToday(ctx, a, u)
+			if err != nil {
+				return err
+			}
+			all, err := u.Periods().List(ctx)
+			if err != nil || len(all) == 0 {
+				return err
+			}
+			through := all[len(all)-1]
+			for _, x := range all {
+				if !today.Before(x.StartsOn) && !today.After(x.EndsOn) {
+					through = x
+				}
+			}
+			out.Body.Through = through.EndsOn.Format(time.DateOnly)
+			accounts, err := u.Accounts().List(ctx)
+			if err != nil {
+				return err
+			}
+			byID := map[uuid.UUID]storage.Account{}
+			for _, x := range accounts {
+				byID[x.ID] = x
+			}
+			rows, err := balance.Foreign(ctx, u, base, all, through)
+			if err != nil {
+				return err
+			}
+			var items []ForeignMoneyAccount
+			for _, r := range rows {
+				acc := byID[r.AccountID]
+				if !acc.MoneyAccount {
+					continue
+				}
+				items = append(items, ForeignMoneyAccount{AccountID: acc.ID.String(), Code: acc.Code, Name: acc.Name, Revalue: acc.Revalue,
+					Balance: amountOf(r.Amount), InBooks: amountOf(r.Base)})
+			}
+			slices.SortStableFunc(items, func(x, y ForeignMoneyAccount) int {
+				if c := strings.Compare(x.Code, y.Code); c != 0 {
+					return c
+				}
+				return strings.Compare(x.Balance.Currency, y.Balance.Currency)
+			})
+			page, next, err := pageOf(items, func(f ForeignMoneyAccount) string { return f.AccountID + " " + f.Balance.Currency }, in.PageQuery)
+			if err != nil {
+				return err
+			}
+			out.Body.Items, out.Body.NextCursor = append(out.Body.Items, page...), next
 			return nil
 		})
 		return &out, err

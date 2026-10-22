@@ -3,7 +3,7 @@ key: accounting.currencies
 title: Exchange rates
 mode: expert
 roles: [accountant, controller, owner, auditor, tax_agent]
-requirements: [FR-GL-04, FR-GL-05, ENG-40, RND-RATE]
+requirements: [FR-GL-04, FR-GL-05, ENG-40, ENG-43, RND-RATE]
 status: draft            # written with the Currencies page (P1, p1-multi-currency-fx); reviewed with the accountant
 ---
 
@@ -20,6 +20,9 @@ Rates come from two places:
 - the **daily feed**, the same for every company, published for business days only; and
 - **your rates**: a rate for a day, which overrides the feed's for that day, and the **monthly
   table**, a rate for a whole month.
+
+**Money accounts in other currencies** shows each bank, card, cash or wallet account's balance in
+another currency, both in that currency and in the books in the base currency.
 
 The **Revaluation** tab restates each month's balances in other currencies at the month-end rate.
 
