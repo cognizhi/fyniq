@@ -79,8 +79,13 @@ func TestPostBillSpreadsALineToPrepayments(t *testing.T) {
 		}
 	}
 	credit := sgdBill(spreadLine(t, billLine(t, software, "100.00", "9.00", sgd, true), october, 2), spreadLine(t, billLine(t, hosting, "10.00", "0.00", sgd, true), october, 2))
-	if _, err := PostVendorCredit(credit, s); !slices.Equal(codes(err), []string{CodeSpread, CodeSpread}) {
-		t.Errorf("a credit note spread: %v", err)
+	_, err := PostVendorCredit(credit, s)
+	if probs, _ := err.(Problems); len(probs) != 2 || probs[0].Code != CodeSpread || probs[0].Field != "lines[1].spread_months" || probs[1].Field != "lines[2].spread_months" {
+		t.Errorf("a credit note spread, line by line: %v", err)
+	}
+	bad := sgdBill(billLine(t, software, "1.00", "0.00", sgd, true), spreadLine(t, billLine(t, software, "1.00", "0.00", sgd, true), october, 0))
+	if _, err := PostBill(bad, s); err == nil || err.(Problems)[0].Field != "lines[2].spread_months" {
+		t.Errorf("a bill's spread refused on its own line: %v", err)
 	}
 	credit.Lines = []BillLine{spreadLine(t, billLine(t, software, "100.00", "9.00", sgd, true), october, 2), billLine(t, payables, "1.00", "0.00", sgd, true)}
 	if _, err := PostVendorCredit(credit, s); !slices.Equal(codes(err), []string{CodeRuleAccount, CodeSpread}) {
@@ -179,6 +184,11 @@ func TestPostBillRelease(t *testing.T) {
 	zero.Amount = money.Zero(sgd)
 	if _, err := PostBillRelease(zero, s); !slices.Equal(codes(err), []string{CodeZeroLine}) {
 		t.Errorf("a zero part: %v", err)
+	}
+	longest := r // the memo at its limit, with the month and the part after the bill's
+	longest.Memo = strings.Repeat("m", MaxMemo-len(": cost spread for August 2026 (1 of 12)"))
+	if e, err := PostBillRelease(longest, s); err != nil || len(e.Memo) != MaxMemo {
+		t.Errorf("the longest memo: %d %v", len(e.Memo), err)
 	}
 	bad := r
 	bad.Date, bad.Amount, bad.Memo, bad.AccountID = time.Time{}, amt(t, "1.00", usd), strings.Repeat("m", MaxMemo), uuid.New()
