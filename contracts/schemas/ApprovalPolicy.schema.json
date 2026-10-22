@@ -35,7 +35,9 @@
         "team_mode",
         "period",
         "journal",
-        "opening_balance"
+        "opening_balance",
+        "bill",
+        "bill_payment"
       ],
       "examples": [
         "organisation_setting"

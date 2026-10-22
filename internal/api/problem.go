@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/chart"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
@@ -297,6 +298,21 @@ var codeFacts = map[string]struct {
 	CodeBillVoidApproval:          {409, "Voiding needs a second person"},
 	CodeOwnBill:                   {403, "You prepared it, so another person approves it"},
 	CodeBillEditApproval:          {409, "Editing needs a second person"},
+	bill.CodePaid:                 {409, "Payments settle the bill"},
+	billpayment.CodeNotPayment:    {404, "Not a payment of bills"},
+	billpayment.CodeBadDraft:      {422, "The saved payment cannot be read"},
+	billpayment.CodeSupplier:      {422, "The payment's supplier is not a vendor"},
+	billpayment.CodeBill:          {422, "Not a posted bill of the supplier in the payment's currency"},
+	billpayment.CodeOverpaid:      {422, "More than the bill has open"},
+	billpayment.CodeNotPosted:     {409, "The payment is not posted"},
+	billpayment.CodeVoidDate:      {422, "The void is dated before the payment"},
+	billpayment.CodeTooLong:       {422, "A text of the payment is too long"},
+	billpayment.CodeTooMany:       {422, "The payment settles too many bills"},
+	CodePaymentVoidApproval:       {409, "Voiding needs a second person"},
+	ledger.CodeNotMoneyAccount:    {422, "Not an active money account"},
+	ledger.CodePaymentAmount:      {422, "A payment's amount is not positive or not in its currency"},
+	ledger.CodePaidAmount:         {422, "What a base-currency account paid is missing or not wanted"},
+	storage.CodeAllocation:        {409, "An allocation never changes and is reversed exactly"},
 	ledger.CodeBillTotal:          {422, "A bill's total is more than zero"},
 	ledger.CodeSystemRole:         {422, "A system account is missing"},
 	ledger.CodeRuleAccount:        {422, "The line is on an account the rule posts to"},
@@ -478,6 +494,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		lp  ledger.Problems
 		je  *journal.Error
 		be  *bill.Error
+		bpe *billpayment.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -499,6 +516,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(je.Code, sentence(je.Message), sentence(je.Fix))
 	case errors.As(err, &be):
 		return problem(be.Code, sentence(be.Message), sentence(be.Fix))
+	case errors.As(err, &bpe):
+		return problem(bpe.Code, sentence(bpe.Message), sentence(bpe.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &ae):

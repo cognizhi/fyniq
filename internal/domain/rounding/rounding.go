@@ -89,6 +89,21 @@ func Rate(quote *apd.Decimal, form money.QuoteForm, from, to money.Currency, sou
 	return money.ParseRate(rounded.Text('f'), from, to, source)
 }
 
+// Implied is the rate a conversion implies, under RND-RATE: base ÷ foreign, base currency per one unit of the foreign
+// currency, rounded once to 10 places. A bill in a foreign currency paid from a base-currency account settles at the
+// rate its payment implies (ENG-41).
+func Implied(base, foreign money.Money, source string) (money.Rate, error) {
+	if foreign.Sign() <= 0 || base.Sign() <= 0 {
+		return money.Rate{}, &money.Error{Code: money.CodeRate, Field: "paid",
+			Message: fmt.Sprintf("%s %s for %s %s implies no rate", base, base.Currency(), foreign, foreign.Currency())}
+	}
+	var q apd.Decimal
+	if _, err := work.Quo(&q, base.Decimal(), foreign.Decimal()); err != nil {
+		return money.Rate{}, &money.Error{Code: money.CodeRate, Field: "paid", Message: err.Error()}
+	}
+	return Rate(&q, money.QuoteBasePerUnit, foreign.Currency(), base.Currency(), source)
+}
+
 // Percent is RND-PERCENT (PRD-001 rev 0.65): part as a percentage of whole = round(part ÷ |whole| × 100, 1 decimal), half
 // away from zero, with part's sign, as a plain decimal string such as "40.0" or "-12.5". It is computed to 60 digits
 // before its one rounding, which no tie can fall within for amounts a stored column holds. A percentage is for showing

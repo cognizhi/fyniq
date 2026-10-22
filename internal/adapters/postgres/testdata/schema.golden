@@ -42,6 +42,22 @@ accounting_policy | written_by | text | not null |
 accounting_policy | written_at | timestamp with time zone | not null | now()
 accounting_policy | approved_by | text | null | 
 accounting_policy | approved_at | timestamp with time zone | null | 
+allocation | organisation_id | uuid | not null | current_org()
+allocation | id | uuid | not null | uuidv7()
+allocation | source_id | uuid | not null | 
+allocation | source_version | integer | not null | 
+allocation | document_id | uuid | not null | 
+allocation | on_date | date | not null | 
+allocation | currency | text | not null | 
+allocation | minor_units | smallint | not null | 
+allocation | amount | numeric(20,4) | not null | 
+allocation | base_currency | text | not null | 
+allocation | base_minor_units | smallint | not null | 
+allocation | base_amount | numeric(20,4) | not null | 
+allocation | realised_fx | numeric(20,4) | not null | 
+allocation | reverses_id | uuid | null | 
+allocation | written_by | text | not null | 
+allocation | written_at | timestamp with time zone | not null | 
 app_user | user_id | uuid | not null | uuidv7()
 app_user | display_name | text | not null | 
 app_user | status | text | not null | 'active'::text
@@ -690,6 +706,34 @@ accounting_policy | accounting_policy_written_at_not_null | NOT NULL written_at
 accounting_policy | accounting_policy_written_by_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 accounting_policy | accounting_policy_written_by_not_null | NOT NULL written_by
 accounting_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+allocation | allocation_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+allocation | allocation_amount_not_null | NOT NULL amount
+allocation | allocation_amount_scale | CHECK (((amount <> 'NaN'::numeric) AND (amount <> (0)::numeric) AND (amount = trunc(amount, (minor_units)::integer))))
+allocation | allocation_base_amount_not_null | NOT NULL base_amount
+allocation | allocation_base_currency_fkey | FOREIGN KEY (base_currency, base_minor_units) REFERENCES currency(code, minor_units)
+allocation | allocation_base_currency_not_null | NOT NULL base_currency
+allocation | allocation_base_minor_units_not_null | NOT NULL base_minor_units
+allocation | allocation_base_scale | CHECK (((base_amount <> 'NaN'::numeric) AND (base_amount = trunc(base_amount, (base_minor_units)::integer)) AND (realised_fx <> 'NaN'::numeric) AND (realised_fx = trunc(realised_fx, (base_minor_units)::integer))))
+allocation | allocation_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+allocation | allocation_currency_not_null | NOT NULL currency
+allocation | allocation_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+allocation | allocation_document_id_not_null | NOT NULL document_id
+allocation | allocation_id_not_null | NOT NULL id
+allocation | allocation_minor_units_not_null | NOT NULL minor_units
+allocation | allocation_on_date_not_null | NOT NULL on_date
+allocation | allocation_organisation_id_not_null | NOT NULL organisation_id
+allocation | allocation_pkey | PRIMARY KEY (organisation_id, id)
+allocation | allocation_realised_fx_not_null | NOT NULL realised_fx
+allocation | allocation_reversed_once | UNIQUE (organisation_id, reverses_id)
+allocation | allocation_reverses_fkey | FOREIGN KEY (organisation_id, reverses_id) REFERENCES allocation(organisation_id, id)
+allocation | allocation_sign | CHECK (((reverses_id IS NULL) = (amount > (0)::numeric)))
+allocation | allocation_source_fkey | FOREIGN KEY (organisation_id, source_id) REFERENCES document(organisation_id, id)
+allocation | allocation_source_id_not_null | NOT NULL source_id
+allocation | allocation_source_version_not_null | NOT NULL source_version
+allocation | allocation_version_positive | CHECK ((source_version > 0))
+allocation | allocation_written_at_not_null | NOT NULL written_at
+allocation | allocation_written_by_not_null | NOT NULL written_by
+allocation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 app_user | app_user_created_at_not_null | NOT NULL created_at
 app_user | app_user_display_name_length | CHECK (((length(display_name) >= 1) AND (length(display_name) <= 200)))
 app_user | app_user_display_name_not_null | NOT NULL display_name
@@ -701,7 +745,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -729,7 +773,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK (((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))))
+approval_request | approval_request_object_known | CHECK ((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -886,7 +930,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text])))
 document | document_type_not_null | NOT NULL type
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_number | document_number_created_at_not_null | NOT NULL created_at
@@ -912,7 +956,7 @@ document_sequence | document_sequence_pkey | PRIMARY KEY (organisation_id, id)
 document_sequence | document_sequence_prefix_format | CHECK ((prefix ~ '^[A-Z0-9][A-Z0-9/-]{0,11}$'::text))
 document_sequence | document_sequence_prefix_not_null | NOT NULL prefix
 document_sequence | document_sequence_type_key | UNIQUE (organisation_id, document_type)
-document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (ARRAY['journal'::text, 'bill'::text])))
+document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (ARRAY['journal'::text, 'bill'::text, 'bill_payment'::text])))
 document_sequence | document_sequence_version_not_null | NOT NULL version
 document_sequence | document_sequence_version_positive | CHECK ((version > 0))
 document_sequence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -1602,6 +1646,8 @@ webauthn_credential | webauthn_credential_user_id_not_null | NOT NULL user_id
 
 ## indexes
 CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, parent_id)
+CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_id, document_id, on_date)
+CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id, source_id)
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
@@ -1637,6 +1683,8 @@ CREATE UNIQUE INDEX accounting_framework_pkey ON fyniq.accounting_framework USIN
 CREATE UNIQUE INDEX accounting_framework_version_key ON fyniq.accounting_framework USING btree (organisation_id, version)
 CREATE UNIQUE INDEX accounting_policy_pkey ON fyniq.accounting_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX accounting_policy_version_key ON fyniq.accounting_policy USING btree (organisation_id, area, version)
+CREATE UNIQUE INDEX allocation_pkey ON fyniq.allocation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX allocation_reversed_once ON fyniq.allocation USING btree (organisation_id, reverses_id)
 CREATE UNIQUE INDEX app_user_pkey ON fyniq.app_user USING btree (user_id)
 CREATE UNIQUE INDEX approval_policy_pkey ON fyniq.approval_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_policy_request_once ON fyniq.approval_policy USING btree (organisation_id, request_id)
@@ -1738,6 +1786,7 @@ CREATE CONSTRAINT TRIGGER document_reversed_posted AFTER UPDATE OF status ON fyn
 CREATE CONSTRAINT TRIGGER journal_entry_balanced AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_balanced AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_entry_balanced()
 CREATE CONSTRAINT TRIGGER journal_line_base_only AFTER INSERT ON fyniq.journal_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.amount = (0)::numeric) AND (new.base_amount <> (0)::numeric))) EXECUTE FUNCTION journal_line_base_only()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
@@ -1782,6 +1831,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_mem
 CREATE TRIGGER account_guard BEFORE INSERT OR UPDATE ON fyniq.account FOR EACH ROW EXECUTE FUNCTION account_guard()
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
+CREATE TRIGGER allocation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.allocation FOR EACH ROW EXECUTE FUNCTION allocation_guard()
+CREATE TRIGGER allocation_no_truncate BEFORE TRUNCATE ON fyniq.allocation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER approval_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_guard()
 CREATE TRIGGER approval_policy_voids AFTER INSERT ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_voids()
 CREATE TRIGGER approval_request_guard BEFORE UPDATE ON fyniq.approval_request FOR EACH ROW EXECUTE FUNCTION approval_request_guard()
@@ -1861,6 +1912,7 @@ CREATE TRIGGER webauthn_credential_guard BEFORE DELETE OR UPDATE ON fyniq.webaut
 account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_framework | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+allocation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_signature | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1910,6 +1962,7 @@ accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_sub
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
+allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6d100e2231e82010d4ed7bfb24451c99
 approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54bfd8bf483ebb04da99069f2b6836cf
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
@@ -1955,7 +2008,7 @@ issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now tim
 journal_entry_assign() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2cae35f178d2305aad6634028ac535b2
 journal_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3f13b66e1e870a0db0b8c7126cde13ff
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | eb39f3ecaced5777f9fffc54cd5e3a4c
-journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f844349095c8623435dbd29af6a4613d
+journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | dad4fb069f70b12e5e2e834126833a44
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b6767cda9357653aa644d5c1fa3c7de0
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2

@@ -420,6 +420,15 @@ var (
 	// The GST codes a bill's line takes are read with the bills (V).
 	GetPurchaseGSTCodes = Policy{Operation: "getPurchaseGSTCodes", Capability: Bills, Need: View}
 	RequestBillEdit     = Policy{Operation: "requestBillEdit", Capability: Bills, Need: Post}
+	// Payments of bills recorded by hand (FR-AP-02; the owner's decision of 22 Oct 2026): the money has left already, so
+	// recording one posts (P on "Bills, vendor credits"), as posting a bill does; releasing money is "Payment batches",
+	// which arrives with bank import. Voiding one is FM-1's void of a posted document: posting (P), and in Founder
+	// mode asked for and approved by another person who holds A.
+	ListBillPayments       = Policy{Operation: "listBillPayments", Capability: Bills, Need: View}
+	GetBillPayment         = Policy{Operation: "getBillPayment", Capability: Bills, Need: View}
+	RecordBillPayment      = Policy{Operation: "recordBillPayment", Capability: Bills, Need: Post}
+	VoidBillPayment        = Policy{Operation: "voidBillPayment", Capability: Bills, Need: Post}
+	RequestBillPaymentVoid = Policy{Operation: "requestBillPaymentVoid", Capability: Bills, Need: Post}
 	// A journal's evidence needs the evidence right and the right to view the journal (FR-DOC-05, FR-DOC-11).
 	// The AI's cell is a proposal (doc.attach): an AI or MCP client never uploads, lists or reads evidence here.
 	AddJournalEvidence = Policy{Operation: "addJournalEvidence", Capability: Evidence, Need: Create, Parent: Journals,
@@ -535,6 +544,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
+	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

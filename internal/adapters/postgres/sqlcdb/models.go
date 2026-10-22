@@ -61,6 +61,25 @@ type FyniqAccountingPolicy struct {
 	ApprovedAt     *time.Time
 }
 
+type FyniqAllocation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SourceID       uuid.UUID
+	SourceVersion  int32
+	DocumentID     uuid.UUID
+	OnDate         time.Time
+	Currency       string
+	MinorUnits     int16
+	Amount         string
+	BaseCurrency   string
+	BaseMinorUnits int16
+	BaseAmount     string
+	RealisedFx     string
+	ReversesID     *uuid.UUID
+	WrittenBy      string
+	WrittenAt      time.Time
+}
+
 type FyniqAppUser struct {
 	UserID      uuid.UUID
 	DisplayName string

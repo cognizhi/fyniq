@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -310,6 +311,20 @@ func TestApprovalPoliciesNameAppendixDRows(t *testing.T) {
 	for _, d := range settings.Catalogue {
 		if d.DualControl && d.Fixed {
 			t.Errorf("%s is both set by the platform and under dual control", d.Key)
+		}
+	}
+	// The contract names every object type and operation the engine has, so a client reads each request it is shown.
+	enum := func(v any, field string) []string {
+		f, _ := reflect.TypeOf(v).FieldByName(field)
+		return strings.Split(f.Tag.Get("enum"), ",")
+	}
+	for op, typ := range approval.Operations {
+		if !slices.Contains(enum(Approval{}, "Operation"), op) || !slices.Contains(enum(Approval{}, "ObjectType"), typ) ||
+			!slices.Contains(enum(ApprovalPolicy{}, "ObjectType"), typ) {
+			t.Errorf("%s on %s is missing from the contract's enums", op, typ)
+		}
+		if _, ok := approval.Policies[typ]; !ok {
+			t.Errorf("%s changes %s, which has no policy", op, typ)
 		}
 	}
 }

@@ -60,6 +60,7 @@ type UnitOfWork interface {
 	Idempotency() Idempotency
 	RateLimits() RateLimits
 	GSTRegistrations() GSTRegistrations
+	Allocations() Allocations
 	Sequences() Sequences
 	Contacts() Contacts
 	Items() Items
@@ -369,6 +370,8 @@ const (
 	DocumentOpeningBalance DocumentType = "opening_balance"
 	// DocumentBill is a supplier's bill (FR-AP-02; p1-purchases).
 	DocumentBill DocumentType = "bill"
+	// DocumentBillPayment is a payment of suppliers' bills recorded by hand (FR-AP-02, FR-AR-18; p1-purchases).
+	DocumentBillPayment DocumentType = "bill_payment"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -511,6 +514,7 @@ const (
 	CodeChecklist      = "STORAGE-CLOSE-03"      // a checklist task marked in a period that is not open; or a checklist record changed
 	CodeFXRate         = "STORAGE-FX-01"         // a rate of the base currency, a monthly rate not on a month's first day, a rate changed, or a feed rate changed
 	CodeFXRevaluation  = "STORAGE-FX-02"         // the scheduler saves a revaluation only of an open period, as that period's
+	CodeAllocation     = "STORAGE-ALLOCATION-01" // an allocation settles a bill from a bill payment, never changes, and is reversed exactly
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

@@ -1158,6 +1158,47 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/bills/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	// Payments of bills recorded by hand (FR-AP-02): read under V, recorded and voided under P; asking to void is posting.
+	"listBillPayments": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/bill-payments", tok, nil), nil
+	},
+	"getBillPayment": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.recordedPayment()
+		return e.call(http.MethodGet, "/v1/bill-payments/"+id, tok, nil), nil
+	},
+	"recordBillPayment": func(e *env, tok string) (response, func() bool) {
+		b, _ := e.postedBill("10.00", "0.90")
+		r := e.call(http.MethodPost, "/v1/bill-payments", tok, e.payment(b, "10.90"))
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/bills/"+b, e.as(authz.Accountant), nil).str("states", "payment") == "unpaid"
+		}
+	},
+	"requestBillPaymentVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "bill_payment")
+		id, tag := e.recordedPayment()
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/bill-payments/"+id+"/void-approval", person, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "bill_payment") == was }
+	},
+	// A void in Founder mode is asked for (requestBillPaymentVoid), so the row voids in an organisation in Standard mode.
+	"voidBillPayment": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.recordedPayment()
+		r := s.call(http.MethodPost, "/v1/bill-payments/"+id+"/void", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/bill-payments/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
+		}
+	},
 	// A void in Founder mode is asked for (requestJournalReversal), so the row reverses in an organisation in Standard mode.
 	"reverseJournal": func(e *env, tok string) (response, func() bool) {
 		s := inStandardMode(e)

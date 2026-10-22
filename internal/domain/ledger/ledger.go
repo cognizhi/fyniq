@@ -47,6 +47,10 @@ type Account struct {
 	// Role is the account's system role (FR-COA-03), by which a rule finds the account it posts to, such as
 	// "accounts-payable"; empty for most accounts.
 	Role string
+	// Money marks a bank, cash, card or wallet account money moves through, and Currency the account's currency when it
+	// holds one other than the base; a payment is made from a money account (FR-AP-02).
+	Money    bool
+	Currency string
 }
 
 // Settings are the organisation's settings and master data the rules read.

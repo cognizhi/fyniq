@@ -37,6 +37,7 @@ const (
 	CodeGSTCode   = "BILL-06" // a GST code that is not a purchase code of the sg-gst pack
 	CodeDueDate   = "BILL-07" // a due date before the bill's date
 	CodeTooLong   = "BILL-08" // the supplier's number or the notes are too long
+	CodePaid      = "BILL-13" // a bill payments settle is not voided or edited until they are voided
 )
 
 // The codes of a bill's warnings (⚠, ENG-21): it posts, and the approver sees them.

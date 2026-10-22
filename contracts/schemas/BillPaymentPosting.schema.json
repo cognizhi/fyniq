@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry the command posted: the payment's entry, or its reversing entry."
+    },
+    "payment": {
+      "$ref": "BillPayment.schema.json",
+      "description": "The payment after the command."
+    }
+  },
+  "required": [
+    "payment",
+    "entry"
+  ],
+  "title": "BillPaymentPosting",
+  "type": "object"
+}
