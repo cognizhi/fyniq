@@ -28,6 +28,7 @@ const at = (route = "/accounting/close/p10") => ({ path: route, route: "/account
 // October is the first month: it has no earlier month to compare (FR-GL-14).
 const firstMonth = {
   "GET /v1/periods/p10/variances": { status: 200, body: { period, threshold_amount: { amount: "1000.00", currency: "SGD" }, threshold_percent: "10", unexplained: 0, items: [] } },
+  "GET /v1/periods/p10/checklist": { status: 200, body: { period, template_version: 0, done: 0, skipped: 0, open: 0, tasks: [] } },
 };
 
 // req: FR-GL-07

@@ -103,3 +103,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-22] compile | docs/user-guide/journals.md → accounting.journals (attaching evidence to a journal, FR-DOC-05)
 
 ## [2026-10-22] compile | docs/user-guide/periods-and-close.md → accounting.periods (the close checklist's check, FR-GL-07)
+
+## [2026-10-22] compile | docs/user-guide/periods-and-close.md → accounting.periods (working through the close checklist and changing its template, FR-GL-07)

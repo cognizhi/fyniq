@@ -34,7 +34,10 @@ const page = (items: Variance[], unexplained: number) => ({
   period: nov, previous_period: oct, threshold_amount: sgd("1000.00"), threshold_percent: "10", unexplained, items,
 });
 const at = { path: "/accounting/close/p11", route: "/accounting/close/$periodId" };
-const close = { "GET /v1/periods/p11/close": { status: 200, body: { period: nov, you_may_attest: false }, headers: { ETag: `"1-open"` } } };
+const close = {
+  "GET /v1/periods/p11/close": { status: 200, body: { period: nov, you_may_attest: false }, headers: { ETag: `"1-open"` } },
+  "GET /v1/periods/p11/checklist": { status: 200, body: { period: nov, template_version: 0, done: 0, skipped: 0, open: 0, tasks: [] } },
+};
 
 // req: FR-GL-14
 // req: C.2 #57

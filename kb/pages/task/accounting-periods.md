@@ -4,7 +4,7 @@ type: task
 title: Open the financial year and close the periods
 summary: What accounting periods are, opening the next financial year, closing a month with two people, and explaining its variances
 sources:
-  - docs/user-guide/periods-and-close.md sha256:654d49ec2bfedcdfbbfdbb4041b021685bc856c9bbae8f91d32db7a77e44fba9
+  - docs/user-guide/periods-and-close.md sha256:a6f29721311705ff314019081e8cf11ff2ce369d3e294c15db137bb2db581ace
 data_class: general
 taint: trusted
 status: draft
@@ -51,12 +51,29 @@ aliases:
 ## Close a month
 
 - Closing takes two people: an Accountant or a Controller selects **Run the checks** on the month; another founder, an Owner or a Controller who did not run them, says what they attest and selects **Attest and close**, confirming it's them first.
-- The checks: every earlier month closed (months close in order); the balances agreeing with the ledger; the trial balance at the month's end adding up to zero; draft journals dated in the month (⚠); automatic reversals that have not posted, dated on or before the month's end or of a journal dated in the month and waiting for a month that is not open (⚠); recurring journals due in the month with no draft yet (⚠), or a draft more than a day late, which means the scheduler failed (✖); active recurring journals whose lines would not post (⚠) ([[accounting.journals]]); income and expense accounts that moved against the previous month by more than both thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no explanation of their totals as they are now (✖; see Explain the variances below) ([[settings.organisation]]); the month's close checklist, every task done or skipped for the month with a reason (✖); in the month the books start, the opening balances posted (⚠). ✖ blocks the close, ⚠ needs a look.
+- The checks: every earlier month closed (months close in order); the balances agreeing with the ledger; the trial balance at the month's end adding up to zero; draft journals dated in the month (⚠); automatic reversals that have not posted, dated on or before the month's end or of a journal dated in the month and waiting for a month that is not open (⚠); recurring journals due in the month with no draft yet (⚠), or a draft more than a day late, which means the scheduler failed (✖); active recurring journals whose lines would not post (⚠) ([[accounting.journals]]); income and expense accounts that moved against the previous month by more than both thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no explanation of their totals as they are now (✖; see Explain the variances below) ([[settings.organisation]]); the month's close checklist, every task done or skipped for the month with a reason (✖; see Work through the checklist below); in the month the books start, the opening balances posted (⚠). ✖ blocks the close, ⚠ needs a look.
 - If anything dated in or before the month posts after the checks ran, they are out of date and the close is refused: run them again.
 - A closed month refuses every posting dated in it, by anyone; the close keeps a SHA-256 fingerprint of the trial balance at the month's end and the ledger revision it closed at.
 - Related: preparing and posting journals ([[accounting.journals]]); entering the opening balances ([[accounting.opening-balances]]).
 
 (src: docs/user-guide/periods-and-close.md#close-a-month) (src: docs/user-guide/periods-and-close.md#related)
+
+## Work through the checklist
+
+- Each month's close page starts with its **Checklist**: the tasks every month's close needs, each with who usually does it and when it is due.
+- An Accountant or a Controller selects **Done** once a task is done; a task that does not apply this month, such as payroll before there are employees, is skipped with **Skip** and a reason the attesting founder reads. Then run the checks again: they refuse the close while a task is neither done nor skipped.
+- A task marked by mistake is opened again with the undo button; Fyniq keeps every mark with who, when and the note or reason.
+- Until the company changes it, the checklist is Fyniq's recommended one: the month's documents entered, the bank, card and wallet accounts reconciled, payroll and CPF posted, accruals and prepayments reviewed, foreign-currency balances revalued, and the month reviewed.
+
+(src: docs/user-guide/periods-and-close.md#work-through-the-checklist)
+
+## Change the checklist template
+
+- On a month's close page, **Change the template** under the checklist; change, add, remove or reorder tasks, each with who usually does it and how many days after the month's end it is due; then **Save the template**.
+- An Accountant or a Controller changes it; every change is kept as a new version with who saved it.
+- Open months use the new template at once: a task it keeps keeps its marks, and a task it drops no longer counts.
+
+(src: docs/user-guide/periods-and-close.md#change-the-checklist-template)
 
 ## Explain the variances
 
@@ -89,6 +106,9 @@ aliases:
 - CLOSE-08, a later period is closed: reopen the latest closed month first.
 - CLOSE-09, the account has no variance to explain: explain one of the accounts under **Variances to explain**.
 - CLOSE-10, the totals changed since they were read: reload the page and explain the totals as they are now.
+- CLOSE-11, the checklist template is not valid: give each task a title, and a due day from 0 to 60.
+- CLOSE-12, no such task on the checklist: reload the page, as the template changed.
+- CLOSE-13, skipping a task needs a reason: say why it does not apply this month.
 - APR-06, a request is waiting already: approve or reject it first.
 
 (src: docs/user-guide/periods-and-close.md#common-problems)
