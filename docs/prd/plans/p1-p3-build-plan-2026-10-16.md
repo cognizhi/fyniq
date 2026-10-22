@@ -158,6 +158,8 @@ design and tasks. Question 26's comparison was signed on 19 Oct 2026, so the bui
 claims, fixed assets and projects.
 `p1-general-ledger-close` is proposed (21 Oct 2026). It starts on the built parts of wave 1 that it
 needs; its proposal names them, and what it leaves open there.
+`p1-multi-currency-fx` is proposed (22 Oct 2026), on the built parts of `p1-general-ledger-close`; what
+waits for invoices, bills and bank import stays open in its tasks.
 
 **Wave 3 · Money in and out.** Connectors, bank import and reconciliation, payment files and payment
 providers.
