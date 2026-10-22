@@ -236,5 +236,11 @@
 
 ## 9. Finish
 
-- [ ] 9.1 Every new operation in the contract (`make openapi`), with its authorisation-matrix rows
+- [x] 9.1 Every new operation in the contract (`make openapi`), with its authorisation-matrix rows
+  (22 Oct 2026: the contract's 116 operations each have a row in `TestAuthorisationMatrix`, which fails on an operation
+  without one, so the operations the blocked tasks add later are held to it too.)
 - [ ] 9.2 Finish with `make check`, `make test` and `make test-e2e`
+  (22 Oct 2026, at #134: all three pass in CI, and `make test-e2e` and `make check` locally. Left until the tasks that
+  wait on other changes land: 5.1 and 5.2 (fixed assets, multi-currency, schedules), 6.4 and 7.4 (`p1-purchases`),
+  7.1's dimensions (`p1-organisation-chart` 3.3), 7.2's reconciliations (bank import) and open items (`p1-sales`,
+  `p1-purchases`), and 8.1 (the oracle session). The change is archived after them.)
