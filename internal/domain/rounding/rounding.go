@@ -1,11 +1,13 @@
 // Package rounding holds Fyniq's named rounding and allocation policies (PRD-001 §10.4). Every
 // rounding in the system goes through one of these functions, called by its name, and "half-up"
 // means half away from zero. The policies the P0 posting source needs are here; the statutory ones
-// (RND-GST-*, RND-CPF*, RND-SDL) and RND-SHARE and RND-MILEAGE arrive with their P1 sources.
+// (RND-GST-INCL, RND-CPF*, RND-SDL) and RND-SHARE and RND-MILEAGE arrive with their P1 sources, as
+// RND-GST-EXCL did with bills (p1-purchases).
 package rounding
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/cockroachdb/apd/v3"
@@ -20,6 +22,7 @@ const (
 	AllocProRataName = "ALLOC-PRORATA"
 	PercentName      = "RND-PERCENT"
 	RateName         = "RND-RATE"
+	GSTExclName      = "RND-GST-EXCL"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -109,6 +112,101 @@ func Percent(part, whole money.Money) (string, error) {
 	r := halfAwayFromZero(&x, 1)
 	r.Negative = r.Negative && !r.IsZero() // -0.04 shows as 0.0, never -0.0
 	return r.Text('f'), nil
+}
+
+// GSTMethod is how RND-GST-EXCL rounds a document's GST (PRD-001 §10.4): once per GST code's subtotal, the default,
+// or once per line, an organisation setting. IRAS accepts either when it is applied consistently.
+type GSTMethod string
+
+// The two methods of RND-GST-EXCL.
+const (
+	GSTPerSubtotal GSTMethod = "subtotal"
+	GSTPerLine     GSTMethod = "line"
+)
+
+// GSTNet is one line of a document for RND-GST-EXCL: its net amount, its GST code, and the code's rate in force at the
+// document's tax point as a decimal fraction, such as "0.09", from the sg-gst pack.
+type GSTNet struct {
+	Code string
+	Rate string
+	Net  money.Money
+}
+
+// GSTSubtotal is one GST code's net and GST on a document.
+type GSTSubtotal struct {
+	Code string
+	Rate string
+	Net  money.Money
+	GST  money.Money
+}
+
+// gstRate reads a GST rate strictly: a fraction from 0 to under 1, with at most six decimals ("0.09", "0").
+var gstRate = regexp.MustCompile(`^0(\.[0-9]{1,6})?$`)
+
+// GSTExcl is RND-GST-EXCL: GST = round(net × rate, the currency's minor units), half away from zero, rounded once
+// per GST code's subtotal (GSTPerSubtotal) or once per line and then added (GSTPerLine). It answers each code once,
+// in the order the codes first appear. The lines are in one currency, and the lines of one code have one rate.
+func GSTExcl(lines []GSTNet, method GSTMethod) ([]GSTSubtotal, error) {
+	if method != GSTPerSubtotal && method != GSTPerLine {
+		return nil, fmt.Errorf("%s: no method %q; use %q or %q", GSTExclName, method, GSTPerSubtotal, GSTPerLine)
+	}
+	var out []GSTSubtotal
+	rates := []*apd.Decimal{}
+	exact := []*apd.Decimal{} // each code's exact GST, rounded once at the end by subtotal
+	at := map[string]int{}
+	for i, l := range lines {
+		cur := l.Net.Currency()
+		if cur != lines[0].Net.Currency() {
+			return nil, fmt.Errorf("%s: line %d is in %s, line 1 in %s", GSTExclName, i+1, cur, lines[0].Net.Currency())
+		}
+		if !gstRate.MatchString(l.Rate) {
+			return nil, fmt.Errorf("%s: line %d's rate %q is not a fraction such as 0.09", GSTExclName, i+1, l.Rate)
+		}
+		r, _, err := apd.NewFromString(l.Rate)
+		if err != nil {
+			return nil, fmt.Errorf("%s: line %d's rate %q: %w", GSTExclName, i+1, l.Rate, err)
+		}
+		k, seen := at[l.Code]
+		if !seen {
+			k = len(out)
+			at[l.Code] = k
+			out = append(out, GSTSubtotal{Code: l.Code, Rate: l.Rate, Net: money.Zero(cur), GST: money.Zero(cur)})
+			rates = append(rates, r)
+			exact = append(exact, new(apd.Decimal))
+		} else if rates[k].Cmp(r) != 0 {
+			return nil, fmt.Errorf("%s: line %d gives code %s the rate %s, an earlier line %s", GSTExclName, i+1, l.Code, l.Rate, out[k].Rate)
+		}
+		if out[k].Net, err = out[k].Net.Add(l.Net); err != nil {
+			return nil, err
+		}
+		var product apd.Decimal
+		if _, err := work.Mul(&product, l.Net.Decimal(), r); err != nil {
+			return nil, err
+		}
+		if method == GSTPerLine {
+			g, err := money.FromRounded(halfAwayFromZero(&product, cur.MinorUnits), cur)
+			if err != nil {
+				return nil, err
+			}
+			if out[k].GST, err = out[k].GST.Add(g); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		if _, err := work.Add(exact[k], exact[k], &product); err != nil {
+			return nil, err
+		}
+	}
+	if method == GSTPerSubtotal {
+		for k := range out {
+			g, err := money.FromRounded(halfAwayFromZero(exact[k], out[k].Net.Currency().MinorUnits), out[k].Net.Currency())
+			if err != nil {
+				return nil, err
+			}
+			out[k].GST = g
+		}
+	}
+	return out, nil
 }
 
 // AllocEven is ALLOC-EVEN: amount split into n periods by cumulative rounding. Period k is
