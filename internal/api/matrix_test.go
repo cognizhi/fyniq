@@ -769,6 +769,9 @@ var matrixCalls = map[string]matrixCall{
 	},
 	// The revaluation (rev 0.73): each run is of a September of its own, ended by the matrix's clock, with no foreign-currency
 	// balance, so it records the revaluation and posts nothing; a refused call leaves no revaluation document.
+	"listForeignMoneyAccounts": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/fx/money-accounts", tok, nil), nil
+	},
 	"getFxRevaluation": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/periods/"+e.books.Oct.ID.String()+"/fx-revaluation", tok, nil), nil
 	},

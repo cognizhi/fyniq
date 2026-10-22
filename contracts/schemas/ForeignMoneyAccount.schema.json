@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The money account: a bank, card, cash or wallet account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d64"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "balance": {
+      "$ref": "Money.schema.json",
+      "description": "Its balance in the currency: debit positive."
+    },
+    "code": {
+      "description": "Its code.",
+      "examples": [
+        "1030"
+      ],
+      "type": "string"
+    },
+    "in_books": {
+      "$ref": "Money.schema.json",
+      "description": "What that balance is in the books, in the base currency: the rates it was recorded at, and the month-end revaluations still in force."
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Wise USD"
+      ],
+      "type": "string"
+    },
+    "revalue": {
+      "description": "It is revalued at month end (FR-GL-04).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "account_id",
+    "code",
+    "name",
+    "revalue",
+    "balance",
+    "in_books"
+  ],
+  "title": "ForeignMoneyAccount",
+  "type": "object"
+}

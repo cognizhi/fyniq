@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The money accounts' balances in currencies other than the base, by account and currency.",
+      "items": {
+        "$ref": "ForeignMoneyAccount.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "next_cursor": {
+      "description": "Pass as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjEwMDAifQ"
+      ],
+      "type": "string"
+    },
+    "through": {
+      "description": "The balances are at the end of the period that holds today, or the last period.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "through",
+    "items"
+  ],
+  "title": "ForeignMoneyAccountPage",
+  "type": "object"
+}

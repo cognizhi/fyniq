@@ -4,7 +4,7 @@ type: task
 title: Exchange rates
 summary: Where a posting in another currency takes its rate from, your own rates, and revaluing a month's foreign-currency balances
 sources:
-  - docs/user-guide/currencies.md sha256:9943ef8f9d48b802b641ebf79c38f17da302989dd2df9a9b4799be58a81f3e08
+  - docs/user-guide/currencies.md sha256:e940bce5bb12c75839cae9fb22ef4cc7b4757ce88def57928b801171ec4bb404
 data_class: general
 taint: trusted
 status: draft
@@ -29,6 +29,7 @@ aliases:
   - revalue a month
   - unrealised FX
   - unrealised gain or loss
+  - foreign currency bank account
 ---
 
 # Exchange rates
@@ -37,6 +38,7 @@ aliases:
 
 - **Accounting → Currencies** (Expert mode) keeps the rates that turn other currencies into the base currency; every rate is how much of the base currency one unit buys, kept to 10 decimal places.
 - Rates come from the **daily feed**, the same for every company and published for business days only, and from **your rates**: a rate for a day, which overrides the feed's for that day, and the **monthly table**, a rate for a whole month.
+- **Money accounts in other currencies** shows each bank, card, cash or wallet account's balance in another currency, in that currency and in the books in the base currency.
 - The **Revaluation** tab restates each month's balances in other currencies at the month-end rate.
 - An Accountant or a Controller adds and withdraws rates and revalues a month; the Owner, the Auditor and the Tax agent can see them.
 

@@ -43,6 +43,7 @@ const done: Reval = {
 const rates = { status: 200, body: { items: [], duplicates: [] } };
 const feed = { status: 200, body: { items: [] } };
 const periods = { status: 200, body: { items: [sep, oct, nov] } };
+const money = { status: 200, body: { through: "2026-10-31", items: [] } };
 const at = { path: "/accounting/fx" };
 
 // req: FR-GL-04
@@ -51,7 +52,7 @@ describe("the month's revaluation on Accounting › Currencies", () => {
     let posted = false;
     answer({
       "GET /v1/fx/rates": rates,
-      "GET /v1/fx/feed": feed,
+      "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money,
       "GET /v1/periods": periods,
       "GET /v1/periods/p10/fx-revaluation": () => ({ status: 200, body: posted ? done : due, headers: { ETag: '"1-open"' } }),
       "POST /v1/periods/p10/fx-revaluation": () => ((posted = true), { status: 201, body: done }),
@@ -86,7 +87,7 @@ describe("the month's revaluation on Accounting › Currencies", () => {
   it("names a currency with no rate, offers to add it for the month's last day, and lets the Auditor only look", async () => {
     answer({
       "GET /v1/fx/rates": rates,
-      "GET /v1/fx/feed": feed,
+      "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money,
       "GET /v1/periods": periods,
       "GET /v1/periods/p10/fx-revaluation": { status: 200, body: { ...due, missing: [{ currency: "AUD", detail: "✖ No exchange rate for AUD on 31 Oct 2026" }], lines: [] } },
     });
@@ -101,7 +102,7 @@ describe("the month's revaluation on Accounting › Currencies", () => {
   });
 
   it("shows the Auditor the revaluation without the button that runs it", async () => {
-    answer({ "GET /v1/fx/rates": rates, "GET /v1/fx/feed": feed, "GET /v1/periods": periods, "GET /v1/periods/p10/fx-revaluation": { status: 200, body: due } });
+    answer({ "GET /v1/fx/rates": rates, "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money, "GET /v1/periods": periods, "GET /v1/periods/p10/fx-revaluation": { status: 200, body: due } });
     renderPage(Currencies, { ...at, session: auditor });
     fireEvent.click(await screen.findByRole("tab", { name: "Revaluation" }));
     expect(await screen.findByText("Not revalued", { selector: ".fy-chip" })).toBeTruthy();

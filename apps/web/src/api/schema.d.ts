@@ -328,6 +328,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/fx/money-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the money accounts' balances in other currencies
+         * @description Each bank, card, cash or wallet account's balance in each currency other than the base, with what it is in the books in the base currency, from the balance service (ENG-43; PRD-001 rev 0.74), at the end of the period that holds today, or of the last period when none does. Reconciliation is in the account's currency, with bank import. A page at a time. Read-only; no side effects.
+         */
+        get: operations["listForeignMoneyAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/fx/rate": {
         parameters: {
             query?: never;
@@ -4164,6 +4184,48 @@ export interface components {
         FinancialYearOpened: {
             periods: components["schemas"]["Period"][];
             year: components["schemas"]["FinancialYear"];
+        };
+        ForeignMoneyAccount: {
+            /**
+             * Format: uuid
+             * @description The money account: a bank, card, cash or wallet account.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d64
+             */
+            account_id: string;
+            /** @description Its balance in the currency: debit positive. */
+            balance: components["schemas"]["Money"];
+            /**
+             * @description Its code.
+             * @example 1030
+             */
+            code: string;
+            /** @description What that balance is in the books, in the base currency: the rates it was recorded at, and the month-end revaluations still in force. */
+            in_books: components["schemas"]["Money"];
+            /**
+             * @description Its name.
+             * @example Wise USD
+             */
+            name: string;
+            /**
+             * @description It is revalued at month end (FR-GL-04).
+             * @example true
+             */
+            revalue: boolean;
+        };
+        ForeignMoneyAccountPage: {
+            /** @description The money accounts' balances in currencies other than the base, by account and currency. */
+            items: components["schemas"]["ForeignMoneyAccount"][] | null;
+            /**
+             * @description Pass as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEwMDAifQ
+             */
+            next_cursor?: string;
+            /**
+             * Format: date
+             * @description The balances are at the end of the period that holds today, or the last period.
+             * @example 2026-10-31
+             */
+            through: string;
         };
         GSTPeriod: {
             /**
@@ -9617,6 +9679,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FeedRatePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listForeignMoneyAccounts: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForeignMoneyAccountPage"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
