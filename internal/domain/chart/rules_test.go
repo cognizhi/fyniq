@@ -52,3 +52,31 @@ func TestAChangesRules(t *testing.T) {
 		t.Errorf("deactivating an account that is not a system account: %v", p)
 	}
 }
+
+// Only a monetary asset or liability is revalued at month end: never an equity, income or expense account, prepayments
+// or deferred revenue (FR-GL-04; rev 0.72).
+// req: FR-GL-04
+func TestOnlyAMonetaryItemIsRevalued(t *testing.T) {
+	for _, ok := range []storage.NewAccount{
+		{Code: "1030", Name: "Wise USD", Type: storage.Asset, AccountAttributes: storage.AccountAttributes{MoneyAccount: true, Currency: "USD", Revalue: true}},
+		{Code: "2500", Name: "Loan from director", Type: storage.Liability, Role: "director-loan", AccountAttributes: storage.AccountAttributes{Revalue: true}},
+	} {
+		if p := CheckAccount(ok); p != nil {
+			t.Errorf("%s revalued: %v", ok.Code, p)
+		}
+	}
+	for _, bad := range []storage.NewAccount{
+		{Code: "6110", Name: "Rent", Type: storage.Expense, AccountAttributes: storage.AccountAttributes{Revalue: true}},
+		{Code: "3010", Name: "Share capital", Type: storage.Equity, AccountAttributes: storage.AccountAttributes{Revalue: true}},
+		{Code: "1210", Name: "Prepayments", Type: storage.Asset, Role: "prepayments", AccountAttributes: storage.AccountAttributes{Revalue: true}},
+		{Code: "2400", Name: "Deferred revenue", Type: storage.Liability, Role: "deferred-revenue", AccountAttributes: storage.AccountAttributes{Revalue: true}},
+	} {
+		if got := codes(CheckAccount(bad)); !slices.Equal(got, []string{"COA-10 revalue"}) {
+			t.Errorf("%s revalued: %v", bad.Code, got)
+		}
+	}
+	prepaid := storage.Account{Code: "1210", Name: "Prepayments", Type: storage.Asset, Active: true, Role: "prepayments"}
+	if got := codes(CheckChange(prepaid, storage.AccountChange{Name: "Prepayments", Active: true, AccountAttributes: storage.AccountAttributes{Revalue: true}})); !slices.Equal(got, []string{"COA-10 revalue"}) {
+		t.Errorf("marking prepayments: %v", got)
+	}
+}

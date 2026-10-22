@@ -32,6 +32,7 @@ type FyniqAccount struct {
 	IsControl      bool
 	IsPayrollCost  bool
 	Guidance       *string
+	Revalue        bool
 }
 
 type FyniqAccountingFramework struct {

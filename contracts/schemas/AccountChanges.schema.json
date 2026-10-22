@@ -96,6 +96,13 @@
       ],
       "maxLength": 60,
       "type": "string"
+    },
+    "revalue": {
+      "description": "Revalue its foreign-currency balances at month end: only an asset or a liability settled in money (FR-GL-04; COA-10). Months already revalued keep what they posted.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
     }
   },
   "title": "AccountChanges",

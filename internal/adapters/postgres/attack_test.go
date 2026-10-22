@@ -573,18 +573,19 @@ func TestAttackAmountsOffScaleNaNOrOutOfRangeFail(t *testing.T) {
 		wantState(t, col+" = 1e17", attack(t, b, "100000000000000000"), "22003")
 	}
 	for name, err := range map[string]error{
-		"SGD with three decimals":                 rawLine(t, b, "SGD", "1.005", "1", "1.01"),
-		"yen with decimals":                       rawLine(t, b, "JPY", "1.5", "0.0091", "0.01"),
-		"base not amount × rate (RND-FX)":         rawLine(t, b, "USD", "100.00", "1.35", "135.01"),
-		"a base-only line (FX revaluation is P1)": rawLine(t, b, "USD", "0.00", "1.35", "1.00"),
-		"a zero rate":                             rawLine(t, b, "USD", "1.00", "0", "0.00"),
-		"a negative rate":                         rawLine(t, b, "USD", "1.00", "-1.35", "-1.35"),
-		"a base-currency line at rate 2":          rawLine(t, b, "SGD", "1.00", "2", "2.00"),
-		"infinity":                                rawLine(t, b, "SGD", "Infinity", "1", "1.00"),
+		"SGD with three decimals":         rawLine(t, b, "SGD", "1.005", "1", "1.01"),
+		"yen with decimals":               rawLine(t, b, "JPY", "1.5", "0.0091", "0.01"),
+		"base not amount × rate (RND-FX)": rawLine(t, b, "USD", "100.00", "1.35", "135.01"),
+		"a zero rate":                     rawLine(t, b, "USD", "1.00", "0", "0.00"),
+		"a negative rate":                 rawLine(t, b, "USD", "1.00", "-1.35", "-1.35"),
+		"a base-currency line at rate 2":  rawLine(t, b, "SGD", "1.00", "2", "2.00"),
+		"infinity":                        rawLine(t, b, "SGD", "Infinity", "1", "1.00"),
 	} {
 		wantState(t, name, err, "23514", "22003")
 	}
 	wantState(t, "an unknown currency", rawLine(t, b, "XYZ", "1.00", "1", "1.00"), "FY005")
+	// A base-only line passes the row check and is refused at commit: only the revaluation writes one (rev 0.72).
+	wantState(t, "a base-only line from a manual journal", rawLine(t, b, "USD", "0.00", "1.35", "1.00"), "FY008")
 	if n := count(t, b.Org, "journal_line"); n != 0 {
 		t.Errorf("%d lines were stored; want none", n)
 	}

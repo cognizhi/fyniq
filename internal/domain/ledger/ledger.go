@@ -40,6 +40,10 @@ type Account struct {
 	// ShareCapital marks an account only the register of share issues and opening balances post to:
 	// a manual journal line to it is refused (INV-13, from P0).
 	ShareCapital bool
+	// Revalue marks a monetary item, whose foreign-currency balances are revalued at month end, and UnrealisedFX the
+	// account the revaluation posts against (FR-GL-04; rev 0.72).
+	Revalue      bool
+	UnrealisedFX bool
 }
 
 // Settings are the organisation's settings and master data the rules read.

@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -177,5 +179,87 @@ func TestTheDailyFeedIsTheWorkersAndNeverChanges(t *testing.T) {
 	var n int
 	if err := conn(t, "fyniq_readonly").QueryRow(ctx, "SELECT count(*) FROM fyniq.fx_feed_rates WHERE on_date = '2001-03-05'").Scan(&n); err != nil || n != 1 {
 		t.Errorf("the view for the read-only role: %d, %v", n, err)
+	}
+}
+
+// INV-05's one exception (FR-GL-04; rev 0.72): a base-only line (a foreign currency, amount 0, a base amount) posts only
+// from the fx_revaluation source, an entry or its reversal, on an account marked revalue, in an entry whose other lines
+// are base-currency lines on the unrealised-FX account; anything else is refused at commit, whoever posts it. Only a
+// monetary asset or liability is marked.
+// req: INV-05
+// req: FR-GL-04
+func TestAttackBaseOnlyLinesComeOnlyFromTheRevaluation(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "accountant"}})
+	b := books(t, "Revaluation Pte Ltd")
+	s := store(t, "fyniq_api")
+	var ar, fxAcc, plain storage.Account
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if ar, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1100", Name: "Accounts receivable", Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{Revalue: true}}); err != nil {
+			return err
+		}
+		if fxAcc, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "7040", Name: "Unrealised FX gain or loss", Type: storage.Revenue,
+			Role: storage.RoleUnrealisedFX}); err != nil {
+			return err
+		}
+		plain, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1250", Name: "Advances", Type: storage.Asset})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	baseOnly := func(acc storage.Account, cur, base string) storage.NewLine {
+		return storage.NewLine{AccountID: acc.ID, Currency: cur, Amount: "0.00", FXRate: "1.30", FXRateSource: "MAS daily feed of 2026-10-30", BaseAmount: storage.Decimal(base)}
+	}
+	sgd := func(acc storage.Account, amount string) storage.NewLine {
+		return storage.NewLine{AccountID: acc.ID, Currency: "SGD", Amount: storage.Decimal(amount), FXRate: "1", FXRateSource: "base", BaseAmount: storage.Decimal(amount)}
+	}
+	entry := func(identity, source string, reverses *uuid.UUID, lines ...storage.NewLine) storage.NewEntry {
+		return storage.NewEntry{PostingDate: porttest.Day(10, 31), PostingIdentity: identity, RuleVersion: "fx_revaluation@1", ReversesEntryID: reverses,
+			Source: storage.Source{Type: source, ID: identity, Version: 1}, Lines: lines}
+	}
+	post := func(e storage.NewEntry) (storage.Entry, error) {
+		var out storage.Entry
+		err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = u.Ledger().Append(ctx, e)
+			return err
+		})
+		return out, err
+	}
+	// The revaluation and its reversal post.
+	rev, err := post(entry("reval-1", "fx_revaluation", nil, baseOnly(ar, "USD", "-500.00"), sgd(fxAcc, "500.00")))
+	if err != nil {
+		t.Fatalf("the revaluation: %v", err)
+	}
+	back := entry("reval-1:reversal", "fx_revaluation", &rev.ID, baseOnly(ar, "USD", "500.00"), sgd(fxAcc, "-500.00"))
+	back.PostingDate = porttest.Day(11, 1)
+	if _, err := post(back); err != nil {
+		t.Fatalf("its reversal: %v", err)
+	}
+	// Everything else is refused at commit.
+	for name, e := range map[string]storage.NewEntry{
+		"from a manual journal":         entry("manual-1", "manual_journal", nil, baseOnly(ar, "USD", "-1.00"), sgd(fxAcc, "1.00")),
+		"on an account not marked":      entry("reval-2", "fx_revaluation", nil, baseOnly(plain, "USD", "-1.00"), sgd(fxAcc, "1.00")),
+		"against another account":       entry("reval-3", "fx_revaluation", nil, baseOnly(ar, "USD", "-1.00"), sgd(b.Sales, "1.00")),
+		"with an ordinary foreign line": entry("reval-4", "fx_revaluation", nil, baseOnly(ar, "USD", "-1.00"), sgd(fxAcc, "-0.30"), storage.NewLine{AccountID: ar.ID, Currency: "USD", Amount: "1.00", FXRate: "1.30", FXRateSource: "x", BaseAmount: "1.30"}),
+	} {
+		if _, err := post(e); !refusedAs(err, storage.CodeAmount) {
+			t.Errorf("%s: want %s, got %v", name, storage.CodeAmount, err)
+		}
+	}
+	if _, err := post(entry("reval-5", "fx_revaluation", nil, baseOnly(ar, "SGD", "-1.00"), sgd(fxAcc, "1.00"))); err == nil {
+		t.Error("a base-only line in the base currency: want refused")
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "6110", Name: "Rent", Type: storage.Expense, AccountAttributes: storage.AccountAttributes{Revalue: true}})
+		return err
+	}); err == nil {
+		t.Error("an expense account marked revalue: want refused")
+	}
+	for _, c := range []struct{ stmt, state string }{
+		{"UPDATE fyniq.account SET revalue = true WHERE code = '7040'", "23514"},
+		{"INSERT INTO fyniq.account (code, name, type, role, revalue) VALUES ('1210', 'Prepayments', 'asset', 'prepayments', true)", "23514"},
+	} {
+		err := asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.stmt, err, c.state)
 	}
 }

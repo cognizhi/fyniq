@@ -119,6 +119,13 @@
       ],
       "type": "string"
     },
+    "revalue": {
+      "description": "Its foreign-currency balances are revalued at month end: a monetary item, such as a bank account, AR or AP (FR-GL-04; PRD-001 rev 0.72).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "role": {
       "description": "A role the rules treat specially, such as share-capital.",
       "examples": [
@@ -160,7 +167,8 @@
     "version",
     "money_account",
     "control",
-    "payroll_cost"
+    "payroll_cost",
+    "revalue"
   ],
   "title": "Account",
   "type": "object"

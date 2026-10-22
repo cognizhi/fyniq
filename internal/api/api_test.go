@@ -720,7 +720,8 @@ func TestStandardChart(t *testing.T) {
 	}
 	for code, want := range map[string]map[string]any{
 		"1020": {"type": "asset", "report_group": "Cash & bank", "cash_flow_line": "Cash & cash equivalents", "money_account": true, "default_gst_code": "NA"},
-		"1100": {"type": "asset", "control": true, "money_account": false},
+		"1100": {"type": "asset", "control": true, "money_account": false, "revalue": true},
+		"1210": {"type": "asset", "revalue": false},
 		"3010": {"type": "equity", "role": "share-capital"},
 		"5010": {"type": "expense", "function": "COGS", "default_gst_code": "TX"},
 		"6020": {"type": "expense", "payroll_cost": true, "function": "G&A"},
@@ -737,6 +738,13 @@ func TestStandardChart(t *testing.T) {
 		}
 	}
 
+	// Revaluation is for monetary items only (FR-GL-04; rev 0.72): marking an income account is refused, a bank account takes it.
+	rent, bank := accounts["6110"], accounts["1030"]
+	e.problemIs(e.call(http.MethodPatch, "/v1/accounts/"+rent["id"].(string), accountant, map[string]any{"revalue": true}, "If-Match", fmt.Sprintf(`"%v"`, rent["version"])),
+		"updateAccount", 422, CodeInvalid)
+	if r := e.call(http.MethodPatch, "/v1/accounts/"+bank["id"].(string), accountant, map[string]any{"revalue": false}, "If-Match", fmt.Sprintf(`"%v"`, bank["version"])); r.Status != 200 || r.Body["revalue"] != false {
+		t.Errorf("unmarking a bank account: %d %s", r.Status, r.Raw)
+	}
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil), "loadStandardChart", 409, CodeChartLoaded)
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.as(authz.Accountant), nil), "loadStandardChart", 409, CodeChartLoaded)
 	if n := len(list()); n != 86 {

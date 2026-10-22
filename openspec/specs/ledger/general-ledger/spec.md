@@ -155,6 +155,11 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** a posting is back-dated into it
 - **THEN** that month's revaluation re-runs as a reversal and replacement (FR-GL-12)
 
+#### Scenario: The posting rule fx_revaluation@1 (rev 0.72)
+- **WHEN** a period's revaluation posts
+- **THEN** each item with a change has a base-only line on its account at the period-end rate, and 7040 takes one line for the losses and one for the gains
+- **AND** an item already at the period-end rate posts nothing; the accounts revalued are those marked revalue (FR-COA-02)
+
 #### Scenario: G4-039 USD invoice revalued, part-settled and revalued again
 - **GIVEN** a USD invoice of USD 10,000 at 1.35 (S$13,500.00); 31 Mar rate 1.30; 15 Apr USD 4,000 received at 1.32; 30 Apr rate 1.33
 - **WHEN** March and April are revalued and the receipt is posted

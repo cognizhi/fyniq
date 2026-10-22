@@ -2116,6 +2116,11 @@ export interface components {
              */
             report_group?: string;
             /**
+             * @description Its foreign-currency balances are revalued at month end: a monetary item, such as a bank account, AR or AP (FR-GL-04; PRD-001 rev 0.72).
+             * @example false
+             */
+            revalue: boolean;
+            /**
              * @description A role the rules treat specially, such as share-capital.
              * @example share-capital
              */
@@ -2199,6 +2204,11 @@ export interface components {
              * @example Premises & office
              */
             report_group?: string;
+            /**
+             * @description Revalue its foreign-currency balances at month end: only an asset or a liability settled in money (FR-GL-04; COA-10). Months already revalued keep what they posted.
+             * @example true
+             */
+            revalue?: boolean;
         };
         AccountDraft: {
             /**
@@ -2266,6 +2276,11 @@ export interface components {
              * @example Premises & office
              */
             report_group?: string;
+            /**
+             * @description Revalue its foreign-currency balances at month end: only an asset or a liability settled in money, never prepayments or deferred revenue (FR-GL-04; COA-10).
+             * @example false
+             */
+            revalue?: boolean;
             /**
              * @description A system role (FR-COA-03); it never changes. Usually left empty: the standard chart sets them.
              * @example suspense
@@ -7158,7 +7173,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -7401,7 +7416,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active. */
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `COA-01` Not an account code; `COA-02` A text is blank or too long; `COA-03` Not an account type; `COA-04` Not a function; `COA-05` Not a GST code; `COA-06` Not a currency; `COA-07` Not a system role; `COA-08` Changes only with an approval; `COA-09` A system account stays active; `COA-10` The account is not revalued at month end. */
             422: {
                 headers: {
                     [name: string]: unknown;

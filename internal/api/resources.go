@@ -141,13 +141,14 @@ type Account struct {
 	PayrollCost    bool   `json:"payroll_cost" doc:"Carries payroll cost (FR-PRJ-12, FR-PAY-13)." example:"false"`
 	Guidance       string `json:"guidance,omitempty" doc:"Shown when someone picks the account." example:"Office rent, co-working memberships and short-term space."`
 	Role           string `json:"role,omitempty" doc:"A role the rules treat specially, such as share-capital." example:"share-capital"`
+	Revalue        bool   `json:"revalue" doc:"Its foreign-currency balances are revalued at month end: a monetary item, such as a bank account, AR or AP (FR-GL-04; PRD-001 rev 0.72)." example:"false"`
 }
 
 func accountOf(a storage.Account) Account {
 	out := Account{ID: a.ID.String(), Code: a.Code, Name: a.Name, Type: string(a.Type), Group: a.Group, Active: a.Active, Version: a.Version,
 		ReportGroup: a.ReportGroup, CashFlowLine: a.CashFlowLine, Function: a.Function, MoneyAccount: a.MoneyAccount,
 		DefaultGSTCode: a.DefaultGSTCode, Currency: a.Currency, Control: a.Control, PayrollCost: a.PayrollCost, Guidance: a.Guidance,
-		Role: string(a.Role)}
+		Role: string(a.Role), Revalue: a.Revalue}
 	if a.ParentID != nil {
 		s := a.ParentID.String()
 		out.ParentID = &s

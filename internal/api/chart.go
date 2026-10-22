@@ -98,6 +98,7 @@ type AccountDraft struct {
 	Control        bool   `json:"control,omitempty" doc:"Has a sub-ledger." example:"false"`
 	PayrollCost    bool   `json:"payroll_cost,omitempty" doc:"Carries payroll cost." example:"false"`
 	Guidance       string `json:"guidance,omitempty" maxLength:"500" doc:"Shown when someone picks the account." example:"Hot-desk and co-working memberships."`
+	Revalue        bool   `json:"revalue,omitempty" doc:"Revalue its foreign-currency balances at month end: only an asset or a liability settled in money, never prepayments or deferred revenue (FR-GL-04; COA-10)." example:"false"`
 }
 
 // AccountChanges change an account: a field left out keeps its value. Its code, type and role never change.
@@ -115,6 +116,7 @@ type AccountChanges struct {
 	Control        *bool   `json:"control,omitempty" doc:"Changes only with an approval, which arrives with the approval engine: refused until then." example:"false"`
 	PayrollCost    *bool   `json:"payroll_cost,omitempty" doc:"Changes only with an approval, like the control flag: refused until then." example:"false"`
 	Guidance       *string `json:"guidance,omitempty" maxLength:"500" doc:"Shown when someone picks the account; \"\" clears it." example:"Office rent and co-working memberships."`
+	Revalue        *bool   `json:"revalue,omitempty" doc:"Revalue its foreign-currency balances at month end: only an asset or a liability settled in money (FR-GL-04; COA-10). Months already revalued keep what they posted." example:"true"`
 }
 
 type createAccountInput struct {
@@ -146,7 +148,7 @@ type accountWriteOutput struct {
 
 // AccountCodes are an account's rules (internal/domain/chart).
 var AccountCodes = []string{chart.CodeAccountCode, chart.CodeText, chart.CodeType, chart.CodeFunction, chart.CodeGSTCode,
-	chart.CodeCurrency, chart.CodeRole, chart.CodeProtected, chart.CodeSystem}
+	chart.CodeCurrency, chart.CodeRole, chart.CodeProtected, chart.CodeSystem, chart.CodeRevalue}
 
 func chartProblems(p []chart.Problem, bad []FieldProblem) error {
 	for _, x := range p {
@@ -177,7 +179,7 @@ func registerAccountEditing(a *API) {
 					Group: b.Group, Role: storage.AccountRole(b.Role), AccountAttributes: storage.AccountAttributes{
 						ReportGroup: strings.TrimSpace(b.ReportGroup), CashFlowLine: strings.TrimSpace(b.CashFlowLine), Function: b.Function,
 						MoneyAccount: b.MoneyAccount, DefaultGSTCode: b.DefaultGSTCode, Currency: b.Currency, Control: b.Control,
-						PayrollCost: b.PayrollCost, Guidance: strings.TrimSpace(b.Guidance)}}
+						PayrollCost: b.PayrollCost, Guidance: strings.TrimSpace(b.Guidance), Revalue: b.Revalue}}
 				var bad []FieldProblem
 				if b.ParentID != "" {
 					id, err := uuid.Parse(b.ParentID)
@@ -249,6 +251,7 @@ func registerAccountEditing(a *API) {
 				flag(&c.MoneyAccount, b.MoneyAccount)
 				flag(&c.Control, b.Control)
 				flag(&c.PayrollCost, b.PayrollCost)
+				flag(&c.Revalue, b.Revalue)
 				var bad []FieldProblem
 				if b.ParentID != nil {
 					c.ParentID = nil

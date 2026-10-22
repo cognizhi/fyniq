@@ -98,6 +98,13 @@
       "maxLength": 60,
       "type": "string"
     },
+    "revalue": {
+      "description": "Revalue its foreign-currency balances at month end: only an asset or a liability settled in money, never prepayments or deferred revenue (FR-GL-04; COA-10).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "role": {
       "description": "A system role (FR-COA-03); it never changes. Usually left empty: the standard chart sets them.",
       "examples": [
