@@ -383,6 +383,15 @@ var (
 	MarkChecklistTask             = Policy{Operation: "markChecklistTask", Capability: PeriodClose, Need: Create}
 	// Year end (FR-GL-10; rev 0.69) is read with the close (V): it is computed, so there is nothing to write.
 	GetYearEnd = Policy{Operation: "getYearEnd", Capability: PeriodClose, Need: View}
+	// Exchange rates (FR-GL-05, ENG-40; rev 0.70) are month-end work: read with the close (V), entered and withdrawn by the
+	// members who run its checks (C: the Accountant, the Controller). Postings take them through the cascade, whoever posts.
+	ListFxRates       = Policy{Operation: "listFxRates", Capability: PeriodClose, Need: View}
+	GetFxRate         = Policy{Operation: "getFxRate", Capability: PeriodClose, Need: View}
+	ListFeedRates     = Policy{Operation: "listFeedRates", Capability: PeriodClose, Need: View}
+	LookupFxRate      = Policy{Operation: "lookupFxRate", Capability: PeriodClose, Need: View}
+	CreateFxRate      = Policy{Operation: "createFxRate", Capability: PeriodClose, Need: Create}
+	BulkCreateFxRates = Policy{Operation: "bulkCreateFxRates", Capability: PeriodClose, Need: Create}
+	WithdrawFxRate    = Policy{Operation: "withdrawFxRate", Capability: PeriodClose, Need: Create}
 	// Asking to reopen is preparing it (C); a second person who holds A approves it through the approval engine (FM-1).
 	RequestPeriodReopen = Policy{Operation: "requestPeriodReopen", Capability: PeriodClose, Need: Create,
 		Note: "A person stepped up in the last 5 minutes; the approval engine has another person who holds A approve it (FM-1)."}
@@ -502,6 +511,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
+	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,

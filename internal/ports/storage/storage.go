@@ -76,6 +76,7 @@ type UnitOfWork interface {
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals
 	AccountingBasis() AccountingBasis
+	FXRates() FXRates
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
 	// rollback. The outbox dispatches its rows this way.
 	AfterCommit(fn func(ctx context.Context))
@@ -496,6 +497,7 @@ const (
 	CodeClose          = "STORAGE-CLOSE-01"      // a close is attested by the one who ran its checks, or on checks not clean or of another period; or a close record changed
 	CodeVariance       = "STORAGE-CLOSE-02"      // a variance explained in a period that is not open, or of an account not income or expense; or an explanation changed
 	CodeChecklist      = "STORAGE-CLOSE-03"      // a checklist task marked in a period that is not open; or a checklist record changed
+	CodeFXRate         = "STORAGE-FX-01"         // a rate of the base currency, a monthly rate not on a month's first day, a rate changed, or a feed rate changed
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

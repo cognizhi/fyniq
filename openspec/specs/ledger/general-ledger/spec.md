@@ -180,6 +180,17 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **WHEN** an amount is converted
 - **THEN** the source of the rate used is recorded with it
 
+#### Scenario: The feed, stored once (rev 0.70)
+- **WHEN** the daily feed job runs
+- **THEN** it stores the feed's rates for each of the last 7 days that has none yet, as published and under `RND-RATE`
+- **AND** a feed rate is the same for every organisation and never changes; a different rate for a stored date is refused
+
+#### Scenario: The organisation's rates (rev 0.70)
+- **GIVEN** a member with C on "Period close / reopen"
+- **WHEN** they enter a rate for a day or for the monthly table, alone or up to 250 together
+- **THEN** a rate for a day overrides the feed's on that date, and withdraws the organisation's earlier rate for that day
+- **AND** a rate is never of the base currency, a monthly rate is dated on its month's first day, and a rate never changes: it is withdrawn once, with who, when and why, and stays listed
+
 ### Requirement: FR-GL-06 Opening balances
 The system SHALL take opening balances at books start with a balance check, and SHALL import opening open items (invoices, bills) with their currencies.
 

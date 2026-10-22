@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -246,5 +247,32 @@ func TestDevTokensStampTheirIssuer(t *testing.T) {
 	p, err := NewDevTokens(key, c).Authenticate(context.Background(), authn.Credentials{Authorization: "Bearer " + tok})
 	if err != nil || p.Issuer != DevIssuer || p.Via != authn.ViaSession || p.Subject != "u1" {
 		t.Fatalf("a dev token claiming another issuer: %+v, %v", p, err)
+	}
+}
+
+// req: FR-GL-05
+func TestRateFilesReadOneFilePerDate(t *testing.T) {
+	dir := t.TempDir()
+	day := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
+	if err := os.WriteFile(filepath.Join(dir, "2026-10-16.csv"), []byte("base,currency,quote,form\nSGD,USD,1.2953,base-per-unit\nSGD, JPY ,0.8521,base-per-100\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	f := RateFiles{Dir: dir}
+	got, err := f.Fetch(context.Background(), day)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []ports.RateQuote{{Base: "SGD", Currency: "USD", Quote: "1.2953", Form: "base-per-unit"}, {Base: "SGD", Currency: "JPY", Quote: "0.8521", Form: "base-per-100"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("want %v, got %v", want, got)
+	}
+	if got, err := f.Fetch(context.Background(), day.AddDate(0, 0, 1)); err != nil || len(got) != 0 {
+		t.Errorf("a day without a file: want nothing, got %v, %v", got, err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "2026-10-19.csv"), []byte("currency,rate\nUSD,1.29\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Fetch(context.Background(), day.AddDate(0, 0, 3)); err == nil {
+		t.Error("a file with the wrong header: want an error")
 	}
 }

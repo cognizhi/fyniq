@@ -130,6 +130,11 @@ Source: PRD-001 §12.8
 - **WHEN** the local stack sends email
 - **THEN** it goes to Mailpit (inbox UI at `localhost:8025`) and templates and links are checked end to end
 
+#### Scenario: Exchange rates from local files (rev 0.70)
+- **WHEN** the local stack runs the daily exchange-rate feed
+- **THEN** it reads a directory of rates files of synthetic rates, one per date, and stores them as the MAS feed's would be
+- **AND** MAS's API itself is tested in staging at the cloud gate
+
 #### Scenario: Slack and Zoho Cliq to a local message sink
 - **WHEN** the local stack posts to Slack or Zoho Cliq
 - **THEN** a local message sink (`/dev/messages`) shows what would be posted, with the same payloads

@@ -289,6 +289,45 @@ type FyniqEvidence struct {
 	Version        int32
 }
 
+type FyniqFxFeedRate struct {
+	BaseCurrency string
+	Currency     string
+	OnDate       time.Time
+	Rate         string
+	Quote        string
+	QuoteForm    string
+	Feed         string
+	RecordedAt   time.Time
+}
+
+type FyniqFxFeedRates struct {
+	BaseCurrency string
+	Currency     string
+	OnDate       time.Time
+	Rate         string
+	Quote        string
+	QuoteForm    string
+	Feed         string
+	RecordedAt   time.Time
+}
+
+type FyniqFxRate struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Kind            string
+	Currency        string
+	OnDate          time.Time
+	Rate            string
+	Quote           string
+	QuoteForm       string
+	Note            *string
+	EnteredBy       string
+	EnteredAt       time.Time
+	WithdrawnBy     *string
+	WithdrawnAt     *time.Time
+	WithdrawnReason *string
+}
+
 type FyniqGstRegistration struct {
 	OrganisationID    uuid.UUID
 	ID                uuid.UUID

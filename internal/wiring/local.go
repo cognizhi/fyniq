@@ -59,6 +59,8 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// Mailpit (`make deps-up`, or the stack's mailpit), spoken to in the clear: local mode only.
 		Email:    smtp.New(cmp.Or(os.Getenv("FYNIQ_SMTP_ADDR"), "localhost:1025"), "fyniq.local", true),
 		MailFrom: cmp.Or(os.Getenv("FYNIQ_MAIL_FROM"), "Fyniq <no-reply@fyniq.local>"),
+		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
+		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
 	}, nil
 }
 

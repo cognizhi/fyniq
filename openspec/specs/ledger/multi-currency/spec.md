@@ -26,6 +26,17 @@ Source: PRD-001 §10.8 · Priority M · Phase P1
 - **WHEN** the document is posted
 - **THEN** it cannot post, with the error "✖ No exchange rate for this currency"
 
+#### Scenario: The organisation's rate for the day comes first (rev 0.70)
+- **GIVEN** a foreign-currency document without its own rate, and the organisation's rate for the document date
+- **WHEN** it is posted
+- **THEN** it takes the organisation's rate, before the feed's, recorded as "organisation rate of" the date
+
+#### Scenario: The feed's latest rate within a week (rev 0.70)
+- **GIVEN** no feed rate for the document date, such as a Sunday, and one up to 7 days earlier
+- **WHEN** a foreign-currency document without its own rate is posted
+- **THEN** it takes the feed's latest rate within those 7 days, and the source names that rate's own date
+- **AND** with none in the 7 days it falls to the monthly table [accountant to confirm the look-back]
+
 #### Scenario: Duplicate monthly-table rates
 - **GIVEN** the monthly table holds more than one rate for a currency and month
 - **WHEN** a posting takes the rate from the monthly table

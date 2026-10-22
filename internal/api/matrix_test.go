@@ -43,6 +43,40 @@ func matrixGST(e *env) string {
 	return r.str("id")
 }
 
+// matrixDays keeps the matrix's exchange rates apart, a day each.
+var matrixDays int
+
+// matrixDay is a day no other matrix call uses.
+func matrixDay() time.Time {
+	matrixDays++
+	return time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).AddDate(0, 0, matrixDays)
+}
+
+// matrixRate enters a USD rate for on in e's organisation.
+func matrixRate(e *env, on time.Time) storage.FXRate {
+	var r storage.FXRate
+	if err := e.store.Do(storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "matrix-fixture"}}), e.books.Org,
+		func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			r, err = u.FXRates().Enter(ctx, storage.NewFXRate{Kind: storage.FXRateDay, Currency: "USD", On: on, Rate: "1.3", Quote: "1.3", QuoteForm: "base-per-unit"})
+			return err
+		}); err != nil {
+		panic(err)
+	}
+	return r
+}
+
+// matrixRates are e's organisation's current rates for on.
+func matrixRates(e *env, on time.Time) []storage.FXRate {
+	var rs []storage.FXRate
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		rs, err = u.FXRates().List(ctx, storage.FXRateFilter{From: on, To: on})
+		return err
+	}); err != nil {
+		panic(err)
+	}
+	return rs
+}
+
 // matrixOpening makes an organisation of its own for tok's principal, with books from 1 October 2026 and, when draft is
 // true, balanced opening balances saved as a draft.
 func matrixOpening(e *env, tok string, draft bool) (porttest.Books, authn.Principal) {
@@ -699,6 +733,39 @@ var matrixCalls = map[string]matrixCall{
 			})
 			return n == 0
 		}
+	},
+	// Exchange rates (rev 0.70): each write uses a day of its own, so a refused call is seen to have entered nothing.
+	"listFxRates": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/fx/rates", tok, nil), nil
+	},
+	"getFxRate": func(e *env, tok string) (response, func() bool) {
+		r := matrixRate(e, matrixDay())
+		return e.call(http.MethodGet, "/v1/fx/rates/"+r.ID.String(), tok, nil), nil
+	},
+	"listFeedRates": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/fx/feed?from=2026-10-01&to=2026-10-31", tok, nil), nil
+	},
+	"lookupFxRate": func(e *env, tok string) (response, func() bool) {
+		on := matrixDay()
+		matrixRate(e, on)
+		return e.call(http.MethodGet, "/v1/fx/rate?currency=USD&date="+on.Format(time.DateOnly), tok, nil), nil
+	},
+	"createFxRate": func(e *env, tok string) (response, func() bool) {
+		on := matrixDay()
+		return e.call(http.MethodPost, "/v1/fx/rates", tok, map[string]any{"kind": "day", "currency": "USD", "on": on.Format(time.DateOnly), "quote": "1.3"}),
+			func() bool { return len(matrixRates(e, on)) == 0 }
+	},
+	"bulkCreateFxRates": func(e *env, tok string) (response, func() bool) {
+		on := matrixDay()
+		return e.call(http.MethodPost, "/v1/fx/rates:bulk", tok, map[string]any{"items": []map[string]any{
+				{"kind": "day", "currency": "USD", "on": on.Format(time.DateOnly), "quote": "1.3"}}}),
+			func() bool { return len(matrixRates(e, on)) == 0 }
+	},
+	"withdrawFxRate": func(e *env, tok string) (response, func() bool) {
+		on := matrixDay()
+		r := matrixRate(e, on)
+		return e.call(http.MethodPost, "/v1/fx/rates/"+r.ID.String()+"/withdraw", tok, map[string]any{"reason": "Matrix"}, "If-Match", `"1"`),
+			func() bool { return len(matrixRates(e, on)) == 1 }
 	},
 	// Year end needs the financial years, so each call reads it in an organisation of its own whose books start on 1 October
 	// 2026.

@@ -216,6 +216,36 @@ evidence | locked_key | text | null |
 evidence | retain_until | timestamp with time zone | null | 
 evidence | finalised_at | timestamp with time zone | null | 
 evidence | version | integer | not null | 1
+fx_feed_rate | base_currency | text | not null | 
+fx_feed_rate | currency | text | not null | 
+fx_feed_rate | on_date | date | not null | 
+fx_feed_rate | rate | numeric(20,10) | not null | 
+fx_feed_rate | quote | numeric(20,10) | not null | 
+fx_feed_rate | quote_form | text | not null | 
+fx_feed_rate | feed | text | not null | 
+fx_feed_rate | recorded_at | timestamp with time zone | not null | now()
+fx_feed_rates | base_currency | text | null | 
+fx_feed_rates | currency | text | null | 
+fx_feed_rates | on_date | date | null | 
+fx_feed_rates | rate | numeric(20,10) | null | 
+fx_feed_rates | quote | numeric(20,10) | null | 
+fx_feed_rates | quote_form | text | null | 
+fx_feed_rates | feed | text | null | 
+fx_feed_rates | recorded_at | timestamp with time zone | null | 
+fx_rate | organisation_id | uuid | not null | current_org()
+fx_rate | id | uuid | not null | uuidv7()
+fx_rate | kind | text | not null | 
+fx_rate | currency | text | not null | 
+fx_rate | on_date | date | not null | 
+fx_rate | rate | numeric(20,10) | not null | 
+fx_rate | quote | numeric(20,10) | not null | 
+fx_rate | quote_form | text | not null | 
+fx_rate | note | text | null | 
+fx_rate | entered_by | text | not null | 
+fx_rate | entered_at | timestamp with time zone | not null | 
+fx_rate | withdrawn_by | text | null | 
+fx_rate | withdrawn_at | timestamp with time zone | null | 
+fx_rate | withdrawn_reason | text | null | 
 gst_registration | organisation_id | uuid | not null | current_org()
 gst_registration | id | uuid | not null | uuidv7()
 gst_registration | registered_from | date | not null | 
@@ -944,6 +974,43 @@ evidence | evidence_uploaded_by_not_null | NOT NULL uploaded_by
 evidence | evidence_version_not_null | NOT NULL version
 evidence | evidence_version_positive | CHECK ((version > 0))
 evidence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+fx_feed_rate | fx_feed_rate_base_currency_fkey | FOREIGN KEY (base_currency) REFERENCES currency(code)
+fx_feed_rate | fx_feed_rate_base_currency_not_null | NOT NULL base_currency
+fx_feed_rate | fx_feed_rate_currency_fkey | FOREIGN KEY (currency) REFERENCES currency(code)
+fx_feed_rate | fx_feed_rate_currency_not_null | NOT NULL currency
+fx_feed_rate | fx_feed_rate_feed_format | CHECK ((feed ~ '^[A-Za-z][A-Za-z0-9 ._-]{0,39}$'::text))
+fx_feed_rate | fx_feed_rate_feed_not_null | NOT NULL feed
+fx_feed_rate | fx_feed_rate_not_base | CHECK ((currency <> base_currency))
+fx_feed_rate | fx_feed_rate_on_date_not_null | NOT NULL on_date
+fx_feed_rate | fx_feed_rate_pkey | PRIMARY KEY (base_currency, currency, on_date)
+fx_feed_rate | fx_feed_rate_positive | CHECK (((rate <> 'NaN'::numeric) AND (rate > (0)::numeric) AND (quote <> 'NaN'::numeric) AND (quote > (0)::numeric)))
+fx_feed_rate | fx_feed_rate_quote_form_not_null | NOT NULL quote_form
+fx_feed_rate | fx_feed_rate_quote_not_null | NOT NULL quote
+fx_feed_rate | fx_feed_rate_rate_not_null | NOT NULL rate
+fx_feed_rate | fx_feed_rate_recorded_at_not_null | NOT NULL recorded_at
+fx_feed_rate | fx_feed_rate_rnd_rate | CHECK ((((quote_form = 'base-per-unit'::text) AND (rate = quote)) OR ((quote_form = 'base-per-100'::text) AND (rate = round((quote / (100)::numeric), 10))) OR ((quote_form = 'foreign-per-base'::text) AND (rate = round(((1)::numeric(40,30) / quote), 10)))))
+fx_rate | fx_rate_currency_fkey | FOREIGN KEY (currency) REFERENCES currency(code)
+fx_rate | fx_rate_currency_not_null | NOT NULL currency
+fx_rate | fx_rate_entered_at_not_null | NOT NULL entered_at
+fx_rate | fx_rate_entered_by_format | CHECK ((entered_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+fx_rate | fx_rate_entered_by_not_null | NOT NULL entered_by
+fx_rate | fx_rate_id_not_null | NOT NULL id
+fx_rate | fx_rate_kind_known | CHECK ((kind = ANY (ARRAY['day'::text, 'month'::text])))
+fx_rate | fx_rate_kind_not_null | NOT NULL kind
+fx_rate | fx_rate_note_length | CHECK (((length(note) >= 1) AND (length(note) <= 200)))
+fx_rate | fx_rate_on_date_not_null | NOT NULL on_date
+fx_rate | fx_rate_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+fx_rate | fx_rate_organisation_id_not_null | NOT NULL organisation_id
+fx_rate | fx_rate_pkey | PRIMARY KEY (organisation_id, id)
+fx_rate | fx_rate_positive | CHECK (((rate <> 'NaN'::numeric) AND (rate > (0)::numeric) AND (quote <> 'NaN'::numeric) AND (quote > (0)::numeric)))
+fx_rate | fx_rate_quote_form_not_null | NOT NULL quote_form
+fx_rate | fx_rate_quote_not_null | NOT NULL quote
+fx_rate | fx_rate_rate_not_null | NOT NULL rate
+fx_rate | fx_rate_rnd_rate | CHECK ((((quote_form = 'base-per-unit'::text) AND (rate = quote)) OR ((quote_form = 'base-per-100'::text) AND (rate = round((quote / (100)::numeric), 10))) OR ((quote_form = 'foreign-per-base'::text) AND (rate = round(((1)::numeric(40,30) / quote), 10)))))
+fx_rate | fx_rate_withdrawn_by_format | CHECK ((withdrawn_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+fx_rate | fx_rate_withdrawn_reason_length | CHECK (((length(btrim(withdrawn_reason)) >= 1) AND (length(btrim(withdrawn_reason)) <= 500)))
+fx_rate | fx_rate_withdrawn_whole | CHECK ((((withdrawn_by IS NULL) = (withdrawn_at IS NULL)) AND ((withdrawn_by IS NULL) = (withdrawn_reason IS NULL))))
+fx_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 gst_registration | gst_registration_accounting_basis_not_null | NOT NULL accounting_basis
 gst_registration | gst_registration_basis_known | CHECK ((accounting_basis = 'invoice'::text))
 gst_registration | gst_registration_dates | CHECK ((deregistered_from > registered_from))
@@ -1537,6 +1604,7 @@ CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, p
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
 CREATE INDEX evidence_document ON fyniq.evidence USING btree (organisation_id, document_id, id)
+CREATE INDEX fx_rate_lookup ON fyniq.fx_rate USING btree (organisation_id, currency, kind, on_date)
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
 CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (organisation_id, expires_at)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
@@ -1594,6 +1662,9 @@ CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree 
 CREATE UNIQUE INDEX email_message_pkey ON fyniq.email_message USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_pkey ON fyniq.evidence USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_staging_key ON fyniq.evidence USING btree (organisation_id, staging_key)
+CREATE UNIQUE INDEX fx_feed_rate_pkey ON fyniq.fx_feed_rate USING btree (base_currency, currency, on_date)
+CREATE UNIQUE INDEX fx_rate_day_current ON fyniq.fx_rate USING btree (organisation_id, currency, on_date) WHERE ((kind = 'day'::text) AND (withdrawn_at IS NULL))
+CREATE UNIQUE INDEX fx_rate_pkey ON fyniq.fx_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree (organisation_id, id)
 CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
@@ -1691,6 +1762,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
@@ -1729,6 +1801,10 @@ CREATE TRIGGER email_message_guard BEFORE UPDATE ON fyniq.email_message FOR EACH
 CREATE TRIGGER evidence_guard BEFORE UPDATE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_guard()
 CREATE TRIGGER evidence_never_deleted BEFORE DELETE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_never_deleted()
 CREATE TRIGGER evidence_no_truncate BEFORE TRUNCATE ON fyniq.evidence FOR EACH STATEMENT EXECUTE FUNCTION evidence_never_deleted()
+CREATE TRIGGER fx_feed_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.fx_feed_rate FOR EACH ROW EXECUTE FUNCTION fx_feed_rate_immutable()
+CREATE TRIGGER fx_feed_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_feed_rate FOR EACH STATEMENT EXECUTE FUNCTION fx_feed_rate_immutable()
+CREATE TRIGGER fx_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.fx_rate FOR EACH ROW EXECUTE FUNCTION fx_rate_guard()
+CREATE TRIGGER fx_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_rate FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_entry_no_truncate BEFORE TRUNCATE ON fyniq.journal_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
@@ -1795,6 +1871,7 @@ document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 email_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+fx_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -1864,6 +1941,8 @@ end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_remove
 evidence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e9a4de22d514e03c7917f207a26849f9
 evidence_never_deleted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c4003638e114bc7cbc14e63a1e638b1e
 finish_job_slot(p_job text, p_slot timestamp with time zone, p_ok boolean, p_detail text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ad4500fb0fd68beae2aba5eb5653db8b
+fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
+fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8
@@ -1893,6 +1972,7 @@ period_guard() → trigger | security definer | v | search_path=pg_catalog, fyni
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
+record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311
 require_audit() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88b80585540483298b0397296b364b9d

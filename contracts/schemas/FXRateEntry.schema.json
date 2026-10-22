@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The foreign currency, as an ISO 4217 code; never the base currency.",
+      "examples": [
+        "USD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "kind": {
+      "description": "day: the rate for one day, which overrides the daily feed's on that date and replaces the organisation's earlier rate for it; month: a rate of the monthly table, used for a date with neither (ENG-40).",
+      "enum": [
+        "day",
+        "month"
+      ],
+      "examples": [
+        "day"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Where the rate came from, such as the bank's board rate.",
+      "examples": [
+        "DBS board rate at 4 pm"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "on": {
+      "description": "The day; for a month, the month's first day.",
+      "examples": [
+        "2026-10-16"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "quote": {
+      "description": "The rate as the source quotes it, a decimal string of up to 10 decimal places (ENG-12, ENG-44).",
+      "examples": [
+        "1.2953"
+      ],
+      "type": "string"
+    },
+    "quote_form": {
+      "default": "base-per-unit",
+      "description": "How the quote is given: base currency per one unit (stored as it is), per 100 units, or foreign currency per one unit of the base. Fyniq stores base per one unit under RND-RATE: round(quote ÷ 100, 10) or round(1 ÷ quote, 10), half away from zero.",
+      "enum": [
+        "base-per-unit",
+        "base-per-100",
+        "foreign-per-base"
+      ],
+      "examples": [
+        "base-per-unit"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "currency",
+    "on",
+    "quote"
+  ],
+  "title": "FXRateEntry",
+  "type": "object"
+}

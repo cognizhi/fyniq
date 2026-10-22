@@ -10,6 +10,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -66,6 +67,13 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"journals.recurring": func(ctx context.Context) error {
 			_, err := journal.MakeDueAll(ctx, k.Store, clock.Now())
+			return err
+		},
+		"fx.feed": func(ctx context.Context) error {
+			if k.Rates == nil {
+				return nil // no feed configured: organisations enter their own rates
+			}
+			_, err := fx.RecordFeed(ctx, k.Store, k.Rates, clock.Now())
 			return err
 		},
 		"evidence.verify": func(ctx context.Context) error {
