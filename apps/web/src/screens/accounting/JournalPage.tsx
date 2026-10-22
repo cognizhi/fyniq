@@ -765,7 +765,7 @@ export function JournalPage() {
             </div>
           </section>
 
-          <LineEditor id={id} lines={f.lines} onChange={(lines) => change({ ...f, lines })} base={base} choices={choices} byId={byId} errors={errors} />
+          <LineEditor id={id} lines={f.lines} onChange={(lines) => change({ ...f, lines })} base={base} choices={choices} byId={byId} errors={errors} on={f.date} />
         </form>
       )}
 

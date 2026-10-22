@@ -3,7 +3,7 @@ key: accounting.journals
 title: Prepare, post and reverse journals
 mode: expert
 roles: [accountant, tax_agent, controller, owner, auditor]
-requirements: [FR-GL-01, FR-GL-02, FR-GL-12, FR-AUT-01, FR-INT-14, ENG-20, ENG-21, ENG-24, FM-1, FM-2, SOD-3, FR-DOC-05, FR-DOC-07]
+requirements: [FR-GL-01, FR-GL-02, FR-GL-12, FR-AUT-01, FR-INT-14, ENG-20, ENG-21, ENG-24, ENG-40, FM-1, FM-2, SOD-3, FR-DOC-05, FR-DOC-07]
 status: draft            # written with the journal screens (P1, p1-general-ledger-close); reviewed with the accountant
 ---
 
@@ -36,8 +36,10 @@ A draft keeps every version: when you change it and select **Save the changes**,
 stays in its history. Fyniq records who saved each version.
 
 Type amounts without a sign, as `1,234.56` or `S$1,234.56`: a credit goes under **Credit**. For a
-line in another currency, enter its currency code and the rate: how much of the base currency one
-unit buys.
+line in another currency, enter its currency code. Its **Rate** is how much of the base currency one
+unit buys. Leave it blank and the line takes the rate for the journal's date from
+**Accounting → Currencies** when it is checked and posted; under the field, Fyniq says which rate and
+where from. A rate you type is the journal's own and is used instead.
 
 ## Check and post a journal
 
@@ -185,6 +187,7 @@ resolution, under **Evidence** on the journal's page.
 | Fewer than two lines, or a line of zero (LEDGER-02, LEDGER-03) | Give the journal at least two lines, each with an amount |
 | The account is a group or inactive (LEDGER-05, LEDGER-06) | Choose an active account that is not a group |
 | A rate is missing, or entered on a base-currency line (LEDGER-07, LEDGER-13) | Enter a rate only on a line in another currency |
+| No exchange rate for this currency (FX-01) | Type the rate on the line, or add the rate for the day or the month in **Accounting → Currencies** |
 | A reversal dated before the journal (LEDGER-16) | Date the reversal on or after the journal's date |
 | The automatic reversal is not after the journal (JOURNAL-11) | Date it after the journal's date, such as the first of the next month |
 | The journal is not a draft (JOURNAL-02) | A posted journal is reversed, not changed |
@@ -204,3 +207,4 @@ resolution, under **Evidence** on the journal's page.
 - [Open the financial year and close the periods](periods-and-close.md)
 - [Set up and keep the chart of accounts](chart-of-accounts.md)
 - [Read the general ledger](general-ledger.md)
+- [Exchange rates](currencies.md)

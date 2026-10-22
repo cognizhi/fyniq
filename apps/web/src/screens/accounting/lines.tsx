@@ -1,9 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { CircleCheck, CircleX, Plus, Trash2 } from "lucide-react";
+import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Button } from "../../components/ui/button";
 import { formatAmount } from "../../format/amount";
+import { date as dateOf } from "../../format/date";
 import { isZero, minus, sign, sum, typed } from "../../format/decimal";
-import { Icon } from "../../ui";
+import { Icon, problemOf } from "../../ui";
 import type { Account } from "./data";
 
 type Draft = components["schemas"]["JournalDraft"];
@@ -65,8 +68,10 @@ export function checkLines(typedLines: Line[], base: string, errors: Errors): No
     const currency = (l.currency.trim() || base).toUpperCase();
     const rate = l.fx_rate.trim();
     if (!/^[A-Z]{3}$/.test(currency)) errors[`${l.key}.currency`] = "Enter a currency code, such as USD.";
-    else if (currency !== base && !/^(0|[1-9]\d{0,9})(\.\d{1,10})?$/.test(rate)) errors[`${l.key}.fx_rate`] = `Enter the rate: ${base} for 1 ${currency}, such as 1.3472.`;
-    lines.push({ account_id: l.account_id, amount: { amount, currency }, description: l.description.trim() || undefined, fx_rate: currency !== base ? rate : undefined });
+    // A rate left blank is taken from the cascade when the journal is checked and posted (ENG-40, rev 0.71).
+    else if (currency !== base && rate && !/^(0|[1-9]\d{0,9})(\.\d{1,10})?$/.test(rate))
+      errors[`${l.key}.fx_rate`] = `Enter the rate as ${base} for 1 ${currency}, such as 1.3472, or leave it blank to take the day's rate.`;
+    lines.push({ account_id: l.account_id, amount: { amount, currency }, description: l.description.trim() || undefined, fx_rate: currency !== base && rate ? rate : undefined });
   }
   return lines;
 }
@@ -134,9 +139,35 @@ export function accountLabel(accounts: Map<string, Account>, id: string): string
   return a ? `${a.code} ${a.name}` : "An account not in the chart";
 }
 
+// RateHint says what a foreign-currency line without a typed rate takes: the rate the cascade finds for the journal's
+// date (ENG-40; PRD-001 rev 0.71), as lookupFxRate shows it. Without a date, or for a recurring journal, the rate is the
+// one for the date it posts on. The rate is the server's: the page shows it, never works it out.
+function RateHint({ id, currency, on }: { id: string; currency: string; on?: string }) {
+  const known = /^[A-Z]{3}$/.test(currency) && !!on && /^\d{4}-\d{2}-\d{2}$/.test(on);
+  const q = useQuery({
+    queryKey: ["fx-rate", currency, on],
+    enabled: known,
+    retry: false,
+    queryFn: async () => {
+      const r = await api.GET("/v1/fx/rate", { params: { query: { currency, date: on ?? "" } } });
+      if (r.error) throw r.error;
+      return r.data;
+    },
+  });
+  let text = "Leave it blank to take the rate for the date it posts on.";
+  if (known && q.data) text = `Leave it blank to take ${q.data.rate}, from the ${q.data.source}.`;
+  else if (known && q.isError && problemOf(q.error).code === "FX-01") text = `No ${currency} rate for ${dateOf(on)}: type one, or add one in Accounting › Currencies.`;
+  return (
+    <span className="fy-small fy-muted" id={id}>
+      {text}
+    </span>
+  );
+}
+
 // LineEditor edits a journal's lines: the account, description, debit or credit, currency and rate of each, with
-// whether they balance as typed (FR-GL-01). The journal editor and the recurring journal editor share it.
-export function LineEditor({ id, lines, onChange, base, choices, byId, errors, title = "Lines" }: { id: string; lines: Line[]; onChange: (lines: Line[]) => void; base: string; choices: Account[]; byId: Map<string, Account>; errors: Errors; title?: string }) {
+// whether they balance as typed (FR-GL-01). The journal editor and the recurring journal editor share it; on is the
+// journal's date, which a line left without a rate takes its rate for.
+export function LineEditor({ id, lines, onChange, base, choices, byId, errors, title = "Lines", on }: { id: string; lines: Line[]; onChange: (lines: Line[]) => void; base: string; choices: Account[]; byId: Map<string, Account>; errors: Errors; title?: string; on?: string }) {
   const setLine = (key: string, field: keyof Line, value: string) => onChange(lines.map((l) => (l.key === key ? { ...l, [field]: value } : l)));
   const list = balances({ lines }, base);
   const fieldError = (key: string) =>
@@ -215,10 +246,19 @@ export function LineEditor({ id, lines, onChange, base, choices, byId, errors, t
                 <div className="fy-field col-span-2 medium:col-span-4 expanded:col-span-3">
                   <label className="fy-label" htmlFor={`${l.key}-rate`}>
                     <span className="fy-sr">Line {n}: </span>
-                    Rate ({base} for 1 {l.currency.toUpperCase()})
+                    Rate ({base} for 1 {l.currency.toUpperCase()}, optional)
                   </label>
-                  <input className="fy-input fy-num" id={`${l.key}-rate`} inputMode="decimal" value={l.fx_rate} onChange={(e) => setLine(l.key, "fx_rate", e.target.value)} aria-invalid={errors[`${l.key}.fx_rate`] ? true : undefined} aria-describedby={described(`${l.key}.fx_rate`)} />
+                  <input
+                    className="fy-input fy-num"
+                    id={`${l.key}-rate`}
+                    inputMode="decimal"
+                    value={l.fx_rate}
+                    onChange={(e) => setLine(l.key, "fx_rate", e.target.value)}
+                    aria-invalid={errors[`${l.key}.fx_rate`] ? true : undefined}
+                    aria-describedby={[described(`${l.key}.fx_rate`), l.fx_rate.trim() ? undefined : `${id}-${l.key}-rate-hint`].filter(Boolean).join(" ") || undefined}
+                  />
                   {fieldError(`${l.key}.fx_rate`)}
+                  {!l.fx_rate.trim() && <RateHint id={`${id}-${l.key}-rate-hint`} currency={l.currency.trim().toUpperCase()} on={on} />}
                 </div>
               )}
             </li>

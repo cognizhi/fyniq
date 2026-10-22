@@ -77,7 +77,7 @@ describe("what a journal's form sends", () => {
   });
 
   it("says what to fix under each field", () => {
-    const out = check({ date: "", memo: "", reverse_on: "", lines: [line("1", { debit: "5", credit: "5" }), line("2", { account_id: "", debit: "abc" }), line("3", { debit: "-5" }), line("4", { debit: "10", currency: "USD" })] }, "SGD");
+    const out = check({ date: "", memo: "", reverse_on: "", lines: [line("1", { debit: "5", credit: "5" }), line("2", { account_id: "", debit: "abc" }), line("3", { debit: "-5" }), line("4", { debit: "10", currency: "USD", fx_rate: "1,35" }), line("5", { debit: "10", currency: "USD" })] }, "SGD");
     expect(out.draft).toBeUndefined();
     expect(out.errors).toEqual({
       date: "Enter the date the journal belongs to.",
@@ -85,7 +85,7 @@ describe("what a journal's form sends", () => {
       "2.account": "Choose the account.",
       "2.debit": "Enter an amount, such as 1,200.00.",
       "3.debit": "Enter the amount without a minus sign: a credit goes under Credit.",
-      "4.fx_rate": "Enter the rate: SGD for 1 USD, such as 1.3472.",
+      "4.fx_rate": "Enter the rate as SGD for 1 USD, such as 1.3472, or leave it blank to take the day's rate.",
     });
     expect(check({ date: "2026-10-31", memo: "", reverse_on: "", lines: [] }, "SGD").errors.lines).toBe("Add a line.");
   });
@@ -149,7 +149,29 @@ describe("the journal page", () => {
     fireEvent.change(screen.getByLabelText("Line 2: Credit"), { target: { value: "740" } });
     fireEvent.change(screen.getByLabelText("Line 2: Currency"), { target: { value: "usd" } });
     expect(screen.getByText("In SGD and USD: select Check to see whether it balances in SGD.")).toBeTruthy();
-    expect(screen.getByLabelText("Line 2: Rate (SGD for 1 USD)")).toBeTruthy();
+    expect(screen.getByLabelText("Line 2: Rate (SGD for 1 USD, optional)")).toBeTruthy();
+    expect(screen.getByText("Leave it blank to take the rate for the date it posts on.")).toBeTruthy();
+  });
+
+  // req: ENG-40
+  it("says which rate a foreign-currency line left blank takes for the journal's date, as the server finds it", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/fx/rate": (_body, req) =>
+        new URL(req.url).searchParams.get("date") === "2026-10-18"
+          ? { status: 200, body: { currency: "USD", base_currency: "SGD", date: "2026-10-18", rate: "1.2953", source: "MAS daily feed of 2026-10-16", step: "feed", of: "2026-10-16", entries: 1 } }
+          : { status: 422, headers: { "Content-Type": "application/problem+json" }, body: { type: "x", title: "No exchange rate for this currency", status: 422, code: "FX-01" } },
+    });
+    renderPage(page(accountant), { path: "/accounting/journals/new" });
+    fireEvent.change(await screen.findByLabelText("Line 2: Currency"), { target: { value: "USD" } });
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2026-10-18" } });
+    const rate = screen.getByLabelText("Line 2: Rate (SGD for 1 USD, optional)");
+    expect(await screen.findByText("Leave it blank to take 1.2953, from the MAS daily feed of 2026-10-16.")).toBeTruthy();
+    expect(rate.getAttribute("aria-describedby")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2026-10-30" } });
+    expect(await screen.findByText("No USD rate for 30 Oct 2026: type one, or add one in Accounting › Currencies.")).toBeTruthy();
+    fireEvent.change(rate, { target: { value: "1.30" } });
+    expect(screen.queryByText(/No USD rate/)).toBeNull();
   });
 
   it("refuses to save what does not read as a journal, and sends nothing", async () => {

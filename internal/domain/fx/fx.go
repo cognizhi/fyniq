@@ -30,7 +30,6 @@ const (
 	CodeEntry     = "FX-02" // a rate that cannot be entered that way
 	CodeWithdrawn = "FX-03" // the rate is withdrawn already
 	CodeReason    = "FX-04" // withdrawing a rate needs a reason
-	CodeTooMany   = "FX-05" // more rates than one answer holds
 )
 
 // Error is a refusal with the field it is about, what is wrong and how to fix it (ENG-23).

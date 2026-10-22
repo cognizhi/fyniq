@@ -41,6 +41,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "period-close": lazyRouteComponent(() => import("./screens/accounting/PeriodClose"), "PeriodClose"),
   "general-ledger": lazyRouteComponent(() => import("./screens/accounting/GeneralLedger"), "GeneralLedger"),
   "chart-of-accounts": lazyRouteComponent(() => import("./screens/accounting/ChartOfAccounts"), "ChartOfAccounts"),
+  currencies: lazyRouteComponent(() => import("./screens/accounting/Currencies"), "Currencies"),
   settings: lazyRouteComponent(() => import("./screens/settings/Settings"), "Settings"),
   "settings-profile": lazyRouteComponent(() => import("./screens/settings/Profile"), "Profile"),
   "settings-organisation": lazyRouteComponent(() => import("./screens/settings/Organisation"), "Organisation"),

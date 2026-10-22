@@ -188,7 +188,6 @@ var codeFacts = map[string]struct {
 	fx.CodeEntry:                  {422, "The exchange rate is not valid"},
 	fx.CodeWithdrawn:              {409, "The rate is withdrawn already"},
 	fx.CodeReason:                 {422, "Withdrawing a rate needs a reason"},
-	fx.CodeTooMany:                {422, "Too many rates for one answer"},
 	contact.CodeName:              {422, "The legal name is not valid"},
 	contact.CodeRole:              {422, "Neither a customer nor a vendor"},
 	contact.CodeEmail:             {422, "Not an email address"},
