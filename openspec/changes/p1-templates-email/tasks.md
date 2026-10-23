@@ -2,7 +2,11 @@
 
 ## 1. Templates and rendering
 
-- [ ] 1.0 Redraw the template-editor canvas to the P1 half (theme, texts, optional blocks, live preview) before building it (`fyniq-openspec` Recipe C)
+- [x] 1.0 Redraw the template-editor canvas to the P1 half (theme, texts, optional blocks, live preview) before building it (`fyniq-openspec` Recipe C)
+  (23 Oct 2026: TemplateEditor and DocumentTemplates redrawn as built through rev 0.99 and published to the settings-admin
+  canvas: the four styles (a select on phones), the theme and page with the contrast check, blocks shown or hidden with locked
+  IRAS blocks and texts with field chips, the field catalogue and formats, the sample preview, the publish checks, versions
+  with roll back; the list's defaults, the platform starter, the four-style gallery and JSON bundles. P2 parts stay tagged.)
 - [x] 1.1 Template versions as JSON from the typed field catalogue, drafts, and immutable numbered versions published under approval, with rollback. Tests `// req: FR-TPL-02` (P1 part) and `// req: FR-TPL-04` (P1 part)
   (23 Oct 2026, PRD-001 rev 0.95: `internal/domain/doctemplate` holds the content (a document's page, theme and blocks, or an
   email's subject and body), the typed field catalogue per document type with its date and money formats, the locked IRAS

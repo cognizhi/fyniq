@@ -4000,13 +4000,15 @@
    ],
    "purpose": "Manage the templates used for invoices, quotes, statements, reminders, remittances, POs and emails.",
    "content": [
-    "Templates by document type with default flag, per-customer overrides, published version and draft status",
-    "Starter gallery of 3-4 templates built with the design system",
-    "Export and import as a versioned bundle"
+    "Templates by document type: the default chosen by an approver, or the platform's Classic starter as version 0; customer overrides set on the contact; status",
+    "Email templates: subject and body with the same fields",
+    "Starter gallery of four styles: Classic, Band, Minimal, Compact",
+    "Export and import a versioned JSON bundle; an import arrives as drafts"
    ],
    "states": [
     "draft changes",
-    "publish awaiting approval"
+    "publish awaiting approval",
+    "no template yet (the platform starter)"
    ]
   },
   {
@@ -4033,20 +4035,22 @@
     "FR-TPL-06",
     "FR-TPL-08"
    ],
-   "purpose": "Design a document template visually, with the IRAS particulars locked, and publish it as a version.",
+   "purpose": "Design a document template in P1: its style, theme, page and texts, with the IRAS particulars locked, a live preview, and versions published under approval.",
    "content": [
-    "Block list, each shown or hidden (P2: drag or keyboard to reorder): header and logo, our and customer details, document details, line table, totals and GST summary, payment details (bank, PayNow QR, link), notes, signature, footer, free text and image",
-    "Per-block texts; field catalogue (customer name, due date, amount due, SGD equivalents); P2: per-block layout settings, conditions (GST-registered, foreign currency, overdue, PayNow available) and the column chooser",
-    "Locked IRAS particulars blocks for tax invoices and credit notes",
-    "Live preview with sample or real document; A4 / Letter; theme",
-    "Versions: rollback, publish (approval object); P2: compare any two side by side",
-    "Basic: theme, logo, colours, texts; Expert (P2): layout, columns, conditions; P2 Typst code mode; P3 languages"
+    "Style: Classic, Band, Minimal or Compact (a select on phones)",
+    "Theme and page: the organisation's logo shown or not, an accent colour checked to 4.5:1 against white, a shipped font, A4 or Letter, margins of 10 to 40 mm",
+    "Blocks and texts: each block shown or hidden; locked IRAS blocks on tax invoices and credit notes; each block's label and text with fields inserted from the catalogue as chips (P2: moving blocks, per-block layout, conditions, the column chooser)",
+    "Fields: the typed catalogue of the document type, with the date and amount formats",
+    "Live preview with sample data from the render service, and the IRAS particulars it would lack",
+    "Publish checks: the test tax invoice and simplified tax invoice rendered at publication",
+    "Versions: the draft, the version in force, earlier versions with roll back; Founder mode publishes alone, otherwise approval (P2: compare side by side; code mode; P3 languages)"
    ],
    "states": [
-    "draft",
-    "publish blocked (missing particular)",
-    "published",
-    "comparing versions"
+    "draft changes",
+    "save refused (a field not in the catalogue, a pale accent)",
+    "publish refused (a test document lacks a particular)",
+    "awaiting approval",
+    "published"
    ]
   },
   {
