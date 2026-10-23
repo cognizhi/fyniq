@@ -57,9 +57,10 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// enforces retention in code, and scans with clamd when FYNIQ_CLAMD_ADDR names one (the stack's scanner
 		// profile), else with the EICAR fake (SEC-24).
 		Staging: blobs, Evidence: blobs, Scanner: scanner(local.EICARScanner{}),
-		// Mailpit (`make deps-up`, or the stack's mailpit), spoken to in the clear: local mode only.
-		Email:    smtp.New(cmp.Or(os.Getenv("FYNIQ_SMTP_ADDR"), "localhost:1025"), "fyniq.local", true),
-		MailFrom: cmp.Or(os.Getenv("FYNIQ_MAIL_FROM"), "Fyniq <no-reply@fyniq.local>"),
+		// Mailpit (`make deps-up`, or the stack's mailpit), spoken to in the clear: local mode only. Senders may be
+		// chosen on fyniq.local and example.com.
+		Mail: MailConfig{Providers: []ports.Email{smtp.New(cmp.Or(os.Getenv("FYNIQ_SMTP_ADDR"), "localhost:1025"), "fyniq.local", true)},
+			From: cmp.Or(os.Getenv("FYNIQ_MAIL_FROM"), "Fyniq <no-reply@fyniq.local>"), Domains: []string{"fyniq.local", "example.com"}},
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
 		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.

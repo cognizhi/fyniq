@@ -121,7 +121,7 @@ func TestAMessageIsDeliveredUnderItsKey(t *testing.T) {
 			t.Errorf("the message lacks %q:\n%s", want, got[0])
 		}
 	}
-	if _, err := s.Status(context.Background(), "message-one"); !errors.Is(err, ports.ErrEmailUnknown) {
+	if _, err := s.Status(context.Background(), ports.OutboundEmail{Key: "message-one"}, time.Time{}); !errors.Is(err, ports.ErrEmailUnknown) {
 		t.Errorf("SMTP cannot say what became of a message: %v", err)
 	}
 }

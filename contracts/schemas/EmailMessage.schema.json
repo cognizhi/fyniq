@@ -49,9 +49,10 @@
       "type": "string"
     },
     "purpose": {
-      "description": "Why it was sent.",
+      "description": "Why it was sent: a test message, or a sign-in alert.",
       "enum": [
-        "test"
+        "test",
+        "sign_in_alert"
       ],
       "examples": [
         "test"

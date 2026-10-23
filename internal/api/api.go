@@ -53,6 +53,9 @@ type Deps struct {
 	// Renderer is the private render service (§12.3, rev 0.96): previews, and a publication's test documents (FR-TPL-03).
 	// Nil: no document previews, and no template with IRAS particulars publishes.
 	Renderer render.Renderer
+	// Mail is the deployment's outbound email: its providers' names, the platform's sender and the sending domains
+	// (FR-INT-21, rev 0.102). Zero: no provider, and no sender can be chosen.
+	Mail MailInfo
 	// Origin is the web app's origin as the browser sees it, such as https://fyniq.example.com: passkeys are registered
 	// and asserted for it and its host (FR-ADM-02). Empty: no passkey ceremony runs.
 	Origin string

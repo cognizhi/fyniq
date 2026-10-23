@@ -12,6 +12,49 @@ import (
 	"github.com/google/uuid"
 )
 
+const emailSendersInForce = `-- name: EmailSendersInForce :many
+SELECT DISTINCT ON (purpose) id, purpose, address, display_name, set_by, set_at
+FROM fyniq.email_sender
+ORDER BY purpose, set_at DESC, id DESC
+`
+
+type EmailSendersInForceRow struct {
+	ID          uuid.UUID
+	Purpose     string
+	Address     *string
+	DisplayName *string
+	SetBy       string
+	SetAt       time.Time
+}
+
+// The latest choice of each purpose: the one in force.
+func (q *Queries) EmailSendersInForce(ctx context.Context) ([]EmailSendersInForceRow, error) {
+	rows, err := q.db.Query(ctx, emailSendersInForce)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmailSendersInForceRow
+	for rows.Next() {
+		var i EmailSendersInForceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Purpose,
+			&i.Address,
+			&i.DisplayName,
+			&i.SetBy,
+			&i.SetAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const finishEmailMessage = `-- name: FinishEmailMessage :one
 UPDATE fyniq.email_message SET status = $1, provider = $2, provider_id = $3,
   accepted_at = $4, last_error = $5
@@ -155,6 +198,49 @@ func (q *Queries) InsertEmailMessage(ctx context.Context, arg InsertEmailMessage
 	return i, err
 }
 
+const insertEmailSender = `-- name: InsertEmailSender :one
+INSERT INTO fyniq.email_sender (purpose, address, display_name, set_by, set_at)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, purpose, address, display_name, set_by, set_at
+`
+
+type InsertEmailSenderParams struct {
+	Purpose     string
+	Address     *string
+	DisplayName *string
+	SetBy       string
+	SetAt       time.Time
+}
+
+type InsertEmailSenderRow struct {
+	ID          uuid.UUID
+	Purpose     string
+	Address     *string
+	DisplayName *string
+	SetBy       string
+	SetAt       time.Time
+}
+
+func (q *Queries) InsertEmailSender(ctx context.Context, arg InsertEmailSenderParams) (InsertEmailSenderRow, error) {
+	row := q.db.QueryRow(ctx, insertEmailSender,
+		arg.Purpose,
+		arg.Address,
+		arg.DisplayName,
+		arg.SetBy,
+		arg.SetAt,
+	)
+	var i InsertEmailSenderRow
+	err := row.Scan(
+		&i.ID,
+		&i.Purpose,
+		&i.Address,
+		&i.DisplayName,
+		&i.SetBy,
+		&i.SetAt,
+	)
+	return i, err
+}
+
 const lockEmailMessage = `-- name: LockEmailMessage :one
 SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at FROM fyniq.email_message WHERE id = $1 FOR UPDATE
 `
@@ -240,13 +326,15 @@ func (q *Queries) ReleaseEmailAttempt(ctx context.Context, arg ReleaseEmailAttem
 }
 
 const startEmailAttempt = `-- name: StartEmailAttempt :one
-UPDATE fyniq.email_message SET attempts = attempts + 1, attempt_started_at = $1 WHERE id = $2 AND status = 'queued'
+UPDATE fyniq.email_message SET attempts = attempts + 1, attempt_started_at = $1, provider = $2
+WHERE id = $3 AND status = 'queued'
 RETURNING id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at
 `
 
 type StartEmailAttemptParams struct {
-	Now *time.Time
-	ID  uuid.UUID
+	Now      *time.Time
+	Provider *string
+	ID       uuid.UUID
 }
 
 type StartEmailAttemptRow struct {
@@ -265,7 +353,7 @@ type StartEmailAttemptRow struct {
 }
 
 func (q *Queries) StartEmailAttempt(ctx context.Context, arg StartEmailAttemptParams) (StartEmailAttemptRow, error) {
-	row := q.db.QueryRow(ctx, startEmailAttempt, arg.Now, arg.ID)
+	row := q.db.QueryRow(ctx, startEmailAttempt, arg.Now, arg.Provider, arg.ID)
 	var i StartEmailAttemptRow
 	err := row.Scan(
 		&i.ID,

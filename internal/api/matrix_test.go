@@ -361,6 +361,17 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPost, "/v1/organisation/email/test-messages", tok, nil)
 		return r, func() bool { return nextWork(e.t, e) == "" }
 	},
+	"getEmailSettings": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/email", tok, nil), nil
+	},
+	"setEmailSender": func(e *env, tok string) (response, func() bool) {
+		reminders := func() any {
+			return e.call(http.MethodGet, "/v1/organisation/email", e.as(authz.Auditor), nil).Body["senders"].([]any)[2].(map[string]any)["etag"]
+		}
+		before := reminders()
+		r := e.call(http.MethodPut, "/v1/organisation/email/senders/reminders", tok, map[string]any{"address": "reminders@mail.example.com"}, "If-Match", "*")
+		return r, func() bool { return reminders() == before }
+	},
 	"getEmailMessage": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation/email/messages/"+matrixEmail(e), tok, nil), nil
 	},

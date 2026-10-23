@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "The organisation's sender of this purpose; absent while it uses the platform's.",
+      "examples": [
+        "accounts@mail.example.com"
+      ],
+      "type": "string"
+    },
+    "display_name": {
+      "description": "The name shown with the address.",
+      "examples": [
+        "Example Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "etag": {
+      "description": "The choice in force: send it in If-Match to change it.",
+      "examples": [
+        "\"none\""
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "What the email's From says: the organisation's sender, or the platform's.",
+      "examples": [
+        "Example Pte Ltd \u003caccounts@mail.example.com\u003e"
+      ],
+      "type": "string"
+    },
+    "platform": {
+      "description": "true while this purpose uses the platform's sender.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "purpose": {
+      "description": "What the email is for: notifications, invoices and quotes, reminders, or security notices such as sign-in alerts.",
+      "enum": [
+        "notifications",
+        "invoices",
+        "reminders",
+        "security"
+      ],
+      "examples": [
+        "invoices"
+      ],
+      "type": "string"
+    },
+    "set_at": {
+      "description": "When the organisation last chose it.",
+      "examples": [
+        "2026-10-23T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "purpose",
+    "from",
+    "platform",
+    "etag"
+  ],
+  "title": "EmailSender",
+  "type": "object"
+}

@@ -6,18 +6,20 @@ import (
 	"time"
 )
 
-// Email sends outbound email (FR-INT-21). Adapters: SMTP (Mailpit locally, or any relay); ZeptoMail and
-// Resend arrive as connectors. A send goes through the outbox, so it happens once, or Fyniq knows it may
-// not have (G4-073).
+// Email sends outbound email (FR-INT-21). Adapters: SMTP (Mailpit locally, or any relay), ZeptoMail and Resend;
+// the deployment names them in order, the first primary and the next its failover (PRD-001 rev 0.102). A send
+// goes through the outbox, so it happens once, or Fyniq knows it may not have (G4-073).
 type Email interface {
 	// Name names the provider, for the message's record.
 	Name() string
 	// Send hands the message to the provider. A nil error means the provider accepted it. ErrEmailRefused
 	// means it did not, and sending again is safe; any other error leaves it unknown whether it was accepted.
 	Send(ctx context.Context, m OutboundEmail) (EmailReceipt, error)
-	// Status asks the provider what became of the message with key, before any retry: ErrEmailUnknown when
-	// the provider cannot say (SMTP never can).
-	Status(ctx context.Context, key string) (EmailReceipt, error)
+	// Status asks the provider what became of m, which an attempt begun at attempted may have handed over, before
+	// any retry: a nil error means it accepted m; ErrEmailRefused that it never did, so sending is safe;
+	// ErrEmailUnknown that it cannot say (SMTP and ZeptoMail never can). A provider that keeps idempotency keys
+	// answers by sending m again under its key while it still keeps the key (Resend: 24 hours).
+	Status(ctx context.Context, m OutboundEmail, attempted time.Time) (EmailReceipt, error)
 }
 
 // OutboundEmail is one plain-text message. Key identifies it to the provider (an SMTP Message-ID, or the

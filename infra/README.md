@@ -71,6 +71,13 @@ The tests check the controls on the planned configuration:
    - `idp-api-key`.
 
    The `migrate` and `oauth-migrate` jobs need their URLs before they run.
+
+   Outbound email (FR-INT-21, PRD-001 rev 0.102) is the deployment's to set: in the root's values,
+   `service_env` gives the `api` and the `worker` `FYNIQ_EMAIL_PROVIDERS` (`zeptomail,resend`: the
+   first primary, the next its failover), `FYNIQ_MAIL_FROM` (the platform's sender) and
+   `FYNIQ_MAIL_DOMAINS` (the domains organisations may choose senders on), and `service_secrets`
+   gives the `worker` `FYNIQ_ZEPTOMAIL_KEY = "zeptomail-key"` and `FYNIQ_RESEND_KEY = "resend-key"`.
+   Add those secrets' versions out of band like the others; no key ever passes through the API.
 7. Run the Infrastructure workflow by hand for `staging` with **apply**. After that, pushes to
    `main` plan every environment, and the nightly run fails on drift.
 

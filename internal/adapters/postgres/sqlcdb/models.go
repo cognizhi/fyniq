@@ -344,6 +344,16 @@ type FyniqEmailMessage struct {
 	CreatedAt        time.Time
 }
 
+type FyniqEmailSender struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Purpose        string
+	Address        *string
+	DisplayName    *string
+	SetBy          string
+	SetAt          time.Time
+}
+
 type FyniqEvidence struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -104,3 +104,60 @@ func TestATestEmailGoesOnlyToTheOrganisationsOwnAddress(t *testing.T) {
 		t.Fatal("the test message's queueing is not in the audit trail")
 	}
 }
+
+// The email settings show the deployment's providers in order, its sender and sending domains, never a key, and each
+// purpose's sender; an Administrator chooses a sender on a sending domain over the choice read, and a choice of
+// neither field returns it to the platform's. Each choice is audited.
+// req: FR-INT-21
+func TestAnOrganisationChoosesItsSendersOnTheDeploymentsDomains(t *testing.T) {
+	e := newEnv(t)
+	admin := e.as(authz.Administrator)
+	got := e.call(http.MethodGet, "/v1/organisation/email", e.as(authz.Auditor), nil)
+	if got.Status != http.StatusOK || got.str("platform_sender") != "Fyniq <no-reply@mail.example.com>" {
+		t.Fatalf("the settings: %d %s", got.Status, got.Raw)
+	}
+	if p := got.Body["providers"].([]any); len(p) != 2 || p[0].(map[string]any)["name"] != "zeptomail" || p[0].(map[string]any)["role"] != "primary" ||
+		p[1].(map[string]any)["role"] != "failover" {
+		t.Fatalf("the providers: %v", p)
+	}
+	if strings.Contains(got.Raw, "key") {
+		t.Fatalf("the settings mention a key: %s", got.Raw)
+	}
+	senders := got.Body["senders"].([]any)
+	if len(senders) != 4 || senders[1].(map[string]any)["purpose"] != "invoices" || senders[1].(map[string]any)["platform"] != true ||
+		senders[1].(map[string]any)["from"] != "Fyniq <no-reply@mail.example.com>" {
+		t.Fatalf("the senders: %v", senders)
+	}
+	const path = "/v1/organisation/email/senders/invoices"
+	tag := senders[1].(map[string]any)["etag"].(string)
+
+	for name, c := range map[string]struct {
+		body map[string]any
+		code string
+	}{
+		"another domain":         {map[string]any{"address": "billing@gmail.com"}, CodeSenderDomain},
+		"not an address":         {map[string]any{"address": "Billing <billing@mail.example.com>"}, CodeSenderAddress},
+		"a name with no address": {map[string]any{"display_name": "Billing"}, CodeSenderAddress},
+		"a name with a newline":  {map[string]any{"address": "billing@mail.example.com", "display_name": "Billing\nBcc: x"}, CodeSenderAddress},
+	} {
+		if r := e.call(http.MethodPut, path, admin, c.body, "If-Match", tag); r.Status != http.StatusUnprocessableEntity || r.problemCode() != c.code {
+			t.Errorf("%s: %d %s; want %s", name, r.Status, r.Raw, c.code)
+		}
+	}
+	if r := e.call(http.MethodPut, path, admin, map[string]any{"address": "billing@mail.example.com"}, "If-Match", `"stale"`); r.Status != http.StatusPreconditionFailed {
+		t.Fatalf("over a stale choice: %d %s", r.Status, r.Raw)
+	}
+	set := e.call(http.MethodPut, path, admin, map[string]any{"address": "Billing@MAIL.example.com", "display_name": "Example Pte Ltd"}, "If-Match", tag,
+		"Idempotency-Key", uuid.NewString())
+	if set.Status != http.StatusOK || set.str("address") != "Billing@mail.example.com" || set.str("from") != `"Example Pte Ltd" <Billing@mail.example.com>` ||
+		set.Body["platform"] != false || set.Header.Get("ETag") == "" || set.Header.Get("ETag") == tag {
+		t.Fatalf("choosing a sender: %d %s %s", set.Status, set.Header.Get("ETag"), set.Raw)
+	}
+	back := e.call(http.MethodPut, path, admin, map[string]any{}, "If-Match", set.Header.Get("ETag"))
+	if back.Status != http.StatusOK || back.Body["platform"] != true || back.str("from") != "Fyniq <no-reply@mail.example.com>" {
+		t.Fatalf("back to the platform's sender: %d %s", back.Status, back.Raw)
+	}
+	if trail := auditTrail(t, e); strings.Count(trail, "email_sender.set") != 2 {
+		t.Fatal("the two choices are not both in the audit trail")
+	}
+}

@@ -37,7 +37,7 @@ func New(addr, domain string, plaintext bool) *Sender {
 func (s *Sender) Name() string { return "smtp" }
 
 // Status implements ports.Email: SMTP has no way to ask.
-func (s *Sender) Status(context.Context, string) (ports.EmailReceipt, error) {
+func (s *Sender) Status(context.Context, ports.OutboundEmail, time.Time) (ports.EmailReceipt, error) {
 	return ports.EmailReceipt{}, ports.ErrEmailUnknown
 }
 

@@ -221,6 +221,8 @@ var codeFacts = map[string]struct {
 	settings.CodeShortened:        {422, "The setting can only lengthen"},
 	settings.CodeFixed:            {409, "Set by the platform"},
 	CodeNoEmailAddress:            {409, "The organisation has no email address"},
+	CodeSenderAddress:             {422, "Not a sender address"},
+	CodeSenderDomain:              {422, "Not a domain email is sent from"},
 	approval.CodeOwnRequest:       {403, "You asked for it, so another person approves it"},
 	approval.CodeNotPending:       {409, "The request was decided already"},
 	approval.CodeExpired:          {409, "The request expired"},

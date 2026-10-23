@@ -39,8 +39,8 @@ func main() {
 				return err
 			}
 		}
-		if kit.Email != nil {
-			kinds[email.Kind] = email.Work(kit.Email, kit.Store, kit.MailFrom, deps.Clock) // FR-INT-21: send queued mail once
+		if len(kit.Mail.Providers) > 0 {
+			kinds[email.Kind] = email.Work(kit.Mail.Providers, kit.Store, kit.Mail.From, deps.Clock) // FR-INT-21: send queued mail once
 		}
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds})

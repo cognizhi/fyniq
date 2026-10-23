@@ -56,7 +56,14 @@
   `POST /v1/organisation/email/test-messages` sends only to the organisation's own address (EML-01 without one) and
   `GET /v1/organisation/email/messages/{message_id}` shows the outcome. Left: ZeptoMail and Resend, a sender per
   purpose, the daily domain check, webhooks and suppression, failover, the staging sandboxes, and the test send's help
-  page with the connector-detail screen.)
+  page with the connector-detail screen. Second slice, 23 Oct 2026, PRD-001 rev 0.102, on the owner's decision of that
+  day (the deployment sets the providers, their keys and the sending domains; each organisation its senders per
+  purpose): migration 000100 (`email_sender`, FY179; an attempt records its provider), getEmailSettings and
+  setEmailSender (EML-02, EML-03), `internal/adapters/zeptomail` and `internal/adapters/resend` against fakes, the
+  worker's failover after a refusal only, `wiring.ReadMail`. Tests: `TestTheFailoverSendsOnlyWhatThePrimaryRefused`,
+  `TestAnEmailIsSentFromTheOrganisationsSenderOfItsPurpose`, `TestASenderChoiceIsAppendOnly`,
+  `TestAnOrganisationChoosesItsSendersOnTheDeploymentsDomains`, the adapters' and two matrix rows. Left: webhooks and
+  suppression, the daily domain check, the staging sandboxes, the email settings screen and its help.)
 - [ ] 2.2 The `InboundMail` port: messages stored with their authentication results, attachments through the evidence upload and scanner, and unknown senders quarantined. Test `// req: FR-INT-22`
 - [ ] 2.3 Interchangeable adapters and the §8.24 launch adapters and local substitutes for this change's capabilities. Tests `// req: communication/email-and-notifications Outside services behind interchangeable adapters` and `… Launch adapters and local substitutes`
 

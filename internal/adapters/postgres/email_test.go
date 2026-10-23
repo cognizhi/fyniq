@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -24,15 +25,22 @@ import (
 const mailFrom = "Fyniq <no-reply@fyniq.test>"
 
 // fakeMail is an email provider whose answers a test sets: send gives the nth send's error (1-based), status
-// what the provider says of a message; without them every send is accepted and the provider cannot say.
+// what the provider says of a message; without them every send is accepted and the provider cannot say. name
+// names it: "fake" when empty.
 type fakeMail struct {
 	mu     sync.Mutex
+	name   string
 	sent   []ports.OutboundEmail
 	send   func(n int) error
 	status func() (ports.EmailReceipt, error)
 }
 
-func (f *fakeMail) Name() string { return "fake" }
+func (f *fakeMail) Name() string {
+	if f.name == "" {
+		return "fake"
+	}
+	return f.name
+}
 
 func (f *fakeMail) Send(_ context.Context, m ports.OutboundEmail) (ports.EmailReceipt, error) {
 	f.mu.Lock()
@@ -43,10 +51,10 @@ func (f *fakeMail) Send(_ context.Context, m ports.OutboundEmail) (ports.EmailRe
 			return ports.EmailReceipt{}, err
 		}
 	}
-	return ports.EmailReceipt{ProviderID: "<" + m.Key + "@fake>"}, nil
+	return ports.EmailReceipt{ProviderID: "<" + m.Key + "@" + f.Name() + ">"}, nil
 }
 
-func (f *fakeMail) Status(context.Context, string) (ports.EmailReceipt, error) {
+func (f *fakeMail) Status(context.Context, ports.OutboundEmail, time.Time) (ports.EmailReceipt, error) {
 	if f.status == nil {
 		return ports.EmailReceipt{}, ports.ErrEmailUnknown
 	}
@@ -59,12 +67,16 @@ func (f *fakeMail) sends() int {
 	return len(f.sent)
 }
 
-// mailHarness is an outbox whose worker sends email through f.
-func mailHarness(t *testing.T, f *fakeMail) (*harness, outbox.Work) {
+// mailHarness is an outbox whose worker sends email through fs, in order.
+func mailHarness(t *testing.T, fs ...*fakeMail) (*harness, outbox.Work) {
 	t.Helper()
 	kinds := map[string]outbox.Work{}
 	h := newHarness(t, kinds)
-	kinds[email.Kind] = email.Work(f, store(t, "fyniq_worker"), mailFrom, h.clock)
+	var providers []ports.Email
+	for _, f := range fs {
+		providers = append(providers, f)
+	}
+	kinds[email.Kind] = email.Work(providers, store(t, "fyniq_worker"), mailFrom, h.clock)
 	return h, kinds[email.Kind]
 }
 
@@ -246,5 +258,134 @@ func TestAnEmailsOutcomeIsFinalAndOnlyTheWorkerRecordsIt(t *testing.T) {
 	} {
 		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt, m.ID); return err })
 		wantState(t, c.what, err, "FY130", "42501")
+	}
+}
+
+// The failover sends only what the primary refused: a refusal moves the send on at once, and the record names the
+// provider that took it; a send the primary may have taken is reconciled with the primary and never handed to the
+// failover (FR-INT-21, PRD-001 rev 0.102).
+// req: FR-INT-21
+func TestTheFailoverSendsOnlyWhatThePrimaryRefused(t *testing.T) {
+	t.Run("refused, then taken by the failover", func(t *testing.T) {
+		b := books(t, "Email failover Pte Ltd")
+		primary := &fakeMail{name: "zeptomail", send: func(int) error { return fmt.Errorf("%w: zeptomail answered 401 TM_4001 invalid key", ports.ErrEmailRefused) }}
+		failover := &fakeMail{name: "resend"}
+		h, _ := mailHarness(t, primary, failover)
+		m := queueMail(t, h, b.Org)
+		got := emailMessage(t, b.Org, m.ID)
+		if got.Status != storage.EmailAccepted || got.Provider != "resend" || got.ProviderID != "<"+m.ID.String()+"@resend>" || got.Attempts != 2 {
+			t.Fatalf("after the primary refused: %+v", got)
+		}
+		if primary.sends() != 1 || failover.sends() != 1 || failover.sent[0].Key != m.ID.String() {
+			t.Fatalf("%d sends to the primary and %d to the failover; want one each, under the message's key", primary.sends(), failover.sends())
+		}
+	})
+	t.Run("may have been taken by the primary", func(t *testing.T) {
+		b := books(t, "Email no failover Pte Ltd")
+		primary := &fakeMail{name: "zeptomail", send: func(int) error { return errors.New("zeptomail: no answer, so the message may have been taken") }}
+		failover := &fakeMail{name: "resend"}
+		h, _ := mailHarness(t, primary, failover)
+		m := queueMail(t, h, b.Org)
+		got := emailMessage(t, b.Org, m.ID)
+		if got.Status != storage.EmailUnknown || got.Provider != "zeptomail" || failover.sends() != 0 || primary.sends() != 1 {
+			t.Fatalf("%+v after %d sends to the primary and %d to the failover; want unknown, the failover never asked", got, primary.sends(), failover.sends())
+		}
+	})
+	t.Run("refused by both, then failed", func(t *testing.T) {
+		b := books(t, "Email both refused Pte Ltd")
+		no := func(int) error { return fmt.Errorf("%w: 422 recipient rejected", ports.ErrEmailRefused) }
+		primary, failover := &fakeMail{name: "zeptomail", send: no}, &fakeMail{name: "resend", send: no}
+		h, _ := mailHarness(t, primary, failover)
+		m := queueMail(t, h, b.Org)
+		var row uuid.UUID
+		if err := asOrg(context.Background(), conn(t, "fyniq_worker"), b.Org, func(tx pgx.Tx) error {
+			return tx.QueryRow(context.Background(), "SELECT id FROM fyniq.outbox WHERE business_key = $1", "email:"+m.ID.String()).Scan(&row)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		token, _ := h.tokens.Token("worker")
+		h.deliver(t, "worker", token, b.Org, row)
+		got := emailMessage(t, b.Org, m.ID)
+		if got.Status != storage.EmailFailed || primary.sends() != 5 || failover.sends() != 5 ||
+			!strings.Contains(got.LastError, "zeptomail: ") || !strings.Contains(got.LastError, "resend: ") {
+			t.Fatalf("after %d and %d sends: %+v; want failed, naming both", primary.sends(), failover.sends(), got)
+		}
+	})
+}
+
+// A message is sent from the organisation's sender of its purpose (a sign-in alert from security's), or the
+// platform's while it has none; a choice of no address returns to the platform's. Each choice is audited.
+// req: FR-INT-21
+func TestAnEmailIsSentFromTheOrganisationsSenderOfItsPurpose(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Email sender Pte Ltd")
+	f := &fakeMail{}
+	h, _ := mailHarness(t, f)
+	set := func(purpose, address, name string) storage.EmailSender {
+		var c storage.EmailSender
+		if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			c, err = u.EmailSenders().Set(ctx, purpose, address, name)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return c
+	}
+	send := func(purpose string) ports.OutboundEmail {
+		n := f.sends()
+		if err := h.store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := email.Queue(ctx, h.disp, u, b.Org, purpose, "founder@example.com", "Hello", "Hello.\n")
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		h.push.Wait()
+		if f.sends() != n+1 {
+			t.Fatalf("%d sends; want %d", f.sends(), n+1)
+		}
+		return f.sent[n]
+	}
+	if got := send("test").From; got != mailFrom {
+		t.Fatalf("with no sender chosen, from %q; want the platform's", got)
+	}
+	c := set(storage.SenderNotifications, "accounts@example.com", "Email Sender Pte Ltd")
+	set(storage.SenderSecurity, "security@example.com", "")
+	if got, want := send("test").From, `"Email Sender Pte Ltd" <accounts@example.com>`; got != want {
+		t.Fatalf("a notification from %q; want %q", got, want)
+	}
+	if got, want := send("sign_in_alert").From, "<security@example.com>"; got != want {
+		t.Fatalf("a sign-in alert from %q; want security's, %q", got, want)
+	}
+	set(storage.SenderNotifications, "", "")
+	if got := send("test").From; got != mailFrom {
+		t.Fatalf("after returning to the platform's sender, from %q", got)
+	}
+	if got := actions(t, b.Org, c.ID); strings.Join(got, ",") != "email_sender.set" {
+		t.Fatalf("the choice's audit trail: %v", got)
+	}
+}
+
+// A sender choice never changes or goes (FY179): the API records one, the worker only reads them.
+// req: FR-INT-21
+func TestASenderChoiceIsAppendOnly(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Email sender record Pte Ltd")
+	var c storage.EmailSender
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		c, err = u.EmailSenders().Set(ctx, storage.SenderInvoices, "billing@example.com", "Billing")
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, x := range []struct{ role, what, stmt string }{
+		{"fyniq_migrator", "change a choice as the owner", "UPDATE fyniq.email_sender SET address = 'x@example.com' WHERE id = $1"},
+		{"fyniq_migrator", "delete a choice as the owner", "DELETE FROM fyniq.email_sender WHERE id = $1"},
+		{"fyniq_api", "change a choice", "UPDATE fyniq.email_sender SET address = 'x@example.com' WHERE id = $1"},
+		{"fyniq_worker", "choose a sender as the worker", "INSERT INTO fyniq.email_sender (purpose, set_by, set_at) SELECT 'invoices', 'user:x', now() WHERE $1::uuid IS NOT NULL"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, c.ID); return err })
+		wantState(t, x.what, err, "FY179", "42501")
 	}
 }

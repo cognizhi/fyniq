@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "description": "The provider.",
+      "enum": [
+        "smtp",
+        "zeptomail",
+        "resend"
+      ],
+      "examples": [
+        "zeptomail"
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "primary sends; failover sends only what the providers before it refused.",
+      "enum": [
+        "primary",
+        "failover"
+      ],
+      "examples": [
+        "primary"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "role"
+  ],
+  "title": "EmailProvider",
+  "type": "object"
+}
