@@ -121,7 +121,9 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   (23 Oct 2026, PRD-001 rev 0.87, on the owner's decisions of 23 Oct 2026: billed by quantity under the new
   `RND-LINE`, approved as bills are posted; migrations 000091, 000092; `purchaseorder`, `journal.PurchaseOrders`, a bill
   line's `order`, the eight `/v1/purchase-orders` operations. The oracle's `RND-LINE` is task 10.1's)
-- [ ] 8.2 The purchase orders screen (`purchase-orders`)
+- [x] 8.2 The purchase orders screen (`purchase-orders`)
+  (23 Oct 2026, PRD-001 rev 0.88: the Orders tab, the list, the order's page with approval, Make a bill and Close
+  order, and a bill line's link to its order line; the guide "Purchase orders")
 
 ## 9. Non-resident payments and input tax
 

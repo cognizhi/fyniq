@@ -64,6 +64,9 @@ export const routes = [
   { kind: "route", id: "bill-new", path: "/purchases/bills/new", mode: "basic", signedIn: true, help: "bill.new", guide: "purchases.bills#enter-a-bill" },
   { kind: "route", id: "credit-new", path: "/purchases/credits/new", mode: "basic", signedIn: true, help: "credit.new", guide: "purchases.bills#credit-notes" },
   { kind: "route", id: "bill", path: "/purchases/bills/$billId", mode: "basic", signedIn: true, help: "purchases.bill", guide: "purchases.bills#check-and-post-a-bill" },
+  { kind: "route", id: "purchase-orders", path: "/purchases/orders", mode: "basic", signedIn: true, help: "purchases.orders", guide: "purchases.orders" },
+  { kind: "route", id: "purchase-order-new", path: "/purchases/orders/new", mode: "basic", signedIn: true, help: "order.new", guide: "purchases.orders#raise-an-order" },
+  { kind: "route", id: "purchase-order", path: "/purchases/orders/$orderId", mode: "basic", signedIn: true, help: "purchases.order", guide: "purchases.orders#approve-an-order" },
   { kind: "route", id: "recurring-bills", path: "/purchases/bills/recurring", mode: "basic", signedIn: true, help: "purchases.recurring-bills", guide: "purchases.bills#recurring-bills" },
   { kind: "route", id: "recurring-bill-new", path: "/purchases/bills/recurring/new", mode: "basic", signedIn: true, help: "recurring-bill.new", guide: "purchases.bills#recurring-bills" },
   { kind: "route", id: "recurring-bill", path: "/purchases/bills/recurring/$recurringBillId", mode: "basic", signedIn: true, help: "purchases.recurring-bill", guide: "purchases.bills#recurring-bills" },
@@ -136,6 +139,11 @@ export const actions = [
   { kind: "action", id: "bill.record-payment", mode: "basic", help: "bill.record-payment", guide: "purchases.bills#record-a-payment" },
   // A line's spread is an Expert field group (§7.8: service periods and spreads); a bill that has one shows it, and its
   // schedule, in both modes.
+  { kind: "action", id: "order.save", mode: "basic", help: "order.save", guide: "purchases.orders#raise-an-order" },
+  { kind: "action", id: "order.approve", mode: "basic", help: "order.approve", guide: "purchases.orders#approve-an-order" },
+  { kind: "action", id: "order.ask-approval", mode: "basic", help: "order.ask-approval", guide: "purchases.orders#approve-an-order" },
+  { kind: "action", id: "order.bill", mode: "basic", help: "order.bill", guide: "purchases.orders#bill-an-order" },
+  { kind: "action", id: "order.close", mode: "basic", help: "order.close", guide: "purchases.orders#close-an-order" },
   { kind: "action", id: "recurring-bill.save", mode: "basic", help: "recurring-bill.save", guide: "purchases.bills#recurring-bills" },
   { kind: "action", id: "recurring-bill.check", mode: "basic", help: "recurring-bill.check", guide: "purchases.bills#recurring-bills" },
   { kind: "action", id: "recurring-bill.pause", mode: "basic", help: "recurring-bill.pause", guide: "purchases.bills#recurring-bills" },

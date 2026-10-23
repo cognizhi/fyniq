@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill; recurring bills; spreading a prepaid cost; recording and voiding payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:0b3d42042bd5ba368aaac69e0236b1680463052c03314ec4551aa3edfe4746f3
+  - docs/user-guide/bills.md sha256:411aeea177e4ea995b8c75f3ae6ec702474275ac00942f3215ccfc03bea5f231
 data_class: general
 taint: trusted
 status: draft
@@ -167,6 +167,6 @@ aliases:
 
 ## Related
 
-- [[accounting.currencies]], [[settings.organisation]], [[contacts.manage]], [[approvals.decide]]
+- [[purchases.orders]], [[accounting.currencies]], [[settings.organisation]], [[contacts.manage]], [[approvals.decide]]
 
 (src: docs/user-guide/bills.md#related)

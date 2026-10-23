@@ -30,7 +30,7 @@ const filters: [Status | "", string][] = [
 
 // StateChips are a bill's separate states (FR-AP-02): where its approval stands, whether it is posted or voided, what
 // payments settle of it, and whether it is overdue. Each chip carries its icon and its words: colour never says it alone.
-// BillTabs switches between the bills and the recurring bills (FR-AP-09; PRD-001 rev 0.84).
+// BillTabs switches between the bills, the recurring bills (FR-AP-09) and the purchase orders (FR-AP-01).
 export function BillTabs() {
   return (
     <nav className="fy-tabs" aria-label="Bill lists">
@@ -39,6 +39,9 @@ export function BillTabs() {
       </Link>
       <Link to="/purchases/bills/recurring" activeOptions={{ exact: true }}>
         Recurring
+      </Link>
+      <Link to="/purchases/orders" activeOptions={{ exact: true }}>
+        Orders
       </Link>
     </nav>
   );

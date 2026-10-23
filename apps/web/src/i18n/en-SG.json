@@ -288,6 +288,38 @@
       "label": "Record refund",
       "tooltip": "Record money the supplier paid back against the credit: the date, the account it came into and how much. It posts at once."
     },
+    "purchases.orders": {
+      "label": "Purchase orders",
+      "tooltip": "What you buy from suppliers, how many and at what price, agreed before the bill arrives; bills are made from them."
+    },
+    "purchases.order": {
+      "label": "Purchase order",
+      "tooltip": "One order: its lines, its approval, what bills take of each line, and the bills made from it."
+    },
+    "order.new": {
+      "label": "New order",
+      "tooltip": "Raise a purchase order: the supplier, and what you buy, how many and at what price."
+    },
+    "order.save": {
+      "label": "Save as a draft",
+      "tooltip": "Save the order. Nothing is committed until it is approved; it never posts to the books."
+    },
+    "order.approve": {
+      "label": "Approve",
+      "tooltip": "Approve the order: at or below the self-approval threshold you approve it alone; above it, ask another person."
+    },
+    "order.ask-approval": {
+      "label": "Ask for approval",
+      "tooltip": "Ask another person who approves bills, and did not prepare this order, to approve it."
+    },
+    "order.bill": {
+      "label": "Make a bill",
+      "tooltip": "Make a draft bill of what the supplier invoices: how much of each line. Enter their invoice on it and post it."
+    },
+    "order.close": {
+      "label": "Close order",
+      "tooltip": "Close the order with a reason: no more bills are made from it; those made already stand."
+    },
     "purchases.recurring-bills": {
       "label": "Recurring",
       "tooltip": "Bills that repeat, such as the office rent: Fyniq makes each one's draft on its date, and a person posts it."
