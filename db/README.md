@@ -85,6 +85,10 @@ The daily exchange-rate feed (000070, FR-GL-05): `fx_feed_rate` (one rate per ba
 published and under `RND-RATE`), read by every service through `fx_feed_rates` and written only by the worker's feed
 job through `record_feed_rate`; a feed rate never changes or goes, and a different rate for a stored date is refused
 (`FY168`).
+The registry of email-in address names (000102, FR-INT-22): `capture_name` (a name, its owning organisation for good,
+and its live address there and that address's member, if any), written only by `capture_address`'s trigger and read only through `capture_route`, which
+the receiver of inbound mail calls before any tenant is set; no role holds a grant on it, and a name never passes to
+another organisation (`FY183`).
 Add one only with its access model here and in the test's list.
 - **The installation organisation** (`organisation.kind = 'installation'`, one per installation,
   created by first-run setup) holds only the installation's audit trail: setup and Super-admin events.
@@ -199,6 +203,9 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY179 | STORAGE-VERSION-01 | An email sender choice never changes or goes: choose again, and the latest of a purpose is in force |
 | FY180 | STORAGE-VERSION-01 | An email event a provider reported never changes or goes: a later event is recorded beside it |
 | FY181 | STORAGE-VERSION-01 | An email suppression is only ever released, once: a later bounce suppresses the address again |
+| FY182 | STORAGE-VERSION-01 | An email-in address is only ever retired, once: make a new one |
+| FY183 | STORAGE-CAPTURE-01 | An email-in address name is taken: a name belongs to one organisation for good |
+| FY184 | STORAGE-VERSION-01 | A decision about a sender at an email-in address never changes or goes: decide again |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

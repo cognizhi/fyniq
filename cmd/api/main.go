@@ -79,7 +79,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	d.Staging, d.Scanner = kit.Staging, kit.Scanner // nil until configured: then no file can be attached
 	d.Renderer = kit.Render                         // nil until configured: then no document preview renders
 	dns := &maildns.Cache{Resolver: net.DefaultResolver, Domains: kit.Mail.Domains, Records: kit.Mail.DNS, TTL: time.Hour, Now: deps.Clock.Now}
-	d.Mail = api.MailInfo{From: kit.Mail.From, Domains: kit.Mail.Domains, Check: dns.Results}
+	d.Mail = api.MailInfo{From: kit.Mail.From, Domains: kit.Mail.Domains, Check: dns.Results, CaptureDomain: kit.Mail.CaptureDomain}
 	for _, p := range kit.Mail.Providers {
 		d.Mail.Providers = append(d.Mail.Providers, p.Name())
 	}

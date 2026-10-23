@@ -32,6 +32,12 @@ fyniq_api       EXECUTE   balance_differences()
 fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
+fyniq_api       INSERT    capture_address (created_at, created_by, local_part, user_id)
+fyniq_api       SELECT    capture_address
+fyniq_api       UPDATE    capture_address (retired_at, retired_by)
+fyniq_api       EXECUTE   capture_route()
+fyniq_api       INSERT    capture_sender (address, decided_at, decided_by, decision, user_id)
+fyniq_api       SELECT    capture_sender
 fyniq_api       EXECUTE   claim_job_slot()
 fyniq_api       EXECUTE   claim_setup()
 fyniq_api       INSERT    close_checklist_entry (note, period_id, state, task_key, template_version, written_at, written_by)
@@ -262,6 +268,8 @@ fyniq_readonly  SELECT    audit_event
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
 fyniq_readonly  SELECT    bill_payment_plan
+fyniq_readonly  SELECT    capture_address
+fyniq_readonly  SELECT    capture_sender
 fyniq_readonly  SELECT    close_checklist_entry
 fyniq_readonly  SELECT    close_checklist_template
 fyniq_readonly  SELECT    contact
@@ -329,6 +337,9 @@ fyniq_worker    SELECT    balance
 fyniq_worker    EXECUTE   balance_differences()
 fyniq_worker    EXECUTE   beat()
 fyniq_worker    SELECT    bill_payment_plan
+fyniq_worker    SELECT    capture_address
+fyniq_worker    EXECUTE   capture_route()
+fyniq_worker    SELECT    capture_sender
 fyniq_worker    SELECT    close_checklist_entry
 fyniq_worker    SELECT    close_checklist_template
 fyniq_worker    SELECT    contact

@@ -105,6 +105,7 @@ func newEnv(t *testing.T) *env {
 		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
 		Staging: e.blobs, Scanner: local.EICARScanner{}, Origin: testOrigin, Renderer: testRenderer(t),
 		Mail: MailInfo{Providers: []string{"zeptomail", "resend"}, From: "Fyniq <no-reply@mail.example.com>", Domains: []string{"mail.example.com", "example.org"},
+			CaptureDomain: "in.example.com",
 			Check: func(context.Context) ([]maildns.Result, time.Time) {
 				return []maildns.Result{{Domain: "mail.example.com", DMARC: "none", Records: []maildns.RecordStatus{
 					{Record: maildns.Record{Type: "TXT", Name: "k._domainkey.mail.example.com", Value: "v=DKIM1"}, Status: maildns.Wrong, Found: "v=DKIM1; p=OLD"}}},

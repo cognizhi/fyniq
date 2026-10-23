@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "domain": {
+      "description": "The deployment's capture domain; absent when email-in is not set up.",
+      "examples": [
+        "in.example.com"
+      ],
+      "type": "string"
+    },
+    "mine": {
+      "$ref": "CaptureAddress.schema.json",
+      "description": "The caller's own address; absent until they make one."
+    },
+    "mine_etag": {
+      "description": "Send it in If-Match to change your own address.",
+      "examples": [
+        "\"none\""
+      ],
+      "type": "string"
+    },
+    "organisation": {
+      "$ref": "CaptureAddress.schema.json",
+      "description": "The organisation's address; absent until an Administrator makes one."
+    },
+    "organisation_etag": {
+      "description": "Send it in If-Match to change the organisation's address.",
+      "examples": [
+        "\"none\""
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "organisation_etag",
+    "mine_etag"
+  ],
+  "title": "CaptureAddresses",
+  "type": "object"
+}

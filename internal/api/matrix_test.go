@@ -387,6 +387,32 @@ var matrixCalls = map[string]matrixCall{
 			return false
 		}
 	},
+	"getCaptureAddresses": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/email/capture-addresses", tok, nil), nil
+	},
+	"setOrganisationCaptureAddress": func(e *env, tok string) (response, func() bool) {
+		tag := func() any {
+			return e.call(http.MethodGet, "/v1/organisation/email/capture-addresses", e.as(authz.Auditor), nil).Body["organisation_etag"]
+		}
+		before := tag()
+		r := e.call(http.MethodPut, "/v1/organisation/email/capture-addresses/organisation", tok, map[string]any{"name": "m-" + uuid.NewString()[:8]}, "If-Match", "*")
+		return r, func() bool { return tag() == before }
+	},
+	"setMyCaptureAddress": func(e *env, tok string) (response, func() bool) {
+		// An address of one's own needs a person: the role's caller, as a member of the organisation.
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		p.UserID = matrixMemberUser(e)
+		person := e.singleFactor(p)
+		mine := func() any {
+			own := e.principal(authn.Principal{UserID: p.UserID, Client: "web", Class: authn.ClassUser, Organisation: e.books.Org, Roles: []authz.Role{authz.Employee}})
+			return e.call(http.MethodGet, "/v1/organisation/email/capture-addresses", own, nil).Body["mine_etag"]
+		}
+		before := mine()
+		r := e.call(http.MethodPut, "/v1/organisation/email/capture-addresses/mine", person, map[string]any{"name": "m-" + uuid.NewString()[:8]}, "If-Match", "*")
+		return r, func() bool { return mine() == before }
+	},
 	"getEmailMessage": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation/email/messages/"+matrixEmail(e), tok, nil), nil
 	},
@@ -1678,4 +1704,16 @@ func TestAuthorisationMatrix(t *testing.T) {
 	if allowed == 0 || refused == 0 {
 		t.Fatal("a matrix with one outcome proves nothing")
 	}
+}
+
+// matrixMemberUser is the user of the matrix's member of e's organisation.
+func matrixMemberUser(e *env) uuid.UUID {
+	id := matrixMember(e)
+	for _, x := range e.call(http.MethodGet, "/v1/members", e.as(authz.Administrator), nil).Body["items"].([]any) {
+		if m := x.(map[string]any); m["id"] == id {
+			return uuid.MustParse(m["user_id"].(string))
+		}
+	}
+	e.t.Fatalf("the matrix member %s is not listed", id)
+	return uuid.Nil
 }

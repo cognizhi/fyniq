@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "description": "The name before the @: 3 to 40 lower-case letters, digits, dots and hyphens. Leave it out to retire the address.",
+      "examples": [
+        "bills"
+      ],
+      "maxLength": 40,
+      "type": "string"
+    }
+  },
+  "title": "CaptureAddressChange",
+  "type": "object"
+}

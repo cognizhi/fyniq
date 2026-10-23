@@ -31,9 +31,11 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // the migrator at a release, read through views (§11.4, ENG-30). webauthn_credential and webauthn_challenge are people's
 // passkeys and their ceremonies' challenges (000045): reached only through SECURITY DEFINER functions. fx_feed_rate is
 // the daily exchange-rate feed (000070): read through a view, written by the worker only through record_feed_rate.
+// capture_name is the registry of email-in address names (000102): written by capture_address's trigger, read only
+// through capture_route.
 var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge",
-	"fx_feed_rate"}
+	"fx_feed_rate", "capture_name"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}
