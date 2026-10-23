@@ -101,6 +101,10 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **THEN** several files can be added
 - **AND** each has an evidence type (e.g. "ACRA acknowledgement", "board resolution", "bank letter", "screenshot"), a short note and the date it relates to
 
+#### Scenario: Built for bills and vendor credits (rev 0.86)
+- **WHEN** a person who holds the evidence right and views bills attaches a file to a bill or a vendor credit
+- **THEN** it is checked and staged as a journal's evidence is, comes off again while the bill is a draft, and is committed to the locked store once the bill is posted
+
 ### Requirement: FR-DOC-06 Evidence rules
 The system SHALL apply evidence rules per activity type, marking each as required, recommended or optional with the evidence types expected.
 

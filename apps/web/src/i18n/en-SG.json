@@ -324,6 +324,10 @@
       "label": "Spread over months",
       "tooltip": "Each month's part of a spread cost, moved from Prepayments to the cost on its date. Months to come are projections, not in the books yet."
     },
+    "bill.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the supplier's invoice or another file the bill rests on. Fyniq scans it; once the bill is posted the file is kept and never deleted."
+    },
     "bill.record-payment": {
       "label": "Record payment",
       "tooltip": "Record money already paid to the supplier for this bill: the date, the account it left and how much. It posts at once."

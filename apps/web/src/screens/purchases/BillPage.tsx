@@ -16,6 +16,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, postable, type Account } from "../accounting/data";
+import { billAttachers, EvidencePanel } from "../accounting/JournalEvidence";
 import { who } from "../accounting/Journals";
 import { preparers, StateChips, total, type Bill } from "./Bills";
 import { BillLines, lineKey, newLine, type Errors, type Line } from "./BillLines";
@@ -842,6 +843,9 @@ export function BillPage() {
 
       {bill && !editing && !form && <Releases bill={bill} base={base} />}
       {bill && !editing && !form && <Impact bill={bill} lines={bill.ledger_impact ?? []} accounts={byId} base={base} />}
+      {bill && one.data && !editing && (
+        <EvidencePanel record={{ kind: "bill", id: bill.id, etag: one.data.etag }} draft={bill.status === "draft"} mayAttach={roles.some((r) => billAttachers.includes(r))} onChanged={setStatus} />
+      )}
       {bill && applying && (
         <ApplyCredit
           open={applying}

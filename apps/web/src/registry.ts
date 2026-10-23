@@ -132,6 +132,7 @@ export const actions = [
   { kind: "action", id: "bill.ask-edit", mode: "basic", help: "bill.ask-edit", guide: "purchases.bills#void-or-edit-a-posted-bill" },
   { kind: "action", id: "credit.apply", mode: "basic", help: "credit.apply", guide: "purchases.bills#credit-notes" },
   { kind: "action", id: "credit.refund", mode: "basic", help: "credit.refund", guide: "purchases.bills#credit-notes" },
+  { kind: "action", id: "bill.attach-evidence", mode: "basic", help: "bill.attach-evidence", guide: "purchases.bills#attach-the-suppliers-invoice" },
   { kind: "action", id: "bill.record-payment", mode: "basic", help: "bill.record-payment", guide: "purchases.bills#record-a-payment" },
   // A line's spread is an Expert field group (§7.8: service periods and spreads); a bill that has one shows it, and its
   // schedule, in both modes.

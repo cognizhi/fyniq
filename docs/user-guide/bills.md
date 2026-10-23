@@ -50,6 +50,16 @@ For a bill in another currency, enter the amounts in that currency. Leave the ra
 the rate for the invoice date (see [Exchange rates](currencies.md)), and enter the **GST stated in
 SGD** as the supplier's tax invoice states it: that is the input tax claimed.
 
+## Attach the supplier's invoice
+
+Under **Evidence** on a saved bill or credit note, choose the file, say what it is (such as the
+invoice or a receipt) and select **Attach**. PDF, image, CSV, text, XLSX, DOCX and email files of up
+to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location.
+
+- While the bill is a draft, a file can come off again.
+- Once the bill is posted, its files are kept with it and never deleted, for as long as the records
+  are. A file added later is kept the same way.
+
 ## Check and post a bill
 
 A saved draft shows what stops it posting (✖) and what it would post with (⚠):

@@ -24,11 +24,13 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   (22 Oct 2026: `journal.Bills` posts, voids and edits in one transaction each; through the API the post and the
   void and the edit with their approvals, the approval engine's object `bill` (000077, 000078) and the four states, PRD
   rev 0.76. Test `TestBillsThroughTheAPI`)
-- [ ] 1.5 The API: list, get, create, revise, post, void, edit and preview bills, with ETags, idempotency
+- [x] 1.5 The API: list, get, create, revise, post, void, edit and preview bills, with ETags, idempotency
   and the matrix rows; Spectral clean. Tests `// req: FR-INT-01`
   (22 Oct 2026, part: `listBills`, `getBill` (states, checks, ledger impact), `createBill`, `replaceBill`, `postBill`,
   `voidBill`, `editBill`, `requestBillPost`, `requestBillVoid`, `requestBillEdit`, each with Prefer: return=preview, and
   their matrix rows. **Left:** a bill's attachments, with the screens)
+  (23 Oct 2026, PRD-001 rev 0.86: `addBillEvidence`, `listBillEvidence`, `getBillEvidence`, `removeBillEvidence`, with their
+  matrix rows)
 - [x] 1.6 The AP sub-ledger: open documents by supplier, equal to 2010 (INV-07), shown at the close.
   Tests `// req: INV-07`
   (23 Oct 2026, rev 0.78: `payables.Open` and `payables.Reconcile` from the documents, `balance.Control`, the close's
@@ -47,6 +49,7 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   attachments, activity, related)
   (22 Oct 2026, part: the posted bill on the same page, read-only, with its states, ledger impact, and Void and Edit,
   asked for in Founder mode. **Left:** the tabs for attachments, activity and related records, with attachments)
+  (23 Oct 2026, rev 0.86: the Evidence panel on the bill's page. **Left:** the activity and related-records tabs)
 
 ## 3. Payments recorded by hand (the owner's decision of 22 Oct 2026)
 
