@@ -9,7 +9,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// The standard chart is the workbook's 83 accounts, one moved, and B.5's three (PRD-001 rev 0.31): every
+// The standard chart is the workbook's 83 accounts, one moved, B.5's three (PRD-001 rev 0.31) and 2330 withholding tax
+// payable (rev 0.90, FR-AP-19): every
 // code once, every system account B.5 names, and the flags as the PRD reads.
 // req: FR-COA-01
 // req: FR-COA-02
@@ -18,8 +19,8 @@ func TestTheStandardChart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(accounts) != 86 {
-		t.Fatalf("%d accounts; want 86", len(accounts))
+	if len(accounts) != 87 {
+		t.Fatalf("%d accounts; want 87", len(accounts))
 	}
 	byCode := map[string]Account{}
 	sources := map[string]int{}
@@ -39,7 +40,7 @@ func TestTheStandardChart(t *testing.T) {
 			t.Errorf("account %s's guidance names a workbook sheet: %s", a.Code, a.Guidance)
 		}
 	}
-	if want := map[string]int{"workbook": 82, "workbook-moved": 1, "prd-b5": 3}; !maps.Equal(sources, want) {
+	if want := map[string]int{"workbook": 82, "workbook-moved": 1, "prd-b5": 4}; !maps.Equal(sources, want) {
 		t.Errorf("sources %v; want %v", sources, want)
 	}
 
@@ -52,7 +53,7 @@ func TestTheStandardChart(t *testing.T) {
 		"2120": "Deferred remuneration payable", "1250": "Staff & director advances", "3010": "Share capital - Ordinary",
 		"3020": "Share capital - Preference", "3300": "Capital contribution", "2700": "Convertible notes / SAFE", "6050": "Directors' fees",
 		"7040": "Unrealised FX gain or loss", "7050": "Gain / (loss) on disposal of assets", "1050": "Payment gateway (e.g. Stripe)",
-		"5040": "Payment processing fees", "2020": "Accrued expenses"} {
+		"5040": "Payment processing fees", "2020": "Accrued expenses", "2330": "Withholding tax payable"} {
 		if a, ok := byCode[code]; !ok || a.Name != name {
 			t.Errorf("account %s: %q; want %q", code, a.Name, name)
 		}
@@ -80,7 +81,7 @@ func TestTheStandardChart(t *testing.T) {
 			"2120", "2500"}},
 		"share capital": {flagged(func(a Account) bool { return a.Role == storage.RoleShareCapital }), []string{"3010", "3020"}},
 		"system": {flagged(func(a Account) bool { return a.Role != "" }), []string{"1100", "1210", "1590", "2010", "2100", "2110", "2120",
-			"2150", "2200", "2300", "2400", "2500", "2999", "3010", "3020", "3100", "3300", "6020", "6030", "6610", "7030", "7040", "8010"}},
+			"2150", "2200", "2300", "2330", "2400", "2500", "2999", "3010", "3020", "3100", "3300", "6020", "6030", "6610", "7030", "7040", "8010"}},
 		"money": {flagged(func(a Account) bool { return a.MoneyAccount }), []string{"1010", "1020", "1030", "1040", "1050", "2030", "2150"}},
 	} {
 		if !slices.Equal(c.got, c.want) {

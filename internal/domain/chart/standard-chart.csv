@@ -9,7 +9,8 @@
 # - type: the workbook's Cost of Sales, Expense, Other Expense and Tax are expense; Other Income is revenue
 #   (Fyniq's five types, FR-COA-02); the report group keeps the distinction;
 # - source "workbook-moved": 7050, the workbook's 7040 (disposals), because 7040 is unrealised FX in Fyniq;
-# - source "prd-b5": 2120, 3300 and 7040, which PRD-001 B.5 adds;
+# - source "prd-b5": 2120, 3300 and 7040, which PRD-001 B.5 adds, and (rev 0.90) 2330, withholding tax payable
+#   (FR-AP-19) [accountant to confirm the code];
 # - control_account on the sub-ledger accounts (1100, 2010, 2500, 2120), payroll_cost on 5050, 6011-6013,
 #   6050, 6020 and 6030 (FR-COA-02, read as rev 0.31 records [verify]), and the role of each system
 #   account of B.5 (FR-COA-03, rev 0.32), share-capital on 3010 and 3020;
@@ -41,6 +42,7 @@ code,name,type,report_group,cash_flow_line,function,money_account,default_gst_co
 2150,Expense claims payable (staff),liability,Payables & accruals,Payables & accruals,,yes,NA,no,no,expense-claims-payable,workbook,Staff paid for company expenses personally: record the expense as Money Out from this account; reimbursing them is a transfer from the bank to this account.,no
 2200,GST control,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,gst-control,workbook,"SYSTEM. GST owed to IRAS (or refundable). Choose this when you pay GST to, or receive a GST refund from, IRAS.",no
 2300,Income tax payable,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,income-tax-payable,workbook,Corporate income tax owed to IRAS. Choose this when paying corporate tax.,no
+2330,Withholding tax payable,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,withholding-tax-payable,prd-b5,"SYSTEM. Tax withheld from payments to non-resident suppliers, owed to IRAS (filled automatically when a bill withholds it). Choose this when paying it to IRAS.",no
 2400,Deferred revenue,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,deferred-revenue,workbook,SYSTEM. Customer money received in advance for future months (filled automatically when revenue is spread).,no
 2410,Customer deposits & retainers,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,,workbook,Advance payments / retainers received before any invoice. Apply them later with a Journal.,no
 2500,Loan from director / shareholder,liability,Borrowings,Borrowings,,no,NA,yes,no,director-loan,workbook,"Money lent to the company by founders or shareholders, and repayments of it.",yes

@@ -78,7 +78,7 @@ func (q *Queries) ContactDuplicates(ctx context.Context, arg ContactDuplicatesPa
 }
 
 const getContact = `-- name: GetContact :one
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact WHERE id = $1
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact WHERE id = $1
 `
 
 type GetContactRow struct {
@@ -93,6 +93,7 @@ type GetContactRow struct {
 	Phone            *string
 	Address          *string
 	Country          *string
+	TaxResidence     *string
 	Currency         *string
 	PaymentTermsDays *int16
 	DefaultAccountID *uuid.UUID
@@ -116,6 +117,7 @@ func (q *Queries) GetContact(ctx context.Context, id uuid.UUID) (GetContactRow, 
 		&i.Phone,
 		&i.Address,
 		&i.Country,
+		&i.TaxResidence,
 		&i.Currency,
 		&i.PaymentTermsDays,
 		&i.DefaultAccountID,
@@ -128,11 +130,11 @@ func (q *Queries) GetContact(ctx context.Context, id uuid.UUID) (GetContactRow, 
 
 const insertContact = `-- name: InsertContact :one
 INSERT INTO fyniq.contact (legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone,
-  address, country, currency, payment_terms_days, default_account_id, default_gst_code)
+  address, country, tax_residence, currency, payment_terms_days, default_account_id, default_gst_code)
 VALUES ($1, $2, $3, $4, $5,
-  $6, $7, $8, $9, $10, $11,
-  $12, $13, $14)
-RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version
+  $6, $7, $8, $9, $10, $11, $12,
+  $13, $14, $15)
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version
 `
 
 type InsertContactParams struct {
@@ -146,6 +148,7 @@ type InsertContactParams struct {
 	Phone            *string
 	Address          *string
 	Country          *string
+	TaxResidence     *string
 	Currency         *string
 	PaymentTermsDays *int16
 	DefaultAccountID *uuid.UUID
@@ -164,6 +167,7 @@ type InsertContactRow struct {
 	Phone            *string
 	Address          *string
 	Country          *string
+	TaxResidence     *string
 	Currency         *string
 	PaymentTermsDays *int16
 	DefaultAccountID *uuid.UUID
@@ -184,6 +188,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 		arg.Phone,
 		arg.Address,
 		arg.Country,
+		arg.TaxResidence,
 		arg.Currency,
 		arg.PaymentTermsDays,
 		arg.DefaultAccountID,
@@ -202,6 +207,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 		&i.Phone,
 		&i.Address,
 		&i.Country,
+		&i.TaxResidence,
 		&i.Currency,
 		&i.PaymentTermsDays,
 		&i.DefaultAccountID,
@@ -213,7 +219,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 }
 
 const lockContact = `-- name: LockContact :one
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact WHERE id = $1 FOR UPDATE
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact WHERE id = $1 FOR UPDATE
 `
 
 type LockContactRow struct {
@@ -228,6 +234,7 @@ type LockContactRow struct {
 	Phone            *string
 	Address          *string
 	Country          *string
+	TaxResidence     *string
 	Currency         *string
 	PaymentTermsDays *int16
 	DefaultAccountID *uuid.UUID
@@ -251,6 +258,7 @@ func (q *Queries) LockContact(ctx context.Context, id uuid.UUID) (LockContactRow
 		&i.Phone,
 		&i.Address,
 		&i.Country,
+		&i.TaxResidence,
 		&i.Currency,
 		&i.PaymentTermsDays,
 		&i.DefaultAccountID,
@@ -262,7 +270,7 @@ func (q *Queries) LockContact(ctx context.Context, id uuid.UUID) (LockContactRow
 }
 
 const pageContacts = `-- name: PageContacts :many
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact
 WHERE id > $1::uuid
   AND ($2::text IS NULL OR ($2::text = 'customer' AND is_customer) OR ($2::text = 'vendor' AND is_vendor))
 ORDER BY id LIMIT $3
@@ -286,6 +294,7 @@ type PageContactsRow struct {
 	Phone            *string
 	Address          *string
 	Country          *string
+	TaxResidence     *string
 	Currency         *string
 	PaymentTermsDays *int16
 	DefaultAccountID *uuid.UUID
@@ -316,6 +325,7 @@ func (q *Queries) PageContacts(ctx context.Context, arg PageContactsParams) ([]P
 			&i.Phone,
 			&i.Address,
 			&i.Country,
+			&i.TaxResidence,
 			&i.Currency,
 			&i.PaymentTermsDays,
 			&i.DefaultAccountID,
@@ -337,10 +347,10 @@ const updateContact = `-- name: UpdateContact :one
 UPDATE fyniq.contact SET legal_name = $1, is_customer = $2, is_vendor = $3,
   uen_or_tax_id = $4, peppol_id = $5, billing_email = $6,
   remittance_email = $7, phone = $8, address = $9, country = $10,
-  currency = $11, payment_terms_days = $12, default_account_id = $13,
-  default_gst_code = $14, is_active = $15, version = version + 1
-WHERE id = $16
-RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version
+  tax_residence = $11, currency = $12, payment_terms_days = $13, default_account_id = $14,
+  default_gst_code = $15, is_active = $16, version = version + 1
+WHERE id = $17
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, default_account_id, default_gst_code, is_active, version
 `
 
 type UpdateContactParams struct {
@@ -354,6 +364,7 @@ type UpdateContactParams struct {
 	Phone            *string
 	Address          *string
 	Country          *string
+	TaxResidence     *string
 	Currency         *string
 	PaymentTermsDays *int16
 	DefaultAccountID *uuid.UUID
@@ -374,6 +385,7 @@ type UpdateContactRow struct {
 	Phone            *string
 	Address          *string
 	Country          *string
+	TaxResidence     *string
 	Currency         *string
 	PaymentTermsDays *int16
 	DefaultAccountID *uuid.UUID
@@ -394,6 +406,7 @@ func (q *Queries) UpdateContact(ctx context.Context, arg UpdateContactParams) (U
 		arg.Phone,
 		arg.Address,
 		arg.Country,
+		arg.TaxResidence,
 		arg.Currency,
 		arg.PaymentTermsDays,
 		arg.DefaultAccountID,
@@ -414,6 +427,7 @@ func (q *Queries) UpdateContact(ctx context.Context, arg UpdateContactParams) (U
 		&i.Phone,
 		&i.Address,
 		&i.Country,
+		&i.TaxResidence,
 		&i.Currency,
 		&i.PaymentTermsDays,
 		&i.DefaultAccountID,

@@ -662,3 +662,71 @@ func mustCmp(t interface{ Fatal(...any) }, a, b money.Money) int {
 	}
 	return c
 }
+
+// req: RND-WHT
+// req: FR-AP-19
+func TestWHTPinnedCases(t *testing.T) {
+	for _, c := range []struct {
+		gross, rate string
+		cur         money.Currency
+		tax, part   string
+	}{
+		{"5000.00", "15", sgd, "750.00", "750.00"},
+		{"1234.56", "17", sgd, "209.78", "209.88"}, // the tax on 1,234 (rounded down); the part of 1,234.56
+		{"1346.10", "17", sgd, "228.82", "228.84"},
+		{"999.99", "10", sgd, "99.90", "100.00"},
+		{"0.99", "17", sgd, "0.00", "0.17"},
+		{"12345", "15", jpy, "1852", "1852"}, // 1,851.75
+		{"100.00", "12.5", sgd, "12.50", "12.50"},
+	} {
+		g, err := money.Parse(c.gross, c.cur)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tax, err := WHT(g, c.rate)
+		if err != nil || tax.String() != c.tax {
+			t.Errorf("WHT(%s, %s%%) = %v, %v; want %s", c.gross, c.rate, tax, err, c.tax)
+		}
+		part, err := Withheld(g, c.rate)
+		if err != nil || part.String() != c.part {
+			t.Errorf("Withheld(%s, %s%%) = %v, %v; want %s", c.gross, c.rate, part, err, c.part)
+		}
+	}
+	g, _ := money.Parse("100.00", sgd)
+	for _, bad := range []string{"", "0", "0.00", "100.01", "-5", "17%", "1e1"} {
+		if _, err := WHT(g, bad); err == nil || IsWHTRate(bad) {
+			t.Errorf("WHT took the rate %q", bad)
+		}
+		if _, err := Withheld(g, bad); err == nil {
+			t.Errorf("Withheld took the rate %q", bad)
+		}
+	}
+}
+
+// req: RND-WHT
+// req: QA-ENG-03
+// The tax is never more than the rate of the gross nor less than the rate of its whole units, and never falls as the
+// gross grows.
+func TestWHTProperties(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		cents := rapid.Int64Range(0, 100_000_000).Draw(t, "gross cents")
+		g, _ := money.Parse(fmt.Sprintf("%d.%02d", cents/100, cents%100), sgd)
+		n := rapid.IntRange(1, 10_000).Draw(t, "rate hundredths")
+		rate := fmt.Sprintf("%d.%02d", n/100, n%100)
+		tax, err := WHT(g, rate)
+		if err != nil {
+			t.Fatal(err)
+		}
+		part, err := Withheld(g, rate)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if tax.Sign() < 0 || mustCmp(t, tax, part) > 0 {
+			t.Fatalf("tax %s above the part %s of %s at %s%%", tax, part, g, rate)
+		}
+		more, _ := money.Parse(fmt.Sprintf("%d.%02d", (cents+100)/100, (cents+100)%100), sgd)
+		if next, _ := WHT(more, rate); mustCmp(t, next, tax) < 0 {
+			t.Fatalf("a larger gross withheld less: %s < %s", next, tax)
+		}
+	})
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "$ref": "WithholdingDecision.schema.json",
+      "description": "The tax agent's decision it posts (or posted) with; absent while there is none (⚠, BILL-WHT-UNDECIDED)."
+    },
+    "held": {
+      "description": "A posted bill: why a payment of it waits (BILLPAY-11): no decision yet, or one since it posted that withholds at another rate, which an edit applies.",
+      "examples": [
+        "the tax agent has not decided whether tax is withheld from it"
+      ],
+      "type": "string"
+    },
+    "nature_of_payment": {
+      "description": "What the payment is for, as the bill records it.",
+      "examples": [
+        "services_in_singapore"
+      ],
+      "type": "string"
+    },
+    "residence": {
+      "description": "Where the supplier is resident for tax.",
+      "examples": [
+        "US"
+      ],
+      "type": "string"
+    },
+    "tax": {
+      "$ref": "Money.schema.json",
+      "description": "The tax withheld, in the base currency, as posting writes it (or wrote it) to the withholding tax payable (RND-WHT)."
+    }
+  },
+  "required": [
+    "residence"
+  ],
+  "title": "BillWithholding",
+  "type": "object"
+}

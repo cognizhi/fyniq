@@ -25,6 +25,7 @@ const (
 	GSTExclName      = "RND-GST-EXCL"
 	LineName         = "RND-LINE"
 	GSTShareName     = "RND-GST-SHARE"
+	WHTName          = "RND-WHT"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -113,6 +114,45 @@ func GSTShare(gst money.Money, shares ...string) (money.Money, error) {
 		}
 	}
 	return money.FromRounded(halfAwayFromZero(product, gst.Currency().MinorUnits), gst.Currency())
+}
+
+// IsWHTRate reports whether s is a withholding rate WHT takes: a percentage above 0 and up to 100, with at most two
+// decimals ("17", "10", "24", "12.5").
+func IsWHTRate(s string) bool { return sharePattern.MatchString(s) && !isZeroText(s) }
+
+func isZeroText(s string) bool {
+	d, _, err := apd.NewFromString(s)
+	return err == nil && d.IsZero()
+}
+
+// WHT is RND-WHT (PRD-001 §10.4, rev 0.90; provisional until the accountant's sign-off): the tax withheld from a
+// payment to a non-resident supplier (FR-AP-19), in the base currency = round(⌊gross⌋ × rate ÷ 100, the base
+// currency's minor units), half away from zero, where gross is the payment before GST in the base currency and ⌊⌋
+// rounds it down to a whole unit, as IRAS's withholding-tax form states it ("rounded down to the nearest dollar").
+func WHT(gross money.Money, percent string) (money.Money, error) {
+	if !IsWHTRate(percent) {
+		return money.Money{}, fmt.Errorf("%s: the rate %q is not a percentage above 0 and up to 100 with at most two decimals", WHTName, percent)
+	}
+	c := work.WithPrecision(60)
+	c.Rounding = apd.RoundDown
+	whole := new(apd.Decimal)
+	if _, err := c.Quantize(whole, gross.Decimal(), 0); err != nil {
+		return money.Money{}, err
+	}
+	base, err := money.FromRounded(whole, gross.Currency())
+	if err != nil {
+		return money.Money{}, err
+	}
+	return GSTShare(base, percent)
+}
+
+// Withheld is RND-WHT's part of a supplier's own amount, for a bill in another currency than the base: round(gross ×
+// rate ÷ 100, the currency's minor units), half away from zero. What it owes the supplier is its total less this.
+func Withheld(gross money.Money, percent string) (money.Money, error) {
+	if !IsWHTRate(percent) {
+		return money.Money{}, fmt.Errorf("%s: the rate %q is not a percentage above 0 and up to 100 with at most two decimals", WHTName, percent)
+	}
+	return GSTShare(gross, percent)
 }
 
 // Rate is RND-RATE (PRD-001 §10.4, rev 0.24): a quote turned into the one form Fyniq stores, base currency per one

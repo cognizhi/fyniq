@@ -41,7 +41,7 @@ func registerChart(a *API) {
 	register(a, authz.LoadStandardChart, huma.Operation{
 		OperationID: "loadStandardChart", Method: http.MethodPost, Path: "/v1/accounts:load-standard-chart", Tags: []string{"Chart of accounts"},
 		DefaultStatus: http.StatusCreated, Summary: "Load the standard chart of accounts",
-		Description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 86 accounts with their " +
+		Description: "Loads the standard Singapore start-up chart into an organisation that has no account yet: 87 accounts with their " +
 			"report groups, cash-flow lines, functions, GST codes, flags and guidance (FR-COA-01, FR-COA-02; PRD-001 rev 0.31, provisional " +
 			"until the accountant's review). Refused once the organisation has any account. Side effects: the accounts and an audit event " +
 			"for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",

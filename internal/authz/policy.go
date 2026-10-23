@@ -417,6 +417,11 @@ var (
 	RequestBillPost = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
 	RequestBillVoid = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
 	EditBill        = Policy{Operation: "editBill", Capability: Bills, Need: Post}
+	// The tax agent's withholding decisions for a non-resident supplier (FR-AP-19; rev 0.90): read with the bills (V),
+	// recorded by whoever prepares bills (C), naming the tax agent who gave them, with their advice on the bill.
+	ListWithholdingDecisions  = Policy{Operation: "listWithholdingDecisions", Capability: Bills, Need: View}
+	RecordWithholdingDecision = Policy{Operation: "recordWithholdingDecision", Capability: Bills, Need: Create,
+		Note: "Names the tax agent who gave it; their advice is attached to the bill as evidence. AI and MCP clients never record one (§9.6)."}
 	// The GST codes a bill's line takes are read with the bills (V).
 	GetPurchaseGSTCodes = Policy{Operation: "getPurchaseGSTCodes", Capability: Bills, Need: View}
 	RequestBillEdit     = Policy{Operation: "requestBillEdit", Capability: Bills, Need: Post}
@@ -587,6 +592,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
+	ListWithholdingDecisions, RecordWithholdingDecision,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
 	ListPurchaseOrders, GetPurchaseOrder, CreatePurchaseOrder, ReplacePurchaseOrder, ApprovePurchaseOrder, RequestPurchaseOrderApproval, ClosePurchaseOrder, BillPurchaseOrder,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,

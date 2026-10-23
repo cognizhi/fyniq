@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -78,6 +79,9 @@ type Draft struct {
 	Lines       []Line
 	Notes       string
 	InputTax    InputTax // the facts its input tax is decided from (FR-AP-20; rev 0.89)
+	// Nature is the nature of the payment, one of Natures, for a bill of a supplier resident outside Singapore: what the
+	// tax agent's withholding decision is kept by (FR-AP-19; rev 0.90). Empty for a resident supplier.
+	Nature string
 	// RecurringBill is the recurring bill version the scheduler made it from (FR-AP-09; rev 0.84), nil for one a person
 	// made. The database's create_scheduled_bill_draft writes it, and every later version keeps it.
 	RecurringBill *RecurringRef
@@ -162,6 +166,7 @@ type payload struct {
 	Notes         string        `json:"notes,omitempty"`
 	RecurringBill *RecurringRef `json:"recurring_bill,omitempty"`
 	InputTax      *payloadTax   `json:"input_tax,omitempty"`
+	Nature        string        `json:"nature_of_payment,omitempty"`
 }
 
 // payloadTax are a bill's input-tax facts as a document version stores them: only those that are not the usual, so a
@@ -208,8 +213,11 @@ func Encode(d Draft) ([]byte, error) {
 		x := probs[0]
 		return nil, &Error{x.Code, x.Field + ": " + x.Message, x.Fix}
 	}
+	if d.Nature != "" && !slices.Contains(Natures, d.Nature) {
+		return nil, &Error{CodeNature, fmt.Sprintf("nature_of_payment: %q is not one of %s", d.Nature, strings.Join(Natures, ", ")), "Choose one of them"}
+	}
 	p := payload{SupplierID: d.SupplierID, SupplierRef: d.SupplierRef, Date: day(d.Date), DueDate: day(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes,
-		Lines: []payloadLine{}, RecurringBill: d.RecurringBill}
+		Lines: []payloadLine{}, RecurringBill: d.RecurringBill, Nature: d.Nature}
 	if f := d.InputTax; f != (InputTax{}) {
 		p.InputTax = &payloadTax{Document: f.Document, AddressedTo: f.AddressedTo, Repaid: f.Repaid, TaxAgent: f.TaxAgent}
 		if f.SupplierNotRegistered {
@@ -262,7 +270,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	if err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{SupplierID: p.SupplierID, SupplierRef: p.SupplierRef, Currency: cur, Notes: p.Notes, RecurringBill: p.RecurringBill}
+	d := Draft{SupplierID: p.SupplierID, SupplierRef: p.SupplierRef, Currency: cur, Notes: p.Notes, RecurringBill: p.RecurringBill, Nature: p.Nature}
 	if t := p.InputTax; t != nil {
 		d.InputTax = InputTax{SupplierNotRegistered: t.SupplierRegistered != nil && !*t.SupplierRegistered, Document: t.Document, AddressedTo: t.AddressedTo,
 			Repaid: t.Repaid, TaxAgent: t.TaxAgent}
@@ -336,7 +344,9 @@ type Prepared struct {
 	Supplier storage.Contact
 	DueDate  time.Time
 	InputTax []Decision // one a line, in order (FR-AP-20)
-	Warnings []Warning
+	// Withholding is how withholding tax stands for it (FR-AP-19): only a bill, never a vendor credit, withholds.
+	Withholding Withholding
+	Warnings    []Warning
 }
 
 // Prepare reads one version of a bill for the rules: its supplier, its due date, its rate (the typed one, else the
@@ -344,6 +354,12 @@ type Prepared struct {
 // share, and the organisation's GST registration on the bill's date (FR-AP-20; decide). Problems the rules would
 // refuse come back as ledger.Problems with the engine's own, from PostBill; the warnings come back on the Prepared.
 func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, base money.Currency) (Prepared, ledger.Problems, error) {
+	return PrepareAt(ctx, u, doc, base, time.Time{})
+}
+
+// PrepareAt is Prepare for a bill that posted at at: the withholding decision it takes is the one in force then
+// (FR-AP-19), as a replay or a posted bill's view reads it. A zero at is now.
+func PrepareAt(ctx context.Context, u storage.UnitOfWork, doc storage.Document, base money.Currency, at time.Time) (Prepared, ledger.Problems, error) {
 	d, err := Read(doc, base)
 	if err != nil {
 		return Prepared{}, nil, err
@@ -370,6 +386,18 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 			add(CodeSupplier, "supplier_id", fmt.Sprintf("%s is inactive", c.LegalName), "Reactivate the contact, or choose another")
 		default:
 			out.Supplier = c
+		}
+	}
+
+	// Withholding tax on a non-resident supplier's bill (FR-AP-19): the nature of the payment, and the tax agent's
+	// decision in force when it posts.
+	if out.Supplier.ID != uuid.Nil && doc.Type == storage.DocumentBill {
+		if out.Withholding, err = withholdingOf(ctx, u, out.Supplier, d.Nature, at); err != nil {
+			return Prepared{}, nil, err
+		}
+		if out.Withholding.NonResident && !slices.Contains(Natures, d.Nature) {
+			add(CodeNature, "nature_of_payment", fmt.Sprintf("%s is resident for tax in %s, so the bill records the nature of the payment", out.Supplier.LegalName,
+				out.Withholding.Residence), "Choose what the payment is for, such as software for the company's own use or services performed in Singapore")
 		}
 	}
 
@@ -436,11 +464,22 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		}
 		b.Lines = append(b.Lines, bl)
 	}
+	if r := out.Withholding.Rate(); r != "" {
+		b.Withholding = &ledger.Withholding{RatePercent: r}
+	}
 	out.Bill = b
+	if out.Withholding.NonResident && slices.Contains(Natures, d.Nature) && out.Withholding.Decision == nil {
+		out.Warnings = append(out.Warnings, Warning{WarnWHTUndecided, "nature_of_payment",
+			fmt.Sprintf("the tax agent has not decided whether tax is withheld from %s's payments for %s: it posts without withholding, and its payment waits for the decision",
+				out.Supplier.LegalName, NatureWords[d.Nature]),
+			"Record the tax agent's decision for the supplier and nature, with their advice attached"})
+	}
 	if len(probs) == 0 && !d.Date.IsZero() {
-		if out.Warnings, err = warnings(ctx, u, doc, d, b, base, version, out.InputTax); err != nil {
+		more, err := warnings(ctx, u, doc, d, b, base, version, out.InputTax)
+		if err != nil {
 			return Prepared{}, nil, err
 		}
+		out.Warnings = append(out.Warnings, more...)
 	}
 	return out, probs, nil
 }

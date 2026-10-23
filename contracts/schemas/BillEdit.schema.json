@@ -59,6 +59,23 @@
         "null"
       ]
     },
+    "nature_of_payment": {
+      "description": "For a supplier resident outside Singapore (FR-AP-19): what the payment is for. Required to post such a bill (BILL-16); the tax agent's withholding decision is kept per supplier and nature. software_use is software bought for the company's own use, such as a subscription; movable_rent is rent of movable property.",
+      "enum": [
+        "goods",
+        "software_use",
+        "software_rights",
+        "services_in_singapore",
+        "services_outside_singapore",
+        "interest",
+        "movable_rent",
+        "other"
+      ],
+      "examples": [
+        "software_use"
+      ],
+      "type": "string"
+    },
     "notes": {
       "description": "Notes kept with the bill.",
       "examples": [

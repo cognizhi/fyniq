@@ -130,6 +130,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 - [ ] 9.1 A vendor's tax residence; a non-resident bill's nature of payment; the tax agent's decision per
   supplier and nature, with evidence, reused; ⚠ and the payment hold until decided; the withholding
   posting to 2330. Tests `// req: FR-AP-19`, G4-010. **Left:** the statutory-calendar task (`p1-gst`)
+  (23 Oct 2026, PRD-001 rev 0.90, the API: a contact's `tax_residence`; a bill's `nature_of_payment`, BILL-16 without
+  it; the decisions, append-only (`FY174`), with the rate the tax agent advised; `bill@1` withholds under `RND-WHT` with
+  the decision in force when its entry is recorded; ⚠ BILL-WHT-UNDECIDED; the hold BILLPAY-11; 2330 in the standard
+  chart. Tests `TestWithholdingIsDecidedAndPostedWithTheBill`, `TestWithholdingThroughTheAPI`, `TestPostBillWithholdsTax`,
+  `TestWHT*`. **Left:** the screens (a contact's tax residence, a bill's nature, recording the decision, the hold);
+  a vendor credit's withholding [accountant to confirm])
 - [x] 9.2 Input-tax eligibility per line from its facts and the organisation's registration at the bill
   date. Tests `// req: FR-AP-20`, G4-026, G4-027, G4-028
   (23 Oct 2026, PRD-001 rev 0.89: the facts on the bill and each line's business share; the decision

@@ -30,6 +30,23 @@
       "minLength": 1,
       "type": "string"
     },
+    "nature_of_payment": {
+      "description": "For a supplier resident outside Singapore: what each draft's payment is for (FR-AP-19), as on a bill.",
+      "enum": [
+        "goods",
+        "software_use",
+        "software_rights",
+        "services_in_singapore",
+        "services_outside_singapore",
+        "interest",
+        "movable_rent",
+        "other"
+      ],
+      "examples": [
+        "software_use"
+      ],
+      "type": "string"
+    },
     "notes": {
       "description": "The notes of each draft.",
       "examples": [

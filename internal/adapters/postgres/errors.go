@@ -54,6 +54,7 @@ var fyCodes = map[string]string{
 	"FY171": storage.CodeAllocation,
 	"FY172": storage.CodeBillRelease,
 	"FY173": storage.CodePurchaseOrder,
+	"FY174": storage.CodeWithholding,
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

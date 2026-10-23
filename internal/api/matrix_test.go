@@ -1371,6 +1371,18 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/supplier-refunds/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	"listWithholdingDecisions": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/contacts/"+e.foreignSupplier()+"/withholding-decisions", tok, nil), nil
+	},
+	"recordWithholdingDecision": func(e *env, tok string) (response, func() bool) {
+		id := e.foreignSupplier()
+		agent := "Matrix " + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/contacts/"+id+"/withholding-decisions", tok, map[string]any{"nature_of_payment": "interest",
+			"outcome": "not_applicable", "tax_agent": agent})
+		return r, func() bool {
+			return !strings.Contains(e.call(http.MethodGet, "/v1/contacts/"+id+"/withholding-decisions", e.as(authz.Accountant), nil).Raw, agent)
+		}
+	},
 	"getPayables": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/payables?as_at=2026-10-31", tok, nil), nil
 	},

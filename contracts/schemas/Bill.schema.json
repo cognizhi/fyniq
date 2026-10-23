@@ -91,6 +91,13 @@
       },
       "type": "array"
     },
+    "nature_of_payment": {
+      "description": "What the payment is for, for a supplier resident outside Singapore (FR-AP-19).",
+      "examples": [
+        "software_use"
+      ],
+      "type": "string"
+    },
     "notes": {
       "description": "Its notes.",
       "examples": [
@@ -181,6 +188,10 @@
       ],
       "format": "int64",
       "type": "integer"
+    },
+    "withholding": {
+      "$ref": "BillWithholding.schema.json",
+      "description": "getBill only, for a supplier resident outside Singapore: how withholding tax stands (FR-AP-19)."
     }
   },
   "required": [

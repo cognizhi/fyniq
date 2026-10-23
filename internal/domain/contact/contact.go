@@ -69,6 +69,9 @@ func Check(d storage.ContactDetails) []Problem {
 	if d.Country != "" && !country.MatchString(d.Country) {
 		add(CodeCountry, "country", fmt.Sprintf("%q is not a country code", d.Country), "Use the two-letter ISO 3166 code, such as SG or US")
 	}
+	if d.TaxResidence != "" && !country.MatchString(d.TaxResidence) {
+		add(CodeCountry, "tax_residence", fmt.Sprintf("%q is not a country code", d.TaxResidence), "Use the two-letter ISO 3166 code, such as SG or US")
+	}
 	if d.Currency != "" {
 		if _, err := money.Lookup(d.Currency); err != nil {
 			add(CodeCurrency, "currency", fmt.Sprintf("%q is not a currency Fyniq knows", d.Currency), "Use an ISO 4217 code, such as SGD or USD")

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bill_id": {
+      "description": "The bill it was recorded from, whose files hold the tax agent's advice.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The decision's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "nature_of_payment": {
+      "description": "The nature of payment it is for.",
+      "examples": [
+        "services_in_singapore"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Why, in the tax agent's words.",
+      "examples": [
+        "Non-resident professional working on site in Singapore: 15% of gross"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "not_applicable: nothing is withheld; withhold: at the rate the tax agent advised; treaty: a reduced treaty rate, with the certificate of residence attached.",
+      "enum": [
+        "not_applicable",
+        "withhold",
+        "treaty"
+      ],
+      "examples": [
+        "withhold"
+      ],
+      "type": "string"
+    },
+    "rate_percent": {
+      "description": "The rate withheld, as a percentage of the payment before GST; absent for not_applicable.",
+      "examples": [
+        "15"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded: it is in force from then.",
+      "examples": [
+        "2026-10-23T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who recorded it."
+    },
+    "supplier_id": {
+      "description": "The supplier.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "tax_agent": {
+      "description": "The tax agent who gave it.",
+      "examples": [
+        "Grace Ho, Ho \u0026 Partners"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "supplier_id",
+    "nature_of_payment",
+    "outcome",
+    "tax_agent",
+    "recorded_at"
+  ],
+  "title": "WithholdingDecision",
+  "type": "object"
+}

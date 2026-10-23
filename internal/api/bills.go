@@ -44,7 +44,8 @@ const (
 
 // BillCodes are the codes the posting rules and the bill's own checks answer.
 var BillCodes = []string{bill.CodeSupplier, bill.CodeGSTCode, bill.CodeDueDate, bill.CodeTooLong, ledger.CodeBillTotal, ledger.CodeSystemRole,
-	ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread}
+	ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread, bill.CodeInputTax, bill.CodeBusinessShare, ledger.CodeClaimShare,
+	bill.CodeNature, ledger.CodeWithholding}
 
 // BillApprovalCodes are the codes an approval of a bill's post or void may answer: SOD-3, and the posting's own.
 func BillApprovalCodes() []string {
@@ -119,6 +120,31 @@ type BillDraft struct {
 	Lines       []BillLineDraft `json:"lines" maxItems:"200" doc:"The bill's lines."`
 	Notes       string          `json:"notes,omitempty" maxLength:"2000" doc:"Notes kept with the bill." example:"Annual renewal, 10 seats"`
 	InputTax    *BillInputTax   `json:"input_tax,omitempty" doc:"The facts its input tax is decided from (FR-AP-20). Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the company."`
+	Nature      string          `json:"nature_of_payment,omitempty" enum:"goods,software_use,software_rights,services_in_singapore,services_outside_singapore,interest,movable_rent,other" doc:"For a supplier resident outside Singapore (FR-AP-19): what the payment is for. Required to post such a bill (BILL-16); the tax agent's withholding decision is kept per supplier and nature. software_use is software bought for the company's own use, such as a subscription; movable_rent is rent of movable property." example:"software_use"`
+}
+
+// WithholdingDecision is the tax agent's decision on whether tax is withheld from a non-resident supplier's payments for
+// one nature of payment (FR-AP-19), reused for its bills: a later decision replaces it from when it is recorded.
+type WithholdingDecision struct {
+	ID          string    `json:"id" format:"uuid" doc:"The decision's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10"`
+	SupplierID  string    `json:"supplier_id" format:"uuid" doc:"The supplier." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"`
+	Nature      string    `json:"nature_of_payment" doc:"The nature of payment it is for." example:"services_in_singapore"`
+	Outcome     string    `json:"outcome" enum:"not_applicable,withhold,treaty" doc:"not_applicable: nothing is withheld; withhold: at the rate the tax agent advised; treaty: a reduced treaty rate, with the certificate of residence attached." example:"withhold"`
+	RatePercent string    `json:"rate_percent,omitempty" doc:"The rate withheld, as a percentage of the payment before GST; absent for not_applicable." example:"15"`
+	TaxAgent    string    `json:"tax_agent" doc:"The tax agent who gave it." example:"Grace Ho, Ho & Partners"`
+	Note        string    `json:"note,omitempty" doc:"Why, in the tax agent's words." example:"Non-resident professional working on site in Singapore: 15% of gross"`
+	BillID      string    `json:"bill_id,omitempty" format:"uuid" doc:"The bill it was recorded from, whose files hold the tax agent's advice." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"`
+	RecordedBy  *Person   `json:"recorded_by,omitempty" doc:"Who recorded it."`
+	RecordedAt  time.Time `json:"recorded_at" doc:"When it was recorded: it is in force from then." example:"2026-10-23T09:30:00Z"`
+}
+
+// BillWithholding is how withholding tax stands for a bill of a supplier resident outside Singapore (FR-AP-19).
+type BillWithholding struct {
+	Residence string               `json:"residence" doc:"Where the supplier is resident for tax." example:"US"`
+	Nature    string               `json:"nature_of_payment,omitempty" doc:"What the payment is for, as the bill records it." example:"services_in_singapore"`
+	Decision  *WithholdingDecision `json:"decision,omitempty" doc:"The tax agent's decision it posts (or posted) with; absent while there is none (⚠, BILL-WHT-UNDECIDED)."`
+	Tax       *Money               `json:"tax,omitempty" doc:"The tax withheld, in the base currency, as posting writes it (or wrote it) to the withholding tax payable (RND-WHT)."`
+	Held      string               `json:"held,omitempty" doc:"A posted bill: why a payment of it waits (BILLPAY-11): no decision yet, or one since it posted that withholds at another rate, which an edit applies." example:"the tax agent has not decided whether tax is withheld from it"`
 }
 
 // BillSupplier is a bill's supplier, as the bill shows it.
@@ -162,6 +188,8 @@ type Bill struct {
 	Lines         []BillLineDraft   `json:"lines" nullable:"false" doc:"The lines as entered."`
 	Notes         string            `json:"notes,omitempty" doc:"Its notes." example:"Annual renewal"`
 	InputTax      BillInputTax      `json:"input_tax" doc:"The facts its input tax is decided from, every one stated (FR-AP-20)."`
+	Nature        string            `json:"nature_of_payment,omitempty" doc:"What the payment is for, for a supplier resident outside Singapore (FR-AP-19)." example:"software_use"`
+	Withholding   *BillWithholding  `json:"withholding,omitempty" doc:"getBill only, for a supplier resident outside Singapore: how withholding tax stands (FR-AP-19)."`
 	TaxDecisions  []BillTaxDecision `json:"input_tax_decisions" nullable:"false" doc:"getBill only: how each line's input tax was decided, one a line in order (FR-AP-20)."`
 	Total         Money             `json:"total" doc:"Every line's net and GST, in the bill's currency."`
 	Payable       *Money            `json:"payable,omitempty" doc:"What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."`
@@ -328,7 +356,7 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 		}
 		d.SupplierID = id
 	}
-	d.SupplierRef, d.Notes = strings.TrimSpace(in.SupplierRef), in.Notes
+	d.SupplierRef, d.Notes, d.Nature = strings.TrimSpace(in.SupplierRef), in.Notes, in.Nature
 	if f := in.InputTax; f != nil {
 		d.InputTax = bill.InputTax{SupplierNotRegistered: f.SupplierRegistered != nil && !*f.SupplierRegistered, Document: f.Document,
 			AddressedTo: f.AddressedTo, Repaid: f.Repaid, TaxAgent: f.TaxAgent}
@@ -433,11 +461,12 @@ func abs(m money.Money) money.Money {
 // billView is what showing bills reads once per request: the base currency, the organisation's today, the accounts
 // payable account, and the pending and rejected requests about bills.
 type billView struct {
-	base     money.Currency
-	today    time.Time
-	payables uuid.UUID
-	asked    map[string]string // a bill's ID: its pending request
-	rejected map[string]int    // a bill's ID: the version its latest rejected request to post was for
+	base        money.Currency
+	today       time.Time
+	payables    uuid.UUID
+	withholding uuid.UUID         // 2330, the withholding tax payable (FR-AP-19)
+	asked       map[string]string // a bill's ID: its pending request
+	rejected    map[string]int    // a bill's ID: the version its latest rejected request to post was for
 }
 
 func (a *API) billView(ctx context.Context, u storage.UnitOfWork) (billView, error) {
@@ -457,8 +486,11 @@ func (a *API) billView(ctx context.Context, u storage.UnitOfWork) (billView, err
 		return billView{}, err
 	}
 	for _, x := range accounts {
-		if string(x.Role) == ledger.RoleAccountsPayable {
+		switch string(x.Role) {
+		case ledger.RoleAccountsPayable:
 			v.payables = x.ID
+		case ledger.RoleWithholdingTax:
+			v.withholding = x.ID
 		}
 	}
 	requests, err := u.Approvals().List(ctx, "")
@@ -497,7 +529,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 	}
 	out := Bill{ID: doc.ID.String(), Kind: kindOf(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, SupplierRef: d.SupplierRef,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: []BillLineDraft{}, Checks: []BillCheck{},
-		InputTax: billInputTaxOut(d.InputTax), TaxDecisions: []BillTaxDecision{},
+		InputTax: billInputTaxOut(d.InputTax), TaxDecisions: []BillTaxDecision{}, Nature: d.Nature,
 		LedgerImpact: []EntryLine{}, Payments: []BillPaidBy{}, Releases: []BillRelease{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}
 	if withChecks {
@@ -553,6 +585,14 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 		}
 		if withChecks {
 			out.TaxDecisions = taxDecisionsOut(c.Prepared.InputTax)
+			var tax *Money
+			for _, l := range c.Entry.Lines {
+				if l.AccountID == v.withholding && v.withholding != uuid.Nil {
+					t := moneyOut(l.Base.Neg())
+					tax = &t
+				}
+			}
+			out.Withholding = withholdingOut(c.Prepared.Withholding, tax, "")
 			for _, p := range c.Problems {
 				out.Checks = append(out.Checks, BillCheck{Severity: "error", Code: p.Code, Field: journalField(p.Field), Message: p.Message, Fix: p.Fix})
 			}
@@ -574,11 +614,24 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 		return Bill{}, err
 	}
 	if withChecks {
-		p, _, err := bill.Prepare(ctx, u, doc, v.base)
+		p, _, err := bill.PrepareAt(ctx, u, doc, v.base, e.RecordedAt)
 		if err != nil {
 			return Bill{}, err
 		}
 		out.TaxDecisions = taxDecisionsOut(p.InputTax)
+		held := ""
+		if doc.Status == storage.DocumentPosted {
+			held = p.Withholding.Held()
+		}
+		var tax *Money
+		for _, l := range e.Lines {
+			if l.AccountID == v.withholding && v.withholding != uuid.Nil {
+				t := storedOut(l.BaseAmount, l.BaseCurrency)
+				t.Amount = strings.TrimPrefix(t.Amount, "-")
+				tax = &t
+			}
+		}
+		out.Withholding = withholdingOut(p.Withholding, tax, held)
 	}
 	for _, l := range entryOf(e).Lines {
 		if withChecks {
@@ -594,7 +647,15 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 			out.DueDate = dayText(c.Prepared.DueDate)
 		}
 	}
-	if err := billPaid(ctx, u, &out, total, withChecks); err != nil {
+	owed := total // what the entry put on accounts payable: the total less any tax withheld (FR-AP-19)
+	for _, l := range e.Lines {
+		if l.AccountID == v.payables && l.Currency == total.Currency().Code {
+			if x, err := money.ParseStored(string(l.Amount), total.Currency()); err == nil {
+				owed = abs(x)
+			}
+		}
+	}
+	if err := billPaid(ctx, u, &out, owed, withChecks); err != nil {
 		return Bill{}, err
 	}
 	if doc.Status == storage.DocumentPosted && out.States.Payment != "paid" && out.DueDate != "" && out.DueDate < dateOf(v.today) {
@@ -611,6 +672,30 @@ func billInputTaxOut(f bill.InputTax) BillInputTax {
 		TaxAgent: f.TaxAgent}
 	if out.AddressedTo == bill.ToAgent {
 		out.Repaid = cmp.Or(f.Repaid, bill.RepaidPaid)
+	}
+	return out
+}
+
+// withholdingOut is how withholding stands for a bill, as getBill shows it, with the tax its entry withholds; nil for a
+// resident supplier.
+func withholdingOut(w bill.Withholding, tax *Money, held string) *BillWithholding {
+	if !w.NonResident {
+		return nil
+	}
+	out := &BillWithholding{Residence: w.Residence, Nature: w.Nature, Tax: tax, Held: held}
+	if w.Decision != nil {
+		d := withholdingDecisionOf(*w.Decision)
+		out.Decision = &d
+	}
+	return out
+}
+
+// withholdingDecisionOf is a decision as the API shows it.
+func withholdingDecisionOf(d storage.WithholdingDecision) WithholdingDecision {
+	out := WithholdingDecision{ID: d.ID.String(), SupplierID: d.SupplierID.String(), Nature: d.Nature, Outcome: d.Outcome, RatePercent: d.RatePercent,
+		TaxAgent: d.TaxAgent, Note: d.Note, RecordedBy: personOf(d.RecordedBy), RecordedAt: d.RecordedAt.UTC()}
+	if d.BillID != nil {
+		out.BillID = d.BillID.String()
 	}
 	return out
 }
@@ -643,7 +728,8 @@ func billLinesOut(d bill.Draft) []BillLineDraft {
 }
 
 // billPaid fills a posted or voided bill's payments: what is open of it, its payment state, and with withPayments the
-// payments that settle it, from its allocations net of their voids (FR-AR-18).
+// payments that settle it, from its allocations net of their voids (FR-AR-18). total is what it owes: its total, less
+// any tax withheld.
 func billPaid(ctx context.Context, u storage.UnitOfWork, b *Bill, total money.Money, withPayments bool) error {
 	id, err := uuid.Parse(b.ID)
 	if err != nil {

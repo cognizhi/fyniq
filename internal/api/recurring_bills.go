@@ -30,6 +30,7 @@ type RecurringBillInput struct {
 	Currency   string            `json:"currency" pattern:"^[A-Z]{3}$" doc:"The currency of each draft. One in another currency takes the cascade's rate for its date when it posts (ENG-40)." example:"SGD"`
 	Lines      []BillLineDraft   `json:"lines" maxItems:"200" doc:"The lines of each draft, as on a bill."`
 	Notes      string            `json:"notes,omitempty" maxLength:"2000" doc:"The notes of each draft." example:"Monthly rent, unit 05-12"`
+	Nature     string            `json:"nature_of_payment,omitempty" enum:"goods,software_use,software_rights,services_in_singapore,services_outside_singapore,interest,movable_rent,other" doc:"For a supplier resident outside Singapore: what each draft's payment is for (FR-AP-19), as on a bill." example:"software_use"`
 }
 
 // RecurringBill is a recurring bill at its version (FR-AP-09; PRD-001 rev 0.84).
@@ -45,9 +46,10 @@ type RecurringBill struct {
 	Currency       string            `json:"currency" doc:"The currency of each draft." example:"SGD"`
 	Lines          []BillLineDraft   `json:"lines" nullable:"false" doc:"The lines of each draft."`
 	Notes          string            `json:"notes,omitempty" doc:"The notes of each draft." example:"Monthly rent, unit 05-12"`
+	Nature         string            `json:"nature_of_payment,omitempty" doc:"What each draft's payment is for, for a supplier resident outside Singapore (FR-AP-19)." example:"software_use"`
 	Total          Money             `json:"total" doc:"Each draft's total: every line's net and GST, in its currency."`
 	Version        int               `json:"version" doc:"The version of the recurring bill; it makes the ETag." example:"3"`
-	ContentVersion int               `json:"content_version" doc:"The version of its content, which drafts name; it changes when the supplier, currency, lines or notes change." example:"2"`
+	ContentVersion int               `json:"content_version" doc:"The version of its content, which drafts name; it changes when the supplier, currency, lines, notes or nature of payment change." example:"2"`
 	EditedBy       *Person           `json:"edited_by,omitempty" doc:"Who wrote the current content: they do not approve the posting of its drafts (SOD-3)."`
 	EditedAt       time.Time         `json:"edited_at" doc:"When the current content was written." example:"2026-10-23T09:30:00Z"`
 	Checks         []JournalCheck    `json:"checks" nullable:"false" doc:"Its statuses (Appendix C.1 #28, #29): every problem the bill rules find in its content (a missing rate aside, which a draft takes when it posts), as Templates incomplete (✖); a warning when an occurrence before today has no draft yet; or OK, Paused or Ended."`
@@ -113,7 +115,7 @@ func recurringBillOf(ctx context.Context, u storage.UnitOfWork, base money.Curre
 	out := RecurringBill{ID: r.ID.String(), Name: r.Name, Status: string(r.Status), NextOn: optDate(r.NextOn), LastOn: optDate(r.LastOn),
 		Schedule: RecurringSchedule{EveryMonths: r.Schedule.EveryMonths, DayOfMonth: r.Schedule.DayOfMonth,
 			StartsOn: r.Schedule.StartsOn.Format(time.DateOnly), EndsOn: optDate(r.Schedule.EndsOn)},
-		Currency: d.Currency.Code, Lines: billLinesOut(d), Notes: d.Notes, Total: moneyOut(total), Version: r.Version,
+		Currency: d.Currency.Code, Lines: billLinesOut(d), Notes: d.Notes, Nature: d.Nature, Total: moneyOut(total), Version: r.Version,
 		ContentVersion: r.ContentVersion, EditedBy: personOf(r.EditedBy), EditedAt: r.EditedAt.UTC(), Checks: checksOf(st)}
 	if r.NextOn == nil {
 		out.Status = "ended"
@@ -154,7 +156,7 @@ func recurringBillInputOf(in RecurringBillInput, base money.Currency) (journal.R
 			out.Schedule.EndsOn = &ends
 		}
 	}
-	d, err := billDraftOf(BillDraft{SupplierID: in.SupplierID, Currency: in.Currency, Lines: in.Lines, Notes: in.Notes}, base)
+	d, err := billDraftOf(BillDraft{SupplierID: in.SupplierID, Currency: in.Currency, Lines: in.Lines, Notes: in.Notes, Nature: in.Nature}, base)
 	if p, ok := err.(*Problem); ok {
 		bad = append(bad, p.Errors...)
 	} else if err != nil {

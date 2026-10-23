@@ -77,6 +77,7 @@ type UnitOfWork interface {
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals
 	RecurringBills() RecurringBills
+	WithholdingDecisions() WithholdingDecisions
 	AccountingBasis() AccountingBasis
 	FXRates() FXRates
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
@@ -316,7 +317,7 @@ const RoleUnrealisedFX AccountRole = "unrealised-fx"
 var SystemRoles = []AccountRole{"accounts-receivable", "accounts-payable", "gst-control", "fx-rounding", "unrealised-fx",
 	"deferred-revenue", "prepayments", "salaries-payable", "cpf-sdl-payable", "employer-cpf", "sdl", "depreciation",
 	"accumulated-depreciation", "suspense", "retained-earnings", "expense-claims-payable", "income-tax-payable", "income-tax-expense",
-	"director-loan", "deferred-remuneration", RoleShareCapital, "capital-contribution"}
+	"director-loan", "deferred-remuneration", RoleShareCapital, "capital-contribution", "withholding-tax-payable"}
 
 // AccountChange is what may change on an account: never its code, type or role (FR-COA-03).
 type AccountChange struct {
@@ -534,6 +535,7 @@ const (
 	CodeAllocation     = "STORAGE-ALLOCATION-01" // an allocation settles a bill from a bill payment, never changes, and is reversed exactly
 	CodeBillRelease    = "STORAGE-RELEASE-01"    // a release releases the spread of a posted bill's current version
 	CodePurchaseOrder  = "STORAGE-PO-01"         // a purchase order posts nothing: no entry names one
+	CodeWithholding    = "STORAGE-WHT-01"        // a withholding decision never changes: a later one replaces it
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

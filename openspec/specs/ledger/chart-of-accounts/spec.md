@@ -12,7 +12,7 @@ Source: PRD-001 §8.2 · Priority M · Phase P1
 
 #### Scenario: An organisation loads the standard chart
 - **WHEN** an organisation that has no account yet loads the standard chart
-- **THEN** its chart of accounts holds the standard chart's 86 accounts: the workbook's 83 with every attribute, its disposal account moved to 7050, and 2120, 3300 and 7040 (rev 0.31, provisional until the CoA review)
+- **THEN** its chart of accounts holds the standard chart's 87 accounts: the workbook's 83 with every attribute, its disposal account moved to 7050, and 2120, 3300 and 7040 (rev 0.31, provisional until the CoA review), and (rev 0.90) 2330 Withholding tax payable [accountant to confirm the code]
 
 #### Scenario: The standard chart loads once
 - **GIVEN** an organisation that has any account

@@ -218,6 +218,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerRecurringBills(a)
 	registerBillEvidence(a)
 	registerPurchaseOrders(a)
+	registerWithholding(a)
 	registerAccounting(a)
 	registerEvidence(a)
 	registerSetup(a)
