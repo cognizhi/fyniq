@@ -62,8 +62,13 @@
   setEmailSender (EML-02, EML-03), `internal/adapters/zeptomail` and `internal/adapters/resend` against fakes, the
   worker's failover after a refusal only, `wiring.ReadMail`. Tests: `TestTheFailoverSendsOnlyWhatThePrimaryRefused`,
   `TestAnEmailIsSentFromTheOrganisationsSenderOfItsPurpose`, `TestASenderChoiceIsAppendOnly`,
-  `TestAnOrganisationChoosesItsSendersOnTheDeploymentsDomains`, the adapters' and two matrix rows. Left: webhooks and
-  suppression, the daily domain check, the staging sandboxes, the email settings screen and its help.)
+  `TestAnOrganisationChoosesItsSendersOnTheDeploymentsDomains`, the adapters' and two matrix rows. Third slice, rev
+  0.103: `internal/mailhooks` (Resend's Svix signature, ZeptoMail's producer-signature `[verify]`), a reference per
+  message, migration 000101 (`email_event` FY180, `email_suppression` FY181), the worker skipping suppressed addresses,
+  listEmailSuppressions and releaseEmailSuppression (EML-04), the threat model `email-delivery.md`. Tests:
+  `TestTheProvidersWebhooksRecordEventsAndSuppressHardBounces`, `TestAnEmailToASuppressedAddressIsNotSent`,
+  `TestEmailEventsAndSuppressionsKeepTheirHistory`, the receiver's unit tests and two matrix rows. Left: the daily
+  domain check, the staging sandboxes, the email settings screen and its help.)
 - [ ] 2.2 The `InboundMail` port: messages stored with their authentication results, attachments through the evidence upload and scanner, and unknown senders quarantined. Test `// req: FR-INT-22`
 - [ ] 2.3 Interchangeable adapters and the §8.24 launch adapters and local substitutes for this change's capabilities. Tests `// req: communication/email-and-notifications Outside services behind interchangeable adapters` and `… Launch adapters and local substitutes`
 

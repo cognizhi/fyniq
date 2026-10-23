@@ -12,6 +12,7 @@ import (
 	netmail "net/mail"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -47,6 +48,20 @@ func Queue(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org u
 	return m, nil
 }
 
+// Reference is what a provider echoes in its webhooks for a message: its organisation and its ID.
+func Reference(org, message uuid.UUID) string { return org.String() + "_" + message.String() }
+
+// ParseReference reads a Reference.
+func ParseReference(s string) (org, message uuid.UUID, ok bool) {
+	a, b, found := strings.Cut(s, "_")
+	o, err1 := uuid.Parse(a)
+	m, err2 := uuid.Parse(b)
+	if !found || err1 != nil || err2 != nil || len(a) != 36 || len(b) != 36 {
+		return uuid.Nil, uuid.Nil, false
+	}
+	return o, m, true
+}
+
 // SenderOf is the sender purpose of a message's purpose (FR-INT-21): a sign-in alert is security's; the rest so far
 // are notifications.
 func SenderOf(messagePurpose string) string {
@@ -71,6 +86,7 @@ func fromOf(senders []storage.EmailSender, purpose, from string) string {
 // and each next one its failover (PRD-001 rev 0.102), from the organisation's sender of its purpose, or the
 // platform's, from.
 //   - A message with an outcome is left as it is: the job ran before.
+//   - A message to an address on the suppression list is failed without being sent.
 //   - A message an earlier attempt may have handed over is reconciled first, with the provider that attempt went
 //     to: the provider says whether it took it; when it cannot say (SMTP, ZeptoMail), the message is recorded as
 //     unknown and never sent again on a guess.
@@ -109,21 +125,35 @@ func Work(providers []ports.Email, store storage.Store, from string, clock ports
 		}
 		var before storage.EmailMessage
 		var senders []storage.EmailSender
+		var suppressed *storage.EmailSuppression
 		if err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			var err error
 			if before, err = u.EmailMessages().Start(ctx, p.MessageID, clock.Now(), providers[0].Name()); err != nil {
 				return err
 			}
-			senders, err = u.EmailSenders().InForce(ctx)
-			return err
+			if senders, err = u.EmailSenders().InForce(ctx); err != nil {
+				return err
+			}
+			switch s, err := u.EmailSuppressions().InForce(ctx, p.To); {
+			case err == nil:
+				suppressed = &s
+			case !errors.Is(err, ports.ErrNotFound):
+				return err
+			}
+			return nil
 		}); err != nil {
 			return err
 		}
 		if before.Status != storage.EmailQueued {
 			return nil
 		}
-		m := ports.OutboundEmail{Key: p.MessageID.String(), From: fromOf(senders, before.Purpose, from), To: []string{p.To}, Subject: p.Subject,
-			Text: p.Text, Date: clock.Now()}
+		if suppressed != nil && before.AttemptStartedAt == nil {
+			return finish(storage.EmailOutcome{Status: storage.EmailFailed, LastError: fmt.Sprintf("not sent: %s is suppressed after a %s on %s; "+
+				"an Administrator releases it in the email settings", suppressed.Address, strings.ReplaceAll(suppressed.Reason, "_", " "),
+				suppressed.SuppressedAt.UTC().Format(time.DateOnly))})
+		}
+		m := ports.OutboundEmail{Key: p.MessageID.String(), Reference: Reference(org, p.MessageID), From: fromOf(senders, before.Purpose, from),
+			To: []string{p.To}, Subject: p.Subject, Text: p.Text, Date: clock.Now()}
 		if before.AttemptStartedAt != nil {
 			i := slices.IndexFunc(providers, func(e ports.Email) bool { return e.Name() == before.Provider })
 			if i < 0 {

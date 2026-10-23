@@ -137,6 +137,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** the failover is tried in the same run, and a send the primary may have taken is never handed to it
 - **AND** each attempt records its provider: Resend's is reconciled by sending again under its key within 23 hours, ZeptoMail's stays unknown
 
+#### Scenario: Webhooks and suppression as built (rev 0.103)
+- **WHEN** a provider's webhook arrives
+- **THEN** it is read only with a valid signature under five minutes old, and each event is recorded once on the message its reference names, in that organisation, for that recipient
+- **AND** a hard bounce, complaint or the provider's suppression suppresses the address: nothing is sent to it until an Administrator releases it
+
 ### Requirement: FR-INT-22 Inbound email
 The system SHALL receive email for the capture addresses (FR-DOC-12) through an inbound adapter and store everything received as untrusted documents (AI-18).
 

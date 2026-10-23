@@ -64,10 +64,15 @@ fyniq_api       INSERT    document_template_version (content, content_hash, note
 fyniq_api       SELECT    document_template_version
 fyniq_api       INSERT    document_version (created_by, document_id, payload, version)
 fyniq_api       SELECT    document_version
+fyniq_api       INSERT    email_event (delivery_id, detail, kind, message_id, occurred_at, provider, received_at, recipient)
+fyniq_api       SELECT    email_event
 fyniq_api       INSERT    email_message (purpose, recipient, subject)
 fyniq_api       SELECT    email_message
 fyniq_api       INSERT    email_sender (address, display_name, purpose, set_at, set_by)
 fyniq_api       SELECT    email_sender
+fyniq_api       INSERT    email_suppression (address, event_id, reason, suppressed_at)
+fyniq_api       SELECT    email_suppression
+fyniq_api       UPDATE    email_suppression (released_at, released_by)
 fyniq_api       EXECUTE   end_session()
 fyniq_api       EXECUTE   end_user_session()
 fyniq_api       EXECUTE   end_user_sessions()
@@ -270,8 +275,10 @@ fyniq_readonly  SELECT    document_template
 fyniq_readonly  SELECT    document_template_default
 fyniq_readonly  SELECT    document_template_version
 fyniq_readonly  SELECT    document_version
+fyniq_readonly  SELECT    email_event
 fyniq_readonly  SELECT    email_message
 fyniq_readonly  SELECT    email_sender
+fyniq_readonly  SELECT    email_suppression
 fyniq_readonly  SELECT    evidence
 fyniq_readonly  SELECT    fx_feed_rates
 fyniq_readonly  SELECT    fx_rate
@@ -340,9 +347,11 @@ fyniq_worker    SELECT    document_template
 fyniq_worker    SELECT    document_template_default
 fyniq_worker    SELECT    document_template_version
 fyniq_worker    SELECT    document_version
+fyniq_worker    SELECT    email_event
 fyniq_worker    SELECT    email_message
 fyniq_worker    UPDATE    email_message (accepted_at, attempt_started_at, attempts, last_error, provider, provider_id, status)
 fyniq_worker    SELECT    email_sender
+fyniq_worker    SELECT    email_suppression
 fyniq_worker    SELECT    evidence
 fyniq_worker    UPDATE    evidence (finalised_at, locked_key, retain_until, state, version)
 fyniq_worker    EXECUTE   finish_job_slot()

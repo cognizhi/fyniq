@@ -243,6 +243,16 @@ document_version | version | integer | not null |
 document_version | payload | jsonb | not null | 
 document_version | created_at | timestamp with time zone | not null | now()
 document_version | created_by | text | null | 
+email_event | organisation_id | uuid | not null | current_org()
+email_event | id | uuid | not null | uuidv7()
+email_event | message_id | uuid | not null | 
+email_event | provider | text | not null | 
+email_event | delivery_id | text | not null | 
+email_event | kind | text | not null | 
+email_event | recipient | text | not null | 
+email_event | detail | text | null | 
+email_event | occurred_at | timestamp with time zone | not null | 
+email_event | received_at | timestamp with time zone | not null | 
 email_message | organisation_id | uuid | not null | current_org()
 email_message | id | uuid | not null | uuidv7()
 email_message | purpose | text | not null | 
@@ -263,6 +273,14 @@ email_sender | address | text | null |
 email_sender | display_name | text | null | 
 email_sender | set_by | text | not null | 
 email_sender | set_at | timestamp with time zone | not null | 
+email_suppression | organisation_id | uuid | not null | current_org()
+email_suppression | id | uuid | not null | uuidv7()
+email_suppression | address | text | not null | 
+email_suppression | reason | text | not null | 
+email_suppression | event_id | uuid | not null | 
+email_suppression | suppressed_at | timestamp with time zone | not null | 
+email_suppression | released_at | timestamp with time zone | null | 
+email_suppression | released_by | text | null | 
 evidence | organisation_id | uuid | not null | current_org()
 evidence | id | uuid | not null | uuidv7()
 evidence | document_id | uuid | not null | 
@@ -1133,6 +1151,22 @@ document_version | document_version_pkey | PRIMARY KEY (organisation_id, id)
 document_version | document_version_positive | CHECK ((version > 0))
 document_version | document_version_version_not_null | NOT NULL version
 document_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+email_event | email_event_delivery_id_not_null | NOT NULL delivery_id
+email_event | email_event_id_not_null | NOT NULL id
+email_event | email_event_kind_known | CHECK ((kind = ANY (ARRAY['delivered'::text, 'delayed'::text, 'soft_bounce'::text, 'hard_bounce'::text, 'complaint'::text, 'suppressed'::text, 'failed'::text])))
+email_event | email_event_kind_not_null | NOT NULL kind
+email_event | email_event_lengths | CHECK ((((length(delivery_id) >= 1) AND (length(delivery_id) <= 200)) AND ((length(recipient) >= 3) AND (length(recipient) <= 254)) AND ((length(detail) >= 1) AND (length(detail) <= 500))))
+email_event | email_event_message_fkey | FOREIGN KEY (organisation_id, message_id) REFERENCES email_message(organisation_id, id)
+email_event | email_event_message_id_not_null | NOT NULL message_id
+email_event | email_event_occurred_at_not_null | NOT NULL occurred_at
+email_event | email_event_once | UNIQUE (organisation_id, provider, delivery_id)
+email_event | email_event_organisation_id_not_null | NOT NULL organisation_id
+email_event | email_event_pkey | PRIMARY KEY (organisation_id, id)
+email_event | email_event_provider_known | CHECK ((provider = ANY (ARRAY['zeptomail'::text, 'resend'::text])))
+email_event | email_event_provider_not_null | NOT NULL provider
+email_event | email_event_received_at_not_null | NOT NULL received_at
+email_event | email_event_recipient_not_null | NOT NULL recipient
+email_event | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 email_message | email_message_accepted_has_provider | CHECK (((status <> 'accepted'::text) OR ((provider IS NOT NULL) AND (accepted_at IS NOT NULL))))
 email_message | email_message_attempts_not_null | NOT NULL attempts
 email_message | email_message_attempts_range | CHECK (((attempts >= 0) AND (attempts <= 100)))
@@ -1162,6 +1196,18 @@ email_sender | email_sender_set_at_not_null | NOT NULL set_at
 email_sender | email_sender_set_by_format | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 email_sender | email_sender_set_by_not_null | NOT NULL set_by
 email_sender | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+email_suppression | email_suppression_address_lower | CHECK (((address = lower(address)) AND ((length(address) >= 3) AND (length(address) <= 254))))
+email_suppression | email_suppression_address_not_null | NOT NULL address
+email_suppression | email_suppression_event_fkey | FOREIGN KEY (organisation_id, event_id) REFERENCES email_event(organisation_id, id)
+email_suppression | email_suppression_event_id_not_null | NOT NULL event_id
+email_suppression | email_suppression_id_not_null | NOT NULL id
+email_suppression | email_suppression_organisation_id_not_null | NOT NULL organisation_id
+email_suppression | email_suppression_pkey | PRIMARY KEY (organisation_id, id)
+email_suppression | email_suppression_reason_known | CHECK ((reason = ANY (ARRAY['hard_bounce'::text, 'complaint'::text, 'suppressed'::text])))
+email_suppression | email_suppression_reason_not_null | NOT NULL reason
+email_suppression | email_suppression_released_by | CHECK ((((released_at IS NULL) = (released_by IS NULL)) AND (released_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+email_suppression | email_suppression_suppressed_at_not_null | NOT NULL suppressed_at
+email_suppression | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 evidence | evidence_data_class_known | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'bank'::text, 'payroll'::text, 'identity'::text])))
 evidence | evidence_data_class_not_null | NOT NULL data_class
 evidence | evidence_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
@@ -1885,6 +1931,7 @@ CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
 CREATE INDEX document_template_default_latest ON fyniq.document_template_default USING btree (organisation_id, kind, document_type, set_at)
 CREATE INDEX document_template_type ON fyniq.document_template USING btree (organisation_id, document_type, kind, id)
+CREATE INDEX email_event_message ON fyniq.email_event USING btree (organisation_id, message_id, occurred_at)
 CREATE INDEX email_sender_latest ON fyniq.email_sender USING btree (organisation_id, purpose, set_at)
 CREATE INDEX evidence_document ON fyniq.evidence USING btree (organisation_id, document_id, id)
 CREATE INDEX fx_rate_lookup ON fyniq.fx_rate USING btree (organisation_id, currency, kind, on_date)
@@ -1951,8 +1998,12 @@ CREATE UNIQUE INDEX document_template_version_number_key ON fyniq.document_templ
 CREATE UNIQUE INDEX document_template_version_pkey ON fyniq.document_template_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX email_event_once ON fyniq.email_event USING btree (organisation_id, provider, delivery_id)
+CREATE UNIQUE INDEX email_event_pkey ON fyniq.email_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX email_message_pkey ON fyniq.email_message USING btree (organisation_id, id)
 CREATE UNIQUE INDEX email_sender_pkey ON fyniq.email_sender USING btree (organisation_id, id)
+CREATE UNIQUE INDEX email_suppression_in_force ON fyniq.email_suppression USING btree (organisation_id, address) WHERE (released_at IS NULL)
+CREATE UNIQUE INDEX email_suppression_pkey ON fyniq.email_suppression USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_pkey ON fyniq.evidence USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_staging_key ON fyniq.evidence USING btree (organisation_id, staging_key)
 CREATE UNIQUE INDEX fx_feed_rate_pkey ON fyniq.fx_feed_rate USING btree (base_currency, currency, on_date)
@@ -2042,6 +2093,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_default DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template_default', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'template_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.opening_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
@@ -2068,6 +2120,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.email_suppression DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_suppression', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
@@ -2116,9 +2169,13 @@ CREATE TRIGGER document_template_version_no_truncate BEFORE TRUNCATE ON fyniq.do
 CREATE TRIGGER document_version_created_by BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_created_by()
 CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER email_event_guard BEFORE DELETE OR UPDATE ON fyniq.email_event FOR EACH ROW EXECUTE FUNCTION email_event_guard()
+CREATE TRIGGER email_event_no_truncate BEFORE TRUNCATE ON fyniq.email_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER email_message_guard BEFORE UPDATE ON fyniq.email_message FOR EACH ROW EXECUTE FUNCTION email_message_guard()
 CREATE TRIGGER email_sender_guard BEFORE DELETE OR UPDATE ON fyniq.email_sender FOR EACH ROW EXECUTE FUNCTION email_sender_guard()
 CREATE TRIGGER email_sender_no_truncate BEFORE TRUNCATE ON fyniq.email_sender FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER email_suppression_guard BEFORE DELETE OR UPDATE ON fyniq.email_suppression FOR EACH ROW EXECUTE FUNCTION email_suppression_guard()
+CREATE TRIGGER email_suppression_no_truncate BEFORE TRUNCATE ON fyniq.email_suppression FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER evidence_guard BEFORE UPDATE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_guard()
 CREATE TRIGGER evidence_never_deleted BEFORE DELETE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_never_deleted()
 CREATE TRIGGER evidence_no_truncate BEFORE TRUNCATE ON fyniq.evidence FOR EACH STATEMENT EXECUTE FUNCTION evidence_never_deleted()
@@ -2200,8 +2257,10 @@ document_template | tenant_isolation | * | (organisation_id = current_org()) | (
 document_template_default | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_template_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+email_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 email_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 email_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+email_suppression | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 fx_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2275,8 +2334,10 @@ document_template_choice_guard() → trigger | security invoker | v | search_pat
 document_template_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 460a8f1bd5f4af96698ac00b70b265c4
 document_version_created_by() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b35b5285220973313c6224ad1d90dd81
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
+email_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 990580601ef047ba0fb748308b38b333
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
 email_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 08f185782be71d4ec32e6b14d2daf500
+email_suppression_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 03e389c71cad64117c3be6fa82077158
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
 end_user_session(p_user uuid, p_hash bytea, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b349d69ee0308bbba7c1aca8c62af95f
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083

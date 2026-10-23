@@ -197,6 +197,8 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY177 | STORAGE-TEMPLATE-01 | A template choice (a default or a contact's override) never changes or goes: choose again |
 | FY178 | STORAGE-TEMPLATE-01 | A template choice names a published template of its own kind and document type |
 | FY179 | STORAGE-VERSION-01 | An email sender choice never changes or goes: choose again, and the latest of a purpose is in force |
+| FY180 | STORAGE-VERSION-01 | An email event a provider reported never changes or goes: a later event is recorded beside it |
+| FY181 | STORAGE-VERSION-01 | An email suppression is only ever released, once: a later bounce suppresses the address again |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

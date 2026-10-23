@@ -223,6 +223,7 @@ var codeFacts = map[string]struct {
 	CodeNoEmailAddress:            {409, "The organisation has no email address"},
 	CodeSenderAddress:             {422, "Not a sender address"},
 	CodeSenderDomain:              {422, "Not a domain email is sent from"},
+	CodeReleased:                  {409, "Released already"},
 	approval.CodeOwnRequest:       {403, "You asked for it, so another person approves it"},
 	approval.CodeNotPending:       {409, "The request was decided already"},
 	approval.CodeExpired:          {409, "The request expired"},

@@ -12,6 +12,53 @@ import (
 	"github.com/google/uuid"
 )
 
+const emailEvents = `-- name: EmailEvents :many
+SELECT id, message_id, provider, delivery_id, kind, recipient, detail, occurred_at, received_at FROM fyniq.email_event
+WHERE message_id = $1 ORDER BY occurred_at, id
+`
+
+type EmailEventsRow struct {
+	ID         uuid.UUID
+	MessageID  uuid.UUID
+	Provider   string
+	DeliveryID string
+	Kind       string
+	Recipient  string
+	Detail     *string
+	OccurredAt time.Time
+	ReceivedAt time.Time
+}
+
+func (q *Queries) EmailEvents(ctx context.Context, messageID uuid.UUID) ([]EmailEventsRow, error) {
+	rows, err := q.db.Query(ctx, emailEvents, messageID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmailEventsRow
+	for rows.Next() {
+		var i EmailEventsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MessageID,
+			&i.Provider,
+			&i.DeliveryID,
+			&i.Kind,
+			&i.Recipient,
+			&i.Detail,
+			&i.OccurredAt,
+			&i.ReceivedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const emailSendersInForce = `-- name: EmailSendersInForce :many
 SELECT DISTINCT ON (purpose) id, purpose, address, display_name, set_by, set_at
 FROM fyniq.email_sender
@@ -44,6 +91,110 @@ func (q *Queries) EmailSendersInForce(ctx context.Context) ([]EmailSendersInForc
 			&i.DisplayName,
 			&i.SetBy,
 			&i.SetAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const emailSuppressionByID = `-- name: EmailSuppressionByID :one
+SELECT id, address, reason, event_id, suppressed_at, released_at, released_by FROM fyniq.email_suppression WHERE id = $1
+`
+
+type EmailSuppressionByIDRow struct {
+	ID           uuid.UUID
+	Address      string
+	Reason       string
+	EventID      uuid.UUID
+	SuppressedAt time.Time
+	ReleasedAt   *time.Time
+	ReleasedBy   *string
+}
+
+func (q *Queries) EmailSuppressionByID(ctx context.Context, id uuid.UUID) (EmailSuppressionByIDRow, error) {
+	row := q.db.QueryRow(ctx, emailSuppressionByID, id)
+	var i EmailSuppressionByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Address,
+		&i.Reason,
+		&i.EventID,
+		&i.SuppressedAt,
+		&i.ReleasedAt,
+		&i.ReleasedBy,
+	)
+	return i, err
+}
+
+const emailSuppressionInForce = `-- name: EmailSuppressionInForce :one
+SELECT id, address, reason, event_id, suppressed_at, released_at, released_by FROM fyniq.email_suppression
+WHERE address = $1 AND released_at IS NULL
+`
+
+type EmailSuppressionInForceRow struct {
+	ID           uuid.UUID
+	Address      string
+	Reason       string
+	EventID      uuid.UUID
+	SuppressedAt time.Time
+	ReleasedAt   *time.Time
+	ReleasedBy   *string
+}
+
+func (q *Queries) EmailSuppressionInForce(ctx context.Context, address string) (EmailSuppressionInForceRow, error) {
+	row := q.db.QueryRow(ctx, emailSuppressionInForce, address)
+	var i EmailSuppressionInForceRow
+	err := row.Scan(
+		&i.ID,
+		&i.Address,
+		&i.Reason,
+		&i.EventID,
+		&i.SuppressedAt,
+		&i.ReleasedAt,
+		&i.ReleasedBy,
+	)
+	return i, err
+}
+
+const emailSuppressions = `-- name: EmailSuppressions :many
+SELECT id, address, reason, event_id, suppressed_at, released_at, released_by FROM fyniq.email_suppression
+WHERE $1::boolean OR released_at IS NULL
+ORDER BY suppressed_at DESC, id DESC
+LIMIT 1000
+`
+
+type EmailSuppressionsRow struct {
+	ID           uuid.UUID
+	Address      string
+	Reason       string
+	EventID      uuid.UUID
+	SuppressedAt time.Time
+	ReleasedAt   *time.Time
+	ReleasedBy   *string
+}
+
+func (q *Queries) EmailSuppressions(ctx context.Context, allToo bool) ([]EmailSuppressionsRow, error) {
+	rows, err := q.db.Query(ctx, emailSuppressions, allToo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmailSuppressionsRow
+	for rows.Next() {
+		var i EmailSuppressionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Address,
+			&i.Reason,
+			&i.EventID,
+			&i.SuppressedAt,
+			&i.ReleasedAt,
+			&i.ReleasedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -152,6 +303,63 @@ func (q *Queries) GetEmailMessage(ctx context.Context, id uuid.UUID) (GetEmailMe
 	return i, err
 }
 
+const insertEmailEvent = `-- name: InsertEmailEvent :one
+INSERT INTO fyniq.email_event (message_id, provider, delivery_id, kind, recipient, detail, occurred_at, received_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+  $7, $8)
+ON CONFLICT ON CONSTRAINT email_event_once DO NOTHING
+RETURNING id, message_id, provider, delivery_id, kind, recipient, detail, occurred_at, received_at
+`
+
+type InsertEmailEventParams struct {
+	MessageID  uuid.UUID
+	Provider   string
+	DeliveryID string
+	Kind       string
+	Recipient  string
+	Detail     *string
+	OccurredAt time.Time
+	ReceivedAt time.Time
+}
+
+type InsertEmailEventRow struct {
+	ID         uuid.UUID
+	MessageID  uuid.UUID
+	Provider   string
+	DeliveryID string
+	Kind       string
+	Recipient  string
+	Detail     *string
+	OccurredAt time.Time
+	ReceivedAt time.Time
+}
+
+func (q *Queries) InsertEmailEvent(ctx context.Context, arg InsertEmailEventParams) (InsertEmailEventRow, error) {
+	row := q.db.QueryRow(ctx, insertEmailEvent,
+		arg.MessageID,
+		arg.Provider,
+		arg.DeliveryID,
+		arg.Kind,
+		arg.Recipient,
+		arg.Detail,
+		arg.OccurredAt,
+		arg.ReceivedAt,
+	)
+	var i InsertEmailEventRow
+	err := row.Scan(
+		&i.ID,
+		&i.MessageID,
+		&i.Provider,
+		&i.DeliveryID,
+		&i.Kind,
+		&i.Recipient,
+		&i.Detail,
+		&i.OccurredAt,
+		&i.ReceivedAt,
+	)
+	return i, err
+}
+
 const insertEmailMessage = `-- name: InsertEmailMessage :one
 INSERT INTO fyniq.email_message (purpose, recipient, subject) VALUES ($1, $2, $3)
 RETURNING id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at
@@ -241,6 +449,50 @@ func (q *Queries) InsertEmailSender(ctx context.Context, arg InsertEmailSenderPa
 	return i, err
 }
 
+const insertEmailSuppression = `-- name: InsertEmailSuppression :one
+INSERT INTO fyniq.email_suppression (address, reason, event_id, suppressed_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (organisation_id, address) WHERE released_at IS NULL DO NOTHING
+RETURNING id, address, reason, event_id, suppressed_at, released_at, released_by
+`
+
+type InsertEmailSuppressionParams struct {
+	Address      string
+	Reason       string
+	EventID      uuid.UUID
+	SuppressedAt time.Time
+}
+
+type InsertEmailSuppressionRow struct {
+	ID           uuid.UUID
+	Address      string
+	Reason       string
+	EventID      uuid.UUID
+	SuppressedAt time.Time
+	ReleasedAt   *time.Time
+	ReleasedBy   *string
+}
+
+func (q *Queries) InsertEmailSuppression(ctx context.Context, arg InsertEmailSuppressionParams) (InsertEmailSuppressionRow, error) {
+	row := q.db.QueryRow(ctx, insertEmailSuppression,
+		arg.Address,
+		arg.Reason,
+		arg.EventID,
+		arg.SuppressedAt,
+	)
+	var i InsertEmailSuppressionRow
+	err := row.Scan(
+		&i.ID,
+		&i.Address,
+		&i.Reason,
+		&i.EventID,
+		&i.SuppressedAt,
+		&i.ReleasedAt,
+		&i.ReleasedBy,
+	)
+	return i, err
+}
+
 const lockEmailMessage = `-- name: LockEmailMessage :one
 SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at FROM fyniq.email_message WHERE id = $1 FOR UPDATE
 `
@@ -321,6 +573,43 @@ func (q *Queries) ReleaseEmailAttempt(ctx context.Context, arg ReleaseEmailAttem
 		&i.AcceptedAt,
 		&i.LastError,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const releaseEmailSuppression = `-- name: ReleaseEmailSuppression :one
+UPDATE fyniq.email_suppression SET released_at = $1, released_by = $2
+WHERE id = $3 AND released_at IS NULL
+RETURNING id, address, reason, event_id, suppressed_at, released_at, released_by
+`
+
+type ReleaseEmailSuppressionParams struct {
+	ReleasedAt *time.Time
+	ReleasedBy *string
+	ID         uuid.UUID
+}
+
+type ReleaseEmailSuppressionRow struct {
+	ID           uuid.UUID
+	Address      string
+	Reason       string
+	EventID      uuid.UUID
+	SuppressedAt time.Time
+	ReleasedAt   *time.Time
+	ReleasedBy   *string
+}
+
+func (q *Queries) ReleaseEmailSuppression(ctx context.Context, arg ReleaseEmailSuppressionParams) (ReleaseEmailSuppressionRow, error) {
+	row := q.db.QueryRow(ctx, releaseEmailSuppression, arg.ReleasedAt, arg.ReleasedBy, arg.ID)
+	var i ReleaseEmailSuppressionRow
+	err := row.Scan(
+		&i.ID,
+		&i.Address,
+		&i.Reason,
+		&i.EventID,
+		&i.SuppressedAt,
+		&i.ReleasedAt,
+		&i.ReleasedBy,
 	)
 	return i, err
 }

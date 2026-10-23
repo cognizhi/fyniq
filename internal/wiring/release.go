@@ -66,13 +66,13 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	kit := &Kit{
-		Mail:     mail,
-		Store:    store,
-		Tokens:   &gcp.TaskTokens{Invokers: c.Invokers, Keys: oidc.NewRemoteKeySet(context.Background(), gcp.GoogleCerts), Clock: clock},
-		Queue:    gcp.NewTasks(gcp.TasksAPI, c.Tasks, tokens, nil),
-		Jobs:     gcp.NewRunJobs(gcp.RunAPI, c.Job, tokens, nil),
-		Blobs:    gcp.NewStorage(gcp.StorageAPI, c.Anchors.Bucket, tokens, nil),
-		Signer:   gcp.NewKMS(gcp.KMSAPI, c.Anchors.KeyVersion, tokens, nil),
+		Mail:   mail,
+		Store:  store,
+		Tokens: &gcp.TaskTokens{Invokers: c.Invokers, Keys: oidc.NewRemoteKeySet(context.Background(), gcp.GoogleCerts), Clock: clock},
+		Queue:  gcp.NewTasks(gcp.TasksAPI, c.Tasks, tokens, nil),
+		Jobs:   gcp.NewRunJobs(gcp.RunAPI, c.Job, tokens, nil),
+		Blobs:  gcp.NewStorage(gcp.StorageAPI, c.Anchors.Bucket, tokens, nil),
+		Signer: gcp.NewKMS(gcp.KMSAPI, c.Anchors.KeyVersion, tokens, nil),
 	}
 	if c.Evidence.Staging != "" && c.Evidence.Bucket != "" {
 		kit.Staging = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, nil)

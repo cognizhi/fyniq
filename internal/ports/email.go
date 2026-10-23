@@ -23,14 +23,16 @@ type Email interface {
 }
 
 // OutboundEmail is one plain-text message. Key identifies it to the provider (an SMTP Message-ID, or the
-// idempotency key of a provider that takes one).
+// idempotency key of a provider that takes one). Reference is what the provider echoes in its webhooks, so an
+// event finds its organisation and message: letters, digits, dashes and underscores only.
 type OutboundEmail struct {
-	Key     string
-	From    string // an RFC 5322 address, such as "Fyniq <no-reply@example.com>"
-	To      []string
-	Subject string
-	Text    string
-	Date    time.Time
+	Key       string
+	Reference string
+	From      string // an RFC 5322 address, such as "Fyniq <no-reply@example.com>"
+	To        []string
+	Subject   string
+	Text      string
+	Date      time.Time
 }
 
 // EmailReceipt is the provider's acceptance of a message.

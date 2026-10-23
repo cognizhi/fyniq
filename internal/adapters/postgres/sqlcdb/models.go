@@ -328,6 +328,19 @@ type FyniqDocumentVersion struct {
 	CreatedBy      *string
 }
 
+type FyniqEmailEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	MessageID      uuid.UUID
+	Provider       string
+	DeliveryID     string
+	Kind           string
+	Recipient      string
+	Detail         *string
+	OccurredAt     time.Time
+	ReceivedAt     time.Time
+}
+
 type FyniqEmailMessage struct {
 	OrganisationID   uuid.UUID
 	ID               uuid.UUID
@@ -352,6 +365,17 @@ type FyniqEmailSender struct {
 	DisplayName    *string
 	SetBy          string
 	SetAt          time.Time
+}
+
+type FyniqEmailSuppression struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Address        string
+	Reason         string
+	EventID        uuid.UUID
+	SuppressedAt   time.Time
+	ReleasedAt     *time.Time
+	ReleasedBy     *string
 }
 
 type FyniqEvidence struct {

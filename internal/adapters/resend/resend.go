@@ -60,12 +60,21 @@ func (s *Sender) Status(ctx context.Context, m ports.OutboundEmail, attempted ti
 	return s.post(ctx, m)
 }
 
+type tag struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 type request struct {
 	From    string   `json:"from"`
 	To      []string `json:"to"`
 	Subject string   `json:"subject"`
 	Text    string   `json:"text"`
+	Tags    []tag    `json:"tags,omitempty"`
 }
+
+// RefTag is the tag carrying a message's reference, which Resend echoes in its webhooks.
+const RefTag = "fyniq_ref"
 
 func (s *Sender) post(ctx context.Context, m ports.OutboundEmail) (ports.EmailReceipt, error) {
 	from, err := netmail.ParseAddress(m.From)
@@ -76,6 +85,9 @@ func (s *Sender) post(ctx context.Context, m ports.OutboundEmail) (ports.EmailRe
 		return ports.EmailReceipt{}, fmt.Errorf("%w: no recipient or more than 50, a subject with a line break, or no key", ports.ErrEmailRefused)
 	}
 	body := request{From: written(from), Subject: m.Subject, Text: m.Text}
+	if m.Reference != "" {
+		body.Tags = []tag{{RefTag, m.Reference}}
+	}
 	for _, t := range m.To {
 		a, err := netmail.ParseAddress(t)
 		if err != nil {

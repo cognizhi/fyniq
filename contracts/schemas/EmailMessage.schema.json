@@ -26,6 +26,16 @@
       "format": "date-time",
       "type": "string"
     },
+    "events": {
+      "description": "What the provider reported after it took the message, oldest first: some providers never report delivered. Only when one message is read.",
+      "items": {
+        "$ref": "EmailEvent.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "id": {
       "description": "The message's ID.",
       "examples": [

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -147,6 +148,129 @@ func (r senders) InForce(ctx context.Context) ([]storage.EmailSender, error) {
 	out := make([]storage.EmailSender, 0, len(rows))
 	for _, x := range rows {
 		out = append(out, toSender(x.ID, x.Purpose, x.Address, x.DisplayName, x.SetBy, x.SetAt))
+	}
+	return out, nil
+}
+
+type eventRow = sqlcdb.EmailEventsRow
+
+func toEvent(r eventRow) storage.EmailEvent {
+	return storage.EmailEvent{ID: r.ID, MessageID: r.MessageID, Provider: r.Provider, DeliveryID: r.DeliveryID, Kind: r.Kind, Recipient: r.Recipient,
+		Detail: str(r.Detail), OccurredAt: r.OccurredAt, ReceivedAt: r.ReceivedAt}
+}
+
+func (r emails) RecordEvent(ctx context.Context, e storage.EmailEvent) (storage.EmailEvent, bool, error) {
+	if err := r.u.check(); err != nil {
+		return storage.EmailEvent{}, false, err
+	}
+	row, err := r.u.q.InsertEmailEvent(ctx, sqlcdb.InsertEmailEventParams{MessageID: e.MessageID, Provider: e.Provider, DeliveryID: e.DeliveryID,
+		Kind: e.Kind, Recipient: e.Recipient, Detail: opt(clip(e.Detail)), OccurredAt: e.OccurredAt, ReceivedAt: r.u.store.clock.Now()})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.EmailEvent{}, false, nil // the provider's retry of a delivery recorded already
+	}
+	if err != nil {
+		return storage.EmailEvent{}, false, mapError(err)
+	}
+	out := toEvent(eventRow(row))
+	if err := r.u.event(ctx, "email_message.event_recorded", "email_message", out.MessageID, nil, map[string][2]any{
+		"event_id": {nil, out.ID.String()}, "provider": {nil, out.Provider}, "kind": {nil, out.Kind}, "recipient": {nil, out.Recipient},
+		"detail": {nil, nilIfEmpty(out.Detail)}, "occurred_at": {nil, out.OccurredAt.UTC().Format(time.RFC3339)}}); err != nil {
+		return storage.EmailEvent{}, false, err
+	}
+	return out, true, nil
+}
+
+func (r emails) Events(ctx context.Context, message uuid.UUID) ([]storage.EmailEvent, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.EmailEvents(ctx, message)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.EmailEvent, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toEvent(x))
+	}
+	return out, nil
+}
+
+func (u *unitOfWork) EmailSuppressions() storage.EmailSuppressions { return suppressions{u} }
+
+type suppressions struct{ u *unitOfWork }
+
+type suppressionRow = sqlcdb.EmailSuppressionsRow
+
+func toSuppression(r suppressionRow) storage.EmailSuppression {
+	return storage.EmailSuppression{ID: r.ID, Address: r.Address, Reason: r.Reason, EventID: r.EventID, SuppressedAt: r.SuppressedAt,
+		ReleasedAt: r.ReleasedAt, ReleasedBy: str(r.ReleasedBy)}
+}
+
+func (r suppressions) Suppress(ctx context.Context, address, reason string, event uuid.UUID) (storage.EmailSuppression, bool, error) {
+	if err := r.u.check(); err != nil {
+		return storage.EmailSuppression{}, false, err
+	}
+	row, err := r.u.q.InsertEmailSuppression(ctx, sqlcdb.InsertEmailSuppressionParams{Address: strings.ToLower(address), Reason: reason,
+		EventID: event, SuppressedAt: r.u.store.clock.Now()})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.EmailSuppression{}, false, nil // suppressed already
+	}
+	if err != nil {
+		return storage.EmailSuppression{}, false, mapError(err)
+	}
+	out := toSuppression(suppressionRow(row))
+	if err := r.u.event(ctx, "email_suppression.added", "email_suppression", out.ID, nil, map[string][2]any{
+		"address": {nil, out.Address}, "reason": {nil, out.Reason}, "event_id": {nil, out.EventID.String()}}); err != nil {
+		return storage.EmailSuppression{}, false, err
+	}
+	return out, true, nil
+}
+
+func (r suppressions) InForce(ctx context.Context, address string) (storage.EmailSuppression, error) {
+	if err := r.u.check(); err != nil {
+		return storage.EmailSuppression{}, err
+	}
+	row, err := r.u.q.EmailSuppressionInForce(ctx, strings.ToLower(address))
+	if err != nil {
+		return storage.EmailSuppression{}, mapError(err)
+	}
+	return toSuppression(suppressionRow(row)), nil
+}
+
+func (r suppressions) List(ctx context.Context, all bool) ([]storage.EmailSuppression, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.EmailSuppressions(ctx, all)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.EmailSuppression, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toSuppression(x))
+	}
+	return out, nil
+}
+
+func (r suppressions) Release(ctx context.Context, id uuid.UUID) (storage.EmailSuppression, error) {
+	if err := r.u.check(); err != nil {
+		return storage.EmailSuppression{}, err
+	}
+	now, by := r.u.store.clock.Now(), r.u.actor(ctx)
+	row, err := r.u.q.ReleaseEmailSuppression(ctx, sqlcdb.ReleaseEmailSuppressionParams{ID: id, ReleasedAt: &now, ReleasedBy: &by})
+	if errors.Is(err, pgx.ErrNoRows) {
+		if _, gerr := r.u.q.EmailSuppressionByID(ctx, id); gerr != nil {
+			return storage.EmailSuppression{}, mapError(gerr)
+		}
+		return storage.EmailSuppression{}, &storage.Error{Code: storage.CodeVersion, Message: fmt.Sprintf("email suppression %s was released already", id)}
+	}
+	if err != nil {
+		return storage.EmailSuppression{}, mapError(err)
+	}
+	out := toSuppression(suppressionRow(row))
+	if err := r.u.event(ctx, "email_suppression.released", "email_suppression", out.ID, nil, map[string][2]any{
+		"released_at": {nil, now.UTC().Format(time.RFC3339)}}); err != nil {
+		return storage.EmailSuppression{}, err
 	}
 	return out, nil
 }

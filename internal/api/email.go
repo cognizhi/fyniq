@@ -24,6 +24,7 @@ const (
 	CodeNoEmailAddress = "EML-01" // the organisation has no email address to send a test message to
 	CodeSenderAddress  = "EML-02" // not an address, or a name that cannot go in a header, or a name without an address
 	CodeSenderDomain   = "EML-03" // the address is not on a domain the deployment sends from
+	CodeReleased       = "EML-04" // the suppression was released already
 )
 
 // MailInfo is the deployment's outbound email as the API shows it (FR-INT-21; the owner's decision of 23 Oct 2026,
@@ -163,16 +164,73 @@ func (a *API) checkSender(b EmailSenderChange) (address, name string, _ error) {
 
 // EmailMessage is the record of an outbound email: never its body.
 type EmailMessage struct {
-	ID         string     `json:"id" format:"uuid" doc:"The message's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
-	Purpose    string     `json:"purpose" enum:"test,sign_in_alert" doc:"Why it was sent: a test message, or a sign-in alert." example:"test"`
-	Recipient  string     `json:"recipient" doc:"Who it goes to." example:"accounts@example.com"`
-	Subject    string     `json:"subject" doc:"Its subject." example:"Fyniq test message"`
-	Status     string     `json:"status" enum:"queued,accepted,failed,unknown" doc:"queued until the worker sends it; accepted when the provider took it; failed when every attempt was refused; unknown when an attempt may have handed it over and the provider cannot say, so it is never sent again on a guess." example:"queued"`
-	Provider   string     `json:"provider,omitempty" doc:"The provider that took or refused it." example:"smtp"`
-	Attempts   int        `json:"attempts" doc:"How many times the worker tried." example:"1"`
-	AcceptedAt *time.Time `json:"accepted_at,omitempty" doc:"When the provider accepted it." example:"2026-10-20T09:00:05Z"`
-	LastError  string     `json:"last_error,omitempty" doc:"Why the last attempt did not end it." example:"the email provider refused the message: 554 rejected"`
-	CreatedAt  time.Time  `json:"created_at" doc:"When it was queued." example:"2026-10-20T09:00:00Z"`
+	ID         string       `json:"id" format:"uuid" doc:"The message's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
+	Purpose    string       `json:"purpose" enum:"test,sign_in_alert" doc:"Why it was sent: a test message, or a sign-in alert." example:"test"`
+	Recipient  string       `json:"recipient" doc:"Who it goes to." example:"accounts@example.com"`
+	Subject    string       `json:"subject" doc:"Its subject." example:"Fyniq test message"`
+	Status     string       `json:"status" enum:"queued,accepted,failed,unknown" doc:"queued until the worker sends it; accepted when the provider took it; failed when every attempt was refused; unknown when an attempt may have handed it over and the provider cannot say, so it is never sent again on a guess." example:"queued"`
+	Provider   string       `json:"provider,omitempty" doc:"The provider that took or refused it." example:"smtp"`
+	Attempts   int          `json:"attempts" doc:"How many times the worker tried." example:"1"`
+	AcceptedAt *time.Time   `json:"accepted_at,omitempty" doc:"When the provider accepted it." example:"2026-10-20T09:00:05Z"`
+	LastError  string       `json:"last_error,omitempty" doc:"Why the last attempt did not end it." example:"the email provider refused the message: 554 rejected"`
+	CreatedAt  time.Time    `json:"created_at" doc:"When it was queued." example:"2026-10-20T09:00:00Z"`
+	Events     []EmailEvent `json:"events,omitempty" doc:"What the provider reported after it took the message, oldest first: some providers never report delivered. Only when one message is read."`
+}
+
+// EmailEvent is a provider's report about a message it took.
+type EmailEvent struct {
+	Kind       string    `json:"kind" enum:"delivered,delayed,soft_bounce,hard_bounce,complaint,suppressed,failed" doc:"What happened: a hard bounce, a complaint or the provider's suppression puts the address on the suppression list." example:"hard_bounce"`
+	Provider   string    `json:"provider" enum:"zeptomail,resend" doc:"Who reported it." example:"zeptomail"`
+	Detail     string    `json:"detail,omitempty" doc:"The provider's reason." example:"550 5.1.1 unknown user"`
+	OccurredAt time.Time `json:"occurred_at" doc:"When it happened, as the provider says." example:"2026-10-20T09:00:40Z"`
+}
+
+// EmailSuppression keeps mail from an address until an Administrator releases it.
+type EmailSuppression struct {
+	ID           string     `json:"id" format:"uuid" doc:"The suppression's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"`
+	Address      string     `json:"address" doc:"The address, in lower case." example:"founder@example.com"`
+	Reason       string     `json:"reason" enum:"hard_bounce,complaint,suppressed" doc:"Why: the address bounced hard, its owner marked mail as spam, or the provider suppressed it." example:"hard_bounce"`
+	SuppressedAt time.Time  `json:"suppressed_at" doc:"When." example:"2026-10-20T09:00:41Z"`
+	ReleasedAt   *time.Time `json:"released_at,omitempty" doc:"When it was released; absent while mail to it is not sent." example:"2026-10-21T08:00:00Z"`
+}
+
+// EmailSuppressionPage is a page of suppressions, newest first.
+type EmailSuppressionPage struct {
+	Items      []EmailSuppression `json:"items" nullable:"false" doc:"The suppressions, newest first."`
+	NextCursor string             `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjAxOTI4ZjZlIn0"`
+}
+
+// EmailSuppressionPath names a suppression.
+type EmailSuppressionPath struct {
+	SuppressionID string `path:"suppression_id" format:"uuid" doc:"The suppression's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"`
+}
+
+type suppressionsInput struct {
+	PageQuery
+	All bool `query:"all" doc:"true lists released suppressions too." example:"false"`
+}
+
+type releaseSuppressionInput struct {
+	EmailSuppressionPath
+	KeyHeader
+	PreferHeader
+}
+
+type suppressionsOutput struct{ Body EmailSuppressionPage }
+
+type suppressionOutput struct {
+	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+	Body     EmailSuppression
+}
+
+func suppressionOf(s storage.EmailSuppression) EmailSuppression {
+	out := EmailSuppression{ID: s.ID.String(), Address: s.Address, Reason: s.Reason, SuppressedAt: s.SuppressedAt.UTC()}
+	if s.ReleasedAt != nil {
+		at := s.ReleasedAt.UTC()
+		out.ReleasedAt = &at
+	}
+	return out
 }
 
 // EmailMessagePath names a message.
@@ -319,9 +377,78 @@ func registerEmail(a *API) {
 		var out emailMessageReadOutput
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			m, err := u.EmailMessages().Get(ctx, id)
+			if err != nil {
+				return err
+			}
 			out.Body = emailMessageOf(m)
+			evs, err := u.EmailMessages().Events(ctx, id)
+			for _, e := range evs {
+				out.Body.Events = append(out.Body.Events, EmailEvent{Kind: e.Kind, Provider: e.Provider, Detail: e.Detail, OccurredAt: e.OccurredAt.UTC()})
+			}
 			return err
 		})
 		return &out, err
 	})
+
+	register(a, authz.ListEmailSuppressions, huma.Operation{
+		OperationID: "listEmailSuppressions", Method: http.MethodGet, Path: "/v1/organisation/email/suppressions", Tags: []string{"Organisation"},
+		Summary: "List suppressed addresses",
+		Description: "The addresses no mail is sent to, newest first (FR-INT-21): each bounced hard, complained, or was suppressed by the provider, " +
+			"as its signed webhook reported; a message to one fails without being sent. Released ones too with all=true. Read-only; no side effects.",
+	}, append([]string{CodeCursor}, locks...), func(ctx context.Context, in *suppressionsInput) (*suppressionsOutput, error) {
+		p, _ := authn.From(ctx)
+		out := EmailSuppressionPage{Items: []EmailSuppression{}}
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			all, err := u.EmailSuppressions().List(ctx, in.All)
+			if err != nil {
+				return err
+			}
+			if in.Cursor != "" {
+				after, err := decodeCursor(in.Cursor)
+				if err != nil {
+					return err
+				}
+				i := slices.IndexFunc(all, func(s storage.EmailSuppression) bool { return s.ID.String() == after })
+				if i < 0 {
+					return badCursor()
+				}
+				all = all[i+1:]
+			}
+			if len(all) > in.PageSize {
+				all = all[:in.PageSize]
+				out.NextCursor = encodeCursor(all[len(all)-1].ID.String())
+			}
+			for _, s := range all {
+				out.Items = append(out.Items, suppressionOf(s))
+			}
+			return nil
+		})
+		return &suppressionsOutput{Body: out}, err
+	})
+
+	register(a, authz.ReleaseEmailSuppression, huma.Operation{
+		OperationID: "releaseEmailSuppression", Method: http.MethodPost, Path: "/v1/organisation/email/suppressions/{suppression_id}/release",
+		Tags: []string{"Organisation"}, Summary: "Release a suppressed address",
+		Description: "Lets mail go to a suppressed address again (FR-INT-21), once its owner has fixed the mailbox or asked for mail: the next " +
+			"message is sent, and a later hard bounce or complaint suppresses it again. Side effects: the release and its audit event. Refused " +
+			"when it was released already. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+	}, append([]string{CodeNotFound, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeReleased}, locks...),
+		func(ctx context.Context, in *releaseSuppressionInput) (*suppressionOutput, error) {
+			id, err := parseID("suppression_id", in.SuppressionID)
+			if err != nil {
+				return nil, err
+			}
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (EmailSuppression, error) {
+				s, err := u.EmailSuppressions().Release(ctx, id)
+				if storage.CodeOf(err) == storage.CodeVersion {
+					return EmailSuppression{}, problem(CodeReleased, "The address was released already.",
+						"Nothing to do: mail is sent to it, and a later hard bounce or complaint suppresses it again")
+				}
+				return suppressionOf(s), err
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &suppressionOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		})
 }
