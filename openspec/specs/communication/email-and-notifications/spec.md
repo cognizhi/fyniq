@@ -173,6 +173,16 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** it is Resend receiving (documented without a beta label; the webhook carries metadata and the message is fetched through the API) or IMAP polling of a mailbox
 - **AND** ZeptoMail is not offered, because it is send-only
 
+#### Scenario: Readable addresses as built (rev 0.105)
+- **WHEN** an Administrator names the organisation's email-in address, or a member their own
+- **THEN** it is a readable name on the deployment's capture domain, such as bills@in.example.com, checked against the name rules and the role mailboxes
+- **AND** a name stays with its organisation for good (EML-07), and replacing or retiring an address stops its mail
+
+#### Scenario: Known senders and quarantine (rev 0.105)
+- **WHEN** mail arrives at an email-in address
+- **THEN** it is accepted from the member's own sign-in email at their address, and from members and contacts' billing and remittance emails at the organisation's
+- **AND** any other sender is quarantined until an Administrator, or the member for their own address, accepts or rejects it
+
 ### Requirement: FR-NTF-01 Notification centre
 The system SHALL give every user a notification centre: a bell with the unread count, and notifications that each carry a type, a severity, the record it is about and the time.
 

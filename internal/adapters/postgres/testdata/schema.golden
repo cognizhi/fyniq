@@ -136,6 +136,25 @@ bill_payment_plan | bill_id | uuid | not null |
 bill_payment_plan | planned_on | date | null | 
 bill_payment_plan | recorded_by | text | not null | 
 bill_payment_plan | recorded_at | timestamp with time zone | not null | now()
+capture_address | organisation_id | uuid | not null | current_org()
+capture_address | id | uuid | not null | uuidv7()
+capture_address | local_part | text | not null | 
+capture_address | user_id | uuid | null | 
+capture_address | created_by | text | not null | 
+capture_address | created_at | timestamp with time zone | not null | 
+capture_address | retired_at | timestamp with time zone | null | 
+capture_address | retired_by | text | null | 
+capture_name | local_part | text | not null | 
+capture_name | owner | uuid | not null | 
+capture_name | address_id | uuid | null | 
+capture_name | user_id | uuid | null | 
+capture_sender | organisation_id | uuid | not null | current_org()
+capture_sender | id | uuid | not null | uuidv7()
+capture_sender | address | text | not null | 
+capture_sender | user_id | uuid | null | 
+capture_sender | decision | text | not null | 
+capture_sender | decided_by | text | not null | 
+capture_sender | decided_at | timestamp with time zone | not null | 
 close_checklist_entry | organisation_id | uuid | not null | current_org()
 close_checklist_entry | id | uuid | not null | uuidv7()
 close_checklist_entry | period_id | uuid | not null | 
@@ -970,6 +989,34 @@ bill_payment_plan | bill_payment_plan_recorded_at_not_null | NOT NULL recorded_a
 bill_payment_plan | bill_payment_plan_recorded_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 bill_payment_plan | bill_payment_plan_recorded_by_not_null | NOT NULL recorded_by
 bill_payment_plan | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+capture_address | capture_address_by_format | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (retired_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text)))
+capture_address | capture_address_created_at_not_null | NOT NULL created_at
+capture_address | capture_address_created_by_not_null | NOT NULL created_by
+capture_address | capture_address_id_not_null | NOT NULL id
+capture_address | capture_address_local_part_format | CHECK (((local_part ~ '^[a-z][a-z0-9.-]{1,38}[a-z0-9]$'::text) AND (local_part !~ '\.\.'::text)))
+capture_address | capture_address_local_part_not_null | NOT NULL local_part
+capture_address | capture_address_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+capture_address | capture_address_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+capture_address | capture_address_organisation_id_not_null | NOT NULL organisation_id
+capture_address | capture_address_pkey | PRIMARY KEY (organisation_id, id)
+capture_address | capture_address_retired_pair | CHECK (((retired_at IS NULL) = (retired_by IS NULL)))
+capture_address | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+capture_name | capture_name_local_part_not_null | NOT NULL local_part
+capture_name | capture_name_owner_not_null | NOT NULL owner
+capture_name | capture_name_pkey | PRIMARY KEY (local_part)
+capture_sender | capture_sender_address_lower | CHECK (((address = lower(address)) AND ((length(address) >= 3) AND (length(address) <= 254))))
+capture_sender | capture_sender_address_not_null | NOT NULL address
+capture_sender | capture_sender_by_format | CHECK ((decided_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+capture_sender | capture_sender_decided_at_not_null | NOT NULL decided_at
+capture_sender | capture_sender_decided_by_not_null | NOT NULL decided_by
+capture_sender | capture_sender_decision_known | CHECK ((decision = ANY (ARRAY['accepted'::text, 'rejected'::text])))
+capture_sender | capture_sender_decision_not_null | NOT NULL decision
+capture_sender | capture_sender_id_not_null | NOT NULL id
+capture_sender | capture_sender_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+capture_sender | capture_sender_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+capture_sender | capture_sender_organisation_id_not_null | NOT NULL organisation_id
+capture_sender | capture_sender_pkey | PRIMARY KEY (organisation_id, id)
+capture_sender | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 close_checklist_entry | close_checklist_entry_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 close_checklist_entry | close_checklist_entry_id_not_null | NOT NULL id
 close_checklist_entry | close_checklist_entry_key_format | CHECK ((task_key ~ '^[a-z0-9][a-z0-9-]{0,39}$'::text))
@@ -1926,6 +1973,7 @@ CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (o
 CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
 CREATE INDEX bill_payment_plan_bill ON fyniq.bill_payment_plan USING btree (organisation_id, bill_id, recorded_at)
+CREATE INDEX capture_sender_latest ON fyniq.capture_sender USING btree (organisation_id, address, decided_at)
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
@@ -1980,6 +2028,10 @@ CREATE UNIQUE INDEX audit_event_seq_key ON fyniq.audit_event USING btree (organi
 CREATE UNIQUE INDEX balance_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, currency)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bill_payment_plan_pkey ON fyniq.bill_payment_plan USING btree (organisation_id, id)
+CREATE UNIQUE INDEX capture_address_live_owner ON fyniq.capture_address USING btree (organisation_id, COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE (retired_at IS NULL)
+CREATE UNIQUE INDEX capture_address_pkey ON fyniq.capture_address USING btree (organisation_id, id)
+CREATE UNIQUE INDEX capture_name_pkey ON fyniq.capture_name USING btree (local_part)
+CREATE UNIQUE INDEX capture_sender_pkey ON fyniq.capture_sender USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_entry_pkey ON fyniq.close_checklist_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_pkey ON fyniq.close_checklist_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_version_key ON fyniq.close_checklist_template USING btree (organisation_id, version)
@@ -2086,6 +2138,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRA
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'bill_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.capture_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.contact_document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'contact_id')
@@ -2117,6 +2170,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_framework DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_framework', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'id')
@@ -2151,6 +2205,10 @@ CREATE TRIGGER audit_event_append BEFORE INSERT ON fyniq.audit_event FOR EACH RO
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON fyniq.audit_event FOR EACH ROW EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON fyniq.audit_event FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER bill_payment_plan_immutable BEFORE DELETE OR UPDATE ON fyniq.bill_payment_plan FOR EACH ROW EXECUTE FUNCTION bill_payment_plan_immutable()
+CREATE TRIGGER capture_address_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.capture_address FOR EACH ROW EXECUTE FUNCTION capture_address_guard()
+CREATE TRIGGER capture_address_no_truncate BEFORE TRUNCATE ON fyniq.capture_address FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER capture_sender_guard BEFORE DELETE OR UPDATE ON fyniq.capture_sender FOR EACH ROW EXECUTE FUNCTION capture_sender_guard()
+CREATE TRIGGER capture_sender_no_truncate BEFORE TRUNCATE ON fyniq.capture_sender FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER close_checklist_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_entry FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
 CREATE TRIGGER close_checklist_entry_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER close_checklist_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_template FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
@@ -2246,6 +2304,8 @@ audit_chain | tenant_isolation | * | (organisation_id = current_org()) | (organi
 audit_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+capture_address | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+capture_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2316,6 +2376,9 @@ audit_immutable() → trigger | security invoker | v | search_path=pg_catalog, f
 balance_differences() → TABLE(account_id uuid, period_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 3fb15f23f1568ac9a4288b7dced1e16e
 beat(p_name text, p_at timestamp with time zone, p_detail text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 464af91fa7b0d569c10c9b291c9d6460
 bill_payment_plan_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d53bcb2c3cc4abaeb7eb39ce991bc40
+capture_address_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 74c297c8ec1f2a43a920e66f732fd515
+capture_route(p_local text) → TABLE(organisation_id uuid, address_id uuid, user_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 172d93473f532f3e8728708678490889
+capture_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d3ca1a62ec41cff9d93981758a2f74c
 check_entry_balanced() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7b53334884d5e11426b962a38e77aed9
 claim_job_slot(p_job text, p_slot timestamp with time zone, p_holder text, p_until timestamp with time zone, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 25c90e46d6e3d1e87666459f6db394db
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12

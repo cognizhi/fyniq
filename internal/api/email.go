@@ -37,6 +37,8 @@ type MailInfo struct {
 	Domains   []string
 	// Check is the sending domains' DNS, as last checked and when (rev 0.104); nil: none is checked.
 	Check func(ctx context.Context) ([]maildns.Result, time.Time)
+	// CaptureDomain is the domain of the email-in addresses (rev 0.105); empty: email-in is not set up.
+	CaptureDomain string
 }
 
 // DomainRecord is a record a sending domain's providers asked for.

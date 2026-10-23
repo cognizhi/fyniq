@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "The whole address, to give to suppliers or to forward bills and receipts to.",
+      "examples": [
+        "bills@in.example.com"
+      ],
+      "type": "string"
+    },
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2026-10-23T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, before the @.",
+      "examples": [
+        "bills"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "address",
+    "name",
+    "created_at"
+  ],
+  "title": "CaptureAddress",
+  "type": "object"
+}

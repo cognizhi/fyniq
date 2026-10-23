@@ -76,6 +76,13 @@
   settings screen with its help, which the Super admin console and the connector-detail screen show (super-admin-console,
   connector-detail).)
 - [ ] 2.2 The `InboundMail` port: messages stored with their authentication results, attachments through the evidence upload and scanner, and unknown senders quarantined. Test `// req: FR-INT-22`
+  (23 Oct 2026, first slice, PRD-001 rev 0.105, on the owner's decisions of that day: readable names on the capture
+  domain, members and contacts as known senders. Migration 000102: `capture_address` (FY182), the global registry
+  `capture_name` read through `capture_route` (FY183), `capture_sender` (FY184); getCaptureAddresses,
+  setOrganisationCaptureAddress, setMyCaptureAddress (EML-05 to EML-08); `FYNIQ_CAPTURE_DOMAIN`. Tests:
+  `TestAnEmailInAddressNameBelongsToOneOrganisation`, `TestEmailInAddressesAndSenderDecisionsKeepTheirHistory`,
+  `TestEmailInAddressesHaveReadableNames` and three matrix rows. Left: receiving through Resend, attachments through
+  the evidence upload and scanner, the quarantine and its decisions, the screens.)
 - [ ] 2.3 Interchangeable adapters and the §8.24 launch adapters and local substitutes for this change's capabilities. Tests `// req: communication/email-and-notifications Outside services behind interchangeable adapters` and `… Launch adapters and local substitutes`
 
 ## 3. Notifications

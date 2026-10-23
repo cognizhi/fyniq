@@ -62,7 +62,8 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Mail: MailConfig{Providers: []ports.Email{smtp.New(cmp.Or(os.Getenv("FYNIQ_SMTP_ADDR"), "localhost:1025"), "fyniq.local", true)},
 			From: cmp.Or(os.Getenv("FYNIQ_MAIL_FROM"), "Fyniq <no-reply@fyniq.local>"), Domains: []string{"fyniq.local", "example.com"},
 			// Webhooks only when a developer points a provider's sandbox at a tunnel and sets its secret.
-			ResendWebhookSecret: os.Getenv("FYNIQ_RESEND_WEBHOOK_SECRET"), ZeptoMailWebhookKey: os.Getenv("FYNIQ_ZEPTOMAIL_WEBHOOK_KEY")},
+			ResendWebhookSecret: os.Getenv("FYNIQ_RESEND_WEBHOOK_SECRET"), ZeptoMailWebhookKey: os.Getenv("FYNIQ_ZEPTOMAIL_WEBHOOK_KEY"),
+			CaptureDomain: cmp.Or(os.Getenv("FYNIQ_CAPTURE_DOMAIN"), "in.fyniq.local")},
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
 		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.

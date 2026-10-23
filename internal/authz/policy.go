@@ -275,15 +275,18 @@ var (
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	UpdateAccount = Policy{Operation: "updateAccount", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
-	SendTestEmail           = Policy{Operation: "sendTestEmail", Capability: Integrations, Need: Create}
-	GetEmailMessage         = Policy{Operation: "getEmailMessage", Capability: Integrations, Need: View}
-	GetEmailSettings        = Policy{Operation: "getEmailSettings", Capability: Integrations, Need: View}
-	SetEmailSender          = Policy{Operation: "setEmailSender", Capability: Integrations, Need: Create}
-	ListEmailSuppressions   = Policy{Operation: "listEmailSuppressions", Capability: Integrations, Need: View}
-	ReleaseEmailSuppression = Policy{Operation: "releaseEmailSuppression", Capability: Integrations, Need: Create}
-	ListMembers             = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
-	ListMemberInvitations   = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
-	CreateMemberInvitation  = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
+	SendTestEmail                 = Policy{Operation: "sendTestEmail", Capability: Integrations, Need: Create}
+	GetEmailMessage               = Policy{Operation: "getEmailMessage", Capability: Integrations, Need: View}
+	GetEmailSettings              = Policy{Operation: "getEmailSettings", Capability: Integrations, Need: View}
+	SetEmailSender                = Policy{Operation: "setEmailSender", Capability: Integrations, Need: Create}
+	ListEmailSuppressions         = Policy{Operation: "listEmailSuppressions", Capability: Integrations, Need: View}
+	ReleaseEmailSuppression       = Policy{Operation: "releaseEmailSuppression", Capability: Integrations, Need: Create}
+	GetCaptureAddresses           = Policy{Operation: "getCaptureAddresses", Capability: OwnNotifications, Need: View}
+	SetOrganisationCaptureAddress = Policy{Operation: "setOrganisationCaptureAddress", Capability: Integrations, Need: Create}
+	SetMyCaptureAddress           = Policy{Operation: "setMyCaptureAddress", Capability: OwnNotifications, Need: Create}
+	ListMembers                   = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
+	ListMemberInvitations         = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
+	CreateMemberInvitation        = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
 		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they wait for another Owner to approve them, and the request needs step-up (rev 0.36)."}
 	WithdrawMemberInvitation = Policy{Operation: "withdrawMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true}
 	AssignRole               = Policy{Operation: "assignRole", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
@@ -614,7 +617,7 @@ var (
 var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisationProfile, ListGSTRegistrations, GetGSTRegistration,
 	GetGSTStatus, CreateGSTRegistration, UpdateGSTRegistration, ListSequences, GetSequence, UpdateSequence, ListSettings, GetSetting, UpdateSetting, ListAccounts, LoadStandardChart, CreateAccount, UpdateAccount, ListContacts, GetContact,
 	CreateContact, UpdateContact, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
-	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
+	RevokeRole, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,

@@ -182,6 +182,34 @@ type FyniqBillPaymentPlan struct {
 	RecordedAt     time.Time
 }
 
+type FyniqCaptureAddress struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	LocalPart      string
+	UserID         *uuid.UUID
+	CreatedBy      string
+	CreatedAt      time.Time
+	RetiredAt      *time.Time
+	RetiredBy      *string
+}
+
+type FyniqCaptureName struct {
+	LocalPart string
+	Owner     uuid.UUID
+	AddressID *uuid.UUID
+	UserID    *uuid.UUID
+}
+
+type FyniqCaptureSender struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Address        string
+	UserID         *uuid.UUID
+	Decision       string
+	DecidedBy      string
+	DecidedAt      time.Time
+}
+
 type FyniqCloseChecklistEntry struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID

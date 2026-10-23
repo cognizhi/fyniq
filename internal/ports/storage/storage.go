@@ -75,6 +75,7 @@ type UnitOfWork interface {
 	EmailMessages() EmailMessages
 	EmailSenders() EmailSenders
 	EmailSuppressions() EmailSuppressions
+	CaptureAddresses() CaptureAddresses
 	Outbox() Outbox
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals
@@ -542,6 +543,7 @@ const (
 	CodeWithholding    = "STORAGE-WHT-01"        // a withholding decision never changes: a later one replaces it
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
+	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done
