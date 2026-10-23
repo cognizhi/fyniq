@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "file_name": {
+      "description": "Its name, as sent: data, never a path.",
+      "examples": [
+        "INV-0042.pdf"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "The message's text, or an attachment.",
+      "enum": [
+        "body",
+        "attachment"
+      ],
+      "examples": [
+        "attachment"
+      ],
+      "type": "string"
+    },
+    "media_type": {
+      "description": "Its type, from its content.",
+      "examples": [
+        "application/pdf"
+      ],
+      "type": "string"
+    },
+    "removed": {
+      "description": "true once its message was rejected or expired, and the file deleted.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "size_bytes": {
+      "description": "Its size.",
+      "examples": [
+        48211
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind",
+    "file_name",
+    "media_type",
+    "size_bytes",
+    "removed"
+  ],
+  "title": "InboundFile",
+  "type": "object"
+}

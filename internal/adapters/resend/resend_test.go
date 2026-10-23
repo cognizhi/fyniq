@@ -119,3 +119,49 @@ func TestTheReferenceGoesAsATag(t *testing.T) {
 		t.Fatalf("the tags: %v", got["tags"])
 	}
 }
+
+// A received email is read as Resend's receiving API documents it: its sender, text, the receiving server's SPF, DKIM
+// and DMARC, and its attachments, each downloaded from the signed https URL its retrieval gives, refused beyond the
+// limit.
+// req: FR-INT-22
+func TestReceivedMailIsReadFromResendsReceivingAPI(t *testing.T) {
+	var cdn *httptest.Server
+	cdn = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("%PDF-1.7 invoice"))
+	}))
+	defer cdn.Close()
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer re_key" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		switch r.URL.Path {
+		case "/emails/receiving/e-1":
+			_, _ = w.Write([]byte(`{"object":"email","id":"e-1","from":"ar@supplier.example","subject":"Invoice","text":"See attached.",` +
+				`"authentication":{"spf":"pass","dkim":"pass","dmarc":"pass"},"attachments":[{"id":"a-1","filename":"INV.pdf",` +
+				`"content_type":"application/pdf","content_disposition":null,"content_id":null,"size":16}]}`))
+		case "/emails/receiving/e-1/attachments/a-1":
+			_, _ = w.Write([]byte(`{"object":"attachment","id":"a-1","download_url":"` + cdn.URL + `/a-1","expires_at":"2026-10-23T10:00:00Z"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer api.Close()
+	r := resend.NewReceiving(api.URL, "re_key")
+	r.HTTP = cdn.Client() // trusts the test CDN's certificate, and reaches the plain API
+	mail, err := r.Fetch(context.Background(), "e-1")
+	if err != nil || mail.From != "ar@supplier.example" || mail.Text != "See attached." || mail.DMARC != "pass" || len(mail.Attachments) != 1 ||
+		mail.Attachments[0].FileName != "INV.pdf" || mail.Attachments[0].Size != 16 {
+		t.Fatalf("%+v, %v", mail, err)
+	}
+	b, err := r.Attachment(context.Background(), "e-1", mail.Attachments[0], 1<<20)
+	if err != nil || string(b) != "%PDF-1.7 invoice" {
+		t.Fatalf("the attachment: %q, %v", b, err)
+	}
+	if _, err := r.Attachment(context.Background(), "e-1", mail.Attachments[0], 10); !errors.Is(err, ports.ErrTooLarge) {
+		t.Fatalf("beyond the limit: %v", err)
+	}
+	if _, err := resend.NewReceiving(api.URL, "wrong").Fetch(context.Background(), "e-1"); err == nil {
+		t.Fatal("a refused fetch read nothing, but no error")
+	}
+}

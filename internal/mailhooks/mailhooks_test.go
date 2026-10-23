@@ -150,3 +150,20 @@ func TestZeptoMailsEventsAreReadByTheirObject(t *testing.T) {
 		t.Fatalf("an open is not recorded: %+v, %v", got, err)
 	}
 }
+
+// Resend's email.received is read as a received message: its ID, sender, subject and every address it was sent to;
+// its body and attachments are fetched later.
+// req: FR-INT-22
+func TestAReceivedEmailIsReadFromResendsWebhook(t *testing.T) {
+	body := `{"type":"email.received","created_at":"2026-10-23T08:59:30Z","data":{"email_id":"e-1","created_at":"2026-10-23T08:59:00Z",` +
+		`"from":"AR <ar@supplier.example>","to":["bills@in.example.com"],"received_for":["bills@in.example.com"],"subject":"Invoice",` +
+		`"message_id":"<x@supplier.example>","attachments":[{"id":"a-1","filename":"INV.pdf"}]}}`
+	got, err := mailhooks.ParseResend("msg_9", []byte(body), now)
+	if err != nil || len(got) != 1 || got[0].Received == nil || got[0].Received.ID != "e-1" || got[0].Received.From != "AR <ar@supplier.example>" ||
+		got[0].Received.Subject != "Invoice" || len(got[0].Received.To) != 2 || !got[0].Received.ReceivedAt.Equal(now.Add(-time.Minute)) {
+		t.Fatalf("%+v, %v", got, err)
+	}
+	if _, err := mailhooks.ParseResend("msg_9", []byte(`{"type":"email.received","data":{}}`), now); err == nil {
+		t.Fatal("a received email with no ID was read")
+	}
+}

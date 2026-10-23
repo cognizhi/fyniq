@@ -208,6 +208,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSettings(a)
 	registerEmail(a)
 	registerCapture(a)
+	registerInbound(a)
 	registerMembers(a)
 	registerApprovals(a)
 	registerApprovalPolicies(a)

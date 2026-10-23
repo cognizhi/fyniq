@@ -377,6 +377,35 @@ idempotency_key | response_status | smallint | null |
 idempotency_key | response_body | bytea | null | 
 idempotency_key | created_at | timestamp with time zone | not null | 
 idempotency_key | expires_at | timestamp with time zone | not null | 
+inbound_file | organisation_id | uuid | not null | current_org()
+inbound_file | id | uuid | not null | uuidv7()
+inbound_file | message_id | uuid | not null | 
+inbound_file | kind | text | not null | 
+inbound_file | file_name | text | not null | 
+inbound_file | media_type | text | not null | 
+inbound_file | size_bytes | bigint | not null | 
+inbound_file | sha256 | text | not null | 
+inbound_file | original_sha256 | text | not null | 
+inbound_file | blob_key | text | not null | 
+inbound_file | stored_at | timestamp with time zone | not null | 
+inbound_file | removed_at | timestamp with time zone | null | 
+inbound_message | organisation_id | uuid | not null | current_org()
+inbound_message | id | uuid | not null | uuidv7()
+inbound_message | address_id | uuid | not null | 
+inbound_message | provider | text | not null | 
+inbound_message | provider_id | text | not null | 
+inbound_message | sender | text | not null | 
+inbound_message | subject | text | null | 
+inbound_message | received_at | timestamp with time zone | not null | 
+inbound_message | status | text | not null | 'received'::text
+inbound_message | spf | text | null | 
+inbound_message | dkim | text | null | 
+inbound_message | dmarc | text | null | 
+inbound_message | fetched_at | timestamp with time zone | null | 
+inbound_message | expires_at | timestamp with time zone | null | 
+inbound_message | decided_by | text | null | 
+inbound_message | decided_at | timestamp with time zone | null | 
+inbound_message | last_error | text | null | 
 installation | singleton | boolean | not null | true
 installation | setup_code_hash | bytea | null | 
 installation | setup_completed_at | timestamp with time zone | null | 
@@ -706,6 +735,8 @@ user_identity | issuer | text | not null |
 user_identity | subject | text | not null | 
 user_identity | user_id | uuid | not null | 
 user_identity | created_at | timestamp with time zone | not null | now()
+user_identity | email | text | null | 
+user_identity | email_verified_at | timestamp with time zone | null | 
 user_membership | organisation_id | uuid | not null | current_org()
 user_membership | id | uuid | not null | uuidv7()
 user_membership | user_id | uuid | not null | 
@@ -1362,6 +1393,40 @@ idempotency_key | idempotency_key_organisation_id_not_null | NOT NULL organisati
 idempotency_key | idempotency_key_pkey | PRIMARY KEY (organisation_id, id)
 idempotency_key | idempotency_key_request_hash_not_null | NOT NULL request_hash
 idempotency_key | idempotency_key_status_range | CHECK (((response_status >= 100) AND (response_status <= 599)))
+inbound_file | inbound_file_blob_key_not_null | NOT NULL blob_key
+inbound_file | inbound_file_file_name_not_null | NOT NULL file_name
+inbound_file | inbound_file_id_not_null | NOT NULL id
+inbound_file | inbound_file_kind_known | CHECK ((kind = ANY (ARRAY['body'::text, 'attachment'::text])))
+inbound_file | inbound_file_kind_not_null | NOT NULL kind
+inbound_file | inbound_file_lengths | CHECK ((((length(file_name) >= 1) AND (length(file_name) <= 255)) AND ((length(media_type) >= 3) AND (length(media_type) <= 100)) AND ((size_bytes >= 1) AND (size_bytes <= 26214400)) AND (sha256 ~ '^[0-9a-f]{64}$'::text) AND (original_sha256 ~ '^[0-9a-f]{64}$'::text) AND (blob_key ~ '^inbound/[0-9a-f-]{36}/[0-9a-f-]{36}/[0-9a-f-]{36}$'::text)))
+inbound_file | inbound_file_media_type_not_null | NOT NULL media_type
+inbound_file | inbound_file_message_fkey | FOREIGN KEY (organisation_id, message_id) REFERENCES inbound_message(organisation_id, id)
+inbound_file | inbound_file_message_id_not_null | NOT NULL message_id
+inbound_file | inbound_file_organisation_id_not_null | NOT NULL organisation_id
+inbound_file | inbound_file_original_sha256_not_null | NOT NULL original_sha256
+inbound_file | inbound_file_pkey | PRIMARY KEY (organisation_id, id)
+inbound_file | inbound_file_sha256_not_null | NOT NULL sha256
+inbound_file | inbound_file_size_bytes_not_null | NOT NULL size_bytes
+inbound_file | inbound_file_stored_at_not_null | NOT NULL stored_at
+inbound_file | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+inbound_message | inbound_message_address_fkey | FOREIGN KEY (organisation_id, address_id) REFERENCES capture_address(organisation_id, id)
+inbound_message | inbound_message_address_id_not_null | NOT NULL address_id
+inbound_message | inbound_message_decided_by_format | CHECK ((decided_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+inbound_message | inbound_message_decided_pair | CHECK (((decided_at IS NULL) = (decided_by IS NULL)))
+inbound_message | inbound_message_id_not_null | NOT NULL id
+inbound_message | inbound_message_lengths | CHECK ((((length(provider_id) >= 1) AND (length(provider_id) <= 200)) AND (length(subject) <= 500) AND ((length(spf) >= 1) AND (length(spf) <= 40)) AND ((length(dkim) >= 1) AND (length(dkim) <= 40)) AND ((length(dmarc) >= 1) AND (length(dmarc) <= 40)) AND ((length(last_error) >= 1) AND (length(last_error) <= 500))))
+inbound_message | inbound_message_once | UNIQUE (organisation_id, provider, provider_id, address_id)
+inbound_message | inbound_message_organisation_id_not_null | NOT NULL organisation_id
+inbound_message | inbound_message_pkey | PRIMARY KEY (organisation_id, id)
+inbound_message | inbound_message_provider_id_not_null | NOT NULL provider_id
+inbound_message | inbound_message_provider_known | CHECK ((provider = ANY (ARRAY['resend'::text, 'mailpit'::text])))
+inbound_message | inbound_message_provider_not_null | NOT NULL provider
+inbound_message | inbound_message_received_at_not_null | NOT NULL received_at
+inbound_message | inbound_message_sender_lower | CHECK (((sender = lower(sender)) AND ((length(sender) >= 3) AND (length(sender) <= 254))))
+inbound_message | inbound_message_sender_not_null | NOT NULL sender
+inbound_message | inbound_message_status_known | CHECK ((status = ANY (ARRAY['received'::text, 'accepted'::text, 'quarantined'::text, 'rejected'::text, 'expired'::text, 'failed'::text])))
+inbound_message | inbound_message_status_not_null | NOT NULL status
+inbound_message | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 installation | installation_code_or_done | CHECK (((setup_code_hash IS NULL) <> (setup_completed_at IS NULL)))
 installation | installation_code_sha256 | CHECK ((length(setup_code_hash) = 32))
 installation | installation_one_row | CHECK (singleton)
@@ -1866,6 +1931,7 @@ tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisatio
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
 tenant_directory | tenant_directory_pkey | PRIMARY KEY (organisation_id)
 user_identity | user_identity_created_at_not_null | NOT NULL created_at
+user_identity | user_identity_email_form | CHECK ((((email IS NULL) AND (email_verified_at IS NULL)) OR ((email = lower(email)) AND ((length(email) >= 3) AND (length(email) <= 254)) AND (email_verified_at IS NOT NULL))))
 user_identity | user_identity_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
 user_identity | user_identity_issuer_not_null | NOT NULL issuer
 user_identity | user_identity_pkey | PRIMARY KEY (issuer, subject)
@@ -1985,6 +2051,9 @@ CREATE INDEX evidence_document ON fyniq.evidence USING btree (organisation_id, d
 CREATE INDEX fx_rate_lookup ON fyniq.fx_rate USING btree (organisation_id, currency, kind, on_date)
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
 CREATE INDEX idempotency_key_expires_idx ON fyniq.idempotency_key USING btree (organisation_id, expires_at)
+CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisation_id, message_id)
+CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
+CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
@@ -2065,6 +2134,9 @@ CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree 
 CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX idempotency_key_client_key ON fyniq.idempotency_key USING btree (organisation_id, client_id, key)
 CREATE UNIQUE INDEX idempotency_key_pkey ON fyniq.idempotency_key USING btree (organisation_id, id)
+CREATE UNIQUE INDEX inbound_file_pkey ON fyniq.inbound_file USING btree (organisation_id, id)
+CREATE UNIQUE INDEX inbound_message_once ON fyniq.inbound_message USING btree (organisation_id, provider, provider_id, address_id)
+CREATE UNIQUE INDEX inbound_message_pkey ON fyniq.inbound_message USING btree (organisation_id, id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
 CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
 CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
@@ -2166,6 +2238,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.withholding_decisi
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF revoked_at ON fyniq.webauthn_credential DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_passkey_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.inbound_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_framework DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_framework', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
@@ -2178,6 +2251,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.email_su
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
@@ -2241,6 +2315,10 @@ CREATE TRIGGER fx_feed_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.fx_feed_r
 CREATE TRIGGER fx_feed_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_feed_rate FOR EACH STATEMENT EXECUTE FUNCTION fx_feed_rate_immutable()
 CREATE TRIGGER fx_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.fx_rate FOR EACH ROW EXECUTE FUNCTION fx_rate_guard()
 CREATE TRIGGER fx_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_rate FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER inbound_file_guard BEFORE DELETE OR UPDATE ON fyniq.inbound_file FOR EACH ROW EXECUTE FUNCTION inbound_file_guard()
+CREATE TRIGGER inbound_file_no_truncate BEFORE TRUNCATE ON fyniq.inbound_file FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER inbound_message_guard BEFORE DELETE OR UPDATE ON fyniq.inbound_message FOR EACH ROW EXECUTE FUNCTION inbound_message_guard()
+CREATE TRIGGER inbound_message_no_truncate BEFORE TRUNCATE ON fyniq.inbound_message FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_bill_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'bill_release'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bill_release()
 CREATE TRIGGER journal_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
@@ -2325,6 +2403,8 @@ evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisat
 fx_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2409,6 +2489,8 @@ evidence_never_deleted() → trigger | security invoker | v | search_path=pg_cat
 finish_job_slot(p_job text, p_slot timestamp with time zone, p_ok boolean, p_detail text, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ad4500fb0fd68beae2aba5eb5653db8b
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
+inbound_file_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9b3c6d083223c4f8e6521e1cd4cad263
+inbound_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3bd01c80a7acafbbc22e6ab62d336849
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8
@@ -2424,6 +2506,7 @@ latest_job_slot(p_job text) → timestamp with time zone | security definer | s 
 ledger_revision_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 27d2b85d5d0e1b94326405d0ba9e737e
 live_session_user(p_session bytea, p_now timestamp with time zone) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1e4b8368d23fd003bc4e7f03c591ed49
 lock_ledger() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 15857e366d7360fc986394bc521e4b89
+member_emails() → TABLE(user_id uuid, email text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | de5d5500c1abd3c22db2454f742d293e
 member_invitation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bbbd3cfc69b3ef2e3f033c058258160c
 member_names() → TABLE(user_id uuid, display_name text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9cbac1cf633afffdb29757fcd8b4615f
 membership_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 128d9c99c0ed6f6f65e25de8d48962e4
@@ -2442,6 +2525,7 @@ period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalo
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
+record_identity_email(p_issuer text, p_subject text, p_email text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2f631281b01b5872840eb07594f8bbe1
 recover_super_admin(p_recovery_hash bytea, p_confirmation_hash bytea, p_issuer text, p_subject text, p_now timestamp with time zone, OUT recovered uuid, OUT via text, OUT removed_subjects text[]) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f87f534722c75764197f2d82a45a906a
 recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311

@@ -74,6 +74,17 @@ func (r captures) Live(ctx context.Context) ([]storage.CaptureAddress, error) {
 	return out, nil
 }
 
+func (r captures) Get(ctx context.Context, id uuid.UUID) (storage.CaptureAddress, error) {
+	if err := r.u.check(); err != nil {
+		return storage.CaptureAddress{}, err
+	}
+	row, err := r.u.q.CaptureAddressByID(ctx, id)
+	if err != nil {
+		return storage.CaptureAddress{}, mapError(err)
+	}
+	return toCapture(captureRow(row)), nil
+}
+
 func (r captures) Retire(ctx context.Context, id uuid.UUID) (storage.CaptureAddress, error) {
 	if err := r.u.check(); err != nil {
 		return storage.CaptureAddress{}, err

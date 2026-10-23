@@ -228,6 +228,7 @@ var codeFacts = map[string]struct {
 	CodeCaptureReserved:           {422, "A reserved name"},
 	CodeCaptureTaken:              {409, "The name belongs to another organisation"},
 	CodeCaptureNoUser:             {422, "Not a person with an address of their own"},
+	CodeSenderNotAddress:          {422, "Not one email address"},
 	approval.CodeOwnRequest:       {403, "You asked for it, so another person approves it"},
 	approval.CodeNotPending:       {409, "The request was decided already"},
 	approval.CodeExpired:          {409, "The request expired"},

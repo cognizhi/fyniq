@@ -29,7 +29,7 @@ type Schedule struct {
 // with its journal lines at 02:30 (CTL-FIN-01), the nightly replay of every entry under the rule version that posted
 // it at 02:45 (ENG-06, QA-ENG-06), the nightly count of Super admins at 03:00 (CTL-IAM-07),
 // and the night's control evidence at 04:00, after them (compliance/, PRD-001 §14.1), the sending domains' check at
-// 04:30 (FR-INT-21); every hour, the
+// 04:30 (FR-INT-21) and the end of expired quarantined mail at 04:45 (FR-INT-22); every hour, the
 // commit and the sweep of evidence files (FR-DOC-13), and at 03:30 the re-verification of their hashes.
 var PlatformSchedules = []Schedule{
 	{Job: "audit.anchor", Every: time.Hour, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
@@ -43,6 +43,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "compliance.evidence", Every: 24 * time.Hour, Offset: 20 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Nightly at 04:30, the sending domains' DNS records and DMARC policy (FR-INT-21, rev 0.104).
 	{Job: "email.domains", Every: 24 * time.Hour, Offset: 20*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Nightly at 04:45, quarantined mail whose days have passed ends and its files go (FR-INT-22, rev 0.106).
+	{Job: "inbound.expire", Every: 24 * time.Hour, Offset: 20*time.Hour + 45*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Evidence (FR-DOC-13): hourly, commit the files of records no longer drafts that the outbox missed, and
 	// sweep staging files no row uses after a day, reporting locked files no row knows.
 	{Job: "evidence.commit", Every: time.Hour, Offset: 10 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},

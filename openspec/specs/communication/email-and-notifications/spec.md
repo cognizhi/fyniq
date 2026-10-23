@@ -183,6 +183,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** it is accepted from the member's own sign-in email at their address, and from members and contacts' billing and remittance emails at the organisation's
 - **AND** any other sender is quarantined until an Administrator, or the member for their own address, accepts or rejects it
 
+#### Scenario: Received mail as built (rev 0.106)
+- **WHEN** Resend's signed webhook announces mail for an email-in address
+- **THEN** the worker fetches it, keeps its text and attachments, checked and scanned, as untrusted files, and accepts it only from an authenticated known or accepted sender
+- **AND** anything else is quarantined for the organisation's days (30 by default, or until someone decides), and a decision about the sender settles it
+
 ### Requirement: FR-NTF-01 Notification centre
 The system SHALL give every user a notification centre: a bell with the unread count, and notifications that each carry a type, a severity, the record it is about and the time.
 

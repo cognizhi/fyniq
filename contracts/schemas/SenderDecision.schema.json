@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "description": "accepted: their mail is captured from now on, and their quarantined mail is accepted; rejected: their mail is refused, and their quarantined mail deleted.",
+      "enum": [
+        "accepted",
+        "rejected"
+      ],
+      "examples": [
+        "accepted"
+      ],
+      "type": "string"
+    },
+    "sender": {
+      "description": "The sender's email address.",
+      "examples": [
+        "accounts@supplier.example"
+      ],
+      "maxLength": 254,
+      "type": "string"
+    }
+  },
+  "required": [
+    "sender",
+    "decision"
+  ],
+  "title": "SenderDecision",
+  "type": "object"
+}

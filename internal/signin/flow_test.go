@@ -43,6 +43,12 @@ func (f *fakeSignIn) Finish(_ context.Context, provider string, cb *url.URL, s p
 type fakeSessions struct {
 	started []storage.NewSession
 	ended   [][]byte
+	emails  []string // "issuer subject email" of each email recorded
+}
+
+func (f *fakeSessions) RecordIdentityEmail(_ context.Context, issuer, subject, email string, _ time.Time) error {
+	f.emails = append(f.emails, issuer+" "+subject+" "+email)
+	return nil
 }
 
 func (f *fakeSessions) StartSession(_ context.Context, s storage.NewSession) error {
@@ -144,7 +150,8 @@ func TestTheSignInFlowStartsASessionOnlyForTheBrowserThatBegan(t *testing.T) {
 	}
 
 	e.provider.err = nil
-	e.provider.who = ports.SignedIn{Provider: "google", Issuer: "https://accounts.google.com", Subject: "110", AuthTime: now.Add(-time.Minute), SecondFactor: true}
+	e.provider.who = ports.SignedIn{Provider: "google", Issuer: "https://accounts.google.com", Subject: "110", AuthTime: now.Add(-time.Minute), SecondFactor: true,
+		Email: "Mei@Example.com", EmailVerified: true}
 	old := &http.Cookie{Name: "fyniq_session", Value: "an-earlier-session"}
 	resp = callback(start, old)
 	session := cookieNamed(resp, "fyniq_session")
@@ -169,10 +176,18 @@ func TestTheSignInFlowStartsASessionOnlyForTheBrowserThatBegan(t *testing.T) {
 		t.Error("a new sign-in did not end the browser's earlier session")
 	}
 
-	e.provider.who.SecondFactor = false
+	// The verified email is kept on the identity, so mail the person sends to an email-in address is known (FR-INT-22).
+	if len(e.sessions.emails) != 1 || e.sessions.emails[0] != "https://accounts.google.com 110 Mei@Example.com" {
+		t.Errorf("the emails recorded: %v", e.sessions.emails)
+	}
+
+	e.provider.who.SecondFactor, e.provider.who.EmailVerified = false, false
 	callback(start)
 	if !e.sessions.started[1].StepUpAt.IsZero() {
 		t.Error("a sign-in without a second factor counted as a step-up (FR-ADM-07)")
+	}
+	if len(e.sessions.emails) != 1 {
+		t.Error("an email the provider did not verify was recorded")
 	}
 }
 
