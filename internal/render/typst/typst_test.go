@@ -39,10 +39,11 @@ func input(t *testing.T, typ string, c doctemplate.Content, d render.Data) Input
 	return Input{Layout: l, Created: issued}
 }
 
-// Every document type's default template renders the sample data to PDF/A-2a and PDF/UA-1, the same bytes every
-// time (snapshot hashes in testdata), holding every particular IRAS requires of it.
+// Every starter template of every document type renders the sample data to PDF/A-2a and PDF/UA-1, the same bytes
+// every time (snapshot hashes in testdata), holding every particular IRAS requires of it.
 // req: FR-TPL-03
 // req: FR-TPL-04
+// req: FR-TPL-07
 func TestEveryDefaultRendersArchivalAndAccessible(t *testing.T) {
 	c := compiler(t)
 	ctx := context.Background()
@@ -60,40 +61,49 @@ func TestEveryDefaultRendersArchivalAndAccessible(t *testing.T) {
 		_ = f.Close()
 	}
 	var lines []string
-	for _, typ := range doctemplate.Types {
-		in := input(t, typ, doctemplate.Default(doctemplate.KindDocument, typ), render.Sample(typ))
-		pdf, err := c.PDF(ctx, in)
-		if err != nil {
-			t.Fatalf("%s: %v", typ, err)
-		}
-		again, err := c.PDF(ctx, in)
-		if err != nil || !bytes.Equal(pdf, again) {
-			t.Errorf("%s: two renders differ (%v)", typ, err)
-		}
-		for _, want := range []string{"%PDF-", "<pdfaid:part>2</pdfaid:part>", "<pdfaid:conformance>A</pdfaid:conformance>", "<pdfuaid:part>1</pdfuaid:part>"} {
-			if !bytes.Contains(pdf, []byte(want)) {
-				t.Errorf("%s: the PDF lacks %s", typ, want)
-			}
-		}
-		h := sha256.Sum256(pdf)
-		sum := hex.EncodeToString(h[:])
-		lines = append(lines, typ+" "+sum)
-		if !*update && golden[typ] != sum {
-			t.Errorf("%s: the PDF's SHA-256 is %s, not the snapshot's %s: a change to the layout, the fonts or Typst re-renders every "+
-				"document; check the PDFs and run go test ./internal/render/typst -update", typ, sum, golden[typ])
-		}
-		got, err := c.Particulars(ctx, in)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if miss := Missing(render.Required(typ, render.Sample(typ)), got); len(miss) > 0 {
-			t.Errorf("%s: the document lacks the particulars %v (it has %v)", typ, miss, got)
+	for _, st := range doctemplate.Starters {
+		for _, typ := range doctemplate.Types {
+			check(t, c, typ+"/"+st.Key, input(t, typ, doctemplate.Starter(st, doctemplate.KindDocument, typ), render.Sample(typ)), golden, &lines)
 		}
 	}
 	if *update {
 		if err := os.WriteFile("testdata/sha256.golden", []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// check renders in twice as name, and checks the standards, the snapshot and the particulars.
+func check(t *testing.T, c *Compiler, name string, in Input, golden map[string]string, lines *[]string) {
+	t.Helper()
+	ctx := context.Background()
+	typ, _, _ := strings.Cut(name, "/")
+	pdf, err := c.PDF(ctx, in)
+	if err != nil {
+		t.Fatalf("%s: %v", name, err)
+	}
+	again, err := c.PDF(ctx, in)
+	if err != nil || !bytes.Equal(pdf, again) {
+		t.Errorf("%s: two renders differ (%v)", name, err)
+	}
+	for _, want := range []string{"%PDF-", "<pdfaid:part>2</pdfaid:part>", "<pdfaid:conformance>A</pdfaid:conformance>", "<pdfuaid:part>1</pdfuaid:part>"} {
+		if !bytes.Contains(pdf, []byte(want)) {
+			t.Errorf("%s: the PDF lacks %s", name, want)
+		}
+	}
+	h := sha256.Sum256(pdf)
+	sum := hex.EncodeToString(h[:])
+	*lines = append(*lines, name+" "+sum)
+	if !*update && golden[name] != sum {
+		t.Errorf("%s: the PDF's SHA-256 is %s, not the snapshot's %s: a change to the layout, the fonts or Typst re-renders every "+
+			"document; check the PDFs and run go test ./internal/render/typst -update", name, sum, golden[name])
+	}
+	got, err := c.Particulars(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if miss := Missing(render.Required(typ, render.Sample(typ)), got); len(miss) > 0 {
+		t.Errorf("%s: the document lacks the particulars %v (it has %v)", name, miss, got)
 	}
 }
 

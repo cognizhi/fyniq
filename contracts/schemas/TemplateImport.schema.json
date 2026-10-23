@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "templates": {
+      "description": "The drafts made, in the bundle's order.",
+      "items": {
+        "$ref": "DocumentTemplate.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "templates"
+  ],
+  "title": "TemplateImport",
+  "type": "object"
+}

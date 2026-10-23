@@ -248,6 +248,12 @@ func TestTheHashIsTheContentsCanonicalJSON(t *testing.T) {
 	if hc, _ := Hash(back); !bytes.Equal(ha, hc) {
 		t.Error("content read back hashes differently")
 	}
+	empty := Default(KindDocument, Invoice)
+	block(&empty, BlockNotes).Texts = map[string]string{TextLabel: "Notes"}
+	block(&empty, BlockText).Texts = nil
+	if he, _ := Hash(empty); !bytes.Equal(ha, he) {
+		t.Error("content with its empty texts left out hashes differently")
+	}
 	if _, err := Read([]byte(`{"schema":"fyniq.template/1","script":"x"}`)); err == nil {
 		t.Error("an unknown member was read")
 	}

@@ -55,6 +55,7 @@ type TemplateTheme struct {
 	Logo   bool   `json:"logo" doc:"Show the organisation's logo (FR-ORG-09) in the header." example:"true"`
 	Accent string `json:"accent" pattern:"^#[0-9A-Fa-f]{6}$" doc:"The accent colour, #RRGGBB, at least 4.5:1 against white so text in it reads (TPL-05)." example:"#0F766E"`
 	Font   string `json:"font" enum:"Inter,IBM Plex Sans,IBM Plex Serif" doc:"The font, from those the render service ships." example:"Inter"`
+	Style  string `json:"style,omitempty" enum:"classic,band,minimal,compact" doc:"The look the renderer draws (FR-TPL-07, rev 0.98): classic, band (an accent band behind the header and the table's head), minimal or compact. Left out: classic." example:"band"`
 }
 
 // TemplateBlock is one block of a document.
@@ -96,7 +97,8 @@ type DocumentTemplateDraft struct {
 	Kind         string           `json:"kind" enum:"document,email" doc:"document: the PDF; email: the message that carries it." example:"document"`
 	DocumentType string           `json:"document_type" enum:"invoice,quote,credit_note,receipt,statement,reminder,remittance,purchase_order" doc:"The document it serves." example:"invoice"`
 	Name         string           `json:"name" maxLength:"100" doc:"Its name." example:"Standard invoice"`
-	Content      *TemplateContent `json:"content,omitempty" doc:"The draft's content. Left out, the template starts from the catalogue's default for its kind and type."`
+	Content      *TemplateContent `json:"content,omitempty" doc:"The draft's content. Left out, the template starts from the starter named, or the classic starter."`
+	Starter      string           `json:"starter,omitempty" enum:"classic,band,minimal,compact" doc:"The starter template to begin from (FR-TPL-07), when content is left out." example:"band"`
 }
 
 // DocumentTemplateChanges are a template's name and draft to save.
@@ -141,6 +143,15 @@ type TemplateCatalogue struct {
 	MinContrast  string                `json:"min_contrast" doc:"The least contrast of the accent colour against white." example:"4.5"`
 	LockedTitle  bool                  `json:"locked_title" doc:"The renderer writes the title (an invoice's \"Tax Invoice\"), so the header takes none." example:"true"`
 	Defaults     TemplateDefaults      `json:"defaults" doc:"The content a new template starts from."`
+	Starters     []TemplateStarter     `json:"starters" nullable:"false" doc:"The starter gallery (FR-TPL-07): one per style, the first the default."`
+}
+
+// TemplateStarter is a starter template of the gallery, for a document type.
+type TemplateStarter struct {
+	Key         string          `json:"key" enum:"classic,band,minimal,compact" doc:"Its key, which createDocumentTemplate takes as starter." example:"band"`
+	Name        string          `json:"name" doc:"Its name." example:"Band"`
+	Description string          `json:"description" doc:"What it looks like." example:"IBM Plex Sans, a navy band behind the header and the table's head"`
+	Content     TemplateContent `json:"content" doc:"Its content for the document type."`
 }
 
 // TemplateChoice is one name from a list of the catalogue: a font, a paper size, a text or a format.
@@ -279,7 +290,7 @@ func contentIn(c TemplateContent) doctemplate.Content {
 		out.Page = &doctemplate.Page{Size: c.Page.Size, Margins: doctemplate.Margins{Top: m.Top, Right: m.Right, Bottom: m.Bottom, Left: m.Left}}
 	}
 	if c.Theme != nil {
-		out.Theme = &doctemplate.Theme{Logo: c.Theme.Logo, Accent: c.Theme.Accent, Font: c.Theme.Font}
+		out.Theme = &doctemplate.Theme{Logo: c.Theme.Logo, Accent: c.Theme.Accent, Font: c.Theme.Font, Style: c.Theme.Style}
 	}
 	for _, b := range c.Blocks {
 		x := doctemplate.Block{Kind: b.Kind, Shown: b.Shown}
@@ -303,7 +314,7 @@ func contentOut(c doctemplate.Content) TemplateContent {
 		out.Page = &TemplatePage{Size: c.Page.Size, Margins: TemplateMargins{Top: m.Top, Right: m.Right, Bottom: m.Bottom, Left: m.Left}}
 	}
 	if c.Theme != nil {
-		out.Theme = &TemplateTheme{Logo: c.Theme.Logo, Accent: c.Theme.Accent, Font: c.Theme.Font}
+		out.Theme = &TemplateTheme{Logo: c.Theme.Logo, Accent: c.Theme.Accent, Font: c.Theme.Font, Style: c.Theme.Style}
 	}
 	for _, b := range c.Blocks {
 		x := TemplateBlock{Kind: b.Kind, Shown: b.Shown}
@@ -557,7 +568,12 @@ func registerDocumentTemplates(a *API) {
 		func(ctx context.Context, in *templateCreateInput) (*templateWriteOutput, error) {
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (DocumentTemplate, error) {
 				b := in.Body
-				c := doctemplate.Default(b.Kind, b.DocumentType)
+				st, _ := doctemplate.StarterKey(cmpOr(b.Starter, doctemplate.Starters[0].Key))
+				c := doctemplate.Starter(st, b.Kind, b.DocumentType)
+				if b.Content != nil && b.Starter != "" {
+					return DocumentTemplate{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.starter", Message: "is given with content",
+						Fix: "Send the content, or the starter to begin from, not both"}})
+				}
 				if b.Content != nil {
 					c = contentIn(*b.Content)
 				}
@@ -873,6 +889,10 @@ func registerDocumentTemplates(a *API) {
 			MarginMin: doctemplate.MinMargin, MarginMax: doctemplate.MaxMargin, MinContrast: fmt.Sprintf("%d.%d", doctemplate.MinOnWhite/10, doctemplate.MinOnWhite%10),
 			LockedTitle: doctemplate.LockedTitle(t), Defaults: TemplateDefaults{Document: contentOut(doctemplate.Default(doctemplate.KindDocument, t)),
 				Email: contentOut(doctemplate.Default(doctemplate.KindEmail, t))}}
+		for _, s := range doctemplate.Starters {
+			out.Starters = append(out.Starters, TemplateStarter{Key: s.Key, Name: s.Name, Description: s.Description,
+				Content: contentOut(doctemplate.Starter(s, doctemplate.KindDocument, t))})
+		}
 		for _, k := range doctemplate.Blocks(t) {
 			out.Blocks = append(out.Blocks, TemplateBlockKind{Kind: k, Texts: choices(doctemplate.BlockTexts(t, k)), Locked: doctemplate.IsLocked(t, k)})
 		}

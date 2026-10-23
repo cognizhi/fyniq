@@ -28,6 +28,19 @@
         true
       ],
       "type": "boolean"
+    },
+    "style": {
+      "description": "The look the renderer draws (FR-TPL-07, rev 0.98): classic, band (an accent band behind the header and the table's head), minimal or compact. Left out: classic.",
+      "enum": [
+        "classic",
+        "band",
+        "minimal",
+        "compact"
+      ],
+      "examples": [
+        "band"
+      ],
+      "type": "string"
     }
   },
   "required": [

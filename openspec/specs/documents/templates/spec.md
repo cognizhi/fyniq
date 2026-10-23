@@ -47,6 +47,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1 (theme, texts, optional blocks)
 - **THEN** it is filled with made-up sample data of its document type: a document rendered by the render service as PDF/A-2a and PDF/UA-1, with the IRAS particulars it would lack, or an email's subject and body
 - **AND** nothing is saved, and the same content gives the same bytes
 
+#### Scenario: The theme's style (rev 0.98)
+- **WHEN** a document template's theme names a style
+- **THEN** the renderer draws it: classic, band (white on the accent behind the header and the table's head), minimal or compact
+- **AND** a template that names none is classic, and a style the renderer does not draw is refused (TPL-05)
+
 ### Requirement: FR-TPL-02 Fields and conditions
 Templates SHALL use fields from a typed catalogue with formats for dates and money and, from P2, conditional blocks from a fixed list and a column chooser; the visual editor SHALL allow no free code.
 
@@ -174,6 +179,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **THEN** it serves one document type as a document or an email, and starts from that type's default content
 - **AND** an email template's subject is one line and its body uses the type's fields (TPL-10, TPL-11)
 
+#### Scenario: Who chooses a default and an override (rev 0.98)
+- **WHEN** a type's default or a customer's override is chosen
+- **THEN** the default is chosen by a person who holds A on "Document templates", the override on the customer's contact by whoever edits contacts, each among the type's published templates, audited, with no separate request
+- **AND** until an organisation publishes a template of a type, the platform's classic starter renders it as version 0, its content hash recorded on each document
+
 ### Requirement: FR-TPL-06 Code mode for experts
 Templates SHALL compile to Typst (§12.2), and an expert SHALL be able to edit the Typst source in a sandbox.
 
@@ -214,6 +224,11 @@ Source: PRD-001 §8.25 · Priority S · Phase P1
 - **WHEN** a template is exported
 - **THEN** it is a versioned bundle of JSON plus assets
 - **AND** the bundle can be imported
+
+#### Scenario: Starters and bundles as built (rev 0.98)
+- **WHEN** a template is made from the gallery, or templates are exported and imported
+- **THEN** the gallery offers four starters, one per style (Classic, Band, Minimal, Compact), and a bundle (`fyniq.template-bundle/1`) holds one to 50 templates, each the version in force or a never-published draft with its content's SHA-256
+- **AND** import makes drafts, all or none, refusing content that does not match its hash (TPL-18)
 
 ### Requirement: FR-TPL-08 Languages
 Templates SHALL support labels per language, and each customer SHALL have a language.

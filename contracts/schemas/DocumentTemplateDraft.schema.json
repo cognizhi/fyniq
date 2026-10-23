@@ -4,7 +4,7 @@
   "properties": {
     "content": {
       "$ref": "TemplateContent.schema.json",
-      "description": "The draft's content. Left out, the template starts from the catalogue's default for its kind and type."
+      "description": "The draft's content. Left out, the template starts from the starter named, or the classic starter."
     },
     "document_type": {
       "description": "The document it serves.",
@@ -40,6 +40,19 @@
         "Standard invoice"
       ],
       "maxLength": 100,
+      "type": "string"
+    },
+    "starter": {
+      "description": "The starter template to begin from (FR-TPL-07), when content is left out.",
+      "enum": [
+        "classic",
+        "band",
+        "minimal",
+        "compact"
+      ],
+      "examples": [
+        "band"
+      ],
       "type": "string"
     }
   },

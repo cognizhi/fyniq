@@ -752,6 +752,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/document-template-bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export templates as a bundle
+         * @description Exports one to 50 templates as a versioned bundle (FR-TPL-07): each the version in force, or the draft of one never published, with its content's SHA-256, for importDocumentTemplates in another organisation or installation. Read-only; no side effects.
+         */
+        get: operations["exportDocumentTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/document-template-bundles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import templates from a bundle
+         * @description Makes a draft of each template of a bundle from exportDocumentTemplates (FR-TPL-07), all or none. Each content must match its SHA-256 (TPL-18) and meet the template rules as they are here (TPL-01 to TPL-11); every problem comes back together. Nothing imported is in force: each draft is published under approval like any other (FR-TPL-04). Side effects: the drafts and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["importDocumentTemplates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/document-template-catalogue/{document_type}": {
         parameters: {
             query?: never;
@@ -4904,6 +4944,38 @@ export interface components {
              */
             saved: number;
         };
+        BundledTemplate: {
+            /** @description Its content. */
+            content: components["schemas"]["TemplateContent"];
+            /**
+             * @description The SHA-256 of the content's RFC 8785 JSON, in hex: import refuses content that does not match it.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            content_hash: string;
+            /**
+             * @description The document it serves.
+             * @example invoice
+             * @enum {string}
+             */
+            document_type: "invoice" | "quote" | "credit_note" | "receipt" | "statement" | "reminder" | "remittance" | "purchase_order";
+            /**
+             * @description document: the PDF; email: the message that carries it.
+             * @example document
+             * @enum {string}
+             */
+            kind: "document" | "email";
+            /**
+             * @description Its name.
+             * @example Standard invoice
+             */
+            name: string;
+            /**
+             * Format: int64
+             * @description The version exported: the one in force, or 0 for the draft of a template never published.
+             * @example 3
+             */
+            version: number;
+        };
         ChartLoaded: {
             /**
              * Format: int64
@@ -5634,7 +5706,7 @@ export interface components {
             name: string;
         };
         DocumentTemplateDraft: {
-            /** @description The draft's content. Left out, the template starts from the catalogue's default for its kind and type. */
+            /** @description The draft's content. Left out, the template starts from the starter named, or the classic starter. */
             content?: components["schemas"]["TemplateContent"];
             /**
              * @description The document it serves.
@@ -5653,6 +5725,12 @@ export interface components {
              * @example Standard invoice
              */
             name: string;
+            /**
+             * @description The starter template to begin from (FR-TPL-07), when content is left out.
+             * @example band
+             * @enum {string}
+             */
+            starter?: "classic" | "band" | "minimal" | "compact";
         };
         DocumentTemplatePage: {
             /** @description The templates, in the order they were made. */
@@ -9864,6 +9942,22 @@ export interface components {
             /** @description The texts it takes: title, label or body. */
             texts: string[];
         };
+        TemplateBundle: {
+            /**
+             * Format: date-time
+             * @description When it was exported.
+             * @example 2026-10-23T10:00:00Z
+             */
+            exported_at: string;
+            /**
+             * @description The bundle's format.
+             * @example fyniq.template-bundle/1
+             * @enum {string}
+             */
+            schema: "fyniq.template-bundle/1";
+            /** @description The templates, one to 50. */
+            templates: components["schemas"]["BundledTemplate"][];
+        };
         TemplateCatalogue: {
             /** @description The blocks it takes, in the starter order. */
             blocks: components["schemas"]["TemplateBlockKind"][];
@@ -9904,6 +9998,8 @@ export interface components {
             min_contrast: string;
             /** @description The paper sizes. */
             page_sizes: string[];
+            /** @description The starter gallery (FR-TPL-07): one per style, the first the default. */
+            starters: components["schemas"]["TemplateStarter"][];
         };
         TemplateContent: {
             /** @description A document's blocks, in order; an email has none. */
@@ -9964,6 +10060,10 @@ export interface components {
              * @enum {string}
              */
             type: "text" | "date" | "money" | "number";
+        };
+        TemplateImport: {
+            /** @description The drafts made, in the bundle's order. */
+            templates: components["schemas"]["DocumentTemplate"][];
         };
         TemplateMargins: {
             /**
@@ -10065,6 +10165,26 @@ export interface components {
              */
             version?: number;
         };
+        TemplateStarter: {
+            /** @description Its content for the document type. */
+            content: components["schemas"]["TemplateContent"];
+            /**
+             * @description What it looks like.
+             * @example IBM Plex Sans, a navy band behind the header and the table's head
+             */
+            description: string;
+            /**
+             * @description Its key, which createDocumentTemplate takes as starter.
+             * @example band
+             * @enum {string}
+             */
+            key: "classic" | "band" | "minimal" | "compact";
+            /**
+             * @description Its name.
+             * @example Band
+             */
+            name: string;
+        };
         TemplateTexts: {
             /**
              * @description The block's text, with fields.
@@ -10099,6 +10219,12 @@ export interface components {
              * @example true
              */
             logo: boolean;
+            /**
+             * @description The look the renderer draws (FR-TPL-07, rev 0.98): classic, band (an accent band behind the header and the table's head), minimal or compact. Left out: classic.
+             * @example band
+             * @enum {string}
+             */
+            style?: "classic" | "band" | "minimal" | "compact";
         };
         TemplateVersion: {
             /** @description What it holds; in a list, absent: read the version for it. */
@@ -16679,6 +16805,256 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    exportDocumentTemplates: {
+        parameters: {
+            query?: {
+                /** @description The templates, one to 50, each as its own template_id parameter. */
+                template_id?: string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateBundle"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    importDocumentTemplates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateBundle"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateImport"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateImport"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-18` Not a bundle of templates Fyniq reads. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
