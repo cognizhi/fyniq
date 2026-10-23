@@ -1378,7 +1378,7 @@ var matrixCalls = map[string]matrixCall{
 		id := e.foreignSupplier()
 		agent := "Matrix " + uuid.NewString()[:8]
 		r := e.call(http.MethodPost, "/v1/contacts/"+id+"/withholding-decisions", tok, map[string]any{"nature_of_payment": "interest",
-			"outcome": "not_applicable", "tax_agent": agent})
+			"outcome": "not_applicable", "tax_agent": agent}, "If-Match", "*")
 		return r, func() bool {
 			return !strings.Contains(e.call(http.MethodGet, "/v1/contacts/"+id+"/withholding-decisions", e.as(authz.Accountant), nil).Raw, agent)
 		}

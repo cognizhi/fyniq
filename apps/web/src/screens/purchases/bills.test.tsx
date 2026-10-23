@@ -223,6 +223,7 @@ describe("A bill", () => {
       ...reads,
       "GET /v1/contacts": { status: 200, body: { items: [vendors.body.items[0], consultant] } },
       "GET /v1/bills/b1": read(held),
+      "GET /v1/contacts/c2": { status: 200, body: consultant, headers: { ETag: `"3"` } },
       "POST /v1/contacts/c2/withholding-decisions": { status: 201, body: { id: "d1", supplier_id: "c2", nature_of_payment: "services_in_singapore", outcome: "withhold", rate_percent: "15", tax_agent: "Grace Ho", recorded_at: "2026-10-23T09:00:00Z" } },
     });
     const { container } = renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
@@ -250,6 +251,7 @@ describe("A bill", () => {
         bill_id: "b1",
       }),
     );
+    expect(sent.find((x) => x.path === "/v1/contacts/c2/withholding-decisions")?.headers.get("If-Match")).toBe(`"3"`);
     expect(await screen.findByText(/edit the bill so it withholds, then record its payment/)).toBeTruthy();
   });
 

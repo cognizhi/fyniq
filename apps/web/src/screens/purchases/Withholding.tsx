@@ -75,8 +75,14 @@ function RecordDecision({ open, bill, onClose, onDone }: { open: boolean; bill: 
     setProblem(null);
     const body: Draft = { nature_of_payment: bill.nature_of_payment as Draft["nature_of_payment"], outcome, tax_agent: agent.trim(), note: note.trim() || undefined, bill_id: bill.id };
     if (withholds) body.rate_percent = r;
+    // The supplier as read now: the decision is recorded for the tax residence it has (If-Match).
+    const supplier = await api.GET("/v1/contacts/{contact_id}", { params: { path: { contact_id: bill.supplier?.id ?? "" } } });
+    if (!supplier.data) {
+      setBusy(false);
+      return setProblem(problemOf(supplier.error));
+    }
     const out = await api.POST("/v1/contacts/{contact_id}/withholding-decisions", {
-      params: { path: { contact_id: bill.supplier?.id ?? "" }, header: { "Idempotency-Key": newKey() } },
+      params: { path: { contact_id: supplier.data.id }, header: { "If-Match": supplier.response.headers.get("ETag") ?? "", "Idempotency-Key": newKey() } },
       body,
     });
     setBusy(false);

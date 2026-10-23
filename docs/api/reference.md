@@ -1955,48 +1955,55 @@ Asks for another person's approval to void a posted bill with a reversing entry 
 
 **List a supplier's withholding decisions** (`listWithholdingDecisions`)
 
-The tax agent's decisions on whether tax is withheld from a non-resident supplier's payments, one per nature of payment in force at a time, newest first (FR-AP-19). A bill of the supplier posts with the decision in force for its nature when it posts. Read-only; no side effects.
+The tax agent's decisions on whether tax is withheld from a non-resident supplier's payments, one per nature of payment in force at a time, newest first, a page at a time (FR-AP-19). A bill of the supplier posts with the decision in force for its nature when it posts. Read-only; no side effects.
 
 - **Permission:** View on Bills, vendor credits
 - **Parameters:**
   - `contact_id` (path, required): The contact's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
 - **Responses:**
   - `200` OK [`WithholdingDecisionPage`](../../contracts/schemas/WithholdingDecisionPage.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
-  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/contacts/{contact_id}/withholding-decisions`
 
 **Record the tax agent's withholding decision** (`recordWithholdingDecision`)
 
-Records the tax agent's decision for a supplier resident outside Singapore and a nature of payment (FR-AP-19): not applicable, withhold at the rate they advised, or a reduced treaty rate with a certificate of residence. It replaces the supplier's earlier decision for the nature from now: bills posted before keep theirs, and a posted bill whose rate it changes waits for an edit before it is paid (BILLPAY-11). Attach the tax agent's advice to the bill named. A decision is never changed or removed (FY174). Side effects: the decision and its audit event. Idempotent with Idempotency-Key.
+Records the tax agent's decision for a supplier resident outside Singapore and a nature of payment (FR-AP-19): not applicable, withhold at the rate they advised, or a reduced treaty rate with a certificate of residence. It replaces the supplier's earlier decision for the nature from now: bills posted before keep theirs, and a posted bill whose rate it changes waits for an edit before it is paid (BILLPAY-11). Attach the tax agent's advice to the bill named. A decision is never changed or removed (FY174). If-Match is the supplier's ETag, so the decision is recorded for the tax residence that was read. Side effects: the decision and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Create on Bills, vendor credits. Names the tax agent who gave it; their advice is attached to the bill as evidence. AI and MCP clients never record one (§9.6).
 - **Parameters:**
   - `contact_id` (path, required): The contact's ID.
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
 - **Request body:** [`WithholdingDecisionDraft`](../../contracts/schemas/WithholdingDecisionDraft.schema.json)
 - **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`WithholdingDecision`](../../contracts/schemas/WithholdingDecision.schema.json)
   - `201` Created [`WithholdingDecision`](../../contracts/schemas/WithholdingDecision.schema.json)
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
   - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-17` The withholding decision cannot be recorded.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `BILL-17`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `BILL-17`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `POST /v1/credit-applications`
 

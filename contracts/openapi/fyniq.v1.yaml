@@ -9775,6 +9775,11 @@ components:
           items:
             $ref: "#/components/schemas/WithholdingDecision"
           type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
       required:
         - items
       type: object
@@ -17182,7 +17187,7 @@ paths:
         right: C
   /v1/contacts/{contact_id}/withholding-decisions:
     get:
-      description: The tax agent's decisions on whether tax is withheld from a non-resident supplier's payments, one per nature of payment in force at a time, newest first (FR-AP-19). A bill of the supplier posts with the decision in force for its nature when it posts. Read-only; no side effects.
+      description: The tax agent's decisions on whether tax is withheld from a non-resident supplier's payments, one per nature of payment in force at a time, newest first, a page at a time (FR-AP-19). A bill of the supplier posts with the decision in force for its nature when it posts. Read-only; no side effects.
       operationId: listWithholdingDecisions
       parameters:
         - description: The contact's ID.
@@ -17194,6 +17199,29 @@ paths:
             examples:
               - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
             format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
             type: string
       responses:
         "200":
@@ -17244,7 +17272,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
         "429":
           content:
             application/problem+json:
@@ -17291,6 +17319,7 @@ paths:
         - API-AUTHZ-02
         - API-AUTHZ-03
         - API-AUTHZ-07
+        - API-CURSOR-01
         - API-FAILURE-01
         - API-INPUT-02
         - API-NOT-FOUND-01
@@ -17301,7 +17330,7 @@ paths:
         capability: Bills, vendor credits
         right: V
     post:
-      description: "Records the tax agent's decision for a supplier resident outside Singapore and a nature of payment (FR-AP-19): not applicable, withhold at the rate they advised, or a reduced treaty rate with a certificate of residence. It replaces the supplier's earlier decision for the nature from now: bills posted before keep theirs, and a posted bill whose rate it changes waits for an edit before it is paid (BILLPAY-11). Attach the tax agent's advice to the bill named. A decision is never changed or removed (FY174). Side effects: the decision and its audit event. Idempotent with Idempotency-Key."
+      description: "Records the tax agent's decision for a supplier resident outside Singapore and a nature of payment (FR-AP-19): not applicable, withhold at the rate they advised, or a reduced treaty rate with a certificate of residence. It replaces the supplier's earlier decision for the nature from now: bills posted before keep theirs, and a posted bill whose rate it changes waits for an edit before it is paid (BILLPAY-11). Attach the tax agent's advice to the bill named. A decision is never changed or removed (FY174). If-Match is the supplier's ETag, so the decision is recorded for the tax residence that was read. Side effects: the decision and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
       operationId: recordWithholdingDecision
       parameters:
         - description: The contact's ID.
@@ -17314,6 +17343,14 @@ paths:
               - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4db0
             format: uuid
             type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
         - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
           in: header
           name: Idempotency-Key
@@ -17325,6 +17362,14 @@ paths:
             minLength: 1
             pattern: ^[\x21-\x7E]+$
             type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
       requestBody:
         content:
           application/json:
@@ -17332,6 +17377,31 @@ paths:
               $ref: "#/components/schemas/WithholdingDecisionDraft"
         required: true
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithholdingDecision"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
         "201":
           content:
             application/json:
@@ -17385,6 +17455,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
         "413":
           content:
             application/problem+json:
@@ -17403,6 +17479,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-17` The withholding decision cannot be recorded."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
         "429":
           content:
             application/problem+json:
@@ -17454,6 +17536,8 @@ paths:
         - API-IDEMPOTENCY-01
         - API-IDEMPOTENCY-02
         - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
         - API-INPUT-01
         - API-INPUT-02
         - API-INPUT-03

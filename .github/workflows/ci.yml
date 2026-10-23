@@ -71,7 +71,10 @@ jobs:
       # jdx/mise-action v5.1.2, pinned by commit (SEC-28): installs the toolchain of mise.toml
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: pnpm install --frozen-lockfile
-      - run: make test 2>&1 | tee make-test.log   # bash -o pipefail: the job fails when make test does
+      # shell: bash runs it with -o pipefail, so the job fails when make test does: GitHub's default, bash -e, took tee's
+      # status and passed a failing make test (archtest's workflow rules now refuse a pipe without it).
+      - run: make test 2>&1 | tee make-test.log
+        shell: bash
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
