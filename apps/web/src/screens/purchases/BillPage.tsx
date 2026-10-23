@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useParams } from "@tanstack/react-router";
-import { Banknote, CalendarClock, CircleCheck, CircleX, ClockAlert, Link2, Pencil, Plus, Save, Send, Trash2, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
+import { Banknote, CalendarClock, CircleCheck, CircleX, ClockAlert, Link2, Pencil, Save, Send, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -18,6 +18,7 @@ import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts, postable, type Account } from "../accounting/data";
 import { who } from "../accounting/Journals";
 import { preparers, StateChips, total, type Bill } from "./Bills";
+import { BillLines, lineKey, newLine, type Errors, type Line } from "./BillLines";
 import { ApplyCredit, Payments, RecordPayment } from "./Payments";
 
 type Draft = components["schemas"]["BillDraft"];
@@ -30,18 +31,6 @@ const posters = ["accountant"];
 // The code the API answers when a bill's total is above the self-approval threshold (FM-2): ask for approval.
 const overThreshold = "BILL-09";
 
-interface Line {
-  key: string;
-  account_id: string;
-  description: string;
-  gst_code: string;
-  net: string;
-  gst: string;
-  stated_gst: string; // the SGD GST the tax invoice states, for a bill in another currency (ENG-42)
-  spread_months: string; // a cost spread over months to Prepayments (FR-GL-03); blank for none
-  spread_from: string; // the spread's first month, "2026-10"; blank for the bill's month
-}
-
 interface Form {
   supplier_id: string;
   supplier_ref: string;
@@ -53,10 +42,6 @@ interface Form {
   lines: Line[];
 }
 
-type Errors = Record<string, string>;
-
-let keys = 0;
-const newLine = (): Line => ({ key: `bl-${++keys}`, account_id: "", description: "", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" });
 
 function today(): string {
   return new Date().toLocaleDateString("en-CA");
@@ -73,7 +58,7 @@ function formOf(b: Bill): Form {
     fx_rate: b.fx_rate ?? "",
     notes: b.notes ?? "",
     lines: (b.lines ?? []).map((l) => ({
-      key: `bl-${++keys}`,
+      key: lineKey(),
       account_id: l.account_id,
       description: l.description ?? "",
       gst_code: l.gst_code,
@@ -730,191 +715,22 @@ export function BillPage() {
           </div>
         </section>
 
-        <section className="fy-card" aria-labelledby={`${id}-lines`}>
-          <div className="fy-card__head">
-            <h2 className="fy-h3" id={`${id}-lines`}>
-              Lines
-            </h2>
-            <span className="fy-small fy-muted">As the supplier's {credit ? "credit note" : "invoice"} states them</span>
-          </div>
-          <div className="fy-card__body fy-stack fy-stack--4">
-            {f.lines.map((l, i) => (
-              <fieldset key={l.key} className="fy-fieldset">
-                <legend className="fy-small fy-strong">Line {i + 1}</legend>
-                <div className="fy-form fy-form--2">
-                  <div className="fy-field">
-                    <label className="fy-label" htmlFor={`${l.key}-account`}>
-                      What it is for
-                    </label>
-                    <select
-                      className="fy-select"
-                      id={`${l.key}-account`}
-                      value={l.account_id}
-                      disabled={!editable}
-                      onChange={(e) => setLine(l.key, { account_id: e.target.value, gst_code: l.gst_code || byId.get(e.target.value)?.default_gst_code || "" })}
-                      aria-invalid={Boolean(errors[`${l.key}.account`]) || undefined}
-                      aria-describedby={described(`${l.key}.account`)}
-                    >
-                      <option value="">Choose an account</option>
-                      {choices.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.code} {a.name}
-                        </option>
-                      ))}
-                    </select>
-                    {err(`${l.key}.account`)}
-                  </div>
-                  <div className="fy-field">
-                    <label className="fy-label" htmlFor={`${l.key}-description`}>
-                      Description
-                    </label>
-                    <input className="fy-input" id={`${l.key}-description`} value={l.description} maxLength={500} disabled={!editable} onChange={(e) => setLine(l.key, { description: e.target.value })} />
-                  </div>
-                  <div className="fy-field">
-                    <label className="fy-label" htmlFor={`${l.key}-code`}>
-                      GST code
-                    </label>
-                    <select
-                      className="fy-select"
-                      id={`${l.key}-code`}
-                      value={l.gst_code}
-                      disabled={!editable}
-                      onChange={(e) => setLine(l.key, { gst_code: e.target.value })}
-                      aria-invalid={Boolean(errors[`${l.key}.gst_code`]) || undefined}
-                      aria-describedby={described(`${l.key}.gst_code`)}
-                    >
-                      <option value="">Choose a code</option>
-                      {(codes.data?.codes ?? []).map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.code}: {c.description}
-                        </option>
-                      ))}
-                    </select>
-                    {err(`${l.key}.gst_code`)}
-                  </div>
-                  <div className="fy-field">
-                    <label className="fy-label" htmlFor={`${l.key}-net`}>
-                      Amount before GST ({f.currency || base})
-                    </label>
-                    <input
-                      className="fy-input fy-num"
-                      id={`${l.key}-net`}
-                      inputMode="decimal"
-                      value={l.net}
-                      disabled={!editable}
-                      onChange={(e) => setLine(l.key, { net: e.target.value })}
-                      aria-invalid={Boolean(errors[`${l.key}.net`]) || undefined}
-                      aria-describedby={described(`${l.key}.net`)}
-                    />
-                    {err(`${l.key}.net`)}
-                  </div>
-                  <div className="fy-field">
-                    <label className="fy-label" htmlFor={`${l.key}-gst`}>
-                      GST as stated ({f.currency || base})
-                    </label>
-                    <input
-                      className="fy-input fy-num"
-                      id={`${l.key}-gst`}
-                      inputMode="decimal"
-                      value={l.gst}
-                      disabled={!editable}
-                      onChange={(e) => setLine(l.key, { gst: e.target.value })}
-                      aria-invalid={Boolean(errors[`${l.key}.gst`]) || undefined}
-                      aria-describedby={described(`${l.key}.gst`)}
-                    />
-                    {err(`${l.key}.gst`)}
-                  </div>
-                  {foreign && (
-                    <div className="fy-field">
-                      <label className="fy-label" htmlFor={`${l.key}-stated`}>
-                        GST stated in {base}
-                      </label>
-                      <input
-                        className="fy-input fy-num"
-                        id={`${l.key}-stated`}
-                        inputMode="decimal"
-                        value={l.stated_gst}
-                        disabled={!editable}
-                        onChange={(e) => setLine(l.key, { stated_gst: e.target.value })}
-                        aria-invalid={Boolean(errors[`${l.key}.stated_gst`]) || undefined}
-                        aria-describedby={errors[`${l.key}.stated_gst`] ? described(`${l.key}.stated_gst`) : `${l.key}-stated-help`}
-                      />
-                      {err(`${l.key}.stated_gst`) ?? (
-                        <span className="fy-help" id={`${l.key}-stated-help`}>
-                          The input tax claimed is the {base} GST the tax invoice states.
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {!credit && (
-                    // A spread is an Expert field (§7.8), shown in Basic too once a line has one, so nothing is hidden.
-                    <>
-                      <div className={`fy-field${l.spread_months || l.spread_from ? "" : " fy-expert-only"}`}>
-                        <label className="fy-label" htmlFor={`${l.key}-spread`}>
-                          Spread over (months, optional)
-                        </label>
-                        <input
-                          className="fy-input fy-num"
-                          id={`${l.key}-spread`}
-                          inputMode="numeric"
-                          value={l.spread_months}
-                          disabled={!editable}
-                          onChange={(e) => setLine(l.key, { spread_months: e.target.value })}
-                          aria-invalid={Boolean(errors[`${l.key}.spread_months`]) || undefined}
-                          aria-describedby={errors[`${l.key}.spread_months`] ? described(`${l.key}.spread_months`) : `${l.key}-spread-help`}
-                        />
-                        {err(`${l.key}.spread_months`) ?? (
-                          <span className="fy-help" id={`${l.key}-spread-help`}>
-                            {h("bill.spread").tooltip}
-                          </span>
-                        )}
-                      </div>
-                      <div className={`fy-field${l.spread_months || l.spread_from ? "" : " fy-expert-only"}`}>
-                        <label className="fy-label" htmlFor={`${l.key}-spread-from`}>
-                          Spread from
-                        </label>
-                        <input
-                          className="fy-input"
-                          id={`${l.key}-spread-from`}
-                          type="month"
-                          placeholder="2026-10"
-                          value={l.spread_from}
-                          disabled={!editable}
-                          onChange={(e) => setLine(l.key, { spread_from: e.target.value })}
-                          aria-invalid={Boolean(errors[`${l.key}.spread_from`]) || undefined}
-                          aria-describedby={errors[`${l.key}.spread_from`] ? described(`${l.key}.spread_from`) : `${l.key}-spread-from-help`}
-                        />
-                        {err(`${l.key}.spread_from`) ?? (
-                          <span className="fy-help" id={`${l.key}-spread-from-help`}>
-                            The month the service starts; blank for the invoice's month.
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  )}
-                  {editable && f.lines.length > 1 && (
-                    <div className="fy-field fy-field--full">
-                      <Button variant="ghost" size="sm" type="button" aria-label={`Remove line ${i + 1}`} onClick={() => set({ lines: f.lines.filter((x) => x.key !== l.key) })}>
-                        <Icon of={Trash2} />
-                        Remove
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </fieldset>
-            ))}
-            {err("lines")}
-            {editable && (
-              <div>
-                <Button variant="ghost" type="button" onClick={() => set({ lines: [...f.lines, newLine()] })}>
-                  <Icon of={Plus} />
-                  Add a line
-                </Button>
-              </div>
-            )}
-            {bill && <p className="fy-small">Total {total(bill)}{bill.currency !== base && bill.payable ? ` · ${base} ${formatAmount(bill.payable.amount)} payable` : ""}</p>}
-          </div>
-        </section>
+        <BillLines
+          id={id}
+          lines={f.lines}
+          onChange={(lines) => set({ lines })}
+          editable={editable}
+          errors={errors}
+          currency={f.currency || base}
+          base={base}
+          stated={foreign}
+          spreads={!credit}
+          codes={codes.data?.codes ?? []}
+          choices={choices}
+          byId={byId}
+          subtitle={`As the supplier's ${credit ? "credit note" : "invoice"} states them`}
+          footer={bill && <p className="fy-small">Total {total(bill)}{bill.currency !== base && bill.payable ? ` · ${base} ${formatAmount(bill.payable.amount)} payable` : ""}</p>}
+        />
 
         <div className="fy-field">
           <label className="fy-label" htmlFor={`${id}-notes`}>

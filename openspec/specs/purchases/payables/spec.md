@@ -168,6 +168,10 @@ Source: PRD-001 §8.6 · Priority S · Phase P1
 - **THEN** the scheduler makes its draft bill, dated on it, saved by scheduler:bills.recurring and naming the version it came from, once
 - **AND** a person adds the supplier's number and posts it under the usual approvals; whoever wrote that version never approves its post (SOD-3)
 
+#### Scenario: The recurring bills' screens (rev 0.85)
+- **WHEN** a person opens Purchases › Bills › Recurring
+- **THEN** each recurring bill shows its schedule, next draft, total and statuses, and its page keeps its schedule, supplier, currency, lines and notes, checks it without saving, and pauses or resumes it
+
 ### Requirement: FR-AP-10 Vendor statement reconciliation
 The system SHALL reconcile a vendor's statement with the vendor's balance and documents in Fyniq.
 

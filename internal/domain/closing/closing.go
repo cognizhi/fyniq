@@ -106,7 +106,8 @@ func base(ctx context.Context, u storage.UnitOfWork) (money.Currency, storage.Or
 // against the previous month above both thresholds with no explanation of its totals as they are (FR-GL-14, Appendix C.2
 // #57); (rev 0.68) ✖ a task of the month's close checklist neither done nor skipped with a reason (FR-GL-07, C.2 #58);
 // (rev 0.78) ✖ the AP sub-ledger differs from 2010 by anything no source explains, ⚠ amounts on 2010 from opening
-// balances or manual journals (INV-07, C.2 #2). Reconciliations join with p1-bank-import-reconcile.
+// balances or manual journals (INV-07, C.2 #2); (rev 0.85) the same two checks of the recurring bills as of the
+// recurring journals (C.1 #28, #29). Reconciliations join with p1-bank-import-reconcile.
 func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
 	cur, org, err := base(ctx, u)
 	if err != nil {
@@ -209,6 +210,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, recurring...)
+	recurringBills, err := recurringBillChecks(ctx, u, p, today)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, recurringBills...)
 	flux, err := compare(ctx, u, p, all, cur, cmpDay(today, p.EndsOn))
 	if err != nil {
 		return nil, err
@@ -632,6 +638,79 @@ func recurringChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period
 			count(incomplete) + " active recurring journal(s) have content the posting rules refuse, so their drafts could not post: fix or pause them"})
 	} else {
 		out = append(out, Check{"recurring-content", OK, "Every active recurring journal is complete", ""})
+	}
+	return out, nil
+}
+
+// recurringBillChecks are the close's checks of the recurring bills (FR-AP-09; Appendix C.1 #28, #29; rev 0.85), as
+// the recurring journals': ⚠ an occurrence on or before the period's end with no draft yet, ✖ one more than a day before
+// today (the hourly scheduler failed), and ⚠ an active one whose content the bill rules refuse.
+func recurringBillChecks(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time.Time) ([]Check, error) {
+	var out []Check
+	due, err := u.RecurringBills().Due(ctx, p.EndsOn.Format(time.DateOnly), 101)
+	if err != nil {
+		return nil, err
+	}
+	failed := 0
+	for _, id := range due {
+		r, err := u.RecurringBills().Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if !today.IsZero() && r.NextOn != nil && r.NextOn.Before(today.AddDate(0, 0, -1)) {
+			failed++
+		}
+	}
+	count := func(n int) string {
+		if n > 100 {
+			return "More than 100"
+		}
+		return fmt.Sprint(n)
+	}
+	switch {
+	case failed > 0:
+		out = append(out, Check{"recurring-bills", Failed, "The scheduler did not make recurring bills' drafts",
+			count(failed) + " recurring bill(s) have an occurrence more than a day ago with no draft: the scheduler may have failed. Tell an administrator, then run the checks again"})
+	case len(due) > 0:
+		out = append(out, Check{"recurring-bills", Warning, "Recurring bills due in the period have no draft",
+			count(len(due)) + " recurring bill(s) have an occurrence on or before " + p.EndsOn.Format(time.DateOnly) + " with no draft yet: the scheduler makes them within the hour"})
+	default:
+		out = append(out, Check{"recurring-bills", OK, "Every recurring bill due in the period has its draft", ""})
+	}
+	var all []storage.RecurringBill
+	var afterName string
+	var afterID *uuid.UUID
+	for {
+		page, err := u.RecurringBills().Page(ctx, afterName, afterID, 1000)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range page {
+			if r.Status == storage.RecurringActive && r.NextOn != nil {
+				all = append(all, r)
+			}
+		}
+		if len(page) < 1000 {
+			break
+		}
+		last := page[len(page)-1]
+		afterName, afterID = last.Name, &last.ID
+	}
+	statuses, err := journal.RecurringBillStatuses(ctx, u, all, cmpDay(today, p.EndsOn))
+	if err != nil {
+		return nil, err
+	}
+	incomplete := 0
+	for _, st := range statuses {
+		if len(st) > 0 && st[0].Severity == journal.SeverityError {
+			incomplete++
+		}
+	}
+	if incomplete > 0 {
+		out = append(out, Check{"recurring-bills-content", Warning, "Recurring bills are incomplete",
+			count(incomplete) + " active recurring bill(s) have lines a bill would refuse, so their drafts could not post: fix or pause them"})
+	} else {
+		out = append(out, Check{"recurring-bills-content", OK, "Every active recurring bill is complete", ""})
 	}
 	return out, nil
 }

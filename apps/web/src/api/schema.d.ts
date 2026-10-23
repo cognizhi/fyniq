@@ -4334,7 +4334,7 @@ export interface components {
              */
             detail?: string;
             /**
-             * @description Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, variances, checklist or opening; more join as their modules arrive.
+             * @description Which check: earlier, balances, trial-balance, drafts, reversals, recurring, recurring-content, recurring-bills, recurring-bills-content, variances, checklist or opening; more join as their modules arrive.
              * @example drafts
              */
             key: string;

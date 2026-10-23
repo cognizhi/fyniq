@@ -2,9 +2,9 @@
 key: purchases.bills
 type: task
 title: Bills
-summary: Entering, posting and approving a supplier's bill; spreading a prepaid cost over months; recording and voiding payments; voiding or editing a bill
+summary: Entering, posting and approving a supplier's bill; recurring bills; spreading a prepaid cost; recording and voiding payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:b202b41117902877625f52fe091bcad1f9224ed4a73530cd5efc74923c9f2f29
+  - docs/user-guide/bills.md sha256:51b4c2d4b99d28d64d1955fa4920044cd03b0d49f2f1af24005eb337a87bfb02
 data_class: general
 taint: trusted
 status: draft
@@ -44,6 +44,9 @@ aliases:
   - prepayment
   - prepaid subscription
   - spread over months
+  - recurring bill
+  - monthly rent bill
+  - repeating bill
 ---
 
 # Bills
@@ -88,6 +91,15 @@ aliases:
 - Only an expense line's cost is spread, and never a credit note's lines.
 
 (src: docs/user-guide/bills.md#spread-a-cost-over-months)
+
+## Recurring bills
+
+- A bill that comes every month, quarter or year, such as the office rent, is set up once under **Purchases → Bills → Recurring** with **New recurring bill**: its name, how often it repeats (every month, 3 months, 6 months or year) and on which day, when it starts and ends, then the supplier, currency and lines as on a bill; the 29th to the 31st fall on the last day of a shorter month.
+- Fyniq makes a draft bill on each date by itself, within the hour; nothing recurring posts by itself: add **Their invoice number** from the supplier's invoice, check the draft and post it as any bill. Whoever wrote a recurring bill's lines does not approve the posting of its drafts.
+- **Check** shows the next draft's date and what would stop the drafts posting, without saving; a recurring bill whose lines a bill would refuse is kept and shows ✖ until fixed. A change applies to drafts made after it; **Pause** stops the drafts, and **Resume** starts them again from today, skipping the dates passed.
+- At the month's close, Fyniq warns of a recurring bill due in the month with no draft yet, and refuses the close when one is more than a day late.
+
+(src: docs/user-guide/bills.md#recurring-bills)
 
 ## Approval above the threshold
 

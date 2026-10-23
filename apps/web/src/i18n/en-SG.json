@@ -288,6 +288,34 @@
       "label": "Record refund",
       "tooltip": "Record money the supplier paid back against the credit: the date, the account it came into and how much. It posts at once."
     },
+    "purchases.recurring-bills": {
+      "label": "Recurring",
+      "tooltip": "Bills that repeat, such as the office rent: Fyniq makes each one's draft on its date, and a person posts it."
+    },
+    "purchases.recurring-bill": {
+      "label": "Recurring bill",
+      "tooltip": "One recurring bill: its schedule, its supplier and lines, its next draft and what would stop its drafts posting."
+    },
+    "recurring-bill.new": {
+      "label": "New recurring bill",
+      "tooltip": "Set up a bill that repeats every 1, 3, 6 or 12 months; each draft waits for a person to add the supplier's number and post it."
+    },
+    "recurring-bill.save": {
+      "label": "Save",
+      "tooltip": "Save it. A change to its supplier or lines is a new version; drafts already made keep theirs."
+    },
+    "recurring-bill.check": {
+      "label": "Check",
+      "tooltip": "See the date of its next draft and what would stop its drafts posting, without saving."
+    },
+    "recurring-bill.pause": {
+      "label": "Pause",
+      "tooltip": "Stop making drafts until you resume it. The drafts already made stay."
+    },
+    "recurring-bill.resume": {
+      "label": "Resume",
+      "tooltip": "Start making drafts again from today; the dates passed while it was paused are skipped."
+    },
     "bill.spread": {
       "label": "Spread over months",
       "tooltip": "For a cost paid ahead, such as a year's subscription: it goes to Prepayments, and one part a month moves to the cost. Leave blank to cost it on the invoice date."

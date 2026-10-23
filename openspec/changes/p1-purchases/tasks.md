@@ -106,7 +106,10 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   (23 Oct 2026, PRD-001 rev 0.84, provisional: migration 000090; `journal.Bills` recurring commands and `MakeDue`; the
   hourly `bills.recurring`; a draft keeps naming the recurring bill's version, and SOD-3 refuses its author on the post;
   the six `/v1/recurring-bills` operations; the threat model covers it and rev 0.83's releases)
-- [ ] 7.2 Recurring bills on the board and their editor
+- [x] 7.2 Recurring bills on the board and their editor
+  (23 Oct 2026, PRD-001 rev 0.85, provisional: a Recurring tab on Purchases › Bills until recurring invoices join the
+  designed shared page; the list and the recurring bill's page; the bill line editor shared with bills; the close checks
+  `recurring-bills` and `recurring-bills-content`; the guide's "Recurring bills")
 
 ## 8. Purchase orders
 
