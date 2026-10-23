@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bottom": {
+      "description": "The bottom margin.",
+      "examples": [
+        20
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "left": {
+      "description": "The left margin.",
+      "examples": [
+        18
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "right": {
+      "description": "The right margin.",
+      "examples": [
+        18
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "top": {
+      "description": "The top margin.",
+      "examples": [
+        20
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "top",
+    "right",
+    "bottom",
+    "left"
+  ],
+  "title": "TemplateMargins",
+  "type": "object"
+}

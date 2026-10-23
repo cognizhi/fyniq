@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "The block.",
+      "examples": [
+        "totals"
+      ],
+      "type": "string"
+    },
+    "locked": {
+      "description": "It carries IRAS particulars, so it is always present and shown (FR-TPL-03).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "texts": {
+      "description": "The texts it takes: title, label or body.",
+      "items": {
+        "description": "One name from the catalogue's list, such as a font, a paper size, a text or a format.",
+        "examples": [
+          "medium"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "kind",
+    "texts",
+    "locked"
+  ],
+  "title": "TemplateBlockKind",
+  "type": "object"
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content": {
+      "$ref": "TemplateContent.schema.json",
+      "description": "The draft's content, whole."
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Standard invoice"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "content"
+  ],
+  "title": "DocumentTemplateChanges",
+  "type": "object"
+}

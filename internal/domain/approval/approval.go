@@ -47,6 +47,7 @@ const (
 	ObjectApplication = "credit_application"   // a supplier credit applied to a bill, to void (FR-AP-03, FR-GL-12, FM-1); its key is its id
 	ObjectRefund      = "supplier_refund"      // a refund from a supplier recorded by hand, to void (FR-AP-03, FR-GL-12, FM-1); its key is its id
 	ObjectOrder       = "purchase_order"       // a purchase order to approve above the threshold (FR-AP-01, FM-2, SOD-3); its key is its id
+	ObjectTemplate    = "document_template"    // a document or email template to publish (FR-TPL-04, FM-3); its key is its id
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -73,6 +74,7 @@ const (
 	OpApplicationVoid = "credit_application.void"
 	OpRefundVoid      = "supplier_refund.void"
 	OpOrderApprove    = "purchase_order.approve"
+	OpTemplatePublish = "document_template.publish"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -82,7 +84,7 @@ var Operations = map[string]string{
 	OpPolicyChange: ObjectPolicy, OpPackActivate: ObjectPack, OpTeamModeChange: ObjectTeamMode, OpPeriodReopen: ObjectPeriod,
 	OpJournalPost: ObjectJournal, OpJournalReverse: ObjectJournal, OpJournalEdit: ObjectJournal, OpOpeningEdit: ObjectOpening,
 	OpBillPost: ObjectBill, OpBillVoid: ObjectBill, OpBillEdit: ObjectBill, OpPaymentVoid: ObjectPayment, OpApplicationVoid: ObjectApplication,
-	OpRefundVoid: ObjectRefund, OpOrderApprove: ObjectOrder,
+	OpRefundVoid: ObjectRefund, OpOrderApprove: ObjectOrder, OpTemplatePublish: ObjectTemplate,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -117,6 +119,8 @@ var Dependencies = map[string][]string{
 	ObjectRefund: {"status", "refunded"},
 	// the order's version and status, and its total in the base currency
 	ObjectOrder: {"order_version", "status", "total"},
+	// the template's version, the SHA-256 of the content to publish, and the latest version published
+	ObjectTemplate: {"template_version", "content", "published"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -136,6 +140,7 @@ var Rows = map[string]string{
 	ObjectApplication: "Bills, vendor credits",
 	ObjectRefund:      "Bills, vendor credits",
 	ObjectOrder:       "Bills, vendor credits",
+	ObjectTemplate:    "Document templates: edit, publish (rev 0.7)",
 }
 
 // The limits of a policy.
@@ -184,6 +189,7 @@ var Policies = map[string]Policy{
 	ObjectApplication: {ObjectType: ObjectApplication, Version: "founder/credit_application@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
 	ObjectRefund:      {ObjectType: ObjectRefund, Version: "founder/supplier_refund@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
 	ObjectOrder:       {ObjectType: ObjectOrder, Version: "founder/purchase_order@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
+	ObjectTemplate:    {ObjectType: ObjectTemplate, Version: "founder/document_template@2026-10-23.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

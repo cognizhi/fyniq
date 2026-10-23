@@ -3,7 +3,17 @@
 ## 1. Templates and rendering
 
 - [ ] 1.0 Redraw the template-editor canvas to the P1 half (theme, texts, optional blocks, live preview) before building it (`fyniq-openspec` Recipe C)
-- [ ] 1.1 Template versions as JSON from the typed field catalogue, drafts, and immutable numbered versions published under approval, with rollback. Tests `// req: FR-TPL-02` (P1 part) and `// req: FR-TPL-04` (P1 part)
+- [x] 1.1 Template versions as JSON from the typed field catalogue, drafts, and immutable numbered versions published under approval, with rollback. Tests `// req: FR-TPL-02` (P1 part) and `// req: FR-TPL-04` (P1 part)
+  (23 Oct 2026, PRD-001 rev 0.95: `internal/domain/doctemplate` holds the content (a document's page, theme and blocks, or an
+  email's subject and body), the typed field catalogue per document type with its date and money formats, the locked IRAS
+  blocks of invoices and credit notes from IRAS's "Invoicing customers", the accent's contrast in integer arithmetic, and the
+  rules TPL-01…15. Migrations 000097 and 000098: `document_template` (the draft, saved over at the next version) and
+  `document_template_version` (numbered, with the SHA-256 of the RFC 8785 JSON; never changes, FY176), and the approval
+  object `document_template.publish`. Nine operations under the tag Templates; in Founder mode an approver publishes alone for
+  the weekly review, otherwise another approves, never the draft's saver (SOD-3); a rollback republishes an earlier version
+  and leaves the draft. Tests: `TestTemplateVersionsNeverChange`, `TestDocumentTemplatesThroughTheAPI`,
+  `TestTemplatesArePublishedByApprovalInStandardMode`, the domain tests and nine matrix rows. Left for 1.2: rendering test
+  documents at publication and the version and hash on each issued document.)
 - [ ] 1.2 The render service compiles the JSON through owned Typst sources to PDF/A-2a and PDF/UA-1, with locked IRAS blocks inserted for tax-invoice types. Tests `// req: FR-TPL-03` and byte-identical snapshots per starter template
 - [ ] 1.3 The document types and email templates with a default per type and a per-customer override; 3–4 starter templates; export and import of a versioned bundle. Tests `// req: FR-TPL-05` and `// req: FR-TPL-07`
 - [ ] 1.4 The editor's P1 half as designed: theme, texts, optional blocks, live preview, Basic and Expert. Test `// req: FR-TPL-01` (P1 part)

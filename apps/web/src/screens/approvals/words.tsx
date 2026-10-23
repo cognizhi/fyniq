@@ -27,6 +27,7 @@ const operations: Record<Approval["operation"], string> = {
   "credit_application.void": "Void a credit applied to a bill",
   "supplier_refund.void": "Void a refund from a supplier",
   "purchase_order.approve": "Approve a purchase order",
+  "document_template.publish": "Publish a document template",
 };
 
 export function operationLabel(op: string): string {
@@ -48,6 +49,7 @@ const objects: Record<string, string> = {
   credit_application: "Credit applied to a bill",
   supplier_refund: "Refund from a supplier",
   purchase_order: "Purchase order",
+  document_template: "Document template",
 };
 
 export function objectLabel(t: string): string {

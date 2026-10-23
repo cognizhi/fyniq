@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "label": {
+      "description": "What it is, in words.",
+      "examples": [
+        "Due date"
+      ],
+      "type": "string"
+    },
+    "path": {
+      "description": "How a text writes it, inside {{ }}.",
+      "examples": [
+        "document.due_date"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "What it is, which decides its formats.",
+      "enum": [
+        "text",
+        "date",
+        "money",
+        "number"
+      ],
+      "examples": [
+        "date"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "path",
+    "type",
+    "label"
+  ],
+  "title": "TemplateField",
+  "type": "object"
+}

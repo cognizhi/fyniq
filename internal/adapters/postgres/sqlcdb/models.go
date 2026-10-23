@@ -270,6 +270,33 @@ type FyniqDocumentSequence struct {
 	Version        int32
 }
 
+type FyniqDocumentTemplate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	DocumentType   string
+	Name           string
+	Draft          []byte
+	Version        int32
+	Published      *int32
+	SavedBy        string
+	SavedAt        time.Time
+	CreatedAt      time.Time
+}
+
+type FyniqDocumentTemplateVersion struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	TemplateID      uuid.UUID
+	Number          int32
+	Content         []byte
+	ContentHash     []byte
+	Note            *string
+	RepublishedFrom *int32
+	PublishedBy     string
+	PublishedAt     time.Time
+}
+
 type FyniqDocumentVersion struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

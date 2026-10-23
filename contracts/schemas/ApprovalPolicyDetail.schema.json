@@ -50,7 +50,8 @@
         "bill_payment",
         "credit_application",
         "supplier_refund",
-        "purchase_order"
+        "purchase_order",
+        "document_template"
       ],
       "examples": [
         "organisation_setting"

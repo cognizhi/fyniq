@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accent": {
+      "description": "The accent colour, #RRGGBB, at least 4.5:1 against white so text in it reads (TPL-05).",
+      "examples": [
+        "#0F766E"
+      ],
+      "pattern": "^#[0-9A-Fa-f]{6}$",
+      "type": "string"
+    },
+    "font": {
+      "description": "The font, from those the render service ships.",
+      "enum": [
+        "Inter",
+        "IBM Plex Sans",
+        "IBM Plex Serif"
+      ],
+      "examples": [
+        "Inter"
+      ],
+      "type": "string"
+    },
+    "logo": {
+      "description": "Show the organisation's logo (FR-ORG-09) in the header.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "logo",
+    "accent",
+    "font"
+  ],
+  "title": "TemplateTheme",
+  "type": "object"
+}
