@@ -903,7 +903,7 @@ export interface paths {
         put?: never;
         /**
          * Preview template content
-         * @description Fills template content, saved or not, with made-up sample data of its document type (FR-TPL-01's live preview): a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has no side effects. TPL-17 when the render service is not configured or busy.
+         * @description Fills template content, saved or not, with the organisation's own details and made-up sample data of its document type (FR-TPL-01's live preview), so a detail the organisation's profile lacks shows as missing: a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has no side effects. TPL-17 when the render service is not configured or busy.
          */
         post: operations["previewDocumentTemplate"];
         delete?: never;
@@ -5863,6 +5863,11 @@ export interface components {
              */
             document_type: "invoice" | "quote" | "credit_note" | "receipt" | "statement" | "reminder" | "remittance" | "purchase_order";
             /**
+             * @description The choice's ETag: send it in If-Match to change a default. A contact's choice changes with the contact's ETag instead.
+             * @example "none"
+             */
+            etag: string;
+            /**
              * @description document: the PDF; email: the message that carries it.
              * @example document
              * @enum {string}
@@ -10311,6 +10316,8 @@ export interface components {
             kind: "document" | "email";
             /** @description The IRAS particulars the sample lacks (FR-TPL-03); empty when none is missing or none is required. */
             missing_particulars: string[];
+            /** @description A document's pages as PNG images at 96 pixels an inch, up to 10, for showing it on a screen. */
+            pages?: string[] | null;
             /**
              * @description A document's sample, as PDF/A-2a and PDF/UA-1, base64.
              * @example JVBERi0xLjc=

@@ -435,7 +435,7 @@ func (a *API) testDocuments(ctx context.Context, t storage.DocumentTemplate, c d
 		variants = append(variants, simplified)
 	}
 	for _, d := range variants {
-		res, err := a.renderDocument(ctx, t.DocumentType, c, d, true)
+		res, err := a.renderDocument(ctx, t.DocumentType, c, d, true, false)
 		if err != nil {
 			return err
 		}
@@ -451,6 +451,43 @@ func (a *API) testDocuments(ctx context.Context, t storage.DocumentTemplate, c d
 	return nil
 }
 
+// sampleOf is the data a preview renders (FR-TPL-01): render.Sample's made-up customer, lines and totals, with the
+// organisation's own name, UEN, address, contact and payment details from its profile and its GST registration in
+// force today. A detail the profile lacks stays empty rather than made up, so the preview shows the particular missing.
+func (a *API) sampleOf(ctx context.Context, u storage.UnitOfWork, documentType string) (render.Data, error) {
+	d := render.Sample(documentType)
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return d, err
+	}
+	p := o.Profile
+	for path, v := range map[string]string{
+		"organisation.name": cmpOr(p.LegalName, o.Name), "organisation.uen": p.UEN, "organisation.address": p.RegisteredAddress,
+		"organisation.email": p.Email, "organisation.phone": p.Phone, "payment.bank_name": p.BankName,
+		"payment.account_name": p.BankAccountName, "payment.account_number": p.BankAccountNumber, "payment.paynow": p.PayNowUEN,
+	} {
+		if strings.TrimSpace(v) == "" {
+			delete(d.Fields, path)
+		} else {
+			d.Fields[path] = render.Value{Text: v}
+		}
+	}
+	regs, err := u.GSTRegistrations().List(ctx)
+	if err != nil {
+		return d, err
+	}
+	today := a.deps.Clock.Now().UTC().Truncate(24 * time.Hour)
+	d.GSTRegistered = false
+	delete(d.Fields, "organisation.gst_number")
+	for _, r := range regs {
+		if !r.RegisteredFrom.After(today) && (r.DeregisteredFrom == nil || r.DeregisteredFrom.After(today)) {
+			d.GSTRegistered = true
+			d.Fields["organisation.gst_number"] = render.Value{Text: r.GSTNumber}
+		}
+	}
+	return d, nil
+}
+
 // sampleCreated is when a sample document was issued: its date, at midnight in UTC, so a preview is the same bytes.
 func sampleCreated(d render.Data) time.Time {
 	day, err := time.Parse(time.DateOnly, d.Fields["document.date"].Date)
@@ -461,12 +498,12 @@ func sampleCreated(d render.Data) time.Time {
 }
 
 // renderDocument renders c with d through the render service, finding the particulars when check is set.
-func (a *API) renderDocument(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, check bool) (render.Response, error) {
+func (a *API) renderDocument(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, check, pages bool) (render.Response, error) {
 	if a.deps.Renderer == nil {
 		return render.Response{}, problem(doctemplate.CodeRenderer, "No render service is configured, so the document cannot be rendered.",
 			"Ask the operator to configure the render service; templates without IRAS particulars and emails publish without it")
 	}
-	res, err := a.deps.Renderer.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: sampleCreated(d), Check: check})
+	res, err := a.deps.Renderer.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: sampleCreated(d), Check: check, Pages: pages})
 	var rp *render.Problem
 	switch {
 	case err == nil:
@@ -933,6 +970,14 @@ func (Particular) Schema(huma.Registry) *huma.Schema {
 	return &huma.Schema{Type: "string", Description: "An IRAS particular, such as supplier_gst_number, total_with_gst or reason.", Examples: []any{"total_with_gst"}}
 }
 
+// PageImage is one page of a preview as a PNG image, base64.
+type PageImage []byte
+
+// Schema implements huma.SchemaProvider: base64 text, with an example.
+func (PageImage) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", ContentEncoding: "base64", Description: "A page as a PNG image, base64.", Examples: []any{"iVBORw0KGgo="}}
+}
+
 // TemplatePreviewRequest is content to preview: saved or not, as the editor has it.
 type TemplatePreviewRequest struct {
 	Kind         string          `json:"kind" enum:"document,email" doc:"document: the PDF; email: the message that carries it." example:"document"`
@@ -945,6 +990,7 @@ type TemplatePreview struct {
 	Kind         string       `json:"kind" enum:"document,email" doc:"What was previewed." example:"document"`
 	DocumentType string       `json:"document_type" doc:"The document type." example:"invoice"`
 	PDF          []byte       `json:"pdf,omitempty" doc:"A document's sample, as PDF/A-2a and PDF/UA-1, base64." example:"JVBERi0xLjc="`
+	Pages        []PageImage  `json:"pages,omitempty" doc:"A document's pages as PNG images at 96 pixels an inch, up to 10, for showing it on a screen."`
 	SHA256       string       `json:"sha256,omitempty" doc:"The PDF's SHA-256, in hex: the same content always gives the same bytes." example:"a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda"`
 	Missing      []Particular `json:"missing_particulars" nullable:"false" doc:"The IRAS particulars the sample lacks (FR-TPL-03); empty when none is missing or none is required."`
 	Subject      string       `json:"subject,omitempty" doc:"An email's subject, filled." example:"Invoice INV-0042 from Example Analytics Pte Ltd"`
@@ -963,7 +1009,8 @@ func registerTemplatePreviews(a *API) {
 	op := huma.Operation{
 		OperationID: "previewDocumentTemplate", Method: http.MethodPost, Path: "/v1/document-template-previews", Tags: []string{"Templates"},
 		Summary: "Preview template content",
-		Description: "Fills template content, saved or not, with made-up sample data of its document type (FR-TPL-01's live preview): " +
+		Description: "Fills template content, saved or not, with the organisation's own details and made-up sample data of its " +
+			"document type (FR-TPL-01's live preview), so a detail the organisation's profile lacks shows as missing: " +
 			"a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an " +
 			"email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has " +
 			"no side effects. TPL-17 when the render service is not configured or busy.",
@@ -978,7 +1025,14 @@ func registerTemplatePreviews(a *API) {
 			return nil, err
 		}
 		out := TemplatePreview{Kind: b.Kind, DocumentType: b.DocumentType, Missing: []Particular{}}
-		d := render.Sample(b.DocumentType)
+		var d render.Data
+		p, _ := authn.From(ctx)
+		if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			d, err = a.sampleOf(ctx, u, b.DocumentType)
+			return err
+		}); err != nil {
+			return nil, err
+		}
 		if b.Kind == doctemplate.KindEmail {
 			subject, body, err := render.Email(c, d)
 			if err != nil {
@@ -987,11 +1041,14 @@ func registerTemplatePreviews(a *API) {
 			out.Subject, out.Body = subject, body
 			return &templatePreviewOutput{Body: out}, nil
 		}
-		res, err := a.renderDocument(ctx, b.DocumentType, c, d, len(doctemplate.Locked[b.DocumentType]) > 0)
+		res, err := a.renderDocument(ctx, b.DocumentType, c, d, len(doctemplate.Locked[b.DocumentType]) > 0, true)
 		if err != nil {
 			return nil, err
 		}
 		out.PDF, out.SHA256 = res.PDF, res.SHA256
+		for _, pg := range res.Pages {
+			out.Pages = append(out.Pages, PageImage(pg))
+		}
 		for _, m := range res.Missing {
 			out.Missing = append(out.Missing, Particular(m))
 		}

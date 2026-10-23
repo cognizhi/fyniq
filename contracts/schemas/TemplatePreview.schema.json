@@ -38,6 +38,21 @@
       },
       "type": "array"
     },
+    "pages": {
+      "description": "A document's pages as PNG images at 96 pixels an inch, up to 10, for showing it on a screen.",
+      "items": {
+        "contentEncoding": "base64",
+        "description": "A page as a PNG image, base64.",
+        "examples": [
+          "iVBORw0KGgo="
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "pdf": {
       "contentEncoding": "base64",
       "description": "A document's sample, as PDF/A-2a and PDF/UA-1, base64.",

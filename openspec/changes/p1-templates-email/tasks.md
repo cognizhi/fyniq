@@ -35,7 +35,13 @@
   per-supplier overrides on the contact (TPL-20), and the platform's classic starter as version 0; migration 000099 (FY177,
   FY178); `doctemplate.Applying` resolves contact, default, platform. Tests `TestTemplateChoicesAreAppendOnly`,
   `TestTemplateDefaultsAndOverrides` and five matrix rows.)
-- [ ] 1.4 The editor's P1 half as designed: theme, texts, optional blocks, live preview, Basic and Expert. Test `// req: FR-TPL-01` (P1 part)
+- [x] 1.4 The editor's P1 half as designed: theme, texts, optional blocks, live preview, Basic and Expert. Test `// req: FR-TPL-01` (P1 part)
+  (23 Oct 2026, PRD-001 rev 0.100: `apps/web/src/screens/settings/TemplateEditor.tsx` at /settings/templates/$templateId:
+  the style, the theme and page with the accent's contrast, blocks shown or hidden with the locked IRAS blocks, texts with a
+  field picker that inserts `{{path|format}}` at the cursor, the fields, a live preview 600 ms after the last change, publish
+  or ask for approval, versions with roll back. The preview now fills the organisation's own details and GST number in force
+  and returns PNG pages at 96 ppi (`render.Request.Pages`; the CSP embeds no PDF). The P1 editor is the same in both modes,
+  its Expert half being P2. Tests: `Templates.test.tsx` with axe, `TestPreviewPagesArePNGs`, `TestDocumentTemplatesThroughTheAPI`.)
 
 ## 2. Email
 
@@ -63,4 +69,9 @@
 ## 4. Screens
 
 - [ ] 4.1 Build announcements, banners, document-templates, notification-centre, notification-preferences and template-editor as designed. Add help keys and `docs/user-guide/` pages compiled into `kb/`
+  (23 Oct 2026, part, rev 0.100: document-templates (`Templates.tsx` at /settings/templates: each type's document and email
+  default chosen over the choice's ETag, the templates, the four-style gallery, waiting publications, the bundle in Expert
+  mode) and template-editor, with the help key `settings.templates`, `docs/user-guide/document-templates.md` and
+  `kb/pages/task/settings-templates.md`. Still to build: announcements, banners, notification-centre,
+  notification-preferences, and the template override on the contact's page.)
 - [ ] 4.2 Finish with `make check` and `make test`

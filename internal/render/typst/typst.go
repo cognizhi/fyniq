@@ -147,6 +147,39 @@ func (c *Compiler) PDF(ctx context.Context, in Input) ([]byte, error) {
 	return os.ReadFile(filepath.Join(dir, "document.pdf"))
 }
 
+// PreviewPPI is the resolution of a preview's page images: an A4 page 794 pixels wide.
+const PreviewPPI = 96
+
+// MaxPages is the most pages a preview shows.
+const MaxPages = 10
+
+// Pages compiles in to one PNG per page, at most MaxPages, for a preview the web app shows as images (its content
+// security policy embeds no PDF).
+func (c *Compiler) Pages(ctx context.Context, in Input) ([][]byte, error) {
+	dir, done, err := sandbox(in)
+	if err != nil {
+		return nil, err
+	}
+	defer done()
+	if _, err := c.run(ctx, dir, "compile", "--format", "png", "--ppi", strconv.Itoa(PreviewPPI), "document.typ", "page-{0p}.png"); err != nil {
+		return nil, err
+	}
+	names, err := filepath.Glob(filepath.Join(dir, "page-*.png"))
+	if err != nil {
+		return nil, err
+	}
+	slices.Sort(names)
+	var out [][]byte
+	for _, n := range names[:min(len(names), MaxPages)] {
+		b, err := os.ReadFile(n)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, b)
+	}
+	return out, nil
+}
+
 // Particulars are the IRAS particulars the compiled document holds (render.Required lists those it must), each once,
 // sorted: what the layout marked and Typst laid out.
 func (c *Compiler) Particulars(ctx context.Context, in Input) ([]string, error) {

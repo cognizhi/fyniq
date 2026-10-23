@@ -114,5 +114,10 @@ func (h *Handler) render(ctx context.Context, x typst.Input, in render.Request) 
 		}
 		out.Missing = typst.Missing(render.Required(in.DocumentType, in.Data), out.Particulars)
 	}
+	if in.Pages {
+		if out.Pages, err = h.Compiler.Pages(ctx, x); err != nil {
+			return render.Response{}, err
+		}
+	}
 	return out, nil
 }

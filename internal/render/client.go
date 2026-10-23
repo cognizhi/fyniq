@@ -24,6 +24,7 @@ type Request struct {
 	Logo         []byte              `json:"logo,omitempty"`  // a PNG, base64 in JSON
 	Created      time.Time           `json:"created"`         // the PDF's creation date, so a reprint is the same bytes
 	Check        bool                `json:"check,omitempty"` // also find the IRAS particulars in the document
+	Pages        bool                `json:"pages,omitempty"` // also each page as a PNG, for a preview
 }
 
 // Response is the rendered document.
@@ -32,6 +33,7 @@ type Response struct {
 	SHA256      string   `json:"sha256"`
 	Particulars []string `json:"particulars,omitempty"` // with check: those the document holds
 	Missing     []string `json:"missing,omitempty"`     // with check: those IRAS requires and it lacks
+	Pages       [][]byte `json:"pages,omitempty"`       // with pages: each page as a PNG
 }
 
 // Problem is the render service's refusal: its code says why.

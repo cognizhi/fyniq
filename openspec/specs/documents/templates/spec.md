@@ -52,6 +52,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1 (theme, texts, optional blocks)
 - **THEN** the renderer draws it: classic, band (white on the accent behind the header and the table's head), minimal or compact
 - **AND** a template that names none is classic, and a style the renderer does not draw is refused (TPL-05)
 
+#### Scenario: The editor and its preview as built (rev 0.100)
+- **WHEN** a person edits a template in Settings → Templates
+- **THEN** they set the style, theme and page (the accent's contrast shown as it is typed), show or hide blocks (IRAS blocks marked locked) and insert fields with a format at the cursor
+- **AND** the preview asks again 600 ms after the last change, fills the organisation's own details and GST number in force, names a particular they lack, and shows the pages as PNG images at 96 ppi (at most 10), with the PDF to download
+
 ### Requirement: FR-TPL-02 Fields and conditions
 Templates SHALL use fields from a typed catalogue with formats for dates and money and, from P2, conditional blocks from a fixed list and a column chooser; the visual editor SHALL allow no free code.
 
@@ -159,6 +164,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1 (versions); P2 (visual diff)
 - **THEN** in Founder mode a person who holds A publishes alone, listed for the weekly review (FM-3)
 - **AND** otherwise another person who holds A approves the request, never the one who saved the draft (TPL-15), and a change to the template voids it
 
+#### Scenario: Publishing and rolling back in the editor (rev 0.100)
+- **WHEN** a person publishes from the editor
+- **THEN** an approver publishes and a preparer asks for approval, over the draft's version with the note, and when another person must approve (TPL-14) the editor offers to ask
+- **AND** Versions rolls back to an earlier version, published again as the next one
+
 ### Requirement: FR-TPL-05 Document types
 The system SHALL provide templates for invoices, quotes, credit notes, receipts, customer statements, reminder letters, remittance advice, purchase orders and, in P2, payslips (used by Nemura through the shared engine; Fyniq issues none), plus email templates.
 
@@ -188,6 +198,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **WHEN** the template that renders a document is resolved
 - **THEN** the contact's override applies, else the organisation's default, else the platform's classic starter as version 0, each with the version and content hash the document records
 - **AND** choices are append-only, name only a published template of their kind and type (FY177, FY178), and an override sits on a contact that receives the document (TPL-20)
+
+#### Scenario: Choosing a default on the screen (rev 0.100)
+- **WHEN** an approver changes a type's document or email default in Settings → Templates
+- **THEN** they choose among the type's published templates or the platform's starter
+- **AND** the change is made over the choice's ETag (If-Match), so a concurrent change is refused
 
 ### Requirement: FR-TPL-06 Code mode for experts
 Templates SHALL compile to Typst (§12.2), and an expert SHALL be able to edit the Typst source in a sandbox.
@@ -234,6 +249,11 @@ Source: PRD-001 §8.25 · Priority S · Phase P1
 - **WHEN** a template is made from the gallery, or templates are exported and imported
 - **THEN** the gallery offers four starters, one per style (Classic, Band, Minimal, Compact), and a bundle (`fyniq.template-bundle/1`) holds one to 50 templates, each the version in force or a never-published draft with its content's SHA-256
 - **AND** import makes drafts, all or none, refusing content that does not match its hash (TPL-18)
+
+#### Scenario: The gallery and bundles on the screen (rev 0.100)
+- **WHEN** a person opens Settings → Templates
+- **THEN** the four starters show as a gallery in Basic mode, each starting a draft of the chosen type and kind
+- **AND** exporting and importing a bundle is shown in Expert mode
 
 ### Requirement: FR-TPL-08 Languages
 Templates SHALL support labels per language, and each customer SHALL have a language.

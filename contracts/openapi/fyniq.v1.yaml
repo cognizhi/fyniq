@@ -3867,6 +3867,11 @@ components:
           examples:
             - invoice
           type: string
+        etag:
+          description: "The choice's ETag: send it in If-Match to change a default. A contact's choice changes with the contact's ETag instead."
+          examples:
+            - "\"none\""
+          type: string
         kind:
           description: "document: the PDF; email: the message that carries it."
           enum:
@@ -3890,6 +3895,7 @@ components:
       required:
         - kind
         - document_type
+        - etag
       type: object
     DocumentTemplateChoicePage:
       additionalProperties: false
@@ -10352,6 +10358,17 @@ components:
               - total_with_gst
             type: string
           type: array
+        pages:
+          description: A document's pages as PNG images at 96 pixels an inch, up to 10, for showing it on a screen.
+          items:
+            contentEncoding: base64
+            description: A page as a PNG image, base64.
+            examples:
+              - iVBORw0KGgo=
+            type: string
+          type:
+            - array
+            - "null"
         pdf:
           contentEncoding: base64
           description: A document's sample, as PDF/A-2a and PDF/UA-1, base64.
@@ -20992,7 +21009,7 @@ paths:
         right: A
   /v1/document-template-previews:
     post:
-      description: "Fills template content, saved or not, with made-up sample data of its document type (FR-TPL-01's live preview): a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has no side effects. TPL-17 when the render service is not configured or busy."
+      description: "Fills template content, saved or not, with the organisation's own details and made-up sample data of its document type (FR-TPL-01's live preview), so a detail the organisation's profile lacks shows as missing: a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has no side effects. TPL-17 when the render service is not configured or busy."
       operationId: previewDocumentTemplate
       requestBody:
         content:
