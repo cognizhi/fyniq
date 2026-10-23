@@ -48,6 +48,19 @@ type NewTemplateVersion struct {
 	RepublishedFrom int
 }
 
+// TemplateChoice is a choice of the template that renders a kind and document type (FR-TPL-05; PRD-001 rev 0.99): the
+// organisation's default, or a contact's override. The latest is in force; one naming no template returns to the
+// default, or to the platform's starter. A choice never changes (FY177) and names a published template of its own
+// kind and type (FY178).
+type TemplateChoice struct {
+	ID                 uuid.UUID
+	ContactID          *uuid.UUID // an override's contact; nil for a default
+	Kind, DocumentType string
+	TemplateID         *uuid.UUID
+	SetBy              string
+	SetAt              time.Time
+}
+
 // TemplateFilter narrows a page of templates.
 type TemplateFilter struct {
 	Kind, DocumentType string // "" for any
@@ -70,4 +83,13 @@ type DocumentTemplates interface {
 	Versions(ctx context.Context, id uuid.UUID, before, limit int) ([]TemplateVersion, error)
 	// Version returns one published version: ports.ErrNotFound when there is none.
 	Version(ctx context.Context, id uuid.UUID, number int) (TemplateVersion, error)
+	// SetDefault chooses the default template of a kind and document type, nil for the platform's starter.
+	SetDefault(ctx context.Context, kind, documentType string, template *uuid.UUID) (TemplateChoice, error)
+	// Defaults are the defaults in force, one per kind and document type ever chosen.
+	Defaults(ctx context.Context) ([]TemplateChoice, error)
+	// SetContactTemplate chooses a contact's template of a kind and document type, nil for the default. Audited on the
+	// contact.
+	SetContactTemplate(ctx context.Context, contact uuid.UUID, kind, documentType string, template *uuid.UUID) (TemplateChoice, error)
+	// ContactTemplates are a contact's choices in force, one per kind and document type ever chosen.
+	ContactTemplates(ctx context.Context, contact uuid.UUID) ([]TemplateChoice, error)
 }

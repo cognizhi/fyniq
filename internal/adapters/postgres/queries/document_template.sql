@@ -50,3 +50,26 @@ ORDER BY number DESC LIMIT sqlc.arg(page_size);
 SELECT id, template_id, number, content, content_hash, coalesce(note, '')::text AS note, coalesce(republished_from, 0)::integer AS republished_from,
   published_by, published_at
 FROM fyniq.document_template_version WHERE template_id = sqlc.arg(template_id) AND number = sqlc.arg(number);
+
+-- name: InsertDocumentTemplateDefault :one
+INSERT INTO fyniq.document_template_default (kind, document_type, template_id, set_by, set_at)
+VALUES (sqlc.arg(kind), sqlc.arg(document_type), sqlc.narg(template_id), sqlc.arg(set_by), sqlc.arg(set_at))
+RETURNING id, kind, document_type, template_id, set_by, set_at;
+
+-- name: DocumentTemplateDefaults :many
+-- The latest choice of each kind and document type: the one in force.
+SELECT DISTINCT ON (kind, document_type) id, kind, document_type, template_id, set_by, set_at
+FROM fyniq.document_template_default
+ORDER BY kind, document_type, set_at DESC, id DESC;
+
+-- name: InsertContactDocumentTemplate :one
+INSERT INTO fyniq.contact_document_template (contact_id, kind, document_type, template_id, set_by, set_at)
+VALUES (sqlc.arg(contact_id), sqlc.arg(kind), sqlc.arg(document_type), sqlc.narg(template_id), sqlc.arg(set_by), sqlc.arg(set_at))
+RETURNING id, contact_id, kind, document_type, template_id, set_by, set_at;
+
+-- name: ContactDocumentTemplates :many
+-- The latest choice of each kind and document type for a contact: the one in force.
+SELECT DISTINCT ON (kind, document_type) id, contact_id, kind, document_type, template_id, set_by, set_at
+FROM fyniq.contact_document_template
+WHERE contact_id = sqlc.arg(contact_id)
+ORDER BY kind, document_type, set_at DESC, id DESC;

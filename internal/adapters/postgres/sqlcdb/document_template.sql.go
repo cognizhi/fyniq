@@ -12,6 +12,95 @@ import (
 	"github.com/google/uuid"
 )
 
+const contactDocumentTemplates = `-- name: ContactDocumentTemplates :many
+SELECT DISTINCT ON (kind, document_type) id, contact_id, kind, document_type, template_id, set_by, set_at
+FROM fyniq.contact_document_template
+WHERE contact_id = $1
+ORDER BY kind, document_type, set_at DESC, id DESC
+`
+
+type ContactDocumentTemplatesRow struct {
+	ID           uuid.UUID
+	ContactID    uuid.UUID
+	Kind         string
+	DocumentType string
+	TemplateID   *uuid.UUID
+	SetBy        string
+	SetAt        time.Time
+}
+
+// The latest choice of each kind and document type for a contact: the one in force.
+func (q *Queries) ContactDocumentTemplates(ctx context.Context, contactID uuid.UUID) ([]ContactDocumentTemplatesRow, error) {
+	rows, err := q.db.Query(ctx, contactDocumentTemplates, contactID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ContactDocumentTemplatesRow
+	for rows.Next() {
+		var i ContactDocumentTemplatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ContactID,
+			&i.Kind,
+			&i.DocumentType,
+			&i.TemplateID,
+			&i.SetBy,
+			&i.SetAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const documentTemplateDefaults = `-- name: DocumentTemplateDefaults :many
+SELECT DISTINCT ON (kind, document_type) id, kind, document_type, template_id, set_by, set_at
+FROM fyniq.document_template_default
+ORDER BY kind, document_type, set_at DESC, id DESC
+`
+
+type DocumentTemplateDefaultsRow struct {
+	ID           uuid.UUID
+	Kind         string
+	DocumentType string
+	TemplateID   *uuid.UUID
+	SetBy        string
+	SetAt        time.Time
+}
+
+// The latest choice of each kind and document type: the one in force.
+func (q *Queries) DocumentTemplateDefaults(ctx context.Context) ([]DocumentTemplateDefaultsRow, error) {
+	rows, err := q.db.Query(ctx, documentTemplateDefaults)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DocumentTemplateDefaultsRow
+	for rows.Next() {
+		var i DocumentTemplateDefaultsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.DocumentType,
+			&i.TemplateID,
+			&i.SetBy,
+			&i.SetAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const documentTemplateVersions = `-- name: DocumentTemplateVersions :many
 SELECT id, template_id, number, content, content_hash, coalesce(note, '')::text AS note, coalesce(republished_from, 0)::integer AS republished_from,
   published_by, published_at
@@ -145,6 +234,53 @@ func (q *Queries) GetDocumentTemplateVersion(ctx context.Context, arg GetDocumen
 	return i, err
 }
 
+const insertContactDocumentTemplate = `-- name: InsertContactDocumentTemplate :one
+INSERT INTO fyniq.contact_document_template (contact_id, kind, document_type, template_id, set_by, set_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, contact_id, kind, document_type, template_id, set_by, set_at
+`
+
+type InsertContactDocumentTemplateParams struct {
+	ContactID    uuid.UUID
+	Kind         string
+	DocumentType string
+	TemplateID   *uuid.UUID
+	SetBy        string
+	SetAt        time.Time
+}
+
+type InsertContactDocumentTemplateRow struct {
+	ID           uuid.UUID
+	ContactID    uuid.UUID
+	Kind         string
+	DocumentType string
+	TemplateID   *uuid.UUID
+	SetBy        string
+	SetAt        time.Time
+}
+
+func (q *Queries) InsertContactDocumentTemplate(ctx context.Context, arg InsertContactDocumentTemplateParams) (InsertContactDocumentTemplateRow, error) {
+	row := q.db.QueryRow(ctx, insertContactDocumentTemplate,
+		arg.ContactID,
+		arg.Kind,
+		arg.DocumentType,
+		arg.TemplateID,
+		arg.SetBy,
+		arg.SetAt,
+	)
+	var i InsertContactDocumentTemplateRow
+	err := row.Scan(
+		&i.ID,
+		&i.ContactID,
+		&i.Kind,
+		&i.DocumentType,
+		&i.TemplateID,
+		&i.SetBy,
+		&i.SetAt,
+	)
+	return i, err
+}
+
 const insertDocumentTemplate = `-- name: InsertDocumentTemplate :one
 INSERT INTO fyniq.document_template (kind, document_type, name, draft, saved_by, saved_at)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -194,6 +330,49 @@ func (q *Queries) InsertDocumentTemplate(ctx context.Context, arg InsertDocument
 		&i.SavedBy,
 		&i.SavedAt,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertDocumentTemplateDefault = `-- name: InsertDocumentTemplateDefault :one
+INSERT INTO fyniq.document_template_default (kind, document_type, template_id, set_by, set_at)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, kind, document_type, template_id, set_by, set_at
+`
+
+type InsertDocumentTemplateDefaultParams struct {
+	Kind         string
+	DocumentType string
+	TemplateID   *uuid.UUID
+	SetBy        string
+	SetAt        time.Time
+}
+
+type InsertDocumentTemplateDefaultRow struct {
+	ID           uuid.UUID
+	Kind         string
+	DocumentType string
+	TemplateID   *uuid.UUID
+	SetBy        string
+	SetAt        time.Time
+}
+
+func (q *Queries) InsertDocumentTemplateDefault(ctx context.Context, arg InsertDocumentTemplateDefaultParams) (InsertDocumentTemplateDefaultRow, error) {
+	row := q.db.QueryRow(ctx, insertDocumentTemplateDefault,
+		arg.Kind,
+		arg.DocumentType,
+		arg.TemplateID,
+		arg.SetBy,
+		arg.SetAt,
+	)
+	var i InsertDocumentTemplateDefaultRow
+	err := row.Scan(
+		&i.ID,
+		&i.Kind,
+		&i.DocumentType,
+		&i.TemplateID,
+		&i.SetBy,
+		&i.SetAt,
 	)
 	return i, err
 }

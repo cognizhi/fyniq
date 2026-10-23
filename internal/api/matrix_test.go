@@ -1399,6 +1399,27 @@ var matrixCalls = map[string]matrixCall{
 			return !strings.Contains(e.call(http.MethodGet, "/v1/document-templates?page_size=500", e.as(authz.Accountant), nil).Raw, name)
 		}
 	},
+	"listDocumentTemplateDefaults": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/document-template-defaults", tok, nil), nil
+	},
+	"getAppliedDocumentTemplate": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/document-template-resolution?kind=document&document_type=invoice", tok, nil), nil
+	},
+	"setDocumentTemplateDefault": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.createTemplate()
+		e.call(http.MethodPost, "/v1/document-templates/"+id+"/publish", e.as(authz.Owner), nil, "If-Match", tag)
+		r := e.call(http.MethodPut, "/v1/document-template-defaults/email/invoice", tok, map[string]any{"template_id": id}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/document-template-resolution?kind=email&document_type=invoice", e.as(authz.Accountant), nil).str("template", "id") != id
+		}
+	},
+	"listContactDocumentTemplates": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/contacts/"+e.supplier()+"/document-templates", tok, nil), nil
+	},
+	"setContactDocumentTemplate": func(e *env, tok string) (response, func() bool) {
+		r := e.call(http.MethodPut, "/v1/contacts/"+e.supplier()+"/document-templates/email/remittance", tok, map[string]any{}, "If-Match", "*")
+		return r, nil
+	},
 	"listDocumentTemplates": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/document-templates", tok, nil), nil
 	},

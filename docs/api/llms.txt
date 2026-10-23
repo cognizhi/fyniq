@@ -54,6 +54,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/contacts` (createContact): Add a contact
 - `GET /v1/contacts/{contact_id}` (getContact): Get a contact
 - `PATCH /v1/contacts/{contact_id}` (updateContact): Change a contact
+- `GET /v1/contacts/{contact_id}/document-templates` (listContactDocumentTemplates): List a contact's templates
+- `PUT /v1/contacts/{contact_id}/document-templates/{kind}/{document_type}` (setContactDocumentTemplate): Choose a contact's template
 - `GET /v1/contacts/{contact_id}/withholding-decisions` (listWithholdingDecisions): List a supplier's withholding decisions
 - `POST /v1/contacts/{contact_id}/withholding-decisions` (recordWithholdingDecision): Record the tax agent's withholding decision
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
@@ -63,7 +65,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/document-template-bundle` (exportDocumentTemplates): Export templates as a bundle
 - `POST /v1/document-template-bundles` (importDocumentTemplates): Import templates from a bundle
 - `GET /v1/document-template-catalogue/{document_type}` (getDocumentTemplateCatalogue): Read what a template is made of
+- `GET /v1/document-template-defaults` (listDocumentTemplateDefaults): List the default templates
+- `PUT /v1/document-template-defaults/{kind}/{document_type}` (setDocumentTemplateDefault): Choose a default template
 - `POST /v1/document-template-previews` (previewDocumentTemplate): Preview template content
+- `GET /v1/document-template-resolution` (getAppliedDocumentTemplate): Find the template that applies
 - `GET /v1/document-templates` (listDocumentTemplates): List document and email templates
 - `POST /v1/document-templates` (createDocumentTemplate): Make a template
 - `GET /v1/document-templates/{template_id}` (getDocumentTemplate): Read a template

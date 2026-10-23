@@ -42,6 +42,8 @@ const (
 	CodeTest     = "TPL-16" // a test document rendered at publication lacks an IRAS particular (FR-TPL-03)
 	CodeRenderer = "TPL-17" // the render service is not configured or did not answer; nothing renders or publishes that needs it
 	CodeBundle   = "TPL-18" // a bundle Fyniq does not read: another format, or content that does not match its hash
+	CodeChoice   = "TPL-19" // a default or override names no published template of its kind and document type
+	CodeParty    = "TPL-20" // an override on a contact that does not receive that document: not a customer, or not a supplier
 )
 
 // BundleSchema names the format of an exported bundle of templates (FR-TPL-07).

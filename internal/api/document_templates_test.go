@@ -301,3 +301,86 @@ func TestTemplateStartersAndBundles(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/document-template-bundles", e.as(authz.Auditor), bundle), "importDocumentTemplates", 403, CodeForbidden)
 }
+
+// FR-TPL-05 through the API (rev 0.99, the owner's decisions of 23 Oct 2026): until an organisation chooses, the
+// platform's classic starter applies as version 0; an approver chooses a type's default among published templates with
+// no separate request; whoever edits contacts sets a customer's or supplier's override; the contact's override comes first.
+// req: FR-TPL-05
+func TestTemplateDefaultsAndOverrides(t *testing.T) {
+	e := newEnv(t)
+	accountant, owner := e.as(authz.Accountant), e.as(authz.Owner)
+	applied := func(query string) response {
+		return e.call(http.MethodGet, "/v1/document-template-resolution?kind=email&document_type=invoice"+query, e.as(authz.Auditor), nil)
+	}
+	if a := applied(""); a.Status != http.StatusOK || a.str("source") != "platform" || a.Body["version"] != float64(0) || len(a.str("content_hash")) != 64 ||
+		a.Body["template"] != nil {
+		t.Fatalf("before any choice: %d %s", a.Status, a.Raw)
+	}
+	publish := func(name string) string {
+		r := e.call(http.MethodPost, "/v1/document-templates", accountant, map[string]any{"kind": "email", "document_type": "invoice", "name": name})
+		if p := e.call(http.MethodPost, "/v1/document-templates/"+r.str("id")+"/publish", owner, nil, "If-Match", r.Header.Get("ETag")); p.Status != http.StatusOK {
+			t.Fatalf("publishing %s: %d %s", name, p.Status, p.Raw)
+		}
+		return r.str("id")
+	}
+	house, special := publish("House email"), publish("Key account email")
+	draft := e.call(http.MethodPost, "/v1/document-templates", accountant, map[string]any{"kind": "email", "document_type": "invoice", "name": "Draft"}).str("id")
+	quote := e.call(http.MethodPost, "/v1/document-templates", accountant, map[string]any{"kind": "email", "document_type": "quote", "name": "Quote email"}).str("id")
+
+	set := func(who, tag string, body map[string]any) response {
+		return e.call(http.MethodPut, "/v1/document-template-defaults/email/invoice", who, body, "If-Match", tag)
+	}
+	e.problemIs(set(accountant, `"none"`, map[string]any{"template_id": house}), "setDocumentTemplateDefault", 403, CodeForbidden)
+	e.problemIs(set(owner, `"none"`, map[string]any{"template_id": draft}), "setDocumentTemplateDefault", 422, doctemplate.CodeChoice)
+	e.problemIs(set(owner, `"none"`, map[string]any{"template_id": quote}), "setDocumentTemplateDefault", 422, doctemplate.CodeChoice)
+	d := set(owner, `"none"`, map[string]any{"template_id": house})
+	if d.Status != http.StatusOK || d.str("template", "name") != "House email" || d.Header.Get("ETag") == `"none"` {
+		t.Fatalf("choosing the default: %d %s", d.Status, d.Raw)
+	}
+	e.problemIs(set(owner, `"none"`, map[string]any{}), "setDocumentTemplateDefault", 412, CodeStale)
+	if a := applied(""); a.str("source") != "default" || a.str("template", "id") != house || a.Body["version"] != float64(1) {
+		t.Errorf("with a default: %s", a.Raw)
+	}
+	l := e.call(http.MethodGet, "/v1/document-template-defaults?page_size=10", accountant, nil)
+	items, _ := l.Body["items"].([]any)
+	if len(items) != 10 || l.str("next_cursor") == "" || items[0].(map[string]any)["document_type"] != "invoice" ||
+		!strings.Contains(l.Raw, `{"kind":"email","document_type":"invoice","template":{"id":"`+house+`","name":"House email","published_version":1}`) {
+		t.Fatalf("the defaults' first page: %s", l.Raw)
+	}
+	rest := e.call(http.MethodGet, "/v1/document-template-defaults?page_size=10&cursor="+l.str("next_cursor"), accountant, nil)
+	if items, _ := rest.Body["items"].([]any); len(items) != 6 || strings.Contains(rest.Raw, `"template"`) || rest.str("next_cursor") != "" {
+		t.Errorf("the defaults' last page: %s", rest.Raw)
+	}
+
+	// A customer's override comes first; a supplier receives no invoices.
+	c := e.call(http.MethodPost, "/v1/contacts", accountant, map[string]any{"legal_name": "Key Account Pte Ltd", "customer": true})
+	customer, tag := c.str("id"), c.Header.Get("ETag")
+	o := e.call(http.MethodPut, "/v1/contacts/"+customer+"/document-templates/email/invoice", accountant, map[string]any{"template_id": special}, "If-Match", tag)
+	if o.Status != http.StatusOK || o.str("template", "id") != special || o.Header.Get("ETag") != tag {
+		t.Fatalf("a customer's override: %d %s", o.Status, o.Raw)
+	}
+	if a := applied("&contact_id=" + customer); a.str("source") != "contact" || a.str("template", "id") != special {
+		t.Errorf("for the customer: %s", a.Raw)
+	}
+	if a := applied("&contact_id=" + e.supplier()); a.str("source") != "default" {
+		t.Errorf("for another contact: %s", a.Raw)
+	}
+	if lc := e.call(http.MethodGet, "/v1/contacts/"+customer+"/document-templates", accountant, nil); !strings.Contains(lc.Raw, `"name":"Key account email"`) {
+		t.Errorf("the customer's templates: %s", lc.Raw)
+	}
+	supplier := e.call(http.MethodGet, "/v1/contacts/"+e.supplier(), accountant, nil)
+	e.problemIs(e.call(http.MethodPut, "/v1/contacts/"+e.supplier()+"/document-templates/email/invoice", accountant, map[string]any{"template_id": special},
+		"If-Match", supplier.Header.Get("ETag")), "setContactDocumentTemplate", 422, doctemplate.CodeParty)
+	e.problemIs(e.call(http.MethodPut, "/v1/contacts/"+customer+"/document-templates/email/invoice", e.as(authz.Auditor), map[string]any{},
+		"If-Match", tag), "setContactDocumentTemplate", 403, CodeForbidden)
+
+	// Back to none: the customer gets the default, and with no default the platform's starter.
+	e.call(http.MethodPut, "/v1/contacts/"+customer+"/document-templates/email/invoice", accountant, map[string]any{}, "If-Match", tag)
+	if a := applied("&contact_id=" + customer); a.str("source") != "default" {
+		t.Errorf("the override withdrawn: %s", a.Raw)
+	}
+	set(owner, d.Header.Get("ETag"), map[string]any{})
+	if a := applied("&contact_id=" + customer); a.str("source") != "platform" {
+		t.Errorf("the default withdrawn: %s", a.Raw)
+	}
+}

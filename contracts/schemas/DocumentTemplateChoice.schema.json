@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_type": {
+      "description": "The document type.",
+      "enum": [
+        "invoice",
+        "quote",
+        "credit_note",
+        "receipt",
+        "statement",
+        "reminder",
+        "remittance",
+        "purchase_order"
+      ],
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "document: the PDF; email: the message that carries it.",
+      "enum": [
+        "document",
+        "email"
+      ],
+      "examples": [
+        "document"
+      ],
+      "type": "string"
+    },
+    "set_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-23T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "set_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who chose it last; absent when nobody has."
+    },
+    "template": {
+      "$ref": "ChosenTemplate.schema.json",
+      "description": "The template chosen. Absent: for a default, the platform's classic starter renders; for a contact, the default does."
+    }
+  },
+  "required": [
+    "kind",
+    "document_type"
+  ],
+  "title": "DocumentTemplateChoice",
+  "type": "object"
+}

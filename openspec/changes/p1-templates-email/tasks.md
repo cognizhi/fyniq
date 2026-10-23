@@ -23,12 +23,14 @@
   particulars with `typst query`; `cmd/render` serves POST /render to the render class's tokens only (local HMAC; in
   Google Cloud `gcp.CallerTokens`, the api's and the worker's accounts). The render image is the Dockerfile's `render`
   target: distroless/static (the cc base's glibc and OpenSSL failed the image scan), Typst 0.15.1 checked against its SHA-256, 30 MB. Second part, rev 0.97: previewDocumentTemplate; test documents at publication (TPL-16, TPL-17); the callers' ID tokens from the metadata server (`gcp.IdentityTokens`); OpenTofu's run.invoker for the api and the worker only, and the render entry of FYNIQ_GCP.)
-- [ ] 1.3 The document types and email templates with a default per type and a per-customer override; 3–4 starter templates; export and import of a versioned bundle. Tests `// req: FR-TPL-05` and `// req: FR-TPL-07`
+- [x] 1.3 The document types and email templates with a default per type and a per-customer override; 3–4 starter templates; export and import of a versioned bundle. Tests `// req: FR-TPL-05` and `// req: FR-TPL-07`
   (23 Oct 2026, first part, PRD-001 rev 0.98, on the owner's decisions of 23 Oct 2026: the theme's style, drawn by the
   render service (classic, band, minimal, compact), snapshot hashes per style and document type; the four starters in the
   catalogue and createDocumentTemplate's `starter`; exportDocumentTemplates and importDocumentTemplates (TPL-18). Test
-  `TestTemplateStartersAndBundles`. Left: the default per type (an approver, no request), per-customer overrides on the
-  contact, and the platform's classic starter as version 0 until an organisation publishes its own.)
+  `TestTemplateStartersAndBundles`. Second part, rev 0.99: the default per type (an approver, no request), per-customer and
+  per-supplier overrides on the contact (TPL-20), and the platform's classic starter as version 0; migration 000099 (FY177,
+  FY178); `doctemplate.Applying` resolves contact, default, platform. Tests `TestTemplateChoicesAreAppendOnly`,
+  `TestTemplateDefaultsAndOverrides` and five matrix rows.)
 - [ ] 1.4 The editor's P1 half as designed: theme, texts, optional blocks, live preview, Basic and Expert. Test `// req: FR-TPL-01` (P1 part)
 
 ## 2. Email
