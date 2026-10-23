@@ -72,6 +72,29 @@ describe("Contacts", () => {
   });
 });
 
+// req: FR-AP-13
+describe("a supplier's early-payment discount", () => {
+  it("takes the percentage and the days together, and clears both", async () => {
+    const vendor = { ...northwind, customer: false, vendor: true, discount_percent: "2", discount_days: 10 };
+    const seen = answer({
+      "GET /v1/contacts": { status: 200, body: { items: [vendor] } },
+      "GET /v1/contacts/c1": { status: 200, body: vendor, headers: { ETag: '"1"' } },
+      "PATCH /v1/contacts/c1": { status: 200, body: { ...vendor, version: 2 } },
+    });
+    renderPage(Contacts, { path: "/contacts", session: bookkeeper });
+    fireEvent.click(await screen.findByRole("button", { name: "Change Northwind Analytics Pte Ltd" }));
+    const dialog = await screen.findByRole("dialog");
+    const pct = await within(dialog).findByLabelText("Early-payment discount (%)");
+    expect((pct as HTMLInputElement).value).toBe("2");
+    fireEvent.change(within(dialog).getByLabelText("If paid within (days)"), { target: { value: "" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the contact" }));
+    expect(await within(dialog).findByText("Enter both the percentage and the days, or neither.")).toBeTruthy();
+    fireEvent.change(pct, { target: { value: "" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the contact" }));
+    await waitFor(() => expect(seen.find((x) => x.method === "PATCH")?.body).toEqual({ discount_percent: "", discount_days: -1 }));
+  });
+});
+
 const consult = { id: "i1", code: "CONSULT", name: "Consulting", type: "service", unit: "hour", gst_code: "SR", revenue_account_id: "r1", prices: [{ currency: "SGD", unit_price: "180.00" }], active: true, version: 1 };
 
 // req: FR-ITM-01

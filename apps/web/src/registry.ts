@@ -154,6 +154,10 @@ export const actions = [
   { kind: "action", id: "bill.business-share", mode: "basic", help: "bill.business-share", guide: "purchases.bills#input-tax" },
   { kind: "action", id: "bill.tax-agent", mode: "basic", help: "bill.tax-agent", guide: "purchases.bills#input-tax" },
   // Withholding tax (FR-AP-19): the nature, the decision and the hold are safety information, so Basic shows them too.
+  // Tracking and paying bills (FR-AP-13): the board, the calendar, planning and the reminders are Basic.
+  { kind: "action", id: "bill.calendar", mode: "basic", help: "bill.calendar", guide: "purchases.bills#plan-and-track-payments" },
+  { kind: "action", id: "bill.plan-payment", mode: "basic", help: "bill.plan-payment", guide: "purchases.bills#plan-and-track-payments" },
+  { kind: "action", id: "inbox.bills-to-pay", mode: "basic", help: "inbox.bills-to-pay", guide: "purchases.bills#plan-and-track-payments" },
   { kind: "action", id: "bill.nature", mode: "basic", help: "bill.nature", guide: "purchases.bills#non-resident-suppliers" },
   { kind: "action", id: "bill.withholding", mode: "basic", help: "bill.withholding", guide: "purchases.bills#non-resident-suppliers" },
   { kind: "action", id: "bill.record-decision", mode: "basic", help: "bill.record-decision", guide: "purchases.bills#non-resident-suppliers" },

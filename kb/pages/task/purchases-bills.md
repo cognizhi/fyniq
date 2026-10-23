@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill; claiming its GST; recurring bills; spreading a prepaid cost; payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:10de90ae62c36c216867244019cc3a0886b52b100e3d5d209cf2c33e81386ccd
+  - docs/user-guide/bills.md sha256:75f7778e0bebc20eabe56ad3db1b979c52c3657c593a7551e179632bd2a6d9fa
 data_class: general
 taint: trusted
 status: draft
@@ -36,6 +36,12 @@ aliases:
   - foreign consultant
   - nature of payment
   - payment held
+  - bills board
+  - plan a payment
+  - schedule a payment
+  - payment calendar
+  - bills to pay
+  - reminder before due date
   - duplicate bill
   - void a bill
   - edit a bill
@@ -151,6 +157,15 @@ aliases:
 
 (src: docs/user-guide/bills.md#bills-above-the-self-approval-threshold)
 
+## Plan and track payments
+
+- **Purchases → Bills** has three views: **List** (every bill and credit note, by status); **Board** (**To review**, **Awaiting approval**, **Approved**, **Scheduled**, **Paid**, **Overdue**; on a phone, a status picked above the list); and **Calendar**, two weeks of **Payment dates** with each unpaid bill on its planned payment date, else its due date.
+- On a posted bill, **Plan payment** under **Paying it** chooses the day to pay it; a plan posts nothing, and the bill shows **Scheduled** until its payment is recorded. **Change the plan** picks another day and **Unschedule** clears it; a bill is planned on or after its date, a paid one not at all. A Bookkeeper, an AP specialist or an Accountant plans payments.
+- A supplier's early-payment discount (its contact's terms) shows on its bills with the last day to take it, such as "2% off by 24 Oct"; to take it, pay the rest and enter the supplier's credit note for the discount.
+- The Inbox lists **Bills to pay** for whoever records bill payments: the bills overdue, or falling due or planned within the organisation's reminder days (3 unless changed in the organisation's settings, [[settings.organisation]]).
+
+(src: docs/user-guide/bills.md#plan-and-track-payments)
+
 ## Record a payment
 
 - Until bank import matches payments, a payment the company made is recorded by hand: on the posted bill, **Record payment**, then the **Date paid**, the account it was **Paid from** (a bank, card or wallet account in the bill's currency or in SGD), the **Amount paid of the bill** (it starts at what is still open; less records a part payment) and the **Bank reference**.
@@ -199,6 +214,7 @@ aliases:
 - BILL-15, a line's business share is not a percentage: enter the share used for the business from 0 to 100, such as 60, or leave it blank.
 - BILL-16, the bill does not say what the payment is for: choose the **Nature of payment**, as the supplier is resident outside Singapore.
 - BILLPAY-11, the bill waits for its withholding tax decision: record the tax agent's decision, and if it withholds, edit the bill first.
+- BILL-18, the payment date cannot be planned: plan it on or after the bill's date, for a bill with something left to pay.
 - BILL-17, the withholding decision cannot be recorded: record the supplier's tax residence, give a rate only when tax is withheld, and name the tax agent.
 
 (src: docs/user-guide/bills.md#common-problems)

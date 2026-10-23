@@ -147,3 +147,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-23] compile | docs/user-guide/bills.md, contacts-and-items.md → purchases.bills, contacts.manage (non-resident suppliers, the nature of payment, the tax agent's withholding decision, a contact's tax residence; FR-AP-19, rev 0.91)
 
 ## [2026-10-23] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (Bill reminders: purchases.reminder_days; FR-AP-13, rev 0.93)
+
+## [2026-10-23] compile | docs/user-guide/bills.md, contacts-and-items.md → purchases.bills, contacts.manage (plan and track payments: the board, the calendar, planned dates, early-payment discounts, Bills to pay; FR-AP-13, rev 0.94)

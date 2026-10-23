@@ -11,6 +11,7 @@ import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { Board, Calendar } from "./BillsBoard";
 import { PayablesSummary } from "./Payables";
 
 export type Bill = components["schemas"]["Bill"];
@@ -131,6 +132,9 @@ export function Bills() {
   const addCredit = helpText("credit.new");
   const base = organisation?.base_currency ?? "SGD";
   const overdue = items.filter((b) => b.states.due === "overdue").length;
+  // The board and the calendar show the bills, every status (FR-AP-13); the list filters them.
+  const [view, setView] = useState<"list" | "board" | "calendar">("list");
+  const shown = view === "list" ? items : items.filter((b) => b.kind === "bill");
 
   return (
     <div className="fy-page fy-enter">
@@ -167,7 +171,33 @@ export function Bills() {
           </div>
         </div>
       )}
-      <div className="fy-row fy-row--wrap fy-row--between gap-3">
+      <div className="fy-segmented self-start" role="group" aria-label="View">
+        {(
+          [
+            ["list", "List"],
+            ["board", "Board"],
+            ["calendar", "Calendar"],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={view === v}
+            onClick={() => {
+              setView(v);
+              if (v !== "list") {
+                setKind("bill");
+                setStatus("");
+              }
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {view === "board" && <Board bills={shown} />}
+      {view === "calendar" && <Calendar bills={shown} />}
+      <div className={`fy-row fy-row--wrap fy-row--between gap-3${view === "list" ? "" : " hidden"}`}>
         <div className="fy-chipset" role="group" aria-label="Kind">
           {(
             [
@@ -199,7 +229,7 @@ export function Bills() {
       </div>
       {list.isError && <Refusal problem={problemOf(list.error)} title="The bills could not be listed" />}
       {list.isPending && <p className="fy-secondary">Loading the bills…</p>}
-      {list.data && items.length === 0 && (
+      {view === "list" && list.data && items.length === 0 && (
         <div className="fy-empty fy-card fy-card--pad">
           <Icon of={ReceiptText} size={24} />
           {status || q ? (
@@ -223,7 +253,7 @@ export function Bills() {
           )}
         </div>
       )}
-      {items.length > 0 && (
+      {view === "list" && items.length > 0 && (
         <div className="fy-tablewrap">
           <table className="fy-table fy-table--cards" aria-label="Bills">
             <thead>

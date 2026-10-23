@@ -3,7 +3,7 @@ key: contacts.manage
 title: Keep your contacts, items and prices
 mode: basic
 roles: [bookkeeper, ar_specialist, ap_specialist, accountant, controller, owner]
-requirements: [FR-CT-01, FR-CT-04, FR-ITM-01, FR-AP-19]
+requirements: [FR-CT-01, FR-CT-04, FR-ITM-01, FR-AP-19, FR-AP-13]
 status: draft            # written with the contacts and items screens (P1); reviewed when sales and purchases arrive
 ---
 
@@ -31,6 +31,10 @@ Leave the payment terms empty to use the organisation's default.
 For a vendor, enter its **Country**, and its **Tax residence** when it is resident for tax somewhere
 else. A vendor resident outside Singapore may have tax withheld from its payments: see
 [Bills](bills.md).
+
+When a supplier offers a discount for paying early, enter its **Early-payment discount (%)** and
+**If paid within (days)** of the bill's date, such as 2% within 10 days. Its bills then show the
+discount and the last day to take it.
 
 ## Possible duplicates
 
@@ -65,6 +69,7 @@ prices before and after.
 | Neither a customer nor a vendor (CT-02) | Tick A customer, A vendor or both |
 | Not an email address (CT-03) | Check the billing or remittance email |
 | Not a country code (CT-04) | Use two letters for the country or the tax residence, such as SG |
+| The early-payment discount terms are not right (CT-11) | Enter both a percentage above 0 and below 100 and 1 to 365 days, or neither |
 | A price that is not a plain decimal | Enter digits with up to 6 decimals, without commas or a currency sign |
 
 ## Related
