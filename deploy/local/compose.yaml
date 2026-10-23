@@ -24,6 +24,7 @@ x-fyniq-env: &fyniq-env
   FYNIQ_DATABASE_URL: ""
   FYNIQ_GCS_ENDPOINT: http://gcs:4443/storage/v1/
   FYNIQ_SMTP_ADDR: mailpit:1025
+  FYNIQ_MAILPIT_URL: http://mailpit:8025     # the worker reads received mail through Mailpit's API (rev 0.107)
   # Background work (ADR-T7, PRD rev 0.23): the push dispatcher's targets, and a writable place for
   # the local bucket and signing key (the containers' root is read-only).
   FYNIQ_WORKER_URL: http://worker:8080
@@ -60,6 +61,14 @@ services:
     ports:
       - "127.0.0.1:${FYNIQ_MAIL_UI_PORT:-8025}:8025"
       - "127.0.0.1:${FYNIQ_SMTP_PORT:-1025}:1025"
+    # Mail sent to the capture domain (in.fyniq.local) is received like Resend's (FR-INT-22, rev 0.107): Mailpit posts
+    # each message to the API's local webhook, on the host's API port in both `make dev` and `make up`, every message
+    # (no rate limit), and the worker reads it through Mailpit's API.
+    environment:
+      MP_WEBHOOK_URL: http://fyniq:local-only@host.docker.internal:${FYNIQ_API_PORT:-8081}/webhooks/email/mailpit
+      MP_WEBHOOK_LIMIT: "0"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   gcs:                                        # Cloud Storage JSON API emulator (Bucket Lock is not emulated)
     image: fsouza/fake-gcs-server:1.56@sha256:797ce226d62f947c009dc40246b30cfb456b8473d8241407f9d6f2c04e4d69ef

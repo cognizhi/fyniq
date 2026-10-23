@@ -45,7 +45,7 @@
 
 ## 2. Email
 
-- [ ] 2.1 The `Email` port with ZeptoMail, Resend and SMTP adapters against fakes and Mailpit: a sender per purpose, the daily domain check, webhooks, outbox sends with reconciliation before retry, failover only for unaccepted sends, and a log without bodies. Test `// req: FR-INT-21` (G4-073)
+- [x] 2.1 The `Email` port with ZeptoMail, Resend and SMTP adapters against fakes and Mailpit: a sender per purpose, the daily domain check, webhooks, outbox sends with reconciliation before retry, failover only for unaccepted sends, and a log without bodies. Test `// req: FR-INT-21` (G4-073)
   (20 Oct 2026, first slice, PRD-001 rev 0.39: the `Email` port (`internal/ports/email.go`) and the SMTP adapter
   (`internal/adapters/smtp`: Mailpit locally, STARTTLS only elsewhere, header injection refused, a Message-ID per message;
   a 4xx or 5xx answer to the data is a refusal, a broken connection after it is unknown). Migration 000038 adds
@@ -72,10 +72,9 @@
   cached for an hour, the platform job `email.domains` at 04:30 recording a failed check per domain not ok. Tests:
   `TestASendingDomainIsCheckedRecordByRecord`, `TestTheCheckIsCachedForItsTTL`,
   `TestTheNightlyDomainCheckRecordsEachDomainThatIsNotOK`, `TestTheSendingDomainsRecordsAreConfiguration`,
-  `TestEveryPlatformScheduleHasItsJob`. Left: the staging sandboxes (operations, at the cloud gate), and the email
-  settings screen with its help, which the Super admin console and the connector-detail screen show (super-admin-console,
-  connector-detail).)
-- [ ] 2.2 The `InboundMail` port: messages stored with their authentication results, attachments through the evidence upload and scanner, and unknown senders quarantined. Test `// req: FR-INT-22`
+  `TestEveryPlatformScheduleHasItsJob`. The staging sandboxes go with the cloud gate (§17.5), and the email settings'
+  screen with its help with the Super admin console and connector-detail (`p1-connector-framework`).)
+- [x] 2.2 The `InboundMail` port: messages stored with their authentication results, attachments through the evidence upload and scanner, and unknown senders quarantined. Test `// req: FR-INT-22`
   (23 Oct 2026, first slice, PRD-001 rev 0.105, on the owner's decisions of that day: readable names on the capture
   domain, members and contacts as known senders. Migration 000102: `capture_address` (FY182), the global registry
   `capture_name` read through `capture_route` (FY183), `capture_sender` (FY184); getCaptureAddresses,
@@ -89,8 +88,15 @@
   the threat model `email-in.md`. Tests: `TestTheWorkerFetchesDecidesAndKeepsReceivedMail`,
   `TestQuarantinedMailExpiresAndKeepsItsHistory`, `TestMembersAndContactsAreKnownSenders`,
   `TestReceivedMailIsQuarantinedUntilSomeoneDecides`, `TestTheStandingOfASender`, the adapters' and four matrix rows.
-  Left: the screens; IMAP polling, which Resend makes unneeded for now.)
-- [ ] 2.3 Interchangeable adapters and the §8.24 launch adapters and local substitutes for this change's capabilities. Tests `// req: communication/email-and-notifications Outside services behind interchangeable adapters` and `… Launch adapters and local substitutes`
+  The screens are the document inbox (`p1-document-capture`) and connector-detail (`p1-connector-framework`); IMAP
+  polling is not built for launch (open question 45).)
+- [x] 2.3 Interchangeable adapters and the §8.24 launch adapters and local substitutes for this change's capabilities. Tests `// req: communication/email-and-notifications Outside services behind interchangeable adapters` and `… Launch adapters and local substitutes`
+  (23 Oct 2026, PRD-001 rev 0.107: outbound ZeptoMail, Resend and SMTP and inbound Resend receiving are chosen by
+  configuration (`wiring.ReadMail`); local mode substitutes Mailpit for both, receiving through its webhook
+  (`POST /webhooks/email/mailpit`, a local-only secret) and API (`local.MailpitInbound`), wired in compose. Tests:
+  `TestEmailProvidersAreConfigurationNotCode`, `TestLocalModeSubstitutesMailpitForTheEmailProviders`,
+  `TestMailpitStandsInForTheReceivingProvider`, `TestMailpitsWebhookStandsInForTheProvidersInLocalMode`; checked end to
+  end on the dev stack: SMTP to Mailpit, its webhook, the worker's fetch, the quarantine with both files.)
 
 ## 3. Notifications
 

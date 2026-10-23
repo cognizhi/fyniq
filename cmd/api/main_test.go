@@ -26,6 +26,9 @@ var infrastructure = []string{
 	// Signing in to the web app (SEC-05, SEC-08): browser navigations to a provider and back, and the
 	// sign-out form; and in the local build the dev sign-in page that stands in for the provider (§12.8).
 	"GET /auth/signin", "GET /auth/callback", "POST /auth/signout", "GET /auth/dev/authorize", "POST /auth/dev/authorize",
+	// The email providers' webhooks (FR-INT-21, FR-INT-22), signed by the provider, not API operations; in the local build
+	// Mailpit's, the substitute for receiving.
+	"POST /webhooks/email/resend", "POST /webhooks/email/zeptomail", "POST /webhooks/email/mailpit",
 }
 
 // Every route the API serves is a documented operation or named infrastructure: no private

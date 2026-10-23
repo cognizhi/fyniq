@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -167,3 +169,33 @@ func TestAReceivedEmailIsReadFromResendsWebhook(t *testing.T) {
 		t.Fatal("a received email with no ID was read")
 	}
 }
+
+// Local mode's Mailpit webhook carries its message summary under basic authentication with the local secret; another
+// password is refused, and a summary is read as a received message.
+// req: communication/email-and-notifications Launch adapters and local substitutes
+// req: FR-INT-22
+func TestMailpitsWebhookStandsInForTheProvidersInLocalMode(t *testing.T) {
+	body := `{"ID":"3OZ4","MessageID":"x@mailpit","From":{"Name":"AR","Address":"ar@supplier.example"},"To":[{"Name":"","Address":"bills@in.fyniq.local"}],` +
+		`"Cc":null,"Subject":"Invoice INV-0042","Created":"2026-10-23T08:59:00Z","Attachments":1}`
+	got, err := mailhooks.ParseMailpit([]byte(body), now)
+	if err != nil || len(got) != 1 || got[0].Received.ID != "3OZ4" || got[0].Received.From != "ar@supplier.example" ||
+		len(got[0].Received.To) != 1 || got[0].Received.To[0] != "bills@in.fyniq.local" || !got[0].Received.ReceivedAt.Equal(now.Add(-time.Minute)) {
+		t.Fatalf("%+v, %v", got, err)
+	}
+	mux := http.NewServeMux()
+	(&mailhooks.Receiver{Clock: fixed{}, MailpitSecret: "fyniq:local-only"}).Register(mux)
+	for pass, want := range map[string]int{"wrong": http.StatusUnauthorized, "local-only": http.StatusNoContent} {
+		req := httptest.NewRequest(http.MethodPost, "/webhooks/email/mailpit", strings.NewReader(body))
+		req.SetBasicAuth("fyniq", pass)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		if rec.Code != want {
+			t.Errorf("password %q: %d; want %d", pass, rec.Code, want)
+		}
+	}
+}
+
+// fixed is a clock at now.
+type fixed struct{}
+
+func (fixed) Now() time.Time { return now }
