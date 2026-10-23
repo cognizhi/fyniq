@@ -436,7 +436,13 @@ var (
 	PreviewDocumentTemplate            = Policy{Operation: "previewDocumentTemplate", Capability: DocumentTemplates, Need: View}
 	ExportDocumentTemplates            = Policy{Operation: "exportDocumentTemplates", Capability: DocumentTemplates, Need: View}
 	ImportDocumentTemplates            = Policy{Operation: "importDocumentTemplates", Capability: DocumentTemplates, Need: Create}
-	PublishDocumentTemplate            = Policy{Operation: "publishDocumentTemplate", Capability: DocumentTemplates, Need: Approve,
+	ListDocumentTemplateDefaults       = Policy{Operation: "listDocumentTemplateDefaults", Capability: DocumentTemplates, Need: View}
+	SetDocumentTemplateDefault         = Policy{Operation: "setDocumentTemplateDefault", Capability: DocumentTemplates, Need: Approve,
+		Note: "Among templates approved when they were published, so no separate request (the owner's decision of 23 Oct 2026)."}
+	GetAppliedDocumentTemplate   = Policy{Operation: "getAppliedDocumentTemplate", Capability: DocumentTemplates, Need: View}
+	ListContactDocumentTemplates = Policy{Operation: "listContactDocumentTemplates", Capability: ContactsAndItems, Need: View}
+	SetContactDocumentTemplate   = Policy{Operation: "setContactDocumentTemplate", Capability: ContactsAndItems, Need: Create}
+	PublishDocumentTemplate      = Policy{Operation: "publishDocumentTemplate", Capability: DocumentTemplates, Need: Approve,
 		Note: "In Founder mode an approver publishes alone, listed for the weekly review (FM-3); in Team mode another person approves a request."}
 	ListWithholdingDecisions  = Policy{Operation: "listWithholdingDecisions", Capability: Bills, Need: View}
 	RecordWithholdingDecision = Policy{Operation: "recordWithholdingDecision", Capability: Bills, Need: Create,
@@ -614,7 +620,8 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
-	ExportDocumentTemplates, ImportDocumentTemplates,
+	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,
+	ListContactDocumentTemplates, SetContactDocumentTemplate,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
 	ListPurchaseOrders, GetPurchaseOrder, CreatePurchaseOrder, ReplacePurchaseOrder, ApprovePurchaseOrder, RequestPurchaseOrderApproval, ClosePurchaseOrder, BillPurchaseOrder,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,

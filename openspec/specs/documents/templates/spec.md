@@ -184,6 +184,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **THEN** the default is chosen by a person who holds A on "Document templates", the override on the customer's contact by whoever edits contacts, each among the type's published templates, audited, with no separate request
 - **AND** until an organisation publishes a template of a type, the platform's classic starter renders it as version 0, its content hash recorded on each document
 
+#### Scenario: Defaults and overrides as built (rev 0.99)
+- **WHEN** the template that renders a document is resolved
+- **THEN** the contact's override applies, else the organisation's default, else the platform's classic starter as version 0, each with the version and content hash the document records
+- **AND** choices are append-only, name only a published template of their kind and type (FY177, FY178), and an override sits on a contact that receives the document (TPL-20)
+
 ### Requirement: FR-TPL-06 Code mode for experts
 Templates SHALL compile to Typst (§12.2), and an expert SHALL be able to edit the Typst source in a sandbox.
 

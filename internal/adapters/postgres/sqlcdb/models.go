@@ -228,6 +228,17 @@ type FyniqContact struct {
 	DiscountDays     *int16
 }
 
+type FyniqContactDocumentTemplate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContactID      uuid.UUID
+	Kind           string
+	DocumentType   string
+	TemplateID     *uuid.UUID
+	SetBy          string
+	SetAt          time.Time
+}
+
 type FyniqCurrencies struct {
 	Code       string
 	MinorUnits int16
@@ -282,6 +293,16 @@ type FyniqDocumentTemplate struct {
 	SavedBy        string
 	SavedAt        time.Time
 	CreatedAt      time.Time
+}
+
+type FyniqDocumentTemplateDefault struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	DocumentType   string
+	TemplateID     *uuid.UUID
+	SetBy          string
+	SetAt          time.Time
 }
 
 type FyniqDocumentTemplateVersion struct {

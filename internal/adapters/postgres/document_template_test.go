@@ -156,3 +156,74 @@ func TestTemplateVersionsNeverChange(t *testing.T) {
 		wantState(t, c.role+": "+c.stmt, err, c.state)
 	}
 }
+
+// FR-TPL-05 (rev 0.99): a default or a contact's choice of template is append-only, the latest in force, and names only a
+// published template of its own kind and type (FY177, FY178); a contact's choice is audited on the contact.
+// req: FR-TPL-05
+func TestTemplateChoicesAreAppendOnly(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "owner"}})
+	s := store(t, "fyniq_api")
+	b := books(t, "Choices Pte Ltd")
+	content := []byte(`{"schema":"fyniq.template/1","subject":"Invoice {{document.number}}","body":"Dear {{customer.name}}"}`)
+	sum := sha256.Sum256(content)
+	var published, draft storage.DocumentTemplate
+	var customer storage.Contact
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if published, err = u.DocumentTemplates().Create(ctx, storage.NewDocumentTemplate{Kind: "email", DocumentType: "invoice", Name: "Invoice email", Draft: content}); err != nil {
+			return err
+		}
+		if published, _, err = u.DocumentTemplates().Publish(ctx, published.ID, 1, storage.NewTemplateVersion{Content: content, Hash: sum[:]}); err != nil {
+			return err
+		}
+		if draft, err = u.DocumentTemplates().Create(ctx, storage.NewDocumentTemplate{Kind: "email", DocumentType: "invoice", Name: "Draft email", Draft: content}); err != nil {
+			return err
+		}
+		customer, err = u.Contacts().Create(ctx, storage.ContactDetails{LegalName: "Acme Trading Pte Ltd", Customer: true})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.DocumentTemplates().SetDefault(ctx, "email", "invoice", &published.ID); err != nil {
+			return err
+		}
+		if _, err := u.DocumentTemplates().SetDefault(ctx, "email", "quote", nil); err != nil {
+			return err
+		}
+		_, err := u.DocumentTemplates().SetContactTemplate(ctx, customer.ID, "email", "invoice", &published.ID)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		ds, err := u.DocumentTemplates().Defaults(ctx)
+		if err != nil || len(ds) != 2 || ds[0].DocumentType != "invoice" || *ds[0].TemplateID != published.ID || ds[1].TemplateID != nil {
+			t.Errorf("the defaults: %+v %v", ds, err)
+		}
+		cs, err := u.DocumentTemplates().ContactTemplates(ctx, customer.ID)
+		if err != nil || len(cs) != 1 || *cs[0].ContactID != customer.ID || cs[0].SetBy != "user:owner" {
+			t.Errorf("the contact's choices: %+v %v", cs, err)
+		}
+		// A draft, or a template of another type, is refused by the database too.
+		if _, err := u.DocumentTemplates().SetDefault(ctx, "email", "invoice", &draft.ID); !storageCode(err, storage.CodeTemplate) {
+			t.Errorf("a draft as the default: %v", err)
+		}
+		return nil
+	}); err == nil {
+		t.Error("the refused choice committed")
+	}
+	for _, c := range []struct{ role, stmt, state string }{
+		{"fyniq_api", "UPDATE fyniq.document_template_default SET template_id = NULL", "42501"},
+		{"fyniq_migrator", "UPDATE fyniq.document_template_default SET template_id = NULL", "FY177"},
+		{"fyniq_migrator", "DELETE FROM fyniq.contact_document_template", "FY177"},
+		{"fyniq_api", "INSERT INTO fyniq.document_template_default (kind, document_type, template_id, set_by, set_at) VALUES ('document', 'invoice', '" +
+			published.ID.String() + "', 'user:x', now())", "FY178"},
+		{"fyniq_api", "INSERT INTO fyniq.contact_document_template (contact_id, kind, document_type, template_id, set_by, set_at) VALUES ('" +
+			customer.ID.String() + "', 'email', 'quote', '" + published.ID.String() + "', 'user:x', now())", "FY178"},
+		{"fyniq_api", "INSERT INTO fyniq.document_template_default (kind, document_type, set_by, set_at) VALUES ('email', 'invoice', 'user:x', now())", "FY061"},
+		{"fyniq_worker", "INSERT INTO fyniq.document_template_default (kind, document_type, set_by, set_at) VALUES ('email', 'invoice', 'user:x', now())", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt); return err })
+		wantState(t, c.role+": "+c.stmt, err, c.state)
+	}
+}

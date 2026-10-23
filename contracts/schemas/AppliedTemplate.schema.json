@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content_hash": {
+      "description": "The SHA-256 of that version's content, in hex.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "document_type": {
+      "description": "The document type.",
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "The kind.",
+      "examples": [
+        "document"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "contact: the contact's override; default: the organisation's default; platform: the platform's classic starter, as version 0.",
+      "enum": [
+        "contact",
+        "default",
+        "platform"
+      ],
+      "examples": [
+        "default"
+      ],
+      "type": "string"
+    },
+    "template": {
+      "$ref": "ChosenTemplate.schema.json",
+      "description": "The template; absent for the platform's starter."
+    },
+    "version": {
+      "description": "The version that renders, 0 for the platform's starter: what each document records.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind",
+    "document_type",
+    "source",
+    "version",
+    "content_hash"
+  ],
+  "title": "AppliedTemplate",
+  "type": "object"
+}

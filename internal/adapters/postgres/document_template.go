@@ -193,3 +193,76 @@ func (t documentTemplates) Version(ctx context.Context, id uuid.UUID, number int
 	}
 	return templateVersionOf(row), nil
 }
+
+func optID(id *uuid.UUID) any {
+	if id == nil {
+		return nil
+	}
+	return id.String()
+}
+
+func (t documentTemplates) SetDefault(ctx context.Context, kind, documentType string, template *uuid.UUID) (storage.TemplateChoice, error) {
+	if err := t.u.check(); err != nil {
+		return storage.TemplateChoice{}, err
+	}
+	row, err := t.u.q.InsertDocumentTemplateDefault(ctx, sqlcdb.InsertDocumentTemplateDefaultParams{Kind: kind, DocumentType: documentType,
+		TemplateID: template, SetBy: t.u.actor(ctx), SetAt: t.u.store.clock.Now()})
+	if err != nil {
+		return storage.TemplateChoice{}, mapError(err)
+	}
+	out := storage.TemplateChoice{ID: row.ID, Kind: row.Kind, DocumentType: row.DocumentType, TemplateID: row.TemplateID, SetBy: row.SetBy, SetAt: row.SetAt}
+	if err := t.u.event(ctx, "document_template.default_set", "document_template_default", out.ID, nil, map[string][2]any{
+		"kind": {nil, kind}, "document_type": {nil, documentType}, "template_id": {nil, optID(template)}}); err != nil {
+		return storage.TemplateChoice{}, err
+	}
+	return out, nil
+}
+
+func (t documentTemplates) Defaults(ctx context.Context) ([]storage.TemplateChoice, error) {
+	if err := t.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := t.u.q.DocumentTemplateDefaults(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.TemplateChoice, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, storage.TemplateChoice{ID: r.ID, Kind: r.Kind, DocumentType: r.DocumentType, TemplateID: r.TemplateID, SetBy: r.SetBy, SetAt: r.SetAt})
+	}
+	return out, nil
+}
+
+func (t documentTemplates) SetContactTemplate(ctx context.Context, contact uuid.UUID, kind, documentType string, template *uuid.UUID) (storage.TemplateChoice, error) {
+	if err := t.u.check(); err != nil {
+		return storage.TemplateChoice{}, err
+	}
+	row, err := t.u.q.InsertContactDocumentTemplate(ctx, sqlcdb.InsertContactDocumentTemplateParams{ContactID: contact, Kind: kind, DocumentType: documentType,
+		TemplateID: template, SetBy: t.u.actor(ctx), SetAt: t.u.store.clock.Now()})
+	if err != nil {
+		return storage.TemplateChoice{}, mapError(err)
+	}
+	c := row.ContactID
+	out := storage.TemplateChoice{ID: row.ID, ContactID: &c, Kind: row.Kind, DocumentType: row.DocumentType, TemplateID: row.TemplateID, SetBy: row.SetBy, SetAt: row.SetAt}
+	if err := t.u.event(ctx, "contact.document_template_set", "contact", contact, nil, map[string][2]any{
+		"kind": {nil, kind}, "document_type": {nil, documentType}, "template_id": {nil, optID(template)}}); err != nil {
+		return storage.TemplateChoice{}, err
+	}
+	return out, nil
+}
+
+func (t documentTemplates) ContactTemplates(ctx context.Context, contact uuid.UUID) ([]storage.TemplateChoice, error) {
+	if err := t.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := t.u.q.ContactDocumentTemplates(ctx, contact)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.TemplateChoice, 0, len(rows))
+	for _, r := range rows {
+		c := r.ContactID
+		out = append(out, storage.TemplateChoice{ID: r.ID, ContactID: &c, Kind: r.Kind, DocumentType: r.DocumentType, TemplateID: r.TemplateID, SetBy: r.SetBy, SetAt: r.SetAt})
+	}
+	return out, nil
+}

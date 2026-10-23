@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "template_id": {
+      "description": "A published template of the kind and document type. Left out: no choice, so the default applies (for a contact), or the platform's classic starter (for a default).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "title": "TemplateChoiceChange",
+  "type": "object"
+}
