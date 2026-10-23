@@ -187,6 +187,12 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **THEN** it posts the same revaluation a person's run would, saved and posted by `scheduler:fx.revalue`
 - **AND** without a rate it waits, with an audit event that says why; a current run is left alone, and a stale one runs again
 
+#### Scenario: Accounts payable revalued document by document (rev 0.92)
+- **GIVEN** open bills and supplier credits in a foreign currency at a period's end
+- **WHEN** the period is revalued
+- **THEN** each is an item at what is open of it and its carrying amount at its stored rate, plus the period's earlier runs' changes to it, with a line on 2010 naming it
+- **AND** what 2010 holds beyond its documents is an item of its own (USD 1,000.37 at 1.3456 and USD 200.01 at 1.3501, at 1.3333: gains of 12.31 and 3.36)
+
 #### Scenario: G4-039 USD invoice revalued, part-settled and revalued again
 - **GIVEN** a USD invoice of USD 10,000 at 1.35 (S$13,500.00); 31 Mar rate 1.30; 15 Apr USD 4,000 received at 1.32; 30 Apr rate 1.33
 - **WHEN** March and April are revalued and the receipt is posted

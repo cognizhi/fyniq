@@ -63,6 +63,8 @@
   (22 Oct 2026, PRD rev 0.73: close check `revaluation`, Appendix C.2 #59, after the reversals. Test:
   `TestTheMonthEndRevaluation`.)
 - [ ] 3.6 AR and AP documents and unapplied credits revalued one by one against their stored rates, replacing the control accounts' lines (with `p1-sales` and `p1-purchases`). Tests `// req: FR-GL-04` (G4-039 in full)
+  (23 Oct 2026, PRD-001 rev 0.92, the AP half: `fx.SubLedgers`, `payables.Documents`; test `TestBillsAreRevaluedOneByOne`.
+  **Left:** AR with `p1-sales`)
 - [x] 3.7 The scheduler runs a period's revaluation itself once its last day's rates are in, under the system principal (FR-AUT-01, FR-AUT-02): the worker needs the right to write revaluation documents, a change to its grants reviewed with the security checklist. Tests `// req: FR-AUT-01`
   (22 Oct 2026, PRD rev 0.75, the founder's decision: it posts by itself. `fx.revalue` daily at 03:05 in Singapore; `journal.RevalueDue`/`RevalueDueAll`; `create_scheduled_revaluation`, EXECUTE for `fyniq_worker` only (FY169); threat model T9 to T11. Test `TestTheSchedulerRevaluesAnEndedMonth`)
 

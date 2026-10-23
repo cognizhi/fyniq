@@ -25,12 +25,13 @@ const (
 )
 
 // RevaluationItem is one account's balance in one foreign currency at a period's end, as the balance service gave it,
-// and the period-end rate it is revalued at.
+// or one open document of a control account's sub-ledger in it (rev 0.92), and the period-end rate it is revalued at.
 type RevaluationItem struct {
 	AccountID uuid.UUID
 	Open      money.Money // in the foreign currency
 	Carrying  money.Money // its base value in the books, in the base currency
 	Rate      money.Rate  // the foreign currency into the base, with its source (ENG-40)
+	Of        string      // the document it is, such as BILL-0007; empty for an account's balance
 }
 
 // Change is the item's unrealised gain (positive, a debit) or loss: RND-FX(open × rate) − carrying (FR-GL-04).
@@ -57,7 +58,8 @@ func RevaluationIdentity(id uuid.UUID, version int, rule string) string {
 }
 
 // Revalue is the posting rule "FX revaluation (month end)" (FR-GL-04, INV-05): for each item whose change is not zero,
-// a base-only line on its account (amount 0 in its currency, at its rate, the change as its base amount), and against
+// a base-only line on its account (amount 0 in its currency, at its rate, the change as its base amount, naming the
+// document an item of a control account's sub-ledger is: rev 0.92, no earlier item named one), and against
 // them the unrealised-FX account: one line for the losses (a debit) and one for the gains (a credit). Items without a
 // change post nothing, and a run with none has no lines: there is nothing to post.
 func Revalue(r Revaluation, s Settings) (Entry, error) {
@@ -101,8 +103,11 @@ func Revalue(r Revaluation, s Settings) (Entry, error) {
 		if change.IsZero() {
 			continue
 		}
-		out.Lines = append(out.Lines, Line{AccountID: it.AccountID, Amount: money.Zero(cur), Rate: it.Rate, Base: change,
-			Description: fmt.Sprintf("%s %s revalued at %s", it.Open, cur, it.Rate)})
+		desc := fmt.Sprintf("%s %s revalued at %s", it.Open, cur, it.Rate)
+		if it.Of != "" {
+			desc = it.Of + ": " + desc
+		}
+		out.Lines = append(out.Lines, Line{AccountID: it.AccountID, Amount: money.Zero(cur), Rate: it.Rate, Base: change, Description: desc})
 		if change.Sign() > 0 {
 			gains, _ = gains.Add(change)
 		} else {

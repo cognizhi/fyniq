@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/payables"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -179,7 +180,7 @@ func registerRevaluation(a *API) {
 		p, _ := authn.From(ctx)
 		var out fxRevaluationOutput
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			plan, err := fx.Prepare(ctx, u, id)
+			plan, err := fx.Prepare(ctx, u, id, payables.SubLedgers())
 			if err != nil {
 				return err
 			}
@@ -231,7 +232,7 @@ func registerRevaluation(a *API) {
 				if _, err := journal.PostRevaluation(ctx, u, id, today); err != nil {
 					return FXRevaluation{}, err
 				}
-				plan, err := fx.Prepare(ctx, u, id)
+				plan, err := fx.Prepare(ctx, u, id, payables.SubLedgers())
 				if err != nil {
 					return FXRevaluation{}, err
 				}

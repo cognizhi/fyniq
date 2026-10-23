@@ -150,5 +150,8 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 - [ ] 10.1 The bill, credit, payment and spread rules in the independent oracle, with scenario shapes and
   golden cases (an oracle session, QA-ENG-01; a build session never reads or edits `oracle/`)
-- [ ] 10.2 The bills of `p1-multi-currency-fx` task 3.6: revalued one by one
+- [x] 10.2 The bills of `p1-multi-currency-fx` task 3.6: revalued one by one
+  (23 Oct 2026, PRD-001 rev 0.92: each open bill and supplier credit in a foreign currency against its stored rate, a
+  line on 2010 naming it, what 2010 holds beyond them an item of its own, a stale run posting only the change. Test
+  `TestBillsAreRevaluedOneByOne`)
 - [ ] 10.3 `make check`, `make test` and `make test-e2e`; the five frames of each screen in a browser
