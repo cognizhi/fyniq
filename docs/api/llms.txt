@@ -122,7 +122,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/organisation/accounting/framework/{version}/confirm` (confirmAccountingFramework): Confirm the accounting framework
 - `POST /v1/organisation/accounting/policies/{area}` (recordAccountingPolicy): Record an accounting policy
 - `POST /v1/organisation/accounting/policies/{area}/{version}/approve` (approveAccountingPolicy): Approve an accounting policy
+- `GET /v1/organisation/email` (getEmailSettings): Get the email settings
 - `GET /v1/organisation/email/messages/{message_id}` (getEmailMessage): Get an email message's outcome
+- `PUT /v1/organisation/email/senders/{purpose}` (setEmailSender): Choose a sender
 - `POST /v1/organisation/email/test-messages` (sendTestEmail): Send a test email
 - `GET /v1/organisation/gst-registrations` (listGSTRegistrations): List the GST registrations
 - `POST /v1/organisation/gst-registrations` (createGSTRegistration): Record a GST registration

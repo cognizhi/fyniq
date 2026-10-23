@@ -127,6 +127,16 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **AND** the posting exists once
 - **AND** the exhausted row shows as dead on Checks with replay
 
+#### Scenario: The deployment sets providers, the organisation its senders (rev 0.102)
+- **WHEN** outbound email is configured
+- **THEN** the deployment sets the providers in order, their keys as secrets never shown through the API, the platform's sender and the sending domains
+- **AND** an Administrator chooses each purpose's sender on one of those domains (EML-03), or keeps the platform's, each choice audited and never changed (FY179)
+
+#### Scenario: Failover and reconciliation as built (rev 0.102)
+- **WHEN** the primary refuses a send
+- **THEN** the failover is tried in the same run, and a send the primary may have taken is never handed to it
+- **AND** each attempt records its provider: Resend's is reconciled by sending again under its key within 23 hours, ZeptoMail's stays unknown
+
 ### Requirement: FR-INT-22 Inbound email
 The system SHALL receive email for the capture addresses (FR-DOC-12) through an inbound adapter and store everything received as untrusted documents (AI-18).
 

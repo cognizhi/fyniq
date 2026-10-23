@@ -23,9 +23,9 @@ type Kit struct {
 	// file can be attached.
 	Staging, Evidence ports.BlobStore
 	Scanner           ports.Scanner
-	// Email sends outbound mail (FR-INT-21), from MailFrom; nil when no provider is configured.
-	Email    ports.Email
-	MailFrom string
+	// Mail is the outbound email (FR-INT-21): its providers in order (none: no email is sent), the platform's
+	// sender, and the domains an organisation may choose its senders on.
+	Mail MailConfig
 	// Rates is the daily exchange-rate feed (FR-GL-05); nil until one is configured: the MAS adapter arrives at the
 	// cloud gate, and until then organisations enter their own rates.
 	Rates ports.RateFeed

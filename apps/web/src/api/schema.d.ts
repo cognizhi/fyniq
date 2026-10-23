@@ -1800,6 +1800,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organisation/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the email settings
+         * @description The organisation's outbound email (FR-INT-21; the owner's decision of 23 Oct 2026): the deployment's providers in order, the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the deployment's operators set; and the organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects.
+         */
+        get: operations["getEmailSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/organisation/email/messages/{message_id}": {
         parameters: {
             query?: never;
@@ -1813,6 +1833,26 @@ export interface paths {
          */
         get: operations["getEmailMessage"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organisation/email/senders/{purpose}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose a sender
+         * @description Chooses the address a purpose's email is sent from (FR-INT-21; the owner's decision of 23 Oct 2026): an address on one of the deployment's sending domains (EML-03), with a display name, or neither, so the platform's sender is used. Side effects: the choice and its audit event; mail queued afterwards is sent from it. Needs If-Match with the sender's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        put: operations["setEmailSender"];
         post?: never;
         delete?: never;
         options?: never;
@@ -5965,11 +6005,11 @@ export interface components {
              */
             provider?: string;
             /**
-             * @description Why it was sent.
+             * @description Why it was sent: a test message, or a sign-in alert.
              * @example test
              * @enum {string}
              */
-            purpose: "test";
+            purpose: "test" | "sign_in_alert";
             /**
              * @description Who it goes to.
              * @example accounts@example.com
@@ -5986,6 +6026,84 @@ export interface components {
              * @example Fyniq test message
              */
             subject: string;
+        };
+        EmailProvider: {
+            /**
+             * @description The provider.
+             * @example zeptomail
+             * @enum {string}
+             */
+            name: "smtp" | "zeptomail" | "resend";
+            /**
+             * @description primary sends; failover sends only what the providers before it refused.
+             * @example primary
+             * @enum {string}
+             */
+            role: "primary" | "failover";
+        };
+        EmailSender: {
+            /**
+             * @description The organisation's sender of this purpose; absent while it uses the platform's.
+             * @example accounts@mail.example.com
+             */
+            address?: string;
+            /**
+             * @description The name shown with the address.
+             * @example Example Pte Ltd
+             */
+            display_name?: string;
+            /**
+             * @description The choice in force: send it in If-Match to change it.
+             * @example "none"
+             */
+            etag: string;
+            /**
+             * @description What the email's From says: the organisation's sender, or the platform's.
+             * @example Example Pte Ltd <accounts@mail.example.com>
+             */
+            from: string;
+            /**
+             * @description true while this purpose uses the platform's sender.
+             * @example false
+             */
+            platform: boolean;
+            /**
+             * @description What the email is for: notifications, invoices and quotes, reminders, or security notices such as sign-in alerts.
+             * @example invoices
+             * @enum {string}
+             */
+            purpose: "notifications" | "invoices" | "reminders" | "security";
+            /**
+             * Format: date-time
+             * @description When the organisation last chose it.
+             * @example 2026-10-23T09:00:00Z
+             */
+            set_at?: string;
+        };
+        EmailSenderChange: {
+            /**
+             * @description An address on one of the sending domains; leave it out to use the platform's sender.
+             * @example accounts@mail.example.com
+             */
+            address?: string;
+            /**
+             * @description The name shown with it; only with an address.
+             * @example Example Pte Ltd
+             */
+            display_name?: string;
+        };
+        EmailSettings: {
+            /** @description The domains a sender may be chosen on; the deployment's operators add one. */
+            domains: string[] | null;
+            /**
+             * @description The platform's sender, for a purpose the organisation has not chosen one for.
+             * @example Fyniq <no-reply@mail.example.com>
+             */
+            platform_sender?: string;
+            /** @description The providers in order: the first sends, the next only what the ones before it refused. None: no email is sent. */
+            providers: components["schemas"]["EmailProvider"][] | null;
+            /** @description Every purpose's sender, in the order notifications, invoices, reminders, security. */
+            senders: components["schemas"]["EmailSender"][] | null;
         };
         Entry: {
             /**
@@ -24772,6 +24890,99 @@ export interface operations {
             };
         };
     };
+    getEmailSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailSettings"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getEmailMessage: {
         parameters: {
             query?: never;
@@ -24850,6 +25061,162 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setEmailSender: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The purpose. */
+                purpose: "notifications" | "invoices" | "reminders" | "security";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailSenderChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailSender"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EML-02` Not a sender address; `EML-03` Not a domain email is sent from. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

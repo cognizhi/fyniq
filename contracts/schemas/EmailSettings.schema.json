@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "domains": {
+      "description": "The domains a sender may be chosen on; the deployment's operators add one.",
+      "items": {
+        "description": "A domain the deployment sends email from.",
+        "examples": [
+          "mail.example.com"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "platform_sender": {
+      "description": "The platform's sender, for a purpose the organisation has not chosen one for.",
+      "examples": [
+        "Fyniq \u003cno-reply@mail.example.com\u003e"
+      ],
+      "type": "string"
+    },
+    "providers": {
+      "description": "The providers in order: the first sends, the next only what the ones before it refused. None: no email is sent.",
+      "items": {
+        "$ref": "EmailProvider.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "senders": {
+      "description": "Every purpose's sender, in the order notifications, invoices, reminders, security.",
+      "items": {
+        "$ref": "EmailSender.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "providers",
+    "domains",
+    "senders"
+  ],
+  "title": "EmailSettings",
+  "type": "object"
+}

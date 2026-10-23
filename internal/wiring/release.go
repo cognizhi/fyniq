@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	netmail "net/mail"
 	"os"
 	"strings"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/clamav"
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
-	"github.com/cognizhi/fyniq/internal/adapters/smtp"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
 )
@@ -62,18 +60,13 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	tokens := gcp.MetadataTokens()
-	// An SMTP relay only with STARTTLS (FR-INT-21); ZeptoMail and Resend arrive as connectors.
-	var mail ports.Email
-	if addr, from := os.Getenv("FYNIQ_SMTP_ADDR"), os.Getenv("FYNIQ_MAIL_FROM"); addr != "" && from != "" {
-		domain := os.Getenv("FYNIQ_MAIL_DOMAIN") // the Message-ID's; the sender's domain when unset
-		if a, err := netmail.ParseAddress(from); err == nil && domain == "" {
-			domain = a.Address[strings.LastIndex(a.Address, "@")+1:]
-		}
-		mail = smtp.New(addr, domain, false)
+	// The deployment's email providers, in order (FR-INT-21, PRD-001 rev 0.102); an SMTP relay only with STARTTLS.
+	mail, err := ReadMail(os.Getenv)
+	if err != nil {
+		return nil, err
 	}
 	kit := &Kit{
-		Email:    mail,
-		MailFrom: os.Getenv("FYNIQ_MAIL_FROM"),
+		Mail:     mail,
 		Store:    store,
 		Tokens:   &gcp.TaskTokens{Invokers: c.Invokers, Keys: oidc.NewRemoteKeySet(context.Background(), gcp.GoogleCerts), Clock: clock},
 		Queue:    gcp.NewTasks(gcp.TasksAPI, c.Tasks, tokens, nil),

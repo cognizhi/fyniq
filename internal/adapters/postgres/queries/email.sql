@@ -9,7 +9,8 @@ SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts,
 SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at FROM fyniq.email_message WHERE id = sqlc.arg(id) FOR UPDATE;
 
 -- name: StartEmailAttempt :one
-UPDATE fyniq.email_message SET attempts = attempts + 1, attempt_started_at = sqlc.arg(now) WHERE id = sqlc.arg(id) AND status = 'queued'
+UPDATE fyniq.email_message SET attempts = attempts + 1, attempt_started_at = sqlc.arg(now), provider = sqlc.arg(provider)
+WHERE id = sqlc.arg(id) AND status = 'queued'
 RETURNING id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at;
 
 -- name: FinishEmailMessage :one
@@ -21,3 +22,14 @@ RETURNING id, purpose, recipient, subject, status, provider, provider_id, attemp
 -- name: ReleaseEmailAttempt :one
 UPDATE fyniq.email_message SET attempt_started_at = NULL, last_error = sqlc.narg(last_error) WHERE id = sqlc.arg(id) AND status = 'queued'
 RETURNING id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at;
+
+-- name: InsertEmailSender :one
+INSERT INTO fyniq.email_sender (purpose, address, display_name, set_by, set_at)
+VALUES (sqlc.arg(purpose), sqlc.narg(address), sqlc.narg(display_name), sqlc.arg(set_by), sqlc.arg(set_at))
+RETURNING id, purpose, address, display_name, set_by, set_at;
+
+-- name: EmailSendersInForce :many
+-- The latest choice of each purpose: the one in force.
+SELECT DISTINCT ON (purpose) id, purpose, address, display_name, set_by, set_at
+FROM fyniq.email_sender
+ORDER BY purpose, set_at DESC, id DESC;

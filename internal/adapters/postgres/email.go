@@ -61,7 +61,7 @@ func (r emails) Get(ctx context.Context, id uuid.UUID) (storage.EmailMessage, er
 	return toEmail(row), nil
 }
 
-func (r emails) Start(ctx context.Context, id uuid.UUID, now time.Time) (storage.EmailMessage, error) {
+func (r emails) Start(ctx context.Context, id uuid.UUID, now time.Time, provider string) (storage.EmailMessage, error) {
 	if err := r.u.check(); err != nil {
 		return storage.EmailMessage{}, err
 	}
@@ -73,7 +73,7 @@ func (r emails) Start(ctx context.Context, id uuid.UUID, now time.Time) (storage
 	if before.Status != storage.EmailQueued || before.AttemptStartedAt != nil {
 		return before, nil
 	}
-	if _, err := r.u.q.StartEmailAttempt(ctx, sqlcdb.StartEmailAttemptParams{ID: id, Now: &now}); err != nil {
+	if _, err := r.u.q.StartEmailAttempt(ctx, sqlcdb.StartEmailAttemptParams{ID: id, Now: &now, Provider: &provider}); err != nil {
 		return storage.EmailMessage{}, mapError(err)
 	}
 	return before, nil
@@ -109,4 +109,44 @@ func (r emails) Finish(ctx context.Context, id uuid.UUID, o storage.EmailOutcome
 		return storage.EmailMessage{}, err
 	}
 	return m, nil
+}
+
+func (u *unitOfWork) EmailSenders() storage.EmailSenders { return senders{u} }
+
+type senders struct{ u *unitOfWork }
+
+func toSender(id uuid.UUID, purpose string, address, name *string, setBy string, setAt time.Time) storage.EmailSender {
+	return storage.EmailSender{ID: id, Purpose: purpose, Address: str(address), DisplayName: str(name), SetBy: setBy, SetAt: setAt}
+}
+
+func (r senders) Set(ctx context.Context, purpose, address, displayName string) (storage.EmailSender, error) {
+	if err := r.u.check(); err != nil {
+		return storage.EmailSender{}, err
+	}
+	row, err := r.u.q.InsertEmailSender(ctx, sqlcdb.InsertEmailSenderParams{Purpose: purpose, Address: opt(address), DisplayName: opt(displayName),
+		SetBy: r.u.actor(ctx), SetAt: r.u.store.clock.Now()})
+	if err != nil {
+		return storage.EmailSender{}, mapError(err)
+	}
+	out := toSender(row.ID, row.Purpose, row.Address, row.DisplayName, row.SetBy, row.SetAt)
+	if err := r.u.event(ctx, "email_sender.set", "email_sender", out.ID, nil, map[string][2]any{
+		"purpose": {nil, purpose}, "address": {nil, nilIfEmpty(address)}, "display_name": {nil, nilIfEmpty(displayName)}}); err != nil {
+		return storage.EmailSender{}, err
+	}
+	return out, nil
+}
+
+func (r senders) InForce(ctx context.Context) ([]storage.EmailSender, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.EmailSendersInForce(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.EmailSender, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toSender(x.ID, x.Purpose, x.Address, x.DisplayName, x.SetBy, x.SetAt))
+	}
+	return out, nil
 }

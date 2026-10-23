@@ -256,6 +256,13 @@ email_message | attempt_started_at | timestamp with time zone | null |
 email_message | accepted_at | timestamp with time zone | null | 
 email_message | last_error | text | null | 
 email_message | created_at | timestamp with time zone | not null | now()
+email_sender | organisation_id | uuid | not null | current_org()
+email_sender | id | uuid | not null | uuidv7()
+email_sender | purpose | text | not null | 
+email_sender | address | text | null | 
+email_sender | display_name | text | null | 
+email_sender | set_by | text | not null | 
+email_sender | set_at | timestamp with time zone | not null | 
 evidence | organisation_id | uuid | not null | current_org()
 evidence | id | uuid | not null | uuidv7()
 evidence | document_id | uuid | not null | 
@@ -1142,6 +1149,19 @@ email_message | email_message_status_known | CHECK ((status = ANY (ARRAY['queued
 email_message | email_message_status_not_null | NOT NULL status
 email_message | email_message_subject_not_null | NOT NULL subject
 email_message | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+email_sender | email_sender_address_format | CHECK ((address ~ '^[^@\s<>"]{1,64}@[a-z0-9.-]{1,189}$'::text))
+email_sender | email_sender_id_not_null | NOT NULL id
+email_sender | email_sender_name_length | CHECK ((((length(display_name) >= 1) AND (length(display_name) <= 80)) AND (display_name !~ '[\r\n<>"]'::text)))
+email_sender | email_sender_name_needs_address | CHECK (((display_name IS NULL) OR (address IS NOT NULL)))
+email_sender | email_sender_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+email_sender | email_sender_organisation_id_not_null | NOT NULL organisation_id
+email_sender | email_sender_pkey | PRIMARY KEY (organisation_id, id)
+email_sender | email_sender_purpose_known | CHECK ((purpose = ANY (ARRAY['notifications'::text, 'invoices'::text, 'reminders'::text, 'security'::text])))
+email_sender | email_sender_purpose_not_null | NOT NULL purpose
+email_sender | email_sender_set_at_not_null | NOT NULL set_at
+email_sender | email_sender_set_by_format | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+email_sender | email_sender_set_by_not_null | NOT NULL set_by
+email_sender | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 evidence | evidence_data_class_known | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'bank'::text, 'payroll'::text, 'identity'::text])))
 evidence | evidence_data_class_not_null | NOT NULL data_class
 evidence | evidence_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
@@ -1865,6 +1885,7 @@ CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
 CREATE INDEX document_template_default_latest ON fyniq.document_template_default USING btree (organisation_id, kind, document_type, set_at)
 CREATE INDEX document_template_type ON fyniq.document_template USING btree (organisation_id, document_type, kind, id)
+CREATE INDEX email_sender_latest ON fyniq.email_sender USING btree (organisation_id, purpose, set_at)
 CREATE INDEX evidence_document ON fyniq.evidence USING btree (organisation_id, document_id, id)
 CREATE INDEX fx_rate_lookup ON fyniq.fx_rate USING btree (organisation_id, currency, kind, on_date)
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
@@ -1931,6 +1952,7 @@ CREATE UNIQUE INDEX document_template_version_pkey ON fyniq.document_template_ve
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX email_message_pkey ON fyniq.email_message USING btree (organisation_id, id)
+CREATE UNIQUE INDEX email_sender_pkey ON fyniq.email_sender USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_pkey ON fyniq.evidence USING btree (organisation_id, id)
 CREATE UNIQUE INDEX evidence_staging_key ON fyniq.evidence USING btree (organisation_id, staging_key)
 CREATE UNIQUE INDEX fx_feed_rate_pkey ON fyniq.fx_feed_rate USING btree (base_currency, currency, on_date)
@@ -2020,6 +2042,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_default DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template_default', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'template_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.opening_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
@@ -2094,6 +2117,8 @@ CREATE TRIGGER document_version_created_by BEFORE INSERT ON fyniq.document_versi
 CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER email_message_guard BEFORE UPDATE ON fyniq.email_message FOR EACH ROW EXECUTE FUNCTION email_message_guard()
+CREATE TRIGGER email_sender_guard BEFORE DELETE OR UPDATE ON fyniq.email_sender FOR EACH ROW EXECUTE FUNCTION email_sender_guard()
+CREATE TRIGGER email_sender_no_truncate BEFORE TRUNCATE ON fyniq.email_sender FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER evidence_guard BEFORE UPDATE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_guard()
 CREATE TRIGGER evidence_never_deleted BEFORE DELETE ON fyniq.evidence FOR EACH ROW EXECUTE FUNCTION evidence_never_deleted()
 CREATE TRIGGER evidence_no_truncate BEFORE TRUNCATE ON fyniq.evidence FOR EACH STATEMENT EXECUTE FUNCTION evidence_never_deleted()
@@ -2176,6 +2201,7 @@ document_template_default | tenant_isolation | * | (organisation_id = current_or
 document_template_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 email_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+email_sender | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 fx_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2250,6 +2276,7 @@ document_template_guard() → trigger | security invoker | v | search_path=pg_ca
 document_version_created_by() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b35b5285220973313c6224ad1d90dd81
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
+email_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 08f185782be71d4ec32e6b14d2daf500
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
 end_user_session(p_user uuid, p_hash bytea, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b349d69ee0308bbba7c1aca8c62af95f
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083

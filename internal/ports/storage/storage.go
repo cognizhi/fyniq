@@ -73,6 +73,7 @@ type UnitOfWork interface {
 	ReviewLog() ReviewLog
 	Packs() Packs
 	EmailMessages() EmailMessages
+	EmailSenders() EmailSenders
 	Outbox() Outbox
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals

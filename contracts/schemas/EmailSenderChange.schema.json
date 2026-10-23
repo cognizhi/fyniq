@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "An address on one of the sending domains; leave it out to use the platform's sender.",
+      "examples": [
+        "accounts@mail.example.com"
+      ],
+      "maxLength": 254,
+      "type": "string"
+    },
+    "display_name": {
+      "description": "The name shown with it; only with an address.",
+      "examples": [
+        "Example Pte Ltd"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    }
+  },
+  "title": "EmailSenderChange",
+  "type": "object"
+}
