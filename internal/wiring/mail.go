@@ -21,6 +21,9 @@ type MailConfig struct {
 	Providers []ports.Email
 	From      string
 	Domains   []string
+	// The webhooks' secrets, which only the API holds: Resend's endpoint signing secret and ZeptoMail's Agent
+	// authentication key. Empty: that provider's webhooks have no receiver.
+	ResendWebhookSecret, ZeptoMailWebhookKey string
 }
 
 // ReadMail reads the mail configuration from env:
@@ -31,8 +34,10 @@ type MailConfig struct {
 //   - resend: FYNIQ_RESEND_KEY, and FYNIQ_RESEND_URL.
 //   - FYNIQ_MAIL_FROM: the platform's sender, needed with any provider.
 //   - FYNIQ_MAIL_DOMAINS: the sending domains, comma-separated; the platform sender's domain when unset.
+//   - FYNIQ_RESEND_WEBHOOK_SECRET and FYNIQ_ZEPTOMAIL_WEBHOOK_KEY: the webhooks' secrets, on the API.
 func ReadMail(env func(string) string) (MailConfig, error) {
-	c := MailConfig{From: env("FYNIQ_MAIL_FROM")}
+	c := MailConfig{From: env("FYNIQ_MAIL_FROM"), ResendWebhookSecret: env("FYNIQ_RESEND_WEBHOOK_SECRET"),
+		ZeptoMailWebhookKey: env("FYNIQ_ZEPTOMAIL_WEBHOOK_KEY")}
 	names := env("FYNIQ_EMAIL_PROVIDERS")
 	if names == "" && env("FYNIQ_SMTP_ADDR") != "" {
 		names = "smtp"

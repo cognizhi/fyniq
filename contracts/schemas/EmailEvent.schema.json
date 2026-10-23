@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "The provider's reason.",
+      "examples": [
+        "550 5.1.1 unknown user"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "What happened: a hard bounce, a complaint or the provider's suppression puts the address on the suppression list.",
+      "enum": [
+        "delivered",
+        "delayed",
+        "soft_bounce",
+        "hard_bounce",
+        "complaint",
+        "suppressed",
+        "failed"
+      ],
+      "examples": [
+        "hard_bounce"
+      ],
+      "type": "string"
+    },
+    "occurred_at": {
+      "description": "When it happened, as the provider says.",
+      "examples": [
+        "2026-10-20T09:00:40Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "provider": {
+      "description": "Who reported it.",
+      "enum": [
+        "zeptomail",
+        "resend"
+      ],
+      "examples": [
+        "zeptomail"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "provider",
+    "occurred_at"
+  ],
+  "title": "EmailEvent",
+  "type": "object"
+}

@@ -125,6 +125,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/organisation/email` (getEmailSettings): Get the email settings
 - `GET /v1/organisation/email/messages/{message_id}` (getEmailMessage): Get an email message's outcome
 - `PUT /v1/organisation/email/senders/{purpose}` (setEmailSender): Choose a sender
+- `GET /v1/organisation/email/suppressions` (listEmailSuppressions): List suppressed addresses
+- `POST /v1/organisation/email/suppressions/{suppression_id}/release` (releaseEmailSuppression): Release a suppressed address
 - `POST /v1/organisation/email/test-messages` (sendTestEmail): Send a test email
 - `GET /v1/organisation/gst-registrations` (listGSTRegistrations): List the GST registrations
 - `POST /v1/organisation/gst-registrations` (createGSTRegistration): Record a GST registration

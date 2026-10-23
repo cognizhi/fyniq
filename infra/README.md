@@ -76,8 +76,11 @@ The tests check the controls on the planned configuration:
    `service_env` gives the `api` and the `worker` `FYNIQ_EMAIL_PROVIDERS` (`zeptomail,resend`: the
    first primary, the next its failover), `FYNIQ_MAIL_FROM` (the platform's sender) and
    `FYNIQ_MAIL_DOMAINS` (the domains organisations may choose senders on), and `service_secrets`
-   gives the `worker` `FYNIQ_ZEPTOMAIL_KEY = "zeptomail-key"` and `FYNIQ_RESEND_KEY = "resend-key"`.
-   Add those secrets' versions out of band like the others; no key ever passes through the API.
+   gives the `worker` `FYNIQ_ZEPTOMAIL_KEY = "zeptomail-key"` and `FYNIQ_RESEND_KEY = "resend-key"`,
+   and the `api` the webhooks' secrets, `FYNIQ_ZEPTOMAIL_WEBHOOK_KEY = "zeptomail-webhook-key"` and
+   `FYNIQ_RESEND_WEBHOOK_SECRET = "resend-webhook-secret"`; point each provider's webhook at
+   `https://<origin>/api/webhooks/email/zeptomail` or `…/resend`. Add those secrets' versions out of
+   band like the others; no key ever passes through the API's answers.
 7. Run the Infrastructure workflow by hand for `staging` with **apply**. After that, pushes to
    `main` plan every environment, and the nightly run fails on drift.
 

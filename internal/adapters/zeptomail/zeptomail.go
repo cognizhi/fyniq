@@ -10,6 +10,7 @@ package zeptomail
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -73,7 +74,7 @@ func (s *Sender) Send(ctx context.Context, m ports.OutboundEmail) (ports.EmailRe
 	if len(m.To) == 0 || strings.ContainsAny(m.Subject, "\r\n") || m.Key == "" {
 		return ports.EmailReceipt{}, fmt.Errorf("%w: no recipient, a subject with a line break, or no key", ports.ErrEmailRefused)
 	}
-	body := request{From: address{Address: from.Address, Name: from.Name}, Subject: m.Subject, TextBody: m.Text, ClientReference: m.Key}
+	body := request{From: address{Address: from.Address, Name: from.Name}, Subject: m.Subject, TextBody: m.Text, ClientReference: cmp.Or(m.Reference, m.Key)}
 	for _, t := range m.To {
 		a, err := netmail.ParseAddress(t)
 		if err != nil {

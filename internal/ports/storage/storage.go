@@ -74,6 +74,7 @@ type UnitOfWork interface {
 	Packs() Packs
 	EmailMessages() EmailMessages
 	EmailSenders() EmailSenders
+	EmailSuppressions() EmailSuppressions
 	Outbox() Outbox
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals

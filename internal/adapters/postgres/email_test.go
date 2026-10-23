@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -268,7 +269,9 @@ func TestAnEmailsOutcomeIsFinalAndOnlyTheWorkerRecordsIt(t *testing.T) {
 func TestTheFailoverSendsOnlyWhatThePrimaryRefused(t *testing.T) {
 	t.Run("refused, then taken by the failover", func(t *testing.T) {
 		b := books(t, "Email failover Pte Ltd")
-		primary := &fakeMail{name: "zeptomail", send: func(int) error { return fmt.Errorf("%w: zeptomail answered 401 TM_4001 invalid key", ports.ErrEmailRefused) }}
+		primary := &fakeMail{name: "zeptomail", send: func(int) error {
+			return fmt.Errorf("%w: zeptomail answered 401 TM_4001 invalid key", ports.ErrEmailRefused)
+		}}
 		failover := &fakeMail{name: "resend"}
 		h, _ := mailHarness(t, primary, failover)
 		m := queueMail(t, h, b.Org)
@@ -388,4 +391,109 @@ func TestASenderChoiceIsAppendOnly(t *testing.T) {
 		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, c.ID); return err })
 		wantState(t, x.what, err, "FY179", "42501")
 	}
+}
+
+// suppress records a provider's hard bounce of address about message m and suppresses it, as the webhook does.
+func suppress(t *testing.T, org, m uuid.UUID, address string) (storage.EmailEvent, storage.EmailSuppression) {
+	t.Helper()
+	var ev storage.EmailEvent
+	var s storage.EmailSuppression
+	if err := store(t, "fyniq_api").Do(context.Background(), org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		if ev, _, err = u.EmailMessages().RecordEvent(ctx, storage.EmailEvent{MessageID: m, Provider: "resend", DeliveryID: "msg_" + uuid.NewString(),
+			Kind: storage.EventHardBounce, Recipient: address, Detail: "mailbox does not exist", OccurredAt: clock.System{}.Now()}); err != nil {
+			return err
+		}
+		s, _, err = u.EmailSuppressions().Suppress(ctx, address, storage.EventHardBounce, ev.ID)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return ev, s
+}
+
+// A message to a suppressed address fails without reaching a provider, saying why and how to release it; once
+// released, the next message is sent.
+// req: FR-INT-21
+func TestAnEmailToASuppressedAddressIsNotSent(t *testing.T) {
+	b := books(t, "Email suppressed Pte Ltd")
+	f := &fakeMail{}
+	h, _ := mailHarness(t, f)
+	first := queueMail(t, h, b.Org)
+	_, s := suppress(t, b.Org, first.ID, "Accounts@Example.com")
+	if s.Address != "accounts@example.com" {
+		t.Fatalf("the suppression's address is %q; want it in lower case", s.Address)
+	}
+	m := queueMail(t, h, b.Org)
+	got := emailMessage(t, b.Org, m.ID)
+	if got.Status != storage.EmailFailed || f.sends() != 1 || !strings.Contains(got.LastError, "accounts@example.com is suppressed after a hard bounce") {
+		t.Fatalf("after %d sends: %+v; want failed without a send", f.sends(), got)
+	}
+	if err := store(t, "fyniq_api").Do(context.Background(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.EmailSuppressions().Release(ctx, s.ID)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got := emailMessage(t, b.Org, queueMail(t, h, b.Org).ID); got.Status != storage.EmailAccepted || f.sends() != 2 {
+		t.Fatalf("after the release: %+v, %d sends", got, f.sends())
+	}
+}
+
+// A provider's event is recorded once per delivery and never changes or goes (FY180); a suppression is only ever
+// released, once (FY181); only the API records them.
+// req: FR-INT-21
+func TestEmailEventsAndSuppressionsKeepTheirHistory(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Email events record Pte Ltd")
+	h, _ := mailHarness(t, &fakeMail{})
+	m := queueMail(t, h, b.Org)
+	ev, s := suppress(t, b.Org, m.ID, "accounts@example.com")
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		again := ev
+		_, created, err := u.EmailMessages().RecordEvent(ctx, again)
+		if err == nil && created {
+			return fmt.Errorf("the provider's retry was recorded again")
+		}
+		if _, created, err := u.EmailSuppressions().Suppress(ctx, "accounts@example.com", storage.EventComplaint, ev.ID); err != nil || created {
+			return fmt.Errorf("a second suppression in force: %v, %v", created, err)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, x := range []struct{ role, what, stmt string }{
+		{"fyniq_migrator", "change an event as the owner", "UPDATE fyniq.email_event SET kind = 'delivered' WHERE id = $1"},
+		{"fyniq_migrator", "delete an event as the owner", "DELETE FROM fyniq.email_event WHERE id = $1"},
+		{"fyniq_api", "change an event", "UPDATE fyniq.email_event SET detail = 'edited' WHERE id = $1"},
+		{"fyniq_worker", "record an event as the worker", "INSERT INTO fyniq.email_event (message_id, provider, delivery_id, kind, recipient, occurred_at, received_at) SELECT message_id, 'resend', 'x', 'delivered', recipient, now(), now() FROM fyniq.email_event WHERE id = $1"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, ev.ID); return err })
+		wantState(t, x.what, err, "FY180", "42501")
+	}
+	for _, x := range []struct{ role, what, stmt string }{
+		{"fyniq_migrator", "change a suppression's address", "UPDATE fyniq.email_suppression SET address = 'x@example.com' WHERE id = $1"},
+		{"fyniq_migrator", "delete a suppression", "DELETE FROM fyniq.email_suppression WHERE id = $1"},
+		{"fyniq_worker", "release a suppression as the worker", "UPDATE fyniq.email_suppression SET released_at = now(), released_by = 'service:worker' WHERE id = $1"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, s.ID); return err })
+		wantState(t, x.what, err, "FY181", "42501")
+	}
+	release := func() error {
+		return store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.EmailSuppressions().Release(ctx, s.ID)
+			return err
+		})
+	}
+	if err := release(); err != nil {
+		t.Fatal(err)
+	}
+	if err := release(); storage.CodeOf(err) != storage.CodeVersion {
+		t.Fatalf("a second release: %v; want %s", err, storage.CodeVersion)
+	}
+	err := asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "UPDATE fyniq.email_suppression SET released_at = now() WHERE id = $1", s.ID)
+		return err
+	})
+	wantState(t, "release a suppression twice as the owner", err, "FY181", "42501")
 }

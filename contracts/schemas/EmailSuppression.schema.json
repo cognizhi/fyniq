@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "The address, in lower case.",
+      "examples": [
+        "founder@example.com"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The suppression's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why: the address bounced hard, its owner marked mail as spam, or the provider suppressed it.",
+      "enum": [
+        "hard_bounce",
+        "complaint",
+        "suppressed"
+      ],
+      "examples": [
+        "hard_bounce"
+      ],
+      "type": "string"
+    },
+    "released_at": {
+      "description": "When it was released; absent while mail to it is not sent.",
+      "examples": [
+        "2026-10-21T08:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "suppressed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-10-20T09:00:41Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "address",
+    "reason",
+    "suppressed_at"
+  ],
+  "title": "EmailSuppression",
+  "type": "object"
+}

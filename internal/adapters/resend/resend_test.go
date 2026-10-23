@@ -98,3 +98,24 @@ func TestStatusSendsAgainUnderTheKeyWithinTheWindow(t *testing.T) {
 		t.Fatalf("after the window: %v, %d requests; want unknown and none", err, len(keys))
 	}
 }
+
+// A message's reference goes as the fyniq_ref tag, which Resend echoes in its webhooks.
+// req: FR-INT-21
+func TestTheReferenceGoesAsATag(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &got)
+		_, _ = w.Write([]byte(`{"id":"e-1"}`))
+	}))
+	defer srv.Close()
+	m := message
+	m.Reference = "org_message"
+	if _, err := resend.New(srv.URL, "k").Send(context.Background(), m); err != nil {
+		t.Fatal(err)
+	}
+	tags, _ := got["tags"].([]any)
+	if len(tags) != 1 || tags[0].(map[string]any)["name"] != resend.RefTag || tags[0].(map[string]any)["value"] != "org_message" {
+		t.Fatalf("the tags: %v", got["tags"])
+	}
+}

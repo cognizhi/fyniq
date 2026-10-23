@@ -94,3 +94,20 @@ func TestZeptoMailsAnswersAreRefusalsOnlyWhenNothingWasTaken(t *testing.T) {
 		t.Fatalf("Status: %v; want unknown", err)
 	}
 }
+
+// A message's reference goes as client_reference, which ZeptoMail echoes in its webhooks.
+// req: FR-INT-21
+func TestTheReferenceGoesAsClientReference(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &got)
+		_, _ = w.Write([]byte(`{"request_id":"r-1"}`))
+	}))
+	defer srv.Close()
+	m := message
+	m.Reference = "org_message"
+	if _, err := zeptomail.New(srv.URL, "t").Send(context.Background(), m); err != nil || got["client_reference"] != "org_message" {
+		t.Fatalf("client_reference %v, %v", got["client_reference"], err)
+	}
+}

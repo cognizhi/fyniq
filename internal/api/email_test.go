@@ -3,14 +3,25 @@
 package api
 
 import (
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/mailhooks"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // matrixProfileEmail gives the organisation an email address if it has none.
@@ -160,4 +171,146 @@ func TestAnOrganisationChoosesItsSendersOnTheDeploymentsDomains(t *testing.T) {
 	if trail := auditTrail(t, e); strings.Count(trail, "email_sender.set") != 2 {
 		t.Fatal("the two choices are not both in the audit trail")
 	}
+}
+
+// hookKey is the test Resend endpoint's key; hookSecret its signing secret as Resend shows it.
+var (
+	hookKey    = []byte("a test key of thirty-two bytes!!")
+	hookSecret = "whsec_" + base64.StdEncoding.EncodeToString(hookKey)
+)
+
+// hooks serves the email webhooks of e's store.
+func hooks(e *env) *httptest.Server {
+	mux := http.NewServeMux()
+	(&mailhooks.Receiver{Store: e.store, Clock: e.clock, ResendSecret: hookSecret, ZeptoMailKey: "agent-key"}).Register(mux)
+	srv := httptest.NewServer(mux)
+	e.t.Cleanup(srv.Close)
+	return srv
+}
+
+// resendHook posts body to srv as Resend delivery id, signed with the key when signed.
+func resendHook(t *testing.T, e *env, srv *httptest.Server, id, body string, signed bool) int {
+	t.Helper()
+	ts := strconv.FormatInt(e.clock.Now().Unix(), 10)
+	mac := hmac.New(sha256.New, hookKey)
+	mac.Write([]byte(id + "." + ts + "." + body))
+	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+	if !signed {
+		sig = base64.StdEncoding.EncodeToString([]byte("forged"))
+	}
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/webhooks/email/resend", strings.NewReader(body))
+	req.Header.Set("svix-id", id)
+	req.Header.Set("svix-timestamp", ts)
+	req.Header.Set("svix-signature", "v1,"+sig)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	return res.StatusCode
+}
+
+// zeptoHook posts the events payload to srv as ZeptoMail does: one form value, signed with the Agent's key.
+func zeptoHook(t *testing.T, e *env, srv *httptest.Server, payload string) int {
+	t.Helper()
+	mac := hmac.New(sha256.New, []byte("agent-key"))
+	mac.Write([]byte(payload))
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/webhooks/email/zeptomail", strings.NewReader("payload="+url.QueryEscape(payload)))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("producer-signature", fmt.Sprintf("ts=%d;s=%s;s-algorithm=HmacSHA256", e.clock.Now().UnixMilli(),
+		url.QueryEscape(base64.StdEncoding.EncodeToString(mac.Sum(nil)))))
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	return res.StatusCode
+}
+
+// A provider's signed webhook records its event on the message once, however often it is retried; a hard bounce
+// suppresses the address, a soft bounce does not; a forged request, or an event about another recipient, records
+// nothing. An Administrator releases a suppression, once; each step is audited.
+// req: FR-INT-21
+func TestTheProvidersWebhooksRecordEventsAndSuppressHardBounces(t *testing.T) {
+	e := newEnv(t)
+	srv := hooks(e)
+	id := matrixEmail(e)
+	ref := email.Reference(e.books.Org, uuid.MustParse(id))
+	bounce := func(to string) string {
+		return `{"type":"email.bounced","created_at":"` + e.clock.Now().Add(-time.Minute).UTC().Format(time.RFC3339) + `","data":{"email_id":"e-1","to":["` + to + `"],` +
+			`"tags":[{"name":"fyniq_ref","value":"` + ref + `"}],"bounce":{"type":"Permanent","message":"mailbox does not exist"}}}`
+	}
+	if got := resendHook(t, e, srv, "msg_forged", bounce("accounts@example.com"), false); got != http.StatusUnauthorized {
+		t.Fatalf("a forged webhook: %d", got)
+	}
+	if got := resendHook(t, e, srv, "msg_other", bounce("someone@example.com"), true); got != http.StatusNoContent {
+		t.Fatalf("an event about another recipient: %d", got)
+	}
+	for i := 0; i < 2; i++ { // Resend retries the same delivery
+		if got := resendHook(t, e, srv, "msg_1", bounce("accounts@example.com"), true); got != http.StatusNoContent {
+			t.Fatalf("the bounce, delivery %d: %d", i+1, got)
+		}
+	}
+	soft := `{"webhook_request_id":"w-1","event_message":[{"email_info":{"client_reference":"` + ref + `","to":[{"email_address":` +
+		`{"address":"accounts@example.com"}}]},"event_data":[{"object":"softbounce","details":[{"reason":"Mailbox full"}]}]}]}`
+	if got := zeptoHook(t, e, srv, soft); got != http.StatusNoContent {
+		t.Fatalf("a soft bounce from ZeptoMail: %d", got)
+	}
+
+	m := e.call(http.MethodGet, "/v1/organisation/email/messages/"+id, e.as(authz.Auditor), nil)
+	evs, _ := m.Body["events"].([]any)
+	if len(evs) != 2 || evs[0].(map[string]any)["kind"] != "hard_bounce" || evs[0].(map[string]any)["provider"] != "resend" ||
+		evs[0].(map[string]any)["detail"] != "mailbox does not exist" || evs[1].(map[string]any)["kind"] != "soft_bounce" {
+		t.Fatalf("the message's events: %s", m.Raw)
+	}
+	list := e.call(http.MethodGet, "/v1/organisation/email/suppressions", e.as(authz.Auditor), nil)
+	items, _ := list.Body["items"].([]any)
+	if list.Status != http.StatusOK || len(items) != 1 || items[0].(map[string]any)["address"] != "accounts@example.com" ||
+		items[0].(map[string]any)["reason"] != "hard_bounce" {
+		t.Fatalf("the suppressions: %d %s", list.Status, list.Raw)
+	}
+	sid := items[0].(map[string]any)["id"].(string)
+	rel := e.call(http.MethodPost, "/v1/organisation/email/suppressions/"+sid+"/release", e.as(authz.Administrator), nil, "Idempotency-Key", uuid.NewString())
+	if rel.Status != http.StatusOK || rel.str("released_at") == "" {
+		t.Fatalf("releasing it: %d %s", rel.Status, rel.Raw)
+	}
+	if again := e.call(http.MethodPost, "/v1/organisation/email/suppressions/"+sid+"/release", e.as(authz.Administrator), nil); again.Status != http.StatusConflict ||
+		again.problemCode() != CodeReleased {
+		t.Fatalf("releasing it again: %d %s", again.Status, again.Raw)
+	}
+	if after := e.call(http.MethodGet, "/v1/organisation/email/suppressions", e.as(authz.Auditor), nil); len(after.Body["items"].([]any)) != 0 {
+		t.Fatalf("a released suppression is still listed: %s", after.Raw)
+	}
+	if all := e.call(http.MethodGet, "/v1/organisation/email/suppressions?all=true", e.as(authz.Auditor), nil); len(all.Body["items"].([]any)) != 1 {
+		t.Fatalf("all=true leaves out the released one: %s", all.Raw)
+	}
+	trail := auditTrail(t, e)
+	for _, action := range []string{"email_message.event_recorded", "email_suppression.added", "email_suppression.released", "integration"} {
+		if !strings.Contains(trail, action) {
+			t.Errorf("the audit trail lacks %s", action)
+		}
+	}
+	if strings.Count(trail, "email_message.event_recorded") != 2 {
+		t.Errorf("%d events recorded; want 2", strings.Count(trail, "email_message.event_recorded"))
+	}
+}
+
+// matrixSuppression suppresses a fresh address, as a provider's hard bounce would, and returns the suppression's ID.
+func matrixSuppression(e *env) string {
+	id := uuid.MustParse(matrixEmail(e))
+	var sid string
+	if err := e.store.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		address := "bounced-" + uuid.NewString() + "@example.com"
+		ev, _, err := u.EmailMessages().RecordEvent(ctx, storage.EmailEvent{MessageID: id, Provider: "resend", DeliveryID: uuid.NewString(),
+			Kind: storage.EventHardBounce, Recipient: address, OccurredAt: e.clock.Now()})
+		if err != nil {
+			return err
+		}
+		s, _, err := u.EmailSuppressions().Suppress(ctx, address, storage.EventHardBounce, ev.ID)
+		sid = s.ID.String()
+		return err
+	}); err != nil {
+		e.t.Fatal(err)
+	}
+	return sid
 }

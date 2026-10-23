@@ -51,6 +51,59 @@ type EmailMessages interface {
 	Release(ctx context.Context, id uuid.UUID, lastError string) (EmailMessage, error)
 	// Finish records the outcome; CodeVersion when the message has one already.
 	Finish(ctx context.Context, id uuid.UUID, o EmailOutcome) (EmailMessage, error)
+	// RecordEvent records a provider's event about a message; false, and nothing recorded, when that delivery of
+	// the provider's was recorded already.
+	RecordEvent(ctx context.Context, e EmailEvent) (EmailEvent, bool, error)
+	// Events are a message's events, oldest first.
+	Events(ctx context.Context, message uuid.UUID) ([]EmailEvent, error)
+}
+
+// The kinds of event a provider reports about a message it took (FR-INT-21; PRD-001 rev 0.103).
+const (
+	EventDelivered  = "delivered"
+	EventDelayed    = "delayed"
+	EventSoftBounce = "soft_bounce"
+	EventHardBounce = "hard_bounce"
+	EventComplaint  = "complaint"
+	EventSuppressed = "suppressed" // the provider suppressed it
+	EventFailed     = "failed"
+)
+
+// EmailEvent is a provider's report about a message: never changed (FY180).
+type EmailEvent struct {
+	ID         uuid.UUID
+	MessageID  uuid.UUID
+	Provider   string
+	DeliveryID string // the provider's ID of the event, the same on each retry
+	Kind       string
+	Recipient  string
+	Detail     string
+	OccurredAt time.Time
+	ReceivedAt time.Time
+}
+
+// EmailSuppression keeps mail from an address that bounced hard, complained or was suppressed by the provider, until
+// it is released (FY181).
+type EmailSuppression struct {
+	ID           uuid.UUID
+	Address      string // in lower case
+	Reason       string // EventHardBounce, EventComplaint or EventSuppressed
+	EventID      uuid.UUID
+	SuppressedAt time.Time
+	ReleasedAt   *time.Time
+	ReleasedBy   string
+}
+
+// EmailSuppressions are the organisation's suppressed addresses. Each suppression and release is audited.
+type EmailSuppressions interface {
+	// Suppress puts address on the list for reason, from event; false, and nothing recorded, when it is on it.
+	Suppress(ctx context.Context, address, reason string, event uuid.UUID) (EmailSuppression, bool, error)
+	// InForce is address's suppression in force; ports.ErrNotFound when there is none.
+	InForce(ctx context.Context, address string) (EmailSuppression, error)
+	// List is every suppression, newest first; released ones too when all.
+	List(ctx context.Context, all bool) ([]EmailSuppression, error)
+	// Release ends a suppression in force; CodeVersion when it was released already.
+	Release(ctx context.Context, id uuid.UUID) (EmailSuppression, error)
 }
 
 // The purposes an organisation chooses a sender for (FR-INT-21).
