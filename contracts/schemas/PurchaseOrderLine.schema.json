@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The expense or asset account the line costs.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "RND-LINE of quantity × unit price, in the order's currency."
+    },
+    "billed": {
+      "description": "The quantity posted bills take of it.",
+      "examples": [
+        "1"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What is ordered.",
+      "examples": [
+        "Laptop, 14 inch"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The GST expected: RND-GST-EXCL of the amount at the rate on the order's date, for a standard-rated code."
+    },
+    "gst_code": {
+      "description": "The GST code for purchases the supplier is expected to charge.",
+      "examples": [
+        "TX"
+      ],
+      "pattern": "^[A-Z]{2,4}$",
+      "type": "string"
+    },
+    "left": {
+      "description": "What no bill takes yet: the quantity less what posted and draft bills take.",
+      "examples": [
+        "2"
+      ],
+      "type": "string"
+    },
+    "on_drafts": {
+      "description": "The quantity draft bills take of it.",
+      "examples": [
+        "0"
+      ],
+      "type": "string"
+    },
+    "quantity": {
+      "description": "How many, an exact decimal with up to 6 decimals.",
+      "examples": [
+        "3"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$",
+      "type": "string"
+    },
+    "unit_price": {
+      "description": "The price of one before GST, in the order's currency, an exact decimal with up to 6 decimals. The line's amount is RND-LINE: quantity × unit price rounded to the currency's minor units, half away from zero.",
+      "examples": [
+        "1850.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "amount",
+    "gst",
+    "billed",
+    "on_drafts",
+    "left",
+    "account_id",
+    "quantity",
+    "unit_price",
+    "gst_code"
+  ],
+  "title": "PurchaseOrderLine",
+  "type": "object"
+}

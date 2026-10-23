@@ -428,6 +428,17 @@ var (
 	ReplaceRecurringBill = Policy{Operation: "replaceRecurringBill", Capability: Bills, Need: Create}
 	PauseRecurringBill   = Policy{Operation: "pauseRecurringBill", Capability: Bills, Need: Create}
 	ResumeRecurringBill  = Policy{Operation: "resumeRecurringBill", Capability: Bills, Need: Create}
+	// Purchase orders (FR-AP-01; rev 0.87) sit on the bills' row: whoever prepares bills (C) raises, changes, closes and
+	// bills them, and approves one at or below the self-approval threshold (FM-2, the owner's decision of 23 Oct 2026);
+	// above it another person who holds A approves it through the approval engine (SOD-3).
+	ListPurchaseOrders           = Policy{Operation: "listPurchaseOrders", Capability: Bills, Need: View}
+	GetPurchaseOrder             = Policy{Operation: "getPurchaseOrder", Capability: Bills, Need: View}
+	CreatePurchaseOrder          = Policy{Operation: "createPurchaseOrder", Capability: Bills, Need: Create}
+	ReplacePurchaseOrder         = Policy{Operation: "replacePurchaseOrder", Capability: Bills, Need: Create}
+	ApprovePurchaseOrder         = Policy{Operation: "approvePurchaseOrder", Capability: Bills, Need: Create}
+	RequestPurchaseOrderApproval = Policy{Operation: "requestPurchaseOrderApproval", Capability: Bills, Need: Create}
+	ClosePurchaseOrder           = Policy{Operation: "closePurchaseOrder", Capability: Bills, Need: Create}
+	BillPurchaseOrder            = Policy{Operation: "billPurchaseOrder", Capability: Bills, Need: Create}
 	// Payments of bills recorded by hand (FR-AP-02; the owner's decision of 22 Oct 2026): the money has left already, so
 	// recording one posts (P on "Bills, vendor credits"), as posting a bill does; releasing money is "Payment batches",
 	// which arrives with bank import. Voiding one is FM-1's void of a posted document: posting (P), and in Founder
@@ -577,6 +588,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
+	ListPurchaseOrders, GetPurchaseOrder, CreatePurchaseOrder, ReplacePurchaseOrder, ApprovePurchaseOrder, RequestPurchaseOrderApproval, ClosePurchaseOrder, BillPurchaseOrder,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
 	GetSupplierRefund, RecordSupplierRefund, VoidSupplierRefund, RequestSupplierRefundVoid,

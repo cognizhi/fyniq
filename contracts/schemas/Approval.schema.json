@@ -87,7 +87,8 @@
         "bill",
         "bill_payment",
         "credit_application",
-        "supplier_refund"
+        "supplier_refund",
+        "purchase_order"
       ],
       "examples": [
         "organisation_setting"
@@ -114,7 +115,8 @@
         "bill.edit",
         "bill_payment.void",
         "credit_application.void",
-        "supplier_refund.void"
+        "supplier_refund.void",
+        "purchase_order.approve"
       ],
       "examples": [
         "organisation_setting.change"

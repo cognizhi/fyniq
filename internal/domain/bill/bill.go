@@ -112,6 +112,21 @@ type Line struct {
 	StatedGST    *money.Money
 	SpreadMonths int
 	SpreadFrom   time.Time
+	Order        *OrderRef // the purchase order line it bills, nil for a line not made from one (FR-AP-01; rev 0.87)
+}
+
+// OrderRef names the line of a purchase order a bill's line bills, and the quantity of it (FR-AP-01; rev 0.87).
+type OrderRef struct {
+	PurchaseOrderID uuid.UUID
+	Line            int // from 1
+	Quantity        money.Quantity
+}
+
+// payloadOrder is an order reference as a document version stores it: the quantity as its exact text.
+type payloadOrder struct {
+	PurchaseOrderID uuid.UUID `json:"purchase_order_id"`
+	Line            int       `json:"line"`
+	Quantity        string    `json:"quantity"`
 }
 
 // Spread is the line's spread as the rules read it, nil for a line that is not spread; date is the bill's.
@@ -145,14 +160,15 @@ type payload struct {
 }
 
 type payloadLine struct {
-	AccountID    uuid.UUID    `json:"account_id"`
-	Description  string       `json:"description,omitempty"`
-	Net          money.Money  `json:"net"`
-	GSTCode      string       `json:"gst_code"`
-	GST          money.Money  `json:"gst"`
-	StatedGST    *money.Money `json:"stated_gst,omitempty"`
-	SpreadMonths int          `json:"spread_months,omitempty"`
-	SpreadFrom   string       `json:"spread_from,omitempty"`
+	AccountID    uuid.UUID     `json:"account_id"`
+	Description  string        `json:"description,omitempty"`
+	Net          money.Money   `json:"net"`
+	GSTCode      string        `json:"gst_code"`
+	GST          money.Money   `json:"gst"`
+	StatedGST    *money.Money  `json:"stated_gst,omitempty"`
+	SpreadMonths int           `json:"spread_months,omitempty"`
+	SpreadFrom   string        `json:"spread_from,omitempty"`
+	Order        *payloadOrder `json:"order,omitempty"`
 }
 
 func day(t time.Time) string {
@@ -176,8 +192,12 @@ func Encode(d Draft) ([]byte, error) {
 		p.FXRate, p.FXRateSource = d.Rate.String(), d.Rate.Source
 	}
 	for _, l := range d.Lines {
-		p.Lines = append(p.Lines, payloadLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST,
-			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom)})
+		pl := payloadLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST,
+			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom)}
+		if o := l.Order; o != nil {
+			pl.Order = &payloadOrder{PurchaseOrderID: o.PurchaseOrderID, Line: o.Line, Quantity: o.Quantity.String()}
+		}
+		p.Lines = append(p.Lines, pl)
 	}
 	return json.Marshal(p)
 }
@@ -238,6 +258,13 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 			if line.SpreadFrom, err = time.Parse(time.DateOnly, l.SpreadFrom); err != nil {
 				return Draft{}, bad(fmt.Sprintf("the spread's first month %q", l.SpreadFrom))
 			}
+		}
+		if o := l.Order; o != nil {
+			q, err := money.ParseQuantity(o.Quantity, "quantity")
+			if err != nil {
+				return Draft{}, bad(fmt.Sprintf("the quantity %q billed of an order line", o.Quantity))
+			}
+			line.Order = &OrderRef{PurchaseOrderID: o.PurchaseOrderID, Line: o.Line, Quantity: q}
 		}
 		d.Lines = append(d.Lines, line)
 	}

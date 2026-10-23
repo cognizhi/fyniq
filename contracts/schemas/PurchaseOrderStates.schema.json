@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval": {
+      "description": "draft until it is approved or asked for; awaiting_approval while a request waits; approved; rejected when the latest request was rejected and it is still a draft.",
+      "enum": [
+        "draft",
+        "awaiting_approval",
+        "approved",
+        "rejected"
+      ],
+      "examples": [
+        "approved"
+      ],
+      "type": "string"
+    },
+    "billing": {
+      "description": "What posted bills take of its lines: none, some, or every line in full.",
+      "enum": [
+        "not_billed",
+        "part_billed",
+        "billed"
+      ],
+      "examples": [
+        "part_billed"
+      ],
+      "type": "string"
+    },
+    "closed": {
+      "description": "Closed by a person: no more bills are made from it; those made already stand.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "approval",
+    "billing",
+    "closed"
+  ],
+  "title": "PurchaseOrderStates",
+  "type": "object"
+}

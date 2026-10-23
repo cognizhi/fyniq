@@ -64,6 +64,7 @@ type API struct {
 	payments     journal.BillPayments
 	applications journal.CreditApplications
 	refunds      journal.SupplierRefunds
+	orders       journal.PurchaseOrders
 	closing      closing.Service
 	passkeys     *passkey.RelyingParty // nil without an origin
 }
@@ -157,7 +158,7 @@ func New(mux humago.Mux, d Deps) *API {
 	}
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
-		refunds: journal.SupplierRefunds{Store: d.Store},
+		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store},
 		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
@@ -216,6 +217,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerRecurringJournals(a)
 	registerRecurringBills(a)
 	registerBillEvidence(a)
+	registerPurchaseOrders(a)
 	registerAccounting(a)
 	registerEvidence(a)
 	registerSetup(a)

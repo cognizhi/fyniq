@@ -18,6 +18,16 @@ Source: PRD-001 §8.6 · Priority S · Phase P1 (PO) / P2 (match)
 - **WHEN** a user converts a purchase order
 - **THEN** a bill is created from it
 
+#### Scenario: Built: billed by quantity (rev 0.87)
+- **GIVEN** an approved purchase order whose lines have a quantity, a unit price and a GST code, each amount RND-LINE
+- **WHEN** a bill is made from it
+- **THEN** the draft bill takes the quantities asked for, or all that no bill takes yet, each line naming its order line, its amount the part by cumulative RND-LINE
+- **AND** a posted bill never takes more of a line than is left; a closed order makes no more bills, and an approved order never changes
+
+#### Scenario: Built: approved as a bill is posted (rev 0.87)
+- **WHEN** an order's total in the base currency is at or below the self-approval threshold
+- **THEN** whoever prepared it may approve it alone, logged as self-approved in Founder mode (FM-2, FM-3); above it another person who holds A on "Bills, vendor credits" approves it, never its preparer (SOD-3)
+
 #### Scenario: Optional three-way match (P2)
 - **GIVEN** the organisation turns on three-way matching
 - **WHEN** a bill is entered against a purchase order

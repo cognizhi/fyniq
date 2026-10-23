@@ -141,6 +141,18 @@ the slice that builds it.
     organisation sets one), and statuses draft, awaiting approval, approved, billed, closed;
   - "Convert to bill" makes a draft bill of the remaining lines;
   - a PO posts nothing.
+  - (the owner, 23 Oct 2026) **billed by quantity:** each line has a quantity and a unit price, and
+    its amount is `RND-LINE` (round(quantity × unit price, the currency's minor units), half away from
+    zero; a new named policy, provisional until the accountant's sign-off). A bill's line made from a
+    PO line names it and the quantity it bills; its amount is the part by cumulative rounding (`RND-LINE`
+    of everything billed so far less `RND-LINE` of what was billed before), so a line's parts add up
+    exactly. A posted bill may not bill more of a line than is left on it. The bill's amount can still
+    be changed to the supplier's invoice; price differences are the P2 three-way match's;
+  - (the owner, 23 Oct 2026) **approved as bills are posted:** at or below the self-approval threshold
+    (FM-2) whoever prepared it approves it alone, logged as self-approved in Founder mode; above it
+    another person who holds A on "Bills, vendor credits" approves it, never its preparer (SOD-3);
+  - an approved PO is the document posted (no entry); closing it, with a reason, is the document
+    reversed (no entry), and stops further bills from it. Part billed and Billed come from its bills.
 - **Non-resident payments:**
   - a vendor gains its tax residence (a country);
   - a bill from a vendor resident outside Singapore records the nature of the payment;

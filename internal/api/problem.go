@@ -33,6 +33,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/organisation"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/domain/period"
+	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -288,6 +289,21 @@ var codeFacts = map[string]struct {
 	CodeOwnJournal:                {403, "You prepared it, so another person approves it"},
 	CodeEditApproval:              {409, "Editing needs a second person"},
 	bill.CodeNotBill:              {404, "Not a bill"},
+	purchaseorder.CodeNotOrder:    {404, "Not a purchase order"},
+	purchaseorder.CodeBadDraft:    {422, "The saved order cannot be read"},
+	purchaseorder.CodeSupplier:    {422, "The order's supplier is not an active vendor"},
+	purchaseorder.CodeNoDate:      {422, "The order has no date"},
+	purchaseorder.CodeLines:       {422, "The order has no lines, or no total"},
+	purchaseorder.CodeAccount:     {422, "A line's account cannot take it"},
+	purchaseorder.CodeQuantity:    {422, "A line's quantity or price is not one an order takes"},
+	purchaseorder.CodeGSTCode:     {422, "Not a GST code for purchases"},
+	purchaseorder.CodeTooLong:     {422, "The order's text is too long"},
+	purchaseorder.CodeNotDraft:    {409, "The order is not a draft"},
+	purchaseorder.CodeNotApproved: {409, "The order is not approved, or is closed"},
+	purchaseorder.CodeLeft:        {422, "More than is left of the order"},
+	purchaseorder.CodeOrderLine:   {422, "A bill's line takes what its order cannot give"},
+	CodeOrderNeedsApproval:        {409, "The order needs another person's approval"},
+	CodeOwnOrder:                  {403, "You prepared it, so another person approves it"},
 	bill.CodeNotDraft:             {409, "The bill is not a draft"},
 	bill.CodeNotPosted:            {409, "The bill is not posted"},
 	bill.CodeBadDraft:             {422, "The saved bill cannot be read"},
@@ -509,6 +525,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		be  *bill.Error
 		bpe *billpayment.Error
 		cre *credits.Error
+		poe *purchaseorder.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -534,6 +551,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(bpe.Code, sentence(bpe.Message), sentence(bpe.Fix))
 	case errors.As(err, &cre):
 		return problem(cre.Code, sentence(cre.Message), sentence(cre.Fix))
+	case errors.As(err, &poe):
+		return problem(poe.Code, sentence(poe.Message), sentence(poe.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &ae):

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The order's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "date": {
+      "description": "The order's date.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "expected_on": {
+      "description": "When the goods or services are expected.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "lines": {
+      "description": "What is ordered.",
+      "items": {
+        "$ref": "PurchaseOrderLineDraft.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "notes": {
+      "description": "Notes kept with the order.",
+      "examples": [
+        "Deliver to level 3"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "reference": {
+      "description": "A reference, such as the supplier's quotation number.",
+      "examples": [
+        "Q-2026-118"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    },
+    "supplier_id": {
+      "description": "The supplier: a contact marked as a vendor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "lines"
+  ],
+  "title": "PurchaseOrderDraft",
+  "type": "object"
+}

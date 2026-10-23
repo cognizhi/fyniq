@@ -54,9 +54,9 @@ type ApprovalSignature struct {
 // and its signatures.
 type Approval struct {
 	ID              string              `json:"id" format:"uuid" doc:"The request's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund" doc:"What it changes." example:"organisation_setting"`
+	ObjectType      string              `json:"object_type" enum:"organisation_setting,membership,member_invitation,approval_policy,statutory_pack,team_mode,period,journal,opening_balance,bill,bill_payment,credit_application,supplier_refund,purchase_order" doc:"What it changes." example:"organisation_setting"`
 	ObjectKey       string              `json:"object_key" doc:"Which one: the setting's key, the membership's ID, the invitation's code hash, the object type whose approval policy changes, the statutory pack version, or organisation for the team mode." example:"bank.tolerance_base"`
-	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void" doc:"What executes on its approval." example:"organisation_setting.change"`
+	Operation       string              `json:"operation" enum:"organisation_setting.change,role.assign,role.revoke,member_invitation.create,approval_policy.change,statutory_pack.activate,team_mode.change,period.reopen,journal.post,journal.reverse,journal.edit,opening_balance.edit,bill.post,bill.void,bill.edit,bill_payment.void,credit_application.void,supplier_refund.void,purchase_order.approve" doc:"What executes on its approval." example:"organisation_setting.change"`
 	Summary         string              `json:"summary" doc:"What it does, in a sentence." example:"Change Tolerance for base-currency differences from 1.00 to 5.00 from 2026-10-20"`
 	Status          string              `json:"status" enum:"pending,approved,rejected,void,expired" doc:"pending waits for approval; approved executed it; void means its record, a dependency, its approval policy or the team mode changed (FR-APR-05), an earlier approver lost their right, or its requester withdrew it, as status_reason says; expired after 7 days." example:"pending"`
 	StatusReason    string              `json:"status_reason,omitempty" doc:"Why it was rejected or voided." example:"the setting changed after the request"`
@@ -462,6 +462,23 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.Dependencies["bill_version"] = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["payable"] = payable
+	case approval.ObjectOrder:
+		id, err := uuid.Parse(c.ObjectKey)
+		if err != nil {
+			return nil, err
+		}
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		p, _, err := a.orders.Check(ctx, u, doc)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = doc.Version
+		e.Dependencies["order_version"] = doc.Version
+		e.Dependencies["status"] = string(doc.Status)
+		e.Dependencies["total"] = p.TotalBase.String()
 	case approval.ObjectPayment:
 		id, err := uuid.Parse(c.ObjectKey)
 		if err != nil {
@@ -874,6 +891,19 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 			}
 		}
 		return nil
+	case approval.OpOrderApprove: // SOD-3: whoever prepared the order never approves it
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if doc.SavedBy == (storage.Actor{Type: "user", ID: signer.String()}).String() {
+			return problem(CodeOwnOrder, "You prepared this purchase order, so another person approves it (SOD-3).", "Ask another person who holds the approval right")
+		}
+		return nil
 	case approval.OpJournalPost: // SOD-3: whoever prepared the journal never approves it
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1036,6 +1066,17 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		}
 		_, err = a.bills.Void(ctx, o.ID, id, date, text("reason"))
 		return err
+	case approval.OpOrderApprove:
+		id, err := uuid.Parse(r.ObjectKey)
+		if err != nil {
+			return err
+		}
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		_, err = a.orders.Approve(ctx, o.ID, id)
+		return err
 	case approval.OpRefundVoid:
 		id, err := uuid.Parse(r.ObjectKey)
 		if err != nil {
@@ -1176,7 +1217,7 @@ func registerApprovals(a *API) {
 	}, append([]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeStale, CodeIfMatchRequired, storage.CodeApproval, storage.CodeVersion, storage.CodeMembership},
 		append(append(append(append(append(append(append(locks, ApprovalCodes...), MemberCodes...), SettingCodes...), PolicyCodes...), PackCodes...), PasskeyCodes...),
-			append(append(append(JournalApprovalCodes(), BillApprovalCodes()...), PaymentApprovalCodes()...), append(ApplicationApprovalCodes(), RefundApprovalCodes()...)...)...)...),
+			append(append(append(JournalApprovalCodes(), BillApprovalCodes()...), PaymentApprovalCodes()...), append(append(ApplicationApprovalCodes(), RefundApprovalCodes()...), OrderApprovalCodes()...)...)...)...),
 		func(ctx context.Context, in *approvalDecideInput) (*approvalWriteOutput, error) {
 			id, err := parseID("approval_id", in.ApprovalID)
 			if err != nil {
