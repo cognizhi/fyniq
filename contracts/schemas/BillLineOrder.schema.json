@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "line": {
+      "description": "Its line, from 1.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "purchase_order_id": {
+      "description": "The purchase order.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "quantity": {
+      "description": "How much of the order line this line bills.",
+      "examples": [
+        "2"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "purchase_order_id",
+    "line",
+    "quantity"
+  ],
+  "title": "BillLineOrder",
+  "type": "object"
+}

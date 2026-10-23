@@ -408,3 +408,18 @@ Source: PRD-001 §10.4
 #### Scenario: Rules compare exact amounts
 - **WHEN** a rule compares a change with a percentage threshold
 - **THEN** it compares the exact amounts, never a rounded percentage
+
+### Requirement: RND-LINE Line amount
+A line's amount SHALL be round(quantity × unit price, the currency's minor units), half away from zero, computed exactly before its one rounding; part of a line taken after others SHALL be RND-LINE of all taken so far less RND-LINE of what was taken before (rev 0.87; provisional).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Line amount formula
+- **WHEN** a line has a quantity and a unit price
+- **THEN** its amount = round(quantity × unit price, the currency's minor units), half away from zero (3 × 33.333333 SGD is 100.00; 2.5 × 1.25 SGD is 3.13)
+
+#### Scenario: Parts of a line add up exactly
+- **GIVEN** a purchase order line billed in parts (FR-AP-01)
+- **WHEN** each part's amount is worked out
+- **THEN** it is RND-LINE of everything taken so far, this part included, less RND-LINE of what was taken before
+- **AND** the parts add up to the line's amount exactly, each within one minor unit of its own quantity × price (three parts of one of 3 × 33.333333 are 33.33, 33.34 and 33.33)

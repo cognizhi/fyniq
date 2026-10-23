@@ -34,6 +34,10 @@
       "$ref": "Money.schema.json",
       "description": "The line's amount before GST, in the bill's currency."
     },
+    "order": {
+      "$ref": "BillLineOrder.schema.json",
+      "description": "The purchase order line it bills, and how much of it, for a line made from an order: billPurchaseOrder sets it. A posted bill never takes more of a line than is left (PO-13)."
+    },
     "spread_from": {
       "description": "The spread's first month, as any day of it: when the service starts. Left out, the bill's month. Months before the bill's date release on the bill's date.",
       "examples": [

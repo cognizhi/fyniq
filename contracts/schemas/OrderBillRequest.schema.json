@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "lines": {
+      "description": "The lines and quantities the bill takes; left out, everything no bill takes yet.",
+      "items": {
+        "$ref": "OrderBillLine.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "title": "OrderBillRequest",
+  "type": "object"
+}

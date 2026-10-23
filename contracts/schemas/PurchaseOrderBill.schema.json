@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "Its date.",
+      "examples": [
+        "2026-10-20"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The bill's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, once it has one.",
+      "examples": [
+        "BILL-0012"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "draft or posted.",
+      "enum": [
+        "draft",
+        "posted"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "status"
+  ],
+  "title": "PurchaseOrderBill",
+  "type": "object"
+}

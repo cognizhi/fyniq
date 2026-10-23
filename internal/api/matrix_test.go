@@ -300,6 +300,61 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/bills/"+id+"/evidence/"+ev, e.as(authz.Accountant), nil).str("state") == "attached"
 		}
 	},
+	"listPurchaseOrders": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/purchase-orders", tok, nil), nil
+	},
+	"getPurchaseOrder": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createOrder("1", "10")
+		return e.call(http.MethodGet, "/v1/purchase-orders/"+id, tok, nil), nil
+	},
+	"createPurchaseOrder": func(e *env, tok string) (response, func() bool) {
+		d := e.orderDraft("1", "10")
+		ref := "M-" + uuid.NewString()[:8]
+		d["reference"] = ref
+		r := e.call(http.MethodPost, "/v1/purchase-orders", tok, d)
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/purchase-orders?page_size=500", e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"reference":"`+ref+`"`)
+		}
+	},
+	"replacePurchaseOrder": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createOrder("1", "10")
+		r := e.call(http.MethodPut, "/v1/purchase-orders/"+id, tok, e.orderDraft("2", "10"), "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/purchase-orders/"+id, e.as(authz.Accountant), nil).Body["version"] == float64(1)
+		}
+	},
+	"approvePurchaseOrder": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createOrder("1", "10")
+		r := e.call(http.MethodPost, "/v1/purchase-orders/"+id+"/approve", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/purchase-orders/"+id, e.as(authz.Accountant), nil).str("status") == "draft"
+		}
+	},
+	"requestPurchaseOrderApproval": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "purchase_order")
+		id, tag := e.createOrder("10", "250")
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/purchase-orders/"+id+"/approval", person, nil, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "purchase_order") == was }
+	},
+	"closePurchaseOrder": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.approvedOrder()
+		r := e.call(http.MethodPost, "/v1/purchase-orders/"+id+"/close", tok, map[string]any{"reason": "Matrix"}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/purchase-orders/"+id, e.as(authz.Accountant), nil).str("status") == "approved"
+		}
+	},
+	"billPurchaseOrder": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.approvedOrder()
+		r := e.call(http.MethodPost, "/v1/purchase-orders/"+id+"/bill", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return len(e.call(http.MethodGet, "/v1/purchase-orders/"+id, e.as(authz.Accountant), nil).Body["bills"].([]any)) == 0
+		}
+	},
 	"sendTestEmail": func(e *env, tok string) (response, func() bool) {
 		matrixProfileEmail(e)
 		drainWork(e.t, e)

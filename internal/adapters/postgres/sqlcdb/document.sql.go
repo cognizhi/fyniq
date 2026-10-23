@@ -12,6 +12,62 @@ import (
 	"github.com/google/uuid"
 )
 
+const billsOfOrder = `-- name: BillsOfOrder :many
+SELECT d.id, d.type, d.status, d.current_version, v.payload, n.number, v.created_by, d.posted_by, d.posted_at,
+       coalesce(v.payload->>'date', '')::text AS date
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = d.current_version
+LEFT JOIN fyniq.document_number n ON n.organisation_id = d.organisation_id AND n.id = d.id
+WHERE d.type = 'bill' AND d.status <> 'reversed'
+  AND v.payload->'lines' @> jsonb_build_array(jsonb_build_object('order', jsonb_build_object('purchase_order_id', $1::text)))
+ORDER BY d.id
+`
+
+type BillsOfOrderRow struct {
+	ID             uuid.UUID
+	Type           string
+	Status         string
+	CurrentVersion int32
+	Payload        []byte
+	Number         *string
+	CreatedBy      *string
+	PostedBy       *string
+	PostedAt       *time.Time
+	Date           string
+}
+
+// The bills, drafts and posted, not reversed, whose current version has a line made from a purchase order (FR-AP-01).
+func (q *Queries) BillsOfOrder(ctx context.Context, orderID string) ([]BillsOfOrderRow, error) {
+	rows, err := q.db.Query(ctx, billsOfOrder, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BillsOfOrderRow
+	for rows.Next() {
+		var i BillsOfOrderRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Status,
+			&i.CurrentVersion,
+			&i.Payload,
+			&i.Number,
+			&i.CreatedBy,
+			&i.PostedBy,
+			&i.PostedAt,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const dueReversals = `-- name: DueReversals :many
 SELECT d.id
 FROM fyniq.document d

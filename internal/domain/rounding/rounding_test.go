@@ -470,3 +470,100 @@ func TestGSTExclProperties(t *testing.T) {
 		}
 	})
 }
+
+func qty(t tb, s string) money.Quantity {
+	t.Helper()
+	q, err := money.ParseQuantity(s, "quantity")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return q
+}
+
+func price(t tb, s string, c money.Currency) money.UnitPrice {
+	t.Helper()
+	p, err := money.ParseUnitPrice(s, c, "unit_price")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+// Worked by hand: 3 × 33.333333 is 99.999999, so 100.00; 2.5 × 1.25 is 3.125, half away from zero 3.13; 0.125 × 10.01
+// is 1.25125, so 1.25; −1 × 0.005 is −0.005, so −0.01; ¥33.5 × 3 is ¥100.5, so ¥101. Three parts of one each of the
+// first line are 33.33, 33.34 and 33.33: RND-LINE of 1, of 2 less of 1, of 3 less of 2, which add up to 100.00.
+// req: RND-LINE
+// req: ENG-11
+func TestLinePinnedCases(t *testing.T) {
+	for _, c := range []struct {
+		q, p string
+		cur  money.Currency
+		want string
+	}{{"3", "33.333333", sgd, "100.00"}, {"2.5", "1.25", sgd, "3.13"}, {"0.125", "10.01", sgd, "1.25"}, {"-1", "0.005", sgd, "-0.01"},
+		{"3", "33.5", jpy, "101"}, {"0", "12.50", sgd, "0.00"}} {
+		got, err := Line(qty(t, c.q), price(t, c.p, c.cur))
+		if err != nil || got.String() != c.want || got.Currency() != c.cur {
+			t.Errorf("%s × %s %s = %v, %v; want %s", c.q, c.p, c.cur, got, err, c.want)
+		}
+	}
+	p := price(t, "33.333333", sgd)
+	var parts []string
+	before := money.Quantity{}
+	for range 3 {
+		part, err := LinePart(before, qty(t, "1"), p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		parts = append(parts, part.String())
+		before = before.Add(qty(t, "1"))
+	}
+	if fmt.Sprint(parts) != "[33.33 33.34 33.33]" {
+		t.Errorf("three parts of one: %v", parts)
+	}
+}
+
+// Any line billed in any parts: the parts add up exactly to RND-LINE of the whole line, and each part is within one
+// minor unit of its own quantity × price.
+// req: RND-LINE
+// req: QA-ENG-03
+func TestLinePartsProperties(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		cur := rapid.SampledFrom([]money.Currency{sgd, jpy}).Draw(t, "currency")
+		p := price(t, fmt.Sprintf("%d.%06d", rapid.IntRange(0, 99_999).Draw(t, "price units"), rapid.IntRange(0, 999_999).Draw(t, "price decimals")), cur)
+		var parts []money.Quantity
+		total := money.Quantity{}
+		for i := range rapid.IntRange(1, 8).Draw(t, "parts") {
+			q := qty(t, fmt.Sprintf("%d.%03d", rapid.IntRange(0, 1_000).Draw(t, fmt.Sprintf("units %d", i)), rapid.IntRange(0, 999).Draw(t, fmt.Sprintf("decimals %d", i))))
+			parts = append(parts, q)
+			total = total.Add(q)
+		}
+		whole, err := Line(total, p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := money.Zero(cur)
+		before := money.Quantity{}
+		one := apd.New(1, -int32(cur.MinorUnits))
+		for _, q := range parts {
+			part, err := LinePart(before, q, p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			sum, _ = sum.Add(part)
+			before = before.Add(q)
+			var exact, diff apd.Decimal
+			if _, err := work.Mul(&exact, q.Decimal(), p.Decimal()); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := work.Sub(&diff, part.Decimal(), &exact); err != nil {
+				t.Fatal(err)
+			}
+			if diff.Abs(&diff).Cmp(one) > 0 {
+				t.Fatalf("a part of %s × %s is %s, more than a minor unit from %s", q, p, part, exact.Text('f'))
+			}
+		}
+		if !sum.Equal(whole) {
+			t.Fatalf("the parts add up to %s; the whole line is %s", sum, whole)
+		}
+	})
+}

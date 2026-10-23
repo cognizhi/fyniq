@@ -61,6 +61,15 @@ type BillLineDraft struct {
 	// Spreads (FR-GL-03; rev 0.83).
 	SpreadMonths int    `json:"spread_months,omitempty" minimum:"1" maximum:"120" doc:"Spread the line's cost over this many months (FR-GL-03): the bill puts the cost on 1210 Prepayments in the base currency, and one part a month (ALLOC-EVEN) is released to the line's account by the scheduler, up to the organisation's today and never ahead (ENG-05). Only an expense line's cost is spread, and never a vendor credit's (LEDGER-28)." example:"12"`
 	SpreadFrom   string `json:"spread_from,omitempty" format:"date" doc:"The spread's first month, as any day of it: when the service starts. Left out, the bill's month. Months before the bill's date release on the bill's date." example:"2026-10-01"`
+	// A line made from a purchase order (FR-AP-01; rev 0.87).
+	Order *BillLineOrder `json:"order,omitempty" doc:"The purchase order line it bills, and how much of it, for a line made from an order: billPurchaseOrder sets it. A posted bill never takes more of a line than is left (PO-13)."`
+}
+
+// BillLineOrder is the purchase order line a bill's line bills (FR-AP-01).
+type BillLineOrder struct {
+	PurchaseOrderID string `json:"purchase_order_id" format:"uuid" doc:"The purchase order." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e50"`
+	Line            int    `json:"line" minimum:"1" doc:"Its line, from 1." example:"1"`
+	Quantity        string `json:"quantity" pattern:"^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$" doc:"How much of the order line this line bills." example:"2"`
 }
 
 // BillRelease is one month's release of a bill line's spread cost (FR-GL-03, ENG-05).
@@ -346,6 +355,15 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 			line.StatedGST = &s
 		}
 		line.SpreadMonths = l.SpreadMonths
+		if o := l.Order; o != nil {
+			oid, err := uuid.Parse(o.PurchaseOrderID)
+			q, qerr := money.ParseQuantity(o.Quantity, at("order.quantity"))
+			if err != nil || qerr != nil {
+				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("order"), Message: "is not an order line and quantity", Fix: "Keep the order line as billPurchaseOrder made it, or remove it"})
+				continue
+			}
+			line.Order = &bill.OrderRef{PurchaseOrderID: oid, Line: o.Line, Quantity: q}
+		}
 		if l.SpreadFrom != "" {
 			if line.SpreadFrom, err = time.Parse(time.DateOnly, l.SpreadFrom); err != nil {
 				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("spread_from"), Message: "is not a date", Fix: "Send the spread's first month as YYYY-MM-DD"})
@@ -556,6 +574,9 @@ func billLinesOut(d bill.Draft) []BillLineDraft {
 			bl.StatedGST = &Money{Amount: l.StatedGST.String(), Currency: l.StatedGST.Currency().Code}
 		}
 		bl.SpreadMonths, bl.SpreadFrom = l.SpreadMonths, dayText(l.SpreadFrom)
+		if o := l.Order; o != nil {
+			bl.Order = &BillLineOrder{PurchaseOrderID: o.PurchaseOrderID.String(), Line: o.Line, Quantity: o.Quantity.String()}
+		}
 		out = append(out, bl)
 	}
 	return out

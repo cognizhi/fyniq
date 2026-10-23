@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -61,7 +62,12 @@ func checkBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 	if err != nil {
 		return Checked{}, err
 	}
-	out := Checked{Prepared: p, Problems: probs}
+	// A line made from a purchase order bills what is left of its line (FR-AP-01; rev 0.87).
+	orders, err := purchaseorder.CheckBillLines(ctx, u, doc, p.Draft, s.Base)
+	if err != nil {
+		return Checked{}, err
+	}
+	out := Checked{Prepared: p, Problems: append(probs, orders...)}
 	post := ledger.PostBill
 	if doc.Type == storage.DocumentVendorCredit {
 		post = ledger.PostVendorCredit
@@ -129,17 +135,24 @@ func (s Bills) create(ctx context.Context, org uuid.UUID, t storage.DocumentType
 	}
 	var doc storage.Document
 	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		if doc, err = u.Documents().Create(ctx, storage.NewDocument{Type: t, Payload: b}); err != nil {
-			return err
-		}
-		// A sequence that is not gap-free numbers a document when it is saved (FR-ORG-04).
-		seq, err := u.Sequences().Get(ctx, t)
-		if err != nil || seq.GapFree {
-			return err
-		}
-		doc.Number, err = u.Sequences().Number(ctx, doc.ID, t)
+		doc, err = createNumbered(ctx, u, t, b)
 		return err
 	})
+	return doc, err
+}
+
+// createNumbered saves a new draft document in u, numbered now when its sequence is not gap-free (FR-ORG-04); a
+// gap-free sequence numbers it when it posts.
+func createNumbered(ctx context.Context, u storage.UnitOfWork, t storage.DocumentType, payload []byte) (storage.Document, error) {
+	doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: t, Payload: payload})
+	if err != nil {
+		return doc, err
+	}
+	seq, err := u.Sequences().Get(ctx, t)
+	if err != nil || seq.GapFree {
+		return doc, err
+	}
+	doc.Number, err = u.Sequences().Number(ctx, doc.ID, t)
 	return doc, err
 }
 

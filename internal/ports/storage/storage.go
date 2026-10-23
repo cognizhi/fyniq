@@ -139,6 +139,9 @@ type Documents interface {
 	// line's cost over months that run past from (YYYY-MM-DD), or that are dated on or after it: the bills whose
 	// releases a period from that day on may still take (FR-GL-03, ENG-05).
 	SpreadBills(ctx context.Context, from string, afterID *uuid.UUID, limit int) ([]uuid.UUID, error)
+	// BillsOfOrder lists the bills, drafts and posted, not reversed, whose current version has a line made from the
+	// purchase order (FR-AP-01), by ID.
+	BillsOfOrder(ctx context.Context, orderID uuid.UUID) ([]Document, error)
 	// WaitingReversals lists, earliest reversal first, the posted journals whose automatic reversal waits because no
 	// period that is not closed covers its date (FR-GL-02; rev 0.58): at most limit of them, after the cursor's reversal
 	// date and ID when afterID is set.
@@ -383,6 +386,9 @@ const (
 	DocumentCreditApplication DocumentType = "credit_application" // #nosec G101 -- a document type's name, not a credential
 	// DocumentSupplierRefund is money a supplier paid back against a credit (FR-AP-03; p1-purchases).
 	DocumentSupplierRefund DocumentType = "supplier_refund"
+	// DocumentPurchaseOrder is an order to a supplier, with quantities and unit prices (FR-AP-01; p1-purchases): it posts
+	// nothing; posted is approved, and reversed is closed.
+	DocumentPurchaseOrder DocumentType = "purchase_order"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -527,6 +533,7 @@ const (
 	CodeFXRevaluation  = "STORAGE-FX-02"         // the scheduler saves a revaluation only of an open period, as that period's
 	CodeAllocation     = "STORAGE-ALLOCATION-01" // an allocation settles a bill from a bill payment, never changes, and is reversed exactly
 	CodeBillRelease    = "STORAGE-RELEASE-01"    // a release releases the spread of a posted bill's current version
+	CodePurchaseOrder  = "STORAGE-PO-01"         // a purchase order posts nothing: no entry names one
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done

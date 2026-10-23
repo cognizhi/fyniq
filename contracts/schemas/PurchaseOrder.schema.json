@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_asked": {
+      "description": "getPurchaseOrder only: the pending request to approve it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd2"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "approved_at": {
+      "description": "When it was approved.",
+      "examples": [
+        "2026-10-14T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "approved_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who approved it."
+    },
+    "bills": {
+      "description": "getPurchaseOrder only: the bills made from it, drafts and posted, not voided.",
+      "items": {
+        "$ref": "PurchaseOrderBill.schema.json"
+      },
+      "type": "array"
+    },
+    "checks": {
+      "description": "getPurchaseOrder only: what stops a draft being approved (✖).",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The order's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "date": {
+      "description": "The order's date.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "expected_on": {
+      "description": "When the goods or services are expected.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "The GST expected, in its currency."
+    },
+    "id": {
+      "description": "The order's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "lines": {
+      "description": "Its lines, with what they come to and what bills take of them.",
+      "items": {
+        "$ref": "PurchaseOrderLine.schema.json"
+      },
+      "type": "array"
+    },
+    "net": {
+      "$ref": "Money.schema.json",
+      "description": "Every line's amount, in its currency."
+    },
+    "notes": {
+      "description": "Its notes.",
+      "examples": [
+        "Deliver to level 3"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number from the purchase order sequence: given when it is approved, or when it is saved if the sequence is not gap-free.",
+      "examples": [
+        "PO-0007"
+      ],
+      "type": "string"
+    },
+    "prepared_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who saved the current version."
+    },
+    "reference": {
+      "description": "Its reference.",
+      "examples": [
+        "Q-2026-118"
+      ],
+      "type": "string"
+    },
+    "states": {
+      "$ref": "PurchaseOrderStates.schema.json",
+      "description": "Its approval and billing states, and whether it is closed."
+    },
+    "status": {
+      "description": "draft (✎), approved, or closed.",
+      "enum": [
+        "draft",
+        "approved",
+        "closed"
+      ],
+      "examples": [
+        "approved"
+      ],
+      "type": "string"
+    },
+    "supplier": {
+      "$ref": "BillSupplier.schema.json",
+      "description": "The supplier, with its name."
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Net and GST, in its currency."
+    },
+    "total_base": {
+      "$ref": "Money.schema.json",
+      "description": "The total in the base currency at the rate for its date, on which its approval is judged (FM-2); absent while it has problems."
+    },
+    "version": {
+      "description": "The version of its content; with the status it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "version",
+    "currency",
+    "lines",
+    "net",
+    "gst",
+    "total",
+    "states",
+    "checks",
+    "bills"
+  ],
+  "title": "PurchaseOrder",
+  "type": "object"
+}

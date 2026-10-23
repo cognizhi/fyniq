@@ -49,7 +49,8 @@
         "bill",
         "bill_payment",
         "credit_application",
-        "supplier_refund"
+        "supplier_refund",
+        "purchase_order"
       ],
       "examples": [
         "organisation_setting"

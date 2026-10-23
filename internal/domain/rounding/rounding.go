@@ -23,6 +23,7 @@ const (
 	PercentName      = "RND-PERCENT"
 	RateName         = "RND-RATE"
 	GSTExclName      = "RND-GST-EXCL"
+	LineName         = "RND-LINE"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -53,6 +54,33 @@ func FX(amount money.Money, rate money.Rate) (money.Money, error) {
 		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "amount", Message: err.Error()}
 	}
 	return money.FromRounded(halfAwayFromZero(&product, rate.To.MinorUnits), rate.To)
+}
+
+// Line is RND-LINE (PRD-001 §10.4, rev 0.87; provisional until the accountant's sign-off): a line's amount =
+// round(quantity × unit price, the currency's minor units), half away from zero, computed exactly before its one
+// rounding.
+func Line(q money.Quantity, p money.UnitPrice) (money.Money, error) {
+	var product apd.Decimal
+	if _, err := work.Mul(&product, q.Decimal(), p.Decimal()); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "quantity", Message: err.Error()}
+	}
+	return money.FromRounded(halfAwayFromZero(&product, p.Currency().MinorUnits), p.Currency())
+}
+
+// LinePart is part of a line under RND-LINE, after the quantity before was taken by earlier parts, by cumulative
+// rounding as ALLOC-EVEN: RND-LINE of everything taken so far, this part included, less RND-LINE of what was taken
+// before it. The parts of a line then add up exactly to the whole line's amount, and each is within one minor unit of
+// its own quantity × price.
+func LinePart(before, part money.Quantity, p money.UnitPrice) (money.Money, error) {
+	all, err := Line(before.Add(part), p)
+	if err != nil {
+		return money.Money{}, err
+	}
+	prev, err := Line(before, p)
+	if err != nil {
+		return money.Money{}, err
+	}
+	return all.Sub(prev)
 }
 
 // Rate is RND-RATE (PRD-001 §10.4, rev 0.24): a quote turned into the one form Fyniq stores, base currency per one
