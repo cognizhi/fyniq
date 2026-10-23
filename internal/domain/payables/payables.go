@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -346,6 +347,33 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 	}
 	slices.SortFunc(out.Suppliers, func(a, b Supplier) int { return strings.Compare(a.Name, b.Name) })
 	return out, nil
+}
+
+// Documents are the AP sub-ledger's open documents at a day in currencies other than the base, as the month-end
+// revaluation revalues them one by one (FR-GL-04; rev 0.92): each bill and supplier credit with what is open of it,
+// as the accounts-payable account holds it (a credit to it negative, as owed is), and its carrying amount at its stored
+// rate. Its signature is fx.SubLedger's.
+func Documents(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uuid.UUID, asAt time.Time) ([]fx.Document, error) {
+	l, err := Open(ctx, u, base, ap, asAt)
+	if err != nil {
+		return nil, err
+	}
+	var out []fx.Document
+	for _, s := range l.Suppliers {
+		for _, it := range s.Items {
+			if it.Open.Currency() == base {
+				continue
+			}
+			// The account is a liability: what is owed is a credit, as the balance service gives it.
+			out = append(out, fx.Document{ID: it.DocumentID, Number: it.Number, Open: it.Open.Neg(), Carrying: it.Carrying.Neg()})
+		}
+	}
+	return out, nil
+}
+
+// SubLedgers are the sub-ledgers the month-end revaluation revalues document by document: accounts payable's.
+func SubLedgers() fx.SubLedgers {
+	return fx.SubLedgers{storage.AccountRole(ledger.RoleAccountsPayable): Documents}
 }
 
 // Explained is what a source other than bills and their payments posted to the accounts-payable account, owed positive.

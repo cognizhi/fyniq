@@ -153,11 +153,18 @@ func TestEveryRevaluationRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 		Items: []RevaluationItem{item(t, ar, "10000.00", "13500.00", "1.30")}}
 	both := march
 	both.Version, both.Items = 2, []RevaluationItem{item(t, wise, "16240.00", "20803.44", "1.2867"), item(t, ap, "-1050.00", "-1345.05", "1.2867")}
+	one, two := item(t, ap, "-1000.37", "-1346.10", "1.3333"), item(t, ap, "-200.01", "-270.03", "1.3333")
+	one.Of, two.Of = "BILL-0001", "BILL-0002"
+	bills := march
+	bills.Version, bills.Items = 3, []RevaluationItem{one, two}
 	cases := map[string][]struct {
 		name string
 		r    Revaluation
 	}{
-		RuleFXRevaluation: {{"a receivable at a lower rate (G4-039, 31 March)", march}, {"a gain and a loss", both}},
+		RuleFXRevaluation: {{"a receivable at a lower rate (G4-039, 31 March)", march}, {"a gain and a loss", both},
+			// rev 0.92: an item may be a document of a control account's sub-ledger, and its line names it; no earlier item
+			// named one, so every stored entry replays.
+			{"two bills revalued one by one", bills}},
 	}
 	for rule := range RevaluationRules {
 		if len(cases[rule]) == 0 {

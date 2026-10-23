@@ -11,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/payables"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -41,7 +42,7 @@ func PostRevaluation(ctx context.Context, u storage.UnitOfWork, periodID uuid.UU
 	if _, err := u.Ledger().Lock(ctx); err != nil { // ENG-47: nothing posts while the balances are read and revalued
 		return fx.Run{}, err
 	}
-	plan, err := fx.Prepare(ctx, u, periodID)
+	plan, err := fx.Prepare(ctx, u, periodID, payables.SubLedgers())
 	if err != nil {
 		return fx.Run{}, err
 	}
@@ -138,7 +139,7 @@ func RevalueDue(ctx context.Context, store storage.Store, org uuid.UUID, day tim
 			if _, err := u.Ledger().Lock(ctx); err != nil { // ENG-47, as a person's run
 				return err
 			}
-			plan, err := fx.Prepare(ctx, u, id)
+			plan, err := fx.Prepare(ctx, u, id, payables.SubLedgers())
 			if err != nil || !plan.Due() {
 				return err
 			}

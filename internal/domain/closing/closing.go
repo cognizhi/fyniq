@@ -242,7 +242,7 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 // revaluationCheck refuses the close of a period with foreign-currency balances on accounts marked revalue and no
 // revaluation run since the last posting dated in or before it (FR-GL-04; rev 0.73), naming a currency with no rate.
 func revaluationCheck(ctx context.Context, u storage.UnitOfWork, p storage.Period) (Check, error) {
-	plan, err := fx.Prepare(ctx, u, p.ID)
+	plan, err := fx.Prepare(ctx, u, p.ID, payables.SubLedgers())
 	if err != nil {
 		return Check{}, err
 	}
