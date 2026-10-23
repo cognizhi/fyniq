@@ -28,7 +28,7 @@ Source: PRD-001 §12.9
 - **THEN** it is ≤ 30 MB compressed
 
 ### Requirement: Render image
-The `render` image (Typst PDF job) SHALL contain the Go binary plus the pinned Typst binary and self-hosted fonts on `gcr.io/distroless/cc-debian12:nonroot`, within ≤ 90 MB compressed.
+The `render` image (Typst PDF service, rev 0.96; formerly a job) SHALL contain the Go binary plus the pinned Typst binary and self-hosted fonts on `gcr.io/distroless/cc-debian12:nonroot`, within ≤ 90 MB compressed.
 
 Source: PRD-001 §12.9
 
@@ -40,6 +40,11 @@ Source: PRD-001 §12.9
 #### Scenario: Render size budget
 - **WHEN** the `render` image is built
 - **THEN** it is ≤ 90 MB compressed
+
+#### Scenario: The render service as built (rev 0.96)
+- **WHEN** the `render` image is built
+- **THEN** it holds Typst 0.15.1 checked against its release's SHA-256 and a binary with the fonts embedded, on distroless/cc
+- **AND** the binary carries no database adapter, driver or domain command
 
 ### Requirement: Web image for local and preview
 The `web` image SHALL be used in local and preview only, built with `pnpm build` on `nginxinc/nginx-unprivileged` (Alpine) with a strict CSP, within ≤ 25 MB compressed.

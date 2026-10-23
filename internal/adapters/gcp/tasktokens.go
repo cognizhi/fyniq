@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -62,6 +63,51 @@ func (t *TaskTokens) Verify(token, class string) error {
 	}
 	if err := id.Claims(&c); err != nil || c.Email != inv.ServiceAccount || !c.EmailVerified {
 		return errors.Join(ports.ErrUnauthorised, fmt.Errorf("the token is not %s's invoker", class))
+	}
+	return nil
+}
+
+// Callers are the service accounts that may call a private service, and the audience their tokens name: the render
+// service's are the api's and the worker's (PRD-001 §12.3, rev 0.96).
+type Callers struct {
+	Audience        string   `json:"audience"`
+	ServiceAccounts []string `json:"service_accounts"`
+}
+
+// CallerTokens is the TaskTokens port for a private service several services call: it accepts a token Google signed,
+// for its own audience, as one of its callers' accounts. Each caller mints its token as its own account.
+type CallerTokens struct {
+	Class   string // the one class it accepts
+	Callers Callers
+	Keys    oidc.KeySet
+	Clock   ports.Clock
+}
+
+var _ ports.TaskTokens = (*CallerTokens)(nil)
+
+// Token implements ports.TaskTokens: a caller mints its own token from the metadata server, never this service.
+func (t *CallerTokens) Token(class string) (string, error) {
+	return "", fmt.Errorf("%s's callers mint their own tokens", class)
+}
+
+// Verify implements ports.TaskTokens.
+func (t *CallerTokens) Verify(token, class string) error {
+	if class != t.Class || token == "" || t.Callers.Audience == "" {
+		return ports.ErrUnauthorised
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	v := oidc.NewVerifier(GoogleIssuer, t.Keys, &oidc.Config{ClientID: t.Callers.Audience, SupportedSigningAlgs: []string{oidc.RS256}, Now: t.Clock.Now})
+	id, err := v.Verify(ctx, token)
+	if err != nil {
+		return errors.Join(ports.ErrUnauthorised, err)
+	}
+	var c struct {
+		Email         string `json:"email"`
+		EmailVerified bool   `json:"email_verified"`
+	}
+	if err := id.Claims(&c); err != nil || !c.EmailVerified || !slices.Contains(t.Callers.ServiceAccounts, c.Email) {
+		return errors.Join(ports.ErrUnauthorised, fmt.Errorf("the token is not one of %s's callers", class))
 	}
 	return nil
 }
