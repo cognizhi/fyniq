@@ -529,3 +529,26 @@ func TestSecurityTestsCarryASVSIDs(t *testing.T) {
 		t.Fatalf("want 2 planted violations (no ID, an unknown ID), got %v", got)
 	}
 }
+
+// The render service holds no database role and no secret (PRD-001 §12.3, rev 0.96; FR-TPL-02's sandbox), so its
+// binary carries no database adapter or driver, no domain command and none of the services' wiring, in either flavour.
+// req: FR-TPL-02
+func TestTheRenderServiceCarriesNoDatabaseCode(t *testing.T) {
+	forbidden := []string{"github.com/cognizhi/fyniq/internal/adapters/postgres", "github.com/jackc/pgx", "github.com/cognizhi/fyniq/internal/wiring",
+		"github.com/cognizhi/fyniq/internal/api", "github.com/cognizhi/fyniq/internal/domain/journal", "github.com/cognizhi/fyniq/internal/domain/ledger"}
+	for _, tags := range []string{"", "local"} {
+		cmd := exec.Command("go", "list", "-deps", "-tags", tags, "./cmd/render")
+		cmd.Dir = repoRoot(t)
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("go list: %v", err)
+		}
+		for _, dep := range strings.Fields(string(out)) {
+			for _, f := range forbidden {
+				if dep == f || strings.HasPrefix(dep, f+"/") {
+					t.Errorf("tags %q: cmd/render depends on %s", tags, dep)
+				}
+			}
+		}
+	}
+}

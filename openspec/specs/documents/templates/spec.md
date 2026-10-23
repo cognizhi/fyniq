@@ -68,6 +68,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1 (fields); P2 (conditions, colum
 - **WHEN** any template, visual or code, is rendered
 - **THEN** it renders in the `render` job's sandbox (FR-TPL-06), with no network, no secrets, and only the template's own assets and a JSON data file
 
+#### Scenario: The render service's sandbox (rev 0.96)
+- **WHEN** the private `render` service compiles a document, for the api or the worker only
+- **THEN** it runs in a fresh folder that is Typst's root, with only its own source, the layout as JSON and the logo, the shipped fonts, no packages, an empty environment and a time limit
+- **AND** texts are written as text, never read as markup or code, and the same version, data and issue time give the same bytes
+
 #### Scenario: Fields in P1, conditions and columns in P2
 - **WHEN** the template editor ships in P1
 - **THEN** it offers the typed field catalogue and its formats

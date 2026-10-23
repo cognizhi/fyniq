@@ -300,3 +300,12 @@ func Read(b []byte) (Content, error) {
 	}
 	return c, nil
 }
+
+// Expand replaces each field reference in text with what value gives for its path and format ("" for the type's
+// default): how a renderer fills a text the rules accepted.
+func Expand(text string, value func(path, format string) string) string {
+	return reference.ReplaceAllStringFunc(text, func(m string) string {
+		sm := reference.FindStringSubmatch(m)
+		return value(sm[1], sm[2])
+	})
+}

@@ -155,6 +155,42 @@ func TestTaskTokensAreTheClassInvokersOnly(t *testing.T) {
 	}
 }
 
+// The render service accepts a Google-signed token for its audience from the api's or the worker's account only
+// (PRD-001 §12.3, rev 0.96): another account, another audience or another class is refused.
+// req: SEC-03
+// asvs: V13.2.1, V10.3.1
+func TestRenderAcceptsItsCallersOnly(t *testing.T) {
+	k, _ := rsa.GenerateKey(rand.Reader, 2048)
+	g := googleKey{k}
+	now := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
+	tokens := &CallerTokens{Class: "render", Clock: clock.NewFrozen(now), Keys: &oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{&k.PublicKey}},
+		Callers: Callers{Audience: "https://render.example.run.app",
+			ServiceAccounts: []string{"api@fyniq.iam.gserviceaccount.com", "worker@fyniq.iam.gserviceaccount.com"}}}
+	claims := func(email, aud string) map[string]any {
+		return map[string]any{"iss": "https://accounts.google.com", "aud": aud, "sub": "1093", "email": email, "email_verified": true,
+			"iat": now.Add(-time.Minute).Unix(), "exp": now.Add(time.Hour).Unix()}
+	}
+	for _, who := range []string{"api@fyniq.iam.gserviceaccount.com", "worker@fyniq.iam.gserviceaccount.com"} {
+		if err := tokens.Verify(g.mint(t, claims(who, "https://render.example.run.app")), "render"); err != nil {
+			t.Errorf("%s: %v", who, err)
+		}
+	}
+	api := g.mint(t, claims("api@fyniq.iam.gserviceaccount.com", "https://render.example.run.app"))
+	for name, check := range map[string]error{
+		"the executor's account": tokens.Verify(g.mint(t, claims("executor@fyniq.iam.gserviceaccount.com", "https://render.example.run.app")), "render"),
+		"another audience":       tokens.Verify(g.mint(t, claims("api@fyniq.iam.gserviceaccount.com", "https://worker.example.run.app")), "render"),
+		"another class":          tokens.Verify(api, "worker"),
+		"no token":               tokens.Verify("", "render"),
+	} {
+		if !errors.Is(check, ports.ErrUnauthorised) {
+			t.Errorf("%s: %v", name, check)
+		}
+	}
+	if _, err := tokens.Token("render"); err == nil {
+		t.Error("the render service minted its callers' token")
+	}
+}
+
 // A platform job's slot starts as an execution of the Cloud Run job with `run-slot <job> <slot>`.
 // req: NFR-PORT-04
 func TestRunJobsStartsTheSlot(t *testing.T) {

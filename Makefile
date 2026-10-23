@@ -136,7 +136,8 @@ evals: ## Run the AI eval suites in replay mode (the suites arrive in P1)
 images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the engine's own by default) and check them: budgets, non-root, no shell, no local adapter in release, the platform (§12.9)
 	@for svc in $(GO_IMAGES); do for f in $(FLAVOURS); do \
 	  tag=$$( [ "$$f" = local ] && echo local || echo "$(VERSION)" ); \
-	  docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.go-service --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
+	  target=$$( [ "$$svc" = render ] && echo render || echo service ); \
+	  docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.go-service --target $$target --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
 	    --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t fyniq-$$svc:$$tag . >/dev/null; \
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
 	@docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"

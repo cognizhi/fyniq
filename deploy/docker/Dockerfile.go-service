@@ -6,7 +6,8 @@
 #     --build-arg FLAVOUR=release --build-arg VERSION=0.3.0 --build-arg GIT_SHA=$(git rev-parse HEAD) .
 # FLAVOUR=release (staging and production) or local (`make up`): the local flavour adds the
 # `local` build tag and with it the local adapters (DEV-07). Same Dockerfile, base and hardening.
-# Image budgets, scanning and signing are enforced by p0-ci-images-release.
+# Image budgets, scanning and signing are enforced by p0-ci-images-release. The render image is the `render`
+# target (--target render: the binary with Typst); every other service the default target, `service`.
 # Platforms (NFR-IMG-08): linux/amd64 and linux/arm64. Without --platform the image is the build
 # machine's own (arm64 on Apple silicon, amd64 on the CI runner); `--platform linux/amd64,linux/arm64`
 # builds both. The compiler runs on the build machine and cross-compiles, so no emulation is needed,
@@ -48,9 +49,35 @@ RUN --mount=type=cache,target=/go/pkg/mod \
         -X github.com/cognizhi/fyniq/internal/version.BuildTime=${BUILD_TIME}" \
       -o /out/app ./cmd/${SERVICE}
 
-# ---- runtime stage ----------------------------------------------------------------------
+# ---- Typst, for the render image only ------------------------------------------------------
+# Typst 0.15.1, as mise.toml pins it: the static musl build from github.com/typst/typst/releases for the target
+# platform, checked against its SHA-256 (the release's own digests), its one binary read out with Python's lzma (the
+# image has no xz). The fonts are in the render binary (go:embed).
+FROM --platform=$BUILDPLATFORM golang:1.27-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS typst
+ARG TARGETARCH
+RUN case "${TARGETARCH}" in \
+      amd64) t=x86_64; sum=a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c ;; \
+      arm64) t=aarch64; sum=5aa8d74a3d906e60ea12a66ac2f37f8eef1b14cbad7182a745e393a10c23dcee ;; \
+      *) echo "no Typst build for ${TARGETARCH} (NFR-IMG-08)" >&2; exit 1 ;; esac && \
+    curl -fsSL -o /tmp/typst.tar.xz "https://github.com/typst/typst/releases/download/v0.15.1/typst-${t}-unknown-linux-musl.tar.xz" && \
+    echo "${sum}  /tmp/typst.tar.xz" | sha256sum -c - && \
+    mkdir /out && python3 -c 'import lzma, sys, tarfile; t = tarfile.open(fileobj=lzma.open(sys.argv[1])); open("/out/typst", "wb").write(t.extractfile(sys.argv[2]).read())' \
+      /tmp/typst.tar.xz "typst-${t}-unknown-linux-musl/typst" && chmod 0755 /out/typst
+
+# ---- the render image (--target render) ------------------------------------------------------
+# PRD-001 §12.9 (rev 0.96): the Go binary and the pinned Typst binary on distroless/static, as both are static (the
+# musl build of Typst), so the image holds no C library or OpenSSL to patch; no shell, no package manager.
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab AS render
+COPY --from=build /out/app /app
+COPY --from=typst /out/typst /typst
+ENV FYNIQ_TYPST=/typst
+USER 65532:65532
+EXPOSE 8080
+ENTRYPOINT ["/app"]
+
+# ---- every other service (the default target) ---------------------------------------------------
 # CA certificates and the nonroot user; no shell, no package manager (NFR-IMG-01).
-FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab AS service
 COPY --from=build /out/app /app
 USER 65532:65532
 EXPOSE 8080

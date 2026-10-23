@@ -129,7 +129,7 @@ Never point a local MCP client at staging or production with test credentials.
 | Image | Build | Runtime base | Budget (compressed) |
 |---|---|---|---|
 | `api`, `ai`, `mcp`, `worker`, `executor`, `jobs`, `migrate` | Static Go binary (`CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w -X …"`), embedded migrations, templates and `time/tzdata` | `gcr.io/distroless/static-debian12:nonroot` | ≤ 30 MB each |
-| `render` (Typst PDFs) | Go binary + pinned Typst + self-hosted fonts | `gcr.io/distroless/cc-debian12:nonroot` | ≤ 90 MB |
+| `render` (Typst PDFs) | Go binary (fonts embedded) + pinned static Typst | `gcr.io/distroless/static-debian12:nonroot` (rev 0.96; was cc) | ≤ 90 MB |
 | `web` (local and preview only) | `pnpm build` | `nginxinc/nginx-unprivileged` (Alpine), strict CSP | ≤ 25 MB |
 | `oauth` | Upstream Ory Hydra, pinned by digest | Upstream | Upstream |
 
