@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content": {
+      "$ref": "TemplateContent.schema.json",
+      "description": "Its content."
+    },
+    "content_hash": {
+      "description": "The SHA-256 of the content's RFC 8785 JSON, in hex: import refuses content that does not match it.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "document_type": {
+      "description": "The document it serves.",
+      "enum": [
+        "invoice",
+        "quote",
+        "credit_note",
+        "receipt",
+        "statement",
+        "reminder",
+        "remittance",
+        "purchase_order"
+      ],
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "document: the PDF; email: the message that carries it.",
+      "enum": [
+        "document",
+        "email"
+      ],
+      "examples": [
+        "document"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Standard invoice"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "version": {
+      "description": "The version exported: the one in force, or 0 for the draft of a template never published.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind",
+    "document_type",
+    "name",
+    "version",
+    "content",
+    "content_hash"
+  ],
+  "title": "BundledTemplate",
+  "type": "object"
+}

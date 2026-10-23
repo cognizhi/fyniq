@@ -1385,6 +1385,20 @@ var matrixCalls = map[string]matrixCall{
 		return e.call(http.MethodPost, "/v1/document-template-previews", tok, map[string]any{"kind": "email", "document_type": "quote",
 			"content": map[string]any{"schema": "fyniq.template/1", "subject": "Quotation {{document.number}}", "body": "Dear {{customer.name}}"}}), nil
 	},
+	"exportDocumentTemplates": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createTemplate()
+		return e.call(http.MethodGet, "/v1/document-template-bundle?template_id="+id, tok, nil), nil
+	},
+	"importDocumentTemplates": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createTemplate()
+		bundle := e.call(http.MethodGet, "/v1/document-template-bundle?template_id="+id, e.as(authz.Accountant), nil).Body
+		name := "Imported " + uuid.NewString()[:8]
+		bundle["templates"].([]any)[0].(map[string]any)["name"] = name
+		r := e.call(http.MethodPost, "/v1/document-template-bundles", tok, bundle)
+		return r, func() bool {
+			return !strings.Contains(e.call(http.MethodGet, "/v1/document-templates?page_size=500", e.as(authz.Accountant), nil).Raw, name)
+		}
+	},
 	"listDocumentTemplates": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/document-templates", tok, nil), nil
 	},

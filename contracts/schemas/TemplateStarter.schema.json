@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content": {
+      "$ref": "TemplateContent.schema.json",
+      "description": "Its content for the document type."
+    },
+    "description": {
+      "description": "What it looks like.",
+      "examples": [
+        "IBM Plex Sans, a navy band behind the header and the table's head"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "Its key, which createDocumentTemplate takes as starter.",
+      "enum": [
+        "classic",
+        "band",
+        "minimal",
+        "compact"
+      ],
+      "examples": [
+        "band"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Band"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "name",
+    "description",
+    "content"
+  ],
+  "title": "TemplateStarter",
+  "type": "object"
+}

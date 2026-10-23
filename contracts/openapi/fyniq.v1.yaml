@@ -2751,6 +2751,61 @@ components:
         - saved
         - refused
       type: object
+    BundledTemplate:
+      additionalProperties: false
+      properties:
+        content:
+          $ref: "#/components/schemas/TemplateContent"
+          description: Its content.
+        content_hash:
+          description: "The SHA-256 of the content's RFC 8785 JSON, in hex: import refuses content that does not match it."
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          pattern: ^[0-9a-f]{64}$
+          type: string
+        document_type:
+          description: The document it serves.
+          enum:
+            - invoice
+            - quote
+            - credit_note
+            - receipt
+            - statement
+            - reminder
+            - remittance
+            - purchase_order
+          examples:
+            - invoice
+          type: string
+        kind:
+          description: "document: the PDF; email: the message that carries it."
+          enum:
+            - document
+            - email
+          examples:
+            - document
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Standard invoice
+          maxLength: 100
+          type: string
+        version:
+          description: "The version exported: the one in force, or 0 for the draft of a template never published."
+          examples:
+            - 3
+          format: int64
+          minimum: 0
+          type: integer
+      required:
+        - kind
+        - document_type
+        - name
+        - version
+        - content
+        - content_hash
+      type: object
     ChartLoaded:
       additionalProperties: false
       properties:
@@ -3732,7 +3787,7 @@ components:
       properties:
         content:
           $ref: "#/components/schemas/TemplateContent"
-          description: The draft's content. Left out, the template starts from the catalogue's default for its kind and type.
+          description: The draft's content. Left out, the template starts from the starter named, or the classic starter.
         document_type:
           description: The document it serves.
           enum:
@@ -3760,6 +3815,16 @@ components:
           examples:
             - Standard invoice
           maxLength: 100
+          type: string
+        starter:
+          description: The starter template to begin from (FR-TPL-07), when content is left out.
+          enum:
+            - classic
+            - band
+            - minimal
+            - compact
+          examples:
+            - band
           type: string
       required:
         - kind
@@ -9842,6 +9907,34 @@ components:
         - texts
         - locked
       type: object
+    TemplateBundle:
+      additionalProperties: false
+      properties:
+        exported_at:
+          description: When it was exported.
+          examples:
+            - "2026-10-23T10:00:00Z"
+          format: date-time
+          type: string
+        schema:
+          description: The bundle's format.
+          enum:
+            - fyniq.template-bundle/1
+          examples:
+            - fyniq.template-bundle/1
+          type: string
+        templates:
+          description: The templates, one to 50.
+          items:
+            $ref: "#/components/schemas/BundledTemplate"
+          maxItems: 50
+          minItems: 1
+          type: array
+      required:
+        - schema
+        - exported_at
+        - templates
+      type: object
     TemplateCatalogue:
       additionalProperties: false
       properties:
@@ -9906,6 +9999,11 @@ components:
               - medium
             type: string
           type: array
+        starters:
+          description: "The starter gallery (FR-TPL-07): one per style, the first the default."
+          items:
+            $ref: "#/components/schemas/TemplateStarter"
+          type: array
       required:
         - document_type
         - blocks
@@ -9918,6 +10016,7 @@ components:
         - min_contrast
         - locked_title
         - defaults
+        - starters
       type: object
     TemplateContent:
       additionalProperties: false
@@ -10026,6 +10125,17 @@ components:
       required:
         - type
         - formats
+      type: object
+    TemplateImport:
+      additionalProperties: false
+      properties:
+        templates:
+          description: The drafts made, in the bundle's order.
+          items:
+            $ref: "#/components/schemas/DocumentTemplate"
+          type: array
+      required:
+        - templates
       type: object
     TemplateMargins:
       additionalProperties: false
@@ -10178,6 +10288,38 @@ components:
           minimum: 1
           type: integer
       type: object
+    TemplateStarter:
+      additionalProperties: false
+      properties:
+        content:
+          $ref: "#/components/schemas/TemplateContent"
+          description: Its content for the document type.
+        description:
+          description: What it looks like.
+          examples:
+            - IBM Plex Sans, a navy band behind the header and the table's head
+          type: string
+        key:
+          description: Its key, which createDocumentTemplate takes as starter.
+          enum:
+            - classic
+            - band
+            - minimal
+            - compact
+          examples:
+            - band
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Band
+          type: string
+      required:
+        - key
+        - name
+        - description
+        - content
+      type: object
     TemplateTexts:
       additionalProperties: false
       properties:
@@ -10223,6 +10365,16 @@ components:
           examples:
             - true
           type: boolean
+        style:
+          description: "The look the renderer draws (FR-TPL-07, rev 0.98): classic, band (an accent band behind the header and the table's head), minimal or compact. Left out: classic."
+          enum:
+            - classic
+            - band
+            - minimal
+            - compact
+          examples:
+            - band
+          type: string
       required:
         - logo
         - accent
@@ -19545,6 +19697,325 @@ paths:
       x-fyniq-permission:
         capability: Bills, vendor credits
         right: P
+  /v1/document-template-bundle:
+    get:
+      description: "Exports one to 50 templates as a versioned bundle (FR-TPL-07): each the version in force, or the draft of one never published, with its content's SHA-256, for importDocumentTemplates in another organisation or installation. Read-only; no side effects."
+      operationId: exportDocumentTemplates
+      parameters:
+        - description: The templates, one to 50, each as its own template_id parameter.
+          explode: true
+          in: query
+          name: template_id
+          schema:
+            description: The templates, one to 50, each as its own template_id parameter.
+            examples:
+              - - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10
+            items:
+              type: string
+            maxItems: 50
+            minItems: 1
+            type:
+              - array
+              - "null"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateBundle"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Export templates as a bundle
+      tags:
+        - Templates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Document templates: edit, publish (rev 0.7)"
+        right: V
+  /v1/document-template-bundles:
+    post:
+      description: "Makes a draft of each template of a bundle from exportDocumentTemplates (FR-TPL-07), all or none. Each content must match its SHA-256 (TPL-18) and meet the template rules as they are here (TPL-01 to TPL-11); every problem comes back together. Nothing imported is in force: each draft is published under approval like any other (FR-TPL-04). Side effects: the drafts and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: importDocumentTemplates
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateBundle"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateImport"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateImport"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-18` Not a bundle of templates Fyniq reads."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Import templates from a bundle
+      tags:
+        - Templates
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - TPL-01
+        - TPL-02
+        - TPL-03
+        - TPL-04
+        - TPL-05
+        - TPL-06
+        - TPL-07
+        - TPL-08
+        - TPL-09
+        - TPL-10
+        - TPL-11
+        - TPL-18
+      x-fyniq-permission:
+        capability: "Document templates: edit, publish (rev 0.7)"
+        right: C
   /v1/document-template-catalogue/{document_type}:
     get:
       description: "What templates of a document type are made of (FR-TPL-01 to FR-TPL-03): its blocks, with the texts each takes and those locked because they carry IRAS particulars; the typed field catalogue and each type's formats; the fonts, paper sizes, margins and least accent contrast; and the content a new document or email template starts from. Read-only; no side effects."

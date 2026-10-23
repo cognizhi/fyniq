@@ -227,6 +227,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBillPlans(a)
 	registerDocumentTemplates(a)
 	registerTemplatePreviews(a)
+	registerTemplateBundles(a)
 	registerAccounting(a)
 	registerEvidence(a)
 	registerSetup(a)

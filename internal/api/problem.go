@@ -325,6 +325,7 @@ var codeFacts = map[string]struct {
 	doctemplate.CodeOwnDraft:      {403, "You saved the draft, so another person approves it"},
 	doctemplate.CodeTest:          {422, "A test document lacks an IRAS particular"},
 	doctemplate.CodeRenderer:      {503, "The document could not be rendered now"},
+	doctemplate.CodeBundle:        {422, "Not a bundle of templates Fyniq reads"},
 	bill.CodeNotDraft:             {409, "The bill is not a draft"},
 	bill.CodeNotPosted:            {409, "The bill is not posted"},
 	bill.CodeBadDraft:             {422, "The saved bill cannot be read"},

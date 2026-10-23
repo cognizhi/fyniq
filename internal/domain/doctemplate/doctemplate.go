@@ -41,7 +41,11 @@ const (
 	CodeOwnDraft = "TPL-15" // whoever saved the draft never approves its publication (SOD-3)
 	CodeTest     = "TPL-16" // a test document rendered at publication lacks an IRAS particular (FR-TPL-03)
 	CodeRenderer = "TPL-17" // the render service is not configured or did not answer; nothing renders or publishes that needs it
+	CodeBundle   = "TPL-18" // a bundle Fyniq does not read: another format, or content that does not match its hash
 )
+
+// BundleSchema names the format of an exported bundle of templates (FR-TPL-07).
+const BundleSchema = "fyniq.template-bundle/1"
 
 // The limits of a template.
 const (
@@ -74,11 +78,13 @@ type Margins struct {
 	Left   int `json:"left"`
 }
 
-// Theme is a document's look: whether it shows the organisation's logo (FR-ORG-09), its accent colour and font.
+// Theme is a document's look: whether it shows the organisation's logo (FR-ORG-09), its accent colour and font, and
+// its style (rev 0.98), which the renderer draws; none is the classic style.
 type Theme struct {
 	Logo   bool   `json:"logo"`
 	Accent string `json:"accent"`
 	Font   string `json:"font"`
+	Style  string `json:"style,omitempty"`
 }
 
 // Block is one block of a document: shown or hidden, with its texts.
@@ -168,6 +174,9 @@ func checkDocument(documentType string, c Content, fields map[string]string) []P
 	} else {
 		if !slices.Contains(Fonts, c.Theme.Font) {
 			add(CodeTheme, "content.theme.font", fmt.Sprintf("%q is not a font Fyniq ships", c.Theme.Font), "Use "+strings.Join(Fonts, ", "))
+		}
+		if c.Theme.Style != "" && !slices.Contains(Styles, c.Theme.Style) {
+			add(CodeTheme, "content.theme.style", fmt.Sprintf("%q is not a style the renderer draws", c.Theme.Style), "Use "+strings.Join(Styles, ", "))
 		}
 		switch ratio, err := ContrastOnWhite(c.Theme.Accent); {
 		case err != nil:
@@ -267,8 +276,24 @@ func sortedKeys(m map[string]string) []string {
 }
 
 // Canonical is c as RFC 8785 JSON: the bytes a version is stored and hashed as, so the same content always has the same
-// hash.
+// hash. An empty text says nothing, so it is left out: a block's texts mean the same with or without one.
 func Canonical(c Content) ([]byte, error) {
+	blocks := make([]Block, len(c.Blocks))
+	for i, b := range c.Blocks {
+		texts := map[string]string{}
+		for k, v := range b.Texts {
+			if v != "" {
+				texts[k] = v
+			}
+		}
+		if len(texts) == 0 {
+			texts = nil
+		}
+		blocks[i] = Block{Kind: b.Kind, Shown: b.Shown, Texts: texts}
+	}
+	if c.Blocks != nil {
+		c.Blocks = blocks
+	}
 	raw, err := json.Marshal(c)
 	if err != nil {
 		return nil, err

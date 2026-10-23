@@ -4192,6 +4192,53 @@ Takes a file off a draft journal (FR-DOC-07). Once the journal is posted its evi
 
 Document and email templates as data: drafts, and numbered versions published under approval that never change (FR-TPL-01…05).
 
+### `GET /v1/document-template-bundle`
+
+**Export templates as a bundle** (`exportDocumentTemplates`)
+
+Exports one to 50 templates as a versioned bundle (FR-TPL-07): each the version in force, or the draft of one never published, with its content's SHA-256, for importDocumentTemplates in another organisation or installation. Read-only; no side effects.
+
+- **Permission:** View on Document templates: edit, publish (rev 0.7)
+- **Parameters:**
+  - `template_id` (query): The templates, one to 50, each as its own template_id parameter.
+- **Responses:**
+  - `200` OK [`TemplateBundle`](../../contracts/schemas/TemplateBundle.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/document-template-bundles`
+
+**Import templates from a bundle** (`importDocumentTemplates`)
+
+Makes a draft of each template of a bundle from exportDocumentTemplates (FR-TPL-07), all or none. Each content must match its SHA-256 (TPL-18) and meet the template rules as they are here (TPL-01 to TPL-11); every problem comes back together. Nothing imported is in force: each draft is published under approval like any other (FR-TPL-04). Side effects: the drafts and their audit events. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Document templates: edit, publish (rev 0.7)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`TemplateBundle`](../../contracts/schemas/TemplateBundle.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`TemplateImport`](../../contracts/schemas/TemplateImport.schema.json)
+  - `201` Created [`TemplateImport`](../../contracts/schemas/TemplateImport.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-18` Not a bundle of templates Fyniq reads.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `TPL-01`, `TPL-02`, `TPL-03`, `TPL-04`, `TPL-05`, `TPL-06`, `TPL-07`, `TPL-08`, `TPL-09`, `TPL-10`, `TPL-11`, `TPL-18`
+
 ### `GET /v1/document-template-catalogue/{document_type}`
 
 **Read what a template is made of** (`getDocumentTemplateCatalogue`)

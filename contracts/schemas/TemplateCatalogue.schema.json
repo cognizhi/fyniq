@@ -85,6 +85,13 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "starters": {
+      "description": "The starter gallery (FR-TPL-07): one per style, the first the default.",
+      "items": {
+        "$ref": "TemplateStarter.schema.json"
+      },
+      "type": "array"
     }
   },
   "required": [
@@ -98,7 +105,8 @@
     "margin_max_mm",
     "min_contrast",
     "locked_title",
-    "defaults"
+    "defaults",
+    "starters"
   ],
   "title": "TemplateCatalogue",
   "type": "object"

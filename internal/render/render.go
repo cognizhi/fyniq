@@ -160,6 +160,7 @@ type Layout struct {
 	Margins [4]int  `json:"margins_mm"` // top, right, bottom, left
 	Accent  string  `json:"accent"`
 	Font    string  `json:"font"`
+	Style   string  `json:"style"` // the theme's style; classic when the template names none
 	Blocks  []Block `json:"blocks"`
 }
 
@@ -232,7 +233,7 @@ func Build(documentType string, c doctemplate.Content, d Data) (Layout, error) {
 	b := &builder{typ: documentType, d: d}
 	m := c.Page.Margins
 	out := Layout{Author: b.value("organisation.name", ""), Lang: "en", Region: "SG", Paper: strings.ToLower(c.Page.Size),
-		Margins: [4]int{m.Top, m.Right, m.Bottom, m.Left}, Accent: c.Theme.Accent, Font: c.Theme.Font, Blocks: []Block{}}
+		Margins: [4]int{m.Top, m.Right, m.Bottom, m.Left}, Accent: c.Theme.Accent, Font: c.Theme.Font, Style: cmpOr(c.Theme.Style, "classic"), Blocks: []Block{}}
 	title := titles[documentType]
 	for _, x := range c.Blocks {
 		if x.Kind == doctemplate.BlockHeader && x.Texts[doctemplate.TextTitle] != "" && !doctemplate.LockedTitle(documentType) {

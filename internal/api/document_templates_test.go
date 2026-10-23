@@ -243,3 +243,61 @@ func TestTemplatesArePreviewed(t *testing.T) {
 		t.Fatalf("publishing the credit note: %d %s", v.Status, v.Raw)
 	}
 }
+
+// FR-TPL-07 through the API (rev 0.98): the starter gallery of four styles, a template made from a starter, and
+// templates exported as a versioned bundle and imported as drafts, refused when content does not match its hash.
+// req: FR-TPL-07
+func TestTemplateStartersAndBundles(t *testing.T) {
+	e := newEnv(t)
+	accountant, owner := e.as(authz.Accountant), e.as(authz.Owner)
+	c := e.call(http.MethodGet, "/v1/document-template-catalogue/quote", accountant, nil)
+	starters, _ := c.Body["starters"].([]any)
+	var keys []string
+	for _, s := range starters {
+		keys = append(keys, s.(map[string]any)["key"].(string))
+	}
+	if strings.Join(keys, ",") != "classic,band,minimal,compact" || !strings.Contains(c.Raw, `"style":"band"`) {
+		t.Fatalf("the starters: %v", keys)
+	}
+	band := e.call(http.MethodPost, "/v1/document-templates", accountant, map[string]any{"kind": "document", "document_type": "quote", "name": "Navy quote", "starter": "band"})
+	if band.Status != http.StatusCreated || !strings.Contains(band.Raw, `"font":"IBM Plex Sans"`) || !strings.Contains(band.Raw, `"style":"band"`) {
+		t.Fatalf("a template from the band starter: %d %s", band.Status, band.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/document-templates", accountant, map[string]any{"kind": "document", "document_type": "quote", "name": "x",
+		"starter": "band", "content": band.Body["draft"]}), "createDocumentTemplate", 422, CodeInvalid)
+	if p := e.call(http.MethodPost, "/v1/document-template-previews", accountant, map[string]any{"kind": "document", "document_type": "quote",
+		"content": band.Body["draft"]}); p.Status != http.StatusOK || !strings.HasPrefix(p.str("pdf"), "JVBERi0") {
+		t.Errorf("previewing the band starter: %d %.200s", p.Status, p.Raw)
+	}
+
+	// Exported: the published version of one, the draft of the other.
+	mail := e.call(http.MethodPost, "/v1/document-templates", accountant, map[string]any{"kind": "email", "document_type": "quote", "name": "Quote email"})
+	if pub := e.call(http.MethodPost, "/v1/document-templates/"+mail.str("id")+"/publish", owner, nil, "If-Match", mail.Header.Get("ETag")); pub.Status != http.StatusOK {
+		t.Fatalf("publishing the email: %d %s", pub.Status, pub.Raw)
+	}
+	x := e.call(http.MethodGet, "/v1/document-template-bundle?template_id="+band.str("id")+"&template_id="+mail.str("id"), e.as(authz.Auditor), nil)
+	items, _ := x.Body["templates"].([]any)
+	if x.Status != http.StatusOK || x.str("schema") != "fyniq.template-bundle/1" || len(items) != 2 || items[0].(map[string]any)["version"] != float64(0) ||
+		items[1].(map[string]any)["version"] != float64(1) || len(items[1].(map[string]any)["content_hash"].(string)) != 64 {
+		t.Fatalf("the bundle: %d %s", x.Status, x.Raw)
+	}
+
+	// Imported: drafts, nothing in force; a changed content is refused, all or none.
+	bundle := x.Body
+	in := e.call(http.MethodPost, "/v1/document-template-bundles", accountant, bundle)
+	got, _ := in.Body["templates"].([]any)
+	if in.Status != http.StatusCreated || len(got) != 2 || got[1].(map[string]any)["published_version"] != nil || got[1].(map[string]any)["name"] != "Quote email" {
+		t.Fatalf("importing: %d %s", in.Status, in.Raw)
+	}
+	tampered := x.Body
+	tampered["templates"].([]any)[1].(map[string]any)["content"].(map[string]any)["subject"] = "Pay {{document.total}} now"
+	r := e.call(http.MethodPost, "/v1/document-template-bundles", accountant, tampered)
+	e.problemIs(r, "importDocumentTemplates", 422, doctemplate.CodeBundle)
+	if !strings.Contains(r.Raw, `"field":"body.templates[1].content_hash"`) {
+		t.Errorf("the tampered template is not named: %s", r.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/document-templates?kind=email", accountant, nil); len(l.Body["items"].([]any)) != 2 {
+		t.Errorf("a refused import made drafts: %s", l.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/document-template-bundles", e.as(authz.Auditor), bundle), "importDocumentTemplates", 403, CodeForbidden)
+}

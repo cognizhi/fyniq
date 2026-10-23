@@ -10,6 +10,13 @@
 #let ink = rgb("#1f2937")
 #let muted = rgb("#4b5563")
 #let rule = rgb("#d1d5db")
+// The theme's style (FR-TPL-07, rev 0.98): classic, band (white on the accent, which the template rules keep at 4.5:1
+// or more), minimal or compact.
+#let style = d.at("style", default: "classic")
+#let band = style == "band"
+#let minimal = style == "minimal"
+#let compact = style == "compact"
+#let base = if compact { 8.5pt } else { 9.5pt }
 
 #let at(x, key, default: none) = x.at(key, default: default)
 #let mark(p) = if p != none and p != "" [#metadata(p)<particular>]
@@ -17,8 +24,8 @@
 #let footer = d.blocks.find(b => b.kind == "footer")
 
 #set document(title: d.title, author: d.author)
-#set text(font: d.font, lang: d.lang, region: d.region, size: 9.5pt, fill: ink)
-#set par(leading: 0.62em, spacing: 0.9em)
+#set text(font: d.font, lang: d.lang, region: d.region, size: base, fill: ink)
+#set par(leading: if compact { 0.5em } else { 0.62em }, spacing: if compact { 0.6em } else { 0.9em })
 #set page(
   paper: d.paper,
   margin: (top: d.margins_mm.at(0) * 1mm, right: d.margins_mm.at(1) * 1mm, bottom: d.margins_mm.at(2) * 1mm, left: d.margins_mm.at(3) * 1mm),
@@ -27,8 +34,9 @@
     align(center, at(footer, "body", default: ""))
   },
 )
-#show heading.where(level: 1): set text(size: 18pt, weight: "bold", fill: accent)
-#show heading.where(level: 2): set text(size: 9.5pt, weight: "bold", fill: accent)
+#show heading.where(level: 1): set text(size: if compact { 14pt } else if minimal { 20pt } else { 18pt },
+  weight: if minimal { "regular" } else { "bold" }, fill: if band { white } else if minimal { ink } else { accent })
+#show heading.where(level: 2): set text(size: base, weight: "bold", fill: accent)
 
 #let items(b) = for it in at(b, "items", default: ()) {
   [#it.text#mark(at(it, "particular")) \ ]
@@ -54,13 +62,14 @@
 
 #for b in d.blocks {
   if b.kind == "header" {
-    grid(
+    let head = grid(
       columns: (1fr, auto),
       align: (left + horizon, right + horizon),
-      if at(b, "logo", default: false) { image("logo.png", height: 14mm, alt: d.author + " logo") },
+      if at(b, "logo", default: false) { image("logo.png", height: if compact { 10mm } else { 14mm }, alt: d.author + " logo") },
       [#heading(level: 1, b.items.at(0).text)#mark(at(b.items.at(0), "particular"))],
     )
-    v(6pt)
+    if band { block(fill: accent, width: 100%, inset: (x: 10pt, y: 9pt), head) } else { head }
+    v(if compact { 3pt } else { 6pt })
   } else if b.kind == "our_details" {
     block(text(size: 8.5pt, items(b)))
   } else if b.kind == "recipient" {
@@ -74,9 +83,10 @@
       #table(
         columns: cols.enumerate().map(((i, c)) => if i == 0 { 1fr } else { auto }),
         align: (x, y) => aligns.at(x),
-        stroke: (x, y) => (bottom: if y == 0 { 0.8pt + accent } else { 0.4pt + rule }),
-        inset: (x: 5pt, y: 5pt),
-        table.header(..cols.map(c => text(weight: "bold", c.title))),
+        fill: (x, y) => if band and y == 0 { accent },
+        stroke: (x, y) => (bottom: if y == 0 { if minimal { 0.6pt + ink } else if band { none } else { 0.8pt + accent } } else if minimal { none } else { 0.4pt + rule }),
+        inset: if compact { (x: 4pt, y: 3pt) } else { (x: 5pt, y: 5pt) },
+        table.header(..cols.map(c => text(weight: "bold", fill: if band { white } else { ink }, c.title))),
         ..at(b, "cells", default: ()).flatten(),
       )
       #marks(at(b, "particulars", default: ()))

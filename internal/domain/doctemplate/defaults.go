@@ -36,17 +36,52 @@ var emails = map[string][2]string{
 		"Dear {{supplier.name}},\n\nPlease find attached purchase order {{document.number}} for {{document.total}}. Please quote its number on your invoice.\n\nKind regards,\n{{organisation.name}}"},
 }
 
-// Default is the content a new template of kind for documentType starts from: every block the type takes in the
-// starter order, the optional ones a small company rarely needs hidden; or the email's subject and body.
-func Default(kind, documentType string) Content {
+// StarterTemplate is one of the starter gallery's templates (FR-TPL-07): a style with its font, accent and page.
+type StarterTemplate struct {
+	Key, Name, Description string
+	Theme                  Theme
+	Margins                Margins
+}
+
+// Starters are the starter gallery, the first the default (FR-TPL-07; the owner's decision of 23 Oct 2026, rev 0.98):
+// one per style, each accent at least 4.5:1 against white, none violet, which marks AI content in Fyniq.
+var Starters = []StarterTemplate{
+	{Key: "classic", Name: "Classic", Description: "Inter, a teal title and a rule under the table's head",
+		Theme: Theme{Logo: true, Accent: Accent, Font: "Inter", Style: "classic"}, Margins: Margins{Top: 20, Right: 18, Bottom: 20, Left: 18}},
+	{Key: "band", Name: "Band", Description: "IBM Plex Sans, a navy band behind the header and the table's head",
+		Theme: Theme{Logo: true, Accent: "#1E3A8A", Font: "IBM Plex Sans", Style: "band"}, Margins: Margins{Top: 16, Right: 18, Bottom: 20, Left: 18}},
+	{Key: "minimal", Name: "Minimal", Description: "IBM Plex Serif, no rules, generous margins",
+		Theme: Theme{Logo: true, Accent: "#374151", Font: "IBM Plex Serif", Style: "minimal"}, Margins: Margins{Top: 24, Right: 22, Bottom: 24, Left: 22}},
+	{Key: "compact", Name: "Compact", Description: "Inter in smaller type, for long line tables",
+		Theme: Theme{Logo: true, Accent: "#7C2D12", Font: "Inter", Style: "compact"}, Margins: Margins{Top: 14, Right: 14, Bottom: 14, Left: 14}},
+}
+
+// StarterKey looks a starter up by its key.
+func StarterKey(key string) (StarterTemplate, bool) {
+	for _, s := range Starters {
+		if s.Key == key {
+			return s, true
+		}
+	}
+	return StarterTemplate{}, false
+}
+
+// Default is the content a new template of kind for documentType starts from: the classic starter.
+func Default(kind, documentType string) Content { return Starter(Starters[0], kind, documentType) }
+
+// Starter is the content of a starter template of kind for documentType: every block the type takes in the starter
+// order, the optional ones a small company rarely needs hidden; or the email's subject and body, the same for every
+// starter.
+func Starter(s StarterTemplate, kind, documentType string) Content {
 	if kind == KindEmail {
 		e := emails[documentType]
 		return Content{Schema: Schema, Subject: e[0], Body: e[1]}
 	}
+	theme := s.Theme
 	c := Content{
 		Schema: Schema,
-		Page:   &Page{Size: "A4", Margins: Margins{Top: 20, Right: 18, Bottom: 20, Left: 18}},
-		Theme:  &Theme{Logo: true, Accent: Accent, Font: Fonts[0]},
+		Page:   &Page{Size: "A4", Margins: s.Margins},
+		Theme:  &theme,
 	}
 	for _, kind := range Blocks(documentType) {
 		b := Block{Kind: kind, Shown: true}

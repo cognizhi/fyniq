@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "exported_at": {
+      "description": "When it was exported.",
+      "examples": [
+        "2026-10-23T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "schema": {
+      "description": "The bundle's format.",
+      "enum": [
+        "fyniq.template-bundle/1"
+      ],
+      "examples": [
+        "fyniq.template-bundle/1"
+      ],
+      "type": "string"
+    },
+    "templates": {
+      "description": "The templates, one to 50.",
+      "items": {
+        "$ref": "BundledTemplate.schema.json"
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema",
+    "exported_at",
+    "templates"
+  ],
+  "title": "TemplateBundle",
+  "type": "object"
+}

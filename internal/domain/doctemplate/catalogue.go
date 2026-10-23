@@ -224,6 +224,11 @@ func Fields(documentType string) []Field {
 	return out
 }
 
+// Styles are the looks the renderer draws (FR-TPL-07; the owner's decision of 23 Oct 2026, rev 0.98), one per starter
+// template: classic (the accent on the title and the table's rule), band (an accent band behind the header and the
+// table's head), minimal (no rules, the accent on labels only) and compact (smaller type and tighter spacing).
+var Styles = []string{"classic", "band", "minimal", "compact"}
+
 // The theme's choices (FR-TPL-01): fonts the render service ships, self-hosted under the SIL Open Font Licence, and
 // the page sizes and margins.
 var (
