@@ -16,10 +16,14 @@ type ContactDetails struct {
 	RemittanceEmail  string
 	Phone            string
 	Address          string
-	Country          string     // ISO 3166-1 alpha-2
-	TaxResidence     string     // ISO 3166-1 alpha-2, where it is resident for tax when that is not Country (FR-AP-19); empty: Country
-	Currency         string     // ISO 4217
-	PaymentTermsDays *int       // nil when not set
+	Country          string // ISO 3166-1 alpha-2
+	TaxResidence     string // ISO 3166-1 alpha-2, where it is resident for tax when that is not Country (FR-AP-19); empty: Country
+	Currency         string // ISO 4217
+	PaymentTermsDays *int   // nil when not set
+	// The early-payment discount a supplier offers (FR-AP-13; rev 0.93): DiscountPercent off, as an exact decimal such
+	// as "2", if paid within DiscountDays of the bill's date. Both set, or neither.
+	DiscountPercent  string
+	DiscountDays     *int
 	DefaultAccountID *uuid.UUID // the default category
 	DefaultGSTCode   string
 }

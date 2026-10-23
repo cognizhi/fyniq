@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/cockroachdb/apd/v3"
 
@@ -26,6 +27,7 @@ const (
 	LineName         = "RND-LINE"
 	GSTShareName     = "RND-GST-SHARE"
 	WHTName          = "RND-WHT"
+	DiscountName     = "RND-DISCOUNT"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -153,6 +155,16 @@ func Withheld(gross money.Money, percent string) (money.Money, error) {
 		return money.Money{}, fmt.Errorf("%s: the rate %q is not a percentage above 0 and up to 100 with at most two decimals", WHTName, percent)
 	}
 	return GSTShare(gross, percent)
+}
+
+// Discount is RND-DISCOUNT (PRD-001 §10.4, rev 0.93; provisional until the accountant's sign-off): an early-payment
+// discount a supplier offers on a bill (FR-AP-13) = round(total × percent ÷ 100, the currency's minor units), half away
+// from zero, computed exactly before its one rounding. The percent is above 0 and below 100, with at most two decimals.
+func Discount(total money.Money, percent string) (money.Money, error) {
+	if !IsWHTRate(percent) || percent == "100" || strings.HasPrefix(percent, "100.") {
+		return money.Money{}, fmt.Errorf("%s: %q is not a percentage above 0 and below 100 with at most two decimals", DiscountName, percent)
+	}
+	return GSTShare(total, percent)
 }
 
 // Rate is RND-RATE (PRD-001 §10.4, rev 0.24): a quote turned into the one form Fyniq stores, base currency per one

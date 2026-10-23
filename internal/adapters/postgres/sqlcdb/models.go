@@ -173,6 +173,15 @@ type FyniqBalance struct {
 	LineCount      int64
 }
 
+type FyniqBillPaymentPlan struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	BillID         uuid.UUID
+	PlannedOn      pgtype.Date
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
 type FyniqCloseChecklistEntry struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID
@@ -215,6 +224,8 @@ type FyniqContact struct {
 	Version          int32
 	CreatedAt        time.Time
 	TaxResidence     *string
+	DiscountPercent  *string
+	DiscountDays     *int16
 }
 
 type FyniqCurrencies struct {

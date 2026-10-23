@@ -206,6 +206,8 @@ var codeFacts = map[string]struct {
 	contact.CodePeppol:            {422, "Not a Peppol participant ID"},
 	contact.CodeText:              {422, "A text is too long"},
 	contact.CodeCategory:          {422, "Not an account that takes postings"},
+	contact.CodeDiscount:          {422, "The early-payment discount terms are not a percentage and a number of days"},
+	bill.CodePlan:                 {422, "The payment date cannot be planned"},
 	member.CodeRole:               {422, "Not a role a member can hold"},
 	member.CodeName:               {422, "The name is not valid"},
 	member.CodeRoles:              {422, "No role, or a role named twice"},

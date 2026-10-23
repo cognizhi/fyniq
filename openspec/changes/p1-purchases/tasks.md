@@ -86,6 +86,10 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 - [ ] 5.2 The bills board (`bills-board`): by status, the due-date calendar, scheduling a payment date,
   early-payment discounts shown, reminders before due dates in the Inbox. Tests `// req: FR-AP-13`
   **Left:** remittance advice email (`p1-templates-email`); "in a batch" (FR-BNK-12)
+  (23 Oct 2026, PRD-001 rev 0.93, the API: planned payment dates (`planBillPayment`, append-only `FY175`), a
+  supplier's discount terms and a bill's discount (`RND-DISCOUNT`), the bills to pay (`listBillReminders`, the
+  setting `purchases.reminder_days`). Tests `TestBillPaymentsArePlannedAndReminded`, `TestBillPlansThroughTheAPI`.
+  **Left:** the board, the calendar and the Inbox's reminders (the screens))
 
 ## 6. Prepayment spreads (the owner's decision of 22 Oct 2026)
 

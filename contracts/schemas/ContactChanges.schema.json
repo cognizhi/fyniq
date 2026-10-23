@@ -60,6 +60,21 @@
       ],
       "type": "string"
     },
+    "discount_days": {
+      "description": "Its days, 1 to 365; -1 clears them.",
+      "examples": [
+        10
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "discount_percent": {
+      "description": "A supplier's early-payment discount percentage; \"\" clears the discount, with discount_days -1.",
+      "examples": [
+        "2"
+      ],
+      "type": "string"
+    },
     "legal_name": {
       "description": "Its legal name.",
       "examples": [

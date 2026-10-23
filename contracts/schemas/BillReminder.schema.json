@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bill_id": {
+      "description": "The bill.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "due_date": {
+      "description": "When it falls due.",
+      "examples": [
+        "2026-11-13"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "BILL-0007"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "What is left to pay, in its currency."
+    },
+    "planned_payment_on": {
+      "description": "When its payment is planned for, if it is.",
+      "examples": [
+        "2026-11-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "supplier": {
+      "$ref": "BillSupplier.schema.json",
+      "description": "Its supplier."
+    },
+    "why": {
+      "description": "overdue: past its due date; due: it falls due within the organisation's reminder days; planned: its planned payment date is within them.",
+      "enum": [
+        "overdue",
+        "due",
+        "planned"
+      ],
+      "examples": [
+        "due"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "bill_id",
+    "supplier",
+    "open",
+    "why"
+  ],
+  "title": "BillReminder",
+  "type": "object"
+}

@@ -32,6 +32,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/bill-payments/{payment_id}` (getBillPayment): Get a payment of bills
 - `POST /v1/bill-payments/{payment_id}/void` (voidBillPayment): Void a payment of bills
 - `POST /v1/bill-payments/{payment_id}/void-approval` (requestBillPaymentVoid): Ask for approval to void a payment of bills
+- `GET /v1/bill-reminders` (listBillReminders): List the bills to pay soon
 - `GET /v1/bills` (listBills): List the bills
 - `POST /v1/bills` (createBill): Save a draft bill
 - `GET /v1/bills/{bill_id}` (getBill): Get a bill
@@ -42,6 +43,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/evidence` (addBillEvidence): Attach evidence to a bill
 - `GET /v1/bills/{bill_id}/evidence/{evidence_id}` (getBillEvidence): Get a bill's evidence file
 - `DELETE /v1/bills/{bill_id}/evidence/{evidence_id}` (removeBillEvidence): Remove evidence from a draft bill
+- `POST /v1/bills/{bill_id}/payment-plan` (planBillPayment): Plan a bill's payment date
 - `POST /v1/bills/{bill_id}/post` (postBill): Post a draft bill
 - `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill

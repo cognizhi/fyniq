@@ -424,6 +424,15 @@ Source: PRD-001 §10.4
 - **THEN** it is RND-LINE of everything taken so far, this part included, less RND-LINE of what was taken before
 - **AND** the parts add up to the line's amount exactly, each within one minor unit of its own quantity × price (three parts of one of 3 × 33.333333 are 33.33, 33.34 and 33.33)
 
+### Requirement: RND-DISCOUNT Early-payment discount
+An early-payment discount a supplier offers on a bill (FR-AP-13) SHALL be round(total × percent ÷ 100, the currency's minor units), half away from zero, computed exactly before its one rounding, the percent above 0 and below 100 with at most two decimals (rev 0.93; provisional).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Discount formula
+- **WHEN** a bill's supplier offers an early-payment discount
+- **THEN** the discount = round(total × percent ÷ 100, the minor units), half away from zero (2% of S$1,090.00 is 21.80; 2.5% of S$1,234.56 is 30.86)
+
 ### Requirement: RND-WHT Withholding tax
 Withholding tax on a payment to a non-resident supplier (FR-AP-19) SHALL be round(⌊gross⌋ × rate ÷ 100, the base currency's minor units), half away from zero, in the base currency, where gross is the payment before GST in the base currency and ⌊⌋ rounds it down to the dollar (rev 0.90; provisional).
 

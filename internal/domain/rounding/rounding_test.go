@@ -730,3 +730,38 @@ func TestWHTProperties(t *testing.T) {
 		}
 	})
 }
+
+// req: RND-DISCOUNT
+// req: FR-AP-13
+func TestDiscountPinnedCases(t *testing.T) {
+	for _, c := range []struct {
+		total, pct string
+		cur        money.Currency
+		want       string
+	}{
+		{"1090.00", "2", sgd, "21.80"},
+		{"1234.56", "2.5", sgd, "30.86"}, // 30.864
+		{"99.99", "1.5", sgd, "1.50"},    // 1.49985
+		{"12345", "2", jpy, "247"},       // 246.9
+		{"0.01", "0.01", sgd, "0.00"},
+	} {
+		got, err := Discount(amount(t, c.total, c.cur), c.pct)
+		if err != nil || got.String() != c.want {
+			t.Errorf("Discount(%s, %s%%) = %v, %v; want %s", c.total, c.pct, got, err, c.want)
+		}
+	}
+	for _, bad := range []string{"0", "100", "100.00", "101", "-2", "2%", ""} {
+		if _, err := Discount(amount(t, "100.00", sgd), bad); err == nil {
+			t.Errorf("Discount took %q", bad)
+		}
+	}
+}
+
+func amount(t *testing.T, s string, cur money.Currency) money.Money {
+	t.Helper()
+	m, err := money.Parse(s, cur)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return m
+}

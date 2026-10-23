@@ -40,6 +40,10 @@
       "format": "date",
       "type": "string"
     },
+    "early_payment_discount": {
+      "$ref": "BillDiscount.schema.json",
+      "description": "The early-payment discount its supplier offers (FR-AP-13): taking it is a supplier credit note for the amount."
+    },
     "fx_rate": {
       "description": "The rate typed on the document, if one was.",
       "examples": [
@@ -126,6 +130,14 @@
         "$ref": "BillPaidBy.schema.json"
       },
       "type": "array"
+    },
+    "planned_payment_on": {
+      "description": "The date its payment is planned for (FR-AP-13): planBillPayment sets it; it posts nothing. A paid bill keeps the date of its last plan.",
+      "examples": [
+        "2026-11-10"
+      ],
+      "format": "date",
+      "type": "string"
     },
     "posted_at": {
       "description": "When it was posted.",

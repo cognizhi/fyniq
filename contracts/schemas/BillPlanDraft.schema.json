@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "planned_on": {
+      "description": "The date to pay it, on or after the bill's date. Left out, the bill is unscheduled.",
+      "examples": [
+        "2026-11-10"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "title": "BillPlanDraft",
+  "type": "object"
+}

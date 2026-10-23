@@ -80,6 +80,13 @@ type BillInputTax struct {
 	TaxAgent           string `json:"tax_agent,omitempty" enum:"claimable,not_claimable" doc:"The tax agent's decision on lines the rules leave to them: a director's loan, or a simplified tax invoice dated before the pack's limit. Attach their advice. Ignored on other lines." example:"claimable"`
 }
 
+// BillDiscount is the early-payment discount a bill offers (FR-AP-13; rev 0.93): its supplier's terms on its total.
+type BillDiscount struct {
+	Percent string `json:"percent" doc:"The percentage off." example:"2"`
+	Until   string `json:"until" format:"date" doc:"The last day to pay and take it: the bill's date plus the supplier's discount days." example:"2026-10-24"`
+	Amount  Money  `json:"amount" doc:"The discount on the bill's total, in its currency (RND-DISCOUNT)."`
+}
+
 // BillTaxDecision is how one line's input tax was decided (FR-AP-20): the line records the condition that decided it.
 type BillTaxDecision struct {
 	Line          int    `json:"line" doc:"The line, from 1." example:"1"`
@@ -190,6 +197,8 @@ type Bill struct {
 	InputTax      BillInputTax      `json:"input_tax" doc:"The facts its input tax is decided from, every one stated (FR-AP-20)."`
 	Nature        string            `json:"nature_of_payment,omitempty" doc:"What the payment is for, for a supplier resident outside Singapore (FR-AP-19)." example:"software_use"`
 	Withholding   *BillWithholding  `json:"withholding,omitempty" doc:"getBill only, for a supplier resident outside Singapore: how withholding tax stands (FR-AP-19)."`
+	PlannedOn     string            `json:"planned_payment_on,omitempty" format:"date" doc:"The date its payment is planned for (FR-AP-13): planBillPayment sets it; it posts nothing. A paid bill keeps the date of its last plan." example:"2026-11-10"`
+	Discount      *BillDiscount     `json:"early_payment_discount,omitempty" doc:"The early-payment discount its supplier offers (FR-AP-13): taking it is a supplier credit note for the amount."`
 	TaxDecisions  []BillTaxDecision `json:"input_tax_decisions" nullable:"false" doc:"getBill only: how each line's input tax was decided, one a line in order (FR-AP-20)."`
 	Total         Money             `json:"total" doc:"Every line's net and GST, in the bill's currency."`
 	Payable       *Money            `json:"payable,omitempty" doc:"What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."`
@@ -553,6 +562,24 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 		out.Supplier = &BillSupplier{ID: d.SupplierID.String()}
 		if c, err := u.Contacts().Get(ctx, d.SupplierID); err == nil {
 			out.Supplier.Name = c.LegalName
+			if doc.Type == storage.DocumentBill {
+				disc, err := bill.DiscountOf(c, d)
+				if err != nil {
+					return Bill{}, err
+				}
+				if disc != nil {
+					out.Discount = &BillDiscount{Percent: disc.Percent, Until: dayText(disc.Until), Amount: moneyOut(disc.Amount)}
+				}
+			}
+		}
+	}
+	if doc.Type == storage.DocumentBill && doc.Status != storage.DocumentDraft {
+		plans, err := u.BillPlans().Of(ctx, []uuid.UUID{doc.ID})
+		if err != nil {
+			return Bill{}, err
+		}
+		if pl, ok := plans[doc.ID]; ok && pl.PlannedOn != nil {
+			out.PlannedOn = dayText(*pl.PlannedOn)
 		}
 	}
 	out.Lines = billLinesOut(d)

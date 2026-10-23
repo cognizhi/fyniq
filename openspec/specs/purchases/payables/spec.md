@@ -322,6 +322,22 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **WHEN** a supplier statement is received
 - **THEN** it is reconciled (FR-AP-10)
 
+#### Scenario: A planned payment date beside the bill (rev 0.93)
+- **GIVEN** a posted bill with something open, until payment batches exist
+- **WHEN** whoever prepares bills plans its payment date, on or after the bill's date
+- **THEN** the plan is kept beside the bill, posts nothing and changes no version of it; the latest plan is in force, and one with no date unschedules it
+- **AND** a date before the bill's, or a paid bill, is refused (BILL-18)
+
+#### Scenario: Discounts from the supplier's terms (rev 0.93)
+- **GIVEN** a supplier offering a percentage off if paid within a number of days
+- **WHEN** its bill is shown
+- **THEN** the bill shows the discount on its total under `RND-DISCOUNT` and the last day to take it (2% of S$1,090.00 within 10 days of 14 October: S$21.80 until 24 October)
+- **AND** taking it is a supplier credit note for the amount
+
+#### Scenario: Reminders in the Inbox (rev 0.93)
+- **WHEN** a member who records bill payments opens the Inbox
+- **THEN** it lists the bills overdue, or falling due or planned to be paid within the organisation's reminder days (3 by default), earliest first
+
 ### Requirement: FR-AP-20 Input-tax eligibility
 The system SHALL decide input-tax eligibility on bills, claims and card lines per line from recorded facts, never from an extracted GST amount alone, and SHALL record the condition that decided it: claimable, not claimable, or ⚠ for the tax agent.
 

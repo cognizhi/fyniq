@@ -59,6 +59,21 @@
       ],
       "type": "string"
     },
+    "discount_days": {
+      "description": "The days of its early-payment discount.",
+      "examples": [
+        10
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "discount_percent": {
+      "description": "A supplier's early-payment discount: this percentage off its bill if paid within discount_days of the bill's date (FR-AP-13).",
+      "examples": [
+        "2"
+      ],
+      "type": "string"
+    },
     "id": {
       "description": "The contact's ID.",
       "examples": [

@@ -78,6 +78,7 @@ type UnitOfWork interface {
 	RecurringJournals() RecurringJournals
 	RecurringBills() RecurringBills
 	WithholdingDecisions() WithholdingDecisions
+	BillPlans() BillPlans
 	AccountingBasis() AccountingBasis
 	FXRates() FXRates
 	// AfterCommit runs fn after the unit of work commits, outside its transaction; never after a
@@ -536,6 +537,7 @@ const (
 	CodeBillRelease    = "STORAGE-RELEASE-01"    // a release releases the spread of a posted bill's current version
 	CodePurchaseOrder  = "STORAGE-PO-01"         // a purchase order posts nothing: no entry names one
 	CodeWithholding    = "STORAGE-WHT-01"        // a withholding decision never changes: a later one replaces it
+	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
 	CodeAudit          = "STORAGE-AUDIT-01"      // the audit trail cannot change, or a change has no audit event
 	CodeOutbox         = "STORAGE-OUTBOX-01"     // an outbox row cannot change what it is, or move to that state
 	CodeSetup          = "STORAGE-SETUP-01"      // the setup code is not valid, or setup is done
