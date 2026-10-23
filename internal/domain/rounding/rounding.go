@@ -24,6 +24,7 @@ const (
 	RateName         = "RND-RATE"
 	GSTExclName      = "RND-GST-EXCL"
 	LineName         = "RND-LINE"
+	GSTShareName     = "RND-GST-SHARE"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -81,6 +82,37 @@ func LinePart(before, part money.Quantity, p money.UnitPrice) (money.Money, erro
 		return money.Money{}, err
 	}
 	return all.Sub(prev)
+}
+
+// sharePattern reads a share strictly: a percentage from 0 to 100 with at most two decimals ("60", "33.33", "100").
+var sharePattern = regexp.MustCompile(`^(100(\.0{1,2})?|[0-9]{1,2}(\.[0-9]{1,2})?)$`)
+
+// IsShare reports whether s is a share GSTShare takes: a percentage from 0 to 100 with at most two decimals.
+func IsShare(s string) bool { return sharePattern.MatchString(s) }
+
+// GSTShare is RND-GST-SHARE (PRD-001 §10.4, rev 0.89; provisional until the accountant's sign-off): the input tax
+// claimed of a line's GST when only shares of it are claimable, such as the business share and, for an invoice in an
+// agent's name, the share the company reimbursed = round(GST × share₁ ÷ 100 × share₂ ÷ 100 …, the currency's minor
+// units), half away from zero, computed exactly before its one rounding. The rest of the GST stays in the cost. Shares
+// of 100 claim the GST whole, and a share of 0 claims none.
+func GSTShare(gst money.Money, shares ...string) (money.Money, error) {
+	product := gst.Decimal()
+	for i, sh := range shares {
+		if !sharePattern.MatchString(sh) {
+			return money.Money{}, fmt.Errorf("%s: share %d %q is not a percentage from 0 to 100 with at most two decimals", GSTShareName, i+1, sh)
+		}
+		d, _, err := apd.NewFromString(sh)
+		if err != nil {
+			return money.Money{}, fmt.Errorf("%s: share %d %q: %w", GSTShareName, i+1, sh, err)
+		}
+		if _, err := work.Mul(product, product, d); err != nil {
+			return money.Money{}, err
+		}
+		if _, err := work.Quo(product, product, apd.New(100, 0)); err != nil {
+			return money.Money{}, err
+		}
+	}
+	return money.FromRounded(halfAwayFromZero(product, gst.Currency().MinorUnits), gst.Currency())
 }
 
 // Rate is RND-RATE (PRD-001 §10.4, rev 0.24): a quote turned into the one form Fyniq stores, base currency per one

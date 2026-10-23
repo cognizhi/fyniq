@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -282,5 +283,67 @@ func TestSpreadBillsThroughTheAPI(t *testing.T) {
 	if g := e.call(http.MethodGet, "/v1/bills/"+r.str("id"), e.as(authz.Accountant), nil); !strings.Contains(g.Raw, `"code":"`+ledger.CodeSpread+`"`) ||
 		len(g.Body["releases"].([]any)) != 0 {
 		t.Errorf("a spread credit note: %s", g.Raw)
+	}
+}
+
+// FR-AP-20 through the API (rev 0.89): a bill saves its input-tax facts and each line's business share, shows every fact
+// stated, and getBill shows how each line's input tax was decided, for a draft and once posted. A simplified tax
+// invoice used 60% for the business claims 60% of its GST (RND-GST-SHARE); an agent's invoice credited to a director's
+// loan waits for the tax agent (⚠). Facts the API does not know are refused.
+// req: FR-AP-20
+// req: RND-GST-SHARE
+func TestBillInputTaxThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	e.supplier()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.GSTRegistrations().Create(ctx, storage.NewGSTRegistration{RegisteredFrom: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), GSTNumber: "202612345K",
+			ReturnFrequency: "quarterly", QuarterStartMonth: 1, AccountingBasis: "invoice", RecordedAt: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	decision := func(r response) map[string]any { return r.Body["input_tax_decisions"].([]any)[0].(map[string]any) }
+
+	d := e.billDraft("50.00", "4.50")
+	d["date"], d["input_tax"] = "2026-10-26", map[string]any{"document": "simplified"}
+	d["lines"].([]map[string]any)[0]["business_share"] = "60"
+	r := e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), d)
+	if r.Status != 201 || !strings.Contains(r.Raw, `"input_tax":{"supplier_registered":true,"document":"simplified","addressed_to":"company"}`) ||
+		!strings.Contains(r.Raw, `"business_share":"60"`) {
+		t.Fatalf("saving the facts: %d %s", r.Status, r.Raw)
+	}
+	id, tag := r.str("id"), r.Header.Get("ETag")
+	g := e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Accountant), nil)
+	if x := decision(g); x["condition"] != "claimable" || x["reason"] != bill.ReasonBusinessShare || x["business_share"] != "60" ||
+		!strings.Contains(g.Raw, `"amount":"2.70","currency":"SGD"`) {
+		t.Fatalf("the draft's decision: %v\n%s", x, g.Raw)
+	}
+	if p := e.call(http.MethodPost, "/v1/bills/"+id+"/post", e.as(authz.Accountant), nil, "If-Match", tag); p.Status != 200 {
+		t.Fatalf("posting: %d %s", p.Status, p.Raw)
+	}
+	if g = e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Auditor), nil); decision(g)["reason"] != bill.ReasonBusinessShare {
+		t.Errorf("the posted bill's decision: %s", g.Raw)
+	}
+
+	loan := e.billDraft("100.00", "9.00")
+	loan["supplier_ref"], loan["input_tax"] = "PH-1", map[string]any{"addressed_to": "agent", "repaid": "director_loan"}
+	r = e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), loan)
+	g = e.call(http.MethodGet, "/v1/bills/"+r.str("id"), e.as(authz.Accountant), nil)
+	if decision(g)["condition"] != "tax_agent" || !strings.Contains(g.Raw, `"code":"`+bill.WarnTaxAgent+`"`) ||
+		!strings.Contains(g.Raw, `"repaid":"director_loan"`) {
+		t.Errorf("a director's loan: %s", g.Raw)
+	}
+
+	for name, edit := range map[string]func(map[string]any){
+		"an unknown document": func(d map[string]any) { d["input_tax"] = map[string]any{"document": "receipt"} },
+		"a share over 100":    func(d map[string]any) { d["lines"].([]map[string]any)[0]["business_share"] = "120" },
+		"repaid to a company": func(d map[string]any) { d["input_tax"] = map[string]any{"repaid": "director_loan"} },
+	} {
+		d := e.billDraft("10.00", "0.90")
+		edit(d)
+		if r := e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), d); r.Status != 422 {
+			t.Errorf("%s: %d %s", name, r.Status, r.Raw)
+		}
 	}
 }

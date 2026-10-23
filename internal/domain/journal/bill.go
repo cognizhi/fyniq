@@ -470,8 +470,9 @@ func baseOf(x money.Money, rate *money.Rate, base money.Currency) money.Money {
 
 // replayBill posts a stored bill version again under the rule that posted e (ENG-06), with the rate and the claimable
 // lines the entry kept: the rate the cascade gave it (ENG-14), and each line's input tax as it was decided then, read
-// from the line's cost (its net when claimed, net and GST when not), so a later change of the organisation's GST
-// registration never makes an old bill differ. A spread line's cost is read from 1210, at its base amount.
+// from the line's cost (its net, and the GST its business share leaves, when claimed; net and GST when not), so a later
+// change of the organisation's GST registration or of the pack never makes an old bill differ. A spread line's cost is
+// read from 1210, at its base amount.
 func replayBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
 	p, _, err := bill.Prepare(ctx, u, doc, s.Base)
 	if err != nil {
@@ -508,19 +509,27 @@ func replayBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document,
 	k := 0 // the next stored line that is a bill line's cost
 	for i := range b.Lines {
 		l := &b.Lines[i]
+		l.Shares = nil // the line's business share, from its facts, whatever the reading of today decides (rev 0.89)
+		if sh := p.Draft.Lines[i].BusinessShare; sh != "" {
+			l.Shares = []string{sh}
+		}
 		gross, _ := l.Net.Add(l.GST)
+		claimedCost, err := l.ClaimedCost()
+		if err != nil {
+			claimedCost = l.Net
+		}
 		acc, cost := l.AccountID, func(x money.Money) money.Money { return x }
 		if l.Spread != nil { // a spread line's cost is on 1210 at its base amount (FR-GL-03; rev 0.83)
 			acc, cost = prepay, func(x money.Money) money.Money { return baseOf(x, b.Rate, s.Base) }
 		}
 		next := k < len(stored.Lines) && stored.Lines[k].AccountID == acc
 		switch {
-		case next && l.Spread != nil && cost(gross).Equal(cost(l.Net)) && stored.Lines[k].Amount.Equal(cost(l.Net)):
+		case next && l.Spread != nil && cost(gross).Equal(cost(claimedCost)) && stored.Lines[k].Amount.Equal(cost(claimedCost)):
 			k++ // GST under a cent of the base currency: the cost cannot tell, and the reading of the bill's date stands
 		case next && stored.Lines[k].Amount.Equal(cost(gross)) && !l.GST.IsZero():
 			l.Claimable = false
 			k++
-		case next && stored.Lines[k].Amount.Equal(cost(l.Net)):
+		case next && stored.Lines[k].Amount.Equal(cost(claimedCost)):
 			l.Claimable = !l.GST.IsZero()
 			k++
 		case l.Net.IsZero():

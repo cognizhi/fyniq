@@ -3754,6 +3754,10 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
              */
             id: string;
+            /** @description The facts its input tax is decided from, every one stated (FR-AP-20). */
+            input_tax: components["schemas"]["BillInputTax"];
+            /** @description getBill only: how each line's input tax was decided, one a line in order (FR-AP-20). */
+            input_tax_decisions: components["schemas"]["BillTaxDecision"][];
             /**
              * @description bill, or vendor_credit: a supplier's credit note, posted as a bill's reverse (FR-AP-03).
              * @example bill
@@ -3867,6 +3871,8 @@ export interface components {
              * @example 1.34
              */
             fx_rate?: string;
+            /** @description The facts its input tax is decided from (FR-AP-20). Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the company. */
+            input_tax?: components["schemas"]["BillInputTax"];
             /**
              * @description bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved.
              * @example bill
@@ -3915,6 +3921,8 @@ export interface components {
              * @example 1.34
              */
             fx_rate?: string;
+            /** @description The facts its input tax is decided from (FR-AP-20). Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the company. */
+            input_tax?: components["schemas"]["BillInputTax"];
             /**
              * @description bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved.
              * @example bill
@@ -4059,6 +4067,37 @@ export interface components {
              */
             next_cursor?: string;
         };
+        BillInputTax: {
+            /**
+             * @description company, or agent: the invoice is in the name of an employee or a director who bought it as the company's agent. Bill an agent's invoice at what the company paid them back, its GST the GST inside that amount (IRAS's tax fraction of the amount reimbursed), and attach the evidence of the repayment (⚠ until attached). Left out, company.
+             * @example company
+             * @enum {string}
+             */
+            addressed_to?: "company" | "agent";
+            /**
+             * @description What the claim rests on: tax_invoice addressed to the company ("Company c/o another" counts); simplified, a simplified tax invoice, which needs no customer name and is claimable while the bill's total including GST is within the sg-gst pack's limit (S$1,000.00 from 23 Oct 2026; before that, the tax agent decides); import_permit naming the company; none, no valid tax invoice, so nothing is claimed. Left out, tax_invoice.
+             * @example tax_invoice
+             * @enum {string}
+             */
+            document?: "tax_invoice" | "simplified" | "import_permit" | "none";
+            /**
+             * @description For an agent's invoice: paid, the company paid them back; director_loan, credited to their director's loan account (FR-EQ-02), whose input tax is not claimed until the tax agent decides (⚠). Left out, paid.
+             * @example paid
+             * @enum {string}
+             */
+            repaid?: "paid" | "director_loan";
+            /**
+             * @description Whether the supplier is GST-registered (its GST number is on the document). false: no GST was charged, and none is claimed. Left out, true.
+             * @example true
+             */
+            supplier_registered?: boolean;
+            /**
+             * @description The tax agent's decision on lines the rules leave to them: a director's loan, or a simplified tax invoice dated before the pack's limit. Attach their advice. Ignored on other lines.
+             * @example claimable
+             * @enum {string}
+             */
+            tax_agent?: "claimable" | "not_claimable";
+        };
         BillLineDraft: {
             /**
              * Format: uuid
@@ -4066,6 +4105,11 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
              */
             account_id: string;
+            /**
+             * @description The percentage of the purchase used for the business, with at most two decimals (FR-AP-20). Only that share of the line's GST is claimed, rounded half up to the cent (RND-GST-SHARE); the rest stays in the cost, and 0 claims none (a private purchase). Left out, 100.
+             * @example 60
+             */
+            business_share?: string;
             /**
              * @description What the line is for.
              * @example Confluence, 10 seats, October
@@ -4433,6 +4477,36 @@ export interface components {
              * @example Atlassian Pty Ltd
              */
             name?: string;
+        };
+        BillTaxDecision: {
+            /**
+             * @description The business share claimed, when the line is claimed in part.
+             * @example 60
+             */
+            business_share?: string;
+            /**
+             * @description claimable; not_claimable, the GST stays in the cost; or tax_agent (⚠): not claimed until the tax agent decides.
+             * @example claimable
+             * @enum {string}
+             */
+            condition: "claimable" | "not_claimable" | "tax_agent";
+            /**
+             * Format: int64
+             * @description The line, from 1.
+             * @example 1
+             */
+            line: number;
+            /**
+             * @description Why, as a stable code.
+             * @example tax_invoice
+             * @enum {string}
+             */
+            reason: "tax_invoice" | "simplified" | "import_permit" | "agent" | "business_share" | "no_gst" | "organisation_not_registered" | "gst_code" | "supplier_not_registered" | "no_tax_invoice" | "simplified_over_limit" | "simplified_no_limit" | "director_loan" | "private" | "tax_agent_decision";
+            /**
+             * @description Why, in plain words.
+             * @example a tax invoice addressed to the company
+             */
+            text: string;
         };
         BulkResult: {
             /**

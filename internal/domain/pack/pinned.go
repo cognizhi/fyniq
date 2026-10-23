@@ -3,6 +3,7 @@ package pack
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/cockroachdb/apd/v3"
 )
@@ -44,6 +45,26 @@ func RunPinned(v Version) []Result {
 			if c, ok := Code(v, row[1]); ok {
 				r.Got = fmt.Sprintf("%s value %s GST %s", c.Direction, box(strconv.Itoa(c.ValueBox)), box(strconv.Itoa(c.GSTBox)))
 				r.Pass = r.Got == want
+			}
+			out = append(out, r)
+		}
+	}
+	if t, ok := v.Pinned["limits"]; ok && v.Pack == "sg-gst" {
+		for _, row := range t.Rows {
+			r := Result{Table: "limits", Case: row[0] + " " + row[1], Why: row[4], Want: row[3]}
+			d, err := ParseDate(row[2])
+			if err != nil {
+				r.Got = fmt.Sprintf("the date %q does not parse", row[2])
+				out = append(out, r)
+				continue
+			}
+			amount, cur, ok := Limit(v, row[1], d)
+			if !ok {
+				r.Got, r.Pass = "none", row[3] == "none"
+			} else {
+				r.Got = amount + " " + cur
+				want := strings.Fields(row[3])
+				r.Pass = len(want) == 2 && sameDecimal(amount, want[0]) && cur == want[1]
 			}
 			out = append(out, r)
 		}

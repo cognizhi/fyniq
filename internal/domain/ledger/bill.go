@@ -33,6 +33,7 @@ const (
 	CodeRuleAccount  = "LEDGER-23" // a line on an account the rule posts to itself (AP, GST control)
 	CodeLineCurrency = "LEDGER-24" // a line in another currency than its document's
 	CodeSpread       = "LEDGER-28" // a spread that is not 1 to MaxSpreadMonths months of an expense line's cost (FR-GL-03)
+	CodeClaimShare   = "LEDGER-29" // a claimable share that is not a percentage from 0 to 100 (FR-AP-20)
 )
 
 // MaxSpreadMonths is the most months a bill line's cost is spread over (FR-GL-03): ten years.
@@ -50,6 +51,8 @@ type Spread struct {
 // states them in the bill's currency, and whether the line's input tax is claimable (FR-AP-20: from its facts and the
 // organisation's registration at the bill's date). StatedBase is the GST the tax invoice states in the base currency,
 // for a bill in another currency (ENG-42); nil when the invoice states none, and then the input tax is not claimed.
+// Shares are the shares of a claimable line's GST that are claimed, as percentages (FR-AP-20; rev 0.89): its business
+// share and, for an invoice in an agent's name, the share the company reimbursed; none claims the GST whole.
 type BillLine struct {
 	AccountID   uuid.UUID
 	Description string
@@ -58,6 +61,34 @@ type BillLine struct {
 	Claimable   bool
 	StatedBase  *money.Money
 	Spread      *Spread // nil: the cost goes to the line's account on the bill's date
+	Shares      []string
+}
+
+// claim is what a claimable line claims of stated, its GST as the input tax is reported (the line's GST, or the GST
+// stated in the base currency for a bill in another currency): the input tax, under RND-GST-SHARE when the line has
+// shares, and the GST in the bill's currency that stays in the cost, RND-GST-SHARE's remainder of the line's own GST.
+func (l BillLine) claim(stated money.Money) (claim, kept money.Money, err error) {
+	if len(l.Shares) == 0 {
+		return stated, money.Zero(l.GST.Currency()), nil
+	}
+	if claim, err = rounding.GSTShare(stated, l.Shares...); err != nil {
+		return money.Money{}, money.Money{}, err
+	}
+	part, err := rounding.GSTShare(l.GST, l.Shares...)
+	if err != nil {
+		return money.Money{}, money.Money{}, err
+	}
+	kept, err = l.GST.Sub(part)
+	return claim, kept, err
+}
+
+// ClaimedCost is a claimable line's cost in the bill's currency: its net, and the GST its shares leave unclaimed.
+func (l BillLine) ClaimedCost() (money.Money, error) {
+	_, kept, err := l.claim(l.GST)
+	if err != nil {
+		return money.Money{}, err
+	}
+	return l.Net.Add(kept)
 }
 
 // Bill is one version of a supplier's bill as the rules read it.
@@ -88,8 +119,9 @@ func (s Settings) byRole(role string) (Account, bool) {
 
 // PostBill turns one version of a bill into its entry (bill@1):
 //   - Dr each line's account with its net, at the bill's rate under RND-FX; a line whose input tax is not claimable
-//     keeps its GST in the cost, net plus GST (code BL, a private share, no valid tax invoice, or an organisation not
-//     GST-registered at the bill's date: FR-AP-20);
+//     keeps its GST in the cost, net plus GST (code BL, a private purchase, no valid tax invoice, or an organisation
+//     not GST-registered at the bill's date: FR-AP-20), and a line claimable in part keeps the GST its shares leave
+//     (RND-GST-SHARE; rev 0.89: no entry before it had a share, so every earlier entry replays as it posted);
 //   - but Dr 1210 Prepayments, in the base currency, with the base amount of the cost of a line spread over months
 //     (FR-GL-03, Appendix B.2; rev 0.83): a prepayment is not monetary, so it keeps its base amount and is never
 //     revalued, and its releases (bill_release@1) move that amount to the line's account month by month. Only an
@@ -196,7 +228,6 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 		}
 		cost := gross
 		if l.Claimable && !l.GST.IsZero() && (!foreign || l.StatedBase != nil) {
-			cost = l.Net
 			stated := l.GST
 			if foreign {
 				stated = *l.StatedBase
@@ -206,11 +237,20 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 					continue
 				}
 			}
-			if gstBase, err = gstBase.Add(stated); err != nil {
+			claim, kept, err := l.claim(stated)
+			if err != nil {
+				add(CodeClaimShare, f("business_share"), err.Error(), "Enter each share as a percentage from 0 to 100, with at most two decimals")
+				continue
+			}
+			if cost, err = l.Net.Add(kept); err != nil {
 				add(CodeBaseRange, f("gst"), err.Error(), "Check the GST")
 				continue
 			}
-			claimed = true
+			if gstBase, err = gstBase.Add(claim); err != nil {
+				add(CodeBaseRange, f("gst"), err.Error(), "Check the GST")
+				continue
+			}
+			claimed = claimed || !claim.IsZero()
 		}
 		if cost.Sign() <= 0 && l.Spread != nil {
 			add(CodeSpread, f("spread_months"), fmt.Sprintf("the line's cost is %s %s, so there is nothing to spread", cost, b.Currency), "Spread a line with a cost, or remove its spread")

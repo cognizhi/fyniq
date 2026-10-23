@@ -149,6 +149,10 @@ export const actions = [
   { kind: "action", id: "recurring-bill.pause", mode: "basic", help: "recurring-bill.pause", guide: "purchases.bills#recurring-bills" },
   { kind: "action", id: "recurring-bill.resume", mode: "basic", help: "recurring-bill.resume", guide: "purchases.bills#recurring-bills" },
   { kind: "action", id: "bill.spread", mode: "expert", help: "bill.spread", guide: "purchases.bills#spread-a-cost-over-months" },
+  // Input tax (FR-AP-20): the facts and each line's decision are safety information, so Basic shows them too (§7.8).
+  { kind: "action", id: "bill.input-tax", mode: "basic", help: "bill.input-tax", guide: "purchases.bills#input-tax" },
+  { kind: "action", id: "bill.business-share", mode: "basic", help: "bill.business-share", guide: "purchases.bills#input-tax" },
+  { kind: "action", id: "bill.tax-agent", mode: "basic", help: "bill.tax-agent", guide: "purchases.bills#input-tax" },
   { kind: "action", id: "bill.releases", mode: "basic", help: "bill.releases", guide: "purchases.bills#spread-a-cost-over-months" },
   { kind: "action", id: "bill-payment.void", mode: "basic", help: "bill-payment.void", guide: "purchases.bills#void-a-payment" },
   { kind: "action", id: "bill-payment.ask-void", mode: "basic", help: "bill-payment.ask-void", guide: "purchases.bills#void-a-payment" },

@@ -39,6 +39,12 @@ func billLine(t testing.TB, acc Account, net, gst string, cur money.Currency, cl
 	return BillLine{AccountID: acc.ID, Net: amt(t, net, cur), GST: amt(t, gst, cur), Claimable: claimable, Description: "Line " + acc.Code}
 }
 
+// shared is l with the shares of its GST that are claimed.
+func shared(l BillLine, shares ...string) BillLine {
+	l.Shares = shares
+	return l
+}
+
 func sgdBill(lines ...BillLine) Bill {
 	return Bill{ID: billID, Version: 1, Date: day, Memo: "Atlassian AU-1182", Currency: sgd, Lines: lines}
 }
@@ -122,6 +128,61 @@ func TestPostBillInAnotherCurrency(t *testing.T) {
 	if e, err := PostBill(usdBill("1.5", billLine(t, software, "0.01", "0.00", usd, true), billLine(t, hosting, "0.01", "0.00", usd, true)), s); err != nil ||
 		legs(s, e) != "6120 0.01 USD = 0.02; 5010 0.01 USD = 0.02; 2010 -0.02 USD = -0.03; 7030 -0.01 SGD = -0.01" {
 		t.Errorf("a cent of RND-FX: %s %v", legs(s, e), err)
+	}
+}
+
+// Worked by hand (FR-AP-20, RND-GST-SHARE; rev 0.89): a claimable line used 60% for the business claims 60% of its GST,
+// 90.00 × 0.6 = 54.00, and keeps the other 36.00 in its cost; 50% of 7.65 is 3.825, claimed as 3.83, half away from
+// zero, with 3.82 kept. In US dollars the share applies to the GST stated in SGD, 121.50 × 0.6 = 72.90, while the cost
+// keeps USD 90.00 − 54.00 = 36.00 at the book rate: USD 1,036.00 = S$1,388.24, and 7030 takes the S$0.54 between the
+// stated and the book GST. A share of 0 claims nothing and posts no 2200 line, and a share that is not a percentage is
+// refused.
+// req: FR-AP-20
+// req: RND-GST-SHARE
+// req: ledger/posting-rules Amounts of a posted bill
+func TestPostBillClaimsAShareOfTheGST(t *testing.T) {
+	s := purchasing()
+	share := shared
+	stated := amt(t, "121.50", sgd)
+	usdLine := share(billLine(t, software, "1000.00", "90.00", usd, true), "60")
+	usdLine.StatedBase = &stated
+	for _, c := range []struct {
+		name string
+		b    Bill
+		want string
+	}{
+		{"60% for the business", sgdBill(share(billLine(t, software, "1000.00", "90.00", sgd, true), "60")),
+			"6120 1036.00 SGD = 1036.00; 2200 54.00 SGD = 54.00; 2010 -1090.00 SGD = -1090.00"},
+		{"half of 7.65", sgdBill(share(billLine(t, software, "85.00", "7.65", sgd, true), "50"), billLine(t, hosting, "10.00", "0.90", sgd, true)),
+			"6120 88.82 SGD = 88.82; 5010 10.00 SGD = 10.00; 2200 4.73 SGD = 4.73; 2010 -103.55 SGD = -103.55"},
+		{"100% is the whole", sgdBill(share(billLine(t, software, "1000.00", "90.00", sgd, true), "100.00")),
+			"6120 1000.00 SGD = 1000.00; 2200 90.00 SGD = 90.00; 2010 -1090.00 SGD = -1090.00"},
+		{"0% claims nothing", sgdBill(share(billLine(t, software, "1000.00", "90.00", sgd, true), "0")),
+			"6120 1090.00 SGD = 1090.00; 2010 -1090.00 SGD = -1090.00"},
+		{"not claimable ignores its share", sgdBill(share(billLine(t, software, "1000.00", "90.00", sgd, false), "60")),
+			"6120 1090.00 SGD = 1090.00; 2010 -1090.00 SGD = -1090.00"},
+		{"in US dollars", Bill{ID: billID, Version: 1, Date: day, Memo: "Vercel INV-77", Currency: usd, Rate: usdRate(t, "1.34"), Lines: []BillLine{usdLine}},
+			"6120 1036.00 USD = 1388.24; 2200 72.90 SGD = 72.90; 2010 -1090.00 USD = -1460.60; 7030 -0.54 SGD = -0.54"},
+	} {
+		e, err := PostBill(c.b, s)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if got := legs(s, e); got != c.want {
+			t.Errorf("%s:\n got %s\nwant %s", c.name, got, c.want)
+		}
+	}
+	for _, bad := range []string{"60%", "101", "-5", ""} {
+		_, err := PostBill(sgdBill(share(billLine(t, software, "1000.00", "90.00", sgd, true), bad)), s)
+		if !slices.Contains(codes(err), CodeClaimShare) {
+			t.Errorf("share %q: %v; want %s", bad, err, CodeClaimShare)
+		}
+	}
+	if cost, err := share(billLine(t, software, "85.00", "7.65", sgd, true), "50").ClaimedCost(); err != nil || cost.String() != "88.82" {
+		t.Errorf("ClaimedCost: %s %v; want 88.82", cost, err)
+	}
+	if cost, err := billLine(t, software, "85.00", "7.65", sgd, true).ClaimedCost(); err != nil || cost.String() != "85.00" {
+		t.Errorf("ClaimedCost without a share: %s %v; want 85.00", cost, err)
 	}
 }
 
@@ -269,6 +330,11 @@ func TestEveryBillRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 				billLine(t, hosting, "50.00", "4.50", sgd, false))},
 			{"a USD line spread, at its base amount", Bill{ID: billID, Version: 3, Date: day, Memo: "Vercel INV-78", Currency: usd, Rate: usdRate(t, "1.34"),
 				Lines: []BillLine{spreadLine(t, g4023, october, 6)}}},
+			// rev 0.89: bill@1 gained the business share; no entry posted before it has one, so every stored entry replays.
+			{"a line 60% for the business, one at half of 7.65", sgdBill(shared(billLine(t, software, "1000.00", "90.00", sgd, true), "60"),
+				shared(billLine(t, hosting, "85.00", "7.65", sgd, true), "50"))},
+			{"a USD line 60% for the business", Bill{ID: billID, Version: 4, Date: day, Memo: "Vercel INV-79", Currency: usd, Rate: usdRate(t, "1.34"),
+				Lines: []BillLine{shared(g4023, "60")}}},
 		},
 	}
 	for rule := range BillRules {

@@ -348,6 +348,18 @@
       "label": "Resume",
       "tooltip": "Start making drafts again from today; the dates passed while it was paused are skipped."
     },
+    "bill.input-tax": {
+      "label": "Input tax",
+      "tooltip": "What the GST claim rests on: the document, the supplier's registration and whom it is addressed to."
+    },
+    "bill.business-share": {
+      "label": "Business share (%)",
+      "tooltip": "How much of the purchase is used for the business; only that share of the GST is claimed. Leave blank for all of it."
+    },
+    "bill.tax-agent": {
+      "label": "The tax agent's decision",
+      "tooltip": "Some claims the rules leave to the tax agent. Record what they decided, and attach their advice; until then the GST is not claimed."
+    },
     "bill.spread": {
       "label": "Spread over months",
       "tooltip": "For a cost paid ahead, such as a year's subscription: it goes to Prepayments, and one part a month moves to the cost. Leave blank to cost it on the invoice date."

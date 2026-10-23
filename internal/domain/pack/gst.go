@@ -3,7 +3,9 @@ package pack
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
@@ -91,7 +93,77 @@ func checkGST(dir string, v Version) Problems {
 			}
 		}
 	}
+	if limits, ok := v.Tables["limits"]; ok {
+		last := map[string]*time.Time{} // each limit's previous period's last day; nil while open-ended
+		seen := map[string]bool{}
+		for i, row := range limits.Rows {
+			at := fmt.Sprintf("limits.csv row %d", i+2)
+			if !slices.Contains(Limits, row[0]) {
+				add(CodeValue, at, fmt.Sprintf("limit %q is not one Fyniq reads", row[0]), "Use one of "+strings.Join(Limits, ", "))
+			}
+			from, err := ParseDate(row[1])
+			if err != nil || from.Before(v.EffectiveFrom) {
+				add(CodeDates, at, fmt.Sprintf("effective_from %q is not a date in the version's range", row[1]), "Enter the first day the limit is in force (YYYY-MM-DD)")
+				continue
+			}
+			if prev, ok := last[row[0]]; seen[row[0]] && (!ok || prev == nil || !from.Equal(prev.AddDate(0, 0, 1))) {
+				add(CodeDates, at, fmt.Sprintf("starts on %s, not the day after the limit's previous period ends", row[1]),
+					"A limit's periods follow one another without a gap or an overlap")
+			}
+			seen[row[0]] = true
+			last[row[0]] = nil
+			if row[2] != "" {
+				to, err := ParseDate(row[2])
+				if err != nil || to.Before(from) {
+					add(CodeDates, at, fmt.Sprintf("effective_to %q is not a date on or after %s", row[2], row[1]), "Enter the last day of the limit, or leave it blank while it is in force")
+				} else {
+					last[row[0]] = &to
+				}
+			}
+			if !amountPattern.MatchString(row[3]) {
+				add(CodeValue, at, fmt.Sprintf("amount %q is not an exact decimal of at least 0", row[3]), "Write the amount as a decimal such as 1000.00")
+			}
+			if !currencyPattern.MatchString(row[4]) {
+				add(CodeValue, at, fmt.Sprintf("currency %q is not an ISO 4217 code", row[4]), "Enter the currency of the amount, such as SGD")
+			}
+		}
+	}
 	return out
+}
+
+// The limits of the sg-gst pack (rev 0.89).
+const (
+	// LimitSimplifiedInvoice is the most a simplified tax invoice's total payable, GST included, may be for its input
+	// tax to be claimed (FR-AP-20).
+	LimitSimplifiedInvoice = "simplified_invoice"
+)
+
+// Limits are the limits Fyniq reads.
+var Limits = []string{LimitSimplifiedInvoice}
+
+var (
+	amountPattern   = regexp.MustCompile(`^[0-9]{1,15}(\.[0-9]{1,4})?$`)
+	currencyPattern = regexp.MustCompile(`^[A-Z]{3}$`)
+)
+
+// Limit returns the limit name of v in force on d, as its exact amount and its currency, or false when v holds none
+// then: a version from before the limits were read, or a date outside the limit's periods.
+func Limit(v Version, name string, d time.Time) (amount, currency string, ok bool) {
+	for _, row := range v.Tables["limits"].Rows {
+		if row[0] != name {
+			continue
+		}
+		if from, _ := ParseDate(row[1]); d.Before(from) {
+			continue
+		}
+		if row[2] != "" {
+			if to, _ := ParseDate(row[2]); d.After(to) {
+				continue
+			}
+		}
+		return row[3], row[4], true
+	}
+	return "", "", false
 }
 
 // fraction parses an exact decimal rate from 0 up to, not including, 1.

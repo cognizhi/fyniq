@@ -22,6 +22,7 @@ export interface Line {
   spread_months: string; // a cost spread over months to Prepayments (FR-GL-03); blank for none
   spread_from: string; // the spread's first month, "2026-10"; blank for the bill's month
   order?: LineOrder; // the purchase order line it bills (FR-AP-01), kept as the order made it
+  business_share?: string; // the percentage used for the business (FR-AP-20); blank for all of it
 }
 
 let keys = 0;
@@ -34,8 +35,9 @@ export type Errors = Record<string, string>;
 
 // BillLines is the card of a bill's lines (FR-AP-02), shared by a bill, a credit note and a recurring bill: each line's
 // account, description, GST code, net and GST as stated; with stated, the GST the tax invoice states in the base
-// currency (ENG-42); with spreads, the spread over months (FR-GL-03). id is the form's, for each error's element.
-export function BillLines({ id, lines, onChange, editable, errors, currency, base, stated, spreads, codes, choices, byId, subtitle, footer }: {
+// currency (ENG-42); with spreads, the spread over months (FR-GL-03); with shares, the share used for the business, of
+// which only that share of the GST is claimed (FR-AP-20). id is the form's, for each error's element.
+export function BillLines({ id, lines, onChange, editable, errors, currency, base, stated, spreads, shares, codes, choices, byId, subtitle, footer }: {
   id: string;
   lines: Line[];
   onChange: (lines: Line[]) => void;
@@ -45,6 +47,7 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
   base: string;
   stated: boolean;
   spreads: boolean;
+  shares?: boolean;
   codes: GSTCode[];
   choices: Account[];
   byId: Map<string, Account>;
@@ -181,6 +184,29 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
                   {err(`${l.key}.stated_gst`) ?? (
                     <span className="fy-help" id={`${l.key}-stated-help`}>
                       The input tax claimed is the {base} GST the tax invoice states.
+                    </span>
+                  )}
+                </div>
+              )}
+              {shares && (
+                <div className="fy-field">
+                  <label className="fy-label" htmlFor={`${l.key}-share`}>
+                    {helpText("bill.business-share").label}
+                  </label>
+                  <input
+                    className="fy-input fy-num"
+                    id={`${l.key}-share`}
+                    inputMode="decimal"
+                    placeholder="100"
+                    value={l.business_share ?? ""}
+                    disabled={!editable}
+                    onChange={(e) => setLine(l.key, { business_share: e.target.value })}
+                    aria-invalid={Boolean(errors[`${l.key}.business_share`]) || undefined}
+                    aria-describedby={errors[`${l.key}.business_share`] ? described(`${l.key}.business_share`) : `${l.key}-share-help`}
+                  />
+                  {err(`${l.key}.business_share`) ?? (
+                    <span className="fy-help" id={`${l.key}-share-help`}>
+                      {helpText("bill.business-share").tooltip}
                     </span>
                   )}
                 </div>

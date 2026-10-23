@@ -130,8 +130,14 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 - [ ] 9.1 A vendor's tax residence; a non-resident bill's nature of payment; the tax agent's decision per
   supplier and nature, with evidence, reused; ⚠ and the payment hold until decided; the withholding
   posting to 2330. Tests `// req: FR-AP-19`, G4-010. **Left:** the statutory-calendar task (`p1-gst`)
-- [ ] 9.2 Input-tax eligibility per line from its facts and the organisation's registration at the bill
+- [x] 9.2 Input-tax eligibility per line from its facts and the organisation's registration at the bill
   date. Tests `// req: FR-AP-20`, G4-026, G4-027, G4-028
+  (23 Oct 2026, PRD-001 rev 0.89: the facts on the bill and each line's business share; the decision
+  per line; `RND-GST-SHARE` in `bill@1`; the simplified-invoice limit in `sg-gst@2026.2`; ⚠ for the tax
+  agent and for an agent's invoice without evidence; the Input tax card; the guide's "Input tax".
+  Tests `TestBillInputTaxIsDecidedFromItsFacts`, `TestBillInputTaxThroughTheAPI`,
+  `TestPostBillClaimsAShareOfTheGST`, `TestGSTShare*`, `TestTheSimplifiedInvoiceLimitIsInTheGSTPackFromItsVersion`.
+  **Left:** claims and card lines take the same rules when they are built; the oracle's `RND-GST-SHARE` (10.1))
 
 ## 10. Finish
 

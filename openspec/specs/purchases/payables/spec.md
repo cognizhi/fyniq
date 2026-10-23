@@ -340,6 +340,30 @@ Source: PRD-001 §8.6 · Priority M when GST-registered; else S · Phase P1
 - **WHEN** a receipt without a GST number, a motor-car rental and a private purchase are entered
 - **THEN** each is not claimable, with its reason (no GST charged; regulation 27, code BL; private)
 
+#### Scenario: The first rule that applies decides a bill line (rev 0.89)
+- **GIVEN** a bill's facts: what the claim rests on, whether the supplier is GST-registered, whom it is addressed to, how an agent was paid back, the tax agent's decision, and each line's business share
+- **WHEN** a line's input tax is decided
+- **THEN** an organisation not registered on the bill's date, a code with no input-tax box, an unregistered supplier or no valid tax invoice makes it not claimable
+- **AND** otherwise it is claimable for its business share under `RND-GST-SHARE`, and a share of 0 is not claimable (private)
+
+#### Scenario: Simplified tax invoice above the pack's limit (rev 0.89)
+- **GIVEN** a simplified tax invoice whose total including GST is above the sg-gst pack's limit on its date (S$1,000.00 from 23 Oct 2026 in `sg-gst@2026.2`)
+- **WHEN** its lines are decided
+- **THEN** they are not claimable, with that reason
+- **AND** with no limit in force on its date they are ⚠ for the tax agent
+
+#### Scenario: A ⚠ line is not claimed until the tax agent decides (rev 0.89)
+- **GIVEN** an agent's invoice credited to a director's loan, or a simplified tax invoice with no limit in force
+- **WHEN** the bill posts
+- **THEN** the line's GST stays in the cost, with ⚠ for the tax agent
+- **AND** an edit that records their decision claims it, or keeps it in the cost
+
+#### Scenario: An agent's invoice is billed at what was repaid (rev 0.89)
+- **GIVEN** an invoice in an employee's or director's name, bought for the company and paid back
+- **WHEN** it is billed
+- **THEN** the bill is for what the company paid back, its GST the GST inside that amount, so accounts payable shows what the company owes
+- **AND** the bill shows ⚠ until a file is attached as evidence of the repayment
+
 ### Requirement: FR-AP-21 Supplier contracts and renewals
 The system SHALL keep a register of supplier commitments (software and AI tools, cloud, office, services) with supplier, owner, start and end dates, renewal type, notice deadline, billing frequency, amount and currency, minimum commitment and agreed price changes.
 

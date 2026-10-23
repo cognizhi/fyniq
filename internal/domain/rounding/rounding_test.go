@@ -567,3 +567,98 @@ func TestLinePartsProperties(t *testing.T) {
 		}
 	})
 }
+
+// req: RND-GST-SHARE
+// req: FR-AP-20
+func TestGSTSharePinnedCases(t *testing.T) {
+	for _, c := range []struct {
+		gst    string
+		cur    money.Currency
+		shares []string
+		want   string
+	}{
+		{"4.50", sgd, nil, "4.50"},
+		{"4.50", sgd, []string{"100"}, "4.50"},
+		{"4.50", sgd, []string{"100.00", "100.0"}, "4.50"},
+		{"9.00", sgd, []string{"60"}, "5.40"},
+		{"9.00", sgd, []string{"60", "50"}, "2.70"},
+		{"7.65", sgd, []string{"50"}, "3.83"},     // 3.825: half away from zero
+		{"-7.65", sgd, []string{"50"}, "-3.83"},   // the mirror image
+		{"10.00", sgd, []string{"33.33"}, "3.33"}, // 3.333
+		{"0.01", sgd, []string{"40"}, "0.00"},     // 0.004
+		{"0.01", sgd, []string{"50"}, "0.01"},     // 0.005
+		{"123", jpy, []string{"50"}, "62"},        // 61.5
+		{"9.00", sgd, []string{"0"}, "0.00"},
+		{"9.00", sgd, []string{"60", "0.01"}, "0.00"}, // 0.00054
+	} {
+		g, err := money.Parse(c.gst, c.cur)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := GSTShare(g, c.shares...)
+		if err != nil || got.String() != c.want || got.Currency() != c.cur {
+			t.Errorf("GSTShare(%s %s, %v) = %v, %v; want %s", c.gst, c.cur, c.shares, got, err, c.want)
+		}
+	}
+	g, _ := money.Parse("9.00", sgd)
+	for _, bad := range []string{"", "101", "100.01", "-1", "60%", "0.6.0", "1e2", "33.333", " 60"} {
+		if _, err := GSTShare(g, bad); err == nil || IsShare(bad) {
+			t.Errorf("share %q was taken", bad)
+		}
+	}
+}
+
+// req: RND-GST-SHARE
+// req: QA-ENG-03
+// The input tax claimed is never more than the GST nor less than zero, is within half a minor unit of the exact share,
+// claims the GST whole at 100%, and never falls as a share grows.
+func TestGSTShareProperties(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		cur := rapid.SampledFrom([]money.Currency{sgd, jpy}).Draw(t, "currency")
+		units := rapid.Int64Range(0, 10_000_000).Draw(t, "gst minor units")
+		g := money.Zero(cur)
+		if cur.MinorUnits == 2 {
+			g, _ = money.Parse(fmt.Sprintf("%d.%02d", units/100, units%100), cur)
+		} else {
+			g, _ = money.Parse(fmt.Sprint(units), cur)
+		}
+		share := func(label string) string {
+			n := rapid.IntRange(0, 10_000).Draw(t, label)
+			return fmt.Sprintf("%d.%02d", n/100, n%100)
+		}
+		a, b := share("business"), share("reimbursed")
+		got, err := GSTShare(g, a, b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Sign() < 0 || mustCmp(t, got, g) > 0 {
+			t.Fatalf("claimed %s of %s", got, g)
+		}
+		var exact, diff apd.Decimal
+		da, _, _ := apd.NewFromString(a)
+		db, _, _ := apd.NewFromString(b)
+		_, _ = work.Mul(&exact, g.Decimal(), da)
+		_, _ = work.Mul(&exact, &exact, db)
+		_, _ = work.Quo(&exact, &exact, apd.New(10_000, 0))
+		_, _ = work.Sub(&diff, got.Decimal(), &exact)
+		half := apd.New(5, -int32(cur.MinorUnits)-1)
+		if diff.Abs(&diff).Cmp(half) > 0 {
+			t.Fatalf("claimed %s; exact %s", got, &exact)
+		}
+		if whole, _ := GSTShare(g, "100", "100"); !whole.Equal(g) {
+			t.Fatalf("100%% of %s claimed %s", g, whole)
+		}
+		more, err := GSTShare(g, "100", b)
+		if err != nil || mustCmp(t, more, got) < 0 {
+			t.Fatalf("a larger share claimed less: %s < %s", more, got)
+		}
+	})
+}
+
+func mustCmp(t interface{ Fatal(...any) }, a, b money.Money) int {
+	c, err := a.Cmp(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}

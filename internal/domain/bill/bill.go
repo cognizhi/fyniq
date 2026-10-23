@@ -77,6 +77,7 @@ type Draft struct {
 	Rate        *money.Rate // as typed; nil takes the cascade's rate for the bill's date (ENG-40)
 	Lines       []Line
 	Notes       string
+	InputTax    InputTax // the facts its input tax is decided from (FR-AP-20; rev 0.89)
 	// RecurringBill is the recurring bill version the scheduler made it from (FR-AP-09; rev 0.84), nil for one a person
 	// made. The database's create_scheduled_bill_draft writes it, and every later version keeps it.
 	RecurringBill *RecurringRef
@@ -113,6 +114,9 @@ type Line struct {
 	SpreadMonths int
 	SpreadFrom   time.Time
 	Order        *OrderRef // the purchase order line it bills, nil for a line not made from one (FR-AP-01; rev 0.87)
+	// BusinessShare is the percentage of the purchase used for the business (FR-AP-20; rev 0.89): only that share of
+	// its GST is claimed, under RND-GST-SHARE. Empty is 100.
+	BusinessShare string
 }
 
 // OrderRef names the line of a purchase order a bill's line bills, and the quantity of it (FR-AP-01; rev 0.87).
@@ -157,6 +161,17 @@ type payload struct {
 	Lines         []payloadLine `json:"lines"`
 	Notes         string        `json:"notes,omitempty"`
 	RecurringBill *RecurringRef `json:"recurring_bill,omitempty"`
+	InputTax      *payloadTax   `json:"input_tax,omitempty"`
+}
+
+// payloadTax are a bill's input-tax facts as a document version stores them: only those that are not the usual, so a
+// bill entered before them keeps its payload.
+type payloadTax struct {
+	SupplierRegistered *bool  `json:"supplier_registered,omitempty"`
+	Document           string `json:"document,omitempty"`
+	AddressedTo        string `json:"addressed_to,omitempty"`
+	Repaid             string `json:"repaid,omitempty"`
+	TaxAgent           string `json:"tax_agent,omitempty"`
 }
 
 type payloadLine struct {
@@ -169,6 +184,8 @@ type payloadLine struct {
 	SpreadMonths int           `json:"spread_months,omitempty"`
 	SpreadFrom   string        `json:"spread_from,omitempty"`
 	Order        *payloadOrder `json:"order,omitempty"`
+	// BusinessShare is kept as typed, empty for 100.
+	BusinessShare string `json:"business_share,omitempty"`
 }
 
 func day(t time.Time) string {
@@ -186,14 +203,26 @@ func Encode(d Draft) ([]byte, error) {
 	if len(d.Notes) > MaxNotes {
 		return nil, &Error{CodeTooLong, fmt.Sprintf("the notes have %d characters; the most is %d", len(d.Notes), MaxNotes), "Shorten them"}
 	}
+	d = d.usual()
+	if probs := checkFacts(d); len(probs) > 0 {
+		x := probs[0]
+		return nil, &Error{x.Code, x.Field + ": " + x.Message, x.Fix}
+	}
 	p := payload{SupplierID: d.SupplierID, SupplierRef: d.SupplierRef, Date: day(d.Date), DueDate: day(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes,
 		Lines: []payloadLine{}, RecurringBill: d.RecurringBill}
+	if f := d.InputTax; f != (InputTax{}) {
+		p.InputTax = &payloadTax{Document: f.Document, AddressedTo: f.AddressedTo, Repaid: f.Repaid, TaxAgent: f.TaxAgent}
+		if f.SupplierNotRegistered {
+			no := false
+			p.InputTax.SupplierRegistered = &no
+		}
+	}
 	if d.Rate != nil {
 		p.FXRate, p.FXRateSource = d.Rate.String(), d.Rate.Source
 	}
 	for _, l := range d.Lines {
 		pl := payloadLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST,
-			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom)}
+			SpreadMonths: l.SpreadMonths, SpreadFrom: day(l.SpreadFrom), BusinessShare: l.BusinessShare}
 		if o := l.Order; o != nil {
 			pl.Order = &payloadOrder{PurchaseOrderID: o.PurchaseOrderID, Line: o.Line, Quantity: o.Quantity.String()}
 		}
@@ -234,6 +263,10 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		return Draft{}, bad(err.Error())
 	}
 	d := Draft{SupplierID: p.SupplierID, SupplierRef: p.SupplierRef, Currency: cur, Notes: p.Notes, RecurringBill: p.RecurringBill}
+	if t := p.InputTax; t != nil {
+		d.InputTax = InputTax{SupplierNotRegistered: t.SupplierRegistered != nil && !*t.SupplierRegistered, Document: t.Document, AddressedTo: t.AddressedTo,
+			Repaid: t.Repaid, TaxAgent: t.TaxAgent}
+	}
 	for _, x := range []struct {
 		text string
 		to   *time.Time
@@ -253,7 +286,8 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		d.Rate = &r
 	}
 	for _, l := range p.Lines {
-		line := Line{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST, SpreadMonths: l.SpreadMonths}
+		line := Line{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GSTCode: l.GSTCode, GST: l.GST, StatedGST: l.StatedGST, SpreadMonths: l.SpreadMonths,
+			BusinessShare: l.BusinessShare}
 		if l.SpreadFrom != "" {
 			if line.SpreadFrom, err = time.Parse(time.DateOnly, l.SpreadFrom); err != nil {
 				return Draft{}, bad(fmt.Sprintf("the spread's first month %q", l.SpreadFrom))
@@ -295,19 +329,20 @@ type Warning struct {
 }
 
 // Prepared is a bill version as the rules read it, with what it shows beside its entry: its supplier, its due date,
-// the GST method in force, and its warnings.
+// how each line's input tax was decided, and its warnings.
 type Prepared struct {
 	Draft    Draft
 	Bill     ledger.Bill
 	Supplier storage.Contact
 	DueDate  time.Time
+	InputTax []Decision // one a line, in order (FR-AP-20)
 	Warnings []Warning
 }
 
 // Prepare reads one version of a bill for the rules: its supplier, its due date, its rate (the typed one, else the
-// cascade's for its date), and each line's claimable input tax (FR-AP-20 in its P1 form: a purchase code with an
-// input-tax box, from an organisation GST-registered on the bill's date). Problems the rules would refuse come back
-// as ledger.Problems with the engine's own, from PostBill; the warnings come back on the Prepared.
+// cascade's for its date), and each line's input tax, decided from the bill's facts, the line's GST code and business
+// share, and the organisation's GST registration on the bill's date (FR-AP-20; decide). Problems the rules would
+// refuse come back as ledger.Problems with the engine's own, from PostBill; the warnings come back on the Prepared.
 func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, base money.Currency) (Prepared, ledger.Problems, error) {
 	d, err := Read(doc, base)
 	if err != nil {
@@ -362,7 +397,8 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		}
 	}
 
-	// Each line's GST code, and whether its input tax is claimable.
+	// Each line's GST code, and how its input tax is decided.
+	probs = append(probs, checkFacts(d)...)
 	version, err := gstVersion(ctx, u, d.Date)
 	if err != nil {
 		return Prepared{}, nil, err
@@ -375,18 +411,34 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		}
 		_, registered = gst.StatusOn(regs, d.Date)
 	}
+	x := facts{registered: registered, version: version, date: d.Date, base: base}
+	if total, err := d.Total(); err == nil {
+		if d.Currency == base {
+			x.total = &total
+		} else if b.Rate != nil {
+			if t, err := rounding.FX(total, *b.Rate); err == nil {
+				x.total = &t
+			}
+		}
+	}
 	for i, l := range d.Lines {
 		code, ok := pack.Code(version, l.GSTCode)
 		if !ok || code.Direction != pack.DirPurchase {
 			add(CodeGSTCode, fmt.Sprintf("lines[%d].gst_code", i+1), fmt.Sprintf("%q is not a GST code for purchases", l.GSTCode),
 				"Choose the GST code on the supplier's invoice, such as TX, BL or NR")
 		}
-		b.Lines = append(b.Lines, ledger.BillLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GST: l.GST, StatedBase: l.StatedGST,
-			Claimable: ok && registered && code.Direction == pack.DirPurchase && code.GSTBox > 0, Spread: l.Spread(d.Date)})
+		dec := decide(d.InputTax, l, code, ok, x)
+		out.InputTax = append(out.InputTax, dec)
+		bl := ledger.BillLine{AccountID: l.AccountID, Description: l.Description, Net: l.Net, GST: l.GST, StatedBase: l.StatedGST,
+			Claimable: dec.Condition == Claimable && dec.Reason != ReasonNoGST, Spread: l.Spread(d.Date)}
+		if dec.Share != "" {
+			bl.Shares = []string{dec.Share}
+		}
+		b.Lines = append(b.Lines, bl)
 	}
 	out.Bill = b
 	if len(probs) == 0 && !d.Date.IsZero() {
-		if out.Warnings, err = warnings(ctx, u, doc, d, b, base, version); err != nil {
+		if out.Warnings, err = warnings(ctx, u, doc, d, b, base, version, out.InputTax); err != nil {
 			return Prepared{}, nil, err
 		}
 	}
@@ -499,10 +551,31 @@ func PurchaseCodes(ctx context.Context, u storage.UnitOfWork, on time.Time) (Cod
 	return out, nil
 }
 
-// warnings are a readable bill's ⚠: its stated GST against RND-GST-EXCL's, a duplicate of another bill, and a foreign
-// claimable line with no SGD GST stated.
-func warnings(ctx context.Context, u storage.UnitOfWork, doc storage.Document, d Draft, b ledger.Bill, base money.Currency, v pack.Version) ([]Warning, error) {
+// warnings are a readable bill's ⚠: its stated GST against RND-GST-EXCL's, a duplicate of another bill, a foreign
+// claimable line with no SGD GST stated, a line whose input tax waits for the tax agent, and an agent's invoice claimed
+// with no file attached (the owner's decision of 23 Oct 2026).
+func warnings(ctx context.Context, u storage.UnitOfWork, doc storage.Document, d Draft, b ledger.Bill, base money.Currency, v pack.Version,
+	decisions []Decision) ([]Warning, error) {
 	var out []Warning
+	agentClaimed := false
+	for i, dec := range decisions {
+		if dec.Condition == ForTaxAgent {
+			out = append(out, Warning{WarnTaxAgent, fmt.Sprintf("lines[%d].gst_code", i+1), fmt.Sprintf("line %d's input tax is not claimed: %s", i+1, dec.Text),
+				"Ask the tax agent; record their decision on the bill, and attach their advice"})
+		}
+		agentClaimed = agentClaimed || (dec.Condition == Claimable && dec.Reason != ReasonNoGST && d.InputTax.addressedTo() == ToAgent)
+	}
+	if agentClaimed {
+		files, err := u.Evidence().OfDocument(ctx, doc.ID, uuid.Nil, 50)
+		if err != nil {
+			return nil, err
+		}
+		if !slices.ContainsFunc(files, func(e storage.Evidence) bool { return e.RemovedAt == nil }) {
+			out = append(out, Warning{WarnRepaidEvidence, "input_tax.addressed_to",
+				"the invoice is in an agent's name and its input tax is claimed, but no evidence is attached that the company paid them back",
+				"Attach the invoice and the record of the repayment"})
+		}
+	}
 	// RND-GST-EXCL over the claimable lines' nets in the base currency, by the organisation's method, against the
 	// GST the supplier stated (in SGD for a foreign bill).
 	method := rounding.GSTPerSubtotal

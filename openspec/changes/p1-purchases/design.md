@@ -172,6 +172,21 @@ the slice that builds it.
   - whether the expense is disallowed.
   - The condition (claimable, not claimable with its reason, or ⚠ for the tax agent) follows from the
     facts and the organisation's registration at the bill date.
+  - **Decided (the owner, 23 Oct 2026; built in rev 0.89):** a part claim is the business share of the
+    GST rounded half up to the cent (`RND-GST-SHARE`), the rest staying in the cost; a ⚠ line (an
+    agent's invoice credited to a director's loan; a simplified invoice with no limit in force) is
+    not claimed until the tax agent decides, and an edit records their decision; a simplified tax
+    invoice above the limit is not claimable, with its reason.
+  - **Decided (the owner, 23 Oct 2026):** the S$1,000 limit is data in `sg-gst@2026.2` (golden rule
+    12), from 23 Oct 2026, the day it was read on IRAS's page, as no official record of its start
+    was found; an earlier simplified invoice goes to the tax agent.
+  - **Decided (the owner, 23 Oct 2026):** an invoice in an agent's name is billed at what the company
+    paid back, its GST the GST inside that amount (IRAS's tax fraction of the amount reimbursed),
+    replacing the "share reimbursed" multiplier, which would have left accounts payable at the
+    whole invoice; ⚠ until a file is attached as evidence of the repayment.
+  - The facts live on the bill (the document, the supplier's registration, the addressee, how an
+    agent was paid back, the tax agent's decision); the business share on each line. The usual facts
+    are left out of the payload, so a bill saved before them reads as it did.
 - **Duplicates:** a bill with the same supplier, supplier's number and total as another, dated within
   60 days of it, is ⚠ with a link to the other. FR-AP-12's block is for captured bills, with
   `p1-document-capture`.

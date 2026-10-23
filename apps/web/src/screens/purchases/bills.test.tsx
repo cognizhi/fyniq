@@ -7,6 +7,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { BillPage, check } from "./BillPage";
 import { Bills } from "./Bills";
+import { usualTax } from "./InputTax";
 import { paymentOf } from "./Payments";
 
 type Bill = components["schemas"]["Bill"];
@@ -60,6 +61,8 @@ const draft: Bill = {
   ],
   payments: [],
   releases: [],
+  input_tax: { supplier_registered: true, document: "tax_invoice", addressed_to: "company" },
+  input_tax_decisions: [{ line: 1, condition: "claimable", reason: "tax_invoice", text: "a tax invoice addressed to the company" }],
 };
 const posted: Bill = { ...draft, number: "BILL-0007", status: "posted", states: states({ approval: "approved", ledger: "posted", due: "overdue" }), checks: [], open: { amount: "1090.00", currency: "SGD" } };
 const partPaid: Bill = {
@@ -144,11 +147,65 @@ describe("A bill", () => {
   });
 
   it("says what to fix before saving", () => {
-    const { draft: d, errors } = check({ supplier_id: "", supplier_ref: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", lines: [{ key: "l1", account_id: "", description: "x", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" }] }, "SGD");
+    const { draft: d, errors } = check({ supplier_id: "", supplier_ref: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", tax: usualTax(), lines: [{ key: "l1", account_id: "", description: "x", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" }] }, "SGD");
     expect(d).toBeUndefined();
     expect(errors["l1.account"]).toBe("Choose what the line is for.");
     expect(errors["l1.gst_code"]).toBe("Choose the GST code on the supplier's invoice.");
     expect(errors["l1.net"]).toBe("Enter the amount before GST, such as 1,200.00.");
+  });
+
+  // req: FR-AP-20
+  it("sends only the input-tax facts that differ from the usual, and a line's business share", () => {
+    const form = (share: string) => ({
+      supplier_id: "c1",
+      supplier_ref: "",
+      date: "2026-10-26",
+      due_date: "",
+      currency: "SGD",
+      fx_rate: "",
+      notes: "",
+      tax: usualTax(),
+      lines: [{ key: "l1", account_id: "a6120", description: "Phone", gst_code: "TX", net: "100.00", gst: "9.00", stated_gst: "", spread_months: "", spread_from: "", business_share: share }],
+    });
+    const usual = check(form(""), "SGD").draft!;
+    expect(usual.input_tax).toBeUndefined();
+    expect(usual.lines?.[0]?.business_share).toBeUndefined();
+    expect(check(form("100"), "SGD").draft?.lines?.[0]?.business_share).toBeUndefined();
+    expect(check(form("60%"), "SGD").draft?.lines?.[0]?.business_share).toBe("60");
+    for (const bad of ["120", "-5", "sixty", "33.333"]) expect(check(form(bad), "SGD").errors["l1.business_share"], bad).toBeTruthy();
+    const agent = { ...form(""), tax: { ...usualTax(), registered: false, document: "simplified", addressed_to: "agent", repaid: "director_loan" } };
+    expect(check(agent, "SGD").draft?.input_tax).toEqual({ supplier_registered: false, document: "simplified", addressed_to: "agent", repaid: "director_loan" });
+    // How an agent was repaid is sent only for an agent's invoice.
+    expect(check({ ...form(""), tax: { ...usualTax(), repaid: "director_loan" } }, "SGD").draft?.input_tax).toBeUndefined();
+  });
+
+  // req: FR-AP-20
+  it("shows how each line's input tax is decided, and asks for the tax agent's decision; axe finds nothing", async () => {
+    const waiting: Bill = {
+      ...draft,
+      input_tax: { supplier_registered: true, document: "tax_invoice", addressed_to: "agent", repaid: "director_loan" },
+      lines: [draft.lines[0]!, { ...draft.lines[0]!, description: "Phone", business_share: "60" }],
+      input_tax_decisions: [
+        { line: 1, condition: "tax_agent", reason: "director_loan", text: "the invoice is in an agent's name and the company credited their director's loan instead of paying them back: the tax agent decides" },
+        { line: 2, condition: "claimable", reason: "business_share", text: "a tax invoice, claimed for its business share of 60%", business_share: "60" },
+      ],
+    };
+    const sent = answer({ ...reads, "GET /v1/bills/b1": read(waiting), "PUT /v1/bills/b1": { status: 200, body: waiting, headers: { ETag: `"2-draft"` } } });
+    const { container } = renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    const card = (await screen.findByRole("heading", { name: "Input tax" })).closest("section")!;
+    expect(within(card).getByText("For the tax agent")).toBeTruthy();
+    expect(within(card).getByText("Claimed for 60%")).toBeTruthy();
+    expect((within(card).getByLabelText("How they were paid back") as HTMLSelectElement).value).toBe("director_loan");
+    expect((screen.getAllByLabelText("Business share (%)")[1] as HTMLInputElement).value).toBe("60");
+    await noViolations(container);
+    fireEvent.change(within(card).getByLabelText("The tax agent's decision"), { target: { value: "claimable" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as a draft" }));
+    await waitFor(() =>
+      expect(sent.find((x) => x.method === "PUT" && x.path === "/v1/bills/b1")?.body).toMatchObject({
+        input_tax: { addressed_to: "agent", repaid: "director_loan", tax_agent: "claimable" },
+        lines: [{ description: "Confluence" }, { description: "Phone", business_share: "60" }],
+      }),
+    );
   });
 
   // req: FR-GL-03
@@ -161,6 +218,7 @@ describe("A bill", () => {
       currency: "SGD",
       fx_rate: "",
       notes: "",
+      tax: usualTax(),
       lines: [{ key: "l1", account_id: "a6120", description: "Jira, a year", gst_code: "TX", net: "13080.00", gst: "1177.20", stated_gst: "", spread_months, spread_from }],
     });
     expect(check(form("12", "2026-09"), "SGD").draft?.lines?.[0]).toMatchObject({ spread_months: 12, spread_from: "2026-09-01" });
