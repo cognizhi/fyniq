@@ -406,8 +406,21 @@ func TestWithholdingThroughTheAPI(t *testing.T) {
 	if u.Status != 200 || !strings.Contains(g.Raw, `"code":"`+bill.WarnWHTUndecided+`"`) || strings.Contains(g.Raw, `"decision"`) {
 		t.Fatalf("an undecided bill: %d %s", u.Status, g.Raw)
 	}
-	rec := e.call(http.MethodPost, "/v1/contacts/"+id+"/withholding-decisions", e.as(authz.Accountant), map[string]any{"nature_of_payment": "services_in_singapore",
-		"outcome": "withhold", "rate_percent": "15", "tax_agent": "Grace Ho", "bill_id": r.str("id")})
+	decision := map[string]any{"nature_of_payment": "services_in_singapore", "outcome": "withhold", "rate_percent": "15", "tax_agent": "Grace Ho",
+		"bill_id": r.str("id")}
+	contact := e.call(http.MethodGet, "/v1/contacts/"+id, e.as(authz.Accountant), nil)
+	path := "/v1/contacts/" + id + "/withholding-decisions"
+	if x := e.call(http.MethodPost, path, e.as(authz.Accountant), decision); x.Status != 428 {
+		t.Errorf("without If-Match: %d %s", x.Status, x.Raw)
+	}
+	if x := e.call(http.MethodPost, path, e.as(authz.Accountant), decision, "If-Match", `"99"`); x.Status != 412 {
+		t.Errorf("with a stale If-Match: %d %s", x.Status, x.Raw)
+	}
+	if x := e.call(http.MethodPost, path, e.as(authz.Accountant), decision, "If-Match", contact.Header.Get("ETag"), "Prefer", "return=preview"); x.Status != 200 ||
+		x.Header.Get("Preference-Applied") != "return=preview" {
+		t.Errorf("a preview: %d %s", x.Status, x.Raw)
+	}
+	rec := e.call(http.MethodPost, path, e.as(authz.Accountant), decision, "If-Match", contact.Header.Get("ETag"))
 	if rec.Status != 201 || rec.str("outcome") != "withhold" || rec.str("rate_percent") != "15" {
 		t.Fatalf("recording the decision: %d %s", rec.Status, rec.Raw)
 	}
@@ -415,12 +428,20 @@ func TestWithholdingThroughTheAPI(t *testing.T) {
 	if !strings.Contains(g.Raw, `"tax":{"amount":"750.00","currency":"SGD"}`) || !strings.Contains(g.Raw, `"payable":{"amount":"4250.00"`) {
 		t.Fatalf("the decided bill: %s", g.Raw)
 	}
-	l := e.call(http.MethodGet, "/v1/contacts/"+id+"/withholding-decisions", e.as(authz.Auditor), nil)
-	if l.Status != 200 || !strings.Contains(l.Raw, `"tax_agent":"Grace Ho"`) {
-		t.Errorf("the decisions: %d %s", l.Status, l.Raw)
+	decision["outcome"], decision["rate_percent"] = "treaty", "10"
+	if x := e.call(http.MethodPost, path, e.as(authz.Accountant), decision, "If-Match", "*"); x.Status != 201 {
+		t.Fatalf("a second decision: %d %s", x.Status, x.Raw)
+	}
+	l := e.call(http.MethodGet, path+"?page_size=1", e.as(authz.Auditor), nil)
+	if l.Status != 200 || !strings.Contains(l.Raw, `"outcome":"treaty"`) || l.str("next_cursor") == "" {
+		t.Fatalf("the decisions' first page: %d %s", l.Status, l.Raw)
+	}
+	if n := e.call(http.MethodGet, path+"?page_size=1&cursor="+l.str("next_cursor"), e.as(authz.Auditor), nil); !strings.Contains(n.Raw, `"tax_agent":"Grace Ho"`) ||
+		!strings.Contains(n.Raw, `"outcome":"withhold"`) || n.str("next_cursor") != "" {
+		t.Errorf("the decisions' second page: %d %s", n.Status, n.Raw)
 	}
 	bad := e.call(http.MethodPost, "/v1/contacts/"+e.supplier()+"/withholding-decisions", e.as(authz.Accountant), map[string]any{"nature_of_payment": "interest",
-		"outcome": "not_applicable", "tax_agent": "Grace Ho"})
+		"outcome": "not_applicable", "tax_agent": "Grace Ho"}, "If-Match", "*")
 	if bad.Status != 422 || !strings.Contains(bad.Raw, bill.CodeWithholding) {
 		t.Errorf("a resident supplier's decision: %d %s", bad.Status, bad.Raw)
 	}

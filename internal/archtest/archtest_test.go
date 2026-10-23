@@ -400,14 +400,20 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker://alpine:3
       - run: echo ${{ secrets.DEPLOY_KEY }}
+      - run: make test 2>&1 | tee make-test.log
+      - run: make test 2>&1 | tee make-test.log
+        shell: bash
+      - run: set -o pipefail; make test | tee log
+      - run: make test || echo failed
   nothing:
     runs-on: ubuntu-latest
 `)
 	got := WorkflowViolations("planted.yml", planted)
 	// top-level token, write not allowed, write for unreviewed code, unpinned action, checkout under
-	// pull_request_target, unpinned image, no permissions block, a secret under pull_request_target
-	if len(got) != 8 {
-		t.Fatalf("want 8 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	// pull_request_target, unpinned image, no permissions block, a secret under pull_request_target, a pipe without
+	// pipefail (the one with shell: bash, the one that sets pipefail and the || are fine)
+	if len(got) != 9 {
+		t.Fatalf("want 9 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
 	}
 }
 

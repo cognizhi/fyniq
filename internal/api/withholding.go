@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -26,13 +27,15 @@ type WithholdingDecisionDraft struct {
 	BillID      string `json:"bill_id,omitempty" format:"uuid" doc:"The supplier's bill it is recorded from: attach the tax agent's advice (and a certificate of residence) to it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"`
 }
 
-// WithholdingDecisionPage is a supplier's decisions, newest first.
+// WithholdingDecisionPage is a page of a supplier's decisions, newest first.
 type WithholdingDecisionPage struct {
-	Items []WithholdingDecision `json:"items" nullable:"false" doc:"The decisions, newest first: the newest for a nature is in force."`
+	Items      []WithholdingDecision `json:"items" nullable:"false" doc:"The decisions, newest first: the newest for a nature is in force."`
+	NextCursor string                `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjAxOTI4ZjZlIn0"`
 }
 
 type withholdingListInput struct {
 	ContactPath
+	PageQuery
 }
 
 type withholdingListOutput struct {
@@ -41,13 +44,16 @@ type withholdingListOutput struct {
 
 type withholdingRecordInput struct {
 	ContactPath
+	IfMatchHeader
 	KeyHeader
+	PreferHeader
 	Body WithholdingDecisionDraft
 }
 
 type withholdingRecordOutput struct {
 	Status   int
 	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
 	Body     WithholdingDecision
 }
 
@@ -65,8 +71,15 @@ func registerWithholding(a *API) {
 	register(a, authz.ListWithholdingDecisions, huma.Operation{
 		OperationID: "listWithholdingDecisions", Method: http.MethodGet, Path: "/v1/contacts/{contact_id}/withholding-decisions", Tags: []string{"Purchases"},
 		Summary:     "List a supplier's withholding decisions",
-		Description: "The tax agent's decisions on whether tax is withheld from a non-resident supplier's payments, one per nature of payment in force at a time, newest first (FR-AP-19). A bill of the supplier posts with the decision in force for its nature when it posts. Read-only; no side effects.",
-	}, codes, func(ctx context.Context, in *withholdingListInput) (*withholdingListOutput, error) {
+		Description: "The tax agent's decisions on whether tax is withheld from a non-resident supplier's payments, one per nature of payment in force at a time, newest first, a page at a time (FR-AP-19). A bill of the supplier posts with the decision in force for its nature when it posts. Read-only; no side effects.",
+	}, append([]string{CodeCursor}, codes...), func(ctx context.Context, in *withholdingListInput) (*withholdingListOutput, error) {
+		after := ""
+		if in.Cursor != "" {
+			var err error
+			if after, err = decodeCursor(in.Cursor); err != nil {
+				return nil, err
+			}
+		}
 		id, err := parseID("contact_id", in.ContactID)
 		if err != nil {
 			return nil, err
@@ -80,6 +93,17 @@ func registerWithholding(a *API) {
 			ds, err := u.WithholdingDecisions().Of(ctx, id)
 			if err != nil {
 				return err
+			}
+			if after != "" { // the page after the decision the cursor names, in the same order
+				i := slices.IndexFunc(ds, func(d storage.WithholdingDecision) bool { return d.ID.String() == after })
+				if i < 0 {
+					return badCursor()
+				}
+				ds = ds[i+1:]
+			}
+			if len(ds) > in.PageSize {
+				ds = ds[:in.PageSize]
+				out.Body.NextCursor = encodeCursor(ds[len(ds)-1].ID.String())
 			}
 			for _, d := range ds {
 				out.Body.Items = append(out.Body.Items, withholdingDecisionOf(d))
@@ -96,14 +120,24 @@ func registerWithholding(a *API) {
 			"applicable, withhold at the rate they advised, or a reduced treaty rate with a certificate of residence. It replaces the " +
 			"supplier's earlier decision for the nature from now: bills posted before keep theirs, and a posted bill whose rate it " +
 			"changes waits for an edit before it is paid (BILLPAY-11). Attach the tax agent's advice to the bill named. A decision is " +
-			"never changed or removed (FY174). Side effects: the decision and its audit event. Idempotent with Idempotency-Key.",
-	}, append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, bill.CodeWithholding}, codes...),
+			"never changed or removed (FY174). If-Match is the supplier's ETag, so the decision is recorded for the tax residence " +
+			"that was read. Side effects: the decision and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview " +
+			"checks it and saves nothing.",
+	}, append([]string{CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+		bill.CodeWithholding}, codes...),
 		func(ctx context.Context, in *withholdingRecordInput) (*withholdingRecordOutput, error) {
 			id, err := parseID("contact_id", in.ContactID)
 			if err != nil {
 				return nil, err
 			}
-			w, err := write(ctx, a, in.IdempotencyKey, "", in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (WithholdingDecision, error) {
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (WithholdingDecision, error) {
+				c, err := u.Contacts().Get(ctx, id)
+				if err != nil {
+					return WithholdingDecision{}, err
+				}
+				if err := checkIfMatch(in.IfMatch, etag(c.Version)); err != nil {
+					return WithholdingDecision{}, err
+				}
 				b := in.Body
 				d := storage.NewWithholdingDecision{SupplierID: id, Nature: b.Nature, Outcome: b.Outcome, RatePercent: strings.TrimSpace(b.RatePercent),
 					TaxAgent: b.TaxAgent, Note: b.Note}
@@ -131,6 +165,9 @@ func registerWithholding(a *API) {
 			})
 			if err != nil {
 				return nil, err
+			}
+			if w.Previewed {
+				return &withholdingRecordOutput{Status: w.Status, Applied: applied(w), Body: w.Body}, nil
 			}
 			return &withholdingRecordOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
 		})

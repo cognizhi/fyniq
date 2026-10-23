@@ -14,7 +14,9 @@ import (
 // The CI supply-chain rules (SEC-28, CTL-CHG-11), checked on every workflow in .github/workflows:
 // third-party actions pinned by commit SHA; no token at the workflow level, and each job's token
 // limited to read unless the job is in WriteJobs; a job with a write token never runs for a pull
-// request's code; a pull_request_target workflow never checks out code or reads secrets.
+// request's code; a pull_request_target workflow never checks out code or reads secrets. And a step that pipes its
+// command (`make test | tee log`) runs it with `shell: bash`, which sets -o pipefail, or sets pipefail itself: GitHub's
+// default, bash -e, takes the pipe's last command's status, so a failure before the pipe would pass.
 
 // WriteJobs are the jobs allowed a write token, and the scopes each may write, with why.
 var WriteJobs = map[string]struct {
@@ -35,15 +37,39 @@ var (
 type workflow struct {
 	On          yaml.Node      `yaml:"on"`
 	Permissions yaml.Node      `yaml:"permissions"`
+	Defaults    defaults       `yaml:"defaults"`
 	Jobs        map[string]job `yaml:"jobs"`
+}
+
+type defaults struct {
+	Run struct {
+		Shell string `yaml:"shell"`
+	} `yaml:"run"`
 }
 
 type job struct {
 	Permissions yaml.Node `yaml:"permissions"`
 	Uses        string    `yaml:"uses"`
+	Defaults    defaults  `yaml:"defaults"`
 	Steps       []struct {
-		Uses string `yaml:"uses"`
+		Uses  string `yaml:"uses"`
+		Run   string `yaml:"run"`
+		Shell string `yaml:"shell"`
+		Name  string `yaml:"name"`
 	} `yaml:"steps"`
+}
+
+// pipe finds a shell pipe in a command: a | that is not part of ||.
+var pipe = regexp.MustCompile(`(^|[^|])\|([^|]|$)`)
+
+// cmpOr is the first of its values that is not empty.
+func cmpOr(vs ...string) string {
+	for _, v := range vs {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // triggers returns the workflow's events, and the branches of its push event ("tags" for tags).
@@ -134,8 +160,12 @@ func WorkflowViolations(name string, src []byte) []string {
 			}
 		}
 		uses := []string{j.Uses}
-		for _, s := range j.Steps {
+		for i, s := range j.Steps {
 			uses = append(uses, s.Uses)
+			shell := cmpOr(s.Shell, j.Defaults.Run.Shell, w.Defaults.Run.Shell)
+			if pipe.MatchString(s.Run) && shell != "bash" && !strings.Contains(s.Run, "pipefail") {
+				bad("job %s step %d (%s) pipes its command without `shell: bash`: the default bash -e ignores a failure before the pipe", id, i+1, cmpOr(s.Name, s.Run))
+			}
 		}
 		for _, u := range uses {
 			switch {
