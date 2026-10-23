@@ -2,6 +2,7 @@ package wiring
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
 	netmail "net/mail"
 	"slices"
@@ -10,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/resend"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
 	"github.com/cognizhi/fyniq/internal/adapters/zeptomail"
+	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -21,6 +23,8 @@ type MailConfig struct {
 	Providers []ports.Email
 	From      string
 	Domains   []string
+	// DNS is the records each sending domain's providers asked for, which the daily check looks for (rev 0.104).
+	DNS map[string][]maildns.Record
 	// The webhooks' secrets, which only the API holds: Resend's endpoint signing secret and ZeptoMail's Agent
 	// authentication key. Empty: that provider's webhooks have no receiver.
 	ResendWebhookSecret, ZeptoMailWebhookKey string
@@ -34,10 +38,14 @@ type MailConfig struct {
 //   - resend: FYNIQ_RESEND_KEY, and FYNIQ_RESEND_URL.
 //   - FYNIQ_MAIL_FROM: the platform's sender, needed with any provider.
 //   - FYNIQ_MAIL_DOMAINS: the sending domains, comma-separated; the platform sender's domain when unset.
+//   - FYNIQ_MAIL_DNS: the records each domain's providers asked for, for the daily check.
 //   - FYNIQ_RESEND_WEBHOOK_SECRET and FYNIQ_ZEPTOMAIL_WEBHOOK_KEY: the webhooks' secrets, on the API.
 func ReadMail(env func(string) string) (MailConfig, error) {
 	c := MailConfig{From: env("FYNIQ_MAIL_FROM"), ResendWebhookSecret: env("FYNIQ_RESEND_WEBHOOK_SECRET"),
 		ZeptoMailWebhookKey: env("FYNIQ_ZEPTOMAIL_WEBHOOK_KEY")}
+	if err := readDomains(env, &c); err != nil {
+		return MailConfig{}, err
+	}
 	names := env("FYNIQ_EMAIL_PROVIDERS")
 	if names == "" && env("FYNIQ_SMTP_ADDR") != "" {
 		names = "smtp"
@@ -77,14 +85,35 @@ func ReadMail(env func(string) string) (MailConfig, error) {
 			return MailConfig{}, fmt.Errorf("FYNIQ_EMAIL_PROVIDERS names %q: the providers are smtp, zeptomail and resend", name)
 		}
 	}
-	c.Domains = []string{fromDomain}
+	return c, nil
+}
+
+// readDomains reads the sending domains, FYNIQ_MAIL_DOMAINS, else the platform sender's, and the records each
+// domain's providers asked for, FYNIQ_MAIL_DNS: JSON of domain → [{type: TXT or CNAME, name, value}].
+func readDomains(env func(string) string, c *MailConfig) error {
 	if v := env("FYNIQ_MAIL_DOMAINS"); v != "" {
-		c.Domains = nil
 		for _, d := range strings.Split(v, ",") {
 			if d = strings.ToLower(strings.TrimSpace(d)); d != "" && !slices.Contains(c.Domains, d) {
 				c.Domains = append(c.Domains, d)
 			}
 		}
+	} else if from, err := netmail.ParseAddress(c.From); err == nil {
+		c.Domains = []string{strings.ToLower(from.Address[strings.LastIndex(from.Address, "@")+1:])}
 	}
-	return c, nil
+	if v := env("FYNIQ_MAIL_DNS"); v != "" {
+		if err := json.Unmarshal([]byte(v), &c.DNS); err != nil {
+			return fmt.Errorf("FYNIQ_MAIL_DNS is not JSON of domain to [{type, name, value}]: %w", err)
+		}
+		for d, rs := range c.DNS {
+			if !slices.Contains(c.Domains, d) {
+				return fmt.Errorf("FYNIQ_MAIL_DNS names %s, which is not a sending domain", d)
+			}
+			for _, r := range rs {
+				if (r.Type != "TXT" && r.Type != "CNAME") || r.Name == "" || r.Value == "" {
+					return fmt.Errorf("FYNIQ_MAIL_DNS: a record of %s is not a TXT or CNAME with a name and a value", d)
+				}
+			}
+		}
+	}
+	return nil
 }

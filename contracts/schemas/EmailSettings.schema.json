@@ -2,6 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "domain_checks": {
+      "description": "Each sending domain's DNS records and DMARC policy, checked within the hour and every night (FR-INT-21).",
+      "items": {
+        "$ref": "DomainCheck.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "domains": {
       "description": "The domains a sender may be chosen on; the deployment's operators add one.",
       "items": {
@@ -47,7 +57,8 @@
   "required": [
     "providers",
     "domains",
-    "senders"
+    "senders",
+    "domain_checks"
   ],
   "title": "EmailSettings",
   "type": "object"

@@ -3,6 +3,7 @@ package wiring
 import (
 	"context"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/cognizhi/fyniq/compliance"
@@ -13,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
+	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -47,6 +49,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"superadmins.verify": func(ctx context.Context) error {
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
+			return err
+		},
+		email.DomainsJob: func(ctx context.Context) error {
+			_, err := email.CheckDomains(ctx, k.Store, k.Store, net.DefaultResolver, k.Mail.Domains, k.Mail.DNS)
 			return err
 		},
 		"compliance.evidence": func(ctx context.Context) error {

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checked_at": {
+      "description": "When it was checked: at most an hour ago, and every night.",
+      "examples": [
+        "2026-10-23T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "dmarc": {
+      "description": "Its DMARC policy, its own or its parent domain's: none only reports; missing has no record; failed could not be looked up.",
+      "enum": [
+        "reject",
+        "quarantine",
+        "none",
+        "invalid",
+        "missing",
+        "failed"
+      ],
+      "examples": [
+        "quarantine"
+      ],
+      "type": "string"
+    },
+    "domain": {
+      "description": "The sending domain.",
+      "examples": [
+        "mail.example.com"
+      ],
+      "type": "string"
+    },
+    "ok": {
+      "description": "true when every record its providers asked for is there and its DMARC policy quarantines or rejects.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "records": {
+      "description": "The records its providers asked for, as the deployment lists them.",
+      "items": {
+        "$ref": "DomainRecord.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "domain",
+    "ok",
+    "dmarc",
+    "records",
+    "checked_at"
+  ],
+  "title": "DomainCheck",
+  "type": "object"
+}

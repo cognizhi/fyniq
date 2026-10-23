@@ -3978,6 +3978,93 @@ components:
       required:
         - items
       type: object
+    DomainCheck:
+      additionalProperties: false
+      properties:
+        checked_at:
+          description: "When it was checked: at most an hour ago, and every night."
+          examples:
+            - "2026-10-23T09:00:00Z"
+          format: date-time
+          type: string
+        dmarc:
+          description: "Its DMARC policy, its own or its parent domain's: none only reports; missing has no record; failed could not be looked up."
+          enum:
+            - reject
+            - quarantine
+            - none
+            - invalid
+            - missing
+            - failed
+          examples:
+            - quarantine
+          type: string
+        domain:
+          description: The sending domain.
+          examples:
+            - mail.example.com
+          type: string
+        ok:
+          description: true when every record its providers asked for is there and its DMARC policy quarantines or rejects.
+          examples:
+            - true
+          type: boolean
+        records:
+          description: The records its providers asked for, as the deployment lists them.
+          items:
+            $ref: "#/components/schemas/DomainRecord"
+          type:
+            - array
+            - "null"
+      required:
+        - domain
+        - ok
+        - dmarc
+        - records
+        - checked_at
+      type: object
+    DomainRecord:
+      additionalProperties: false
+      properties:
+        found:
+          description: What a wrong record holds, kept short.
+          examples:
+            - v=DKIM1; p=OTHERKEY
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - 1234._domainkey.mail.example.com
+          type: string
+        status:
+          description: "ok: there as asked; missing: no such record; wrong: another value; failed: the lookup failed, so try later."
+          enum:
+            - ok
+            - missing
+            - wrong
+            - failed
+          examples:
+            - ok
+          type: string
+        type:
+          description: The record's type.
+          enum:
+            - TXT
+            - CNAME
+          examples:
+            - TXT
+          type: string
+        value:
+          description: "What it should hold: text a TXT record contains, or a CNAME's target."
+          examples:
+            - v=DKIM1; k=rsa; p=MIGfMA0
+          type: string
+      required:
+        - type
+        - name
+        - value
+        - status
+      type: object
     EmailEvent:
       additionalProperties: false
       properties:
@@ -4192,6 +4279,13 @@ components:
     EmailSettings:
       additionalProperties: false
       properties:
+        domain_checks:
+          description: Each sending domain's DNS records and DMARC policy, checked within the hour and every night (FR-INT-21).
+          items:
+            $ref: "#/components/schemas/DomainCheck"
+          type:
+            - array
+            - "null"
         domains:
           description: The domains a sender may be chosen on; the deployment's operators add one.
           items:
@@ -4225,6 +4319,7 @@ components:
         - providers
         - domains
         - senders
+        - domain_checks
       type: object
     EmailSuppression:
       additionalProperties: false
@@ -30610,7 +30705,7 @@ paths:
         right: A
   /v1/organisation/email:
     get:
-      description: "The organisation's outbound email (FR-INT-21; the owner's decision of 23 Oct 2026): the deployment's providers in order, the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the deployment's operators set; and the organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects."
+      description: "The organisation's outbound email (FR-INT-21; the owner's decision of 23 Oct 2026): the deployment's providers in order, the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the deployment's operators set, with each domain's DNS records and DMARC policy as checked within the hour; and the organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects."
       operationId: getEmailSettings
       responses:
         "200":

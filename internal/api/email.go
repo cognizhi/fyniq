@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -34,6 +35,26 @@ type MailInfo struct {
 	Providers []string
 	From      string
 	Domains   []string
+	// Check is the sending domains' DNS, as last checked and when (rev 0.104); nil: none is checked.
+	Check func(ctx context.Context) ([]maildns.Result, time.Time)
+}
+
+// DomainRecord is a record a sending domain's providers asked for.
+type DomainRecord struct {
+	Type   string `json:"type" enum:"TXT,CNAME" doc:"The record's type." example:"TXT"`
+	Name   string `json:"name" doc:"Its name." example:"1234._domainkey.mail.example.com"`
+	Value  string `json:"value" doc:"What it should hold: text a TXT record contains, or a CNAME's target." example:"v=DKIM1; k=rsa; p=MIGfMA0"`
+	Status string `json:"status" enum:"ok,missing,wrong,failed" doc:"ok: there as asked; missing: no such record; wrong: another value; failed: the lookup failed, so try later." example:"ok"`
+	Found  string `json:"found,omitempty" doc:"What a wrong record holds, kept short." example:"v=DKIM1; p=OTHERKEY"`
+}
+
+// DomainCheck is a sending domain's DNS, as last checked.
+type DomainCheck struct {
+	Domain    string         `json:"domain" doc:"The sending domain." example:"mail.example.com"`
+	OK        bool           `json:"ok" doc:"true when every record its providers asked for is there and its DMARC policy quarantines or rejects." example:"true"`
+	DMARC     string         `json:"dmarc" enum:"reject,quarantine,none,invalid,missing,failed" doc:"Its DMARC policy, its own or its parent domain's: none only reports; missing has no record; failed could not be looked up." example:"quarantine"`
+	Records   []DomainRecord `json:"records" doc:"The records its providers asked for, as the deployment lists them."`
+	CheckedAt time.Time      `json:"checked_at" doc:"When it was checked: at most an hour ago, and every night." example:"2026-10-23T09:00:00Z"`
 }
 
 // EmailProvider is one of the deployment's email providers.
@@ -67,6 +88,7 @@ type EmailSettings struct {
 	PlatformSender string          `json:"platform_sender,omitempty" doc:"The platform's sender, for a purpose the organisation has not chosen one for." example:"Fyniq <no-reply@mail.example.com>"`
 	Domains        []SendingDomain `json:"domains" doc:"The domains a sender may be chosen on; the deployment's operators add one."`
 	Senders        []EmailSender   `json:"senders" doc:"Every purpose's sender, in the order notifications, invoices, reminders, security."`
+	DomainChecks   []DomainCheck   `json:"domain_checks" doc:"Each sending domain's DNS records and DMARC policy, checked within the hour and every night (FR-INT-21)."`
 }
 
 // EmailSenderChange chooses a purpose's sender: an address on a sending domain, or neither field, to use the platform's.
@@ -304,8 +326,8 @@ func registerEmail(a *API) {
 		Summary: "Get the email settings",
 		Description: "The organisation's outbound email (FR-INT-21; the owner's decision of 23 Oct 2026): the deployment's providers in order, " +
 			"the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the " +
-			"deployment's operators set; and the organisation's sender of each purpose, or the platform's. No provider key is ever shown. " +
-			"Read-only; no side effects.",
+			"deployment's operators set, with each domain's DNS records and DMARC policy as checked within the hour; and the " +
+			"organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects.",
 	}, locks, func(ctx context.Context, _ *struct{}) (*emailSettingsOutput, error) {
 		p, _ := authn.From(ctx)
 		out := EmailSettings{PlatformSender: a.deps.Mail.From, Providers: []EmailProvider{}, Domains: []SendingDomain{}}
@@ -318,6 +340,17 @@ func registerEmail(a *API) {
 		}
 		for _, d := range a.deps.Mail.Domains {
 			out.Domains = append(out.Domains, SendingDomain(d))
+		}
+		out.DomainChecks = []DomainCheck{}
+		if a.deps.Mail.Check != nil {
+			results, at := a.deps.Mail.Check(ctx)
+			for _, r := range results {
+				c := DomainCheck{Domain: r.Domain, OK: r.OK, DMARC: r.DMARC, Records: []DomainRecord{}, CheckedAt: at.UTC()}
+				for _, x := range r.Records {
+					c.Records = append(c.Records, DomainRecord{Type: x.Type, Name: x.Name, Value: x.Value, Status: x.Status, Found: x.Found})
+				}
+				out.DomainChecks = append(out.DomainChecks, c)
+			}
 		}
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			cs, err := u.EmailSenders().InForce(ctx)

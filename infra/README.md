@@ -75,7 +75,10 @@ The tests check the controls on the planned configuration:
    Outbound email (FR-INT-21, PRD-001 rev 0.102) is the deployment's to set: in the root's values,
    `service_env` gives the `api` and the `worker` `FYNIQ_EMAIL_PROVIDERS` (`zeptomail,resend`: the
    first primary, the next its failover), `FYNIQ_MAIL_FROM` (the platform's sender) and
-   `FYNIQ_MAIL_DOMAINS` (the domains organisations may choose senders on), and `service_secrets`
+   `FYNIQ_MAIL_DOMAINS` (the domains organisations may choose senders on); the `api` and `jobs` also
+   get `FYNIQ_MAIL_DOMAINS` and `FYNIQ_MAIL_DNS`, each domain's records as its providers' dashboards
+   list them (`{"mail.example.com":[{"type":"TXT","name":"…._domainkey.mail.example.com","value":"v=DKIM1"}]}`),
+   which the settings and the nightly `email.domains` job check (rev 0.104); and `service_secrets`
    gives the `worker` `FYNIQ_ZEPTOMAIL_KEY = "zeptomail-key"` and `FYNIQ_RESEND_KEY = "resend-key"`,
    and the `api` the webhooks' secrets, `FYNIQ_ZEPTOMAIL_WEBHOOK_KEY = "zeptomail-webhook-key"` and
    `FYNIQ_RESEND_WEBHOOK_SECRET = "resend-webhook-secret"`; point each provider's webhook at

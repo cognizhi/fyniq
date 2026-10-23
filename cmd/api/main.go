@@ -7,15 +7,18 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/api"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/logging"
+	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/mailhooks"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -75,7 +78,8 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	d.Store, d.Installation = kit.Store, kit.Store
 	d.Staging, d.Scanner = kit.Staging, kit.Scanner // nil until configured: then no file can be attached
 	d.Renderer = kit.Render                         // nil until configured: then no document preview renders
-	d.Mail = api.MailInfo{From: kit.Mail.From, Domains: kit.Mail.Domains}
+	dns := &maildns.Cache{Resolver: net.DefaultResolver, Domains: kit.Mail.Domains, Records: kit.Mail.DNS, TTL: time.Hour, Now: deps.Clock.Now}
+	d.Mail = api.MailInfo{From: kit.Mail.From, Domains: kit.Mail.Domains, Check: dns.Results}
 	for _, p := range kit.Mail.Providers {
 		d.Mail.Providers = append(d.Mail.Providers, p.Name())
 	}
