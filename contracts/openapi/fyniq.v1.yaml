@@ -1408,6 +1408,9 @@ components:
             - "2026-11-13"
           format: date
           type: string
+        early_payment_discount:
+          $ref: "#/components/schemas/BillDiscount"
+          description: "The early-payment discount its supplier offers (FR-AP-13): taking it is a supplier credit note for the amount."
         fx_rate:
           description: The rate typed on the document, if one was.
           examples:
@@ -1471,6 +1474,12 @@ components:
           items:
             $ref: "#/components/schemas/BillPaidBy"
           type: array
+        planned_payment_on:
+          description: "The date its payment is planned for (FR-AP-13): planBillPayment sets it; it posts nothing. A paid bill keeps the date of its last plan."
+          examples:
+            - "2026-11-10"
+          format: date
+          type: string
         posted_at:
           description: When it was posted.
           examples:
@@ -1571,6 +1580,28 @@ components:
         - severity
         - code
         - message
+      type: object
+    BillDiscount:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: The discount on the bill's total, in its currency (RND-DISCOUNT).
+        percent:
+          description: The percentage off.
+          examples:
+            - "2"
+          type: string
+        until:
+          description: "The last day to pay and take it: the bill's date plus the supplier's discount days."
+          examples:
+            - "2026-10-24"
+          format: date
+          type: string
+      required:
+        - percent
+        - until
+        - amount
       type: object
     BillDraft:
       additionalProperties: false
@@ -2327,6 +2358,16 @@ components:
         - payment
         - entry
       type: object
+    BillPlanDraft:
+      additionalProperties: false
+      properties:
+        planned_on:
+          description: The date to pay it, on or after the bill's date. Left out, the bill is unscheduled.
+          examples:
+            - "2026-11-10"
+          format: date
+          type: string
+      type: object
     BillPosting:
       additionalProperties: false
       properties:
@@ -2400,6 +2441,76 @@ components:
         - date
         - amount
         - status
+      type: object
+    BillReminder:
+      additionalProperties: false
+      properties:
+        bill_id:
+          description: The bill.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+          format: uuid
+          type: string
+        due_date:
+          description: When it falls due.
+          examples:
+            - "2026-11-13"
+          format: date
+          type: string
+        number:
+          description: Its number.
+          examples:
+            - BILL-0007
+          type: string
+        open:
+          $ref: "#/components/schemas/Money"
+          description: What is left to pay, in its currency.
+        planned_payment_on:
+          description: When its payment is planned for, if it is.
+          examples:
+            - "2026-11-10"
+          format: date
+          type: string
+        supplier:
+          $ref: "#/components/schemas/BillSupplier"
+          description: Its supplier.
+        why:
+          description: "overdue: past its due date; due: it falls due within the organisation's reminder days; planned: its planned payment date is within them."
+          enum:
+            - overdue
+            - due
+            - planned
+          examples:
+            - due
+          type: string
+      required:
+        - bill_id
+        - supplier
+        - open
+        - why
+      type: object
+    BillReminderPage:
+      additionalProperties: false
+      properties:
+        days:
+          description: The organisation's reminder days (the setting purchases.reminder_days).
+          examples:
+            - 3
+          format: int64
+          type: integer
+        items:
+          description: "The bills to pay, earliest date first: overdue, or due or planned within the days."
+          items:
+            $ref: "#/components/schemas/BillReminder"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
+      required:
+        - days
+        - items
       type: object
     BillSettled:
       additionalProperties: false
@@ -3010,6 +3121,17 @@ components:
           examples:
             - SR
           type: string
+        discount_days:
+          description: The days of its early-payment discount.
+          examples:
+            - 10
+          format: int64
+          type: integer
+        discount_percent:
+          description: "A supplier's early-payment discount: this percentage off its bill if paid within discount_days of the bill's date (FR-AP-13)."
+          examples:
+            - "2"
+          type: string
         id:
           description: The contact's ID.
           examples:
@@ -3124,6 +3246,17 @@ components:
           examples:
             - SR
           type: string
+        discount_days:
+          description: Its days, 1 to 365; -1 clears them.
+          examples:
+            - 10
+          format: int64
+          type: integer
+        discount_percent:
+          description: A supplier's early-payment discount percentage; "" clears the discount, with discount_days -1.
+          examples:
+            - "2"
+          type: string
         legal_name:
           description: Its legal name.
           examples:
@@ -3210,6 +3343,17 @@ components:
           description: The default GST code.
           examples:
             - SR
+          type: string
+        discount_days:
+          description: Its days, 1 to 365, with discount_percent.
+          examples:
+            - 10
+          format: int64
+          type: integer
+        discount_percent:
+          description: A supplier's early-payment discount, above 0 and below 100 with at most two decimals, with discount_days (FR-AP-13).
+          examples:
+            - "2"
           type: string
         legal_name:
           description: Its legal name.
@@ -13288,6 +13432,133 @@ paths:
       x-fyniq-permission:
         capability: Bills, vendor credits
         right: P
+  /v1/bill-reminders:
+    get:
+      description: The posted bills with something left to pay that are overdue, or fall due or are planned to be paid within the organisation's reminder days (the setting purchases.reminder_days, 3 by default), as at its today, earliest first, a page at a time (FR-AP-13). The Inbox shows them to the members who record bill payments. Read-only; no side effects.
+      operationId: listBillReminders
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillReminderPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the bills to pay soon
+      tags:
+        - Purchases
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        right: V
   /v1/bills:
     get:
       description: The organisation's bills at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the number (FR-AP-02). Each has its supplier, total, due date and states. Read-only; no side effects.
@@ -15240,6 +15511,214 @@ paths:
         capability: "Evidence: add, supersede (rev 0.3)"
         note: Needs the right to view bills as well.
         right: V
+  /v1/bills/{bill_id}/payment-plan:
+    post:
+      description: "Plans the date a posted bill is to be paid (FR-AP-13), or unschedules it when planned_on is left out. A plan is kept beside the bill: it posts nothing and changes no version of the bill, and a later plan replaces it (FY175). The bill must have something open, and the date be on or after the bill's (BILL-18). The bills board and the reminders read it; recording the payment settles the bill. Side effects: the plan and an audit event on the bill. Needs If-Match with the bill's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: planBillPayment
+      parameters:
+        - description: The bill's ID.
+          in: path
+          name: bill_id
+          required: true
+          schema:
+            description: The bill's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BillPlanDraft"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bill"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: "The bill's version and status, for If-Match: planning changes neither."
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BILL-03` The bill is not posted; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BILL-18` The payment date cannot be planned."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Plan a bill's payment date
+      tags:
+        - Purchases
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - BILL-03
+        - BILL-18
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        note: A plan posts nothing; paying needs P.
+        right: C
   /v1/bills/{bill_id}/post:
     post:
       description: "Posts a draft bill under the rule bill@1 (FR-AP-02): Dr each line's account with its net (with its GST when the input tax is not claimable), Dr 2200 with the claimable GST as stated, Cr 2010 with the total, and for a bill in another currency the difference to 7030, written with the bill's change to posted and its number in one transaction (ENG-02). Every problem comes back together. Approval as for journals: a bill whose total in the base currency is above the self-approval threshold is refused (BILL-09): ask with requestBillPost; at or below it, a Founder-mode post is logged as self-approved for the weekly review (FM-2, FM-3). Side effects: the entry, a new ledger revision, balances, audit events. Needs If-Match with the draft's ETag. Idempotent with Idempotency-Key; Prefer: return=preview posts nothing."
@@ -16797,7 +17276,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CT-01` The legal name is not valid; `CT-02` Neither a customer nor a vendor; `CT-03` Not an email address; `CT-04` Not a country code; `CT-05` Not a currency; `CT-06` Payment terms out of range; `CT-07` Not a GST code; `CT-08` Not a Peppol participant ID; `CT-09` A text is too long; `CT-10` Not an account that takes postings."
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CT-01` The legal name is not valid; `CT-02` Neither a customer nor a vendor; `CT-03` Not an email address; `CT-04` Not a country code; `CT-05` Not a currency; `CT-06` Payment terms out of range; `CT-07` Not a GST code; `CT-08` Not a Peppol participant ID; `CT-09` A text is too long; `CT-10` Not an account that takes postings; `CT-11` The early-payment discount terms are not a percentage and a number of days."
         "429":
           content:
             application/problem+json:
@@ -16864,6 +17343,7 @@ paths:
         - CT-08
         - CT-09
         - CT-10
+        - CT-11
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
       x-fyniq-permission:
@@ -17106,7 +17586,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CT-01` The legal name is not valid; `CT-02` Neither a customer nor a vendor; `CT-03` Not an email address; `CT-04` Not a country code; `CT-05` Not a currency; `CT-06` Payment terms out of range; `CT-07` Not a GST code; `CT-08` Not a Peppol participant ID; `CT-09` A text is too long; `CT-10` Not an account that takes postings."
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CT-01` The legal name is not valid; `CT-02` Neither a customer nor a vendor; `CT-03` Not an email address; `CT-04` Not a country code; `CT-05` Not a currency; `CT-06` Payment terms out of range; `CT-07` Not a GST code; `CT-08` Not a Peppol participant ID; `CT-09` A text is too long; `CT-10` Not an account that takes postings; `CT-11` The early-payment discount terms are not a percentage and a number of days."
         "428":
           content:
             application/problem+json:
@@ -17179,6 +17659,7 @@ paths:
         - CT-08
         - CT-09
         - CT-10
+        - CT-11
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
         - STORAGE-VERSION-01

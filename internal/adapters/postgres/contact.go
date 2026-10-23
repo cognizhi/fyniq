@@ -27,6 +27,11 @@ func toContact(r contactRow) storage.Contact {
 		d := int(*r.PaymentTermsDays)
 		c.PaymentTermsDays = &d
 	}
+	c.DiscountPercent = r.DiscountPercent
+	if r.DiscountDays != nil {
+		d := int(*r.DiscountDays)
+		c.DiscountDays = &d
+	}
 	return c
 }
 
@@ -78,6 +83,8 @@ func contactChanges(a, b storage.Contact) map[string][2]any {
 	diff("tax_residence", nilIfEmpty(a.TaxResidence), nilIfEmpty(b.TaxResidence))
 	diff("currency", nilIfEmpty(a.Currency), nilIfEmpty(b.Currency))
 	diff("payment_terms_days", ptr(a.PaymentTermsDays), ptr(b.PaymentTermsDays))
+	diff("discount_percent", nilIfEmpty(a.DiscountPercent), nilIfEmpty(b.DiscountPercent))
+	diff("discount_days", ptr(a.DiscountDays), ptr(b.DiscountDays))
 	diff("default_account_id", ptr(a.DefaultAccountID), ptr(b.DefaultAccountID))
 	diff("default_gst_code", nilIfEmpty(a.DefaultGSTCode), nilIfEmpty(b.DefaultGSTCode))
 	diff("is_active", a.Active, b.Active)
@@ -92,9 +99,14 @@ func (r contacts) Create(ctx context.Context, d storage.ContactDetails) (storage
 	if err != nil {
 		return storage.Contact{}, err
 	}
+	dd, err := terms(d.DiscountDays)
+	if err != nil {
+		return storage.Contact{}, err
+	}
 	row, err := r.u.q.InsertContact(ctx, sqlcdb.InsertContactParams{LegalName: d.LegalName, IsCustomer: d.Customer, IsVendor: d.Vendor,
 		UenOrTaxID: opt(d.UENOrTaxID), PeppolID: opt(d.PeppolID), BillingEmail: opt(d.BillingEmail), RemittanceEmail: opt(d.RemittanceEmail),
 		Phone: opt(d.Phone), Address: opt(d.Address), Country: opt(d.Country), TaxResidence: opt(d.TaxResidence), Currency: opt(d.Currency), PaymentTermsDays: t,
+		DiscountPercent: opt(d.DiscountPercent), DiscountDays: dd,
 		DefaultAccountID: d.DefaultAccountID, DefaultGstCode: opt(d.DefaultGSTCode)})
 	if err != nil {
 		return storage.Contact{}, mapError(err)
@@ -125,6 +137,10 @@ func (r contacts) Update(ctx context.Context, id uuid.UUID, version int, d stora
 	if err != nil {
 		return storage.Contact{}, err
 	}
+	dd, err := terms(d.DiscountDays)
+	if err != nil {
+		return storage.Contact{}, err
+	}
 	cur, err := r.u.q.LockContact(ctx, id)
 	if err != nil {
 		return storage.Contact{}, mapError(err)
@@ -137,6 +153,7 @@ func (r contacts) Update(ctx context.Context, id uuid.UUID, version int, d stora
 	row, err := r.u.q.UpdateContact(ctx, sqlcdb.UpdateContactParams{ID: id, LegalName: d.LegalName, IsCustomer: d.Customer, IsVendor: d.Vendor,
 		UenOrTaxID: opt(d.UENOrTaxID), PeppolID: opt(d.PeppolID), BillingEmail: opt(d.BillingEmail), RemittanceEmail: opt(d.RemittanceEmail),
 		Phone: opt(d.Phone), Address: opt(d.Address), Country: opt(d.Country), TaxResidence: opt(d.TaxResidence), Currency: opt(d.Currency), PaymentTermsDays: t,
+		DiscountPercent: opt(d.DiscountPercent), DiscountDays: dd,
 		DefaultAccountID: d.DefaultAccountID, DefaultGstCode: opt(d.DefaultGSTCode), IsActive: active})
 	if err != nil {
 		return storage.Contact{}, mapError(err)

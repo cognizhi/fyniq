@@ -25,7 +25,11 @@ const (
 	CodePeppol   = "CT-08" // not a Peppol participant ID
 	CodeText     = "CT-09" // a text is too long
 	CodeCategory = "CT-10" // the default category is not an active leaf account
+	CodeDiscount = "CT-11" // early-payment discount terms that are not a percentage and a number of days (FR-AP-13)
 )
+
+// discountPercent reads a discount: above 0 and below 100, with at most two decimals ("2", "2.5").
+var discountPercent = regexp.MustCompile(`^(0\.(0[1-9]|[1-9][0-9]?)|[1-9][0-9]?(\.[0-9]{1,2})?)$`)
 
 // Problem is one rule that failed.
 type Problem struct {
@@ -79,6 +83,14 @@ func Check(d storage.ContactDetails) []Problem {
 	}
 	if d.PaymentTermsDays != nil && (*d.PaymentTermsDays < 0 || *d.PaymentTermsDays > 365) {
 		add(CodeTerms, "payment_terms_days", fmt.Sprintf("%d days is out of range", *d.PaymentTermsDays), "Enter 0 to 365 days")
+	}
+	switch {
+	case (d.DiscountPercent == "") != (d.DiscountDays == nil):
+		add(CodeDiscount, "discount_percent", "an early-payment discount needs both its percentage and its days", "Enter both, or neither")
+	case d.DiscountPercent != "" && !discountPercent.MatchString(d.DiscountPercent):
+		add(CodeDiscount, "discount_percent", fmt.Sprintf("%q is not a percentage above 0 and below 100", d.DiscountPercent), "Enter it as a number such as 2 or 2.5")
+	case d.DiscountDays != nil && (*d.DiscountDays < 1 || *d.DiscountDays > 365):
+		add(CodeDiscount, "discount_days", fmt.Sprintf("%d days is out of range", *d.DiscountDays), "Enter 1 to 365 days")
 	}
 	if d.DefaultGSTCode != "" && !gstCode.MatchString(d.DefaultGSTCode) {
 		add(CodeGSTCode, "default_gst_code", fmt.Sprintf("%q is not a GST code", d.DefaultGSTCode), "Use the GST code, such as TX, SR or NA")

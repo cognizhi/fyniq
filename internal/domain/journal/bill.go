@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -115,6 +116,47 @@ func billDraft(doc storage.Document, what string) error {
 		return &bill.Error{Code: bill.CodeNotDraft, Message: fmt.Sprintf("the bill is %s, not a draft", doc.Status), Fix: what}
 	}
 	return nil
+}
+
+// PlanPayment plans the payment date of a posted bill (FR-AP-13; PRD-001 rev 0.93), or unschedules it with nil: a plan
+// posts nothing and changes no version of the bill. The bill must have something open, and the date be on or after the
+// bill's own. Recording the payment clears the plan by settling the bill.
+func (s Bills) PlanPayment(ctx context.Context, org, id uuid.UUID, on *time.Time) (storage.BillPlan, error) {
+	var out storage.BillPlan
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		settings, err := loadSettings(ctx, u)
+		if err != nil {
+			return err
+		}
+		doc, err := u.Documents().Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if doc.Type != storage.DocumentBill || doc.Status != storage.DocumentPosted {
+			return &bill.Error{Code: bill.CodeNotPosted, Message: fmt.Sprintf("the %s is %s, not a posted bill", bill.Kind(doc), doc.Status),
+				Fix: "Plan the payment of a posted bill"}
+		}
+		if on != nil {
+			d, err := bill.Read(doc, settings.Base)
+			if err != nil {
+				return err
+			}
+			if on.Before(d.Date) {
+				return &bill.Error{Code: bill.CodePlan, Message: fmt.Sprintf("the payment is planned for %s, before the bill's date %s",
+					on.Format(time.DateOnly), d.Date.Format(time.DateOnly)), Fix: "Plan it on or after the bill's date"}
+			}
+			o, err := billpayment.OpenBill(ctx, u, id, settings)
+			if err != nil {
+				return err
+			}
+			if o.Open.Sign() <= 0 {
+				return &bill.Error{Code: bill.CodePlan, Message: "the bill is paid", Fix: "Plan only a bill with something left to pay"}
+			}
+		}
+		out, err = u.BillPlans().Plan(ctx, id, on)
+		return err
+	})
+	return out, err
 }
 
 // Create saves a draft bill (✎). It is checked when it posts; Check shows what posting it would do.

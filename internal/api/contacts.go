@@ -41,6 +41,8 @@ type Contact struct {
 	TaxResidence       string              `json:"tax_residence,omitempty" doc:"Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19). A vendor resident outside Singapore (this, else its country) has its bills record the nature of the payment, and the tax agent decides whether tax is withheld." example:"US"`
 	Currency           string              `json:"currency,omitempty" doc:"The currency it trades in." example:"SGD"`
 	PaymentTermsDays   *int                `json:"payment_terms_days,omitempty" doc:"Days until its documents fall due." example:"30"`
+	DiscountPercent    string              `json:"discount_percent,omitempty" doc:"A supplier's early-payment discount: this percentage off its bill if paid within discount_days of the bill's date (FR-AP-13)." example:"2"`
+	DiscountDays       *int                `json:"discount_days,omitempty" doc:"The days of its early-payment discount." example:"10"`
 	DefaultAccountID   string              `json:"default_account_id,omitempty" format:"uuid" doc:"The category its lines start with." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	DefaultGSTCode     string              `json:"default_gst_code,omitempty" doc:"The GST code its lines start with." example:"SR"`
 	Active             bool                `json:"active" doc:"An inactive contact is kept for its history and offered for nothing new." example:"true"`
@@ -63,6 +65,8 @@ type ContactDraft struct {
 	TaxResidence     string `json:"tax_residence,omitempty" doc:"Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19)." example:"US"`
 	Currency         string `json:"currency,omitempty" doc:"ISO 4217 code." example:"SGD"`
 	PaymentTermsDays *int   `json:"payment_terms_days,omitempty" doc:"0 to 365 days." example:"30"`
+	DiscountPercent  string `json:"discount_percent,omitempty" doc:"A supplier's early-payment discount, above 0 and below 100 with at most two decimals, with discount_days (FR-AP-13)." example:"2"`
+	DiscountDays     *int   `json:"discount_days,omitempty" doc:"Its days, 1 to 365, with discount_percent." example:"10"`
 	DefaultAccountID string `json:"default_account_id,omitempty" doc:"The default category: an active account that takes postings." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	DefaultGSTCode   string `json:"default_gst_code,omitempty" doc:"The default GST code." example:"SR"`
 }
@@ -82,6 +86,8 @@ type ContactChanges struct {
 	TaxResidence     *string `json:"tax_residence,omitempty" doc:"Where it is resident for tax, when that is not its country (FR-AP-19); \"\" clears it." example:"US"`
 	Currency         *string `json:"currency,omitempty" doc:"ISO 4217 code." example:"USD"`
 	PaymentTermsDays *int    `json:"payment_terms_days,omitempty" doc:"0 to 365 days; -1 clears them." example:"45"`
+	DiscountPercent  *string `json:"discount_percent,omitempty" doc:"A supplier's early-payment discount percentage; \"\" clears the discount, with discount_days -1." example:"2"`
+	DiscountDays     *int    `json:"discount_days,omitempty" doc:"Its days, 1 to 365; -1 clears them." example:"10"`
 	DefaultAccountID *string `json:"default_account_id,omitempty" doc:"The default category; \"\" clears it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	DefaultGSTCode   *string `json:"default_gst_code,omitempty" doc:"The default GST code." example:"SR"`
 	Active           *bool   `json:"active,omitempty" doc:"false keeps it for its history and offers it for nothing new." example:"false"`
@@ -134,12 +140,13 @@ type contactWriteOutput struct {
 
 // ContactCodes are a contact's rules (internal/domain/contact).
 var ContactCodes = []string{contact.CodeName, contact.CodeRole, contact.CodeEmail, contact.CodeCountry, contact.CodeCurrency,
-	contact.CodeTerms, contact.CodeGSTCode, contact.CodePeppol, contact.CodeText, contact.CodeCategory}
+	contact.CodeTerms, contact.CodeGSTCode, contact.CodePeppol, contact.CodeText, contact.CodeCategory, contact.CodeDiscount}
 
 func contactOf(c storage.Contact, dups []storage.ContactDuplicate) Contact {
 	out := Contact{ID: c.ID.String(), LegalName: c.LegalName, Customer: c.Customer, Vendor: c.Vendor, UENOrTaxID: c.UENOrTaxID,
 		PeppolID: c.PeppolID, BillingEmail: c.BillingEmail, RemittanceEmail: c.RemittanceEmail, Phone: c.Phone, Address: c.Address,
 		Country: c.Country, TaxResidence: c.TaxResidence, Currency: c.Currency, PaymentTermsDays: c.PaymentTermsDays, DefaultGSTCode: c.DefaultGSTCode,
+		DiscountPercent: c.DiscountPercent, DiscountDays: c.DiscountDays,
 		Active: c.Active, Version: c.Version, PossibleDuplicates: []PossibleDuplicate{}}
 	if c.DefaultAccountID != nil {
 		out.DefaultAccountID = c.DefaultAccountID.String()
@@ -232,7 +239,8 @@ func registerContacts(a *API) {
 				d := storage.ContactDetails{LegalName: strings.TrimSpace(b.LegalName), Customer: b.Customer, Vendor: b.Vendor,
 					UENOrTaxID: strings.TrimSpace(b.UENOrTaxID), PeppolID: strings.TrimSpace(b.PeppolID), BillingEmail: strings.TrimSpace(b.BillingEmail),
 					RemittanceEmail: strings.TrimSpace(b.RemittanceEmail), Phone: strings.TrimSpace(b.Phone), Address: strings.TrimSpace(b.Address),
-					Country: b.Country, TaxResidence: b.TaxResidence, Currency: b.Currency, PaymentTermsDays: b.PaymentTermsDays, DefaultGSTCode: b.DefaultGSTCode}
+					Country: b.Country, TaxResidence: b.TaxResidence, Currency: b.Currency, PaymentTermsDays: b.PaymentTermsDays, DefaultGSTCode: b.DefaultGSTCode,
+					DiscountPercent: strings.TrimSpace(b.DiscountPercent), DiscountDays: b.DiscountDays}
 				var bad []FieldProblem
 				if b.DefaultAccountID != "" {
 					d.DefaultAccountID = parseAccountRef("body.default_account_id", b.DefaultAccountID, &bad)
@@ -326,6 +334,13 @@ func registerContacts(a *API) {
 				}
 				if b.Active != nil {
 					active = *b.Active
+				}
+				text(&d.DiscountPercent, b.DiscountPercent)
+				if b.DiscountDays != nil {
+					d.DiscountDays = b.DiscountDays
+					if *b.DiscountDays == -1 {
+						d.DiscountDays = nil
+					}
 				}
 				if b.PaymentTermsDays != nil {
 					d.PaymentTermsDays = b.PaymentTermsDays

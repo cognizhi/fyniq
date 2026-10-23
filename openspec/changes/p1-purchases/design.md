@@ -197,6 +197,15 @@ the slice that builds it.
   - The facts live on the bill (the document, the supplier's registration, the addressee, how an
     agent was paid back, the tax agent's decision); the business share on each line. The usual facts
     are left out of the payload, so a bill saved before them reads as it did.
+- **Tracking and paying bills (FR-AP-13; decided by the owner, 23 Oct 2026, built in rev 0.93):**
+  - until payment batches exist, scheduling **plans a date beside the bill**: a planned payment date for a posted
+    bill with something open, kept in its own append-only table, posting nothing and changing no version of the bill;
+    the latest plan is in force, one with no date unschedules it, and the batch reads the dates when it comes;
+  - whoever prepares bills plans them (C on "Bills, vendor credits"): a plan posts nothing, and paying still needs P;
+  - early-payment discounts are **shown from the supplier's terms** (a percentage off within a number of days of the
+    bill's date), on the bill's total under a new policy `RND-DISCOUNT`; taking one is a supplier credit note;
+  - **reminders** go to the Inbox, for the members who record payments: the bills overdue, or falling due or planned
+    within the setting `purchases.reminder_days` (3 by default). Email waits for `p1-templates-email`.
 - **Duplicates:** a bill with the same supplier, supplier's number and total as another, dated within
   60 days of it, is ⚠ with a link to the other. FR-AP-12's block is for captured bills, with
   `p1-document-capture`.

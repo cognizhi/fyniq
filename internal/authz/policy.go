@@ -419,6 +419,10 @@ var (
 	EditBill        = Policy{Operation: "editBill", Capability: Bills, Need: Post}
 	// The tax agent's withholding decisions for a non-resident supplier (FR-AP-19; rev 0.90): read with the bills (V),
 	// recorded by whoever prepares bills (C), naming the tax agent who gave them, with their advice on the bill.
+	// Tracking and paying bills (FR-AP-13; rev 0.93): whoever prepares bills plans their payment dates (C); the bills to
+	// pay soon are read with the bills (V), and the Inbox shows them to whoever records payments.
+	PlanBillPayment           = Policy{Operation: "planBillPayment", Capability: Bills, Need: Create, Note: "A plan posts nothing; paying needs P."}
+	ListBillReminders         = Policy{Operation: "listBillReminders", Capability: Bills, Need: View}
 	ListWithholdingDecisions  = Policy{Operation: "listWithholdingDecisions", Capability: Bills, Need: View}
 	RecordWithholdingDecision = Policy{Operation: "recordWithholdingDecision", Capability: Bills, Need: Create,
 		Note: "Names the tax agent who gave it; their advice is attached to the bill as evidence. AI and MCP clients never record one (§9.6)."}
@@ -592,7 +596,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
-	ListWithholdingDecisions, RecordWithholdingDecision,
+	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
 	ListPurchaseOrders, GetPurchaseOrder, CreatePurchaseOrder, ReplacePurchaseOrder, ApprovePurchaseOrder, RequestPurchaseOrderApproval, ClosePurchaseOrder, BillPurchaseOrder,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,

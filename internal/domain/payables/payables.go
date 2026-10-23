@@ -376,6 +376,74 @@ func SubLedgers() fx.SubLedgers {
 	return fx.SubLedgers{storage.AccountRole(ledger.RoleAccountsPayable): Documents}
 }
 
+// Reminder is a bill to pay soon (FR-AP-13; rev 0.93): its supplier, the open item, its planned payment date if any,
+// and why it is listed.
+type Reminder struct {
+	Supplier  Supplier
+	Item      Item
+	PlannedOn *time.Time
+	Why       string // overdue, due or planned
+}
+
+// The reasons a bill is to pay.
+const (
+	WhyOverdue = "overdue"
+	WhyDue     = "due"     // it falls due within the days
+	WhyPlanned = "planned" // its planned payment date is within the days
+)
+
+// Reminders are the bills to pay as at today (FR-AP-13): every posted bill with something open that is overdue, falls
+// due within days, or is planned to be paid within them, earliest first; a planned date that has passed counts as due.
+func Reminders(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uuid.UUID, today time.Time, days int) ([]Reminder, error) {
+	l, err := Open(ctx, u, base, ap, today)
+	if err != nil {
+		return nil, err
+	}
+	var ids []uuid.UUID
+	for _, s := range l.Suppliers {
+		for _, it := range s.Items {
+			if it.Kind == KindBill {
+				ids = append(ids, it.DocumentID)
+			}
+		}
+	}
+	plans, err := u.BillPlans().Of(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	until := today.AddDate(0, 0, days)
+	var out []Reminder
+	for _, s := range l.Suppliers {
+		for _, it := range s.Items {
+			if it.Kind != KindBill || it.Open.Sign() <= 0 {
+				continue
+			}
+			r := Reminder{Supplier: Supplier{ID: s.ID, Name: s.Name}, Item: it, PlannedOn: plans[it.DocumentID].PlannedOn}
+			switch {
+			case !it.DueDate.IsZero() && it.DueDate.Before(today):
+				r.Why = WhyOverdue
+			case r.PlannedOn != nil && !r.PlannedOn.After(until):
+				r.Why = WhyPlanned
+			case !it.DueDate.IsZero() && !it.DueDate.After(until):
+				r.Why = WhyDue
+			default:
+				continue
+			}
+			out = append(out, r)
+		}
+	}
+	slices.SortStableFunc(out, func(a, b Reminder) int { return a.when().Compare(b.when()) })
+	return out, nil
+}
+
+// when is the reminder's date: the planned date when it has one, else the due date.
+func (r Reminder) when() time.Time {
+	if r.PlannedOn != nil && r.Why != WhyOverdue {
+		return *r.PlannedOn
+	}
+	return r.Item.DueDate
+}
+
 // Explained is what a source other than bills and their payments posted to the accounts-payable account, owed positive.
 type Explained struct {
 	SourceType string

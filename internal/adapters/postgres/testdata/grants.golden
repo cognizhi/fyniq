@@ -30,6 +30,8 @@ fyniq_api       INSERT    audit_event (body, id)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   balance_differences()
 fyniq_api       EXECUTE   beat()
+fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
+fyniq_api       SELECT    bill_payment_plan
 fyniq_api       EXECUTE   claim_job_slot()
 fyniq_api       EXECUTE   claim_setup()
 fyniq_api       INSERT    close_checklist_entry (note, period_id, state, task_key, template_version, written_at, written_by)
@@ -37,9 +39,9 @@ fyniq_api       SELECT    close_checklist_entry
 fyniq_api       INSERT    close_checklist_template (tasks, version, written_at, written_by)
 fyniq_api       SELECT    close_checklist_template
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
-fyniq_api       INSERT    contact (address, billing_email, country, currency, default_account_id, default_gst_code, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
+fyniq_api       INSERT    contact (address, billing_email, country, currency, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
 fyniq_api       SELECT    contact
-fyniq_api       UPDATE    contact (address, billing_email, country, currency, default_account_id, default_gst_code, is_active, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
+fyniq_api       UPDATE    contact (address, billing_email, country, currency, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
 fyniq_api       EXECUTE   count_super_admins()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
@@ -177,6 +179,7 @@ fyniq_executor  SELECT    approval_request
 fyniq_executor  SELECT    approval_signature
 fyniq_executor  INSERT    audit_event (body, id)
 fyniq_executor  SELECT    balance
+fyniq_executor  SELECT    bill_payment_plan
 fyniq_executor  SELECT    close_checklist_entry
 fyniq_executor  SELECT    close_checklist_template
 fyniq_executor  SELECT    contact
@@ -238,6 +241,7 @@ fyniq_readonly  SELECT    audit_chain
 fyniq_readonly  SELECT    audit_event
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
+fyniq_readonly  SELECT    bill_payment_plan
 fyniq_readonly  SELECT    close_checklist_entry
 fyniq_readonly  SELECT    close_checklist_template
 fyniq_readonly  SELECT    contact
@@ -297,6 +301,7 @@ fyniq_worker    SELECT    audit_event
 fyniq_worker    SELECT    balance
 fyniq_worker    EXECUTE   balance_differences()
 fyniq_worker    EXECUTE   beat()
+fyniq_worker    SELECT    bill_payment_plan
 fyniq_worker    SELECT    close_checklist_entry
 fyniq_worker    SELECT    close_checklist_template
 fyniq_worker    SELECT    contact

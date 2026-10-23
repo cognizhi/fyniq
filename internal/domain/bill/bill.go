@@ -484,6 +484,34 @@ func PrepareAt(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 	return out, probs, nil
 }
 
+// CodePlan is the refusal of a payment date Fyniq cannot plan (FR-AP-13; rev 0.93).
+const CodePlan = "BILL-18"
+
+// EarlyDiscount is the early-payment discount a bill offers (FR-AP-13; rev 0.93): its supplier's terms, the last day to
+// take it, and its amount on the bill's total under RND-DISCOUNT. Taking it is a supplier credit note for the amount.
+type EarlyDiscount struct {
+	Percent string
+	Until   time.Time
+	Amount  money.Money
+}
+
+// DiscountOf is the early-payment discount a bill of supplier offers: nil when the supplier has no terms, or the bill
+// has no date.
+func DiscountOf(supplier storage.Contact, d Draft) (*EarlyDiscount, error) {
+	if supplier.DiscountPercent == "" || supplier.DiscountDays == nil || d.Date.IsZero() {
+		return nil, nil
+	}
+	total, err := d.Total()
+	if err != nil {
+		return nil, err
+	}
+	amount, err := rounding.Discount(total, supplier.DiscountPercent)
+	if err != nil {
+		return nil, err
+	}
+	return &EarlyDiscount{Percent: supplier.DiscountPercent, Until: d.Date.AddDate(0, 0, *supplier.DiscountDays), Amount: amount}, nil
+}
+
 // memo names a bill in its entry: the supplier and the supplier's number.
 func memo(c storage.Contact, d Draft) string {
 	switch {

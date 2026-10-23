@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "The discount on the bill's total, in its currency (RND-DISCOUNT)."
+    },
+    "percent": {
+      "description": "The percentage off.",
+      "examples": [
+        "2"
+      ],
+      "type": "string"
+    },
+    "until": {
+      "description": "The last day to pay and take it: the bill's date plus the supplier's discount days.",
+      "examples": [
+        "2026-10-24"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "percent",
+    "until",
+    "amount"
+  ],
+  "title": "BillDiscount",
+  "type": "object"
+}

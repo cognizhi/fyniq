@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14]
+requirements: [FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13]
 status: draft
 ---
 
@@ -74,6 +74,13 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 - **Payment terms for bills**: a bill from a vendor with no terms of its own falls due 30 days
   after its date.
 - A contact's own payment terms always win over these.
+
+## Bill reminders
+
+**Remind of bills due within** says how many days ahead the Inbox lists the bills to pay: 3 days unless
+changed, from 0 to 30. A bill is listed once it falls due within that many days, or its planned payment
+date does, and stays while it is overdue, until its payment is recorded. Members who record bill payments
+see the list. See [Bills](bills.md).
 
 ## GST rounding
 

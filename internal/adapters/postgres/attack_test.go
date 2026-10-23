@@ -469,6 +469,13 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"period_variance_explanation.previous_amount": func(t *testing.T, b porttest.Books, v string) error {
 		return rawExplanation(t, b, "0", v)
 	},
+	"contact.discount_percent": func(t *testing.T, b porttest.Books, v string) error {
+		ctx := context.Background()
+		return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.contact (legal_name, is_vendor, discount_percent, discount_days) VALUES ('Attack', true, $1::numeric, 10)`, v)
+			return err
+		})
+	},
 	"withholding_decision.rate_percent": func(t *testing.T, b porttest.Books, v string) error {
 		return rawWithholding(t, b, v)
 	},

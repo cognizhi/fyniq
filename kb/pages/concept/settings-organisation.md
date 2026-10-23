@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings and their recommended values: features, payment terms, tolerances, thresholds, close variances, data region, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:d285b89b67358ef0f53158d8f84430cb99761ef4dd9c075f1a2ed90b792525ef
+  - docs/user-guide/organisation-settings.md sha256:190a7a02cbdd0d42577ad69587e3b7fa0ac23b64e1c88b6574939f867daed335
 data_class: general
 taint: trusted
 status: draft
@@ -49,6 +49,13 @@ aliases:
 - A contact's own payment terms always win.
 
 (src: docs/user-guide/organisation-settings.md#payment-terms)
+
+## Bill reminders
+
+- **Remind of bills due within**: how many days ahead the Inbox lists the bills to pay, 3 days unless changed, from 0 to 30.
+- A bill is listed once it falls due within that many days, or its planned payment date does, and stays while it is overdue, until its payment is recorded; members who record bill payments see the list ([[purchases.bills]]).
+
+(src: docs/user-guide/organisation-settings.md#bill-reminders)
 
 ## GST rounding
 

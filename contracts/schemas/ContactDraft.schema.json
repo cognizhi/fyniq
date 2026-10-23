@@ -53,6 +53,21 @@
       ],
       "type": "string"
     },
+    "discount_days": {
+      "description": "Its days, 1 to 365, with discount_percent.",
+      "examples": [
+        10
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "discount_percent": {
+      "description": "A supplier's early-payment discount, above 0 and below 100 with at most two decimals, with discount_days (FR-AP-13).",
+      "examples": [
+        "2"
+      ],
+      "type": "string"
+    },
     "legal_name": {
       "description": "Its legal name.",
       "examples": [

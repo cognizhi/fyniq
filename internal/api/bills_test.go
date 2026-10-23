@@ -446,3 +446,50 @@ func TestWithholdingThroughTheAPI(t *testing.T) {
 		t.Errorf("a resident supplier's decision: %d %s", bad.Status, bad.Raw)
 	}
 }
+
+// FR-AP-13 through the API (rev 0.93): a supplier's discount terms give its bill an early-payment discount; a posted
+// bill's payment date is planned with its ETag, previewed, and unscheduled; the bills to pay soon list it.
+// req: FR-AP-13
+func TestBillPlansThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	sup := e.supplier()
+	c := e.call(http.MethodPatch, "/v1/contacts/"+sup, e.as(authz.Accountant), map[string]any{"discount_percent": "2", "discount_days": 10}, "If-Match", "*")
+	if c.Status != 200 || c.str("discount_percent") != "2" {
+		t.Fatalf("the discount terms: %d %s", c.Status, c.Raw)
+	}
+	if x := e.call(http.MethodPatch, "/v1/contacts/"+sup, e.as(authz.Accountant), map[string]any{"discount_percent": "2.5", "discount_days": -1}, "If-Match", "*"); x.Status != 422 {
+		t.Errorf("a percentage without days: %d %s", x.Status, x.Raw)
+	}
+	id, tag := e.postedBill("1000.00", "90.00")
+	g := e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Accountant), nil)
+	if !strings.Contains(g.Raw, `"early_payment_discount":{"percent":"2","until":"2026-10-24","amount":{"amount":"21.80","currency":"SGD"}}`) {
+		t.Fatalf("the bill's discount: %s", g.Raw)
+	}
+	path := "/v1/bills/" + id + "/payment-plan"
+	plan := map[string]any{"planned_on": "2026-11-10"}
+	if x := e.call(http.MethodPost, path, e.as(authz.Bookkeeper), plan); x.Status != 428 {
+		t.Errorf("without If-Match: %d %s", x.Status, x.Raw)
+	}
+	if x := e.call(http.MethodPost, path, e.as(authz.Bookkeeper), plan, "If-Match", tag, "Prefer", "return=preview"); x.Status != 200 ||
+		x.Header.Get("Preference-Applied") != "return=preview" || x.str("planned_payment_on") != "2026-11-10" {
+		t.Errorf("a preview: %d %s", x.Status, x.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Accountant), nil); g.str("planned_payment_on") != "" {
+		t.Errorf("the preview planned it: %s", g.Raw)
+	}
+	r := e.call(http.MethodPost, path, e.as(authz.Bookkeeper), plan, "If-Match", tag)
+	if r.Status != 200 || r.str("planned_payment_on") != "2026-11-10" || r.Header.Get("ETag") != tag {
+		t.Fatalf("planning: %d %v %s", r.Status, r.Header, r.Raw)
+	}
+	if x := e.call(http.MethodPost, path, e.as(authz.Bookkeeper), map[string]any{"planned_on": "2026-10-01"}, "If-Match", tag); x.Status != 422 ||
+		!strings.Contains(x.Raw, bill.CodePlan) {
+		t.Errorf("before the bill's date: %d %s", x.Status, x.Raw)
+	}
+	rem := e.call(http.MethodGet, "/v1/bill-reminders", e.as(authz.Accountant), nil)
+	if rem.Status != 200 || rem.Body["days"] != float64(3) {
+		t.Fatalf("the reminders: %d %s", rem.Status, rem.Raw)
+	}
+	if x := e.call(http.MethodPost, path, e.as(authz.Bookkeeper), nil, "If-Match", tag); x.Status != 200 || x.str("planned_payment_on") != "" {
+		t.Errorf("unscheduling: %d %s", x.Status, x.Raw)
+	}
+}

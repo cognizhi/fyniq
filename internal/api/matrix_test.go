@@ -1371,6 +1371,16 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/supplier-refunds/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	"planBillPayment": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.postedBill("10.00", "0.90")
+		r := e.call(http.MethodPost, "/v1/bills/"+id+"/payment-plan", tok, map[string]any{"planned_on": "2026-11-20"}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/bills/"+id, e.as(authz.Accountant), nil).str("planned_payment_on") == ""
+		}
+	},
+	"listBillReminders": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/bill-reminders", tok, nil), nil
+	},
 	"listWithholdingDecisions": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/contacts/"+e.foreignSupplier()+"/withholding-decisions", tok, nil), nil
 	},
