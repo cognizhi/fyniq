@@ -68,6 +68,7 @@ function formOf(b: Bill): Form {
       stated_gst: l.stated_gst?.amount ?? "",
       spread_months: l.spread_months ? String(l.spread_months) : "",
       spread_from: l.spread_from?.slice(0, 7) ?? "",
+      order: l.order,
     })),
   };
 }
@@ -106,6 +107,7 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
       stated_gst: currency !== base && stated ? { amount: stated, currency: base } : undefined,
       spread_months: months ? Number(months) : undefined,
       spread_from: months && from ? `${from}-01` : undefined,
+      order: l.order,
     });
   }
   if (lines.length === 0) errors.lines = "Add a line for what the bill is for.";

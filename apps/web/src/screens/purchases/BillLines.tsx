@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { components } from "../../api/schema";
@@ -7,6 +8,7 @@ import { Icon } from "../../ui";
 import type { Account } from "../accounting/data";
 
 type GSTCode = components["schemas"]["PurchaseGSTCodes"]["codes"][number];
+export type LineOrder = components["schemas"]["BillLineOrder"];
 
 // Line is one line of a bill as the form keeps it (FR-AP-02): what was typed, before it is checked.
 export interface Line {
@@ -19,6 +21,7 @@ export interface Line {
   stated_gst: string; // the SGD GST the tax invoice states, for a bill in another currency (ENG-42)
   spread_months: string; // a cost spread over months to Prepayments (FR-GL-03); blank for none
   spread_from: string; // the spread's first month, "2026-10"; blank for the bill's month
+  order?: LineOrder; // the purchase order line it bills (FR-AP-01), kept as the order made it
 }
 
 let keys = 0;
@@ -68,6 +71,15 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
         {lines.map((l, i) => (
           <fieldset key={l.key} className="fy-fieldset">
             <legend className="fy-small fy-strong">Line {i + 1}</legend>
+            {l.order && (
+              <p className="fy-small fy-muted">
+                Bills {l.order.quantity} of line {l.order.line} of{" "}
+                <Link to="/purchases/orders/$orderId" params={{ orderId: l.order.purchase_order_id }}>
+                  its purchase order
+                </Link>
+                .
+              </p>
+            )}
             <div className="fy-form fy-form--2">
               <div className="fy-field">
                 <label className="fy-label" htmlFor={`${l.key}-account`}>

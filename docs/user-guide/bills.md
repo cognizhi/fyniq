@@ -212,6 +212,7 @@ voided or edited while it is applied or refunded.
 
 ## Related
 
+- [Purchase orders](purchase-orders.md)
 - [Exchange rates](currencies.md)
 - [Organisation settings](organisation-settings.md)
 - [Contacts and items](contacts-and-items.md)

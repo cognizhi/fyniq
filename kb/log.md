@@ -135,3 +135,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-23] compile | docs/user-guide/bills.md → purchases.bills (recurring bills; rev 0.85)
 
 ## [2026-10-23] compile | docs/user-guide/bills.md → purchases.bills (attaching the supplier's invoice; rev 0.86)
+
+## [2026-10-23] compile | docs/user-guide/purchase-orders.md → purchases.orders (new: purchase orders; rev 0.88)
+
+## [2026-10-23] compile | docs/user-guide/bills.md → purchases.bills (links purchase orders; rev 0.88)
