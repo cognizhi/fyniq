@@ -10,6 +10,7 @@ package mailhooks
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -38,6 +39,9 @@ type Receiver struct {
 	Log          *slog.Logger
 	// Inbound receives mail for the email-in addresses (FR-INT-22, rev 0.106); nil: email-in is not set up.
 	Inbound *Inbound
+	// MailpitSecret is "user:password" of local mode's Mailpit webhook, the substitute for receiving (ADR-T4, rev 0.107);
+	// empty everywhere else, so the route does not exist.
+	MailpitSecret string
 }
 
 // Inbound is where mail for the email-in addresses goes: the capture domain, the routes of its names, and the outbox
@@ -62,6 +66,15 @@ func (r *Receiver) Register(mux Mux) {
 				return nil, err
 			}
 			return ParseResend(id, body, now)
+		}))
+	}
+	if r.MailpitSecret != "" {
+		mux.HandleFunc("POST /webhooks/email/mailpit", r.handle("mailpit", func(h http.Header, body []byte, now time.Time) ([]Event, error) {
+			user, password, ok := (&http.Request{Header: h}).BasicAuth()
+			if !ok || subtle.ConstantTimeCompare([]byte(user+":"+password), []byte(r.MailpitSecret)) != 1 {
+				return nil, ErrSignature
+			}
+			return ParseMailpit(body, now)
 		}))
 	}
 	if r.ZeptoMailKey != "" {
@@ -276,6 +289,30 @@ func parseReceived(id string, body []byte, now time.Time) ([]Event, error) {
 	d := in.Data
 	return []Event{{DeliveryID: id, Received: &Received{ID: d.EmailID, From: d.From, Subject: d.Subject, To: append(d.ReceivedFor, d.To...),
 		ReceivedAt: when(d.CreatedAt, now)}}}, nil
+}
+
+// ParseMailpit reads Mailpit's webhook, its message summary (checked against Mailpit 1.31): ID, From, To, Cc,
+// Subject and Created; the body and attachments are fetched through its API.
+func ParseMailpit(body []byte, now time.Time) ([]Event, error) {
+	type addr struct {
+		Address string `json:"Address"`
+	}
+	var in struct {
+		ID      string `json:"ID"`
+		From    addr   `json:"From"`
+		To      []addr `json:"To"`
+		Cc      []addr `json:"Cc"`
+		Subject string `json:"Subject"`
+		Created string `json:"Created"`
+	}
+	if err := json.Unmarshal(body, &in); err != nil || in.ID == "" || in.From.Address == "" {
+		return nil, errMalformed
+	}
+	r := Received{ID: in.ID, From: in.From.Address, Subject: in.Subject, ReceivedAt: when(in.Created, now)}
+	for _, a := range append(in.To, in.Cc...) {
+		r.To = append(r.To, a.Address)
+	}
+	return []Event{{DeliveryID: in.ID, Received: &r}}, nil
 }
 
 // resendRef is the fyniq_ref tag, whether Resend writes tags as a list of names and values or as an object.

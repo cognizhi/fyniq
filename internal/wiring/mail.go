@@ -29,6 +29,8 @@ type MailConfig struct {
 	CaptureDomain string
 	// Inbound fetches what the receiving provider received for the email-in addresses (rev 0.106); nil without its key.
 	Inbound ports.InboundMail
+	// MailpitWebhook is "user:password" of local mode's Mailpit webhook (rev 0.107); never set in a release build.
+	MailpitWebhook string
 	// The webhooks' secrets, which only the API holds: Resend's endpoint signing secret and ZeptoMail's Agent
 	// authentication key. Empty: that provider's webhooks have no receiver.
 	ResendWebhookSecret, ZeptoMailWebhookKey string

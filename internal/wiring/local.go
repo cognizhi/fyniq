@@ -57,13 +57,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// enforces retention in code, and scans with clamd when FYNIQ_CLAMD_ADDR names one (the stack's scanner
 		// profile), else with the EICAR fake (SEC-24).
 		Staging: blobs, Evidence: blobs, Scanner: scanner(local.EICARScanner{}),
-		// Mailpit (`make deps-up`, or the stack's mailpit), spoken to in the clear: local mode only. Senders may be
-		// chosen on fyniq.local and example.com.
-		Mail: MailConfig{Providers: []ports.Email{smtp.New(cmp.Or(os.Getenv("FYNIQ_SMTP_ADDR"), "localhost:1025"), "fyniq.local", true)},
-			From: cmp.Or(os.Getenv("FYNIQ_MAIL_FROM"), "Fyniq <no-reply@fyniq.local>"), Domains: []string{"fyniq.local", "example.com"},
-			// Webhooks only when a developer points a provider's sandbox at a tunnel and sets its secret.
-			ResendWebhookSecret: os.Getenv("FYNIQ_RESEND_WEBHOOK_SECRET"), ZeptoMailWebhookKey: os.Getenv("FYNIQ_ZEPTOMAIL_WEBHOOK_KEY"),
-			CaptureDomain: cmp.Or(os.Getenv("FYNIQ_CAPTURE_DOMAIN"), "in.fyniq.local")},
+		Mail: LocalMail(os.Getenv),
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
 		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.
@@ -78,4 +72,17 @@ func scanner(fallback ports.Scanner) ports.Scanner {
 		return clamav.Scanner{Addr: addr}
 	}
 	return fallback
+}
+
+// LocalMail is local mode's email (ADR-T4, PRD-001 §8.24): Mailpit (`make deps-up`, or the stack's mailpit) for sending,
+// spoken to in the clear, with senders on fyniq.local and example.com; Mailpit again for receiving, mail to the capture
+// domain announced by its webhook and read through its API; a provider's webhooks only when a developer points its
+// sandbox at a tunnel and sets its secret.
+func LocalMail(env func(string) string) MailConfig {
+	return MailConfig{Providers: []ports.Email{smtp.New(cmp.Or(env("FYNIQ_SMTP_ADDR"), "localhost:1025"), "fyniq.local", true)},
+		From: cmp.Or(env("FYNIQ_MAIL_FROM"), "Fyniq <no-reply@fyniq.local>"), Domains: []string{"fyniq.local", "example.com"},
+		ResendWebhookSecret: env("FYNIQ_RESEND_WEBHOOK_SECRET"), ZeptoMailWebhookKey: env("FYNIQ_ZEPTOMAIL_WEBHOOK_KEY"),
+		CaptureDomain:  cmp.Or(env("FYNIQ_CAPTURE_DOMAIN"), "in.fyniq.local"),
+		Inbound:        local.MailpitInbound{URL: cmp.Or(env("FYNIQ_MAILPIT_URL"), "http://localhost:8025")},
+		MailpitWebhook: cmp.Or(env("FYNIQ_MAILPIT_WEBHOOK"), "fyniq:local-only")}
 }

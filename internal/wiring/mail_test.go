@@ -78,3 +78,27 @@ func TestEveryPlatformScheduleHasItsJob(t *testing.T) {
 		}
 	}
 }
+
+// Every email capability is a port with interchangeable adapters, chosen by configuration: outbound ZeptoMail, Resend
+// or an SMTP relay in any order; inbound Resend's receiving with its key. A release build never has Mailpit's webhook.
+// req: communication/email-and-notifications Outside services behind interchangeable adapters
+// req: communication/email-and-notifications Launch adapters and local substitutes
+func TestEmailProvidersAreConfigurationNotCode(t *testing.T) {
+	for _, order := range []string{"zeptomail,resend,smtp", "smtp,resend", "resend"} {
+		c, err := wiring.ReadMail(env(map[string]string{"FYNIQ_EMAIL_PROVIDERS": order, "FYNIQ_ZEPTOMAIL_KEY": "z", "FYNIQ_RESEND_KEY": "r",
+			"FYNIQ_SMTP_ADDR": "smtp.example.com:587", "FYNIQ_MAIL_FROM": "a@example.com"}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var names []string
+		for _, p := range c.Providers {
+			names = append(names, p.Name())
+		}
+		if strings.Join(names, ",") != order || c.Inbound == nil || c.Inbound.Name() != "resend" || c.MailpitWebhook != "" {
+			t.Errorf("%s: providers %v, inbound %v, Mailpit %q", order, names, c.Inbound, c.MailpitWebhook)
+		}
+	}
+	if c, _ := wiring.ReadMail(env(nil)); c.Inbound != nil {
+		t.Error("an inbound adapter without its key")
+	}
+}

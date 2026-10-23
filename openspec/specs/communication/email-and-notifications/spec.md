@@ -39,6 +39,11 @@ Source: PRD-001 §8.24
 - **THEN** they are Resend receiving (webhook, then fetch the message) and mailbox polling over IMAP (e.g. a Zoho Mail mailbox)
 - **AND** the local substitute is Mailpit plus a local webhook
 
+#### Scenario: The local substitute for receiving as built (rev 0.107)
+- **WHEN** mail is sent to Mailpit for the capture domain in local mode
+- **THEN** Mailpit's webhook announces it to the API under a local-only secret, and the worker reads it through Mailpit's API
+- **AND** it is received, decided and kept as Resend's would be, while IMAP polling is not built for launch (open question 45)
+
 #### Scenario: Messaging
 - **WHEN** messaging adapters are offered (P2)
 - **THEN** they are Slack, Zoho Cliq and a generic incoming webhook
