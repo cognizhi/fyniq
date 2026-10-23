@@ -60,6 +60,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void-approval` (requestCreditApplicationVoid): Ask for approval to void a credit applied to a bill
+- `GET /v1/document-template-catalogue/{document_type}` (getDocumentTemplateCatalogue): Read what a template is made of
+- `GET /v1/document-templates` (listDocumentTemplates): List document and email templates
+- `POST /v1/document-templates` (createDocumentTemplate): Make a template
+- `GET /v1/document-templates/{template_id}` (getDocumentTemplate): Read a template
+- `PUT /v1/document-templates/{template_id}` (replaceDocumentTemplate): Save a template's draft
+- `POST /v1/document-templates/{template_id}/approval` (requestDocumentTemplatePublication): Ask for approval to publish a template
+- `POST /v1/document-templates/{template_id}/publish` (publishDocumentTemplate): Publish a template
+- `GET /v1/document-templates/{template_id}/versions` (listDocumentTemplateVersions): List a template's versions
+- `GET /v1/document-templates/{template_id}/versions/{number}` (getDocumentTemplateVersion): Read a template version
 - `GET /v1/fx/feed` (listFeedRates): List the daily feed's rates
 - `GET /v1/fx/money-accounts` (listForeignMoneyAccounts): List the money accounts' balances in other currencies
 - `GET /v1/fx/rate` (lookupFxRate): Find the rate a posting takes

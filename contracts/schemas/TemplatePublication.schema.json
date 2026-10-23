@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "description": "Why, for the version history.",
+      "examples": [
+        "New PayNow details"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "version": {
+      "description": "A rollback: publish this earlier version's content again, as the next version. Left out, the draft is published.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "title": "TemplatePublication",
+  "type": "object"
+}

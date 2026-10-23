@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "body": {
+      "description": "The block's text, with fields.",
+      "examples": [
+        "Please pay by {{document.due_date|long}}."
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "label": {
+      "description": "The block's label, on one line.",
+      "examples": [
+        "Bill to"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "title": {
+      "description": "The header's title. An invoice's is \"Tax Invoice\" when the organisation is GST-registered, never a text (FR-TPL-03).",
+      "examples": [
+        "Quotation"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    }
+  },
+  "title": "TemplateTexts",
+  "type": "object"
+}

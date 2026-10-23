@@ -53,6 +53,11 @@ fyniq_api       SELECT    document_number
 fyniq_api       INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
 fyniq_api       SELECT    document_sequence
 fyniq_api       UPDATE    document_sequence (digits, gap_free, next_number, prefix, version)
+fyniq_api       INSERT    document_template (document_type, draft, kind, name, saved_at, saved_by)
+fyniq_api       SELECT    document_template
+fyniq_api       UPDATE    document_template (draft, name, published, saved_at, saved_by, version)
+fyniq_api       INSERT    document_template_version (content, content_hash, note, number, published_at, published_by, republished_from, template_id)
+fyniq_api       SELECT    document_template_version
 fyniq_api       INSERT    document_version (created_by, document_id, payload, version)
 fyniq_api       SELECT    document_version
 fyniq_api       INSERT    email_message (purpose, recipient, subject)
@@ -193,6 +198,8 @@ fyniq_executor  SELECT    document_number
 fyniq_executor  INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
 fyniq_executor  SELECT    document_sequence
 fyniq_executor  UPDATE    document_sequence (next_number)
+fyniq_executor  SELECT    document_template
+fyniq_executor  SELECT    document_template_version
 fyniq_executor  INSERT    document_version (created_by, document_id, payload, version)
 fyniq_executor  SELECT    document_version
 fyniq_executor  SELECT    evidence
@@ -250,6 +257,8 @@ fyniq_readonly  EXECUTE   current_org()
 fyniq_readonly  SELECT    document
 fyniq_readonly  SELECT    document_number
 fyniq_readonly  SELECT    document_sequence
+fyniq_readonly  SELECT    document_template
+fyniq_readonly  SELECT    document_template_version
 fyniq_readonly  SELECT    document_version
 fyniq_readonly  SELECT    email_message
 fyniq_readonly  SELECT    evidence
@@ -315,6 +324,8 @@ fyniq_worker    SELECT    document
 fyniq_worker    UPDATE    document (status)
 fyniq_worker    SELECT    document_number
 fyniq_worker    SELECT    document_sequence
+fyniq_worker    SELECT    document_template
+fyniq_worker    SELECT    document_template_version
 fyniq_worker    SELECT    document_version
 fyniq_worker    SELECT    email_message
 fyniq_worker    UPDATE    email_message (accepted_at, attempt_started_at, attempts, last_error, provider, provider_id, status)

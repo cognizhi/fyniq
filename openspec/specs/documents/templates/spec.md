@@ -37,6 +37,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1 (theme, texts, optional blocks)
 - **THEN** it offers the theme, logo, colours, font and texts, showing or hiding optional blocks, page settings and the live preview
 - **AND** drag-and-drop layout and per-block layout settings, the Expert part, follow in P2 (open question 44, decided 16 Oct 2026)
 
+#### Scenario: The theme's data (rev 0.95)
+- **WHEN** a document template's page and theme are saved
+- **THEN** the paper is A4 or Letter with margins of 10 to 40 mm, the font one the render service ships (Inter, IBM Plex Sans, IBM Plex Serif), and the logo the organisation's, shown or not
+- **AND** an accent colour below 4.5:1 against white is refused (TPL-05), as is a block the document type does not take or one repeated (TPL-06)
+
 ### Requirement: FR-TPL-02 Fields and conditions
 Templates SHALL use fields from a typed catalogue with formats for dates and money and, from P2, conditional blocks from a fixed list and a column chooser; the visual editor SHALL allow no free code.
 
@@ -68,6 +73,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1 (fields); P2 (conditions, colum
 - **THEN** it offers the typed field catalogue and its formats
 - **AND** conditional blocks and the column chooser follow in P2 (open question 44, decided 16 Oct 2026)
 
+#### Scenario: Fields and formats as built (rev 0.95)
+- **WHEN** a text names a field as `{{customer.name}}` or `{{document.date|long}}`
+- **THEN** the field is one of the document type's typed catalogue (text, date, money or number), with a date formatted medium (the default), long, short or iso and an amount code (the default), symbol or plain
+- **AND** a field outside the catalogue, a format its type does not take, or braces that name no field are refused (TPL-09)
+
 ### Requirement: FR-TPL-03 Compliance guard
 For tax invoices, simplified tax invoices and credit notes, the IRAS particulars (FR-AR-05) SHALL be locked blocks that cannot be removed or hidden.
 
@@ -85,6 +95,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 #### Scenario: InvoiceNow is not affected
 - **WHEN** an InvoiceNow document is sent
 - **THEN** it is structured data and the PDF template does not affect it
+
+#### Scenario: The locked blocks as built (rev 0.95)
+- **WHEN** an invoice or credit note template is saved
+- **THEN** its header (an invoice's only), our details, the customer's, the document details, the lines and the totals are present and shown (TPL-07)
+- **AND** an invoice's title is the renderer's ("Tax Invoice" when GST-registered), never a text, as IRAS's "Invoicing customers" requires
 
 ### Requirement: FR-TPL-04 Template versioning
 Saving a template SHALL make a draft, and publishing SHALL make an immutable numbered version recording who, when and a note; the side-by-side visual diff follows in P2.
@@ -114,6 +129,16 @@ Source: PRD-001 §8.25 · Priority M · Phase P1 (versions); P2 (visual diff)
 - **THEN** it offers drafts, immutable published versions, rollback, and the version and hash on every issued document
 - **AND** the side-by-side visual diff follows in P2 (open question 44, decided 16 Oct 2026)
 
+#### Scenario: Versions and rollback as built (rev 0.95)
+- **WHEN** a template is published, or rolled back to an earlier version
+- **THEN** the draft's content, or the earlier version's, becomes the next numbered version with its SHA-256, who, when and a note, and never changes (FY176)
+- **AND** a rollback leaves the draft as it is, and content that is the version in force is refused (TPL-12)
+
+#### Scenario: Publishing under approval as built (rev 0.95)
+- **WHEN** a template's publication is approved
+- **THEN** in Founder mode a person who holds A publishes alone, listed for the weekly review (FM-3)
+- **AND** otherwise another person who holds A approves the request, never the one who saved the draft (TPL-15), and a change to the template voids it
+
 ### Requirement: FR-TPL-05 Document types
 The system SHALL provide templates for invoices, quotes, credit notes, receipts, customer statements, reminder letters, remittance advice, purchase orders and, in P2, payslips (used by Nemura through the shared engine; Fyniq issues none), plus email templates.
 
@@ -128,6 +153,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **WHEN** a document of that type is produced for that customer
 - **THEN** the customer's override is used
 - **AND** other customers get the default template
+
+#### Scenario: Templates by type and kind (rev 0.95)
+- **WHEN** a template is made
+- **THEN** it serves one document type as a document or an email, and starts from that type's default content
+- **AND** an email template's subject is one line and its body uses the type's fields (TPL-10, TPL-11)
 
 ### Requirement: FR-TPL-06 Code mode for experts
 Templates SHALL compile to Typst (§12.2), and an expert SHALL be able to edit the Typst source in a sandbox.

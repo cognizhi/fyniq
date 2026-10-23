@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "formats": {
+      "description": "Its formats, the default first; none for text and numbers.",
+      "items": {
+        "description": "One name from the catalogue's list, such as a font, a paper size, a text or a format.",
+        "examples": [
+          "medium"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "type": {
+      "description": "The field type.",
+      "enum": [
+        "text",
+        "date",
+        "money",
+        "number"
+      ],
+      "examples": [
+        "money"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "formats"
+  ],
+  "title": "TemplateFormatGroup",
+  "type": "object"
+}

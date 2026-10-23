@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "What the block is; the catalogue lists the ones each document type takes.",
+      "enum": [
+        "header",
+        "our_details",
+        "recipient",
+        "document_details",
+        "line_items",
+        "totals",
+        "payment_details",
+        "notes",
+        "signature",
+        "footer",
+        "text"
+      ],
+      "examples": [
+        "recipient"
+      ],
+      "type": "string"
+    },
+    "shown": {
+      "description": "Shown, or hidden. A block carrying IRAS particulars on an invoice or credit note is always shown (FR-TPL-03).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "texts": {
+      "$ref": "TemplateTexts.schema.json",
+      "description": "The block's texts; the rest of it comes from the document."
+    }
+  },
+  "required": [
+    "kind",
+    "shown"
+  ],
+  "title": "TemplateBlock",
+  "type": "object"
+}

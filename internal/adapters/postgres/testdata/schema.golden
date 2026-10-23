@@ -200,6 +200,27 @@ document_sequence | next_number | bigint | not null | 1
 document_sequence | digits | smallint | not null | 4
 document_sequence | gap_free | boolean | not null | true
 document_sequence | version | integer | not null | 1
+document_template | organisation_id | uuid | not null | current_org()
+document_template | id | uuid | not null | uuidv7()
+document_template | kind | text | not null | 
+document_template | document_type | text | not null | 
+document_template | name | text | not null | 
+document_template | draft | jsonb | not null | 
+document_template | version | integer | not null | 1
+document_template | published | integer | null | 
+document_template | saved_by | text | not null | 
+document_template | saved_at | timestamp with time zone | not null | 
+document_template | created_at | timestamp with time zone | not null | now()
+document_template_version | organisation_id | uuid | not null | current_org()
+document_template_version | id | uuid | not null | uuidv7()
+document_template_version | template_id | uuid | not null | 
+document_template_version | number | integer | not null | 
+document_template_version | content | jsonb | not null | 
+document_template_version | content_hash | bytea | not null | 
+document_template_version | note | text | null | 
+document_template_version | republished_from | integer | null | 
+document_template_version | published_by | text | not null | 
+document_template_version | published_at | timestamp with time zone | not null | 
 document_version | organisation_id | uuid | not null | current_org()
 document_version | id | uuid | not null | uuidv7()
 document_version | document_id | uuid | not null | 
@@ -786,7 +807,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -814,7 +835,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK ((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK (((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))))
+approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -1012,6 +1033,44 @@ document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (
 document_sequence | document_sequence_version_not_null | NOT NULL version
 document_sequence | document_sequence_version_positive | CHECK ((version > 0))
 document_sequence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document_template | document_template_created_at_not_null | NOT NULL created_at
+document_template | document_template_document_type_not_null | NOT NULL document_type
+document_template | document_template_draft_not_null | NOT NULL draft
+document_template | document_template_draft_object | CHECK (((jsonb_typeof(draft) = 'object'::text) AND (octet_length((draft)::text) <= 65536)))
+document_template | document_template_id_not_null | NOT NULL id
+document_template | document_template_kind_known | CHECK ((kind = ANY (ARRAY['document'::text, 'email'::text])))
+document_template | document_template_kind_not_null | NOT NULL kind
+document_template | document_template_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+document_template | document_template_name_not_null | NOT NULL name
+document_template | document_template_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+document_template | document_template_organisation_id_not_null | NOT NULL organisation_id
+document_template | document_template_pkey | PRIMARY KEY (organisation_id, id)
+document_template | document_template_published_positive | CHECK (((published IS NULL) OR (published > 0)))
+document_template | document_template_saved_at_not_null | NOT NULL saved_at
+document_template | document_template_saved_by_format | CHECK ((saved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+document_template | document_template_saved_by_not_null | NOT NULL saved_by
+document_template | document_template_type_known | CHECK ((document_type = ANY (ARRAY['invoice'::text, 'quote'::text, 'credit_note'::text, 'receipt'::text, 'statement'::text, 'reminder'::text, 'remittance'::text, 'purchase_order'::text])))
+document_template | document_template_version_not_null | NOT NULL version
+document_template | document_template_version_positive | CHECK ((version > 0))
+document_template | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document_template_version | document_template_version_content_hash_not_null | NOT NULL content_hash
+document_template_version | document_template_version_content_not_null | NOT NULL content
+document_template_version | document_template_version_content_object | CHECK (((jsonb_typeof(content) = 'object'::text) AND (octet_length((content)::text) <= 65536)))
+document_template_version | document_template_version_hash_length | CHECK ((octet_length(content_hash) = 32))
+document_template_version | document_template_version_id_not_null | NOT NULL id
+document_template_version | document_template_version_note_length | CHECK (((note IS NULL) OR ((length(btrim(note)) >= 1) AND (length(btrim(note)) <= 500))))
+document_template_version | document_template_version_number_key | UNIQUE (organisation_id, template_id, number)
+document_template_version | document_template_version_number_not_null | NOT NULL number
+document_template_version | document_template_version_number_positive | CHECK ((number > 0))
+document_template_version | document_template_version_organisation_id_not_null | NOT NULL organisation_id
+document_template_version | document_template_version_pkey | PRIMARY KEY (organisation_id, id)
+document_template_version | document_template_version_published_at_not_null | NOT NULL published_at
+document_template_version | document_template_version_published_by_format | CHECK ((published_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+document_template_version | document_template_version_published_by_not_null | NOT NULL published_by
+document_template_version | document_template_version_republished | CHECK (((republished_from IS NULL) OR ((republished_from > 0) AND (republished_from < number))))
+document_template_version | document_template_version_template_fkey | FOREIGN KEY (organisation_id, template_id) REFERENCES document_template(organisation_id, id)
+document_template_version | document_template_version_template_id_not_null | NOT NULL template_id
+document_template_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_version | document_version_created_at_not_null | NOT NULL created_at
 document_version | document_version_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 document_version | document_version_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
@@ -1762,6 +1821,7 @@ CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, p
 CREATE INDEX bill_payment_plan_bill ON fyniq.bill_payment_plan USING btree (organisation_id, bill_id, recorded_at)
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
+CREATE INDEX document_template_type ON fyniq.document_template USING btree (organisation_id, document_type, kind, id)
 CREATE INDEX evidence_document ON fyniq.evidence USING btree (organisation_id, document_id, id)
 CREATE INDEX fx_rate_lookup ON fyniq.fx_rate USING btree (organisation_id, currency, kind, on_date)
 CREATE INDEX gst_registration_no_overlap ON fyniq.gst_registration USING gist (organisation_id, daterange(registered_from, deregistered_from, '[)'::text))
@@ -1820,6 +1880,9 @@ CREATE UNIQUE INDEX document_number_unique ON fyniq.document_number USING btree 
 CREATE UNIQUE INDEX document_pkey ON fyniq.document USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_sequence_pkey ON fyniq.document_sequence USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_sequence_type_key ON fyniq.document_sequence USING btree (organisation_id, document_type)
+CREATE UNIQUE INDEX document_template_pkey ON fyniq.document_template USING btree (organisation_id, id)
+CREATE UNIQUE INDEX document_template_version_number_key ON fyniq.document_template_version USING btree (organisation_id, template_id, number)
+CREATE UNIQUE INDEX document_template_version_pkey ON fyniq.document_template_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_version_key ON fyniq.document_version USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX document_version_pkey ON fyniq.document_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX email_message_pkey ON fyniq.email_message USING btree (organisation_id, id)
@@ -1908,6 +1971,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'template_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.opening_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
@@ -1933,6 +1997,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounti
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
@@ -1970,6 +2035,10 @@ CREATE TRIGGER close_checklist_template_no_truncate BEFORE TRUNCATE ON fyniq.clo
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_sequence_guard BEFORE UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION document_sequence_guard()
+CREATE TRIGGER document_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_template FOR EACH ROW EXECUTE FUNCTION document_template_guard()
+CREATE TRIGGER document_template_no_truncate BEFORE TRUNCATE ON fyniq.document_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER document_template_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_template_version FOR EACH ROW EXECUTE FUNCTION document_template_guard()
+CREATE TRIGGER document_template_version_no_truncate BEFORE TRUNCATE ON fyniq.document_template_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_created_by BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_created_by()
 CREATE TRIGGER document_version_immutable BEFORE DELETE OR UPDATE ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -2050,6 +2119,8 @@ contact | tenant_isolation | * | (organisation_id = current_org()) | (organisati
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document_template_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 email_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2121,6 +2192,7 @@ document_edit_posted() → trigger | security invoker | v | search_path=pg_catal
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
 document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b2ecb0e2def186af89659bb7ec88a7b4
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
+document_template_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 460a8f1bd5f4af96698ac00b70b265c4
 document_version_created_by() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b35b5285220973313c6224ad1d90dd81
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795

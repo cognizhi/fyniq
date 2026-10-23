@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/credits"
+	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
@@ -189,6 +190,7 @@ var codeFacts = map[string]struct {
 	storage.CodeChecklist:         {409, "The checklist does not change that way"},
 	storage.CodeFXRate:            {409, "The exchange rate does not change that way"},
 	storage.CodeFXRevaluation:     {409, "The scheduler cannot save that revaluation"},
+	storage.CodeTemplate:          {409, "The template does not change that way"},
 	fx.CodeNoRate:                 {422, "No exchange rate for this currency"},
 	fx.CodeEntry:                  {422, "The exchange rate is not valid"},
 	fx.CodeWithdrawn:              {409, "The rate is withdrawn already"},
@@ -306,6 +308,21 @@ var codeFacts = map[string]struct {
 	purchaseorder.CodeOrderLine:   {422, "A bill's line takes what its order cannot give"},
 	CodeOrderNeedsApproval:        {409, "The order needs another person's approval"},
 	CodeOwnOrder:                  {403, "You prepared it, so another person approves it"},
+	doctemplate.CodeKind:          {422, "Not a template Fyniq serves"},
+	doctemplate.CodeName:          {422, "The template's name is blank or too long"},
+	doctemplate.CodeSchema:        {422, "Not this template format"},
+	doctemplate.CodePage:          {422, "A paper size or margin outside the choices"},
+	doctemplate.CodeTheme:         {422, "A font Fyniq does not ship, or an accent colour too pale to read"},
+	doctemplate.CodeBlock:         {422, "A block the document does not take, or one repeated"},
+	doctemplate.CodeLocked:        {422, "IRAS particulars cannot be removed or hidden"},
+	doctemplate.CodeText:          {422, "A text the block does not take, or too long"},
+	doctemplate.CodeField:         {422, "Not a field of the catalogue"},
+	doctemplate.CodeSubject:       {422, "The email's subject is blank, on several lines or too long"},
+	doctemplate.CodeBody:          {422, "The email's body is blank or too long"},
+	doctemplate.CodeUnchange:      {409, "That version is in force already"},
+	doctemplate.CodeVersion:       {422, "No such version of the template"},
+	doctemplate.CodeApproval:      {409, "Publishing needs another person's approval"},
+	doctemplate.CodeOwnDraft:      {403, "You saved the draft, so another person approves it"},
 	bill.CodeNotDraft:             {409, "The bill is not a draft"},
 	bill.CodeNotPosted:            {409, "The bill is not posted"},
 	bill.CodeBadDraft:             {422, "The saved bill cannot be read"},
@@ -421,6 +438,7 @@ var storageFixes = map[string]string{
 	storage.CodeChecklist:     "Mark checklist tasks while the period is open; save a new template version rather than changing one",
 	storage.CodeFXRate:        "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
 	storage.CodeFXRevaluation: "Revalue the period while it is open, from its own last day; the scheduler saves only the revaluation the application worked out",
+	storage.CodeTemplate:      "Publish a new version, or roll back to an earlier one: a published version never changes and a template is never deleted",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

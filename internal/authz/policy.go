@@ -99,8 +99,9 @@ const (
 // ApprovalRows are the Appendix D rows of the objects the approval engine covers: organisation settings under dual
 // control, and members' roles and invitations after the founder bootstrap (rev 0.36); approval policies (rev 0.40);
 // activating statutory pack versions (rev 0.41); reopening a closed period (rev 0.51); posting a journal above the
-// self-approval threshold, and voiding one (rev 0.53); posting a bill above the threshold, and voiding one (p1-purchases).
-var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills}
+// self-approval threshold, and voiding one (rev 0.53); posting a bill above the threshold, and voiding one (p1-purchases);
+// publishing a document template (rev 0.95).
+var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -421,8 +422,19 @@ var (
 	// recorded by whoever prepares bills (C), naming the tax agent who gave them, with their advice on the bill.
 	// Tracking and paying bills (FR-AP-13; rev 0.93): whoever prepares bills plans their payment dates (C); the bills to
 	// pay soon are read with the bills (V), and the Inbox shows them to whoever records payments.
-	PlanBillPayment           = Policy{Operation: "planBillPayment", Capability: Bills, Need: Create, Note: "A plan posts nothing; paying needs P."}
-	ListBillReminders         = Policy{Operation: "listBillReminders", Capability: Bills, Need: View}
+	PlanBillPayment   = Policy{Operation: "planBillPayment", Capability: Bills, Need: Create, Note: "A plan posts nothing; paying needs P."}
+	ListBillReminders = Policy{Operation: "listBillReminders", Capability: Bills, Need: View}
+
+	ListDocumentTemplates              = Policy{Operation: "listDocumentTemplates", Capability: DocumentTemplates, Need: View}
+	GetDocumentTemplate                = Policy{Operation: "getDocumentTemplate", Capability: DocumentTemplates, Need: View}
+	GetDocumentTemplateCatalogue       = Policy{Operation: "getDocumentTemplateCatalogue", Capability: DocumentTemplates, Need: View}
+	ListDocumentTemplateVersions       = Policy{Operation: "listDocumentTemplateVersions", Capability: DocumentTemplates, Need: View}
+	GetDocumentTemplateVersion         = Policy{Operation: "getDocumentTemplateVersion", Capability: DocumentTemplates, Need: View}
+	CreateDocumentTemplate             = Policy{Operation: "createDocumentTemplate", Capability: DocumentTemplates, Need: Create}
+	ReplaceDocumentTemplate            = Policy{Operation: "replaceDocumentTemplate", Capability: DocumentTemplates, Need: Create}
+	RequestDocumentTemplatePublication = Policy{Operation: "requestDocumentTemplatePublication", Capability: DocumentTemplates, Need: Create}
+	PublishDocumentTemplate            = Policy{Operation: "publishDocumentTemplate", Capability: DocumentTemplates, Need: Approve,
+		Note: "In Founder mode an approver publishes alone, listed for the weekly review (FM-3); in Team mode another person approves a request."}
 	ListWithholdingDecisions  = Policy{Operation: "listWithholdingDecisions", Capability: Bills, Need: View}
 	RecordWithholdingDecision = Policy{Operation: "recordWithholdingDecision", Capability: Bills, Need: Create,
 		Note: "Names the tax agent who gave it; their advice is attached to the bill as evidence. AI and MCP clients never record one (§9.6)."}
@@ -597,6 +609,8 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
 	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
+	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
+	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
 	ListPurchaseOrders, GetPurchaseOrder, CreatePurchaseOrder, ReplacePurchaseOrder, ApprovePurchaseOrder, RequestPurchaseOrderApproval, ClosePurchaseOrder, BillPurchaseOrder,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document": {
+      "$ref": "TemplateContent.schema.json",
+      "description": "A document template's."
+    },
+    "email": {
+      "$ref": "TemplateContent.schema.json",
+      "description": "An email template's."
+    }
+  },
+  "required": [
+    "document",
+    "email"
+  ],
+  "title": "TemplateDefaults",
+  "type": "object"
+}

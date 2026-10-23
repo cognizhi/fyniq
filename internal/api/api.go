@@ -135,6 +135,7 @@ func Config(version string) huma.Config {
 		{Name: "Approvals", Description: "Changes that wait for a second approver (FM-1): the envelope each approver signs, their decisions, and the policies that say who approves (FR-APR-01…05, FR-APR-09, FR-APR-10)."},
 		{Name: "Statutory packs", Description: "Statutory parameters as versioned packs from official sources, with pinned tests, and the organisation's activation of each version (ENG-30, ENG-32)."},
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
+		{Name: "Templates", Description: "Document and email templates as data: drafts, and numbered versions published under approval that never change (FR-TPL-01…05)."},
 	}
 	cfg.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		"bearer": {Type: "http", Scheme: "bearer", Description: "An access token from Fyniq's OAuth server (ADR-T3), for integrations and MCP " +
@@ -220,6 +221,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerPurchaseOrders(a)
 	registerWithholding(a)
 	registerBillPlans(a)
+	registerDocumentTemplates(a)
 	registerAccounting(a)
 	registerEvidence(a)
 	registerSetup(a)

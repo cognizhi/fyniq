@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "blocks": {
+      "description": "A document's blocks, in order; an email has none.",
+      "items": {
+        "$ref": "TemplateBlock.schema.json"
+      },
+      "maxItems": 30,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "body": {
+      "description": "An email's text; a document has none.",
+      "examples": [
+        "Dear {{customer.name}},\n\nPlease find attached invoice {{document.number}}."
+      ],
+      "maxLength": 10000,
+      "type": "string"
+    },
+    "page": {
+      "$ref": "TemplatePage.schema.json",
+      "description": "A document's paper and margins; an email has none."
+    },
+    "schema": {
+      "description": "The content's format.",
+      "enum": [
+        "fyniq.template/1"
+      ],
+      "examples": [
+        "fyniq.template/1"
+      ],
+      "type": "string"
+    },
+    "subject": {
+      "description": "An email's subject, on one line; a document has none.",
+      "examples": [
+        "Invoice {{document.number}} from {{organisation.name}}"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "theme": {
+      "$ref": "TemplateTheme.schema.json",
+      "description": "A document's look; an email has none."
+    }
+  },
+  "required": [
+    "schema"
+  ],
+  "title": "TemplateContent",
+  "type": "object"
+}

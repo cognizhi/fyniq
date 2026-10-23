@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "margins_mm": {
+      "$ref": "TemplateMargins.schema.json",
+      "description": "The margins in whole millimetres, 10 to 40."
+    },
+    "size": {
+      "description": "The paper size.",
+      "enum": [
+        "A4",
+        "Letter"
+      ],
+      "examples": [
+        "A4"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "size",
+    "margins_mm"
+  ],
+  "title": "TemplatePage",
+  "type": "object"
+}

@@ -1381,6 +1381,59 @@ var matrixCalls = map[string]matrixCall{
 	"listBillReminders": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/bill-reminders", tok, nil), nil
 	},
+	"listDocumentTemplates": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/document-templates", tok, nil), nil
+	},
+	"getDocumentTemplateCatalogue": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/document-template-catalogue/credit_note", tok, nil), nil
+	},
+	"getDocumentTemplate": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createTemplate()
+		return e.call(http.MethodGet, "/v1/document-templates/"+id, tok, nil), nil
+	},
+	"listDocumentTemplateVersions": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createTemplate()
+		return e.call(http.MethodGet, "/v1/document-templates/"+id+"/versions", tok, nil), nil
+	},
+	"getDocumentTemplateVersion": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.createTemplate()
+		if p := e.call(http.MethodPost, "/v1/document-templates/"+id+"/publish", e.as(authz.Owner), nil, "If-Match", tag); p.Status != http.StatusOK {
+			e.t.Fatalf("publishDocumentTemplate = %d: %s", p.Status, p.Raw)
+		}
+		return e.call(http.MethodGet, "/v1/document-templates/"+id+"/versions/1", tok, nil), nil
+	},
+	"createDocumentTemplate": func(e *env, tok string) (response, func() bool) {
+		name := "Matrix " + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/document-templates", tok, map[string]any{"kind": "document", "document_type": "quote", "name": name})
+		return r, func() bool {
+			return !strings.Contains(e.call(http.MethodGet, "/v1/document-templates?page_size=500", e.as(authz.Accountant), nil).Raw, name)
+		}
+	},
+	"replaceDocumentTemplate": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createTemplate()
+		r := e.call(http.MethodPut, "/v1/document-templates/"+id, tok, map[string]any{"name": "Renamed", "content": map[string]any{
+			"schema": "fyniq.template/1", "subject": "Invoice {{document.number}}", "body": "Dear {{customer.name}}"}}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/document-templates/"+id, e.as(authz.Accountant), nil).str("name") == "Invoice email"
+		}
+	},
+	"publishDocumentTemplate": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createTemplate()
+		r := e.call(http.MethodPost, "/v1/document-templates/"+id+"/publish", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/document-templates/"+id, e.as(authz.Accountant), nil).Body["published_version"] == nil
+		}
+	},
+	"requestDocumentTemplatePublication": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "document_template")
+		id, tag := e.createTemplate()
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/document-templates/"+id+"/approval", person, nil, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "document_template") == was }
+	},
 	"listWithholdingDecisions": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/contacts/"+e.foreignSupplier()+"/withholding-decisions", tok, nil), nil
 	},

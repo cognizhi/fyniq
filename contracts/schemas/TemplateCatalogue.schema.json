@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "blocks": {
+      "description": "The blocks it takes, in the starter order.",
+      "items": {
+        "$ref": "TemplateBlockKind.schema.json"
+      },
+      "type": "array"
+    },
+    "defaults": {
+      "$ref": "TemplateDefaults.schema.json",
+      "description": "The content a new template starts from."
+    },
+    "document_type": {
+      "description": "The document type.",
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "fields": {
+      "description": "The typed field catalogue its texts use.",
+      "items": {
+        "$ref": "TemplateField.schema.json"
+      },
+      "type": "array"
+    },
+    "fonts": {
+      "description": "The fonts the render service ships.",
+      "items": {
+        "description": "One name from the catalogue's list, such as a font, a paper size, a text or a format.",
+        "examples": [
+          "medium"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "formats": {
+      "description": "The formats each field type takes; the first is the default.",
+      "items": {
+        "$ref": "TemplateFormatGroup.schema.json"
+      },
+      "type": "array"
+    },
+    "locked_title": {
+      "description": "The renderer writes the title (an invoice's \"Tax Invoice\"), so the header takes none.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "margin_max_mm": {
+      "description": "The most margin, in millimetres.",
+      "examples": [
+        40
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "margin_min_mm": {
+      "description": "The least margin, in millimetres.",
+      "examples": [
+        10
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "min_contrast": {
+      "description": "The least contrast of the accent colour against white.",
+      "examples": [
+        "4.5"
+      ],
+      "type": "string"
+    },
+    "page_sizes": {
+      "description": "The paper sizes.",
+      "items": {
+        "description": "One name from the catalogue's list, such as a font, a paper size, a text or a format.",
+        "examples": [
+          "medium"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "document_type",
+    "blocks",
+    "fields",
+    "formats",
+    "fonts",
+    "page_sizes",
+    "margin_min_mm",
+    "margin_max_mm",
+    "min_contrast",
+    "locked_title",
+    "defaults"
+  ],
+  "title": "TemplateCatalogue",
+  "type": "object"
+}
