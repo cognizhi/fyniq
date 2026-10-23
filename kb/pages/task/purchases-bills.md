@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill; claiming its GST; recurring bills; spreading a prepaid cost; payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:ca3ba19c22b752c23aebc6cbbf19bd065d326a6209886dc7da3d4232c213308e
+  - docs/user-guide/bills.md sha256:10de90ae62c36c216867244019cc3a0886b52b100e3d5d209cf2c33e81386ccd
 data_class: general
 taint: trusted
 status: draft
@@ -31,6 +31,11 @@ aliases:
   - invoice in a director's name
   - reimbursed expense GST
   - tax agent decision
+  - withholding tax
+  - non-resident supplier
+  - foreign consultant
+  - nature of payment
+  - payment held
   - duplicate bill
   - void a bill
   - edit a bill
@@ -111,6 +116,15 @@ aliases:
 
 (src: docs/user-guide/bills.md#input-tax)
 
+## Non-resident suppliers
+
+- A supplier resident for tax outside Singapore may have tax withheld from what the company pays it, which the company then pays to IRAS; its contact says where it is resident: its **Tax residence**, or its **Country** when that is the same ([[contacts.manage]]).
+- Its bill takes a **Nature of payment** (what the payment is for, such as software for the company's own use or services performed in Singapore), without which it does not post.
+- Under **Withholding tax**, **Record the tax agent's decision** for the supplier and nature: **Not applicable** (nothing withheld, as for an ordinary software subscription), **Withhold tax** at the rate they advised, or **Withhold at a reduced treaty rate**; name the **Tax agent** and attach their advice, and for a treaty rate the certificate of residence, to the bill. It applies to the supplier's bills for that nature from then on; a new decision replaces it for later bills, and bills posted before keep theirs.
+- Until there is a decision the bill shows ⚠, posts without withholding, and its payment waits. Once tax is withheld the bill costs the whole amount, owes the supplier what is left after the tax, and owes the tax to IRAS (2330 Withholding tax payable): the rate of the payment before GST, in SGD rounded down to the dollar. A decision to withhold that comes after the bill posted needs **Edit** and posting the edit before its payment can be recorded.
+
+(src: docs/user-guide/bills.md#non-resident-suppliers)
+
 ## Spread a cost over months
 
 - A cost paid ahead, such as a year's subscription or insurance, is spread over the months it covers: in Expert mode a line takes **Spread over** (1 to 120 months) and **Spread from** (the month the service starts, blank for the invoice's month); a line with a spread shows both in Basic mode too.
@@ -183,6 +197,9 @@ aliases:
 - LEDGER-28, the spread cannot be used: spread an expense line over 1 to 120 months; a credit note's lines are not spread.
 - BILL-14, an input-tax fact is not one Fyniq reads: choose what the claim rests on and whom it is addressed to from the lists; say how an agent was paid back only for an agent's invoice.
 - BILL-15, a line's business share is not a percentage: enter the share used for the business from 0 to 100, such as 60, or leave it blank.
+- BILL-16, the bill does not say what the payment is for: choose the **Nature of payment**, as the supplier is resident outside Singapore.
+- BILLPAY-11, the bill waits for its withholding tax decision: record the tax agent's decision, and if it withholds, edit the bill first.
+- BILL-17, the withholding decision cannot be recorded: record the supplier's tax residence, give a rate only when tax is withheld, and name the tax agent.
 
 (src: docs/user-guide/bills.md#common-problems)
 

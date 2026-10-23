@@ -243,6 +243,11 @@ Source: PRD-001 §8.6 · Priority M when paying non-resident suppliers; else S �
 - **WHEN** a payment of it is recorded while no decision exists for its nature, or the decision in force withholds at another rate than the bill posted with
 - **THEN** the payment is refused (BILLPAY-11) until the decision exists and, if it withholds, an edit of the bill applies it
 
+#### Scenario: The screens (rev 0.91)
+- **WHEN** a person enters a non-resident supplier's bill
+- **THEN** the bill asks for the nature of payment, and shows the tax agent's decision it posts with, the tax withheld and why its payment waits
+- **AND** the tax agent's decision is recorded from the bill, naming the tax agent; a contact keeps its tax residence
+
 #### Scenario: Withholding posted and paid net (rev 0.90)
 - **GIVEN** a US SaaS subscription bill and a non-resident consultant who works on site in Singapore for 5 days
 - **WHEN** the SaaS decision "not applicable" is recorded, and the consultant's is to withhold 15% of S$5,000.00

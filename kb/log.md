@@ -143,3 +143,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-23] compile | docs/user-guide/bills.md → purchases.bills (input tax: the facts, business share, simplified-invoice limit, agent invoices, the tax agent's decision; FR-AP-20, rev 0.89)
 
 ## [2026-10-23] compile | docs/user-guide/chart-of-accounts.md → accounting.chart (the standard chart has 87 accounts: 2330 Withholding tax payable, FR-AP-19, rev 0.90)
+
+## [2026-10-23] compile | docs/user-guide/bills.md, contacts-and-items.md → purchases.bills, contacts.manage (non-resident suppliers, the nature of payment, the tax agent's withholding decision, a contact's tax residence; FR-AP-19, rev 0.91)

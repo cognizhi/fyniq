@@ -607,7 +607,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 				out.LedgerImpact = impactOf(c.Entry)
 			}
 		}
-		return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
+		return out, a.name(ctx, u, out.PreparedBy, out.PostedBy, out.Withholding.recorder())
 	}
 	e, err := u.Ledger().ByIdentity(ctx, journal.BillIdentityOf(doc))
 	if err != nil {
@@ -661,7 +661,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 	if doc.Status == storage.DocumentPosted && out.States.Payment != "paid" && out.DueDate != "" && out.DueDate < dateOf(v.today) {
 		out.States.Due = "overdue"
 	}
-	return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
+	return out, a.name(ctx, u, out.PreparedBy, out.PostedBy, out.Withholding.recorder())
 }
 
 // billInputTaxOut are a bill's input-tax facts as the API shows them: every one stated, how an agent was repaid only for
@@ -688,6 +688,14 @@ func withholdingOut(w bill.Withholding, tax *Money, held string) *BillWithholdin
 		out.Decision = &d
 	}
 	return out
+}
+
+// recorder is who recorded the decision a bill posts with, to be named; nil when there is none.
+func (w *BillWithholding) recorder() *Person {
+	if w == nil || w.Decision == nil {
+		return nil
+	}
+	return w.Decision.RecordedBy
 }
 
 // withholdingDecisionOf is a decision as the API shows it.

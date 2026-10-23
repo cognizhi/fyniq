@@ -4,14 +4,14 @@ type: task
 title: Keep your contacts, items and prices
 summary: Add or change a customer or vendor, what a possible duplicate means, and add items with a unit price per currency
 sources:
-  - docs/user-guide/contacts-and-items.md sha256:51c3dd72ae6700416522f7c2ecc523e633109d811dde685d7ee45a4ee1a53f4a
+  - docs/user-guide/contacts-and-items.md sha256:7e0d6212044896b13f374b823c363abdbe21ec5b0cc41b6652e3a2431fc3bfd6
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-20
+compiled_at: 2026-10-23
 aliases:
   - customer
   - vendor
@@ -22,6 +22,8 @@ aliases:
   - product
   - service
   - price list
+  - tax residence
+  - foreign supplier
 ---
 
 # Keep your contacts, items and prices
@@ -38,6 +40,7 @@ aliases:
 ## Add or change a contact
 
 - **New contact**: tick **A customer**, **A vendor** or both, enter the legal name and what is known (UEN or tax ID, billing and remittance emails, payment terms, currency, Peppol ID, address), then **Add the contact**. Empty payment terms use the organisation's default.
+- For a vendor, enter its **Country**, and its **Tax residence** when it is resident for tax somewhere else; a vendor resident outside Singapore may have tax withheld from its payments ([[purchases.bills]]).
 - Before adding, Fyniq checks for a contact with the same name, UEN or tax ID, or email, and says which and why; check it is a new company, then **Add it anyway**, or use the one there. Such a contact shows **Possible duplicate** in the list.
 - The pencil changes a contact; **Save the contact**. Clearing **Active** stops offering it for new documents. Vendor bank details have their own change, which another founder approves ([[approvals.decide]]).
 
@@ -53,7 +56,7 @@ aliases:
 
 ## Common problems
 
-- CT-01, the legal name is blank or too long; CT-02, neither a customer nor a vendor; CT-03, not an email address; CT-04, not a two-letter country code such as SG.
+- CT-01, the legal name is blank or too long; CT-02, neither a customer nor a vendor; CT-03, not an email address; CT-04, not a two-letter code such as SG for the country or the tax residence.
 - A price that is not a plain decimal: digits with up to 6 decimals, no commas or currency sign.
 
 (src: docs/user-guide/contacts-and-items.md#common-problems)

@@ -147,7 +147,7 @@ describe("A bill", () => {
   });
 
   it("says what to fix before saving", () => {
-    const { draft: d, errors } = check({ supplier_id: "", supplier_ref: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", tax: usualTax(), lines: [{ key: "l1", account_id: "", description: "x", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" }] }, "SGD");
+    const { draft: d, errors } = check({ supplier_id: "", supplier_ref: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", tax: usualTax(), nature: "", lines: [{ key: "l1", account_id: "", description: "x", gst_code: "", net: "", gst: "", stated_gst: "", spread_months: "", spread_from: "" }] }, "SGD");
     expect(d).toBeUndefined();
     expect(errors["l1.account"]).toBe("Choose what the line is for.");
     expect(errors["l1.gst_code"]).toBe("Choose the GST code on the supplier's invoice.");
@@ -165,6 +165,7 @@ describe("A bill", () => {
       fx_rate: "",
       notes: "",
       tax: usualTax(),
+      nature: "",
       lines: [{ key: "l1", account_id: "a6120", description: "Phone", gst_code: "TX", net: "100.00", gst: "9.00", stated_gst: "", spread_months: "", spread_from: "", business_share: share }],
     });
     const usual = check(form(""), "SGD").draft!;
@@ -208,6 +209,68 @@ describe("A bill", () => {
     );
   });
 
+  // req: FR-AP-19
+  // req: G4-010
+  it("asks a non-resident supplier's bill for its nature, and records the tax agent's decision; axe finds nothing", async () => {
+    const consultant = { id: "c2", legal_name: "Ava Consulting", vendor: true, customer: false, active: true, version: 1, country: "SG", tax_residence: "AU" };
+    const held: Bill = {
+      ...posted,
+      supplier: { id: "c2", name: "Ava Consulting" },
+      nature_of_payment: "services_in_singapore",
+      withholding: { residence: "AU", nature_of_payment: "services_in_singapore", held: "the tax agent has not decided whether tax is withheld from it" },
+    };
+    const sent = answer({
+      ...reads,
+      "GET /v1/contacts": { status: 200, body: { items: [vendors.body.items[0], consultant] } },
+      "GET /v1/bills/b1": read(held),
+      "POST /v1/contacts/c2/withholding-decisions": { status: 201, body: { id: "d1", supplier_id: "c2", nature_of_payment: "services_in_singapore", outcome: "withhold", rate_percent: "15", tax_agent: "Grace Ho", recorded_at: "2026-10-23T09:00:00Z" } },
+    });
+    const { container } = renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    const card = (await screen.findByRole("heading", { name: "Withholding tax" })).closest("section")!;
+    expect(within(card).getByText("Not decided yet")).toBeTruthy();
+    expect(within(card).getByText("Its payment waits")).toBeTruthy();
+    expect(within(card).getByText("Services performed in Singapore")).toBeTruthy();
+    expect((screen.getByLabelText("Nature of payment") as HTMLSelectElement).value).toBe("services_in_singapore");
+    await noViolations(container);
+    fireEvent.click(within(card).getByRole("button", { name: "Record the tax agent's decision…" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Decision"), { target: { value: "withhold" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record decision" }));
+    expect(await within(dialog).findByText("Enter the rate the tax agent advised, above 0 and up to 100, such as 15.")).toBeTruthy();
+    expect(within(dialog).getByText("Name the tax agent who decided.")).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText("Rate (%)"), { target: { value: "15" } });
+    fireEvent.change(within(dialog).getByLabelText("Tax agent"), { target: { value: "Grace Ho" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record decision" }));
+    await waitFor(() =>
+      expect(sent.find((x) => x.path === "/v1/contacts/c2/withholding-decisions")?.body).toEqual({
+        nature_of_payment: "services_in_singapore",
+        outcome: "withhold",
+        rate_percent: "15",
+        tax_agent: "Grace Ho",
+        bill_id: "b1",
+      }),
+    );
+    expect(await screen.findByText(/edit the bill so it withholds, then record its payment/)).toBeTruthy();
+  });
+
+  // req: FR-AP-19
+  it("sends the nature of payment for a supplier resident outside Singapore", () => {
+    const f = {
+      supplier_id: "c2",
+      supplier_ref: "",
+      date: "2026-10-14",
+      due_date: "",
+      currency: "SGD",
+      fx_rate: "",
+      notes: "",
+      tax: usualTax(),
+      nature: "software_use",
+      lines: [{ key: "l1", account_id: "a6120", description: "Linear", gst_code: "NR", net: "120.00", gst: "0", stated_gst: "", spread_months: "", spread_from: "" }],
+    };
+    expect(check(f, "SGD").draft?.nature_of_payment).toBe("software_use");
+    expect(check({ ...f, nature: "" }, "SGD").draft?.nature_of_payment).toBeUndefined();
+  });
+
   // req: FR-GL-03
   it("sends a line's spread over months, and says what to fix in one", () => {
     const form = (spread_months: string, spread_from: string) => ({
@@ -219,6 +282,7 @@ describe("A bill", () => {
       fx_rate: "",
       notes: "",
       tax: usualTax(),
+      nature: "",
       lines: [{ key: "l1", account_id: "a6120", description: "Jira, a year", gst_code: "TX", net: "13080.00", gst: "1177.20", stated_gst: "", spread_months, spread_from }],
     });
     expect(check(form("12", "2026-09"), "SGD").draft?.lines?.[0]).toMatchObject({ spread_months: 12, spread_from: "2026-09-01" });

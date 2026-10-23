@@ -22,6 +22,7 @@ import { preparers, StateChips, total, type Bill } from "./Bills";
 import { BillLines, lineKey, newLine, type Errors, type Line } from "./BillLines";
 import { factsOf, InputTaxCard, taxOf, usualTax, type Tax } from "./InputTax";
 import { ApplyCredit, Payments, RecordPayment } from "./Payments";
+import { natures, nonResident, residenceOf, WithholdingCard } from "./Withholding";
 
 type Draft = components["schemas"]["BillDraft"];
 type Check = components["schemas"]["BillCheck"];
@@ -43,6 +44,7 @@ interface Form {
   notes: string;
   lines: Line[];
   tax: Tax; // what its input tax rests on (FR-AP-20)
+  nature: string; // what a non-resident supplier's payment is for (FR-AP-19); blank for a resident one
 }
 
 
@@ -61,6 +63,7 @@ function formOf(b: Bill): Form {
     fx_rate: b.fx_rate ?? "",
     notes: b.notes ?? "",
     tax: taxOf(b.input_tax),
+    nature: b.nature_of_payment ?? "",
     lines: (b.lines ?? []).map((l) => ({
       key: lineKey(),
       account_id: l.account_id,
@@ -131,6 +134,7 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
       notes: f.notes.trim() || undefined,
       lines,
       input_tax: factsOf(f.tax),
+      nature_of_payment: (f.nature || undefined) as Draft["nature_of_payment"],
     },
   };
 }
@@ -457,7 +461,7 @@ export function BillPage() {
 
   const editable = isNew || (bill?.status === "draft" && mayPrepare) || editing;
   const f: Form | null =
-    form ?? (isNew ? { supplier_id: "", supplier_ref: "", date: today(), due_date: "", currency: base, fx_rate: "", notes: "", lines: [newLine()], tax: usualTax() } : bill ? formOf(bill) : null);
+    form ?? (isNew ? { supplier_id: "", supplier_ref: "", date: today(), due_date: "", currency: base, fx_rate: "", notes: "", lines: [newLine()], tax: usualTax(), nature: "" } : bill ? formOf(bill) : null);
   const codes = useQuery({
     queryKey: ["gst-codes", f?.date ?? ""],
     enabled: Boolean(f),
@@ -559,6 +563,9 @@ export function BillPage() {
   const h = (k: string) => helpText(k);
   const title = isNew ? (credit ? "New credit note" : "New bill") : `${bill?.supplier?.name ?? (credit ? "Credit note" : "Bill")}${bill?.supplier_ref ? ` · ${bill.supplier_ref}` : ""}`;
   const foreign = (f.currency.trim() || base).toUpperCase() !== base;
+  // A supplier resident outside Singapore: its bill says what the payment is for, so its withholding can be decided (FR-AP-19).
+  const supplier = (vendors.data ?? []).find((c) => c.id === f.supplier_id);
+  const askNature = !credit && (nonResident(supplier) || f.nature !== "");
   const needsApproval = problem?.code === overThreshold && bill?.status === "draft";
   // A posted bill with something still open is paid by recording the payment (FR-AP-02); the server refuses more than is open.
   const open = bill?.status === "posted" && bill.open && !bill.open.amount.startsWith("-") && !/^0(\.0*)?$/.test(bill.open.amount) ? bill.open : undefined;
@@ -631,6 +638,16 @@ export function BillPage() {
         </div>
       )}
       {bill && !form && !editing && <Checks checks={bill.checks ?? []} />}
+      {bill && !form && !editing && (
+        <WithholdingCard
+          bill={bill}
+          base={base}
+          mayRecord={mayPrepare}
+          onDone={(message) => {
+            void refresh().then(() => setStatus(message));
+          }}
+        />
+      )}
       {bill && bill.status !== "draft" && !editing && (
         <Payments
           bill={bill}
@@ -663,6 +680,32 @@ export function BillPage() {
               </select>
               <span className="fy-help">A contact marked as a vendor. Add one under Contacts.</span>
             </div>
+            {askNature && (
+              <div className="fy-field fy-field--full">
+                <label className="fy-label" htmlFor={`${id}-nature`}>
+                  {h("bill.nature").label}
+                </label>
+                <select
+                  className="fy-select"
+                  id={`${id}-nature`}
+                  value={f.nature}
+                  disabled={!editable}
+                  onChange={(e) => set({ nature: e.target.value })}
+                  aria-describedby={`${id}-nature-help`}
+                >
+                  <option value="">Choose what the payment is for</option>
+                  {natures.map(([v, label]) => (
+                    <option key={v} value={v}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <span className="fy-help" id={`${id}-nature-help`}>
+                  {supplier && nonResident(supplier) ? `${supplier.legal_name} is resident for tax in ${residenceOf(supplier)}. ` : ""}
+                  {h("bill.nature").tooltip}
+                </span>
+              </div>
+            )}
             <div className="fy-field">
               <label className="fy-label" htmlFor={`${id}-ref`}>
                 {credit ? "Their credit note number" : "Their invoice number"}
