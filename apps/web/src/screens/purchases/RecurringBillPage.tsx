@@ -20,6 +20,7 @@ import { RecurringStatusChip, repeats } from "../accounting/RecurringJournals";
 import { BillLines, lineKey, newLine, type Errors, type Line } from "./BillLines";
 import { check } from "./BillPage";
 import { preparers } from "./Bills";
+import { usualTax } from "./InputTax";
 import type { RecurringBill } from "./RecurringBills";
 
 type Input = components["schemas"]["RecurringBillInput"];
@@ -64,7 +65,7 @@ export function recurringBillFormOf(r: RecurringBill): RecurringBillForm {
 // checkRecurringBill turns what was typed into the recurring bill to send, or says what to fix under each field: the
 // schedule here, the lines as a bill's (check). The API checks the content as the bill rules would, in its statuses.
 export function checkRecurringBill(f: RecurringBillForm, base: string): { input?: Input; errors: Errors } {
-  const { draft, errors } = check({ supplier_id: f.supplier_id, supplier_ref: "", date: "", due_date: "", currency: f.currency, fx_rate: "", notes: f.notes, lines: f.lines }, base);
+  const { draft, errors } = check({ supplier_id: f.supplier_id, supplier_ref: "", date: "", due_date: "", currency: f.currency, fx_rate: "", notes: f.notes, lines: f.lines, tax: usualTax() }, base);
   if (!f.name.trim()) errors.name = "Name it, such as Office rent.";
   const day = Number(f.day_of_month);
   if (!Number.isInteger(day) || day < 1 || day > 31) errors.day_of_month = "Enter a day from 1 to 31.";

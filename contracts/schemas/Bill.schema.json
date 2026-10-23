@@ -55,6 +55,17 @@
       "format": "uuid",
       "type": "string"
     },
+    "input_tax": {
+      "$ref": "BillInputTax.schema.json",
+      "description": "The facts its input tax is decided from, every one stated (FR-AP-20)."
+    },
+    "input_tax_decisions": {
+      "description": "getBill only: how each line's input tax was decided, one a line in order (FR-AP-20).",
+      "items": {
+        "$ref": "BillTaxDecision.schema.json"
+      },
+      "type": "array"
+    },
     "kind": {
       "description": "bill, or vendor_credit: a supplier's credit note, posted as a bill's reverse (FR-AP-03).",
       "enum": [
@@ -179,6 +190,8 @@
     "version",
     "currency",
     "lines",
+    "input_tax",
+    "input_tax_decisions",
     "total",
     "payments",
     "releases",

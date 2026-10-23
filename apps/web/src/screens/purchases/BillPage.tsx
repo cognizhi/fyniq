@@ -20,6 +20,7 @@ import { billAttachers, EvidencePanel } from "../accounting/JournalEvidence";
 import { who } from "../accounting/Journals";
 import { preparers, StateChips, total, type Bill } from "./Bills";
 import { BillLines, lineKey, newLine, type Errors, type Line } from "./BillLines";
+import { factsOf, InputTaxCard, taxOf, usualTax, type Tax } from "./InputTax";
 import { ApplyCredit, Payments, RecordPayment } from "./Payments";
 
 type Draft = components["schemas"]["BillDraft"];
@@ -41,6 +42,7 @@ interface Form {
   fx_rate: string;
   notes: string;
   lines: Line[];
+  tax: Tax; // what its input tax rests on (FR-AP-20)
 }
 
 
@@ -58,6 +60,7 @@ function formOf(b: Bill): Form {
     currency: b.currency,
     fx_rate: b.fx_rate ?? "",
     notes: b.notes ?? "",
+    tax: taxOf(b.input_tax),
     lines: (b.lines ?? []).map((l) => ({
       key: lineKey(),
       account_id: l.account_id,
@@ -69,6 +72,7 @@ function formOf(b: Bill): Form {
       spread_months: l.spread_months ? String(l.spread_months) : "",
       spread_from: l.spread_from?.slice(0, 7) ?? "",
       order: l.order,
+      business_share: l.business_share ?? "",
     })),
   };
 }
@@ -98,6 +102,8 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
     const from = l.spread_from.trim();
     if ((months && !/^([1-9]\d?|1[01]\d|120)$/.test(months)) || (!months && from)) errors[`${l.key}.spread_months`] = "Enter how many months to spread it over, 1 to 120, or leave both spread fields blank.";
     if (from && !/^\d{4}-(0[1-9]|1[0-2])$/.test(from)) errors[`${l.key}.spread_from`] = "Enter the month the service starts, such as 2026-10, or leave it blank for the invoice's month.";
+    const share = (l.business_share ?? "").trim().replace(/%$/, "").trim();
+    if (share && !/^(100(\.0{1,2})?|\d{1,2}(\.\d{1,2})?)$/.test(share)) errors[`${l.key}.business_share`] = "Enter the share used for the business, 0 to 100, such as 60, or leave it blank for all of it.";
     lines.push({
       account_id: l.account_id,
       description: l.description.trim() || undefined,
@@ -108,6 +114,7 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
       spread_months: months ? Number(months) : undefined,
       spread_from: months && from ? `${from}-01` : undefined,
       order: l.order,
+      business_share: share && !/^100(\.0{1,2})?$/.test(share) ? share : undefined,
     });
   }
   if (lines.length === 0) errors.lines = "Add a line for what the bill is for.";
@@ -123,6 +130,7 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
       fx_rate: currency !== base && rate ? rate : undefined,
       notes: f.notes.trim() || undefined,
       lines,
+      input_tax: factsOf(f.tax),
     },
   };
 }
@@ -448,7 +456,8 @@ export function BillPage() {
   const [refunding, setRefunding] = useState(false);
 
   const editable = isNew || (bill?.status === "draft" && mayPrepare) || editing;
-  const f: Form | null = form ?? (isNew ? { supplier_id: "", supplier_ref: "", date: today(), due_date: "", currency: base, fx_rate: "", notes: "", lines: [newLine()] } : bill ? formOf(bill) : null);
+  const f: Form | null =
+    form ?? (isNew ? { supplier_id: "", supplier_ref: "", date: today(), due_date: "", currency: base, fx_rate: "", notes: "", lines: [newLine()], tax: usualTax() } : bill ? formOf(bill) : null);
   const codes = useQuery({
     queryKey: ["gst-codes", f?.date ?? ""],
     enabled: Boolean(f),
@@ -718,6 +727,8 @@ export function BillPage() {
           </div>
         </section>
 
+        <InputTaxCard id={id} tax={f.tax} onChange={(tax) => set({ tax })} editable={editable} decisions={bill?.input_tax_decisions ?? []} dirty={Boolean(form)} />
+
         <BillLines
           id={id}
           lines={f.lines}
@@ -728,6 +739,7 @@ export function BillPage() {
           base={base}
           stated={foreign}
           spreads={!credit}
+          shares
           codes={codes.data?.codes ?? []}
           choices={choices}
           byId={byId}

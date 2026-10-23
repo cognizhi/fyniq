@@ -33,6 +33,10 @@
       ],
       "type": "string"
     },
+    "input_tax": {
+      "$ref": "BillInputTax.schema.json",
+      "description": "The facts its input tax is decided from (FR-AP-20). Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the company."
+    },
     "kind": {
       "description": "bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved.",
       "enum": [

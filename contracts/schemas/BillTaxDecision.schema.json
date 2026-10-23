@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "business_share": {
+      "description": "The business share claimed, when the line is claimed in part.",
+      "examples": [
+        "60"
+      ],
+      "type": "string"
+    },
+    "condition": {
+      "description": "claimable; not_claimable, the GST stays in the cost; or tax_agent (⚠): not claimed until the tax agent decides.",
+      "enum": [
+        "claimable",
+        "not_claimable",
+        "tax_agent"
+      ],
+      "examples": [
+        "claimable"
+      ],
+      "type": "string"
+    },
+    "line": {
+      "description": "The line, from 1.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "reason": {
+      "description": "Why, as a stable code.",
+      "enum": [
+        "tax_invoice",
+        "simplified",
+        "import_permit",
+        "agent",
+        "business_share",
+        "no_gst",
+        "organisation_not_registered",
+        "gst_code",
+        "supplier_not_registered",
+        "no_tax_invoice",
+        "simplified_over_limit",
+        "simplified_no_limit",
+        "director_loan",
+        "private",
+        "tax_agent_decision"
+      ],
+      "examples": [
+        "tax_invoice"
+      ],
+      "type": "string"
+    },
+    "text": {
+      "description": "Why, in plain words.",
+      "examples": [
+        "a tax invoice addressed to the company"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "line",
+    "condition",
+    "reason",
+    "text"
+  ],
+  "title": "BillTaxDecision",
+  "type": "object"
+}

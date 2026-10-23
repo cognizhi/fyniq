@@ -1129,6 +1129,7 @@
     "Split view: document preview (left) and the draft (right); low-confidence extracted fields highlighted",
     "Fields: supplier (UEN, GST registration number), number, dates, currency, lines with expense or asset account, GST code (TX, BL…), dimensions, prepayment spread over months",
     "Input-tax eligibility per line with the deciding condition (claimable, not claimable, ⚠ for the tax agent); 'no SGD GST stated' warning",
+    "Input tax card (rev 0.89): what the claim rests on (tax invoice, simplified tax invoice, import permit, none), supplier GST-registered, addressed to the company or an agent (paid back, or credited to a director's loan), the tax agent's decision when a line is left to them; each line's business share (%)",
     "Supplier defaults suggested from approved bills; duplicate blocked (supplier, number, amount, date window)",
     "Non-resident supplier: nature of payment and the tax agent's withholding decision; ⚠ until decided",
     "Basic: plain summary 'This bill adds S$1,090 to what we owe ABC'; Expert: ledger impact with codes",

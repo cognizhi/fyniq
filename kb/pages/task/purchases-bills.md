@@ -2,9 +2,9 @@
 key: purchases.bills
 type: task
 title: Bills
-summary: Entering, posting and approving a supplier's bill; recurring bills; spreading a prepaid cost; recording and voiding payments; voiding or editing a bill
+summary: Entering, posting and approving a supplier's bill; claiming its GST; recurring bills; spreading a prepaid cost; payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:411aeea177e4ea995b8c75f3ae6ec702474275ac00942f3215ccfc03bea5f231
+  - docs/user-guide/bills.md sha256:ca3ba19c22b752c23aebc6cbbf19bd065d326a6209886dc7da3d4232c213308e
 data_class: general
 taint: trusted
 status: draft
@@ -22,6 +22,15 @@ aliases:
   - what we owe a supplier
   - input tax
   - GST on a bill
+  - claim GST
+  - simplified tax invoice
+  - receipt GST
+  - business share
+  - private use
+  - employee's invoice
+  - invoice in a director's name
+  - reimbursed expense GST
+  - tax agent decision
   - duplicate bill
   - void a bill
   - edit a bill
@@ -88,9 +97,19 @@ aliases:
 
 - A saved draft lists what stops it posting (✖) and its warnings (⚠): a stated GST that differs from Fyniq's own working of it even by a cent, another bill from the supplier with the same number and total within 60 days, and a bill in another currency with no GST stated in SGD (its GST stays in the cost).
 - Expert mode shows the **Ledger impact**; Basic mode says how much the bill adds to what the company owes the supplier. **Post** posts it on its date, numbered from the bill sequence (BILL-0001 onwards).
-- Input tax is claimed only once the company is GST-registered on the bill's date, for codes such as TX; until then the GST is part of the cost.
+- Input tax is claimed only once the company is GST-registered on the bill's date, for codes such as TX; until then the GST is part of the cost. **Input tax** below says what else decides it.
 
 (src: docs/user-guide/bills.md#check-and-post-a-bill)
+
+## Input tax
+
+- Whether a bill's GST is claimed is decided line by line from what the bill records, never from the GST amount alone. Under **Input tax** the bill says **What the claim rests on** (a **Tax invoice** addressed to the company, "Company c/o another" counting; a **Simplified tax invoice**, which needs no customer name; an **Import permit** naming the company; or **No valid tax invoice**), whether **the supplier is GST-registered** (its GST number is on the document) and whom it is **addressed to**; each line takes a **Business share (%)**, blank for all of it.
+- Each line shows **Claimable** with its reason; **Claimed for 60%** (or another share), where only the business share of the GST is claimed, rounded half up to the cent, the rest staying in the cost; **Not claimable** with its reason (not GST-registered on the bill's date, a code such as BL for a motor car or club fees, an unregistered supplier, no valid tax invoice, or a business share of 0); or **For the tax agent** (⚠), not claimed until they decide.
+- A simplified tax invoice is claimable while the bill's total, GST included, is at most S$1,000.00, the limit in the GST pack from 23 Oct 2026; above it, ask the supplier for a tax invoice. One dated before 23 Oct 2026 goes to the tax agent, as the pack does not record the limit before then.
+- An invoice in an employee's or director's name, bought for the company and paid back: choose **An employee or director** under **Addressed to**, bill what the company paid back (not the whole invoice) with the GST inside that amount (at 9% GST, 9/109 of it), and attach the invoice and the record of the repayment; until a file is attached the bill shows ⚠. Credited to their director's loan instead (**Credited to their director's loan**), the GST is not claimed until the tax agent decides.
+- The tax agent's decision is recorded under **The tax agent's decision**, with their advice attached; on a posted bill, **Edit**, record it and post the edit, and the claim posts with it.
+
+(src: docs/user-guide/bills.md#input-tax)
 
 ## Spread a cost over months
 
@@ -162,6 +181,8 @@ aliases:
 - CREDIT-05, more than the bill has open or the credit has left: apply or refund at most what is open on both.
 - CREDIT-08, the credit is applied to bills: void its applications and refunds first.
 - LEDGER-28, the spread cannot be used: spread an expense line over 1 to 120 months; a credit note's lines are not spread.
+- BILL-14, an input-tax fact is not one Fyniq reads: choose what the claim rests on and whom it is addressed to from the lists; say how an agent was paid back only for an agent's invoice.
+- BILL-15, a line's business share is not a percentage: enter the share used for the business from 0 to 100, such as 60, or leave it blank.
 
 (src: docs/user-guide/bills.md#common-problems)
 

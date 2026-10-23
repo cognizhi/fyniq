@@ -99,19 +99,36 @@ type Version struct {
 	Digest          string // SHA-256 of the version's files, so a loaded version is never changed
 }
 
-// Schemas are the tables Fyniq reads from each pack, with their columns in order; a pack or table
-// not listed here is refused, as no code could read it.
-var Schemas = map[string]struct{ Tables, Pinned map[string][]string }{
+// Schema is what Fyniq reads from one pack: its tables and their pinned cases, with their columns in order.
+type Schema struct {
+	Tables, Pinned map[string][]string
+	// Since is the first version, as {year, n}, that holds a table and its pinned cases, for a table Fyniq began to read
+	// after the pack's first version: an earlier version, written before it, holds neither.
+	Since map[string][2]int
+}
+
+// Schemas are the tables Fyniq reads from each pack; a pack or table not listed here is refused, as no code could
+// read it.
+var Schemas = map[string]Schema{
 	"sg-gst": {
 		Tables: map[string][]string{
-			"rates": {"effective_from", "effective_to", "rate", "source"},
-			"codes": {"code", "direction", "standard_rated", "value_box", "gst_box", "description", "source"},
+			"rates":  {"effective_from", "effective_to", "rate", "source"},
+			"codes":  {"code", "direction", "standard_rated", "value_box", "gst_box", "description", "source"},
+			"limits": {"limit", "effective_from", "effective_to", "amount", "currency", "source"},
 		},
 		Pinned: map[string][]string{
-			"rates": {"case", "date", "want_rate", "why", "source"},
-			"codes": {"case", "code", "want_direction", "want_value_box", "want_gst_box", "why", "source"},
+			"rates":  {"case", "date", "want_rate", "why", "source"},
+			"codes":  {"case", "code", "want_direction", "want_value_box", "want_gst_box", "why", "source"},
+			"limits": {"case", "limit", "date", "want", "why", "source"},
 		},
+		Since: map[string][2]int{"limits": {2026, 2}}, // the simplified-invoice limit (FR-AP-20; rev 0.89)
 	},
+}
+
+// holds reports whether version v of a pack holds the table name of s.
+func (s Schema) holds(v Version, name string) bool {
+	since, ok := s.Since[name]
+	return !ok || v.Year > since[0] || (v.Year == since[0] && v.N >= since[1])
 }
 
 type fileRef struct {
@@ -310,8 +327,8 @@ func Load(fsys fs.FS, dir string) (Version, error) {
 	readTables := func(refs []fileRef, want map[string][]string, into map[string]Table, kind string) {
 		for _, ref := range refs {
 			cols, ok := want[ref.Name]
-			if !ok {
-				add(CodeTable, kind+"."+ref.Name, "is not a table of this pack", "Remove it, or add it to pack.Schemas")
+			if !ok || !schema.holds(v, ref.Name) {
+				add(CodeTable, kind+"."+ref.Name, "is not a table of this version of the pack", "Remove it, or add it to pack.Schemas")
 				continue
 			}
 			if _, dup := into[ref.Name]; dup {
@@ -348,7 +365,7 @@ func Load(fsys fs.FS, dir string) (Version, error) {
 			into[ref.Name] = t
 		}
 		for name := range want {
-			if _, ok := into[name]; !ok {
+			if _, ok := into[name]; !ok && schema.holds(v, name) {
 				add(CodeTable, kind+"."+name, "is missing", "Add the table: every pack version holds all of its tables and their pinned tests")
 			}
 		}

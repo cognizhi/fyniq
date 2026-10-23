@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -63,6 +64,28 @@ type BillLineDraft struct {
 	SpreadFrom   string `json:"spread_from,omitempty" format:"date" doc:"The spread's first month, as any day of it: when the service starts. Left out, the bill's month. Months before the bill's date release on the bill's date." example:"2026-10-01"`
 	// A line made from a purchase order (FR-AP-01; rev 0.87).
 	Order *BillLineOrder `json:"order,omitempty" doc:"The purchase order line it bills, and how much of it, for a line made from an order: billPurchaseOrder sets it. A posted bill never takes more of a line than is left (PO-13)."`
+	// Input tax (FR-AP-20; rev 0.89).
+	BusinessShare string `json:"business_share,omitempty" pattern:"^(100(\\.0{1,2})?|[0-9]{1,2}(\\.[0-9]{1,2})?)$" doc:"The percentage of the purchase used for the business, with at most two decimals (FR-AP-20). Only that share of the line's GST is claimed, rounded half up to the cent (RND-GST-SHARE); the rest stays in the cost, and 0 claims none (a private purchase). Left out, 100." example:"60"`
+}
+
+// BillInputTax are the facts a bill's input tax is decided from (FR-AP-20; rev 0.89), never from its GST alone. Each
+// line adds its business share. Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the
+// company.
+type BillInputTax struct {
+	SupplierRegistered *bool  `json:"supplier_registered,omitempty" doc:"Whether the supplier is GST-registered (its GST number is on the document). false: no GST was charged, and none is claimed. Left out, true." example:"true"`
+	Document           string `json:"document,omitempty" enum:"tax_invoice,simplified,import_permit,none" doc:"What the claim rests on: tax_invoice addressed to the company (\"Company c/o another\" counts); simplified, a simplified tax invoice, which needs no customer name and is claimable while the bill's total including GST is within the sg-gst pack's limit (S$1,000.00 from 23 Oct 2026; before that, the tax agent decides); import_permit naming the company; none, no valid tax invoice, so nothing is claimed. Left out, tax_invoice." example:"tax_invoice"`
+	AddressedTo        string `json:"addressed_to,omitempty" enum:"company,agent" doc:"company, or agent: the invoice is in the name of an employee or a director who bought it as the company's agent. Bill an agent's invoice at what the company paid them back, its GST the GST inside that amount (IRAS's tax fraction of the amount reimbursed), and attach the evidence of the repayment (⚠ until attached). Left out, company." example:"company"`
+	Repaid             string `json:"repaid,omitempty" enum:"paid,director_loan" doc:"For an agent's invoice: paid, the company paid them back; director_loan, credited to their director's loan account (FR-EQ-02), whose input tax is not claimed until the tax agent decides (⚠). Left out, paid." example:"paid"`
+	TaxAgent           string `json:"tax_agent,omitempty" enum:"claimable,not_claimable" doc:"The tax agent's decision on lines the rules leave to them: a director's loan, or a simplified tax invoice dated before the pack's limit. Attach their advice. Ignored on other lines." example:"claimable"`
+}
+
+// BillTaxDecision is how one line's input tax was decided (FR-AP-20): the line records the condition that decided it.
+type BillTaxDecision struct {
+	Line          int    `json:"line" doc:"The line, from 1." example:"1"`
+	Condition     string `json:"condition" enum:"claimable,not_claimable,tax_agent" doc:"claimable; not_claimable, the GST stays in the cost; or tax_agent (⚠): not claimed until the tax agent decides." example:"claimable"`
+	Reason        string `json:"reason" enum:"tax_invoice,simplified,import_permit,agent,business_share,no_gst,organisation_not_registered,gst_code,supplier_not_registered,no_tax_invoice,simplified_over_limit,simplified_no_limit,director_loan,private,tax_agent_decision" doc:"Why, as a stable code." example:"tax_invoice"`
+	Text          string `json:"text" doc:"Why, in plain words." example:"a tax invoice addressed to the company"`
+	BusinessShare string `json:"business_share,omitempty" doc:"The business share claimed, when the line is claimed in part." example:"60"`
 }
 
 // BillLineOrder is the purchase order line a bill's line bills (FR-AP-01).
@@ -95,6 +118,7 @@ type BillDraft struct {
 	FXRate      string          `json:"fx_rate,omitempty" doc:"For a bill in another currency: base currency per one unit, as typed on the document. Left out, the bill takes the cascade's rate for its date (ENG-40)." example:"1.34"`
 	Lines       []BillLineDraft `json:"lines" maxItems:"200" doc:"The bill's lines."`
 	Notes       string          `json:"notes,omitempty" maxLength:"2000" doc:"Notes kept with the bill." example:"Annual renewal, 10 seats"`
+	InputTax    *BillInputTax   `json:"input_tax,omitempty" doc:"The facts its input tax is decided from (FR-AP-20). Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the company."`
 }
 
 // BillSupplier is a bill's supplier, as the bill shows it.
@@ -124,31 +148,33 @@ type BillCheck struct {
 
 // Bill is a supplier's bill: its current version, its states and what posting it does.
 type Bill struct {
-	ID            string          `json:"id" format:"uuid" doc:"The bill's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"`
-	Kind          string          `json:"kind" enum:"bill,vendor_credit" doc:"bill, or vendor_credit: a supplier's credit note, posted as a bill's reverse (FR-AP-03)." example:"bill"`
-	Number        string          `json:"number,omitempty" doc:"Its number from the bill sequence: given when it posts, or when it is saved if the sequence is not gap-free (FR-ORG-04)." example:"BILL-0007"`
-	Status        string          `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed by a void." example:"draft"`
-	Version       int             `json:"version" doc:"The version of its content; with the status it makes the ETag." example:"1"`
-	Supplier      *BillSupplier   `json:"supplier,omitempty" doc:"The supplier, with its name."`
-	SupplierRef   string          `json:"supplier_ref,omitempty" doc:"The supplier's own number for it." example:"AU-1182"`
-	Date          string          `json:"date,omitempty" format:"date" doc:"The bill's date." example:"2026-10-14"`
-	DueDate       string          `json:"due_date,omitempty" format:"date" doc:"When it falls due: as entered, or from the payment terms." example:"2026-11-13"`
-	Currency      string          `json:"currency" doc:"The bill's currency." example:"SGD"`
-	FXRate        string          `json:"fx_rate,omitempty" doc:"The rate typed on the document, if one was." example:"1.34"`
-	Lines         []BillLineDraft `json:"lines" nullable:"false" doc:"The lines as entered."`
-	Notes         string          `json:"notes,omitempty" doc:"Its notes." example:"Annual renewal"`
-	Total         Money           `json:"total" doc:"Every line's net and GST, in the bill's currency."`
-	Payable       *Money          `json:"payable,omitempty" doc:"What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."`
-	Open          *Money          `json:"open,omitempty" doc:"A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."`
-	Payments      []BillPaidBy    `json:"payments" nullable:"false" doc:"getBill only: the payments that settle it, earliest first, each marked when it was voided."`
-	Releases      []BillRelease   `json:"releases" nullable:"false" doc:"getBill only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05)."`
-	States        BillStates      `json:"states" doc:"Its approval, ledger, payment and due states."`
-	Checks        []BillCheck     `json:"checks" nullable:"false" doc:"getBill only: what stops a draft posting (✖), and the warnings it posts with (⚠)."`
-	LedgerImpact  []EntryLine     `json:"ledger_impact" nullable:"false" doc:"getBill only: the lines posting it writes (a draft), or wrote (posted): debits positive."`
-	PreparedBy    *Person         `json:"prepared_by,omitempty" doc:"Who saved the current version."`
-	PostedBy      *Person         `json:"posted_by,omitempty" doc:"Who posted it."`
-	PostedAt      *time.Time      `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-14T09:30:00Z"`
-	ApprovalAsked string          `json:"approval_asked,omitempty" format:"uuid" doc:"getBill only: the pending request to post or void it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
+	ID            string            `json:"id" format:"uuid" doc:"The bill's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"`
+	Kind          string            `json:"kind" enum:"bill,vendor_credit" doc:"bill, or vendor_credit: a supplier's credit note, posted as a bill's reverse (FR-AP-03)." example:"bill"`
+	Number        string            `json:"number,omitempty" doc:"Its number from the bill sequence: given when it posts, or when it is saved if the sequence is not gap-free (FR-ORG-04)." example:"BILL-0007"`
+	Status        string            `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted, or reversed by a void." example:"draft"`
+	Version       int               `json:"version" doc:"The version of its content; with the status it makes the ETag." example:"1"`
+	Supplier      *BillSupplier     `json:"supplier,omitempty" doc:"The supplier, with its name."`
+	SupplierRef   string            `json:"supplier_ref,omitempty" doc:"The supplier's own number for it." example:"AU-1182"`
+	Date          string            `json:"date,omitempty" format:"date" doc:"The bill's date." example:"2026-10-14"`
+	DueDate       string            `json:"due_date,omitempty" format:"date" doc:"When it falls due: as entered, or from the payment terms." example:"2026-11-13"`
+	Currency      string            `json:"currency" doc:"The bill's currency." example:"SGD"`
+	FXRate        string            `json:"fx_rate,omitempty" doc:"The rate typed on the document, if one was." example:"1.34"`
+	Lines         []BillLineDraft   `json:"lines" nullable:"false" doc:"The lines as entered."`
+	Notes         string            `json:"notes,omitempty" doc:"Its notes." example:"Annual renewal"`
+	InputTax      BillInputTax      `json:"input_tax" doc:"The facts its input tax is decided from, every one stated (FR-AP-20)."`
+	TaxDecisions  []BillTaxDecision `json:"input_tax_decisions" nullable:"false" doc:"getBill only: how each line's input tax was decided, one a line in order (FR-AP-20)."`
+	Total         Money             `json:"total" doc:"Every line's net and GST, in the bill's currency."`
+	Payable       *Money            `json:"payable,omitempty" doc:"What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."`
+	Open          *Money            `json:"open,omitempty" doc:"A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."`
+	Payments      []BillPaidBy      `json:"payments" nullable:"false" doc:"getBill only: the payments that settle it, earliest first, each marked when it was voided."`
+	Releases      []BillRelease     `json:"releases" nullable:"false" doc:"getBill only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05)."`
+	States        BillStates        `json:"states" doc:"Its approval, ledger, payment and due states."`
+	Checks        []BillCheck       `json:"checks" nullable:"false" doc:"getBill only: what stops a draft posting (✖), and the warnings it posts with (⚠)."`
+	LedgerImpact  []EntryLine       `json:"ledger_impact" nullable:"false" doc:"getBill only: the lines posting it writes (a draft), or wrote (posted): debits positive."`
+	PreparedBy    *Person           `json:"prepared_by,omitempty" doc:"Who saved the current version."`
+	PostedBy      *Person           `json:"posted_by,omitempty" doc:"Who posted it."`
+	PostedAt      *time.Time        `json:"posted_at,omitempty" doc:"When it was posted." example:"2026-10-14T09:30:00Z"`
+	ApprovalAsked string            `json:"approval_asked,omitempty" format:"uuid" doc:"getBill only: the pending request to post or void it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd1"`
 }
 
 // BillPaidBy is a payment that settles a bill, or an application of a credit that settles a bill or a vendor credit:
@@ -303,6 +329,10 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 		d.SupplierID = id
 	}
 	d.SupplierRef, d.Notes = strings.TrimSpace(in.SupplierRef), in.Notes
+	if f := in.InputTax; f != nil {
+		d.InputTax = bill.InputTax{SupplierNotRegistered: f.SupplierRegistered != nil && !*f.SupplierRegistered, Document: f.Document,
+			AddressedTo: f.AddressedTo, Repaid: f.Repaid, TaxAgent: f.TaxAgent}
+	}
 	for _, x := range []struct {
 		text, field string
 		to          *time.Time
@@ -354,7 +384,7 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 			}
 			line.StatedGST = &s
 		}
-		line.SpreadMonths = l.SpreadMonths
+		line.SpreadMonths, line.BusinessShare = l.SpreadMonths, l.BusinessShare
 		if o := l.Order; o != nil {
 			oid, err := uuid.Parse(o.PurchaseOrderID)
 			q, qerr := money.ParseQuantity(o.Quantity, at("order.quantity"))
@@ -467,6 +497,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 	}
 	out := Bill{ID: doc.ID.String(), Kind: kindOf(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, SupplierRef: d.SupplierRef,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: []BillLineDraft{}, Checks: []BillCheck{},
+		InputTax: billInputTaxOut(d.InputTax), TaxDecisions: []BillTaxDecision{},
 		LedgerImpact: []EntryLine{}, Payments: []BillPaidBy{}, Releases: []BillRelease{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}
 	if withChecks {
@@ -521,6 +552,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 			out.DueDate = dayText(c.Prepared.DueDate)
 		}
 		if withChecks {
+			out.TaxDecisions = taxDecisionsOut(c.Prepared.InputTax)
 			for _, p := range c.Problems {
 				out.Checks = append(out.Checks, BillCheck{Severity: "error", Code: p.Code, Field: journalField(p.Field), Message: p.Message, Fix: p.Fix})
 			}
@@ -540,6 +572,13 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 	e, err := u.Ledger().ByIdentity(ctx, journal.BillIdentityOf(doc))
 	if err != nil {
 		return Bill{}, err
+	}
+	if withChecks {
+		p, _, err := bill.Prepare(ctx, u, doc, v.base)
+		if err != nil {
+			return Bill{}, err
+		}
+		out.TaxDecisions = taxDecisionsOut(p.InputTax)
 	}
 	for _, l := range entryOf(e).Lines {
 		if withChecks {
@@ -564,6 +603,27 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 	return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
 }
 
+// billInputTaxOut are a bill's input-tax facts as the API shows them: every one stated, how an agent was repaid only for
+// an agent's invoice.
+func billInputTaxOut(f bill.InputTax) BillInputTax {
+	registered := !f.SupplierNotRegistered
+	out := BillInputTax{SupplierRegistered: &registered, Document: cmp.Or(f.Document, bill.DocTaxInvoice), AddressedTo: cmp.Or(f.AddressedTo, bill.ToCompany),
+		TaxAgent: f.TaxAgent}
+	if out.AddressedTo == bill.ToAgent {
+		out.Repaid = cmp.Or(f.Repaid, bill.RepaidPaid)
+	}
+	return out
+}
+
+// taxDecisionsOut are how each line's input tax was decided, as the API shows them.
+func taxDecisionsOut(ds []bill.Decision) []BillTaxDecision {
+	out := make([]BillTaxDecision, 0, len(ds))
+	for i, d := range ds {
+		out = append(out, BillTaxDecision{Line: i + 1, Condition: d.Condition, Reason: d.Reason, Text: d.Text, BusinessShare: d.Share})
+	}
+	return out
+}
+
 // billLinesOut are a bill's lines as entered, as the API shows them.
 func billLinesOut(d bill.Draft) []BillLineDraft {
 	out := make([]BillLineDraft, 0, len(d.Lines))
@@ -573,7 +633,7 @@ func billLinesOut(d bill.Draft) []BillLineDraft {
 		if l.StatedGST != nil {
 			bl.StatedGST = &Money{Amount: l.StatedGST.String(), Currency: l.StatedGST.Currency().Code}
 		}
-		bl.SpreadMonths, bl.SpreadFrom = l.SpreadMonths, dayText(l.SpreadFrom)
+		bl.SpreadMonths, bl.SpreadFrom, bl.BusinessShare = l.SpreadMonths, dayText(l.SpreadFrom), l.BusinessShare
 		if o := l.Order; o != nil {
 			bl.Order = &BillLineOrder{PurchaseOrderID: o.PurchaseOrderID.String(), Line: o.Line, Quantity: o.Quantity.String()}
 		}

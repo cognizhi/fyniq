@@ -1,0 +1,4 @@
+case,limit,date,want,why,source
+GST-L-01,simplified_invoice,2026-10-22,none,"the day before the limit was read on IRAS's page: its history is not recorded, so an earlier simplified invoice goes to the tax agent",iras-invoicing
+GST-L-02,simplified_invoice,2026-10-23,1000.00 SGD,"a simplified tax invoice when the total payable including GST does not exceed $1,000",iras-invoicing
+GST-L-03,simplified_invoice,2030-12-31,1000.00 SGD,the limit has no end,iras-invoicing

@@ -423,6 +423,12 @@ Source: PRD-001 §B.2
 - **WHEN** a bill is posted
 - **THEN** + the SGD GST stated on the supplier's tax invoice goes to 2200 (ENG-42)
 
+#### Scenario: Only claimable input tax, for its business share (rev 0.89)
+- **GIVEN** a bill line whose input tax is claimable for a business share under 100% (FR-AP-20)
+- **WHEN** the bill is posted
+- **THEN** 2200 takes `RND-GST-SHARE` of the line's GST (of the GST stated in SGD for a foreign bill)
+- **AND** the GST not claimed stays in the line's cost (S$1,000.00 + GST 90.00 at 60%: Dr expense 1,036.00, Dr 2200 54.00, Cr 2010 1,090.00)
+
 #### Scenario: Stated GST differs from the recomputation
 - **GIVEN** the stated GST differs from `RND-GST-EXCL`(net base) by more than rounding
 - **WHEN** the bill is posted

@@ -3,7 +3,7 @@ key: purchases.bills
 title: Bills
 mode: basic
 roles: [bookkeeper, ap_specialist, accountant, controller, approver, owner, auditor, tax_agent]
-requirements: [FR-AP-02, FR-AP-03, FR-AP-06, FR-AR-18, RND-GST-EXCL, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
+requirements: [FR-AP-02, FR-AP-03, FR-AP-06, FR-AP-20, FR-AR-18, RND-GST-EXCL, RND-GST-SHARE, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
 status: draft            # written with the bill screens (P1, p1-purchases); reviewed with the accountant
 ---
 
@@ -75,7 +75,48 @@ much the bill adds to what the company owes the supplier. Select **Post** to pos
 Its number comes from the bill sequence (BILL-0001 onwards).
 
 Input tax is claimed only once the company is GST-registered on the bill's date, for codes such as
-TX. Until then the GST is part of the cost.
+TX. Until then the GST is part of the cost. **Input tax** below says what else decides it.
+
+## Input tax
+
+Whether a bill's GST is claimed is decided line by line from what the bill records, never from the
+GST amount alone. Under **Input tax** on the bill, say:
+
+- **What the claim rests on**: a **Tax invoice** addressed to the company (an invoice to "Company
+  c/o another" counts); a **Simplified tax invoice**, which needs no customer name; an **Import
+  permit** naming the company; or **No valid tax invoice**;
+- whether **the supplier is GST-registered**: its GST number is on the document;
+- whom it is **addressed to**: the company, or an employee or director who bought it for the
+  company;
+- on each line, the **Business share (%)**: how much of the purchase is used for the business.
+  Leave it blank for all of it.
+
+Each line then shows how its GST is treated:
+
+- **Claimable**, with the reason, such as a tax invoice addressed to the company;
+- **Claimed for 60%** (or another share): only the business share of the GST is claimed, rounded
+  half up to the cent, and the rest stays in the cost;
+- **Not claimable**, with the reason: the company is not GST-registered on the bill's date, the code
+  is one whose GST is not claimed (such as BL for a motor car or club fees), the supplier is not
+  GST-registered, there is no valid tax invoice, or the business share is 0;
+- **For the tax agent** (⚠): the rules leave it to the tax agent, and the GST is not claimed until
+  they decide.
+
+A simplified tax invoice is claimable while the bill's total, GST included, is at most S$1,000.00:
+the limit in the GST pack from 23 Oct 2026. Above it, ask the supplier for a tax invoice. A
+simplified invoice dated before 23 Oct 2026 goes to the tax agent, as the pack does not record the
+limit before then.
+
+**An invoice in an employee's or director's name.** When they bought something for the company and
+were paid back, choose **An employee or director** under **Addressed to**. Bill what the company paid them
+back, not the whole invoice, and enter the GST inside that amount: at 9% GST, 9/109 of it. Attach the
+invoice and the record of the repayment; until a file is attached the bill shows ⚠. When the company
+credited their director's loan instead of paying them back, choose **Credited to their director's
+loan**: the GST is not claimed until the tax agent decides.
+
+**The tax agent's decision.** When a line is for the tax agent, record what they decided under
+**The tax agent's decision** and attach their advice. On a posted bill, select **Edit**, record the
+decision and post the edit: the claim then posts with it.
 
 ## Spread a cost over months
 
@@ -209,6 +250,8 @@ voided or edited while it is applied or refunded.
 | More than the bill has open or the credit has left (CREDIT-05) | Apply or refund at most what is open on both |
 | The credit is applied to bills (CREDIT-08) | Void its applications and refunds first |
 | The spread cannot be used (LEDGER-28) | Spread an expense line over 1 to 120 months; a credit note's lines are not spread |
+| An input-tax fact is not one Fyniq reads (BILL-14) | Choose what the claim rests on and whom it is addressed to from the lists; say how an agent was paid back only for an agent's invoice |
+| A line's business share is not a percentage (BILL-15) | Enter the share used for the business from 0 to 100, such as 60, or leave it blank |
 
 ## Related
 

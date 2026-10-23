@@ -423,3 +423,19 @@ Source: PRD-001 §10.4
 - **WHEN** each part's amount is worked out
 - **THEN** it is RND-LINE of everything taken so far, this part included, less RND-LINE of what was taken before
 - **AND** the parts add up to the line's amount exactly, each within one minor unit of its own quantity × price (three parts of one of 3 × 33.333333 are 33.33, 33.34 and 33.33)
+
+### Requirement: RND-GST-SHARE Share of a line's GST
+The input tax claimed of a line's GST when only a share of it is claimable (FR-AP-20: its business share) SHALL be round(GST × share ÷ 100, the currency's minor units), half away from zero, computed exactly before its one rounding, the rest of the GST staying in the line's cost (rev 0.89; provisional).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Share formula
+- **WHEN** a line's GST is claimed for a share
+- **THEN** the claim = round(GST × share ÷ 100, the currency's minor units), half away from zero (60% of 9.00 is 5.40; 50% of 7.65 is 3.83, with 3.82 kept in the cost)
+- **AND** a share of 100 claims the GST whole and 0 claims none
+
+#### Scenario: A bill in another currency
+- **GIVEN** a bill in another currency whose tax invoice states its GST in SGD (ENG-42)
+- **WHEN** a line is claimed for a share
+- **THEN** the claim is the share of the GST stated in SGD, the cost keeps the share's remainder of the line's own GST at the book rate
+- **AND** the difference goes to 7030

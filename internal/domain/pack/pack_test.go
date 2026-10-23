@@ -29,8 +29,14 @@ func day(t *testing.T, s string) time.Time {
 // whole new text when it holds no arrow.
 func fixture(t *testing.T, edits map[string]string) fstest.MapFS {
 	t.Helper()
+	return fixtureOf(t, "sg-gst/2026.1", edits)
+}
+
+// fixtureOf is fixture for the shipped version in dir.
+func fixtureOf(t *testing.T, dir string, edits map[string]string) fstest.MapFS {
+	t.Helper()
 	m := fstest.MapFS{}
-	err := fs.WalkDir(packs.FS, "sg-gst/2026.1", func(p string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(packs.FS, dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return err
 		}
@@ -142,20 +148,22 @@ func TestAnIncompleteOrUnverifiedVersionIsRefused(t *testing.T) {
 	}
 }
 
-// later returns the shipped version plus sg-gst@2027.1, a made-up future version with a rate of 10% from
-// 1 Jan 2027, and sg-gst@2026.2, a made-up correction of 2026.1 from the same day.
+// withFuture returns sg-gst@2026.1 plus sg-gst@2027.1, a made-up future version, made from the shipped 2026.2, with a
+// rate of 10% from 1 Jan 2027.
 func withFuture(t *testing.T) []pack.Version {
 	t.Helper()
 	m := fixture(t, nil)
-	for name, f := range fixture(t, nil) {
-		next := strings.Replace(name, "2026.1", "2027.1", 1)
+	for name, f := range fixtureOf(t, "sg-gst/2026.2", nil) {
+		next := strings.Replace(name, "2026.2", "2027.1", 1)
 		m[next] = f
 	}
 	m["sg-gst/2027.1/pack.toml"] = &fstest.MapFile{Data: []byte(strings.NewReplacer(
-		`id = "sg-gst@2026.1"`, `id = "sg-gst@2027.1"`, `effective_from = "1994-04-01"`, `effective_from = "2027-01-01"`).
+		`id = "sg-gst@2026.2"`, `id = "sg-gst@2027.1"`, `effective_from = "1994-04-01"`, `effective_from = "2027-01-01"`).
 		Replace(string(m["sg-gst/2027.1/pack.toml"].Data)))}
 	m["sg-gst/2027.1/rates.csv"] = &fstest.MapFile{Data: []byte("effective_from,effective_to,rate,source\n2027-01-01,,0.10,iras-current-rates\n")}
 	m["sg-gst/2027.1/pinned/rates.csv"] = &fstest.MapFile{Data: []byte("case,date,want_rate,why,source\nX-1,2027-01-01,0.10,made up,iras-current-rates\n")}
+	m["sg-gst/2027.1/limits.csv"] = &fstest.MapFile{Data: []byte("limit,effective_from,effective_to,amount,currency,source\nsimplified_invoice,2027-01-01,,1000.00,SGD,iras-invoicing\n")}
+	m["sg-gst/2027.1/pinned/limits.csv"] = &fstest.MapFile{Data: []byte("case,limit,date,want,why,source\nX-2,simplified_invoice,2027-01-01,1000.00 SGD,made up,iras-invoicing\n")}
 	versions, err := pack.LoadAll(m)
 	if err != nil {
 		t.Fatal(err)
@@ -205,6 +213,96 @@ func TestAFutureRateNeverChangesAPastDocument(t *testing.T) {
 	ended.EffectiveTo = &last
 	if _, ok := pack.At([]pack.Version{ended}, "sg-gst", day(t, "2027-07-01")); ok {
 		t.Error("a version was chosen after its effective_to")
+	}
+}
+
+// req: FR-AP-20
+// req: ENG-30
+// sg-gst@2026.2 adds the simplified-invoice limit: S$1,000 from 23 Oct 2026, the day it was read on IRAS's page, and
+// none before, as its history is not recorded. The version before it holds no limits and still loads; a later one
+// must hold them, and its limits follow the pack's rules.
+func TestTheSimplifiedInvoiceLimitIsInTheGSTPackFromItsVersion(t *testing.T) {
+	versions, err := pack.LoadAll(packs.FS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byID := map[string]pack.Version{}
+	for _, v := range versions {
+		byID[v.ID] = v
+	}
+	v1, v2 := byID["sg-gst@2026.1"], byID["sg-gst@2026.2"]
+	if _, ok := v1.Tables["limits"]; ok || v2.Supersedes != "sg-gst@2026.1" {
+		t.Fatalf("2026.1 holds limits, or 2026.2 does not supersede it (%q)", v2.Supersedes)
+	}
+	for _, c := range []struct {
+		v          pack.Version
+		on, amount string
+	}{
+		{v2, "2026-10-22", ""},
+		{v2, "2026-10-23", "1000.00"},
+		{v2, "2031-01-01", "1000.00"},
+		{v1, "2026-10-23", ""},
+	} {
+		amount, cur, ok := pack.Limit(c.v, pack.LimitSimplifiedInvoice, day(t, c.on))
+		if amount != c.amount || ok != (c.amount != "") || (ok && cur != "SGD") {
+			t.Errorf("%s on %s: got %q %q %v; want %q SGD", c.v.ID, c.on, amount, cur, ok, c.amount)
+		}
+	}
+	if _, _, ok := pack.Limit(v2, "unknown", day(t, "2027-01-01")); ok {
+		t.Error("an unknown limit was found")
+	}
+	// Bills read the newest version in force: 2026.2 supersedes 2026.1 from the same day.
+	if v, _ := pack.At(versions, "sg-gst", day(t, "2026-11-01")); v.ID != "sg-gst@2026.2" {
+		t.Errorf("chose %s on 1 Nov 2026; want sg-gst@2026.2", v.ID)
+	}
+
+	const v2dir = "sg-gst/2026.2/"
+	cases := map[string]struct {
+		edits map[string]string
+		code  string
+	}{
+		"no limits":            {map[string]string{v2dir + "limits.csv": ""}, pack.CodeTable},
+		"no pinned limits":     {map[string]string{v2dir + "pinned/limits.csv": ""}, pack.CodeTable},
+		"an unknown limit":     {map[string]string{v2dir + "limits.csv": "simplified_invoice,→receipt,"}, pack.CodeValue},
+		"a negative amount":    {map[string]string{v2dir + "limits.csv": ",1000.00,→,-1000.00,"}, pack.CodeValue},
+		"a float":              {map[string]string{v2dir + "limits.csv": ",1000.00,→,1e3,"}, pack.CodeValue},
+		"a currency symbol":    {map[string]string{v2dir + "limits.csv": ",SGD,→,S$,"}, pack.CodeValue},
+		"a date before":        {map[string]string{v2dir + "limits.csv": "2026-10-23→1990-01-01"}, pack.CodeDates},
+		"no date":              {map[string]string{v2dir + "limits.csv": "2026-10-23→today"}, pack.CodeDates},
+		"an end before start":  {map[string]string{v2dir + "limits.csv": "2026-10-23,,→2026-10-23,2026-10-01,"}, pack.CodeDates},
+		"overlapping periods":  {map[string]string{v2dir + "limits.csv": "iras-input-tax\n→iras-input-tax\nsimplified_invoice,2027-01-01,,2000.00,SGD,iras-invoicing\n"}, pack.CodeDates},
+		"a wrong pinned limit": {map[string]string{v2dir + "pinned/limits.csv": ",2026-10-23,1000.00 SGD,→,2026-10-23,100.00 SGD,"}, pack.CodePinned},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			v, err := pack.Load(fixtureOf(t, "sg-gst/2026.2", c.edits), "sg-gst/2026.2")
+			if c.code == pack.CodePinned {
+				if err != nil || len(pack.Failed(pack.RunPinned(v))) != 1 {
+					t.Fatalf("got %v and %v; want one failed pinned case", err, pack.Failed(pack.RunPinned(v)))
+				}
+				return
+			}
+			ps, ok := err.(pack.Problems)
+			if !ok {
+				t.Fatalf("got %v; want the version refused with %s", err, c.code)
+			}
+			for _, p := range ps {
+				if p.Code == c.code {
+					return
+				}
+			}
+			t.Fatalf("got %v; want %s among the problems", ps, c.code)
+		})
+	}
+	// Consecutive periods are fine: the limit can change.
+	if _, err := pack.Load(fixtureOf(t, "sg-gst/2026.2", map[string]string{v2dir + "limits.csv": "2026-10-23,,→2026-10-23,2026-12-31,1000.00,SGD,iras-invoicing\nsimplified_invoice,2027-01-01,,"}), "sg-gst/2026.2"); err != nil {
+		t.Errorf("consecutive periods refused: %v", err)
+	}
+	// The version before the limits holds none: listing one there is refused.
+	m := fixture(t, map[string]string{gst + "pack.toml": `[[pinned]]→[[tables]]` + "\n" + `name = "limits"` + "\n" + `file = "limits.csv"` + "\n\n" + `[[pinned]]`})
+	m[gst+"limits.csv"] = &fstest.MapFile{Data: []byte("limit,effective_from,effective_to,amount,currency,source\n")}
+	if _, err := pack.Load(m, "sg-gst/2026.1"); err == nil || !strings.Contains(err.Error(), "is not a table of this version") {
+		t.Errorf("got %v; want the limits of 2026.1 refused", err)
 	}
 }
 

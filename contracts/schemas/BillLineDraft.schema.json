@@ -10,6 +10,14 @@
       "format": "uuid",
       "type": "string"
     },
+    "business_share": {
+      "description": "The percentage of the purchase used for the business, with at most two decimals (FR-AP-20). Only that share of the line's GST is claimed, rounded half up to the cent (RND-GST-SHARE); the rest stays in the cost, and 0 claims none (a private purchase). Left out, 100.",
+      "examples": [
+        "60"
+      ],
+      "pattern": "^(100(\\.0{1,2})?|[0-9]{1,2}(\\.[0-9]{1,2})?)$",
+      "type": "string"
+    },
     "description": {
       "description": "What the line is for.",
       "examples": [
