@@ -131,6 +131,7 @@ export const actions = [
   { kind: "action", id: "template.bundle", mode: "expert", help: "template.bundle", guide: "settings.templates#move-templates-with-a-bundle" },
   { kind: "action", id: "review-banner", mode: "basic", help: "review.awaiting-verification", guide: "review.awaiting-verification" },
   { kind: "action", id: "contact.add", mode: "basic", help: "contact.add", guide: "contacts.manage#add-a-contact" },
+  { kind: "action", id: "contact.templates", mode: "basic", help: "contact.templates", guide: "contacts.manage#their-own-templates" },
   { kind: "action", id: "item.add", mode: "basic", help: "item.add", guide: "contacts.manage#items-and-prices" },
   { kind: "action", id: "chart.add", mode: "expert", help: "chart.add", guide: "accounting.chart#add-an-account" },
   { kind: "action", id: "chart.load-standard", mode: "expert", help: "chart.load-standard", guide: "accounting.chart#start-from-the-standard-chart" },

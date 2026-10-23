@@ -204,6 +204,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **THEN** they choose among the type's published templates or the platform's starter
 - **AND** the change is made over the choice's ETag (If-Match), so a concurrent change is refused
 
+#### Scenario: A contact's own templates on the screen (rev 0.101)
+- **WHEN** a person who edits contacts selects Templates next to a contact
+- **THEN** each document type the contact receives lists its published document and email templates, or the organisation's default
+- **AND** each change is saved over the contact's ETag, and a type with none published shows the default
+
 ### Requirement: FR-TPL-06 Code mode for experts
 Templates SHALL compile to Typst (§12.2), and an expert SHALL be able to edit the Typst source in a sandbox.
 

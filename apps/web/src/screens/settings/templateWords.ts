@@ -1,3 +1,4 @@
+import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 
 // The words the template screens use for what the API returns (FR-TPL-05; PRD-001 rev 0.99).
@@ -10,6 +11,23 @@ export type DocType = DocumentTemplate["document_type"];
 export type Kind = DocumentTemplate["kind"];
 
 export const docTypes: DocType[] = ["invoice", "quote", "credit_note", "receipt", "statement", "reminder", "remittance", "purchase_order"];
+
+// The documents a customer receives, and a supplier's (TPL-20): an override on a contact is for one of these.
+export const customerTypes: DocType[] = ["invoice", "quote", "credit_note", "receipt", "statement", "reminder"];
+export const supplierTypes: DocType[] = ["remittance", "purchase_order"];
+
+// allTemplates reads every template of the organisation, a page at a time.
+export async function allTemplates(): Promise<DocumentTemplate[]> {
+  const out: DocumentTemplate[] = [];
+  let cursor: string | undefined;
+  do {
+    const { data, error } = await api.GET("/v1/document-templates", { params: { query: { page_size: 200, cursor } } });
+    if (error) throw error;
+    out.push(...(data.items ?? []));
+    cursor = data.next_cursor;
+  } while (cursor && out.length < 1000);
+  return out;
+}
 
 export const typeNames: Record<DocType, string> = {
   invoice: "Invoice",

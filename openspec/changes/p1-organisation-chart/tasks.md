@@ -134,7 +134,8 @@
   vendors filtered by role and found by name, UEN or email, a possible duplicate flagged (a preview lists them before
   an add, FR-CT-04), adding and changing a contact over its ETag; items with a unit price per currency as exact
   decimals; guide page `contacts-and-items.md` compiled into `contacts.manage`. Tests `contacts.test.tsx`. **Left:**
-  contact-record's tabs (documents, ageing, timeline, bank details) and logo-brand; balances and the year's figures on
+  contact-record's tabs (documents, ageing, timeline, bank details, and its templates, which Contacts' Templates sets
+  meanwhile: `p1-templates-email` 4.1, FR-TPL-05) and logo-brand; balances and the year's figures on
   contacts and items, which come with the sales and purchase documents; on chart-of-accounts, merge, the Dimensions
   tab and balances, which have no operations yet; the organisation-settings sections whose operations do not exist
   yet (brand, numbering, GST status on this page).)

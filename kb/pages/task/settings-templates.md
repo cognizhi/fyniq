@@ -4,7 +4,7 @@ type: task
 title: Design documents with templates
 summary: How templates set the look of invoices, quotes and other documents; start, edit, publish, roll back, choose the default, move with a bundle
 sources:
-  - docs/user-guide/document-templates.md sha256:2a03300b1cca5860c37e20509478ef80b85617c78751e9290edfb435952766ad
+  - docs/user-guide/document-templates.md sha256:f9b81d0e45521ee92e8a11bb7647a1dbda19e86feae1f35a1a0eed7927da0758
 data_class: general
 taint: trusted
 status: published
@@ -63,7 +63,7 @@ aliases:
 ## Choose the default
 
 - An Owner or a Controller selects **Change default** beside a document type and picks a published template or the Classic starter; no second approval, as each was approved when published.
-- A customer's or supplier's own template, set on their contact ([[contacts.manage]]), comes before the default.
+- A customer's or supplier's own template, chosen with **Templates** next to the contact in **Contacts** ([[contacts.manage]]), comes before the default.
 
 (src: docs/user-guide/document-templates.md#choose-the-default)
 

@@ -11,21 +11,9 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { SettingsPage } from "./SettingsPage";
-import { docTypes, styles, templateApprovers, templatePreparers, typeNames, type DocType, type DocumentTemplate, type Kind, type StyleKey } from "./templateWords";
+import { allTemplates, docTypes, styles, templateApprovers, templatePreparers, typeNames, type DocType, type DocumentTemplate, type Kind, type StyleKey } from "./templateWords";
 
 type Choice = components["schemas"]["DocumentTemplateChoice"];
-
-async function allTemplates(): Promise<DocumentTemplate[]> {
-  const out: DocumentTemplate[] = [];
-  let cursor: string | undefined;
-  do {
-    const { data, error } = await api.GET("/v1/document-templates", { params: { query: { page_size: 200, cursor } } });
-    if (error) throw error;
-    out.push(...(data.items ?? []));
-    cursor = data.next_cursor;
-  } while (cursor && out.length < 1000);
-  return out;
-}
 
 async function defaults(): Promise<Choice[]> {
   const { data, error } = await api.GET("/v1/document-template-defaults", { params: { query: { page_size: 16 } } });
