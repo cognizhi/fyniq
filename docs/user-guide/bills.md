@@ -3,7 +3,7 @@ key: purchases.bills
 title: Bills
 mode: basic
 roles: [bookkeeper, ap_specialist, accountant, controller, approver, owner, auditor, tax_agent]
-requirements: [FR-AP-02, FR-AP-03, FR-AP-06, FR-AP-20, FR-AR-18, RND-GST-EXCL, RND-GST-SHARE, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
+requirements: [FR-AP-02, FR-AP-03, FR-AP-06, FR-AP-19, FR-AP-20, FR-AR-18, RND-GST-EXCL, RND-GST-SHARE, RND-WHT, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
 status: draft            # written with the bill screens (P1, p1-purchases); reviewed with the accountant
 ---
 
@@ -117,6 +117,29 @@ loan**: the GST is not claimed until the tax agent decides.
 **The tax agent's decision.** When a line is for the tax agent, record what they decided under
 **The tax agent's decision** and attach their advice. On a posted bill, select **Edit**, record the
 decision and post the edit: the claim then posts with it.
+
+## Non-resident suppliers
+
+A supplier resident for tax outside Singapore may have tax withheld from what the company pays it,
+which the company then pays to IRAS. Its contact says where it is resident: its **Tax residence**,
+or its **Country** when that is the same.
+
+1. On such a supplier's bill, choose the **Nature of payment**: what the payment is for, such as
+   software for the company's own use or services performed in Singapore. The bill does not post
+   without it.
+2. Under **Withholding tax**, select **Record the tax agent's decision** and record what the tax agent
+   decided for this supplier and nature: **Not applicable** (nothing is withheld, as for an ordinary
+   software subscription), **Withhold tax** at the rate they advised, or **Withhold at a reduced
+   treaty rate**. Name the **Tax agent** and attach their advice, and for a treaty rate the
+   certificate of residence, to the bill.
+3. The decision applies to the supplier's bills for that nature from then on, so it is recorded once.
+   A new decision replaces it for later bills; bills posted before keep theirs.
+
+Until there is a decision, the bill shows ⚠ and posts without withholding, and its payment waits.
+Once tax is withheld, the bill costs the whole amount, owes the supplier what is left after the tax,
+and owes the tax to IRAS (2330 Withholding tax payable). The tax is the rate of the payment before
+GST, in SGD rounded down to the dollar. If a decision to withhold comes after the bill posted, select
+**Edit** on the bill and post the edit: it then withholds, and its payment can be recorded.
 
 ## Spread a cost over months
 
@@ -252,6 +275,9 @@ voided or edited while it is applied or refunded.
 | The spread cannot be used (LEDGER-28) | Spread an expense line over 1 to 120 months; a credit note's lines are not spread |
 | An input-tax fact is not one Fyniq reads (BILL-14) | Choose what the claim rests on and whom it is addressed to from the lists; say how an agent was paid back only for an agent's invoice |
 | A line's business share is not a percentage (BILL-15) | Enter the share used for the business from 0 to 100, such as 60, or leave it blank |
+| The bill does not say what the payment is for (BILL-16) | Choose the **Nature of payment**: the supplier is resident outside Singapore |
+| The bill waits for its withholding tax decision (BILLPAY-11) | Record the tax agent's decision; if it withholds, edit the bill first |
+| The withholding decision cannot be recorded (BILL-17) | Record the supplier's tax residence; give a rate only when tax is withheld; name the tax agent |
 
 ## Related
 

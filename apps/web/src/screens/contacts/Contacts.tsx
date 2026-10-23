@@ -37,6 +37,7 @@ const textFields = [
   ["remittance_email", "Remittance email", "Where payment advice goes"],
   ["phone", "Telephone", ""],
   ["country", "Country", "Two letters, such as SG"],
+  ["tax_residence", "Tax residence", "Only when it is not the country, such as US. A supplier resident outside Singapore may have tax withheld"],
   ["currency", "Currency", "Three letters, such as SGD"],
   ["peppol_id", "Peppol ID", "Such as 0195:SGUEN202312345K"],
   ["default_gst_code", "Default GST code", "Such as TX or SR"],
@@ -50,7 +51,7 @@ interface Draft extends Record<TextKey, string> {
   active: boolean;
 }
 
-const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, payment_terms_days: "", active: true };
+const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, payment_terms_days: "", active: true };
 
 function draftOf(c: Contact): Draft {
   const s = (v: string | undefined) => v ?? "";
@@ -61,6 +62,7 @@ function draftOf(c: Contact): Draft {
     remittance_email: s(c.remittance_email),
     phone: s(c.phone),
     country: s(c.country),
+    tax_residence: s(c.tax_residence),
     currency: s(c.currency),
     peppol_id: s(c.peppol_id),
     default_gst_code: s(c.default_gst_code),

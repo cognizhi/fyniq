@@ -153,6 +153,10 @@ export const actions = [
   { kind: "action", id: "bill.input-tax", mode: "basic", help: "bill.input-tax", guide: "purchases.bills#input-tax" },
   { kind: "action", id: "bill.business-share", mode: "basic", help: "bill.business-share", guide: "purchases.bills#input-tax" },
   { kind: "action", id: "bill.tax-agent", mode: "basic", help: "bill.tax-agent", guide: "purchases.bills#input-tax" },
+  // Withholding tax (FR-AP-19): the nature, the decision and the hold are safety information, so Basic shows them too.
+  { kind: "action", id: "bill.nature", mode: "basic", help: "bill.nature", guide: "purchases.bills#non-resident-suppliers" },
+  { kind: "action", id: "bill.withholding", mode: "basic", help: "bill.withholding", guide: "purchases.bills#non-resident-suppliers" },
+  { kind: "action", id: "bill.record-decision", mode: "basic", help: "bill.record-decision", guide: "purchases.bills#non-resident-suppliers" },
   { kind: "action", id: "bill.releases", mode: "basic", help: "bill.releases", guide: "purchases.bills#spread-a-cost-over-months" },
   { kind: "action", id: "bill-payment.void", mode: "basic", help: "bill-payment.void", guide: "purchases.bills#void-a-payment" },
   { kind: "action", id: "bill-payment.ask-void", mode: "basic", help: "bill-payment.ask-void", guide: "purchases.bills#void-a-payment" },

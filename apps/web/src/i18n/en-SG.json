@@ -348,6 +348,18 @@
       "label": "Resume",
       "tooltip": "Start making drafts again from today; the dates passed while it was paused are skipped."
     },
+    "bill.nature": {
+      "label": "Nature of payment",
+      "tooltip": "What the payment is for. The tax agent decides once per supplier and nature whether tax is withheld from it."
+    },
+    "bill.withholding": {
+      "label": "Withholding tax",
+      "tooltip": "Tax may be withheld from payments to it and paid to IRAS, as the tax agent decides."
+    },
+    "bill.record-decision": {
+      "label": "Record decision",
+      "tooltip": "Record what the tax agent decided for this supplier and nature of payment: nothing withheld, or the rate to withhold."
+    },
     "bill.input-tax": {
       "label": "Input tax",
       "tooltip": "What the GST claim rests on: the document, the supplier's registration and whom it is addressed to."
