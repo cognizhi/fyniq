@@ -5,10 +5,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -72,6 +74,9 @@ func (t documentTemplates) Page(ctx context.Context, after uuid.UUID, limit int,
 	if err := t.u.check(); err != nil {
 		return nil, err
 	}
+	if limit < 1 || limit > 10000 {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d templates", limit), Hint: "Ask for 1 to 10,000"}
+	}
 	rows, err := t.u.q.PageDocumentTemplates(ctx, sqlcdb.PageDocumentTemplatesParams{After: after, Kind: opt(f.Kind), DocumentType: opt(f.DocumentType),
 		PageSize: int32(limit)})
 	if err != nil {
@@ -95,7 +100,7 @@ func (t documentTemplates) SaveDraft(ctx context.Context, id uuid.UUID, version 
 	if err != nil {
 		return storage.DocumentTemplate{}, err
 	}
-	if before.Version != version {
+	if before.Version != version || version < 1 || version > math.MaxInt32 {
 		return storage.DocumentTemplate{}, staleTemplate(before, version)
 	}
 	row, err := t.u.q.SaveDocumentTemplateDraft(ctx, sqlcdb.SaveDocumentTemplateDraftParams{ID: id, Version: int32(version), Name: name, Draft: draft,
@@ -120,8 +125,12 @@ func (t documentTemplates) Publish(ctx context.Context, id uuid.UUID, version in
 	if err != nil {
 		return storage.DocumentTemplate{}, storage.TemplateVersion{}, err
 	}
-	if before.Version != version {
+	if before.Version != version || version < 1 || version > math.MaxInt32 {
 		return storage.DocumentTemplate{}, storage.TemplateVersion{}, staleTemplate(before, version)
+	}
+	if before.Published < 0 || before.Published >= math.MaxInt32 || n.RepublishedFrom < 0 || n.RepublishedFrom > math.MaxInt32 || n.RepublishedFrom > before.Published {
+		return storage.DocumentTemplate{}, storage.TemplateVersion{}, &storage.Error{Code: storage.CodeInvalid,
+			Message: fmt.Sprintf("version %d is not a published version of the template", n.RepublishedFrom), Hint: "Republish one of its versions"}
 	}
 	var from *int32
 	if n.RepublishedFrom > 0 {
@@ -134,8 +143,7 @@ func (t documentTemplates) Publish(ctx context.Context, id uuid.UUID, version in
 		return storage.DocumentTemplate{}, storage.TemplateVersion{}, mapError(err)
 	}
 	pv := templateVersionOf(sqlcdb.GetDocumentTemplateVersionRow(vrow))
-	number := int32(pv.Number)
-	row, err := t.u.q.MarkDocumentTemplatePublished(ctx, sqlcdb.MarkDocumentTemplatePublishedParams{ID: id, Version: int32(version), Number: &number})
+	row, err := t.u.q.MarkDocumentTemplatePublished(ctx, sqlcdb.MarkDocumentTemplatePublishedParams{ID: id, Version: int32(version), Number: &vrow.Number})
 	if err != nil {
 		return storage.DocumentTemplate{}, storage.TemplateVersion{}, mapError(err)
 	}
@@ -158,6 +166,9 @@ func (t documentTemplates) Versions(ctx context.Context, id uuid.UUID, before, l
 	if err := t.u.check(); err != nil {
 		return nil, err
 	}
+	if limit < 1 || limit > 10000 || before < 0 || before > math.MaxInt32 {
+		return nil, &storage.Error{Code: storage.CodeInvalid, Message: fmt.Sprintf("a page of %d versions before %d", limit, before), Hint: "Ask for 1 to 10,000"}
+	}
 	rows, err := t.u.q.DocumentTemplateVersions(ctx, sqlcdb.DocumentTemplateVersionsParams{TemplateID: id, Before: int32(before), PageSize: int32(limit)})
 	if err != nil {
 		return nil, mapError(err)
@@ -172,6 +183,9 @@ func (t documentTemplates) Versions(ctx context.Context, id uuid.UUID, before, l
 func (t documentTemplates) Version(ctx context.Context, id uuid.UUID, number int) (storage.TemplateVersion, error) {
 	if err := t.u.check(); err != nil {
 		return storage.TemplateVersion{}, err
+	}
+	if number < 1 || number > math.MaxInt32 {
+		return storage.TemplateVersion{}, ports.ErrNotFound // no template has such a version
 	}
 	row, err := t.u.q.GetDocumentTemplateVersion(ctx, sqlcdb.GetDocumentTemplateVersionParams{TemplateID: id, Number: int32(number)})
 	if err != nil {
