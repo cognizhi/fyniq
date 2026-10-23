@@ -22,7 +22,7 @@ type tokens struct{}
 
 func (tokens) Token(string) (string, error) { return "ok", nil }
 func (tokens) Verify(token, class string) error {
-	if token != "ok" || class != Class {
+	if token != "ok" || class != render.Class {
 		return ports.ErrUnauthorised
 	}
 	return nil
@@ -52,17 +52,17 @@ func TestTheRenderServiceRendersForItsCallers(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := New(c, tokens{})
-	req := Request{DocumentType: doctemplate.CreditNote, Content: doctemplate.Default(doctemplate.KindDocument, doctemplate.CreditNote),
+	req := render.Request{DocumentType: doctemplate.CreditNote, Content: doctemplate.Default(doctemplate.KindDocument, doctemplate.CreditNote),
 		Data: render.Sample(doctemplate.CreditNote), Created: time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC), Check: true}
 
-	if w, out := call(t, h, "", req); w.Code != http.StatusUnauthorized || out["code"] != CodeUnauthorised {
+	if w, out := call(t, h, "", req); w.Code != http.StatusUnauthorized || out["code"] != render.CodeUnauthorised {
 		t.Errorf("without a token: %d %v", w.Code, out)
 	}
 	w, out := call(t, h, "ok", req)
 	if w.Code != http.StatusOK || out["missing"] != nil || len(out["sha256"].(string)) != 64 {
 		t.Fatalf("a credit note: %d %s", w.Code, w.Body.String()[:200])
 	}
-	var res Response
+	var res render.Response
 	_ = json.Unmarshal(w.Body.Bytes(), &res)
 	if !bytes.HasPrefix(res.PDF, []byte("%PDF-")) || !slices.Contains(res.Particulars, render.PReason) {
 		t.Errorf("the credit note's particulars: %v", res.Particulars)
@@ -76,7 +76,7 @@ func TestTheRenderServiceRendersForItsCallers(t *testing.T) {
 			bad.Content.Blocks[i].Shown = false
 		}
 	}
-	if w, out := call(t, h, "ok", bad); w.Code != http.StatusUnprocessableEntity || out["code"] != CodeTemplate || !strings.Contains(w.Body.String(), doctemplate.CodeLocked) {
+	if w, out := call(t, h, "ok", bad); w.Code != http.StatusUnprocessableEntity || out["code"] != render.CodeTemplate || !strings.Contains(w.Body.String(), doctemplate.CodeLocked) {
 		t.Errorf("a hidden particular: %d %v", w.Code, out)
 	}
 	// Data that lacks a particular renders, and says what is missing.
@@ -88,7 +88,7 @@ func TestTheRenderServiceRendersForItsCallers(t *testing.T) {
 	}
 	logo := req
 	logo.Logo = []byte("<svg/>")
-	if w, out := call(t, h, "ok", logo); w.Code != http.StatusBadRequest || out["code"] != CodeRequest {
+	if w, out := call(t, h, "ok", logo); w.Code != http.StatusBadRequest || out["code"] != render.CodeRequest {
 		t.Errorf("a logo that is not a PNG: %d %v", w.Code, out)
 	}
 	r := httptest.NewRequest(http.MethodPost, "/render", strings.NewReader(`{"document_type":"invoice","script":"x"}`))

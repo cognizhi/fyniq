@@ -158,3 +158,13 @@ resource "google_artifact_registry_repository_iam_member" "pull" {
   role       = "roles/artifactregistry.reader"
   member     = "serviceAccount:service-${local.number}@serverless-robot-prod.iam.gserviceaccount.com"
 }
+
+# The private render service (§12.3, rev 0.96) is invoked by the api and the worker only, as their own accounts.
+resource "google_cloud_run_v2_service_iam_member" "render_invoker" {
+  for_each = toset(["api", "worker"])
+  project  = var.project
+  location = local.region
+  name     = google_cloud_run_v2_service.services["render"].name
+  role     = "roles/run.invoker"
+  member   = local.member[each.key]
+}

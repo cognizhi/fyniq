@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/render"
 )
 
 // Config is the Google Cloud wiring the deployment writes (p0-infra-opentofu) as JSON in FYNIQ_GCP; the
@@ -36,6 +37,9 @@ type Config struct {
 		Staging string `json:"staging"`
 		Bucket  string `json:"bucket"`
 	} `json:"evidence"`
+	// Render is the private render service (PRD-001 §12.3, rev 0.96): its URL, its audience and its callers' accounts;
+	// optional until the deployment adds it: without it no preview renders and no template with IRAS particulars publishes.
+	Render gcp.Callers `json:"render"`
 }
 
 // Build wires a service's background work on Google Cloud (ADR-T7, ADR-T8): Cloud Tasks, the task
@@ -80,6 +84,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if c.Evidence.Staging != "" && c.Evidence.Bucket != "" {
 		kit.Staging = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, nil)
 		kit.Evidence = gcp.NewStorage(gcp.StorageAPI, c.Evidence.Bucket, tokens, nil)
+	}
+	if strings.HasPrefix(c.Render.URL, "https://") && c.Render.Audience != "" { // as the service's own account
+		kit.Render = &render.Client{URL: c.Render.URL, Token: gcp.IdentityTokens(c.Render.Audience, nil)}
 	}
 	if addr := os.Getenv("FYNIQ_CLAMD_ADDR"); addr != "" { // clamd beside the service (SEC-24)
 		kit.Scanner = clamav.Scanner{Addr: addr}

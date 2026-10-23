@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/render"
 )
 
 // TemplateContent is what a template version holds (FR-TPL-01, FR-TPL-02): a document's page, theme and blocks, or an
@@ -191,7 +192,8 @@ var TemplateCodes = []string{doctemplate.CodeKind, doctemplate.CodeName, doctemp
 // TemplateApprovalCodes are the codes an approval of a template's publication may answer: SOD-3, and the rules the
 // content meets when it is published.
 func TemplateApprovalCodes() []string {
-	return append([]string{doctemplate.CodeOwnDraft, doctemplate.CodeUnchange, doctemplate.CodeVersion, storage.CodeTemplate}, TemplateCodes...)
+	return append([]string{doctemplate.CodeOwnDraft, doctemplate.CodeUnchange, doctemplate.CodeVersion, doctemplate.CodeTest, doctemplate.CodeRenderer,
+		storage.CodeTemplate}, TemplateCodes...)
 }
 
 // TemplatePath names a template.
@@ -387,7 +389,7 @@ func templateContent(ctx context.Context, u storage.UnitOfWork, t storage.Docume
 }
 
 // toPublish is templateContent, refused when the content breaks a rule now or is the version in force.
-func toPublish(ctx context.Context, u storage.UnitOfWork, t storage.DocumentTemplate, from int) (doctemplate.Content, []byte, error) {
+func (a *API) toPublish(ctx context.Context, u storage.UnitOfWork, t storage.DocumentTemplate, from int) (doctemplate.Content, []byte, error) {
 	c, h, err := templateContent(ctx, u, t, from)
 	if err != nil {
 		return doctemplate.Content{}, nil, err
@@ -405,7 +407,69 @@ func toPublish(ctx context.Context, u storage.UnitOfWork, t storage.DocumentTemp
 				"Change the draft first, or roll back to another version")
 		}
 	}
-	return c, h, nil
+	return c, h, a.testDocuments(ctx, t, c)
+}
+
+// testDocuments renders a template with IRAS particulars as test documents, a full and a simplified tax invoice or a
+// credit note of the sample data, and refuses it when one lacks a particular (FR-TPL-03): proof in the compiled
+// document, beside the rules that keep the blocks shown.
+func (a *API) testDocuments(ctx context.Context, t storage.DocumentTemplate, c doctemplate.Content) error {
+	if t.Kind != doctemplate.KindDocument || len(doctemplate.Locked[t.DocumentType]) == 0 {
+		return nil
+	}
+	variants := []render.Data{render.Sample(t.DocumentType)}
+	if t.DocumentType == doctemplate.Invoice {
+		simplified := render.Sample(t.DocumentType)
+		simplified.Simplified = true
+		variants = append(variants, simplified)
+	}
+	for _, d := range variants {
+		res, err := a.renderDocument(ctx, t.DocumentType, c, d, true)
+		if err != nil {
+			return err
+		}
+		if len(res.Missing) > 0 {
+			what := "test " + strings.ReplaceAll(t.DocumentType, "_", " ")
+			if d.Simplified {
+				what = "simplified test invoice"
+			}
+			return problem(doctemplate.CodeTest, fmt.Sprintf("The %s rendered without %s, which IRAS requires.", what, strings.Join(res.Missing, ", ")),
+				"Show the blocks that carry them; if they are shown, report the template, as the renderer dropped them")
+		}
+	}
+	return nil
+}
+
+// sampleCreated is when a sample document was issued: its date, at midnight in UTC, so a preview is the same bytes.
+func sampleCreated(d render.Data) time.Time {
+	day, err := time.Parse(time.DateOnly, d.Fields["document.date"].Date)
+	if err != nil {
+		return time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	}
+	return day
+}
+
+// renderDocument renders c with d through the render service, finding the particulars when check is set.
+func (a *API) renderDocument(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, check bool) (render.Response, error) {
+	if a.deps.Renderer == nil {
+		return render.Response{}, problem(doctemplate.CodeRenderer, "No render service is configured, so the document cannot be rendered.",
+			"Ask the operator to configure the render service; templates without IRAS particulars and emails publish without it")
+	}
+	res, err := a.deps.Renderer.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: sampleCreated(d), Check: check})
+	var rp *render.Problem
+	switch {
+	case err == nil:
+		return res, nil
+	case errors.As(err, &rp) && rp.Code == render.CodeTemplate && len(rp.Errors) > 0:
+		return render.Response{}, templateProblems(rp.Errors)
+	case errors.As(err, &rp) && rp.Code == render.CodeBusy:
+		return render.Response{}, problem(doctemplate.CodeRenderer, "The render service is busy.", "Try again in a moment").withHeader("Retry-After", "1")
+	default:
+		if a.deps.Log != nil {
+			a.deps.Log.ErrorContext(ctx, "render", "error", err.Error())
+		}
+		return render.Response{}, problem(doctemplate.CodeRenderer, "The render service did not render the document.", "Try again; if it persists, report it")
+	}
 }
 
 // publishTemplate publishes the draft of the template id, or the earlier version from, as its next version, at the
@@ -415,7 +479,7 @@ func (a *API) publishTemplate(ctx context.Context, u storage.UnitOfWork, id uuid
 	if err != nil {
 		return storage.DocumentTemplate{}, storage.TemplateVersion{}, err
 	}
-	c, h, err := toPublish(ctx, u, t, from)
+	c, h, err := a.toPublish(ctx, u, t, from)
 	if err != nil {
 		return storage.DocumentTemplate{}, storage.TemplateVersion{}, err
 	}
@@ -613,7 +677,7 @@ func registerDocumentTemplates(a *API) {
 			"Idempotent with Idempotency-Key; Prefer: return=preview checks it and publishes nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, storage.CodeVersion, storage.CodeTemplate, doctemplate.CodeApproval, doctemplate.CodeUnchange,
-		doctemplate.CodeVersion}, append(locks, TemplateCodes...)...),
+		doctemplate.CodeVersion, doctemplate.CodeTest, doctemplate.CodeRenderer}, append(locks, TemplateCodes...)...),
 		func(ctx context.Context, in *templatePublishInput) (*templateWriteOutput, error) {
 			id, err := parseID("template_id", in.TemplateID)
 			if err != nil {
@@ -629,7 +693,7 @@ func registerDocumentTemplates(a *API) {
 				if err := checkIfMatch(in.IfMatch, etag(t.Version)); err != nil {
 					return DocumentTemplate{}, err
 				}
-				if _, _, err := toPublish(ctx, u, t, from); err != nil {
+				if _, _, err := a.toPublish(ctx, u, t, from); err != nil {
 					return DocumentTemplate{}, err
 				}
 				mode, _, _, err := teamModeOf(ctx, u)
@@ -683,7 +747,7 @@ func registerDocumentTemplates(a *API) {
 			"return=preview checks it and asks nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeIdempotencyReused,
 		CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired, approval.CodePending, storage.CodeApproval,
-		doctemplate.CodeUnchange, doctemplate.CodeVersion}, append(locks, TemplateCodes...)...),
+		doctemplate.CodeUnchange, doctemplate.CodeVersion, doctemplate.CodeTest, doctemplate.CodeRenderer}, append(locks, TemplateCodes...)...),
 		func(ctx context.Context, in *templatePublishInput) (*templateRequestOutput, error) {
 			id, err := parseID("template_id", in.TemplateID)
 			if err != nil {
@@ -701,7 +765,7 @@ func registerDocumentTemplates(a *API) {
 				if err := checkIfMatch(in.IfMatch, etag(t.Version)); err != nil {
 					return Approval{}, err
 				}
-				if _, _, err := toPublish(ctx, u, t, from); err != nil {
+				if _, _, err := a.toPublish(ctx, u, t, from); err != nil {
 					return Approval{}, err
 				}
 				summary := fmt.Sprintf("Publish the template %q as version %d", t.Name, t.Published+1)
@@ -839,4 +903,78 @@ func templateExecute(x map[string]any) (int, string, error) {
 	}
 	note, _ := x["note"].(string)
 	return from, note, nil
+}
+
+// Particular is one IRAS particular a tax invoice or credit note shows (FR-AR-05, FR-TPL-03).
+type Particular string
+
+// Schema implements huma.SchemaProvider: a string, with an example.
+func (Particular) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Description: "An IRAS particular, such as supplier_gst_number, total_with_gst or reason.", Examples: []any{"total_with_gst"}}
+}
+
+// TemplatePreviewRequest is content to preview: saved or not, as the editor has it.
+type TemplatePreviewRequest struct {
+	Kind         string          `json:"kind" enum:"document,email" doc:"document: the PDF; email: the message that carries it." example:"document"`
+	DocumentType string          `json:"document_type" enum:"invoice,quote,credit_note,receipt,statement,reminder,remittance,purchase_order" doc:"The document it serves." example:"invoice"`
+	Content      TemplateContent `json:"content" doc:"The content to preview, whole."`
+}
+
+// TemplatePreview is a template's content filled with sample data (FR-TPL-01's live preview).
+type TemplatePreview struct {
+	Kind         string       `json:"kind" enum:"document,email" doc:"What was previewed." example:"document"`
+	DocumentType string       `json:"document_type" doc:"The document type." example:"invoice"`
+	PDF          []byte       `json:"pdf,omitempty" doc:"A document's sample, as PDF/A-2a and PDF/UA-1, base64." example:"JVBERi0xLjc="`
+	SHA256       string       `json:"sha256,omitempty" doc:"The PDF's SHA-256, in hex: the same content always gives the same bytes." example:"a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda"`
+	Missing      []Particular `json:"missing_particulars" nullable:"false" doc:"The IRAS particulars the sample lacks (FR-TPL-03); empty when none is missing or none is required."`
+	Subject      string       `json:"subject,omitempty" doc:"An email's subject, filled." example:"Invoice INV-0042 from Example Analytics Pte Ltd"`
+	Body         string       `json:"body,omitempty" doc:"An email's body, filled." example:"Dear Acme Trading Pte Ltd, …"`
+}
+
+type templatePreviewInput struct {
+	Body TemplatePreviewRequest
+}
+
+type templatePreviewOutput struct {
+	Body TemplatePreview
+}
+
+func registerTemplatePreviews(a *API) {
+	op := huma.Operation{
+		OperationID: "previewDocumentTemplate", Method: http.MethodPost, Path: "/v1/document-template-previews", Tags: []string{"Templates"},
+		Summary: "Preview template content",
+		Description: "Fills template content, saved or not, with made-up sample data of its document type (FR-TPL-01's live preview): " +
+			"a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an " +
+			"email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has " +
+			"no side effects. TPL-17 when the render service is not configured or busy.",
+	}
+	op = exempt(op, "Idempotency-Key", "A preview saves nothing and has no side effects, so a repeat is harmless and a stored answer would only keep a PDF.")
+	op = exempt(op, "Prefer", "The operation is itself a preview: it saves nothing, so return=preview would answer the same.")
+	register(a, authz.PreviewDocumentTemplate, op, append([]string{CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, doctemplate.CodeRenderer},
+		TemplateCodes...), func(ctx context.Context, in *templatePreviewInput) (*templatePreviewOutput, error) {
+		b := in.Body
+		c := contentIn(b.Content)
+		if err := templateProblems(doctemplate.Check(b.Kind, b.DocumentType, c)); err != nil {
+			return nil, err
+		}
+		out := TemplatePreview{Kind: b.Kind, DocumentType: b.DocumentType, Missing: []Particular{}}
+		d := render.Sample(b.DocumentType)
+		if b.Kind == doctemplate.KindEmail {
+			subject, body, err := render.Email(c, d)
+			if err != nil {
+				return nil, err
+			}
+			out.Subject, out.Body = subject, body
+			return &templatePreviewOutput{Body: out}, nil
+		}
+		res, err := a.renderDocument(ctx, b.DocumentType, c, d, len(doctemplate.Locked[b.DocumentType]) > 0)
+		if err != nil {
+			return nil, err
+		}
+		out.PDF, out.SHA256 = res.PDF, res.SHA256
+		for _, m := range res.Missing {
+			out.Missing = append(out.Missing, Particular(m))
+		}
+		return &templatePreviewOutput{Body: out}, nil
+	})
 }

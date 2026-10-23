@@ -61,6 +61,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void-approval` (requestCreditApplicationVoid): Ask for approval to void a credit applied to a bill
 - `GET /v1/document-template-catalogue/{document_type}` (getDocumentTemplateCatalogue): Read what a template is made of
+- `POST /v1/document-template-previews` (previewDocumentTemplate): Preview template content
 - `GET /v1/document-templates` (listDocumentTemplates): List document and email templates
 - `POST /v1/document-templates` (createDocumentTemplate): Make a template
 - `GET /v1/document-templates/{template_id}` (getDocumentTemplate): Read a template

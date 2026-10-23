@@ -7,6 +7,7 @@ package wiring
 import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/render"
 )
 
 // Kit is the background-work wiring of one service.
@@ -28,4 +29,7 @@ type Kit struct {
 	// Rates is the daily exchange-rate feed (FR-GL-05); nil until one is configured: the MAS adapter arrives at the
 	// cloud gate, and until then organisations enter their own rates.
 	Rates ports.RateFeed
+	// Render is the private render service (PRD-001 §12.3, rev 0.96), which compiles template versions to PDF; nil when
+	// none is configured: then no preview renders and no template with IRAS particulars publishes.
+	Render render.Renderer
 }
