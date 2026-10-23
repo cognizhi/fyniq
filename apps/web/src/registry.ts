@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { BookCheck, BookOpen, Building, Contact, House, Inbox, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { BookCheck, BookOpen, Building, Contact, House, Inbox, LayoutTemplate, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -91,6 +91,8 @@ export const routes = [
   { kind: "route", id: "settings-members", path: "/settings/members", mode: "expert", signedIn: true, help: "settings.members", guide: "settings.members" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
   { kind: "route", id: "settings-approval-policies", path: "/settings/approval-policies", mode: "expert", signedIn: true, help: "settings.approval-policies", guide: "approvals.policies" },
+  { kind: "route", id: "settings-templates", path: "/settings/templates", mode: "basic", signedIn: true, help: "settings.templates", guide: "settings.templates" },
+  { kind: "route", id: "settings-template", path: "/settings/templates/$templateId", mode: "basic", signedIn: true, help: "settings.template", guide: "settings.templates#edit-a-template" },
 ] as const satisfies readonly RouteFeature[];
 
 export const actions = [
@@ -120,6 +122,13 @@ export const actions = [
   { kind: "action", id: "accounting.record-policy", mode: "expert", help: "accounting.record-policy", guide: "settings.accounting#write-a-policy" },
   { kind: "action", id: "accounting.approve-policy", mode: "expert", help: "accounting.approve-policy", guide: "settings.accounting#confirm-and-approve" },
   { kind: "action", id: "pack.activate", mode: "expert", help: "pack.activate", guide: "settings.statutory-packs#activate-a-version" },
+  { kind: "action", id: "template.new", mode: "basic", help: "template.new", guide: "settings.templates#start-a-template" },
+  { kind: "action", id: "template.save", mode: "basic", help: "template.save", guide: "settings.templates#edit-a-template" },
+  { kind: "action", id: "template.publish", mode: "basic", help: "template.publish", guide: "settings.templates#publish-a-version" },
+  { kind: "action", id: "template.ask-approval", mode: "basic", help: "template.ask-approval", guide: "settings.templates#publish-a-version" },
+  { kind: "action", id: "template.rollback", mode: "basic", help: "template.rollback", guide: "settings.templates#roll-back" },
+  { kind: "action", id: "template.default", mode: "basic", help: "template.default", guide: "settings.templates#choose-the-default" },
+  { kind: "action", id: "template.bundle", mode: "expert", help: "template.bundle", guide: "settings.templates#move-templates-with-a-bundle" },
   { kind: "action", id: "review-banner", mode: "basic", help: "review.awaiting-verification", guide: "review.awaiting-verification" },
   { kind: "action", id: "contact.add", mode: "basic", help: "contact.add", guide: "contacts.manage#add-a-contact" },
   { kind: "action", id: "item.add", mode: "basic", help: "item.add", guide: "contacts.manage#items-and-prices" },
@@ -232,6 +241,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.team-mode", route: "/settings/team-mode", icon: ShieldCheck, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.team-mode", guide: "settings.team-mode" },
   { kind: "nav", id: "settings.approval-policies", route: "/settings/approval-policies", icon: Stamp, group: "organisation", roles: ["owner", "administrator", "controller", "accountant", "auditor", "dpo"], mode: "expert", help: "settings.approval-policies", guide: "approvals.policies" },
   { kind: "nav", id: "settings.statutory-packs", route: "/settings/statutory-packs", icon: Scale, group: "organisation", roles: ["owner", "controller", "accountant", "tax_agent", "payroll_administrator", "auditor"], mode: "expert", help: "settings.statutory-packs", guide: "settings.statutory-packs" },
+  { kind: "nav", id: "settings.templates", route: "/settings/templates", icon: LayoutTemplate, group: "organisation", roles: ["owner", "controller", "accountant", "ar_specialist", "ap_specialist", "auditor"], mode: "basic", help: "settings.templates", guide: "settings.templates" },
 ] as const satisfies readonly NavFeature[];
 
 export type RouteId = (typeof routes)[number]["id"];

@@ -34,6 +34,7 @@ type DocumentTemplateChoice struct {
 	Template     *ChosenTemplate `json:"template,omitempty" doc:"The template chosen. Absent: for a default, the platform's classic starter renders; for a contact, the default does."`
 	SetBy        *Person         `json:"set_by,omitempty" doc:"Who chose it last; absent when nobody has."`
 	SetAt        string          `json:"set_at,omitempty" format:"date-time" doc:"When." example:"2026-10-23T10:00:00Z"`
+	ETag         string          `json:"etag" doc:"The choice's ETag: send it in If-Match to change a default. A contact's choice changes with the contact's ETag instead." example:"\"none\""`
 }
 
 // DocumentTemplateChoicePage is the choices of every kind and document type, a page at a time.
@@ -135,7 +136,7 @@ func inForce(cs []storage.TemplateChoice, kind, typ string) *storage.TemplateCho
 
 // choiceOf is a choice as the API shows it.
 func choiceOf(ctx context.Context, u storage.UnitOfWork, kind, typ string, c *storage.TemplateChoice) (DocumentTemplateChoice, error) {
-	out := DocumentTemplateChoice{Kind: kind, DocumentType: typ}
+	out := DocumentTemplateChoice{Kind: kind, DocumentType: typ, ETag: choiceETag(c)}
 	if c == nil {
 		return out, nil
 	}

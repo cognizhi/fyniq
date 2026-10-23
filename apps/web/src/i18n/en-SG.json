@@ -184,6 +184,42 @@
       "label": "Activate",
       "tooltip": "Ask to use this version; an Owner or Controller who did not ask approves it."
     },
+    "settings.templates": {
+      "label": "Templates",
+      "tooltip": "How your invoices, quotes and other documents look, and the emails that carry them; published versions never change."
+    },
+    "settings.template": {
+      "label": "Template",
+      "tooltip": "A template's style, theme, texts and versions, with a live preview of your details and sample data."
+    },
+    "template.new": {
+      "label": "New template",
+      "tooltip": "Start a draft from one of four styles; nothing changes on your documents until it is published."
+    },
+    "template.save": {
+      "label": "Save draft",
+      "tooltip": "Keep your changes as the draft; documents keep using the version in force."
+    },
+    "template.publish": {
+      "label": "Publish",
+      "tooltip": "Make the saved draft the next version, which never changes; new documents render with it."
+    },
+    "template.ask-approval": {
+      "label": "Ask for approval",
+      "tooltip": "Another Owner or Controller, who did not save the draft, approves its publication."
+    },
+    "template.rollback": {
+      "label": "Roll back",
+      "tooltip": "Publish this earlier version again as the next version; your draft stays as it is."
+    },
+    "template.default": {
+      "label": "Change default",
+      "tooltip": "Choose which published template a document type uses; a customer's own template comes first."
+    },
+    "template.bundle": {
+      "label": "Template bundle",
+      "tooltip": "Export templates as one JSON file, or import one as drafts that publish like any other."
+    },
     "review.awaiting-verification": {
       "label": "Needs additional verification",
       "tooltip": "Some rules this page uses await a specialist's review. Check the figures before you rely on them or file them."

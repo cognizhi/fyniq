@@ -211,6 +211,9 @@ func TestTemplatesArePreviewed(t *testing.T) {
 		return e.call(http.MethodPost, "/v1/document-template-previews", auditor, map[string]any{"kind": kind, "document_type": "invoice", "content": content})
 	}
 	p := preview("document", defaults["document"])
+	if pages, _ := p.Body["pages"].([]any); len(pages) != 1 || !strings.HasPrefix(pages[0].(string), "iVBORw0KGgo") {
+		t.Errorf("the preview's page images: %.200s", p.Raw)
+	}
 	if p.Status != http.StatusOK || !strings.HasPrefix(p.str("pdf"), "JVBERi0") || len(p.str("sha256")) != 64 || p.Raw == "" ||
 		!strings.Contains(p.Raw, `"missing_particulars":[]`) {
 		t.Fatalf("a document preview: %d %.300s", p.Status, p.Raw)
@@ -219,12 +222,22 @@ func TestTemplatesArePreviewed(t *testing.T) {
 		t.Error("the same content previewed twice differs")
 	}
 	m := preview("email", defaults["email"])
-	if m.Status != http.StatusOK || m.str("subject") != "Invoice INV-0042 from Example Analytics Pte Ltd" ||
+	if m.Status != http.StatusOK || !strings.HasPrefix(m.str("subject"), "Invoice INV-0042 from ") || strings.Contains(m.Raw, "Example Analytics") ||
 		!strings.Contains(m.str("body"), "SGD 1,635.00, due on 22 November 2026") || m.Body["pdf"] != nil {
 		t.Fatalf("an email preview: %d %s", m.Status, m.Raw)
 	}
 	e.problemIs(preview("email", map[string]any{"schema": "fyniq.template/1", "subject": "{{document.totl}}", "body": "x"}),
 		"previewDocumentTemplate", 422, doctemplate.CodeField)
+
+	// GST-registered, the preview is a tax invoice of the organisation's own details: a profile without an address shows
+	// that particular missing, rather than a made-up one.
+	if g := e.call(http.MethodPost, "/v1/organisation/gst-registrations", e.as(authz.Controller), map[string]any{"registered_from": "2026-01-01",
+		"gst_number": "M90000001A"}); g.Status != http.StatusCreated {
+		t.Fatalf("registering for GST: %d %s", g.Status, g.Raw)
+	}
+	if r := preview("document", defaults["document"]); r.Status != http.StatusOK || !strings.Contains(r.Raw, `"missing_particulars":["supplier_address"]`) {
+		t.Errorf("a registered organisation without an address: %d %.400s", r.Status, r.Raw)
+	}
 
 	// Without a render service no document previews, and no template with IRAS particulars publishes.
 	id, tag := "", ""

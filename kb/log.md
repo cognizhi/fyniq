@@ -149,3 +149,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-23] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (Bill reminders: purchases.reminder_days; FR-AP-13, rev 0.93)
 
 ## [2026-10-23] compile | docs/user-guide/bills.md, contacts-and-items.md → purchases.bills, contacts.manage (plan and track payments: the board, the calendar, planned dates, early-payment discounts, Bills to pay; FR-AP-13, rev 0.94)
+
+## [2026-10-23] compile | docs/user-guide/document-templates.md → settings.templates (new guide for the template screens, rev 0.100); settings.organisation links it

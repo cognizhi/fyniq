@@ -166,3 +166,14 @@ func TestARunThatFailsSaysWhy(t *testing.T) {
 		t.Error("a cancelled render ran")
 	}
 }
+
+// A preview's pages are PNG images, one per page.
+// req: FR-TPL-01
+func TestPreviewPagesArePNGs(t *testing.T) {
+	c := compiler(t)
+	in := input(t, doctemplate.Statement, doctemplate.Default(doctemplate.KindDocument, doctemplate.Statement), render.Sample(doctemplate.Statement))
+	pages, err := c.Pages(context.Background(), in)
+	if err != nil || len(pages) != 1 || !bytes.HasPrefix(pages[0], []byte("\x89PNG\r\n\x1a\n")) {
+		t.Fatalf("the pages: %d %v", len(pages), err)
+	}
+}

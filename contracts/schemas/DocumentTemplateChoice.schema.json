@@ -19,6 +19,13 @@
       ],
       "type": "string"
     },
+    "etag": {
+      "description": "The choice's ETag: send it in If-Match to change a default. A contact's choice changes with the contact's ETag instead.",
+      "examples": [
+        "\"none\""
+      ],
+      "type": "string"
+    },
     "kind": {
       "description": "document: the PDF; email: the message that carries it.",
       "enum": [
@@ -49,7 +56,8 @@
   },
   "required": [
     "kind",
-    "document_type"
+    "document_type",
+    "etag"
   ],
   "title": "DocumentTemplateChoice",
   "type": "object"

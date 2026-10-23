@@ -4367,7 +4367,7 @@ Chooses the default template of a kind and document type among its published tem
 
 **Preview template content** (`previewDocumentTemplate`)
 
-Fills template content, saved or not, with made-up sample data of its document type (FR-TPL-01's live preview): a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has no side effects. TPL-17 when the render service is not configured or busy.
+Fills template content, saved or not, with the organisation's own details and made-up sample data of its document type (FR-TPL-01's live preview), so a detail the organisation's profile lacks shows as missing: a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has no side effects. TPL-17 when the render service is not configured or busy.
 
 - **Permission:** View on Document templates: edit, publish (rev 0.7)
 - **Request body:** [`TemplatePreviewRequest`](../../contracts/schemas/TemplatePreviewRequest.schema.json)

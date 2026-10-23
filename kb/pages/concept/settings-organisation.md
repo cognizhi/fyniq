@@ -28,7 +28,7 @@ aliases:
 
 ## What they are
 
-- **Settings → Organisation** (Expert mode) holds the profile documents print and the choices that apply to the whole company.
+- **Settings → Organisation** (Expert mode) holds the profile documents print (their look is the templates', [[settings.templates]]) and the choices that apply to the whole company.
 - Each setting starts at its recommended value, with a reason and a link to the guide.
 - It shows **Recommended** while it holds that value, **Changed from recommended** once it differs.
 - The Owner, the Administrator and the Controller change them; others in the company can see them. How: [[settings.change]].
