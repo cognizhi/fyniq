@@ -137,6 +137,12 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 		f.fail(w, r, CodeFailure, "session", err)
 		return
 	}
+	if who.Email != "" && who.EmailVerified {
+		// The person's verified email, so mail they send to an email-in address is known as theirs (FR-INT-22).
+		if err := f.Sessions.RecordIdentityEmail(r.Context(), who.Issuer, who.Subject, who.Email, now); err != nil {
+			f.log().Error("auth.signin.email_not_recorded", "provider", who.Provider, "error", err.Error())
+		}
+	}
 	if f.Alert != nil {
 		if err := f.Alert(r.Context(), who, agent, now); err != nil {
 			f.log().Error("auth.signin.alert_failed", "provider", who.Provider, "error", err.Error())

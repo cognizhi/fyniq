@@ -50,6 +50,8 @@ type CaptureAddresses interface {
 	Create(ctx context.Context, localPart string, user *uuid.UUID) (CaptureAddress, error)
 	// Live are the organisation's live addresses.
 	Live(ctx context.Context) ([]CaptureAddress, error)
+	// Get is an address, live or retired.
+	Get(ctx context.Context, id uuid.UUID) (CaptureAddress, error)
 	// Retire retires a live address; CodeVersion when it was retired already.
 	Retire(ctx context.Context, id uuid.UUID) (CaptureAddress, error)
 	// Decide records a decision about sender at the organisation's address (user nil) or user's.

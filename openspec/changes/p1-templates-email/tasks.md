@@ -81,8 +81,15 @@
   `capture_name` read through `capture_route` (FY183), `capture_sender` (FY184); getCaptureAddresses,
   setOrganisationCaptureAddress, setMyCaptureAddress (EML-05 to EML-08); `FYNIQ_CAPTURE_DOMAIN`. Tests:
   `TestAnEmailInAddressNameBelongsToOneOrganisation`, `TestEmailInAddressesAndSenderDecisionsKeepTheirHistory`,
-  `TestEmailInAddressesHaveReadableNames` and three matrix rows. Left: receiving through Resend, attachments through
-  the evidence upload and scanner, the quarantine and its decisions, the screens.)
+  `TestEmailInAddressesHaveReadableNames` and three matrix rows. Second slice, rev 0.106, on the owner's decision that
+  quarantined mail is kept for a setting's days (30, or until someone decides): verified sign-in emails kept on
+  identities (`member_emails`), Resend's `email.received` routed by `capture_route`, `internal/adapters/resend`
+  receiving, `email.Fetcher` (standing, authentication, files checked and scanned under `inbound/`), migrations 000103
+  and 000104 (FY185, FY186), four operations (EML-09), the job `inbound.expire`, the setting `email.quarantine_days`,
+  the threat model `email-in.md`. Tests: `TestTheWorkerFetchesDecidesAndKeepsReceivedMail`,
+  `TestQuarantinedMailExpiresAndKeepsItsHistory`, `TestMembersAndContactsAreKnownSenders`,
+  `TestReceivedMailIsQuarantinedUntilSomeoneDecides`, `TestTheStandingOfASender`, the adapters' and four matrix rows.
+  Left: the screens; IMAP polling, which Resend makes unneeded for now.)
 - [ ] 2.3 Interchangeable adapters and the §8.24 launch adapters and local substitutes for this change's capabilities. Tests `// req: communication/email-and-notifications Outside services behind interchangeable adapters` and `… Launch adapters and local substitutes`
 
 ## 3. Notifications

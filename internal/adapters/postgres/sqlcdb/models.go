@@ -507,6 +507,41 @@ type FyniqIdempotencyKey struct {
 	ExpiresAt      time.Time
 }
 
+type FyniqInboundFile struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	MessageID      uuid.UUID
+	Kind           string
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	OriginalSha256 string
+	BlobKey        string
+	StoredAt       time.Time
+	RemovedAt      *time.Time
+}
+
+type FyniqInboundMessage struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	AddressID      uuid.UUID
+	Provider       string
+	ProviderID     string
+	Sender         string
+	Subject        *string
+	ReceivedAt     time.Time
+	Status         string
+	Spf            *string
+	Dkim           *string
+	Dmarc          *string
+	FetchedAt      *time.Time
+	ExpiresAt      *time.Time
+	DecidedBy      *string
+	DecidedAt      *time.Time
+	LastError      *string
+}
+
 type FyniqInstallation struct {
 	Singleton        bool
 	SetupCodeHash    []byte
@@ -944,10 +979,12 @@ type FyniqTenants struct {
 }
 
 type FyniqUserIdentity struct {
-	Issuer    string
-	Subject   string
-	UserID    uuid.UUID
-	CreatedAt time.Time
+	Issuer          string
+	Subject         string
+	UserID          uuid.UUID
+	CreatedAt       time.Time
+	Email           *string
+	EmailVerifiedAt *time.Time
 }
 
 type FyniqUserMembership struct {

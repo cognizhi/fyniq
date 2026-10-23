@@ -2,9 +2,9 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and their recommended values: features, payment terms, tolerances, thresholds, close variances, data region, retention
+summary: Company-wide settings and their recommended values: features, terms, tolerances, thresholds, close variances, email-in quarantine, data region, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:190a7a02cbdd0d42577ad69587e3b7fa0ac23b64e1c88b6574939f867daed335
+  - docs/user-guide/organisation-settings.md sha256:d58a32b053d65ea8f26317fc9bc15f9775ff1fd6982cc21a27309f623568c71a
 data_class: general
 taint: trusted
 status: draft
@@ -22,6 +22,8 @@ aliases:
   - self-approved
   - variance threshold
   - flux analysis
+  - quarantine
+  - email-in
 ---
 
 # Organisation settings and their recommended values
@@ -112,6 +114,13 @@ aliases:
 - AI conversations are kept 365 days; proposals stay with the audit trail.
 
 (src: docs/user-guide/organisation-settings.md#data-region-and-retention)
+
+## Email-in
+
+- Bills and receipts sent to the email-in addresses are captured for someone to confirm; mail from members and from contacts' billing and remittance emails is accepted, anyone else's waits in quarantine until someone accepts or rejects the sender.
+- **Quarantined mail kept for**: 30 days, then unaccepted quarantined mail is deleted; 0 keeps it until someone decides.
+
+(src: docs/user-guide/organisation-settings.md#email-in)
 
 ## Related
 

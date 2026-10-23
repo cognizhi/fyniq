@@ -80,7 +80,8 @@ The tests check the controls on the planned configuration:
    list them (`{"mail.example.com":[{"type":"TXT","name":"…._domainkey.mail.example.com","value":"v=DKIM1"}]}`),
    which the settings and the nightly `email.domains` job check (rev 0.104); the `api` and the `worker`
    get `FYNIQ_CAPTURE_DOMAIN`, the email-in addresses' domain, such as `in.cognizhi.com`, whose MX
-   records point at the receiving provider (rev 0.105); and `service_secrets`
+   records point at Resend's receiving (rev 0.105), with Resend's webhook also sending `email.received`
+   (rev 0.106); and `service_secrets`
    gives the `worker` `FYNIQ_ZEPTOMAIL_KEY = "zeptomail-key"` and `FYNIQ_RESEND_KEY = "resend-key"`,
    and the `api` the webhooks' secrets, `FYNIQ_ZEPTOMAIL_WEBHOOK_KEY = "zeptomail-webhook-key"` and
    `FYNIQ_RESEND_WEBHOOK_SECRET = "resend-webhook-secret"`; point each provider's webhook at

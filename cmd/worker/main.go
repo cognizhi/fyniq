@@ -42,6 +42,10 @@ func main() {
 		if len(kit.Mail.Providers) > 0 {
 			kinds[email.Kind] = email.Work(kit.Mail.Providers, kit.Store, kit.Mail.From, deps.Clock) // FR-INT-21: send queued mail once
 		}
+		if kit.Mail.Inbound != nil && kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
+			kinds[email.FetchKind] = email.Fetcher{Mail: kit.Mail.Inbound, Store: kit.Store, Files: kit.Staging, Scanner: kit.Scanner,
+				Clock: deps.Clock}.Work()
+		}
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds})
 		s.Handle("POST /jobs", &outbox.JobsHandler{Tokens: kit.Tokens, Platform: kit.Store, Clock: deps.Clock,

@@ -113,6 +113,9 @@ type Recovered struct {
 type Sessions interface {
 	// StartSession records a new session for a sign-in identity, with the provider used (FR-ADM-08).
 	StartSession(ctx context.Context, s NewSession) error
+	// RecordIdentityEmail keeps the email the provider verified at a sign-in on the identity, if it has a user, so mail
+	// the person sends to an email-in address is known as theirs (FR-INT-22, rev 0.106).
+	RecordIdentityEmail(ctx context.Context, issuer, subject, email string, now time.Time) error
 	// Session returns the live session behind a token's hash at now, or ports.ErrNotFound: unknown,
 	// ended, idle for longer than idle, or past its expiry. The identity's user, their organisation and
 	// their live roles are read at that moment, so a role change applies at the next request.

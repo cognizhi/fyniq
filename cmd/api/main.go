@@ -83,10 +83,14 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	for _, p := range kit.Mail.Providers {
 		d.Mail.Providers = append(d.Mail.Providers, p.Name())
 	}
-	// The email providers' webhooks (FR-INT-21), each only with its secret: delivery events and the suppression list.
-	(&mailhooks.Receiver{Store: kit.Store, Clock: deps.Clock, ResendSecret: kit.Mail.ResendWebhookSecret,
-		ZeptoMailKey: kit.Mail.ZeptoMailWebhookKey, Log: d.Log}).Register(s)
 	d.Outbox = &outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
+	// The email providers' webhooks (FR-INT-21), each only with its secret: delivery events and the suppression list.
+	hooks := &mailhooks.Receiver{Store: kit.Store, Clock: deps.Clock, ResendSecret: kit.Mail.ResendWebhookSecret,
+		ZeptoMailKey: kit.Mail.ZeptoMailWebhookKey, Log: d.Log}
+	if kit.Mail.CaptureDomain != "" { // mail for the email-in addresses (FR-INT-22)
+		hooks.Inbound = &mailhooks.Inbound{Domain: kit.Mail.CaptureDomain, Routes: kit.Store, Dispatcher: *d.Outbox}
+	}
+	hooks.Register(s)
 	api.New(s, d)
 	s.AddReadiness("database", kit.Store.Ping)
 	t := outbox.Ticker{Store: kit.Store, Platform: kit.Store, Jobs: kit.Jobs, Clock: deps.Clock, Holder: app.Holder("api"),

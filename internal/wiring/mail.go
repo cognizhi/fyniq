@@ -27,6 +27,8 @@ type MailConfig struct {
 	DNS map[string][]maildns.Record
 	// CaptureDomain is the domain of the email-in addresses (FR-INT-22, rev 0.105); empty: email-in is not set up.
 	CaptureDomain string
+	// Inbound fetches what the receiving provider received for the email-in addresses (rev 0.106); nil without its key.
+	Inbound ports.InboundMail
 	// The webhooks' secrets, which only the API holds: Resend's endpoint signing secret and ZeptoMail's Agent
 	// authentication key. Empty: that provider's webhooks have no receiver.
 	ResendWebhookSecret, ZeptoMailWebhookKey string
@@ -42,12 +44,16 @@ type MailConfig struct {
 //   - FYNIQ_MAIL_DOMAINS: the sending domains, comma-separated; the platform sender's domain when unset.
 //   - FYNIQ_MAIL_DNS: the records each domain's providers asked for, for the daily check.
 //   - FYNIQ_RESEND_WEBHOOK_SECRET and FYNIQ_ZEPTOMAIL_WEBHOOK_KEY: the webhooks' secrets, on the API.
-//   - FYNIQ_CAPTURE_DOMAIN: the email-in addresses' domain, such as in.example.com.
+//   - FYNIQ_CAPTURE_DOMAIN: the email-in addresses' domain, such as in.example.com; Resend receives for it with
+//     FYNIQ_RESEND_KEY (and FYNIQ_RESEND_API for another base than Resend's).
 func ReadMail(env func(string) string) (MailConfig, error) {
 	c := MailConfig{From: env("FYNIQ_MAIL_FROM"), ResendWebhookSecret: env("FYNIQ_RESEND_WEBHOOK_SECRET"),
 		ZeptoMailWebhookKey: env("FYNIQ_ZEPTOMAIL_WEBHOOK_KEY"), CaptureDomain: strings.ToLower(strings.TrimSpace(env("FYNIQ_CAPTURE_DOMAIN")))}
 	if err := readDomains(env, &c); err != nil {
 		return MailConfig{}, err
+	}
+	if key := env("FYNIQ_RESEND_KEY"); key != "" {
+		c.Inbound = resend.NewReceiving(cmp.Or(env("FYNIQ_RESEND_API"), resend.DefaultBase), key)
 	}
 	names := env("FYNIQ_EMAIL_PROVIDERS")
 	if names == "" && env("FYNIQ_SMTP_ADDR") != "" {

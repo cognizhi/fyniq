@@ -51,6 +51,13 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
 			return err
 		},
+		email.ExpireJob: func(ctx context.Context) error {
+			if k.Staging == nil {
+				return nil // no staging store: no received mail was kept
+			}
+			_, err := email.ExpireAll(ctx, k.Store, k.Staging, clock.Now())
+			return err
+		},
 		email.DomainsJob: func(ctx context.Context) error {
 			_, err := email.CheckDomains(ctx, k.Store, k.Store, net.DefaultResolver, k.Mail.Domains, k.Mail.DNS)
 			return err

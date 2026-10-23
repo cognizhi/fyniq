@@ -21,6 +21,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/resend"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -35,6 +36,16 @@ type Receiver struct {
 	ResendSecret string // the endpoint's signing secret, whsec_…
 	ZeptoMailKey string // the Mail Agent's webhook authentication key
 	Log          *slog.Logger
+	// Inbound receives mail for the email-in addresses (FR-INT-22, rev 0.106); nil: email-in is not set up.
+	Inbound *Inbound
+}
+
+// Inbound is where mail for the email-in addresses goes: the capture domain, the routes of its names, and the outbox
+// that queues each message's fetch.
+type Inbound struct {
+	Domain     string
+	Routes     storage.CaptureRoutes
+	Dispatcher outbox.Dispatcher
 }
 
 // Mux is where the receivers are mounted.
@@ -64,7 +75,8 @@ func (r *Receiver) Register(mux Mux) {
 	}
 }
 
-// Event is a provider's report about one message, as both providers' are read.
+// Event is a provider's report about one message, as both providers' are read: about a message Fyniq sent, or, with
+// Received, one the provider received for an email-in address.
 type Event struct {
 	Reference  string // the organisation and the message, as Fyniq sent them
 	DeliveryID string // the provider's ID of the delivery, the same on each retry
@@ -72,6 +84,16 @@ type Event struct {
 	Recipient  string
 	Detail     string
 	OccurredAt time.Time
+	Received   *Received
+}
+
+// Received is a message a provider received: its ID there, its sender and subject as announced, and every address it
+// was sent to.
+type Received struct {
+	ID            string
+	From, Subject string
+	To            []string
+	ReceivedAt    time.Time
 }
 
 // errMalformed means a signed request could not be read.
@@ -110,6 +132,9 @@ func (r *Receiver) handle(provider string, read func(http.Header, []byte, time.T
 // record records e about its message, and suppresses the recipient after a hard bounce, a complaint or the provider's
 // suppression. An event about no message of the organisation's, or about another recipient, is ignored.
 func (r *Receiver) record(ctx context.Context, provider string, e Event) error {
+	if e.Received != nil {
+		return r.receive(ctx, provider, *e.Received)
+	}
 	org, message, ok := email.ParseReference(e.Reference)
 	if !ok {
 		return nil // not a message Fyniq sent with a reference
@@ -136,6 +161,38 @@ func (r *Receiver) record(ctx context.Context, provider string, e Event) error {
 		}
 		return err
 	})
+}
+
+// receive records a received message once for each email-in address on the capture domain it was sent to, in the
+// address's organisation, and queues its fetch. A name that routes nowhere is ignored, as is everything when email-in
+// is not set up.
+func (r *Receiver) receive(ctx context.Context, provider string, m Received) error {
+	if r.Inbound == nil || r.Inbound.Domain == "" {
+		return nil
+	}
+	seen := map[string]bool{}
+	for _, to := range m.To {
+		local, domain, ok := strings.Cut(strings.ToLower(bare(to)), "@")
+		if !ok || domain != r.Inbound.Domain || seen[local] {
+			continue
+		}
+		seen[local] = true
+		route, err := r.Inbound.Routes.CaptureRoute(ctx, local)
+		if errors.Is(err, ports.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if err := r.Store.Do(ctx, route.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, _, err := email.Receive(ctx, r.Inbound.Dispatcher, u, route.Organisation, storage.NewInboundMessage{AddressID: route.Address,
+				Provider: provider, ProviderID: m.ID, Sender: bare(m.From), Subject: m.Subject, ReceivedAt: m.ReceivedAt})
+			return err
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // resendKinds are the Resend events recorded, and their kinds; the rest (sent, opened, clicked, scheduled,
@@ -167,6 +224,9 @@ func ParseResend(id string, body []byte, now time.Time) ([]Event, error) {
 	if err := json.Unmarshal(body, &in); err != nil || in.Type == "" {
 		return nil, errMalformed
 	}
+	if in.Type == "email.received" {
+		return parseReceived(id, body, now)
+	}
 	kind, detail := resendKinds[in.Type], ""
 	if in.Type == "email.bounced" {
 		kind = storage.EventSoftBounce
@@ -195,6 +255,27 @@ func ParseResend(id string, body []byte, now time.Time) ([]Event, error) {
 		out = append(out, Event{Reference: ref, DeliveryID: delivery(id, i, len(to)), Kind: kind, Recipient: bare(t), Detail: detail, OccurredAt: at})
 	}
 	return out, nil
+}
+
+// parseReceived reads Resend's email.received, from its "Received email webhook" page (retrieved 23 Oct 2026): data
+// with email_id, from, to, received_for, subject and created_at; the body and attachments are fetched separately.
+func parseReceived(id string, body []byte, now time.Time) ([]Event, error) {
+	var in struct {
+		Data struct {
+			EmailID     string   `json:"email_id"`
+			From        string   `json:"from"`
+			To          []string `json:"to"`
+			ReceivedFor []string `json:"received_for"`
+			Subject     string   `json:"subject"`
+			CreatedAt   string   `json:"created_at"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &in); err != nil || in.Data.EmailID == "" || in.Data.From == "" {
+		return nil, errMalformed
+	}
+	d := in.Data
+	return []Event{{DeliveryID: id, Received: &Received{ID: d.EmailID, From: d.From, Subject: d.Subject, To: append(d.ReceivedFor, d.To...),
+		ReceivedAt: when(d.CreatedAt, now)}}}, nil
 }
 
 // resendRef is the fyniq_ref tag, whether Resend writes tags as a list of names and values or as an object.

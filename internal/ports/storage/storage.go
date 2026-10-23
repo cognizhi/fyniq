@@ -76,6 +76,7 @@ type UnitOfWork interface {
 	EmailSenders() EmailSenders
 	EmailSuppressions() EmailSuppressions
 	CaptureAddresses() CaptureAddresses
+	InboundMessages() InboundMessages
 	Outbox() Outbox
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals

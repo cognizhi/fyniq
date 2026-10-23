@@ -145,6 +145,15 @@ approver. See [Explain the variances](periods-and-close.md#explain-the-variances
 - **AI conversations kept for**: 365 days, then they are deleted. A proposal the AI made is kept
   with the audit trail.
 
+## Email-in
+
+Bills and receipts sent to your email-in addresses are captured for someone to confirm. Mail from your
+members and from your contacts' billing and remittance emails is accepted. Mail from anyone else waits in
+quarantine until someone accepts or rejects the sender.
+
+- **Quarantined mail kept for**: 30 days, then quarantined mail nobody accepted is deleted. Set it to 0
+  to keep quarantined mail until someone decides.
+
 ## Related
 
 - [Set up and keep the chart of accounts](chart-of-accounts.md)

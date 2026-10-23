@@ -413,6 +413,25 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPut, "/v1/organisation/email/capture-addresses/mine", person, map[string]any{"name": "m-" + uuid.NewString()[:8]}, "If-Match", "*")
 		return r, func() bool { return mine() == before }
 	},
+	"listInboundMessages": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/email/inbound-messages", tok, nil), nil
+	},
+	"listMyInboundMessages": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/email/inbound-messages/mine", tok, nil), nil
+	},
+	"decideCaptureSender": func(e *env, tok string) (response, func() bool) {
+		// A decision shows only in what it does to mail that arrives; nothing is quarantined here to settle.
+		return e.call(http.MethodPost, "/v1/organisation/email/capture-senders", tok, map[string]any{"sender": "m-" + uuid.NewString()[:8] + "@example.com",
+			"decision": "accepted"}), nil
+	},
+	"decideMyCaptureSender": func(e *env, tok string) (response, func() bool) {
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		p.UserID = matrixMemberUser(e)
+		return e.call(http.MethodPost, "/v1/organisation/email/capture-senders/mine", e.singleFactor(p), map[string]any{"sender": "m-" + uuid.NewString()[:8] + "@example.com",
+			"decision": "accepted"}), nil
+	},
 	"getEmailMessage": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation/email/messages/"+matrixEmail(e), tok, nil), nil
 	},

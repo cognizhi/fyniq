@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "description": "The email-in address it came to.",
+      "examples": [
+        "bills@in.example.com"
+      ],
+      "type": "string"
+    },
+    "dkim": {
+      "description": "Its DKIM result.",
+      "examples": [
+        "pass"
+      ],
+      "type": "string"
+    },
+    "dmarc": {
+      "description": "Its DMARC result: a sender is known only when it passes, or when the sender's domain has no DMARC and SPF or DKIM passes.",
+      "examples": [
+        "pass"
+      ],
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When a quarantined message ends unless someone decides first; absent while it is kept until then.",
+      "examples": [
+        "2026-11-22T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "files": {
+      "description": "Its text and attachments, checked and scanned like an upload.",
+      "items": {
+        "$ref": "InboundFile.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "for": {
+      "description": "Whose address: the organisation's, or a member's own.",
+      "enum": [
+        "organisation",
+        "member"
+      ],
+      "examples": [
+        "organisation"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The message's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "note": {
+      "description": "What was not kept, or why it failed.",
+      "examples": [
+        "not kept: photo.heic: not a type Fyniq accepts"
+      ],
+      "type": "string"
+    },
+    "received_at": {
+      "description": "When it arrived.",
+      "examples": [
+        "2026-10-23T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "sender": {
+      "description": "Who sent it, as the receiving server saw it, in lower case.",
+      "examples": [
+        "accounts@supplier.example"
+      ],
+      "type": "string"
+    },
+    "spf": {
+      "description": "The receiving server's SPF result.",
+      "examples": [
+        "pass"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "received until it is fetched; accepted from a known or accepted sender; quarantined from anyone else until someone decides or its days pass; rejected from a rejected sender; expired when its days passed; failed when it could not be fetched.",
+      "enum": [
+        "received",
+        "accepted",
+        "quarantined",
+        "rejected",
+        "expired",
+        "failed"
+      ],
+      "examples": [
+        "quarantined"
+      ],
+      "type": "string"
+    },
+    "subject": {
+      "description": "Its subject, as sent: untrusted.",
+      "examples": [
+        "Invoice INV-0042"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "address",
+    "for",
+    "sender",
+    "received_at",
+    "status",
+    "files"
+  ],
+  "title": "InboundMessage",
+  "type": "object"
+}

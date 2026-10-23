@@ -97,6 +97,11 @@ fyniq_api       SELECT    heartbeats
 fyniq_api       INSERT    idempotency_key (client_id, created_at, expires_at, key, request_hash)
 fyniq_api       SELECT    idempotency_key
 fyniq_api       UPDATE    idempotency_key (response_body, response_status)
+fyniq_api       SELECT    inbound_file
+fyniq_api       UPDATE    inbound_file (removed_at)
+fyniq_api       INSERT    inbound_message (address_id, provider, provider_id, received_at, sender, subject)
+fyniq_api       SELECT    inbound_message
+fyniq_api       UPDATE    inbound_message (decided_at, decided_by, status)
 fyniq_api       EXECUTE   installation_org()
 fyniq_api       EXECUTE   invite_super_admin()
 fyniq_api       INSERT    item (code, description, gst_code, name, revenue_account_id, type, unit)
@@ -113,6 +118,7 @@ fyniq_api       SELECT    journal_line
 fyniq_api       EXECUTE   latest_job_slot()
 fyniq_api       SELECT    ledger_revision
 fyniq_api       EXECUTE   lock_ledger()
+fyniq_api       EXECUTE   member_emails()
 fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name, expires_at, roles, roles_expire_at)
 fyniq_api       SELECT    member_invitation
 fyniq_api       UPDATE    member_invitation (withdrawn_at)
@@ -141,6 +147,7 @@ fyniq_api       SELECT    period_variance_explanation
 fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
+fyniq_api       EXECUTE   record_identity_email()
 fyniq_api       EXECUTE   recover_super_admin()
 fyniq_api       INSERT    recurring_bill (day_of_month, ends_on, every_months, name, next_on, starts_on, status)
 fyniq_api       SELECT    recurring_bill
@@ -293,6 +300,8 @@ fyniq_readonly  SELECT    fx_rate
 fyniq_readonly  SELECT    gst_registration
 fyniq_readonly  SELECT    heartbeats
 fyniq_readonly  SELECT    idempotency_key
+fyniq_readonly  SELECT    inbound_file
+fyniq_readonly  SELECT    inbound_message
 fyniq_readonly  SELECT    item
 fyniq_readonly  SELECT    item_price
 fyniq_readonly  SELECT    job_slots
@@ -372,6 +381,11 @@ fyniq_worker    SELECT    gst_registration
 fyniq_worker    SELECT    heartbeats
 fyniq_worker    DELETE    idempotency_key
 fyniq_worker    SELECT    idempotency_key (expires_at, id, organisation_id)
+fyniq_worker    INSERT    inbound_file (blob_key, file_name, kind, media_type, message_id, original_sha256, sha256, size_bytes, stored_at)
+fyniq_worker    SELECT    inbound_file
+fyniq_worker    UPDATE    inbound_file (removed_at)
+fyniq_worker    SELECT    inbound_message
+fyniq_worker    UPDATE    inbound_message (dkim, dmarc, expires_at, fetched_at, last_error, spf, status)
 fyniq_worker    EXECUTE   installation_org()
 fyniq_worker    SELECT    item
 fyniq_worker    SELECT    item_price
@@ -382,6 +396,7 @@ fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currenc
 fyniq_worker    SELECT    journal_line
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
+fyniq_worker    EXECUTE   member_emails()
 fyniq_worker    SELECT    member_invitation
 fyniq_worker    SELECT    opening_balance
 fyniq_worker    SELECT    organisation
