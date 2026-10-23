@@ -131,8 +131,13 @@ func TestAnOrganisationChoosesItsSendersOnTheDeploymentsDomains(t *testing.T) {
 		p[1].(map[string]any)["role"] != "failover" {
 		t.Fatalf("the providers: %v", p)
 	}
-	if strings.Contains(got.Raw, "key") {
+	if strings.Contains(strings.ReplaceAll(got.Raw, "_domainkey", ""), "key") {
 		t.Fatalf("the settings mention a key: %s", got.Raw)
+	}
+	checks, _ := got.Body["domain_checks"].([]any)
+	if len(checks) != 2 || checks[0].(map[string]any)["ok"] != false || checks[0].(map[string]any)["dmarc"] != "none" ||
+		checks[0].(map[string]any)["records"].([]any)[0].(map[string]any)["status"] != "wrong" || checks[1].(map[string]any)["ok"] != true {
+		t.Fatalf("the domain checks: %v", got.Body["domain_checks"])
 	}
 	senders := got.Body["senders"].([]any)
 	if len(senders) != 4 || senders[1].(map[string]any)["purpose"] != "invoices" || senders[1].(map[string]any)["platform"] != true ||

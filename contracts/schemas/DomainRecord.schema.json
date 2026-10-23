@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "found": {
+      "description": "What a wrong record holds, kept short.",
+      "examples": [
+        "v=DKIM1; p=OTHERKEY"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "1234._domainkey.mail.example.com"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "ok: there as asked; missing: no such record; wrong: another value; failed: the lookup failed, so try later.",
+      "enum": [
+        "ok",
+        "missing",
+        "wrong",
+        "failed"
+      ],
+      "examples": [
+        "ok"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "The record's type.",
+      "enum": [
+        "TXT",
+        "CNAME"
+      ],
+      "examples": [
+        "TXT"
+      ],
+      "type": "string"
+    },
+    "value": {
+      "description": "What it should hold: text a TXT record contains, or a CNAME's target.",
+      "examples": [
+        "v=DKIM1; k=rsa; p=MIGfMA0"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "name",
+    "value",
+    "status"
+  ],
+  "title": "DomainRecord",
+  "type": "object"
+}

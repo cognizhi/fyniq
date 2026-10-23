@@ -67,8 +67,14 @@
   message, migration 000101 (`email_event` FY180, `email_suppression` FY181), the worker skipping suppressed addresses,
   listEmailSuppressions and releaseEmailSuppression (EML-04), the threat model `email-delivery.md`. Tests:
   `TestTheProvidersWebhooksRecordEventsAndSuppressHardBounces`, `TestAnEmailToASuppressedAddressIsNotSent`,
-  `TestEmailEventsAndSuppressionsKeepTheirHistory`, the receiver's unit tests and two matrix rows. Left: the daily
-  domain check, the staging sandboxes, the email settings screen and its help.)
+  `TestEmailEventsAndSuppressionsKeepTheirHistory`, the receiver's unit tests and two matrix rows. Fourth slice, rev
+  0.104: `internal/maildns` (the records from `FYNIQ_MAIL_DNS`, the DMARC policy), getEmailSettings' `domain_checks`
+  cached for an hour, the platform job `email.domains` at 04:30 recording a failed check per domain not ok. Tests:
+  `TestASendingDomainIsCheckedRecordByRecord`, `TestTheCheckIsCachedForItsTTL`,
+  `TestTheNightlyDomainCheckRecordsEachDomainThatIsNotOK`, `TestTheSendingDomainsRecordsAreConfiguration`,
+  `TestEveryPlatformScheduleHasItsJob`. Left: the staging sandboxes (operations, at the cloud gate), and the email
+  settings screen with its help, which the Super admin console and the connector-detail screen show (super-admin-console,
+  connector-detail).)
 - [ ] 2.2 The `InboundMail` port: messages stored with their authentication results, attachments through the evidence upload and scanner, and unknown senders quarantined. Test `// req: FR-INT-22`
 - [ ] 2.3 Interchangeable adapters and the §8.24 launch adapters and local substitutes for this change's capabilities. Tests `// req: communication/email-and-notifications Outside services behind interchangeable adapters` and `… Launch adapters and local substitutes`
 

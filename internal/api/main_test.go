@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 )
@@ -103,7 +104,12 @@ func newEnv(t *testing.T) *env {
 	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
 		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
 		Staging: e.blobs, Scanner: local.EICARScanner{}, Origin: testOrigin, Renderer: testRenderer(t),
-		Mail: MailInfo{Providers: []string{"zeptomail", "resend"}, From: "Fyniq <no-reply@mail.example.com>", Domains: []string{"mail.example.com", "example.org"}}})
+		Mail: MailInfo{Providers: []string{"zeptomail", "resend"}, From: "Fyniq <no-reply@mail.example.com>", Domains: []string{"mail.example.com", "example.org"},
+			Check: func(context.Context) ([]maildns.Result, time.Time) {
+				return []maildns.Result{{Domain: "mail.example.com", DMARC: "none", Records: []maildns.RecordStatus{
+					{Record: maildns.Record{Type: "TXT", Name: "k._domainkey.mail.example.com", Value: "v=DKIM1"}, Status: maildns.Wrong, Found: "v=DKIM1; p=OLD"}}},
+					{Domain: "example.org", DMARC: "reject", OK: true}}, e.clock.Now()
+			}}})
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e

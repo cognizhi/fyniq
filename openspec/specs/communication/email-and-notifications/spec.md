@@ -142,6 +142,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** it is read only with a valid signature under five minutes old, and each event is recorded once on the message its reference names, in that organisation, for that recipient
 - **AND** a hard bounce, complaint or the provider's suppression suppresses the address: nothing is sent to it until an Administrator releases it
 
+#### Scenario: The daily domain check as built (rev 0.104)
+- **WHEN** a sending domain is checked, within the hour in the settings and nightly
+- **THEN** each record its providers asked for, as the deployment lists them, is found as listed, missing, wrong or failed, beside its DMARC policy
+- **AND** a domain is ok only when every record is there and its policy quarantines or rejects; one that is not is recorded as a failed check
+
 ### Requirement: FR-INT-22 Inbound email
 The system SHALL receive email for the capture addresses (FR-DOC-12) through an inbound adapter and store everything received as untrusted documents (AI-18).
 

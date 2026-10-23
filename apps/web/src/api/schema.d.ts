@@ -1809,7 +1809,7 @@ export interface paths {
         };
         /**
          * Get the email settings
-         * @description The organisation's outbound email (FR-INT-21; the owner's decision of 23 Oct 2026): the deployment's providers in order, the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the deployment's operators set; and the organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects.
+         * @description The organisation's outbound email (FR-INT-21; the owner's decision of 23 Oct 2026): the deployment's providers in order, the first primary and the next its failover, the platform's sender and the domains a sender may be chosen on, which the deployment's operators set, with each domain's DNS records and DMARC policy as checked within the hour; and the organisation's sender of each purpose, or the platform's. No provider key is ever shown. Read-only; no side effects.
          */
         get: operations["getEmailSettings"];
         put?: never;
@@ -6009,6 +6009,61 @@ export interface components {
              */
             next_cursor?: string;
         };
+        DomainCheck: {
+            /**
+             * Format: date-time
+             * @description When it was checked: at most an hour ago, and every night.
+             * @example 2026-10-23T09:00:00Z
+             */
+            checked_at: string;
+            /**
+             * @description Its DMARC policy, its own or its parent domain's: none only reports; missing has no record; failed could not be looked up.
+             * @example quarantine
+             * @enum {string}
+             */
+            dmarc: "reject" | "quarantine" | "none" | "invalid" | "missing" | "failed";
+            /**
+             * @description The sending domain.
+             * @example mail.example.com
+             */
+            domain: string;
+            /**
+             * @description true when every record its providers asked for is there and its DMARC policy quarantines or rejects.
+             * @example true
+             */
+            ok: boolean;
+            /** @description The records its providers asked for, as the deployment lists them. */
+            records: components["schemas"]["DomainRecord"][] | null;
+        };
+        DomainRecord: {
+            /**
+             * @description What a wrong record holds, kept short.
+             * @example v=DKIM1; p=OTHERKEY
+             */
+            found?: string;
+            /**
+             * @description Its name.
+             * @example 1234._domainkey.mail.example.com
+             */
+            name: string;
+            /**
+             * @description ok: there as asked; missing: no such record; wrong: another value; failed: the lookup failed, so try later.
+             * @example ok
+             * @enum {string}
+             */
+            status: "ok" | "missing" | "wrong" | "failed";
+            /**
+             * @description The record's type.
+             * @example TXT
+             * @enum {string}
+             */
+            type: "TXT" | "CNAME";
+            /**
+             * @description What it should hold: text a TXT record contains, or a CNAME's target.
+             * @example v=DKIM1; k=rsa; p=MIGfMA0
+             */
+            value: string;
+        };
         EmailEvent: {
             /**
              * @description The provider's reason.
@@ -6160,6 +6215,8 @@ export interface components {
             display_name?: string;
         };
         EmailSettings: {
+            /** @description Each sending domain's DNS records and DMARC policy, checked within the hour and every night (FR-INT-21). */
+            domain_checks: components["schemas"]["DomainCheck"][] | null;
             /** @description The domains a sender may be chosen on; the deployment's operators add one. */
             domains: string[] | null;
             /**
