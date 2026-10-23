@@ -38,6 +38,7 @@ type Contact struct {
 	Phone              string              `json:"phone,omitempty" doc:"Its phone number." example:"+65 6123 4567"`
 	Address            string              `json:"address,omitempty" doc:"Its address." example:"1 Raffles Place, #20-01, Singapore 048616"`
 	Country            string              `json:"country,omitempty" doc:"Its country, ISO 3166 two-letter code." example:"SG"`
+	TaxResidence       string              `json:"tax_residence,omitempty" doc:"Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19). A vendor resident outside Singapore (this, else its country) has its bills record the nature of the payment, and the tax agent decides whether tax is withheld." example:"US"`
 	Currency           string              `json:"currency,omitempty" doc:"The currency it trades in." example:"SGD"`
 	PaymentTermsDays   *int                `json:"payment_terms_days,omitempty" doc:"Days until its documents fall due." example:"30"`
 	DefaultAccountID   string              `json:"default_account_id,omitempty" format:"uuid" doc:"The category its lines start with." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
@@ -59,6 +60,7 @@ type ContactDraft struct {
 	Phone            string `json:"phone,omitempty" maxLength:"40" doc:"Its phone number." example:"+65 6123 4567"`
 	Address          string `json:"address,omitempty" maxLength:"500" doc:"Its address." example:"1 Raffles Place, #20-01, Singapore 048616"`
 	Country          string `json:"country,omitempty" doc:"ISO 3166 two-letter code." example:"SG"`
+	TaxResidence     string `json:"tax_residence,omitempty" doc:"Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19)." example:"US"`
 	Currency         string `json:"currency,omitempty" doc:"ISO 4217 code." example:"SGD"`
 	PaymentTermsDays *int   `json:"payment_terms_days,omitempty" doc:"0 to 365 days." example:"30"`
 	DefaultAccountID string `json:"default_account_id,omitempty" doc:"The default category: an active account that takes postings." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
@@ -77,6 +79,7 @@ type ContactChanges struct {
 	Phone            *string `json:"phone,omitempty" maxLength:"40" doc:"Its phone number." example:"+65 6123 4567"`
 	Address          *string `json:"address,omitempty" maxLength:"500" doc:"Its address." example:"1 Raffles Place, #20-01, Singapore 048616"`
 	Country          *string `json:"country,omitempty" doc:"ISO 3166 two-letter code." example:"SG"`
+	TaxResidence     *string `json:"tax_residence,omitempty" doc:"Where it is resident for tax, when that is not its country (FR-AP-19); \"\" clears it." example:"US"`
 	Currency         *string `json:"currency,omitempty" doc:"ISO 4217 code." example:"USD"`
 	PaymentTermsDays *int    `json:"payment_terms_days,omitempty" doc:"0 to 365 days; -1 clears them." example:"45"`
 	DefaultAccountID *string `json:"default_account_id,omitempty" doc:"The default category; \"\" clears it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
@@ -136,7 +139,7 @@ var ContactCodes = []string{contact.CodeName, contact.CodeRole, contact.CodeEmai
 func contactOf(c storage.Contact, dups []storage.ContactDuplicate) Contact {
 	out := Contact{ID: c.ID.String(), LegalName: c.LegalName, Customer: c.Customer, Vendor: c.Vendor, UENOrTaxID: c.UENOrTaxID,
 		PeppolID: c.PeppolID, BillingEmail: c.BillingEmail, RemittanceEmail: c.RemittanceEmail, Phone: c.Phone, Address: c.Address,
-		Country: c.Country, Currency: c.Currency, PaymentTermsDays: c.PaymentTermsDays, DefaultGSTCode: c.DefaultGSTCode,
+		Country: c.Country, TaxResidence: c.TaxResidence, Currency: c.Currency, PaymentTermsDays: c.PaymentTermsDays, DefaultGSTCode: c.DefaultGSTCode,
 		Active: c.Active, Version: c.Version, PossibleDuplicates: []PossibleDuplicate{}}
 	if c.DefaultAccountID != nil {
 		out.DefaultAccountID = c.DefaultAccountID.String()
@@ -229,7 +232,7 @@ func registerContacts(a *API) {
 				d := storage.ContactDetails{LegalName: strings.TrimSpace(b.LegalName), Customer: b.Customer, Vendor: b.Vendor,
 					UENOrTaxID: strings.TrimSpace(b.UENOrTaxID), PeppolID: strings.TrimSpace(b.PeppolID), BillingEmail: strings.TrimSpace(b.BillingEmail),
 					RemittanceEmail: strings.TrimSpace(b.RemittanceEmail), Phone: strings.TrimSpace(b.Phone), Address: strings.TrimSpace(b.Address),
-					Country: b.Country, Currency: b.Currency, PaymentTermsDays: b.PaymentTermsDays, DefaultGSTCode: b.DefaultGSTCode}
+					Country: b.Country, TaxResidence: b.TaxResidence, Currency: b.Currency, PaymentTermsDays: b.PaymentTermsDays, DefaultGSTCode: b.DefaultGSTCode}
 				var bad []FieldProblem
 				if b.DefaultAccountID != "" {
 					d.DefaultAccountID = parseAccountRef("body.default_account_id", b.DefaultAccountID, &bad)
@@ -312,6 +315,7 @@ func registerContacts(a *API) {
 				text(&d.Phone, b.Phone)
 				text(&d.Address, b.Address)
 				text(&d.Country, b.Country)
+				text(&d.TaxResidence, b.TaxResidence)
 				text(&d.Currency, b.Currency)
 				text(&d.DefaultGSTCode, b.DefaultGSTCode)
 				if b.Customer != nil {

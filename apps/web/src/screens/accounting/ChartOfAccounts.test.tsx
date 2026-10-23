@@ -42,11 +42,11 @@ describe("the chart of accounts", () => {
 
   // req: FR-COA-01
   it("offers the standard chart to an empty chart", async () => {
-    const seen = answer({ "GET /v1/accounts": { status: 200, body: { items: [] } }, "POST /v1/accounts:load-standard-chart": { status: 201, body: { accounts: 86 } } });
+    const seen = answer({ "GET /v1/accounts": { status: 200, body: { items: [] } }, "POST /v1/accounts:load-standard-chart": { status: 201, body: { accounts: 87 } } });
     renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
     fireEvent.click(await screen.findByRole("button", { name: "Load the standard chart" }));
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Load the standard chart" }));
-    expect(await screen.findByText("The standard chart is loaded: 86 accounts.")).toBeTruthy();
+    expect(await screen.findByText("The standard chart is loaded: 87 accounts.")).toBeTruthy();
     expect(seen.find((s) => s.method === "POST")?.headers.get("Idempotency-Key")).toBeTruthy();
   });
 

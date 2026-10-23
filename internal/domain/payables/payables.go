@@ -187,7 +187,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 		if err != nil {
 			return err
 		}
-		_, carried, err := apLines(e, ap, d.Currency, base)
+		credited, carried, err := apLines(e, ap, d.Currency, base) // its total, less any tax withheld (FR-AP-19)
 		if err != nil {
 			return err
 		}
@@ -208,7 +208,7 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ap uui
 			return err
 		}
 		it := Item{Kind: KindBill, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, DueDate: due, Total: total}
-		if it.Open, err = total.Sub(paid); err != nil {
+		if it.Open, err = credited.Neg().Sub(paid); err != nil {
 			return err
 		}
 		if it.Carrying, err = carried.Neg().Sub(paidBase); err != nil {

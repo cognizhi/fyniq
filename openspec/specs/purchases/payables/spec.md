@@ -228,6 +228,27 @@ Source: PRD-001 §8.6 · Priority M when paying non-resident suppliers; else S �
 - **WHEN** a "not applicable" decision applies to ordinary remote SaaS
 - **THEN** the bill is never blocked or taxed
 
+#### Scenario: The decision a bill posts with (rev 0.90)
+- **GIVEN** a supplier resident outside Singapore (its tax residence, else its country) and a bill recording the nature of the payment
+- **WHEN** the bill posts
+- **THEN** it takes the tax agent's decision for the supplier and nature in force when its entry is recorded, at the rate they advised
+- **AND** a later decision replaces it only from when it is recorded, never changing a posted bill; a decision is never changed or removed
+
+#### Scenario: No nature, no posting (rev 0.90)
+- **WHEN** a non-resident supplier's bill records no nature of payment
+- **THEN** it does not post (BILL-16)
+
+#### Scenario: The payment hold (rev 0.90)
+- **GIVEN** a posted bill of a non-resident supplier
+- **WHEN** a payment of it is recorded while no decision exists for its nature, or the decision in force withholds at another rate than the bill posted with
+- **THEN** the payment is refused (BILLPAY-11) until the decision exists and, if it withholds, an edit of the bill applies it
+
+#### Scenario: Withholding posted and paid net (rev 0.90)
+- **GIVEN** a US SaaS subscription bill and a non-resident consultant who works on site in Singapore for 5 days
+- **WHEN** the SaaS decision "not applicable" is recorded, and the consultant's is to withhold 15% of S$5,000.00
+- **THEN** the SaaS bill is paid normally
+- **AND** the consultant's bill, edited, posts Dr the expense 5,000.00, Cr 2330 750.00 and Cr 2010 4,250.00, and the supplier is paid S$4,250.00
+
 #### Scenario: Tax withheld
 - **WHEN** tax is withheld on a bill
 - **THEN** the bill posts the gross expense, the net to the supplier and the tax to a withholding-tax payable account

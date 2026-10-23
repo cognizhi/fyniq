@@ -24,6 +24,7 @@ const (
 	RoleGSTControl      = "gst-control"
 	RoleFXRounding      = "fx-rounding"
 	RolePrepayments     = "prepayments"
+	RoleWithholdingTax  = "withholding-tax-payable" // tax withheld from payments to non-residents (FR-AP-19; rev 0.90)
 )
 
 // The bill rule's validation codes (ENG-22, ENG-23).
@@ -34,6 +35,7 @@ const (
 	CodeLineCurrency = "LEDGER-24" // a line in another currency than its document's
 	CodeSpread       = "LEDGER-28" // a spread that is not 1 to MaxSpreadMonths months of an expense line's cost (FR-GL-03)
 	CodeClaimShare   = "LEDGER-29" // a claimable share that is not a percentage from 0 to 100 (FR-AP-20)
+	CodeWithholding  = "LEDGER-30" // a withholding rate that is not a percentage, or nothing to withhold it from (FR-AP-19)
 )
 
 // MaxSpreadMonths is the most months a bill line's cost is spread over (FR-GL-03): ten years.
@@ -100,6 +102,13 @@ type Bill struct {
 	Currency money.Currency
 	Rate     *money.Rate // into the base currency; nil for a bill in the base currency
 	Lines    []BillLine
+	// Withholding is the tax withheld from a non-resident supplier's bill (FR-AP-19; rev 0.90); nil when none is.
+	Withholding *Withholding
+}
+
+// Withholding is withholding tax on a bill, at the rate the tax agent advised, as a percentage ("17").
+type Withholding struct {
+	RatePercent string
 }
 
 // BillIdentity is the posting identity of a bill version under a rule version (§11.4).
@@ -128,7 +137,10 @@ func (s Settings) byRole(role string) (Account, bool) {
 //     expense line's cost is spread (B.1: P&L categories only);
 //   - Dr 2200 GST control with the claimable GST: as stated in the base currency for a bill in another currency
 //     (ENG-42), else the line's GST;
-//   - Cr 2010 Accounts payable with the total, net plus GST, at the bill's rate;
+//   - Cr 2010 Accounts payable with the total, net plus GST, at the bill's rate; but for a bill that withholds tax
+//     (FR-AP-19; rev 0.90), Cr 2330 Withholding tax payable with RND-WHT's tax on the lines' net in the base currency,
+//     and 2010 the total less what is withheld of the supplier's own amount: the same tax for a bill in the base
+//     currency, RND-WHT's part of the net in the bill's currency for one in another;
 //   - and, for a bill in another currency, what makes the entry balance in the base currency to 7030: the stated GST
 //     against the GST at the book rate, and any cent RND-FX leaves between the lines and the total.
 //
@@ -280,6 +292,37 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 		add(CodeBillTotal, "lines", fmt.Sprintf("the bill's total is %s %s", total, b.Currency),
 			"A bill's total is more than zero; record what a supplier owes the company as a vendor credit")
 	}
+	// Withholding tax (FR-AP-19): on the lines' net, before GST.
+	var whtBase, withheld money.Money
+	wht, hasWHT := s.byRole(RoleWithholdingTax)
+	if w := b.Withholding; w != nil && len(probs) == 0 {
+		gross := money.Zero(b.Currency)
+		for _, l := range b.Lines {
+			gross, _ = gross.Add(l.Net)
+		}
+		grossBase, err := rounding.FX(gross, rate)
+		switch {
+		case !hasWHT:
+			add(CodeSystemRole, "lines", "the chart has no withholding tax payable account for the tax withheld",
+				"Load the standard chart's 2330 Withholding tax payable, or give a liability account the role")
+		case gross.Sign() <= 0:
+			add(CodeWithholding, "lines", fmt.Sprintf("the bill's net is %s %s, so there is nothing to withhold tax from", gross, b.Currency),
+				"Withhold tax only from a bill with a net above zero")
+		case err != nil:
+			add(CodeBaseRange, "lines", fmt.Sprintf("at this rate the net does not fit: %v", err), "Check the amounts and the rate")
+		default:
+			if whtBase, err = rounding.WHT(grossBase, w.RatePercent); err != nil {
+				add(CodeWithholding, "withholding.rate_percent", err.Error(), "Record the rate the tax agent advised as a percentage, such as 17")
+				break
+			}
+			withheld = whtBase
+			if foreign {
+				if withheld, err = rounding.Withheld(gross, w.RatePercent); err != nil {
+					add(CodeWithholding, "withholding.rate_percent", err.Error(), "Record the rate the tax agent advised as a percentage, such as 17")
+				}
+			}
+		}
+	}
 	if len(probs) > 0 {
 		return Entry{}, probs
 	}
@@ -287,11 +330,20 @@ func PostBill(b Bill, s Settings) (Entry, error) {
 		lines = append(lines, Line{AccountID: gstControl.ID, Amount: gstBase, Rate: money.Identity(s.Base), Base: gstBase, Description: "Input tax"})
 		baseTotal, _ = baseTotal.Add(gstBase)
 	}
-	apBase, err := rounding.FX(total.Neg(), rate)
+	owed := total
+	if !whtBase.IsZero() {
+		lines = append(lines, Line{AccountID: wht.ID, Amount: whtBase.Neg(), Rate: money.Identity(s.Base), Base: whtBase.Neg(),
+			Description: fmt.Sprintf("Withholding tax at %s%%", b.Withholding.RatePercent)})
+		baseTotal, _ = baseTotal.Add(whtBase.Neg())
+	}
+	if !withheld.IsZero() {
+		owed, _ = total.Sub(withheld)
+	}
+	apBase, err := rounding.FX(owed.Neg(), rate)
 	if err != nil {
 		return Entry{}, Problems{{CodeBaseRange, "lines", fmt.Sprintf("at this rate the total does not fit: %v", err), "Check the amounts and the rate"}}
 	}
-	lines = append(lines, Line{AccountID: ap.ID, Amount: total.Neg(), Rate: rate, Base: apBase, Description: b.Memo})
+	lines = append(lines, Line{AccountID: ap.ID, Amount: owed.Neg(), Rate: rate, Base: apBase, Description: b.Memo})
 	baseTotal, _ = baseTotal.Add(apBase)
 	if !baseTotal.IsZero() { // only for a bill in another currency: an SGD bill's lines are their own base amounts
 		fxAcc, ok := s.byRole(RoleFXRounding)

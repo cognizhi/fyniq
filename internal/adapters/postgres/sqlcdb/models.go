@@ -214,6 +214,7 @@ type FyniqContact struct {
 	IsActive         bool
 	Version          int32
 	CreatedAt        time.Time
+	TaxResidence     *string
 }
 
 type FyniqCurrencies struct {
@@ -881,4 +882,18 @@ type FyniqWebauthnCredential struct {
 	CreatedAt      time.Time
 	LastUsedAt     *time.Time
 	RevokedAt      *time.Time
+}
+
+type FyniqWithholdingDecision struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SupplierID     uuid.UUID
+	Nature         string
+	Outcome        string
+	RatePercent    *string
+	TaxAgent       string
+	Note           *string
+	BillID         *uuid.UUID
+	RecordedBy     string
+	RecordedAt     time.Time
 }

@@ -424,6 +424,21 @@ Source: PRD-001 §10.4
 - **THEN** it is RND-LINE of everything taken so far, this part included, less RND-LINE of what was taken before
 - **AND** the parts add up to the line's amount exactly, each within one minor unit of its own quantity × price (three parts of one of 3 × 33.333333 are 33.33, 33.34 and 33.33)
 
+### Requirement: RND-WHT Withholding tax
+Withholding tax on a payment to a non-resident supplier (FR-AP-19) SHALL be round(⌊gross⌋ × rate ÷ 100, the base currency's minor units), half away from zero, in the base currency, where gross is the payment before GST in the base currency and ⌊⌋ rounds it down to the dollar (rev 0.90; provisional).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Tax on the gross rounded down to the dollar
+- **WHEN** tax is withheld from a payment
+- **THEN** the tax = round(⌊gross⌋ × rate ÷ 100, the minor units), half away from zero (S$1,234.56 at 17% is 1,234 × 17% = 209.78; S$5,000.00 at 15% is 750.00)
+
+#### Scenario: A bill in another currency
+- **GIVEN** a bill in another currency
+- **WHEN** tax is withheld from it
+- **THEN** the gross is converted at its rate (`RND-FX`) for the tax, and the supplier's own amount withheld = round(gross × rate ÷ 100, its minor units)
+- **AND** the cents between that at the book rate and the tax go to 7030 (USD 1,000.37 at 1.3456 and 17%: tax S$228.82, USD 170.06 withheld)
+
 ### Requirement: RND-GST-SHARE Share of a line's GST
 The input tax claimed of a line's GST when only a share of it is claimable (FR-AP-20: its business share) SHALL be round(GST × share ÷ 100, the currency's minor units), half away from zero, computed exactly before its one rounding, the rest of the GST staying in the line's cost (rev 0.89; provisional).
 

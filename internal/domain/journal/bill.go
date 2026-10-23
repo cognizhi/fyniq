@@ -474,7 +474,7 @@ func baseOf(x money.Money, rate *money.Rate, base money.Currency) money.Money {
 // change of the organisation's GST registration or of the pack never makes an old bill differ. A spread line's cost is
 // read from 1210, at its base amount.
 func replayBill(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s ledger.Settings, e storage.Entry) (ledger.Entry, error) {
-	p, _, err := bill.Prepare(ctx, u, doc, s.Base)
+	p, _, err := bill.PrepareAt(ctx, u, doc, s.Base, e.RecordedAt) // the withholding decision in force when it posted (FR-AP-19)
 	if err != nil {
 		return ledger.Entry{}, err
 	}

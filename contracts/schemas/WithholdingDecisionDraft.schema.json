@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bill_id": {
+      "description": "The supplier's bill it is recorded from: attach the tax agent's advice (and a certificate of residence) to it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "nature_of_payment": {
+      "description": "The nature of payment it is for.",
+      "enum": [
+        "goods",
+        "software_use",
+        "software_rights",
+        "services_in_singapore",
+        "services_outside_singapore",
+        "interest",
+        "movable_rent",
+        "other"
+      ],
+      "examples": [
+        "services_in_singapore"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Why, in the tax agent's words.",
+      "examples": [
+        "Non-resident professional working on site in Singapore: 15% of gross"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "outcome": {
+      "description": "not_applicable: nothing is withheld (ordinary remote SaaS, for example); withhold: at the rate the tax agent advised; treaty: a reduced treaty rate, with the certificate of residence attached to the bill.",
+      "enum": [
+        "not_applicable",
+        "withhold",
+        "treaty"
+      ],
+      "examples": [
+        "withhold"
+      ],
+      "type": "string"
+    },
+    "rate_percent": {
+      "description": "For withhold and treaty: the rate the tax agent advised, as a percentage of the payment before GST, above 0 and up to 100. Left out for not_applicable.",
+      "examples": [
+        "15"
+      ],
+      "pattern": "^(100(\\.0{1,2})?|[0-9]{1,2}(\\.[0-9]{1,2})?)$",
+      "type": "string"
+    },
+    "tax_agent": {
+      "description": "The tax agent who gave the decision.",
+      "examples": [
+        "Grace Ho, Ho \u0026 Partners"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "nature_of_payment",
+    "outcome",
+    "tax_agent"
+  ],
+  "title": "WithholdingDecisionDraft",
+  "type": "object"
+}

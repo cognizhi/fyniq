@@ -34,6 +34,7 @@ const (
 	CodeVoidDate   = "BILLPAY-07" // a void dated before the payment
 	CodeTooLong    = "BILLPAY-08" // the reference or the notes are too long
 	CodeTooMany    = "BILLPAY-09" // more bills than one payment settles
+	CodeHeld       = "BILLPAY-11" // a bill whose withholding the tax agent has not decided, or decided anew since it posted (FR-AP-19)
 )
 
 // The longest reference and notes a payment keeps, and the most bills it settles.
@@ -183,6 +184,7 @@ type Open struct {
 	Rate     money.Rate
 	Open     money.Money
 	Carrying money.Money
+	PostedAt time.Time // when its entry was recorded
 }
 
 // OpenBill is what is open of a posted bill: CodeBill when the document is not a posted bill. s finds its accounts
@@ -202,7 +204,7 @@ func OpenBill(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s ledger.
 	if err != nil {
 		return Open{}, err
 	}
-	out := Open{Bill: doc, Number: doc.Number}
+	out := Open{Bill: doc, Number: doc.Number, PostedAt: e.RecordedAt}
 	found := false
 	for _, l := range e.Lines {
 		if s.Accounts[l.AccountID].Role != ledger.RoleAccountsPayable {
@@ -348,6 +350,15 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s 
 			continue
 		case o.Total.Currency() != d.Currency:
 			add(CodeBill, field, fmt.Sprintf("%s is in %s; the payment is in %s", name, o.Total.Currency(), d.Currency), "Pay bills of one currency together")
+			continue
+		}
+		held, err := bill.HeldPayment(ctx, u, o.Bill, s.Base, o.PostedAt)
+		if err != nil {
+			return Prepared{}, nil, err
+		}
+		if held != "" {
+			add(CodeHeld, field, fmt.Sprintf("%s waits for withholding tax: %s", name, held),
+				"Record the tax agent's decision for the supplier and the nature of the payment, then edit the bill so it posts with it")
 			continue
 		}
 		out.Bills = append(out.Bills, o)

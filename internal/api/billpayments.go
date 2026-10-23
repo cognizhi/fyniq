@@ -36,6 +36,7 @@ const CodePaymentVoidApproval = "BILLPAY-10"
 
 // PaymentCodes are the codes the posting rule and the payment's own checks answer.
 var PaymentCodes = []string{billpayment.CodeSupplier, billpayment.CodeBill, billpayment.CodeOverpaid, billpayment.CodeTooLong, billpayment.CodeTooMany,
+	billpayment.CodeHeld,
 	ledger.CodeNotMoneyAccount, ledger.CodePaymentAmount, ledger.CodePaidAmount, ledger.CodeSystemRole, ledger.CodeLineCurrency}
 
 // PaymentApprovalCodes are the codes an approval of a payment's void may answer.

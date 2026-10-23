@@ -52,6 +52,37 @@ func (e *env) supplier() string {
 	return id
 }
 
+// foreignSupplier sets e's books up for bills and adds, once, a vendor resident for tax in the United States with
+// 2330 Withholding tax payable (FR-AP-19). It returns the vendor's ID.
+func (e *env) foreignSupplier() string {
+	e.t.Helper()
+	e.supplier()
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "fixture"}})
+	var id string
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		cs, err := u.Contacts().Page(ctx, uuid.Nil, "vendor", 50)
+		if err != nil {
+			return err
+		}
+		for _, c := range cs {
+			if c.Country == "US" {
+				id = c.ID.String()
+				return nil
+			}
+		}
+		if _, err := u.Accounts().Create(ctx, storage.NewAccount{Code: "2330", Name: "Withholding tax payable", Type: storage.Liability,
+			Role: storage.AccountRole(ledger.RoleWithholdingTax)}); err != nil {
+			return err
+		}
+		c, err := u.Contacts().Create(ctx, storage.ContactDetails{LegalName: "Ava Consulting LLC", Vendor: true, Country: "US"})
+		id = c.ID.String()
+		return err
+	}); err != nil {
+		e.t.Fatal(err)
+	}
+	return id
+}
+
 // billDraft is a bill of the supplier for rent: net plus 9% GST, coded TX.
 func (e *env) billDraft(net, gst string) map[string]any {
 	return map[string]any{
@@ -345,5 +376,52 @@ func TestBillInputTaxThroughTheAPI(t *testing.T) {
 		if r := e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), d); r.Status != 422 {
 			t.Errorf("%s: %d %s", name, r.Status, r.Raw)
 		}
+	}
+}
+
+// FR-AP-19 through the API (rev 0.90): a supplier's tax residence; a non-resident supplier's bill without a nature of
+// payment cannot post (BILL-16); with one and no decision it shows ⚠ and how withholding stands; once the tax agent's
+// decision to withhold 15% is recorded, the draft shows the tax and posts it; the decision lists under the supplier;
+// a decision Fyniq cannot record is refused (BILL-17).
+// req: FR-AP-19
+// req: G4-010
+func TestWithholdingThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	id := e.foreignSupplier()
+	c := e.call(http.MethodPatch, "/v1/contacts/"+id, e.as(authz.Accountant), map[string]any{"tax_residence": "AU"}, "If-Match", "*")
+	if c.Status != 200 || c.str("tax_residence") != "AU" {
+		t.Fatalf("setting the tax residence: %d %s", c.Status, c.Raw)
+	}
+	d := e.billDraft("5000.00", "0.00")
+	d["supplier_id"], d["supplier_ref"] = id, "AVA-1"
+	d["lines"].([]map[string]any)[0]["gst_code"] = "NR"
+	r := e.call(http.MethodPost, "/v1/bills", e.as(authz.Accountant), d)
+	g := e.call(http.MethodGet, "/v1/bills/"+r.str("id"), e.as(authz.Accountant), nil)
+	if !strings.Contains(g.Raw, `"code":"`+bill.CodeNature+`"`) || !strings.Contains(g.Raw, `"withholding":{"residence":"AU"}`) {
+		t.Fatalf("a bill with no nature: %s", g.Raw)
+	}
+	d["nature_of_payment"] = "services_in_singapore"
+	u := e.call(http.MethodPut, "/v1/bills/"+r.str("id"), e.as(authz.Accountant), d, "If-Match", r.Header.Get("ETag"))
+	g = e.call(http.MethodGet, "/v1/bills/"+r.str("id"), e.as(authz.Accountant), nil)
+	if u.Status != 200 || !strings.Contains(g.Raw, `"code":"`+bill.WarnWHTUndecided+`"`) || strings.Contains(g.Raw, `"decision"`) {
+		t.Fatalf("an undecided bill: %d %s", u.Status, g.Raw)
+	}
+	rec := e.call(http.MethodPost, "/v1/contacts/"+id+"/withholding-decisions", e.as(authz.Accountant), map[string]any{"nature_of_payment": "services_in_singapore",
+		"outcome": "withhold", "rate_percent": "15", "tax_agent": "Grace Ho", "bill_id": r.str("id")})
+	if rec.Status != 201 || rec.str("outcome") != "withhold" || rec.str("rate_percent") != "15" {
+		t.Fatalf("recording the decision: %d %s", rec.Status, rec.Raw)
+	}
+	g = e.call(http.MethodGet, "/v1/bills/"+r.str("id"), e.as(authz.Accountant), nil)
+	if !strings.Contains(g.Raw, `"tax":{"amount":"750.00","currency":"SGD"}`) || !strings.Contains(g.Raw, `"payable":{"amount":"4250.00"`) {
+		t.Fatalf("the decided bill: %s", g.Raw)
+	}
+	l := e.call(http.MethodGet, "/v1/contacts/"+id+"/withholding-decisions", e.as(authz.Auditor), nil)
+	if l.Status != 200 || !strings.Contains(l.Raw, `"tax_agent":"Grace Ho"`) {
+		t.Errorf("the decisions: %d %s", l.Status, l.Raw)
+	}
+	bad := e.call(http.MethodPost, "/v1/contacts/"+e.supplier()+"/withholding-decisions", e.as(authz.Accountant), map[string]any{"nature_of_payment": "interest",
+		"outcome": "not_applicable", "tax_agent": "Grace Ho"})
+	if bad.Status != 422 || !strings.Contains(bad.Raw, bill.CodeWithholding) {
+		t.Errorf("a resident supplier's decision: %d %s", bad.Status, bad.Raw)
 	}
 }

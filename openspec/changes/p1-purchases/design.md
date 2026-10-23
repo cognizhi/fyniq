@@ -164,6 +164,16 @@ the slice that builds it.
   - withholding posts the gross expense, the net to 2010 and the tax to a withholding-tax payable
     account (a new system role, 2330 in the standard chart, between 2300 and 2400 [accountant to
     confirm the code]).
+  - **Decided (the owner, 23 Oct 2026):** the rate is the one the tax agent advised, kept on the
+    decision for that supplier and nature (a treaty rate with the certificate of residence
+    attached), not a statutory pack, as IRAS's rate turns on facts beyond the nature (company or
+    individual, work in Singapore, the treaty, the prevailing CIT rate); the withholding posts **with
+    the bill**, whose invoice date is usually IRAS's "date of payment" (the earliest of the due or
+    invoice date, the date credited and the date paid); the tax is worked out **IRAS's way, in SGD**
+    under a new policy `RND-WHT`: the gross before GST in SGD at the bill's rate, rounded down to the
+    dollar as the WHT form asks, × the rate, rounded half up to the cent. A foreign bill owes the
+    supplier gross − round(gross × rate) in its currency, and 7030 takes the cents between that and
+    the SGD tax.
 - **Input-tax eligibility:** each line records its facts:
   - the supplier's GST registration;
   - the document: a tax invoice, a simplified tax invoice, an import permit, or none;

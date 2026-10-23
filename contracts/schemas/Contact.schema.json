@@ -113,6 +113,13 @@
       ],
       "type": "string"
     },
+    "tax_residence": {
+      "description": "Where it is resident for tax, ISO 3166 two-letter code, when that is not its country (FR-AP-19). A vendor resident outside Singapore (this, else its country) has its bills record the nature of the payment, and the tax agent decides whether tax is withheld.",
+      "examples": [
+        "US"
+      ],
+      "type": "string"
+    },
     "uen_or_tax_id": {
       "description": "Its UEN, or a foreign contact's tax ID.",
       "examples": [

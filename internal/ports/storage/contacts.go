@@ -17,6 +17,7 @@ type ContactDetails struct {
 	Phone            string
 	Address          string
 	Country          string     // ISO 3166-1 alpha-2
+	TaxResidence     string     // ISO 3166-1 alpha-2, where it is resident for tax when that is not Country (FR-AP-19); empty: Country
 	Currency         string     // ISO 4217
 	PaymentTermsDays *int       // nil when not set
 	DefaultAccountID *uuid.UUID // the default category

@@ -347,7 +347,7 @@ function LoadStandard({ open, onClose, onLoaded }: { open: boolean; onClose: () 
       onOpenChange={(o) => !o && onClose()}
       dismissible={!busy}
       title="Load the standard Singapore start-up chart?"
-      description="86 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance. You can rename, regroup and add accounts afterwards. It loads only into a chart with no accounts."
+      description="87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance. You can rename, regroup and add accounts afterwards. It loads only into a chart with no accounts."
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
@@ -412,7 +412,7 @@ export function ChartOfAccounts() {
         <div className="fy-empty fy-card fy-card--pad">
           <Icon of={BookOpen} size={24} />
           <h2 className="fy-h3">No accounts yet</h2>
-          <p className="fy-secondary">Start from the standard Singapore start-up chart: 86 accounts set up for a company like yours, which you can rename, regroup and add to.</p>
+          <p className="fy-secondary">Start from the standard Singapore start-up chart: 87 accounts set up for a company like yours, which you can rename, regroup and add to.</p>
           {may ? (
             <div className="fy-row fy-row--wrap justify-center gap-2">
               <Button variant="primary" onClick={() => setLoading(true)} title={load.tooltip}>

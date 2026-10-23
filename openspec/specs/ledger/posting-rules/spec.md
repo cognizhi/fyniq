@@ -423,6 +423,12 @@ Source: PRD-001 §B.2
 - **WHEN** a bill is posted
 - **THEN** + the SGD GST stated on the supplier's tax invoice goes to 2200 (ENG-42)
 
+#### Scenario: Withholding tax (rev 0.90)
+- **GIVEN** a non-resident supplier's bill whose tax agent decided tax is withheld (FR-AP-19)
+- **WHEN** the bill is posted
+- **THEN** − the tax goes to 2330 under `RND-WHT`, and − the total less what is withheld of the supplier's own amount goes to 2010
+- **AND** a foreign bill's difference goes to 7030
+
 #### Scenario: Only claimable input tax, for its business share (rev 0.89)
 - **GIVEN** a bill line whose input tax is claimable for a business share under 100% (FR-AP-20)
 - **WHEN** the bill is posted
@@ -627,6 +633,10 @@ Source: PRD-001 §B.5
 #### Scenario: System accounts from the workbook
 - **WHEN** posting rules use a system account
 - **THEN** the codes are 1100 Accounts receivable, 1210 Prepayments, 1590 Accumulated depreciation, 2010 Accounts payable, 2100 Salaries payable, 2110 CPF & SDL payable, 2150 Expense claims payable, 2200 GST control, 2300 Income tax payable, 2400 Deferred revenue, 2999 Suspense, 3100 Retained earnings, 6020 Employer CPF expense, 6030 SDL expense, 6610 Depreciation expense, 7030 FX & rounding differences, 8010 Income tax expense
+
+#### Scenario: Withholding tax payable (rev 0.90)
+- **WHEN** a bill withholds tax from a non-resident supplier (FR-AP-19)
+- **THEN** the tax goes to 2330 Withholding tax payable, the account with the role withholding-tax-payable [accountant to confirm the code]
 
 #### Scenario: New accounts still to be assigned
 - **WHEN** the unrealised FX, payment-provider clearing, gain or loss on disposal and bad debts accounts are needed

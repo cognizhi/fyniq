@@ -26,7 +26,7 @@ A new company starts with no accounts.
 1. Open **Accounting → Chart of accounts**.
 2. Select **Load the standard chart**, then **Load the standard chart** again to confirm.
 
-The standard Singapore start-up chart has 86 accounts, with their report groups, cash-flow lines,
+The standard Singapore start-up chart has 87 accounts, with their report groups, cash-flow lines,
 functions, GST codes, flags and guidance. It loads only into a chart with no accounts. You can
 rename, regroup and add accounts afterwards.
 

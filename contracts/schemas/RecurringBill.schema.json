@@ -10,7 +10,7 @@
       "type": "array"
     },
     "content_version": {
-      "description": "The version of its content, which drafts name; it changes when the supplier, currency, lines or notes change.",
+      "description": "The version of its content, which drafts name; it changes when the supplier, currency, lines, notes or nature of payment change.",
       "examples": [
         2
       ],
@@ -71,6 +71,13 @@
       "description": "What it is.",
       "examples": [
         "Office rent"
+      ],
+      "type": "string"
+    },
+    "nature_of_payment": {
+      "description": "What each draft's payment is for, for a supplier resident outside Singapore (FR-AP-19).",
+      "examples": [
+        "software_use"
       ],
       "type": "string"
     },

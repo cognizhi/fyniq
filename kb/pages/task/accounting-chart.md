@@ -4,7 +4,7 @@ type: task
 title: Set up and keep the chart of accounts
 summary: Load the standard Singapore start-up chart, add an account, rename, regroup or deactivate one, and what system accounts are
 sources:
-  - docs/user-guide/chart-of-accounts.md sha256:4faa923bd9b1269afaae8cadf2b715020d4b8f3c78ee484dc8c1b1a95233cdae
+  - docs/user-guide/chart-of-accounts.md sha256:2ffed5628c201949833da56f8b41372021fe104dd438eaa06bda1733167458b6
 data_class: general
 taint: trusted
 status: draft
@@ -39,7 +39,7 @@ aliases:
 ## Start from the standard chart
 
 - A new company starts with no accounts: **Load the standard chart**, and confirm.
-- The standard Singapore start-up chart has 86 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance; it loads only into a chart with no accounts, and can be renamed, regrouped and added to afterwards.
+- The standard Singapore start-up chart has 87 accounts with their report groups, cash-flow lines, functions, GST codes, flags and guidance; it loads only into a chart with no accounts, and can be renamed, regrouped and added to afterwards.
 
 (src: docs/user-guide/chart-of-accounts.md#start-from-the-standard-chart)
 

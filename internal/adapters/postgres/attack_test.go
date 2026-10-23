@@ -469,6 +469,9 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"period_variance_explanation.previous_amount": func(t *testing.T, b porttest.Books, v string) error {
 		return rawExplanation(t, b, "0", v)
 	},
+	"withholding_decision.rate_percent": func(t *testing.T, b porttest.Books, v string) error {
+		return rawWithholding(t, b, v)
+	},
 	"fx_rate.rate": func(t *testing.T, b porttest.Books, v string) error {
 		return rawFXRate(t, b, v, "1.35")
 	},
@@ -519,6 +522,22 @@ func rawFXRate(t *testing.T, b porttest.Books, rate, quote string) error {
 	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.fx_rate (kind, currency, on_date, rate, quote, quote_form, entered_by, entered_at)
 VALUES ('day', 'USD', '2026-10-16', $1::numeric, $2::numeric, 'base-per-unit', 'user:attack-test', now())`, rate, quote)
+		return err
+	})
+}
+
+// rawWithholding records a decision to withhold at rate as the API role, for a supplier made in the same transaction, so
+// only the rate's own checks can fail.
+func rawWithholding(t *testing.T, b porttest.Books, rate string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		var supplier string
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.contact (legal_name, is_vendor, country) VALUES ('Attack Inc', true, 'US') RETURNING id`).Scan(&supplier); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.withholding_decision (supplier_id, nature, outcome, rate_percent, tax_agent, recorded_by)
+VALUES ($1, 'interest', 'withhold', $2::numeric, 'Attack', 'user:attack-test')`, supplier, rate)
 		return err
 	})
 }

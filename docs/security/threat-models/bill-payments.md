@@ -31,6 +31,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
 | T7 | person ↔ API | Tampering: a retried request records the payment twice | A bill settled twice and the bank credited twice | Medium |
 | T8 | person ↔ API | Tampering (rev 0.81): a credit is applied to a bill beyond what either has open, or applied twice, or the credit or payment behind it is voided while it stands | A bill shown settled by a credit that no longer exists; 2010 and the sub-ledger apart | Low |
 | T9 | person ↔ API | Tampering (rev 0.82): a refund recorded that never came in, to clear a credit and hide that the supplier still owes it | A credit shown settled; the bank in the books above the statement until reconciled | Medium |
+| T10 | person ↔ API | Tampering and repudiation (rev 0.90): a non-resident supplier is paid in full before the tax agent decides on withholding, or a decision is changed after a bill posts to hide tax owed to IRAS | Tax not withheld that the company still owes, with penalties; a supplier overpaid | Medium |
 
 ## 3. What we do about it
 
@@ -45,6 +46,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
 | T7 | `recordBillPayment` takes an Idempotency-Key: a retry gets the saved answer and records nothing; a second record of the same money is still possible without the key, and the bank reconciliation shows it | The API conventions' idempotency tests |
 | T8 | An application locks the bill and the credit, refuses more than either has open (CREDIT-05), and records both allocations in one transaction; a vendor credit or a payment whose credit is applied is voided only once its applications are (CREDIT-08); the database reverses an application that posted nothing only with the reversal of its allocations (FY056); the close's INV-07 check sees any posting and document that disagree | `TestCreditsAreAppliedToBills`, `TestCreditApplicationsThroughTheAPI` |
 | T9 | Recording a refund needs P and is audited with the actor; it settles at most what is left of the credit (CREDIT-05); the bank reconciliation compares the money account with the statement; a void in Founder mode needs a second person (FM-1) | `TestSuppliersRefundCredits`, `TestSupplierRefundsThroughTheAPI` |
+| T10 | A payment of a non-resident supplier's bill is refused while no decision exists for its nature, or while the decision in force withholds at another rate than the bill posted with, until an edit applies it (BILLPAY-11); a decision names the tax agent, is audited, and never changes or goes (FY174), a later one replacing it only from when it is recorded; a bill posts with the decision in force when its entry is recorded, and the replay checks it; the API's role cannot update or delete one | `TestWithholdingIsDecidedAndPostedWithTheBill`, `TestWithholdingThroughTheAPI` |
 
 ## 4. What remains
 
@@ -52,5 +54,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
   until then the monthly reconciliation of the money account is the check.
 - Clearing the residual of a bill paid in parts with a base-only line is a second exception to INV-05, provisional
   until the accountant's sign-off (rev 0.77).
-- A bill from a non-resident supplier is not yet held before payment (FR-AP-19's withholding-tax hold arrives with
-  slice 9).
+- (rev 0.90) The withholding hold is checked when a payment is recorded by hand; the payment batch (FR-BNK-12) takes it over
+  when it exists. A supplier with neither a tax residence nor a country is taken as resident, so a foreign supplier entered
+  without them is not held: the contact form defaults the country to SG and the guide asks for it. The rate is the tax
+  agent's, typed from their advice; their advice attached to the bill is the evidence.

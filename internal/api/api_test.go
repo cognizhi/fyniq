@@ -684,7 +684,7 @@ func TestDocumentNumbers(t *testing.T) {
 	}
 }
 
-// The standard chart loads once into an organisation with no account: 86 accounts with every attribute;
+// The standard chart loads once into an organisation with no account: 87 accounts with every attribute;
 // a second load, or a load into an organisation with accounts, is refused.
 // req: FR-COA-01
 // req: FR-COA-02
@@ -707,15 +707,15 @@ func TestStandardChart(t *testing.T) {
 	}
 
 	if r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Prefer", "return=preview"); r.Status != 200 ||
-		r.Body["accounts"] != float64(86) || len(list()) != 0 {
+		r.Body["accounts"] != float64(87) || len(list()) != 0 {
 		t.Fatalf("the preview: %d %s", r.Status, r.Raw)
 	}
 	r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Idempotency-Key", uuid.NewString())
-	if r.Status != 201 || r.Body["accounts"] != float64(86) || r.Header.Get("Location") != "/v1/accounts" {
+	if r.Status != 201 || r.Body["accounts"] != float64(87) || r.Header.Get("Location") != "/v1/accounts" {
 		t.Fatalf("loading the chart: %d %v %s", r.Status, r.Header, r.Raw)
 	}
 	accounts := list()
-	if len(accounts) != 86 {
+	if len(accounts) != 87 {
 		t.Fatalf("%d accounts after loading", len(accounts))
 	}
 	for code, want := range map[string]map[string]any{
@@ -747,7 +747,7 @@ func TestStandardChart(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil), "loadStandardChart", 409, CodeChartLoaded)
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.as(authz.Accountant), nil), "loadStandardChart", 409, CodeChartLoaded)
-	if n := len(list()); n != 86 {
+	if n := len(list()); n != 87 {
 		t.Errorf("a refused load changed the chart: %d accounts", n)
 	}
 }

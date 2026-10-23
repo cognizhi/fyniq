@@ -23,13 +23,14 @@ var (
 	software   = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000006120"), Code: "6120", Active: true, Type: "expense"}
 	hosting    = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000005010"), Code: "5010", Active: true, Type: "expense"}
 	prepaid    = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000001210"), Code: "1210", Active: true, Type: "asset", Role: RolePrepayments}
+	whtPayable = Account{ID: uuid.MustParse("0192f1a0-0000-7000-8000-000000002330"), Code: "2330", Active: true, Type: "liability", Role: RoleWithholdingTax}
 	billID     = uuid.MustParse("0192f1a0-0000-7000-8000-0000000b1110")
 )
 
 // purchasing is the chart a bill posts against: the system accounts by role, two expense accounts, and settings' own.
 func purchasing() Settings {
 	s := Settings{Base: sgd, Accounts: map[uuid.UUID]Account{}}
-	for _, a := range []Account{payables, gstControl, fxRounding, prepaid, software, hosting, bank, group, closed} {
+	for _, a := range []Account{payables, gstControl, fxRounding, prepaid, whtPayable, software, hosting, bank, group, closed} {
 		s.Accounts[a.ID] = a
 	}
 	return s
@@ -186,6 +187,58 @@ func TestPostBillClaimsAShareOfTheGST(t *testing.T) {
 	}
 }
 
+// Worked by hand (FR-AP-19, RND-WHT; rev 0.90): G4-010's consultant, S$5,000.00 at 15%, posts Dr 6120 5,000.00, Cr 2330
+// 750.00 and Cr 2010 4,250.00, what the supplier is paid. IRAS's form rounds the SGD gross down to the dollar: on
+// S$1,234.56 at 17% the tax is 1,234 × 17% = 209.78, and the supplier is owed 1,024.78. In US dollars the tax is on the
+// gross at the bill's rate: USD 1,000.37 at 1.3456 is S$1,346.10, so 1,346 × 17% = S$228.82, while the supplier's own
+// amount withheld is USD 170.06 (17% of 1,000.37), so it is owed USD 830.31 = S$1,117.27, and 7030 takes the cent
+// between. GST is not withheld from.
+// req: FR-AP-19
+// req: RND-WHT
+// req: G4-010
+func TestPostBillWithholdsTax(t *testing.T) {
+	s := purchasing()
+	withholding := func(b Bill, rate string) Bill { b.Withholding = &Withholding{RatePercent: rate}; return b }
+	for _, c := range []struct {
+		name string
+		b    Bill
+		want string
+	}{
+		{"G4-010: the consultant at 15%", withholding(sgdBill(billLine(t, software, "5000.00", "0.00", sgd, false)), "15"),
+			"6120 5000.00 SGD = 5000.00; 2330 -750.00 SGD = -750.00; 2010 -4250.00 SGD = -4250.00"},
+		{"the SGD gross rounded down to the dollar", withholding(sgdBill(billLine(t, software, "1234.56", "0.00", sgd, false)), "17"),
+			"6120 1234.56 SGD = 1234.56; 2330 -209.78 SGD = -209.78; 2010 -1024.78 SGD = -1024.78"},
+		{"GST is not withheld from", withholding(sgdBill(billLine(t, software, "1000.00", "90.00", sgd, true)), "10"),
+			"6120 1000.00 SGD = 1000.00; 2200 90.00 SGD = 90.00; 2330 -100.00 SGD = -100.00; 2010 -990.00 SGD = -990.00"},
+		{"in US dollars", withholding(Bill{ID: billID, Version: 1, Date: day, Memo: "Consultant INV-9", Currency: usd, Rate: usdRate(t, "1.3456"),
+			Lines: []BillLine{billLine(t, software, "1000.37", "0.00", usd, false)}}, "17"),
+			"6120 1000.37 USD = 1346.10; 2330 -228.82 SGD = -228.82; 2010 -830.31 USD = -1117.27; 7030 -0.01 SGD = -0.01"},
+	} {
+		e, err := PostBill(c.b, s)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if got := legs(s, e); got != c.want {
+			t.Errorf("%s:\n got %s\nwant %s", c.name, got, c.want)
+		}
+	}
+	for name, c := range map[string]struct {
+		b    Bill
+		s    Settings
+		code string
+	}{
+		"no 2330":         {withholding(sgdBill(billLine(t, software, "100.00", "0.00", sgd, false)), "17"), without(s, whtPayable), CodeSystemRole},
+		"a rate of 0":     {withholding(sgdBill(billLine(t, software, "100.00", "0.00", sgd, false)), "0"), s, CodeWithholding},
+		"a rate over 100": {withholding(sgdBill(billLine(t, software, "100.00", "0.00", sgd, false)), "120"), s, CodeWithholding},
+		"a fraction":      {withholding(sgdBill(billLine(t, software, "100.00", "0.00", sgd, false)), "0.17%"), s, CodeWithholding},
+		"no net":          {withholding(sgdBill(billLine(t, software, "0.00", "9.00", sgd, true)), "17"), s, CodeWithholding},
+	} {
+		if _, err := PostBill(c.b, c.s); !slices.Contains(codes(err), c.code) {
+			t.Errorf("%s: %v; want %s", name, err, c.code)
+		}
+	}
+}
+
 // Every refusal of the bill rule is reported together, with its field (ENG-22).
 // req: ENG-22
 // req: FR-AP-02
@@ -335,6 +388,11 @@ func TestEveryBillRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 				shared(billLine(t, hosting, "85.00", "7.65", sgd, true), "50"))},
 			{"a USD line 60% for the business", Bill{ID: billID, Version: 4, Date: day, Memo: "Vercel INV-79", Currency: usd, Rate: usdRate(t, "1.34"),
 				Lines: []BillLine{shared(g4023, "60")}}},
+			// rev 0.90: bill@1 gained withholding tax; no entry posted before it withholds, so every stored entry replays.
+			{"G4-010's consultant, 15% withheld", Bill{ID: billID, Version: 5, Date: day, Memo: "Consultant INV-8", Currency: sgd, Withholding: &Withholding{RatePercent: "15"},
+				Lines: []BillLine{billLine(t, software, "5000.00", "0.00", sgd, false)}}},
+			{"a USD bill, 17% withheld", Bill{ID: billID, Version: 6, Date: day, Memo: "Consultant INV-9", Currency: usd, Rate: usdRate(t, "1.3456"),
+				Withholding: &Withholding{RatePercent: "17"}, Lines: []BillLine{billLine(t, software, "1000.37", "0.00", usd, false)}}},
 		},
 	}
 	for rule := range BillRules {

@@ -37,9 +37,9 @@ fyniq_api       SELECT    close_checklist_entry
 fyniq_api       INSERT    close_checklist_template (tasks, version, written_at, written_by)
 fyniq_api       SELECT    close_checklist_template
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
-fyniq_api       INSERT    contact (address, billing_email, country, currency, default_account_id, default_gst_code, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, uen_or_tax_id)
+fyniq_api       INSERT    contact (address, billing_email, country, currency, default_account_id, default_gst_code, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
 fyniq_api       SELECT    contact
-fyniq_api       UPDATE    contact (address, billing_email, country, currency, default_account_id, default_gst_code, is_active, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, uen_or_tax_id, version)
+fyniq_api       UPDATE    contact (address, billing_email, country, currency, default_account_id, default_gst_code, is_active, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
 fyniq_api       EXECUTE   count_super_admins()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
@@ -168,6 +168,8 @@ fyniq_api       EXECUTE   webauthn_challenge_take()
 fyniq_api       EXECUTE   webauthn_credential_register()
 fyniq_api       EXECUTE   webauthn_credential_revoke()
 fyniq_api       EXECUTE   webauthn_credentials()
+fyniq_api       INSERT    withholding_decision (bill_id, nature, note, outcome, rate_percent, recorded_by, supplier_id, tax_agent)
+fyniq_api       SELECT    withholding_decision
 fyniq_executor  SELECT    account
 fyniq_executor  SELECT    allocation
 fyniq_executor  SELECT    approval_policy
@@ -224,6 +226,7 @@ fyniq_executor  SELECT    statutory_pack_activation
 fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
 fyniq_executor  SELECT    team_mode
+fyniq_executor  SELECT    withholding_decision
 fyniq_readonly  SELECT    account
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
@@ -282,6 +285,7 @@ fyniq_readonly  SELECT    statutory_pack_rows
 fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    team_mode
 fyniq_readonly  SELECT    user_membership
+fyniq_readonly  SELECT    withholding_decision
 fyniq_worker    SELECT    account
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    approval_policy
@@ -361,3 +365,4 @@ fyniq_worker    SELECT    statutory_pack_versions
 fyniq_worker    SELECT    team_mode
 fyniq_worker    SELECT    tenants
 fyniq_worker    SELECT    user_membership
+fyniq_worker    SELECT    withholding_decision
