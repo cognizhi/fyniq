@@ -22,6 +22,7 @@ import { preparers, StateChips, total, type Bill } from "./Bills";
 import { BillLines, lineKey, newLine, type Errors, type Line } from "./BillLines";
 import { factsOf, InputTaxCard, taxOf, usualTax, type Tax } from "./InputTax";
 import { ApplyCredit, Payments, RecordPayment } from "./Payments";
+import { PaymentPlanCard } from "./BillsBoard";
 import { natures, nonResident, residenceOf, WithholdingCard } from "./Withholding";
 
 type Draft = components["schemas"]["BillDraft"];
@@ -638,6 +639,15 @@ export function BillPage() {
         </div>
       )}
       {bill && !form && !editing && <Checks checks={bill.checks ?? []} />}
+      {bill && bill.status !== "draft" && !form && !editing && (
+        <PaymentPlanCard
+          bill={bill}
+          mayPlan={mayPrepare}
+          onDone={(message) => {
+            void refresh().then(() => setStatus(message));
+          }}
+        />
+      )}
       {bill && !form && !editing && (
         <WithholdingCard
           bill={bill}

@@ -45,11 +45,14 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   compiled into `kb/`
   (22 Oct 2026: Purchases › Bills and the bill page; `getPurchaseGSTCodes` gives a line its codes from the pack in
   force on the bill's date. Tests `bills.test.tsx`)
-- [ ] 2.2 The bill record (`bill-record`): state chips, actions, tabs (details, lines, ledger impact,
+- [x] 2.2 The bill record (`bill-record`): state chips, actions, tabs (details, lines, ledger impact,
   attachments, activity, related)
   (22 Oct 2026, part: the posted bill on the same page, read-only, with its states, ledger impact, and Void and Edit,
   asked for in Founder mode. **Left:** the tabs for attachments, activity and related records, with attachments)
   (23 Oct 2026, rev 0.86: the Evidence panel on the bill's page. **Left:** the activity and related-records tabs)
+  (23 Oct 2026: the related records are on the bill's page: its payments, applications and refunds, its spread's
+  releases, its purchase order line, its evidence, its withholding and its payment plan. The activity tab reads the
+  audit trail, so it moves to `p1-audit-explorer` with AUD-07's audit read API)
 
 ## 3. Payments recorded by hand (the owner's decision of 22 Oct 2026)
 
@@ -83,13 +86,14 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   open documents. Tests `// req: FR-AP-06`
   (23 Oct 2026, rev 0.79: `payables.Age`, `payables.ToPay`, `bill.Due`, `getPayables`, the summary on Purchases ›
   Bills. Tests `TestAgeingBucketsByDaysPastDue`, `TestBillsToPayAndTheCashTheyNeed`, `TestPayablesThroughTheAPI`)
-- [ ] 5.2 The bills board (`bills-board`): by status, the due-date calendar, scheduling a payment date,
+- [x] 5.2 The bills board (`bills-board`): by status, the due-date calendar, scheduling a payment date,
   early-payment discounts shown, reminders before due dates in the Inbox. Tests `// req: FR-AP-13`
   **Left:** remittance advice email (`p1-templates-email`); "in a batch" (FR-BNK-12)
   (23 Oct 2026, PRD-001 rev 0.93, the API: planned payment dates (`planBillPayment`, append-only `FY175`), a
   supplier's discount terms and a bill's discount (`RND-DISCOUNT`), the bills to pay (`listBillReminders`, the
   setting `purchases.reminder_days`). Tests `TestBillPaymentsArePlannedAndReminded`, `TestBillPlansThroughTheAPI`.
-  **Left:** the board, the calendar and the Inbox's reminders (the screens))
+  The screens, rev 0.94: the List, Board and Calendar views, the Paying it card, the Inbox's Bills to pay, a supplier's
+  discount terms; the guide's "Plan and track payments")
 
 ## 6. Prepayment spreads (the owner's decision of 22 Oct 2026)
 
@@ -158,4 +162,7 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   (23 Oct 2026, PRD-001 rev 0.92: each open bill and supplier credit in a foreign currency against its stored rate, a
   line on 2010 naming it, what 2010 holds beyond them an item of its own, a stale run posting only the change. Test
   `TestBillsAreRevaluedOneByOne`)
-- [ ] 10.3 `make check`, `make test` and `make test-e2e`; the five frames of each screen in a browser
+- [x] 10.3 `make check`, `make test` and `make test-e2e`; the five frames of each screen in a browser
+  (23 Oct 2026: `make test` with pipefail and `make check` green locally, `make test-e2e` in CI on every pull request;
+  a browser sweep of the bills list, its board and calendar, a new, a draft and a posted bill, a new credit note, the
+  recurring bills and one, the orders and one, and the Inbox, at the five frames: no horizontal overflow, no error)

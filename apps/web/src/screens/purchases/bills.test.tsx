@@ -7,6 +7,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { BillPage, check } from "./BillPage";
 import { Bills } from "./Bills";
+import { today } from "./BillsBoard";
 import { usualTax } from "./InputTax";
 import { paymentOf } from "./Payments";
 
@@ -207,6 +208,55 @@ describe("A bill", () => {
         lines: [{ description: "Confluence" }, { description: "Phone", business_share: "60" }],
       }),
     );
+  });
+
+  // req: FR-AP-13
+  it("shows the bills by where they stand, and their payment dates on the calendar; axe finds nothing", async () => {
+    const now = today();
+    const planned: Bill = { ...posted, id: "b2", number: "BILL-0008", states: states({ approval: "approved", ledger: "posted" }), planned_payment_on: now,
+      early_payment_discount: { percent: "2", until: now, amount: { amount: "21.80", currency: "SGD" } } };
+    const paid: Bill = { ...posted, id: "b3", number: "BILL-0005", states: states({ approval: "approved", ledger: "posted", payment: "paid" }) };
+    answer({ "GET /v1/bills": { status: 200, body: { items: [draft, posted, planned, paid] } }, "GET /v1/payables": { status: 200, body: { as_at: now, currencies: [] } } });
+    const { container } = renderPage(Bills, { path: "/purchases/bills", session: accountant });
+    await screen.findByRole("table", { name: "Bills" });
+    fireEvent.click(screen.getByRole("button", { name: "Board" }));
+    const board = screen.getByLabelText("Bills by status");
+    const column = (name: string) => within(board).getByRole("heading", { name: new RegExp(`^${name}`) }).closest("section")!;
+    expect(within(column("To review")).getByText("Draft")).toBeTruthy();
+    expect(within(column("Scheduled")).getByText("BILL-0008")).toBeTruthy();
+    expect(within(column("Scheduled")).getByText(/2% off by/)).toBeTruthy();
+    expect(within(column("Overdue")).getByText("BILL-0007")).toBeTruthy();
+    expect(within(column("Paid")).getByText("BILL-0005")).toBeTruthy();
+    expect(screen.queryByRole("table", { name: "Bills" })).toBeNull();
+    await noViolations(container);
+    fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
+    const cal = screen.getByRole("table");
+    expect(within(cal).getByRole("link", { name: /Atlassian Pty Ltd, planned payment/ }).getAttribute("href")).toBe("/purchases/bills/b2");
+    await noViolations(container);
+  });
+
+  // req: FR-AP-13
+  it("plans a posted bill's payment over its ETag, and shows its discount", async () => {
+    const open: Bill = { ...posted, states: states({ approval: "approved", ledger: "posted" }), early_payment_discount: { percent: "2", until: "2099-10-24", amount: { amount: "21.80", currency: "SGD" } } };
+    const sent = answer({
+      ...reads,
+      "GET /v1/bills/b1": read(open),
+      "GET /v1/bills/b1/evidence": { status: 200, body: { items: [] } },
+      "POST /v1/bills/b1/payment-plan": { status: 200, body: { ...open, planned_payment_on: "2026-11-10" }, headers: { ETag: `"1-posted"` } },
+    });
+    renderPage(BillPage, { path: "/purchases/bills/b1", route: "/purchases/bills/$billId", session: accountant, organisation: standard });
+    const card = (await screen.findByRole("heading", { name: "Paying it" })).closest("section")!;
+    expect(within(card).getByText(/2% \(21.80 SGD\) if paid by 24 Oct 2099/)).toBeTruthy();
+    fireEvent.click(within(card).getByRole("button", { name: "Plan payment…" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Pay on"), { target: { value: "2026-11-10" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Plan payment" }));
+    await waitFor(() => {
+      const x = sent.find((r) => r.path === "/v1/bills/b1/payment-plan");
+      expect(x?.body).toEqual({ planned_on: "2026-11-10" });
+      expect(x?.headers.get("If-Match")).toBe(`"1-posted"`);
+    });
+    expect(await screen.findByText("Payment planned for 10 Nov 2026.")).toBeTruthy();
   });
 
   // req: FR-AP-19

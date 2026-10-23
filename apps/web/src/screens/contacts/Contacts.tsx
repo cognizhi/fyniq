@@ -48,10 +48,12 @@ interface Draft extends Record<TextKey, string> {
   customer: boolean;
   vendor: boolean;
   payment_terms_days: string;
+  discount_percent: string; // a supplier's early-payment discount (FR-AP-13): blank for none
+  discount_days: string;
   active: boolean;
 }
 
-const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, payment_terms_days: "", active: true };
+const blank: Draft = { legal_name: "", uen_or_tax_id: "", billing_email: "", remittance_email: "", phone: "", country: "SG", tax_residence: "", currency: "SGD", peppol_id: "", default_gst_code: "", address: "", customer: true, vendor: false, payment_terms_days: "", discount_percent: "", discount_days: "", active: true };
 
 function draftOf(c: Contact): Draft {
   const s = (v: string | undefined) => v ?? "";
@@ -70,6 +72,8 @@ function draftOf(c: Contact): Draft {
     customer: c.customer,
     vendor: c.vendor,
     payment_terms_days: c.payment_terms_days === undefined ? "" : String(c.payment_terms_days),
+    discount_percent: s(c.discount_percent),
+    discount_days: c.discount_days === undefined ? "" : String(c.discount_days),
     active: c.active,
   };
 }
@@ -134,6 +138,11 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
     if (!d.customer && !d.vendor) errs.customer = "Mark it as a customer, a vendor or both.";
     const terms = d.payment_terms_days.trim();
     if (terms && !(/^\d{1,3}$/.test(terms) && Number(terms) <= 365)) errs.payment_terms_days = "Enter 0 to 365 days, or leave it empty for the organisation's default.";
+    const pct = d.discount_percent.trim().replace(/%$/, "").trim();
+    const within = d.discount_days.trim();
+    if (pct && !/^(0\.(0[1-9]|[1-9]\d?)|[1-9]\d?(\.\d{1,2})?)$/.test(pct)) errs.discount_percent = "Enter the percentage off, above 0 and below 100, such as 2.";
+    if (within && !(/^\d{1,3}$/.test(within) && Number(within) >= 1 && Number(within) <= 365)) errs.discount_days = "Enter 1 to 365 days.";
+    if (Boolean(pct) !== Boolean(within)) errs[pct ? "discount_days" : "discount_percent"] = "Enter both the percentage and the days, or neither.";
     setErrors(errs);
     if (Object.keys(errs).length) return;
     setBusy(true);
@@ -143,6 +152,10 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
       for (const [k] of textFields) if (k !== "legal_name" && d[k].trim()) body[k] = d[k].trim();
       if (d.address.trim()) body.address = d.address.trim();
       if (terms) body.payment_terms_days = Number(terms);
+      if (pct && within) {
+        body.discount_percent = pct;
+        body.discount_days = Number(within);
+      }
       // First a preview, which lists the contacts it may duplicate (FR-CT-04); then, once seen, the add.
       if (dupes === null) {
         const check = await api.POST("/v1/contacts", { params: { header: { Prefer: "return=preview" } }, body: body as never });
@@ -168,6 +181,10 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
     for (const k of [...textFields.map(([k]) => k), "address"] as TextKey[]) if (d[k].trim() !== base[k]) changes[k] = d[k].trim();
     for (const k of ["customer", "vendor", "active"] as const) if (d[k] !== base[k]) changes[k] = d[k];
     if (terms !== base.payment_terms_days) changes.payment_terms_days = terms ? Number(terms) : -1; // -1 clears it
+    if (pct !== base.discount_percent || within !== base.discount_days) {
+      changes.discount_percent = pct; // "" with -1 clears the discount
+      changes.discount_days = within ? Number(within) : -1;
+    }
     if (Object.keys(changes).length === 0) {
       setBusy(false);
       return close();
@@ -241,6 +258,12 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
           <div className="fy-form fy-form--2">
             {textFields.map(([k, label, help]) => input(k, label, help, k.endsWith("email") ? "email" : "text"))}
             {input("payment_terms_days", "Payment terms (days)", "Empty: the organisation's default")}
+            {d.vendor && (
+              <>
+                {input("discount_percent", "Early-payment discount (%)", "A supplier's discount for paying early, such as 2")}
+                {input("discount_days", "If paid within (days)", "Of the bill's date, such as 10")}
+              </>
+            )}
             <div className="fy-field fy-field--full">
               <label className="fy-label" htmlFor={`${id}-address`}>
                 Address

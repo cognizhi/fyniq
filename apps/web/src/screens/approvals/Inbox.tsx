@@ -7,7 +7,12 @@ import { Refusal } from "../../components/Refusal";
 import { date, dateTime } from "../../format/date";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { BillsToPay } from "../purchases/BillsBoard";
 import { operationLabel, StatusChip, type Approval } from "./words";
+
+// Who records bill payments: P on "Bills, vendor credits" (Appendix D), the Accountant; the Inbox lists them the bills to
+// pay soon (FR-AP-13). The API decides what they may do.
+const payers = ["accountant"];
 
 async function listApprovals(status: "pending" | "all") {
   const { data, error } = await api.GET("/v1/approvals", { params: { query: { status, page_size: 200 } } });
@@ -102,6 +107,7 @@ export function Inbox() {
           {others.length > 0 && <Group id="others" title="Waiting for others" items={others} mine={mine} empty="" />}
         </>
       )}
+      {(session.roles ?? []).some((r) => payers.includes(r)) && <BillsToPay />}
       {review.data && (
         <section className="fy-card" aria-labelledby="weekly-review">
           <div className="fy-card__head">

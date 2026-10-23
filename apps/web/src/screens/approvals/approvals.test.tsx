@@ -176,6 +176,34 @@ describe("the Inbox", () => {
   });
 });
 
+// req: FR-AP-13
+describe("the Inbox's bills to pay", () => {
+  it("lists the bills to pay soon for whoever records payments; axe finds nothing", async () => {
+    const accountant = { ...ownerSession, roles: ["accountant"] } as typeof ownerSession;
+    answer({
+      "GET /v1/approvals": { status: 200, body: { items: [] } },
+      "GET /v1/review-log": { status: 200, body: { items: [], unreviewed: 0, overdue: 0 } },
+      "GET /v1/bill-reminders": {
+        status: 200,
+        body: {
+          days: 3,
+          items: [
+            { bill_id: "b1", number: "BILL-0001", supplier: { id: "c1", name: "Atlassian Pty Ltd" }, due_date: "2026-10-10", open: { amount: "1090.00", currency: "SGD" }, why: "overdue" },
+            { bill_id: "b2", number: "BILL-0002", supplier: { id: "c1", name: "Atlassian Pty Ltd" }, due_date: "2026-11-30", planned_payment_on: "2026-10-23", open: { amount: "200.00", currency: "SGD" }, why: "planned" },
+          ],
+        },
+      },
+    });
+    renderPage(Inbox, { path: "/inbox", session: accountant });
+    const list = await screen.findByRole("list", { name: "Bills to pay" });
+    const rows = within(list).getAllByRole("link");
+    expect(rows[0]!.textContent).toContain("Overdue");
+    expect(rows[0]!.getAttribute("href")).toBe("/purchases/bills/b1");
+    expect(rows[1]!.textContent).toContain("planned 23 Oct 2026");
+    await noViolations(document.body);
+  });
+});
+
 // req: FM-3
 describe("the review log", () => {
   it("marks the actions picked as reviewed, with a note", async () => {

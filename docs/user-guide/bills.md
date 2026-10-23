@@ -3,7 +3,7 @@ key: purchases.bills
 title: Bills
 mode: basic
 roles: [bookkeeper, ap_specialist, accountant, controller, approver, owner, auditor, tax_agent]
-requirements: [FR-AP-02, FR-AP-03, FR-AP-06, FR-AP-19, FR-AP-20, FR-AR-18, RND-GST-EXCL, RND-GST-SHARE, RND-WHT, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
+requirements: [FR-AP-02, FR-AP-03, FR-AP-06, FR-AP-13, FR-AP-19, FR-AP-20, FR-AR-18, RND-GST-EXCL, RND-GST-SHARE, RND-WHT, RND-DISCOUNT, ENG-41, ENG-42, FM-1, FM-2, SOD-3]
 status: draft            # written with the bill screens (P1, p1-purchases); reviewed with the accountant
 ---
 
@@ -202,6 +202,29 @@ A posted bill is never changed in place.
 In Founder mode another founder approves a void or an edit first: the buttons say **Ask to void**
 and **Ask to post the edit**.
 
+## Plan and track payments
+
+On **Purchases → Bills**, choose the view:
+
+- **List**: every bill and credit note, filtered by status;
+- **Board**: the bills by where they stand: **To review**, **Awaiting approval**, **Approved**,
+  **Scheduled**, **Paid** and **Overdue**. On a phone, pick a status above the list;
+- **Calendar**: two weeks of **Payment dates**, each unpaid bill on its planned payment date, else
+  on its due date.
+
+To plan when to pay a posted bill, open it and select **Plan payment** under **Paying it**, then
+choose the day. A plan posts nothing: the bill shows as **Scheduled** until its payment is recorded.
+**Change the plan** picks another day, and **Unschedule** clears it. A bill is planned on or after its
+date, and a paid one is not planned. A Bookkeeper, an AP specialist or an Accountant plans payments.
+
+**Early-payment discounts.** When a supplier offers one (its contact's **Early-payment discount** and
+**If paid within** days), its bills show the discount and the last day to take it, such as "2% off by
+24 Oct". To take it, pay the rest and enter the supplier's credit note for the discount.
+
+**Reminders.** The Inbox lists **Bills to pay** for whoever records bill payments: the bills overdue,
+or falling due or planned to be paid within the organisation's reminder days (3 unless changed in
+the organisation's settings).
+
 ## Record a payment
 
 When the company has paid a supplier, record the payment on the bill. Bank import will match
@@ -277,6 +300,7 @@ voided or edited while it is applied or refunded.
 | A line's business share is not a percentage (BILL-15) | Enter the share used for the business from 0 to 100, such as 60, or leave it blank |
 | The bill does not say what the payment is for (BILL-16) | Choose the **Nature of payment**: the supplier is resident outside Singapore |
 | The bill waits for its withholding tax decision (BILLPAY-11) | Record the tax agent's decision; if it withholds, edit the bill first |
+| The payment date cannot be planned (BILL-18) | Plan it on or after the bill's date, for a bill with something left to pay |
 | The withholding decision cannot be recorded (BILL-17) | Record the supplier's tax residence; give a rate only when tax is withheld; name the tax agent |
 
 ## Related

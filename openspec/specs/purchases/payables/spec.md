@@ -334,6 +334,11 @@ Source: PRD-001 §8.6 · Priority M · Phase P1
 - **THEN** the bill shows the discount on its total under `RND-DISCOUNT` and the last day to take it (2% of S$1,090.00 within 10 days of 14 October: S$21.80 until 24 October)
 - **AND** taking it is a supplier credit note for the amount
 
+#### Scenario: The board and the calendar (rev 0.94)
+- **WHEN** a person opens Purchases › Bills
+- **THEN** a Board view shows the bills under To review, Awaiting approval, Approved, Scheduled, Paid and Overdue, and a Calendar view two weeks of payment dates, each unpaid bill on its planned date else its due date
+- **AND** a bill is planned from its page, not by dragging (WCAG 2.5.7)
+
 #### Scenario: Reminders in the Inbox (rev 0.93)
 - **WHEN** a member who records bill payments opens the Inbox
 - **THEN** it lists the bills overdue, or falling due or planned to be paid within the organisation's reminder days (3 by default), earliest first
