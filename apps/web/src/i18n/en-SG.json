@@ -252,6 +252,10 @@
       "label": "New contact",
       "tooltip": "Add a customer, a vendor or both; Fyniq checks for a possible duplicate first."
     },
+    "contact.templates": {
+      "label": "Templates",
+      "tooltip": "Choose the published templates this contact's documents and emails use, before the default."
+    },
     "item.add": {
       "label": "New item",
       "tooltip": "Add a product or service with its prices; its code never changes."

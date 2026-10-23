@@ -67,7 +67,7 @@ version, so the history keeps every step, and your draft stays as it is.
 In **Settings → Templates**, an Owner or a Controller selects **Change default** beside a document type
 and chooses one of its published templates, or the Classic starter. Each published template was approved
 when it was published, so choosing among them needs no second approval. A customer's or supplier's own
-template, set on their contact, comes before the default.
+template, chosen with **Templates** next to the contact in **Contacts**, comes before the default.
 
 ## Move templates with a bundle
 

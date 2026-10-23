@@ -3,7 +3,7 @@ key: contacts.manage
 title: Keep your contacts, items and prices
 mode: basic
 roles: [bookkeeper, ar_specialist, ap_specialist, accountant, controller, owner]
-requirements: [FR-CT-01, FR-CT-04, FR-ITM-01, FR-AP-19, FR-AP-13]
+requirements: [FR-CT-01, FR-CT-04, FR-ITM-01, FR-AP-19, FR-AP-13, FR-TPL-05]
 status: draft            # written with the contacts and items screens (P1); reviewed when sales and purchases arrive
 ---
 
@@ -48,6 +48,15 @@ duplicate** in the list.
 Select the pencil next to the contact, change what you need, and select **Save the contact**.
 Clear **Active** to stop offering it for new documents. Vendor bank details have their own change,
 which another founder approves.
+
+## Their own templates
+
+A customer or a supplier can have its own look. Select **Templates** next to the contact, then choose,
+for each document it receives, the published template its documents and emails use, or **The
+organisation's default**. Select **Save the templates**. A customer receives invoices, quotes, credit
+notes, receipts, statements and reminder letters; a supplier receives remittance advice and purchase
+orders. Only published templates can be chosen: see [Design your documents with
+templates](document-templates.md).
 
 ## Items and prices
 

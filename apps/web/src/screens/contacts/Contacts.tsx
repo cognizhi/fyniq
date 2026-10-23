@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Copy, Package, Pencil, Plus, Search, TriangleAlert, UserRound } from "lucide-react";
+import { Copy, LayoutTemplate, Package, Pencil, Plus, Search, TriangleAlert, UserRound } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -10,9 +10,11 @@ import { Dialog } from "../../components/ui/dialog";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { allTemplates, customerTypes, supplierTypes, typeNames, type DocType, type Kind } from "../settings/templateWords";
 
 type Contact = components["schemas"]["Contact"];
 type Duplicate = components["schemas"]["PossibleDuplicate"];
+type Choice = components["schemas"]["DocumentTemplateChoice"];
 type Filter = "all" | "customer" | "vendor";
 
 // Who adds and changes contacts and items: C on "Contacts and items" (Appendix D, rev 0.33).
@@ -291,6 +293,131 @@ function ContactForm({ editing, onClose, onSaved }: { editing: Contact | "new" |
   );
 }
 
+// ContactTemplates sets the published template a contact's documents and emails render with, or none, so the
+// organisation's default applies (FR-TPL-05; TPL-20): a customer's types for a customer, a supplier's for a vendor.
+function ContactTemplates({ contact, onClose, onSaved }: { contact: Contact | null; onClose: () => void; onSaved: (what: string) => void }) {
+  const queries = useQueryClient();
+  const one = useQuery({
+    queryKey: ["contact", contact?.id],
+    enabled: contact !== null,
+    queryFn: async () => {
+      const r = await api.GET("/v1/contacts/{contact_id}", { params: { path: { contact_id: contact?.id ?? "" } } });
+      if (r.error) throw r.error;
+      return { contact: r.data, etag: etagOf(r.response) || `"${r.data.version}"` };
+    },
+  });
+  const chosen = useQuery({
+    queryKey: ["contact-document-templates", contact?.id],
+    enabled: contact !== null,
+    queryFn: async () => {
+      const r = await api.GET("/v1/contacts/{contact_id}/document-templates", { params: { path: { contact_id: contact?.id ?? "" }, query: { page_size: 100 } } });
+      if (r.error) throw r.error;
+      return r.data.items ?? [];
+    },
+  });
+  const list = useQuery({ queryKey: ["document-templates"], queryFn: allTemplates, enabled: contact !== null });
+  const [picks, setPicks] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const types = [...(contact?.customer ? customerTypes : []), ...(contact?.vendor ? supplierTypes : [])];
+  const kinds: Kind[] = ["document", "email"];
+  const inForce = (kind: Kind, type: DocType) => (chosen.data ?? []).find((c: Choice) => c.kind === kind && c.document_type === type)?.template?.id ?? "";
+  const pick = (kind: Kind, type: DocType) => picks[`${kind}/${type}`] ?? inForce(kind, type);
+  const changed = Object.entries(picks).filter(([k, v]) => {
+    const [kind, type] = k.split("/") as [Kind, DocType];
+    return v !== inForce(kind, type);
+  });
+  const close = () => {
+    setPicks({});
+    setProblem(null);
+    onClose();
+  };
+  const save = async () => {
+    if (!contact || !one.data) return;
+    setBusy(true);
+    setProblem(null);
+    for (const [k, v] of changed) {
+      const [kind, type] = k.split("/") as [Kind, DocType];
+      const out = await api.PUT("/v1/contacts/{contact_id}/document-templates/{kind}/{document_type}", {
+        params: { path: { contact_id: contact.id, kind, document_type: type }, header: { "If-Match": one.data.etag, "Idempotency-Key": newKey() } },
+        body: v ? { template_id: v } : {},
+      });
+      if (out.error) {
+        setProblem(out.error as ApiProblem);
+        setBusy(false);
+        await queries.invalidateQueries({ queryKey: ["contact-document-templates", contact.id] });
+        return;
+      }
+    }
+    await queries.invalidateQueries({ queryKey: ["contact-document-templates", contact.id] });
+    setBusy(false);
+    onSaved(`${contact.legal_name}'s templates saved.`);
+    close();
+  };
+  const ready = one.data && chosen.data && list.data;
+
+  return (
+    <Dialog
+      open={contact !== null}
+      onOpenChange={(o) => !o && close()}
+      dismissible={!busy}
+      wide
+      eyebrow="Contacts"
+      title={contact ? `Templates for ${contact.legal_name}` : "Templates"}
+      description="Their documents and emails render with the template chosen here, before the organisation's default. Only published templates can be chosen."
+      footer={
+        <>
+          <Button variant="ghost" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={() => void save()} disabled={busy || !ready || changed.length === 0}>
+            Save the templates
+          </Button>
+        </>
+      }
+    >
+      {[one, chosen, list].map((q, i) => q.isError && <Refusal key={i} problem={problemOf(q.error)} title="The templates could not be read" />)}
+      {problem && <Refusal problem={problem} title="The templates were not saved" />}
+      {!ready && !one.isError && !chosen.isError && !list.isError && <p className="fy-secondary">Loading the templates…</p>}
+      {ready && (
+        <div className="fy-stack fy-stack--5">
+          {types.map((type) => (
+            <fieldset key={type} className="fy-fieldset">
+              <legend>{typeNames[type]}</legend>
+              <div className="fy-form fy-form--2">
+                {kinds.map((kind) => {
+                  const published = (list.data ?? []).filter((t) => t.kind === kind && t.document_type === type && t.published_version);
+                  const field = `ct-${type}-${kind}`;
+                  return (
+                    <div key={kind} className="fy-field">
+                      <label className="fy-label" htmlFor={field}>
+                        {kind === "document" ? "Document" : "Email"}
+                      </label>
+                      <select className="fy-select" id={field} value={pick(kind, type)} disabled={published.length === 0} aria-describedby={published.length === 0 ? `${field}-none` : undefined} onChange={(e) => setPicks({ ...picks, [`${kind}/${type}`]: e.target.value })}>
+                        <option value="">The organisation's default</option>
+                        {published.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name} (version {t.published_version})
+                          </option>
+                        ))}
+                      </select>
+                      {published.length === 0 && (
+                        <span className="fy-help" id={`${field}-none`}>
+                          No {kind === "document" ? typeNames[type].toLowerCase() : "email"} template is published yet.
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))}
+        </div>
+      )}
+    </Dialog>
+  );
+}
+
 // Contacts (docs/design/screens Contacts; FR-CT-01, FR-CT-04): the customers and vendors, filtered by
 // role and found by name, UEN or email, each with its details and a flag when it may duplicate
 // another. Balances, ageing and the activity timeline join with the sales and purchase documents.
@@ -301,10 +428,12 @@ export function Contacts() {
   const [find, setFind] = useState("");
   const [inactive, setInactive] = useState(false);
   const [editing, setEditing] = useState<Contact | "new" | null>(null);
+  const [templating, setTemplating] = useState<Contact | null>(null);
   const [status, setStatus] = useState("");
   const findId = useId();
   const may = (session.roles ?? []).some((r) => contactEditors.includes(r));
   const add = helpText("contact.add");
+  const templates = helpText("contact.templates");
   const all = q.data ?? [];
   const needle = find.trim().toLowerCase();
   const shown = all
@@ -405,6 +534,11 @@ export function Contacts() {
                   )}
                   {!c.active && <span className="fy-chip fy-chip--neutral">Inactive</span>}
                   {may && (
+                    <Button variant="ghost" size="sm" onClick={() => setTemplating(c)} aria-label={`Templates for ${c.legal_name}`} title={templates.tooltip}>
+                      <Icon of={LayoutTemplate} />
+                    </Button>
+                  )}
+                  {may && (
                     <Button variant="ghost" size="sm" onClick={() => setEditing(c)} aria-label={`Change ${c.legal_name}`}>
                       <Icon of={Pencil} />
                     </Button>
@@ -416,6 +550,7 @@ export function Contacts() {
         </section>
       )}
       <ContactForm editing={editing} onClose={() => setEditing(null)} onSaved={setStatus} />
+      <ContactTemplates contact={templating} onClose={() => setTemplating(null)} onSaved={setStatus} />
     </div>
   );
 }

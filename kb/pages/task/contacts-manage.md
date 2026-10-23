@@ -2,9 +2,9 @@
 key: contacts.manage
 type: task
 title: Keep your contacts, items and prices
-summary: Add or change a customer or vendor, what a possible duplicate means, and add items with a unit price per currency
+summary: Add or change a customer or vendor, what a possible duplicate means, a contact's own templates, and items with a unit price per currency
 sources:
-  - docs/user-guide/contacts-and-items.md sha256:7fd3f897470c89fe0fc7a5a638b485cbbf0f95ebb185e8e1542f591f15ae79cd
+  - docs/user-guide/contacts-and-items.md sha256:830b9cd6b40bf87d3c309d125ddb8c84a72bbca5d74be4b0102be92f73a6d4f7
 data_class: general
 taint: trusted
 status: draft
@@ -26,6 +26,8 @@ aliases:
   - foreign supplier
   - early-payment discount
   - supplier discount terms
+  - customer template
+  - template for one customer
 ---
 
 # Keep your contacts, items and prices
@@ -48,6 +50,13 @@ aliases:
 - The pencil changes a contact; **Save the contact**. Clearing **Active** stops offering it for new documents. Vendor bank details have their own change, which another founder approves ([[approvals.decide]]).
 
 (src: docs/user-guide/contacts-and-items.md#add-a-contact) (src: docs/user-guide/contacts-and-items.md#possible-duplicates) (src: docs/user-guide/contacts-and-items.md#change-a-contact)
+
+## Their own templates
+
+- **Templates** next to a contact chooses, for each document it receives, the published template its documents and emails use, or **The organisation's default**; then **Save the templates**.
+- A customer receives invoices, quotes, credit notes, receipts, statements and reminder letters; a supplier, remittance advice and purchase orders. Only published templates can be chosen ([[settings.templates]]).
+
+(src: docs/user-guide/contacts-and-items.md#their-own-templates)
 
 ## Items and prices
 

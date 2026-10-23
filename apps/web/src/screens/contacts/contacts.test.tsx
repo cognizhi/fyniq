@@ -98,6 +98,47 @@ describe("a supplier's early-payment discount", () => {
 const consult = { id: "i1", code: "CONSULT", name: "Consulting", type: "service", unit: "hour", gst_code: "SR", revenue_account_id: "r1", prices: [{ currency: "SGD", unit_price: "180.00" }], active: true, version: 1 };
 
 // req: FR-ITM-01
+const published = (id: string, kind: string, type: string, name: string) => ({ id, kind, document_type: type, name, version: 2, published_version: 1, draft_changed: false });
+
+// req: FR-TPL-05
+describe("a contact's own templates", () => {
+  it("chooses a customer's published templates over the contact's version, and returns one to the default; axe finds nothing", async () => {
+    const seen = answer({
+      "GET /v1/contacts": { status: 200, body: { items: [northwind] } },
+      "GET /v1/contacts/c1": { status: 200, body: northwind, headers: { ETag: '"1"' } },
+      "GET /v1/contacts/c1/document-templates": {
+        status: 200,
+        body: { items: [{ kind: "email", document_type: "invoice", etag: '"1"', template: { id: "e-1", name: "Friendly email", published_version: 1 } }] },
+      },
+      "GET /v1/document-templates": {
+        status: 200,
+        body: { items: [published("t-1", "document", "invoice", "Navy invoice"), published("e-1", "email", "invoice", "Friendly email"), published("p-1", "document", "purchase_order", "Purchase order")] },
+      },
+      "PUT /v1/contacts/c1/document-templates/document/invoice": { status: 200, body: { kind: "document", document_type: "invoice", etag: '"1"' } },
+      "PUT /v1/contacts/c1/document-templates/email/invoice": { status: 200, body: { kind: "email", document_type: "invoice", etag: '"1"' } },
+    });
+    renderPage(Contacts, { path: "/contacts", session: bookkeeper });
+    fireEvent.click(await screen.findByRole("button", { name: "Templates for Northwind Analytics Pte Ltd" }));
+    const dialog = await screen.findByRole("dialog");
+    const invoice = within(await within(dialog).findByRole("group", { name: "Invoice" }));
+    const doc = invoice.getByLabelText<HTMLSelectElement>("Document");
+    expect(invoice.getByLabelText<HTMLSelectElement>("Email").value).toBe("e-1");
+    expect(within(dialog).queryByRole("group", { name: "Purchase order" })).toBeNull(); // a customer receives no purchase order (TPL-20)
+    expect(within(within(dialog).getByRole("group", { name: "Quote" })).getByLabelText<HTMLSelectElement>("Document").disabled).toBe(true);
+    await noViolations(document.body);
+    fireEvent.change(doc, { target: { value: "t-1" } });
+    fireEvent.change(invoice.getByLabelText("Email"), { target: { value: "" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the templates" }));
+    expect(await screen.findByText("Northwind Analytics Pte Ltd's templates saved.")).toBeTruthy();
+    const puts = seen.filter((s) => s.method === "PUT");
+    expect(puts.map((p) => [p.path, p.body, p.headers.get("If-Match")])).toEqual([
+      ["/v1/contacts/c1/document-templates/document/invoice", { template_id: "t-1" }, '"1"'],
+      ["/v1/contacts/c1/document-templates/email/invoice", {}, '"1"'],
+    ]);
+    expect(puts.every((p) => p.headers.get("Idempotency-Key"))).toBe(true);
+  });
+});
+
 describe("Items and prices", () => {
   it("lists items with their prices as decimals, and adds one, checking each price", async () => {
     const seen = answer({

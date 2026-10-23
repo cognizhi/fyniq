@@ -73,5 +73,6 @@
   default chosen over the choice's ETag, the templates, the four-style gallery, waiting publications, the bundle in Expert
   mode) and template-editor, with the help key `settings.templates`, `docs/user-guide/document-templates.md` and
   `kb/pages/task/settings-templates.md`. Still to build: announcements, banners, notification-centre,
-  notification-preferences, and the template override on the contact's page.)
+  notification-preferences. Rev 0.101: a contact's own templates, Templates next to a contact in Contacts, with the
+  guide's "Their own templates"; the contact record's page (`p1-organisation-chart`) takes the same choices.)
 - [ ] 4.2 Finish with `make check` and `make test`
