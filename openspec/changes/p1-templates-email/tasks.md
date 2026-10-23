@@ -22,7 +22,7 @@
   fonts, the same bytes each time (snapshot hashes per default template in `testdata/sha256.golden`), and finds the
   particulars with `typst query`; `cmd/render` serves POST /render to the render class's tokens only (local HMAC; in
   Google Cloud `gcp.CallerTokens`, the api's and the worker's accounts). The render image is the Dockerfile's `render`
-  target: distroless/cc, Typst 0.15.1 checked against its SHA-256, 39 MB. Left: the API's preview operation, test documents
+  target: distroless/static (the cc base's glibc and OpenSSL failed the image scan), Typst 0.15.1 checked against its SHA-256, 30 MB. Left: the API's preview operation, test documents
   at publication refused when a particular is missing, the callers' ID tokens in Google Cloud and the OpenTofu service.)
 - [ ] 1.3 The document types and email templates with a default per type and a per-customer override; 3–4 starter templates; export and import of a versioned bundle. Tests `// req: FR-TPL-05` and `// req: FR-TPL-07`
 - [ ] 1.4 The editor's P1 half as designed: theme, texts, optional blocks, live preview, Basic and Expert. Test `// req: FR-TPL-01` (P1 part)

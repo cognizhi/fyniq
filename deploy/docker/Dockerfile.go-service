@@ -7,7 +7,7 @@
 # FLAVOUR=release (staging and production) or local (`make up`): the local flavour adds the
 # `local` build tag and with it the local adapters (DEV-07). Same Dockerfile, base and hardening.
 # Image budgets, scanning and signing are enforced by p0-ci-images-release. The render image is the `render`
-# target (--target render: distroless/cc with Typst); every other service the default target, `service`.
+# target (--target render: the binary with Typst); every other service the default target, `service`.
 # Platforms (NFR-IMG-08): linux/amd64 and linux/arm64. Without --platform the image is the build
 # machine's own (arm64 on Apple silicon, amd64 on the CI runner); `--platform linux/amd64,linux/arm64`
 # builds both. The compiler runs on the build machine and cross-compiles, so no emulation is needed,
@@ -65,8 +65,9 @@ RUN case "${TARGETARCH}" in \
       /tmp/typst.tar.xz "typst-${t}-unknown-linux-musl/typst" && chmod 0755 /out/typst
 
 # ---- the render image (--target render) ------------------------------------------------------
-# PRD-001 §12.9: the Go binary and the pinned Typst binary on distroless/cc; no shell, no package manager.
-FROM gcr.io/distroless/cc-debian12:nonroot@sha256:9dac0a79194e45a7da0158a9c6da57b217585af0786db3845d1f0ec1a0dd182f AS render
+# PRD-001 §12.9 (rev 0.96): the Go binary and the pinned Typst binary on distroless/static, as both are static (the
+# musl build of Typst), so the image holds no C library or OpenSSL to patch; no shell, no package manager.
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab AS render
 COPY --from=build /out/app /app
 COPY --from=typst /out/typst /typst
 ENV FYNIQ_TYPST=/typst

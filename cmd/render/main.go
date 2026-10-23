@@ -1,6 +1,6 @@
 // Command render is the private render service (PRD-001 §12.3, rev 0.96; ADR-T1): POST /render compiles a template
 // version and a document's data to PDF/A-2a and PDF/UA-1 with the pinned Typst binary, for the api and the worker
-// only. It holds no database role and no secret; the render image (distroless/cc) ships Typst and the fonts.
+// only. It holds no database role and no secret; the render image (distroless/static) ships Typst; the fonts are embedded.
 package main
 
 import (

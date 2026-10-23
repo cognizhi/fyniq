@@ -2,7 +2,7 @@
 
 ## Context
 
-- `cmd/render` serves nothing yet; its image is built on `distroless/cc` within its budget.
+- `cmd/render` serves POST /render (rev 0.96); its image is built on `distroless/static` (was `distroless/cc`) within its budget.
 - The outbox (p0-outbox-background-work) delivers jobs through the push dispatcher locally and Cloud
   Tasks in the cloud (§12.11).
 - Mailpit runs in `make deps-up`.

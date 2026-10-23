@@ -21,7 +21,7 @@ images:
   render:
     budget_mb: 90
     dockerfile: Dockerfile.render          # Go binary + pinned Typst + self-hosted fonts
-    base: gcr.io/distroless/cc-debian12:nonroot
+    base: gcr.io/distroless/static-debian12:nonroot   # rev 0.96: Typst's musl build is static
   web:
     budget_mb: 25
     dockerfile: Dockerfile.web             # local and preview only; production uses GCS + CDN
