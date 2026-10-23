@@ -102,7 +102,7 @@ func newEnv(t *testing.T) *env {
 	mux := http.NewServeMux()
 	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
 		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
-		Staging: e.blobs, Scanner: local.EICARScanner{}, Origin: testOrigin})
+		Staging: e.blobs, Scanner: local.EICARScanner{}, Origin: testOrigin, Renderer: testRenderer(t)})
 	e.srv = httptest.NewServer(mux)
 	t.Cleanup(e.srv.Close)
 	return e

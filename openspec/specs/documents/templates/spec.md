@@ -42,6 +42,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1 (theme, texts, optional blocks)
 - **THEN** the paper is A4 or Letter with margins of 10 to 40 mm, the font one the render service ships (Inter, IBM Plex Sans, IBM Plex Serif), and the logo the organisation's, shown or not
 - **AND** an accent colour below 4.5:1 against white is refused (TPL-05), as is a block the document type does not take or one repeated (TPL-06)
 
+#### Scenario: The live preview as built (rev 0.97)
+- **WHEN** content, saved or not, is previewed
+- **THEN** it is filled with made-up sample data of its document type: a document rendered by the render service as PDF/A-2a and PDF/UA-1, with the IRAS particulars it would lack, or an email's subject and body
+- **AND** nothing is saved, and the same content gives the same bytes
+
 ### Requirement: FR-TPL-02 Fields and conditions
 Templates SHALL use fields from a typed catalogue with formats for dates and money and, from P2, conditional blocks from a fixed list and a column chooser; the visual editor SHALL allow no free code.
 
@@ -105,6 +110,11 @@ Source: PRD-001 §8.25 · Priority M · Phase P1
 - **WHEN** an invoice or credit note template is saved
 - **THEN** its header (an invoice's only), our details, the customer's, the document details, the lines and the totals are present and shown (TPL-07)
 - **AND** an invoice's title is the renderer's ("Tax Invoice" when GST-registered), never a text, as IRAS's "Invoicing customers" requires
+
+#### Scenario: Test documents at publication as built (rev 0.97)
+- **WHEN** an invoice or credit note template is published
+- **THEN** test documents of the sample data (a full and a simplified tax invoice, or a credit note) are rendered and the particulars found in each
+- **AND** the publication is refused when one lacks a particular (TPL-16), or when no render service is configured (TPL-17)
 
 ### Requirement: FR-TPL-04 Template versioning
 Saving a template SHALL make a draft, and publishing SHALL make an immutable numbered version recording who, when and a note; the side-by-side visual diff follows in P2.

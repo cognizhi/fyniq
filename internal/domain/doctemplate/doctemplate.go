@@ -39,6 +39,8 @@ const (
 	CodeVersion  = "TPL-13" // no such version of the template to publish again
 	CodeApproval = "TPL-14" // publishing needs another person's approval (FR-TPL-04, FR-APR-01)
 	CodeOwnDraft = "TPL-15" // whoever saved the draft never approves its publication (SOD-3)
+	CodeTest     = "TPL-16" // a test document rendered at publication lacks an IRAS particular (FR-TPL-03)
+	CodeRenderer = "TPL-17" // the render service is not configured or did not answer; nothing renders or publishes that needs it
 )
 
 // The limits of a template.

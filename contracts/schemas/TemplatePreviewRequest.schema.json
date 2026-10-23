@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "content": {
+      "$ref": "TemplateContent.schema.json",
+      "description": "The content to preview, whole."
+    },
+    "document_type": {
+      "description": "The document it serves.",
+      "enum": [
+        "invoice",
+        "quote",
+        "credit_note",
+        "receipt",
+        "statement",
+        "reminder",
+        "remittance",
+        "purchase_order"
+      ],
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "document: the PDF; email: the message that carries it.",
+      "enum": [
+        "document",
+        "email"
+      ],
+      "examples": [
+        "document"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "document_type",
+    "content"
+  ],
+  "title": "TemplatePreviewRequest",
+  "type": "object"
+}

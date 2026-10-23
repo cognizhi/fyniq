@@ -161,6 +161,28 @@ run "the_wiring_the_services_read" {
     condition     = google_cloud_scheduler_job.tick.schedule == "*/5 * * * *" && google_cloud_scheduler_job.tick.time_zone == "Asia/Singapore"
     error_message = "the tick runs every 5 minutes"
   }
+  assert {
+    condition     = jsondecode(output.gcp_config).render.url == "https://render-123456789012.asia-southeast1.run.app" && jsondecode(output.gcp_config).render.audience == jsondecode(output.gcp_config).render.url && toset(jsondecode(output.gcp_config).render.service_accounts) == toset(["run-api@fyniq-staging.iam.gserviceaccount.com", "run-worker@fyniq-staging.iam.gserviceaccount.com"])
+    error_message = "the render service accepts the api's and the worker's ID tokens for its own audience (§12.3, rev 0.96)"
+  }
+}
+
+# The render service is private: no public invoker, and only the api's and the worker's accounts may call it.
+run "only_the_api_and_the_worker_render" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition     = !contains(keys(google_cloud_run_v2_service_iam_member.public), "render") && google_cloud_run_v2_service.services["render"].ingress == "INGRESS_TRAFFIC_INTERNAL_ONLY"
+    error_message = "the render service takes internal traffic from its invokers only"
+  }
+  assert {
+    condition     = toset([for m in google_cloud_run_v2_service_iam_member.render_invoker : m.member]) == toset(["serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com", "serviceAccount:run-worker@fyniq-staging.iam.gserviceaccount.com"])
+    error_message = "only the api and the worker invoke the render service"
+  }
+  assert {
+    condition     = length([for k, m in google_cloud_run_v2_service_iam_member.invoker : k if m.name == "render"]) == 0
+    error_message = "no task invoker calls the render service"
+  }
 }
 
 # CMEK on the database and the secrets, backups with point-in-time recovery, no public IP, and every

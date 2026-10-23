@@ -28,6 +28,7 @@ x-fyniq-env: &fyniq-env
   # the local bucket and signing key (the containers' root is read-only).
   FYNIQ_WORKER_URL: http://worker:8080
   FYNIQ_EXECUTOR_URL: http://executor:8080
+  FYNIQ_RENDER_URL: http://render:8080       # the private render service (PRD-001 §12.3, rev 0.96)
   FYNIQ_DATA_DIR: /tmp/fyniq
 
 x-health: &health

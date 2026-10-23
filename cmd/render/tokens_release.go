@@ -14,7 +14,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
 	"github.com/cognizhi/fyniq/internal/ports"
-	"github.com/cognizhi/fyniq/internal/render/service"
+	"github.com/cognizhi/fyniq/internal/render"
 )
 
 // callers are the render service's callers (PRD-001 §12.3, rev 0.96): FYNIQ_GCP's render entry names its audience and
@@ -29,5 +29,5 @@ func callers(clock ports.Clock) (ports.TaskTokens, error) {
 	if !strings.HasPrefix(c.Render.Audience, "https://") || len(c.Render.ServiceAccounts) == 0 {
 		return nil, errors.New("FYNIQ_GCP lacks render (its audience and its callers' service accounts)")
 	}
-	return &gcp.CallerTokens{Class: service.Class, Callers: c.Render, Keys: oidc.NewRemoteKeySet(context.Background(), gcp.GoogleCerts), Clock: clock}, nil
+	return &gcp.CallerTokens{Class: render.Class, Callers: c.Render, Keys: oidc.NewRemoteKeySet(context.Background(), gcp.GoogleCerts), Clock: clock}, nil
 }

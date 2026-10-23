@@ -433,6 +433,7 @@ var (
 	CreateDocumentTemplate             = Policy{Operation: "createDocumentTemplate", Capability: DocumentTemplates, Need: Create}
 	ReplaceDocumentTemplate            = Policy{Operation: "replaceDocumentTemplate", Capability: DocumentTemplates, Need: Create}
 	RequestDocumentTemplatePublication = Policy{Operation: "requestDocumentTemplatePublication", Capability: DocumentTemplates, Need: Create}
+	PreviewDocumentTemplate            = Policy{Operation: "previewDocumentTemplate", Capability: DocumentTemplates, Need: View}
 	PublishDocumentTemplate            = Policy{Operation: "publishDocumentTemplate", Capability: DocumentTemplates, Need: Approve,
 		Note: "In Founder mode an approver publishes alone, listed for the weekly review (FM-3); in Team mode another person approves a request."}
 	ListWithholdingDecisions  = Policy{Operation: "listWithholdingDecisions", Capability: Bills, Need: View}
@@ -610,7 +611,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
 	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
-	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate,
+	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
 	ListPurchaseOrders, GetPurchaseOrder, CreatePurchaseOrder, ReplacePurchaseOrder, ApprovePurchaseOrder, RequestPurchaseOrderApproval, ClosePurchaseOrder, BillPurchaseOrder,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,

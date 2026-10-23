@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "body": {
+      "description": "An email's body, filled.",
+      "examples": [
+        "Dear Acme Trading Pte Ltd, …"
+      ],
+      "type": "string"
+    },
+    "document_type": {
+      "description": "The document type.",
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "What was previewed.",
+      "enum": [
+        "document",
+        "email"
+      ],
+      "examples": [
+        "document"
+      ],
+      "type": "string"
+    },
+    "missing_particulars": {
+      "description": "The IRAS particulars the sample lacks (FR-TPL-03); empty when none is missing or none is required.",
+      "items": {
+        "description": "An IRAS particular, such as supplier_gst_number, total_with_gst or reason.",
+        "examples": [
+          "total_with_gst"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "pdf": {
+      "contentEncoding": "base64",
+      "description": "A document's sample, as PDF/A-2a and PDF/UA-1, base64.",
+      "examples": [
+        "JVBERi0xLjc="
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The PDF's SHA-256, in hex: the same content always gives the same bytes.",
+      "examples": [
+        "a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda"
+      ],
+      "type": "string"
+    },
+    "subject": {
+      "description": "An email's subject, filled.",
+      "examples": [
+        "Invoice INV-0042 from Example Analytics Pte Ltd"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "document_type",
+    "missing_particulars"
+  ],
+  "title": "TemplatePreview",
+  "type": "object"
+}

@@ -197,3 +197,49 @@ func TestTemplatesArePublishedByApprovalInStandardMode(t *testing.T) {
 		t.Errorf("published in Standard mode: %s", g.Raw)
 	}
 }
+
+// FR-TPL-01's live preview through the API (rev 0.97): content, saved or not, filled with sample data, a document as a
+// PDF from the render service with the particulars it lacks, an email as its subject and body; nothing is saved.
+// req: FR-TPL-01
+// req: FR-TPL-03
+func TestTemplatesArePreviewed(t *testing.T) {
+	e := newEnv(t)
+	auditor := e.as(authz.Auditor)
+	c := e.call(http.MethodGet, "/v1/document-template-catalogue/invoice", auditor, nil)
+	defaults := c.Body["defaults"].(map[string]any)
+	preview := func(kind string, content any) response {
+		return e.call(http.MethodPost, "/v1/document-template-previews", auditor, map[string]any{"kind": kind, "document_type": "invoice", "content": content})
+	}
+	p := preview("document", defaults["document"])
+	if p.Status != http.StatusOK || !strings.HasPrefix(p.str("pdf"), "JVBERi0") || len(p.str("sha256")) != 64 || p.Raw == "" ||
+		!strings.Contains(p.Raw, `"missing_particulars":[]`) {
+		t.Fatalf("a document preview: %d %.300s", p.Status, p.Raw)
+	}
+	if again := preview("document", defaults["document"]); again.str("sha256") != p.str("sha256") {
+		t.Error("the same content previewed twice differs")
+	}
+	m := preview("email", defaults["email"])
+	if m.Status != http.StatusOK || m.str("subject") != "Invoice INV-0042 from Example Analytics Pte Ltd" ||
+		!strings.Contains(m.str("body"), "SGD 1,635.00, due on 22 November 2026") || m.Body["pdf"] != nil {
+		t.Fatalf("an email preview: %d %s", m.Status, m.Raw)
+	}
+	e.problemIs(preview("email", map[string]any{"schema": "fyniq.template/1", "subject": "{{document.totl}}", "body": "x"}),
+		"previewDocumentTemplate", 422, doctemplate.CodeField)
+
+	// Without a render service no document previews, and no template with IRAS particulars publishes.
+	id, tag := "", ""
+	r := e.call(http.MethodPost, "/v1/document-templates", e.as(authz.Accountant), map[string]any{"kind": "document", "document_type": "credit_note", "name": "Credit note"})
+	id, tag = r.str("id"), r.Header.Get("ETag")
+	e.api.deps.Renderer = nil
+	e.problemIs(preview("document", defaults["document"]), "previewDocumentTemplate", 503, doctemplate.CodeRenderer)
+	e.problemIs(e.call(http.MethodPost, "/v1/document-templates/"+id+"/publish", e.as(authz.Owner), nil, "If-Match", tag),
+		"publishDocumentTemplate", 503, doctemplate.CodeRenderer)
+	// A render service that drops a particular fails the publication's test document.
+	e.api.deps.Renderer = dropping{Renderer: testRenderer(t), missing: []string{"reason"}}
+	e.problemIs(e.call(http.MethodPost, "/v1/document-templates/"+id+"/publish", e.as(authz.Owner), nil, "If-Match", tag),
+		"publishDocumentTemplate", 422, doctemplate.CodeTest)
+	e.api.deps.Renderer = testRenderer(t)
+	if v := e.call(http.MethodPost, "/v1/document-templates/"+id+"/publish", e.as(authz.Owner), nil, "If-Match", tag); v.Status != http.StatusOK || v.Body["published_version"] != float64(1) {
+		t.Fatalf("publishing the credit note: %d %s", v.Status, v.Raw)
+	}
+}

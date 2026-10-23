@@ -125,7 +125,7 @@ locals {
   url = { for name in keys(local.spec.services) : name => "https://${name}-${local.number}.${local.region}.run.app" }
 
   # FYNIQ_GCP (internal/wiring/release.go Config): the worker classes' queues, handlers and invokers, the
-  # Scheduler's, the anchors and the jobs image's Cloud Run job.
+  # Scheduler's, the anchors, the jobs image's Cloud Run job and the render service.
   gcp_config = jsonencode({
     tasks = { for class, c in local.spec.classes : class => {
       queue           = "projects/${var.project}/locations/${local.region}/queues/${class}"
@@ -139,9 +139,12 @@ locals {
     )
     anchors = var.anchors
     job     = "projects/${var.project}/locations/${local.region}/jobs/jobs"
+    # The private render service (§12.3, rev 0.96): where the api and the worker send documents, the audience of their
+    # ID tokens, and the accounts it accepts (render.Client, gcp.CallerTokens).
+    render = { url = local.url["render"], audience = local.url["render"], service_accounts = [local.email["api"], local.email["worker"]] }
   })
   # Who reads FYNIQ_GCP (wiring.Build), and who reaches Hydra's admin port.
-  wired       = toset(["api", "worker", "executor", "jobs"])
+  wired       = toset(["api", "worker", "executor", "jobs", "render"])
   oauth_admin = toset(["api", "worker"])
   with_db     = { for name, r in local.runners : name => r if r.database_role != null }
 

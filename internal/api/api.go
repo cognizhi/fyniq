@@ -32,6 +32,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/render"
 )
 
 // Deps are what the API needs.
@@ -49,6 +50,9 @@ type Deps struct {
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
 	Scanner ports.Scanner
+	// Renderer is the private render service (§12.3, rev 0.96): previews, and a publication's test documents (FR-TPL-03).
+	// Nil: no document previews, and no template with IRAS particulars publishes.
+	Renderer render.Renderer
 	// Origin is the web app's origin as the browser sees it, such as https://fyniq.example.com: passkeys are registered
 	// and asserted for it and its host (FR-ADM-02). Empty: no passkey ceremony runs.
 	Origin string
@@ -222,6 +226,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerWithholding(a)
 	registerBillPlans(a)
 	registerDocumentTemplates(a)
+	registerTemplatePreviews(a)
 	registerAccounting(a)
 	registerEvidence(a)
 	registerSetup(a)

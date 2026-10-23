@@ -442,3 +442,12 @@ func (b *builder) money(a Amount) string {
 	}
 	return FormatMoney(m, "")
 }
+
+// Email fills an email template's subject and body with d's fields (FR-TPL-05): what the email that carries the
+// document says. The subject stays on one line.
+func Email(c doctemplate.Content, d Data) (subject, body string, err error) {
+	b := &builder{d: d}
+	subject = strings.Join(strings.Fields(b.text(c.Subject)), " ")
+	body = strings.TrimSpace(b.text(c.Body))
+	return subject, body, b.err
+}

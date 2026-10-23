@@ -772,6 +772,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/document-template-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview template content
+         * @description Fills template content, saved or not, with made-up sample data of its document type (FR-TPL-01's live preview): a document as PDF/A-2a and PDF/UA-1 from the render service, with the IRAS particulars it would lack (FR-TPL-03), or an email's subject and body. Every rule the content breaks comes back together (TPL-01 to TPL-11). It saves nothing and has no side effects. TPL-17 when the render service is not configured or busy.
+         */
+        post: operations["previewDocumentTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/document-templates": {
         parameters: {
             query?: never;
@@ -9981,6 +10001,57 @@ export interface components {
              */
             size: "A4" | "Letter";
         };
+        TemplatePreview: {
+            /**
+             * @description An email's body, filled.
+             * @example Dear Acme Trading Pte Ltd, …
+             */
+            body?: string;
+            /**
+             * @description The document type.
+             * @example invoice
+             */
+            document_type: string;
+            /**
+             * @description What was previewed.
+             * @example document
+             * @enum {string}
+             */
+            kind: "document" | "email";
+            /** @description The IRAS particulars the sample lacks (FR-TPL-03); empty when none is missing or none is required. */
+            missing_particulars: string[];
+            /**
+             * @description A document's sample, as PDF/A-2a and PDF/UA-1, base64.
+             * @example JVBERi0xLjc=
+             */
+            pdf?: string;
+            /**
+             * @description The PDF's SHA-256, in hex: the same content always gives the same bytes.
+             * @example a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda
+             */
+            sha256?: string;
+            /**
+             * @description An email's subject, filled.
+             * @example Invoice INV-0042 from Example Analytics Pte Ltd
+             */
+            subject?: string;
+        };
+        TemplatePreviewRequest: {
+            /** @description The content to preview, whole. */
+            content: components["schemas"]["TemplateContent"];
+            /**
+             * @description The document it serves.
+             * @example invoice
+             * @enum {string}
+             */
+            document_type: "invoice" | "quote" | "credit_note" | "receipt" | "statement" | "reminder" | "remittance" | "purchase_order";
+            /**
+             * @description document: the PDF; email: the message that carries it.
+             * @example document
+             * @enum {string}
+             */
+            kind: "document" | "email";
+        };
         TemplatePublication: {
             /**
              * @description Why, for the version history.
@@ -11552,7 +11623,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -11594,7 +11665,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -16728,6 +16799,121 @@ export interface operations {
             };
         };
     };
+    previewDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplatePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplatePreview"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `TPL-17` The document could not be rendered now. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listDocumentTemplates: {
         parameters: {
             query?: {
@@ -17375,7 +17561,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17417,7 +17603,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -17541,7 +17727,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -17583,7 +17769,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now. */
             503: {
                 headers: {
                     [name: string]: unknown;

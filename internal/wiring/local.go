@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/render"
 )
 
 // localKey signs local task credentials. Local only, valid nowhere else (SEC-12).
@@ -61,6 +62,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		MailFrom: cmp.Or(os.Getenv("FYNIQ_MAIL_FROM"), "Fyniq <no-reply@fyniq.local>"),
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
 		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
+		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.
+		Render: &render.Client{URL: cmp.Or(os.Getenv("FYNIQ_RENDER_URL"), "http://localhost:8086"),
+			Token: func(context.Context) (string, error) { return tokens.Token(render.Class) }},
 	}, nil
 }
 

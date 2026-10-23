@@ -70,6 +70,7 @@ func (t *TaskTokens) Verify(token, class string) error {
 // Callers are the service accounts that may call a private service, and the audience their tokens name: the render
 // service's are the api's and the worker's (PRD-001 §12.3, rev 0.96).
 type Callers struct {
+	URL             string   `json:"url,omitempty"` // where the callers send their requests
 	Audience        string   `json:"audience"`
 	ServiceAccounts []string `json:"service_accounts"`
 }
