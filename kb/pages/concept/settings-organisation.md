@@ -2,16 +2,16 @@
 key: settings.organisation
 type: concept
 title: Organisation settings and their recommended values
-summary: Company-wide settings and their recommended values: features, terms, tolerances, thresholds, close variances, email-in quarantine, data region, retention
+summary: Company-wide settings and recommended values: features, terms, tolerances, thresholds, close variances, email-in, notification email, region, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:d58a32b053d65ea8f26317fc9bc15f9775ff1fd6982cc21a27309f623568c71a
+  - docs/user-guide/organisation-settings.md sha256:92dad07b69786b1789c55cd3156fea7ba7b48140188d0ae4f50acd495c7e2071
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-10-21
+compiled_at: 2026-10-24
 aliases:
   - feature switches
   - default settings
@@ -24,6 +24,7 @@ aliases:
   - flux analysis
   - quarantine
   - email-in
+  - notification email
 ---
 
 # Organisation settings and their recommended values
@@ -121,6 +122,14 @@ aliases:
 - **Quarantined mail kept for**: 30 days, then unaccepted quarantined mail is deleted; 0 keeps it until someone decides.
 
 (src: docs/user-guide/organisation-settings.md#email-in)
+
+## Notifications
+
+- Everyone gets notifications in Fyniq, and by email as their own preferences say; this setting decides how much an email says.
+- **Details in notification email** is off: an email says what kind of thing happened, such as "An approval waits for you", and links to it in Fyniq; amounts, names and reasons stay in Fyniq.
+- The email provider keeps mail outside Singapore, so turn it on only once the provider's transfer of personal data is assessed; on, an email shows the same title as the notification in Fyniq. Changing it needs a second approver.
+
+(src: docs/user-guide/organisation-settings.md#notifications)
 
 ## Related
 

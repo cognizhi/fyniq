@@ -189,7 +189,7 @@ func (a *API) checkSender(b EmailSenderChange) (address, name string, _ error) {
 // EmailMessage is the record of an outbound email: never its body.
 type EmailMessage struct {
 	ID         string       `json:"id" format:"uuid" doc:"The message's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e40"`
-	Purpose    string       `json:"purpose" enum:"test,sign_in_alert" doc:"Why it was sent: a test message, or a sign-in alert." example:"test"`
+	Purpose    string       `json:"purpose" enum:"test,sign_in_alert,notification,digest" doc:"Why it was sent: a test message, a sign-in alert, a notification, or a digest of them." example:"test"`
 	Recipient  string       `json:"recipient" doc:"Who it goes to." example:"accounts@example.com"`
 	Subject    string       `json:"subject" doc:"Its subject." example:"Fyniq test message"`
 	Status     string       `json:"status" enum:"queued,accepted,failed,unknown" doc:"queued until the worker sends it; accepted when the provider took it; failed when every attempt was refused; unknown when an attempt may have handed it over and the provider cannot say, so it is never sent again on a guess." example:"queued"`

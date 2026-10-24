@@ -67,6 +67,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	}
 	kit := &Kit{
 		Mail:   mail,
+		Origin: os.Getenv("FYNIQ_PUBLIC_ORIGIN"),
 		Store:  store,
 		Tokens: &gcp.TaskTokens{Invokers: c.Invokers, Keys: oidc.NewRemoteKeySet(context.Background(), gcp.GoogleCerts), Clock: clock},
 		Queue:  gcp.NewTasks(gcp.TasksAPI, c.Tasks, tokens, nil),

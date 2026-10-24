@@ -86,7 +86,9 @@ The tests check the controls on the planned configuration:
    and the `api` the webhooks' secrets, `FYNIQ_ZEPTOMAIL_WEBHOOK_KEY = "zeptomail-webhook-key"` and
    `FYNIQ_RESEND_WEBHOOK_SECRET = "resend-webhook-secret"`; point each provider's webhook at
    `https://<origin>/api/webhooks/email/zeptomail` or `…/resend`. Add those secrets' versions out of
-   band like the others; no key ever passes through the API's answers.
+   band like the others; no key ever passes through the API's answers. The module gives the `worker`
+   and `jobs` `FYNIQ_PUBLIC_ORIGIN` from `public_origin`, for the links in notifications' emails
+   (rev 0.108).
 7. Run the Infrastructure workflow by hand for `staging` with **apply**. After that, pushes to
    `main` plan every environment, and the nightly run fails on drift.
 

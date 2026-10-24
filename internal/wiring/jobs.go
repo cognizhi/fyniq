@@ -15,6 +15,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/notify"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -49,6 +51,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"superadmins.verify": func(ctx context.Context) error {
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
+			return err
+		},
+		notify.DigestJob: func(ctx context.Context) error {
+			_, err := k.Fanout(clock).Digest(ctx)
 			return err
 		},
 		email.ExpireJob: func(ctx context.Context) error {
@@ -120,6 +126,11 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 	}
+}
+
+// Fanout fans notification events out and sends their digests (FR-NTF-01, FR-NTF-02, FR-NTF-05).
+func (k *Kit) Fanout(clock ports.Clock) notify.Fanout {
+	return notify.Fanout{Store: k.Store, Dispatcher: outbox.Dispatcher{Store: k.Store, Queue: k.Queue, Clock: clock}, Clock: clock, Origin: k.Origin}
 }
 
 // Committer commits attached files of records that are no longer drafts to the locked store (FR-DOC-13);

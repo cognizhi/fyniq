@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -604,7 +605,19 @@ func (a *API) requestApproval(ctx context.Context, u storage.UnitOfWork, c pendi
 	if err != nil {
 		return Approval{}, err
 	}
+	// Those who may approve it hear that it waits for them (FR-NTF-01), the requester aside (SOD).
+	if err := a.notify(ctx, u, notify.Event{Type: "approval.requested", RecordType: "approval_request", RecordID: &r.ID,
+		Title: c.Summary + ": waits for your approval", Link: "/approvals/" + r.ID.String(), At: now,
+		Audience: notify.Audience{Capability: string(approvalRow(c.ObjectType)), Need: "A", Except: []uuid.UUID{p.UserID}}}); err != nil {
+		return Approval{}, err
+	}
 	return a.approvalOf(ctx, u, r)
+}
+
+// notifyDecided tells a request's requester that it was approved or rejected (FR-NTF-01).
+func (a *API) notifyDecided(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, how string) error {
+	return a.notify(ctx, u, notify.Event{Type: "approval.decided", RecordType: "approval_request", RecordID: &r.ID,
+		Title: how + ": " + r.Summary, Link: "/approvals/" + r.ID.String(), Audience: notify.Audience{Users: []uuid.UUID{r.RequestedBy}}})
 }
 
 func requestOf(r storage.ApprovalRequest) approval.Request {
@@ -1340,6 +1353,9 @@ func registerApprovals(a *API) {
 					if err := a.execute(ctx, u, r, s, p.UserID); err != nil {
 						return decided{}, err
 					}
+					if err := a.notifyDecided(ctx, u, r, "Approved"); err != nil {
+						return decided{}, err
+					}
 					// FM-3: the change is logged for another founder's weekly review.
 					requester, approvalID := r.RequestedBy, r.ID
 					if _, err := u.ReviewLog().Log(ctx, storage.NewReviewLogEntry{Kind: storage.ReviewApprovedChange, ObjectType: r.ObjectType,
@@ -1402,6 +1418,9 @@ func registerApprovals(a *API) {
 					return decided{}, err
 				}
 				if r, err = u.Approvals().Decide(ctx, r.ID, r.Version, string(approval.Rejected), reason, now); err != nil {
+					return decided{}, err
+				}
+				if err := a.notifyDecided(ctx, u, r, "Rejected"); err != nil {
 					return decided{}, err
 				}
 				v, err := a.approvalOf(ctx, u, r)

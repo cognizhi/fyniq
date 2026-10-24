@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "email": {
+      "description": "At once, in the daily or weekly digest, or not by email.",
+      "enum": [
+        "immediate",
+        "daily",
+        "weekly",
+        "off"
+      ],
+      "examples": [
+        "daily"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "email"
+  ],
+  "title": "EmailPreferenceChange",
+  "type": "object"
+}

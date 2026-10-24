@@ -432,6 +432,30 @@ var matrixCalls = map[string]matrixCall{
 		return e.call(http.MethodPost, "/v1/organisation/email/capture-senders/mine", e.singleFactor(p), map[string]any{"sender": "m-" + uuid.NewString()[:8] + "@example.com",
 			"decision": "accepted"}), nil
 	},
+	"listNotifications": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/notifications", asMatrixMember(e, tok), nil), nil
+	},
+	"readNotification": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/notifications/"+matrixNotification(e)+"/read", asMatrixMember(e, tok), nil), nil
+	},
+	"unreadNotification": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/notifications/"+matrixNotification(e)+"/unread", asMatrixMember(e, tok), nil), nil
+	},
+	"archiveNotification": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/notifications/"+matrixNotification(e)+"/archive", asMatrixMember(e, tok), nil), nil
+	},
+	"readAllNotifications": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/notifications/read-all", asMatrixMember(e, tok), nil), nil
+	},
+	"getNotificationPreferences": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/notification-preferences", asMatrixMember(e, tok), nil), nil
+	},
+	"setNotificationPreference": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/notification-preferences/approval.decided", asMatrixMember(e, tok), map[string]any{"email": "daily"}, "If-Match", "*"), nil
+	},
+	"setQuietHours": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/notification-quiet-hours", asMatrixMember(e, tok), map[string]any{"from": "22:00", "to": "07:00"}, "If-Match", "*"), nil
+	},
 	"getEmailMessage": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/organisation/email/messages/"+matrixEmail(e), tok, nil), nil
 	},

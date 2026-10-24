@@ -488,6 +488,44 @@ member_invitation | expires_at | timestamp with time zone | not null |
 member_invitation | accepted_at | timestamp with time zone | null | 
 member_invitation | accepted_by | uuid | null | 
 member_invitation | withdrawn_at | timestamp with time zone | null | 
+notification | organisation_id | uuid | not null | current_org()
+notification | id | uuid | not null | uuidv7()
+notification | event_id | uuid | not null | 
+notification | user_id | uuid | not null | 
+notification | type | text | not null | 
+notification | severity | text | not null | 
+notification | actionable | boolean | not null | 
+notification | email | text | not null | 
+notification | email_message_id | uuid | null | 
+notification | digest_id | uuid | null | 
+notification | created_at | timestamp with time zone | not null | 
+notification | read_at | timestamp with time zone | null | 
+notification | archived_at | timestamp with time zone | null | 
+notification_digest | organisation_id | uuid | not null | current_org()
+notification_digest | id | uuid | not null | uuidv7()
+notification_digest | user_id | uuid | not null | 
+notification_digest | cadence | text | not null | 
+notification_digest | email_message_id | uuid | not null | 
+notification_digest | sent_at | timestamp with time zone | not null | 
+notification_event | organisation_id | uuid | not null | current_org()
+notification_event | id | uuid | not null | uuidv7()
+notification_event | type | text | not null | 
+notification_event | record_type | text | null | 
+notification_event | record_id | uuid | null | 
+notification_event | title | text | not null | 
+notification_event | link | text | null | 
+notification_event | actor | text | not null | 
+notification_event | audience | jsonb | not null | 
+notification_event | occurred_at | timestamp with time zone | not null | 
+notification_event | fanned_out_at | timestamp with time zone | null | 
+notification_preference | organisation_id | uuid | not null | current_org()
+notification_preference | id | uuid | not null | uuidv7()
+notification_preference | user_id | uuid | not null | 
+notification_preference | type | text | not null | 
+notification_preference | email | text | null | 
+notification_preference | quiet_from | smallint | null | 
+notification_preference | quiet_to | smallint | null | 
+notification_preference | set_at | timestamp with time zone | not null | 
 opening_balance | organisation_id | uuid | not null | current_org()
 opening_balance | document_id | uuid | not null | 
 organisation | organisation_id | uuid | not null | current_org()
@@ -1254,7 +1292,7 @@ email_message | email_message_lengths | CHECK ((((length(recipient) >= 3) AND (l
 email_message | email_message_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 email_message | email_message_organisation_id_not_null | NOT NULL organisation_id
 email_message | email_message_pkey | PRIMARY KEY (organisation_id, id)
-email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text])))
+email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text])))
 email_message | email_message_purpose_not_null | NOT NULL purpose
 email_message | email_message_recipient_not_null | NOT NULL recipient
 email_message | email_message_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'accepted'::text, 'failed'::text, 'unknown'::text])))
@@ -1554,6 +1592,58 @@ member_invitation | member_invitation_roles_known | CHECK ((((cardinality(roles)
 member_invitation | member_invitation_roles_not_null | NOT NULL roles
 member_invitation | member_invitation_used_once | CHECK ((((accepted_at IS NULL) = (accepted_by IS NULL)) AND ((accepted_at IS NULL) OR (withdrawn_at IS NULL))))
 member_invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+notification | notification_actionable_not_null | NOT NULL actionable
+notification | notification_created_at_not_null | NOT NULL created_at
+notification | notification_digest_fkey | FOREIGN KEY (organisation_id, digest_id) REFERENCES notification_digest(organisation_id, id)
+notification | notification_email_fkey | FOREIGN KEY (organisation_id, email_message_id) REFERENCES email_message(organisation_id, id)
+notification | notification_email_known | CHECK ((email = ANY (ARRAY['immediate'::text, 'daily'::text, 'weekly'::text, 'off'::text])))
+notification | notification_email_not_null | NOT NULL email
+notification | notification_event_fkey | FOREIGN KEY (organisation_id, event_id) REFERENCES notification_event(organisation_id, id)
+notification | notification_event_id_not_null1 | NOT NULL event_id
+notification | notification_id_not_null | NOT NULL id
+notification | notification_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+notification | notification_once | UNIQUE (organisation_id, event_id, user_id)
+notification | notification_organisation_id_not_null | NOT NULL organisation_id
+notification | notification_pkey | PRIMARY KEY (organisation_id, id)
+notification | notification_severity_known | CHECK ((severity = ANY (ARRAY['info'::text, 'warning'::text, 'critical'::text])))
+notification | notification_severity_not_null | NOT NULL severity
+notification | notification_type_not_null | NOT NULL type
+notification | notification_user_id_not_null | NOT NULL user_id
+notification_digest | notification_digest_cadence_known | CHECK ((cadence = ANY (ARRAY['daily'::text, 'weekly'::text])))
+notification_digest | notification_digest_cadence_not_null | NOT NULL cadence
+notification_digest | notification_digest_email_fkey | FOREIGN KEY (organisation_id, email_message_id) REFERENCES email_message(organisation_id, id)
+notification_digest | notification_digest_email_message_id_not_null | NOT NULL email_message_id
+notification_digest | notification_digest_id_not_null | NOT NULL id
+notification_digest | notification_digest_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+notification_digest | notification_digest_organisation_id_not_null | NOT NULL organisation_id
+notification_digest | notification_digest_pkey | PRIMARY KEY (organisation_id, id)
+notification_digest | notification_digest_sent_at_not_null | NOT NULL sent_at
+notification_digest | notification_digest_user_id_not_null | NOT NULL user_id
+notification_event | notification_event_actor_format | CHECK ((actor ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+notification_event | notification_event_actor_not_null | NOT NULL actor
+notification_event | notification_event_audience_not_null | NOT NULL audience
+notification_event | notification_event_id_not_null | NOT NULL id
+notification_event | notification_event_lengths | CHECK ((((length(title) >= 1) AND (length(title) <= 300)) AND ((length(link) >= 1) AND (length(link) <= 300)) AND ((length(record_type) >= 1) AND (length(record_type) <= 60))))
+notification_event | notification_event_link_path | CHECK ((link ~ '^/[A-Za-z0-9/_?=&.-]*$'::text))
+notification_event | notification_event_occurred_at_not_null | NOT NULL occurred_at
+notification_event | notification_event_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+notification_event | notification_event_organisation_id_not_null | NOT NULL organisation_id
+notification_event | notification_event_pkey | PRIMARY KEY (organisation_id, id)
+notification_event | notification_event_title_not_null | NOT NULL title
+notification_event | notification_event_type_format | CHECK (((type ~ '^[a-z]+(\.[a-z_]+)+$'::text) AND (length(type) <= 60)))
+notification_event | notification_event_type_not_null | NOT NULL type
+notification_event | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+notification_preference | notification_preference_id_not_null | NOT NULL id
+notification_preference | notification_preference_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+notification_preference | notification_preference_organisation_id_not_null | NOT NULL organisation_id
+notification_preference | notification_preference_pkey | PRIMARY KEY (organisation_id, id)
+notification_preference | notification_preference_quiet_range | CHECK ((((quiet_from >= 0) AND (quiet_from <= 1439)) AND ((quiet_to >= 0) AND (quiet_to <= 1439))))
+notification_preference | notification_preference_set_at_not_null | NOT NULL set_at
+notification_preference | notification_preference_shape | CHECK ((((type = 'quiet_hours'::text) AND (email IS NULL) AND ((quiet_from IS NULL) = (quiet_to IS NULL))) OR ((type <> 'quiet_hours'::text) AND (email = ANY (ARRAY['immediate'::text, 'daily'::text, 'weekly'::text, 'off'::text])) AND (quiet_from IS NULL) AND (quiet_to IS NULL))))
+notification_preference | notification_preference_type_format | CHECK (((type ~ '^[a-z][a-z_]*(\.[a-z_]+)*$'::text) AND (length(type) <= 60)))
+notification_preference | notification_preference_type_not_null | NOT NULL type
+notification_preference | notification_preference_user_id_not_null | NOT NULL user_id
+notification_preference | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 opening_balance | opening_balance_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
 opening_balance | opening_balance_document_id_not_null | NOT NULL document_id
 opening_balance | opening_balance_organisation_id_not_null | NOT NULL organisation_id
@@ -2057,6 +2147,10 @@ CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organi
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
 CREATE INDEX journal_entry_posting_date_idx ON fyniq.journal_entry USING btree (organisation_id, posting_date)
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
+CREATE INDEX notification_digest_due ON fyniq.notification USING btree (organisation_id, email, created_at) WHERE ((digest_id IS NULL) AND (email = ANY (ARRAY['daily'::text, 'weekly'::text])))
+CREATE INDEX notification_event_pending ON fyniq.notification_event USING btree (organisation_id, occurred_at) WHERE (fanned_out_at IS NULL)
+CREATE INDEX notification_inbox ON fyniq.notification USING btree (organisation_id, user_id, created_at DESC) WHERE (archived_at IS NULL)
+CREATE INDEX notification_preference_latest ON fyniq.notification_preference USING btree (organisation_id, user_id, type, set_at)
 CREATE INDEX outbox_state_idx ON fyniq.outbox USING btree (organisation_id, state, deadline_at)
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
@@ -2152,6 +2246,11 @@ CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organis
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX notification_digest_pkey ON fyniq.notification_digest USING btree (organisation_id, id)
+CREATE UNIQUE INDEX notification_event_pkey ON fyniq.notification_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX notification_once ON fyniq.notification USING btree (organisation_id, event_id, user_id)
+CREATE UNIQUE INDEX notification_pkey ON fyniq.notification USING btree (organisation_id, id)
+CREATE UNIQUE INDEX notification_preference_pkey ON fyniq.notification_preference USING btree (organisation_id, id)
 CREATE UNIQUE INDEX opening_balance_pkey ON fyniq.opening_balance USING btree (organisation_id)
 CREATE UNIQUE INDEX organisation_pkey ON fyniq.organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX organisation_setting_pkey ON fyniq.organisation_setting USING btree (organisation_id, id)
@@ -2221,6 +2320,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_event', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.notification_preference DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('notification_preference', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.opening_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
@@ -2304,6 +2405,7 @@ CREATE TRIGGER document_version_no_truncate BEFORE TRUNCATE ON fyniq.document_ve
 CREATE TRIGGER email_event_guard BEFORE DELETE OR UPDATE ON fyniq.email_event FOR EACH ROW EXECUTE FUNCTION email_event_guard()
 CREATE TRIGGER email_event_no_truncate BEFORE TRUNCATE ON fyniq.email_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER email_message_guard BEFORE UPDATE ON fyniq.email_message FOR EACH ROW EXECUTE FUNCTION email_message_guard()
+CREATE TRIGGER email_message_worker_purposes BEFORE INSERT ON fyniq.email_message FOR EACH ROW EXECUTE FUNCTION email_message_worker_purposes()
 CREATE TRIGGER email_sender_guard BEFORE DELETE OR UPDATE ON fyniq.email_sender FOR EACH ROW EXECUTE FUNCTION email_sender_guard()
 CREATE TRIGGER email_sender_no_truncate BEFORE TRUNCATE ON fyniq.email_sender FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER email_suppression_guard BEFORE DELETE OR UPDATE ON fyniq.email_suppression FOR EACH ROW EXECUTE FUNCTION email_suppression_guard()
@@ -2332,6 +2434,14 @@ CREATE TRIGGER last_owner_guard BEFORE UPDATE OF revoked_at ON fyniq.role_assign
 CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_revision FOR EACH ROW EXECUTE FUNCTION ledger_revision_guard()
 CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION member_invitation_guard()
 CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
+CREATE TRIGGER notification_digest_guard BEFORE DELETE OR UPDATE ON fyniq.notification_digest FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER notification_digest_no_truncate BEFORE TRUNCATE ON fyniq.notification_digest FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER notification_event_guard BEFORE DELETE OR UPDATE ON fyniq.notification_event FOR EACH ROW EXECUTE FUNCTION notification_event_guard()
+CREATE TRIGGER notification_event_no_truncate BEFORE TRUNCATE ON fyniq.notification_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER notification_guard BEFORE DELETE OR UPDATE ON fyniq.notification FOR EACH ROW EXECUTE FUNCTION notification_guard()
+CREATE TRIGGER notification_no_truncate BEFORE TRUNCATE ON fyniq.notification FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER notification_preference_guard BEFORE DELETE OR UPDATE ON fyniq.notification_preference FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER notification_preference_no_truncate BEFORE TRUNCATE ON fyniq.notification_preference FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER opening_balance_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.opening_balance FOR EACH ROW EXECUTE FUNCTION opening_balance_guard()
 CREATE TRIGGER opening_balance_no_truncate BEFORE TRUNCATE ON fyniq.opening_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER organisation_created AFTER INSERT ON fyniq.organisation FOR EACH ROW EXECUTE FUNCTION organisation_created()
@@ -2411,6 +2521,10 @@ journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (orga
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+notification | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+notification_digest | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+notification_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+notification_preference | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 opening_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 organisation_setting | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2479,6 +2593,7 @@ document_version_created_by() → trigger | security invoker | v | search_path=p
 document_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2fdcd7d4d5b6af2938c65503456503ab
 email_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 990580601ef047ba0fb748308b38b333
 email_message_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 12e39d103400a6decfc3214b644ff795
+email_message_worker_purposes() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5efc63cb5bc830fb3ab94ffcf7918979
 email_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 08f185782be71d4ec32e6b14d2daf500
 email_suppression_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 03e389c71cad64117c3be6fa82077158
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
@@ -2510,6 +2625,9 @@ member_emails() → TABLE(user_id uuid, email text) | security definer | s | sea
 member_invitation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bbbd3cfc69b3ef2e3f033c058258160c
 member_names() → TABLE(user_id uuid, display_name text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9cbac1cf633afffdb29757fcd8b4615f
 membership_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 128d9c99c0ed6f6f65e25de8d48962e4
+notification_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0f2b969415ae5bd9d1ebfa65933ad19e
+notification_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7d9d3ebc8e803ce5555a7d2b708d60ba
+notification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf1b2a8e993363d09a3a57e923c66929
 opening_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c2ce7b1e284de3ad59fe6cb84f6a4efd
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6

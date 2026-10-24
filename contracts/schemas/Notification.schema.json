@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actionable": {
+      "description": "true when it links to something waiting for the caller in their Inbox.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "archived": {
+      "description": "true once the caller archived it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "category": {
+      "description": "Its type's group.",
+      "enum": [
+        "security",
+        "approvals",
+        "email",
+        "operations"
+      ],
+      "examples": [
+        "approvals"
+      ],
+      "type": "string"
+    },
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2026-10-24T01:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The notification's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "label": {
+      "description": "What preferences call its type.",
+      "examples": [
+        "An approval waits for you"
+      ],
+      "type": "string"
+    },
+    "link": {
+      "description": "Where in the web app it is about.",
+      "examples": [
+        "/approvals/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f41"
+      ],
+      "type": "string"
+    },
+    "read": {
+      "description": "true once the caller read it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "severity": {
+      "description": "How much it matters.",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ],
+      "examples": [
+        "info"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What happened, in plain words.",
+      "examples": [
+        "Post journal JV-0042 waits for your approval"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "Its type: preferences list them.",
+      "examples": [
+        "approval.requested"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "type",
+    "label",
+    "category",
+    "severity",
+    "title",
+    "actionable",
+    "read",
+    "archived",
+    "created_at"
+  ],
+  "title": "Notification",
+  "type": "object"
+}

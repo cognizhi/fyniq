@@ -155,3 +155,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-23] compile | docs/user-guide/contacts-and-items.md, docs/user-guide/document-templates.md → contacts.manage, settings.templates (a contact's own templates, chosen with Templates in Contacts; FR-TPL-05, rev 0.101)
 
 ## [2026-10-23] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (Email-in: quarantined mail kept for 30 days, or until someone decides; FR-INT-22, rev 0.106)
+
+## [2026-10-24] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the notification email details setting, rev 0.108)
+
+## [2026-10-24] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the notification email details setting, rev 0.108)

@@ -216,6 +216,16 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **WHEN** a notification is actionable
 - **THEN** it links to its Inbox item
 
+#### Scenario: Who an event notifies (rev 0.108)
+- **WHEN** something happens that a P1 type covers (approvals, security, email-in quarantine, bounces and failed domain checks, postings, the close, recurring entries made, bills due, failed jobs)
+- **THEN** it notifies the members it names and those whose roles hold its right on its Appendix D row, such as those who may approve a request
+- **AND** never the person who caused it
+
+#### Scenario: The centre as built (rev 0.108)
+- **WHEN** a person lists, reads, unreads, archives or reads all of their notifications
+- **THEN** only their own are listed or changed, with the unread count, and an archived one stays archived
+- **AND** each event is fanned out once by the worker, however often its job runs
+
 ### Requirement: FR-NTF-02 Notification preferences
 Each user SHALL set notification preferences per event type: channels, immediate delivery or a daily or weekly digest, and quiet hours.
 
@@ -236,6 +246,16 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 #### Scenario: Security notifications cannot be turned off
 - **WHEN** a user tries to turn off a security notification (new-device sign-in, MFA or role change)
 - **THEN** it cannot be turned off
+
+#### Scenario: Recommended timing (rev 0.108)
+- **WHEN** a person has not chosen otherwise
+- **THEN** security notices and approvals are emailed at once and everything else goes in a daily digest at 08:00 Singapore time, with no quiet hours
+- **AND** quiet hours a person sets hold immediate email, never a security notice's, until they end
+
+#### Scenario: Minimal email unless the organisation chooses details (rev 0.108)
+- **WHEN** a notification is emailed while the setting `notify.email_details` is off, as recommended
+- **THEN** the email names only its type and links to Fyniq
+- **AND** with the setting on, which needs a second approver, the email carries the notification's title
 
 ### Requirement: FR-NTF-03 Announcement banners
 The Super admin (for everyone) and the Owner or Administrator (for one organisation) SHALL be able to publish announcement banners, and publishing SHALL be audited.
@@ -325,6 +345,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 #### Scenario: Test message per channel
 - **WHEN** a channel is set up
 - **THEN** a test message can be sent on it
+
+#### Scenario: Notifications and digests from one event as built (rev 0.108)
+- **WHEN** a notification event is recorded with what happened
+- **THEN** each notification and digest about it is produced from that event
+- **AND** its email goes through the outbox, so each attempt is recorded and retried
 
 ### Requirement: FR-NTF-06 Ask from chat
 Linked users SHALL be able to ask the assistant read-only questions in Slack or Cliq through the same tools, permissions and exclusions as the assistant, as an `agent`-class client (§9.7).

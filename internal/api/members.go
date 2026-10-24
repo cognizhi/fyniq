@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/member"
 	"github.com/cognizhi/fyniq/internal/domain/team"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/setupcode"
@@ -258,6 +259,9 @@ func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 	if err := a.endTokens(ctx, u, m, "role "+role+" assigned"); err != nil {
 		return Member{}, err
 	}
+	if err := a.notifyRoles(ctx, u, m, role+" assigned"); err != nil {
+		return Member{}, err
+	}
 	m, err = findMember(ctx, u, id, now)
 	return memberOf(m), err
 }
@@ -282,8 +286,17 @@ func (a *API) revokeRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 	if err := a.endTokens(ctx, u, m, "role "+role+" revoked"); err != nil {
 		return Member{}, err
 	}
+	if err := a.notifyRoles(ctx, u, m, role+" revoked"); err != nil {
+		return Member{}, err
+	}
 	m, err = findMember(ctx, u, id, now)
 	return memberOf(m), err
+}
+
+// notifyRoles tells a member their roles changed: a security notice, always on (FR-NTF-02).
+func (a *API) notifyRoles(ctx context.Context, u storage.UnitOfWork, m storage.Member, what string) error {
+	return a.notify(ctx, u, notify.Event{Type: "security.roles", RecordType: "membership", RecordID: &m.ID, Title: "Your roles changed: " + what,
+		Link: "/settings/profile", Audience: notify.Audience{Users: []uuid.UUID{m.UserID}}})
 }
 
 // endTokens asks for the member's OAuth tokens to be revoked in the same unit of work: their claims are a

@@ -112,6 +112,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/members/invitations/{invitation_id}` (withdrawMemberInvitation): Withdraw an invitation
 - `POST /v1/members/{member_id}/roles` (assignRole): Give a member a role
 - `DELETE /v1/members/{member_id}/roles/{role}` (revokeRole): End a member's role
+- `GET /v1/notification-preferences` (getNotificationPreferences): Get your notification preferences
+- `PUT /v1/notification-preferences/{type}` (setNotificationPreference): Choose how a notification type is emailed
+- `PUT /v1/notification-quiet-hours` (setQuietHours): Set your quiet hours
+- `GET /v1/notifications` (listNotifications): List your notifications
+- `POST /v1/notifications/read-all` (readAllNotifications): Mark all your notifications read
+- `POST /v1/notifications/{notification_id}/archive` (archiveNotification): Archive a notification
+- `POST /v1/notifications/{notification_id}/read` (readNotification): Mark a notification read
+- `POST /v1/notifications/{notification_id}/unread` (unreadNotification): Mark a notification unread
 - `GET /v1/opening-balances` (getOpeningBalances): Get the opening balances
 - `PUT /v1/opening-balances` (replaceOpeningBalances): Save the opening balances as a draft
 - `POST /v1/opening-balances/edit-approval` (requestOpeningBalancesEdit): Ask for approval to change the posted opening balances
