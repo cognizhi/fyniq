@@ -807,6 +807,42 @@
     "invoice.settle-in-full": {
       "label": "Settle the invoice in full",
       "tooltip": "Clear what is left as a settlement difference, within the organisation's settlement tolerance (S$1.00 by default); a larger shortfall stays open, or is written off."
+    },
+    "sales.recurring-invoices": {
+      "label": "Recurring invoices",
+      "tooltip": "Invoices that repeat, weekly to yearly: each one's schedule, its next invoice, what the scheduler does with it and its status."
+    },
+    "sales.recurring-invoice": {
+      "label": "Recurring invoice",
+      "tooltip": "One recurring invoice: its schedule, customer and lines, and whether the scheduler makes drafts or issues and sends."
+    },
+    "recurring-invoice.new": {
+      "label": "New recurring invoice",
+      "tooltip": "Bill a customer the same lines on a schedule, such as a monthly subscription."
+    },
+    "recurring-invoice.save": {
+      "label": "Save",
+      "tooltip": "Save it: a change of lines is a new version, and invoices already made keep theirs."
+    },
+    "recurring-invoice.check": {
+      "label": "Check",
+      "tooltip": "See its next invoice's date and anything that would stop its invoices being issued, without saving."
+    },
+    "recurring-invoice.pause": {
+      "label": "Pause",
+      "tooltip": "Make no invoices until it is resumed."
+    },
+    "recurring-invoice.resume": {
+      "label": "Resume",
+      "tooltip": "Make its invoices again from the next date; the dates it missed are skipped."
+    },
+    "recurring-invoice.mode": {
+      "label": "What the scheduler does",
+      "tooltip": "Make a draft of each invoice for a person to issue, or issue and send each one itself once another person approves the content; a change of content needs the approval again."
+    },
+    "recurring-invoice.ask-approval": {
+      "label": "Ask for approval",
+      "tooltip": "Another person approves this content; until then, and after any change, the scheduler makes drafts."
     }
   }
 }

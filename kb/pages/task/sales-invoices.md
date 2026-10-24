@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:7b0a9b370d1d0b866abc127a14715a9422fb02d89a6be5a3dcbf3d5202659e68
+  - docs/user-guide/invoices.md sha256:25325b48b4c9a7bc387964b773e063a2164339df092b3ab1932bc500e33f71e5
 data_class: general
 taint: trusted
 status: draft
@@ -36,6 +36,13 @@ aliases:
   - spread revenue
   - invoice attachment
   - customer purchase order
+  - recurring invoice
+  - subscription invoice
+  - monthly invoice
+  - weekly invoice
+  - repeating invoice
+  - auto-send
+  - issue and send
   - record a payment
   - customer paid
   - receipt
@@ -85,6 +92,19 @@ aliases:
 - In another currency, an account in that currency takes the bank's or the day's rate; an SGD account needs what it received in SGD.
 
 (src: docs/user-guide/invoices.md#record-a-payment)
+
+## Recurring invoices
+
+- **Sales → Recurring** keeps invoices that repeat: every week or every two weeks on the start's weekday, or every 1, 3, 6 or 12 months on a day of the month, the 29th to the 31st falling on a shorter month's last day; a start in the past makes the invoices of the dates already passed.
+- Each occurrence's draft is made on its date for a person to issue, never approved by whoever wrote its lines; **Check** shows the next date and any problem without saving, **Pause** and **Resume** stop and restart it (skipping missed dates), and a change of lines is a new version.
+
+(src: docs/user-guide/invoices.md#recurring-invoices)
+
+## Issued and sent by the scheduler
+
+- Set to **Issue and send** under **What the scheduler does**, the scheduler issues and emails each invoice itself, but only once another person (not the one who wrote the lines) approves the content through **Ask for approval**; each is listed for the weekly review, and a change of content needs the approval again.
+
+(src: docs/user-guide/invoices.md#invoices-the-scheduler-issues-and-sends)
 
 ## Approval
 

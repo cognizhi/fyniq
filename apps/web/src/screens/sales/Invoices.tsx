@@ -40,6 +40,9 @@ export function SalesTabs() {
       <Link to="/sales/quotes" activeOptions={{ exact: true }}>
         Quotes and orders
       </Link>
+      <Link to="/sales/recurring" activeOptions={{ exact: true }}>
+        Recurring
+      </Link>
     </nav>
   );
 }

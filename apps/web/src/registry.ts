@@ -68,6 +68,9 @@ export const routes = [
   { kind: "route", id: "quote-new", path: "/sales/quotes/new", mode: "basic", signedIn: true, help: "quote.new", guide: "sales.quotes#prepare-a-quote" },
   { kind: "route", id: "sales-order-new", path: "/sales/orders/new", mode: "basic", signedIn: true, help: "sales-order.new", guide: "sales.quotes#sales-orders" },
   { kind: "route", id: "quote", path: "/sales/quotes/$quoteId", mode: "basic", signedIn: true, help: "sales.quote", guide: "sales.quotes#send-a-quote" },
+  { kind: "route", id: "recurring-invoices", path: "/sales/recurring", mode: "basic", signedIn: true, help: "sales.recurring-invoices", guide: "sales.invoices#recurring-invoices" },
+  { kind: "route", id: "recurring-invoice-new", path: "/sales/recurring/new", mode: "basic", signedIn: true, help: "recurring-invoice.new", guide: "sales.invoices#recurring-invoices" },
+  { kind: "route", id: "recurring-invoice", path: "/sales/recurring/$recurringInvoiceId", mode: "basic", signedIn: true, help: "sales.recurring-invoice", guide: "sales.invoices#recurring-invoices" },
   { kind: "route", id: "bills", path: "/purchases/bills", mode: "basic", signedIn: true, help: "purchases.bills", guide: "purchases.bills" },
   { kind: "route", id: "bill-new", path: "/purchases/bills/new", mode: "basic", signedIn: true, help: "bill.new", guide: "purchases.bills#enter-a-bill" },
   { kind: "route", id: "credit-new", path: "/purchases/credits/new", mode: "basic", signedIn: true, help: "credit.new", guide: "purchases.bills#credit-notes" },
@@ -201,6 +204,13 @@ export const actions = [
   { kind: "action", id: "credit-note.credits", mode: "basic", help: "credit-note.credits", guide: "sales.invoices#credit-notes" },
   { kind: "action", id: "invoice.record-payment", mode: "basic", help: "invoice.record-payment", guide: "sales.invoices#record-a-payment" },
   { kind: "action", id: "invoice.settle-in-full", mode: "basic", help: "invoice.settle-in-full", guide: "sales.invoices#record-a-payment" },
+  // Recurring invoices (FR-AR-07): Basic; issue and send needs another person's approval of the content.
+  { kind: "action", id: "recurring-invoice.save", mode: "basic", help: "recurring-invoice.save", guide: "sales.invoices#recurring-invoices" },
+  { kind: "action", id: "recurring-invoice.check", mode: "basic", help: "recurring-invoice.check", guide: "sales.invoices#recurring-invoices" },
+  { kind: "action", id: "recurring-invoice.pause", mode: "basic", help: "recurring-invoice.pause", guide: "sales.invoices#recurring-invoices" },
+  { kind: "action", id: "recurring-invoice.resume", mode: "basic", help: "recurring-invoice.resume", guide: "sales.invoices#recurring-invoices" },
+  { kind: "action", id: "recurring-invoice.mode", mode: "basic", help: "recurring-invoice.mode", guide: "sales.invoices#invoices-the-scheduler-issues-and-sends" },
+  { kind: "action", id: "recurring-invoice.ask-approval", mode: "basic", help: "recurring-invoice.ask-approval", guide: "sales.invoices#invoices-the-scheduler-issues-and-sends" },
   // Quotes and sales orders (FR-AR-01, FR-AR-02): Basic.
   { kind: "action", id: "quote.save", mode: "basic", help: "quote.save", guide: "sales.quotes#prepare-a-quote" },
   { kind: "action", id: "quote.send", mode: "basic", help: "quote.send", guide: "sales.quotes#send-a-quote" },

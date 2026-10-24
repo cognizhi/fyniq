@@ -181,3 +181,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-25] compile | docs/user-guide/quotes.md → sales.quotes (new: the quote screens, p1-sales task 8.1); docs/user-guide/invoices.md → sales.invoices (invoicing an accepted quote)
 
 ## [2026-10-25] compile | docs/user-guide/invoices.md → sales.invoices (recording a payment, p1-sales task 8.1)
+
+## [2026-10-25] compile | docs/user-guide/invoices.md → sales.invoices (recurring invoices and issue and send, p1-sales task 8.1)

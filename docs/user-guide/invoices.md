@@ -77,6 +77,27 @@ and the **Amount received**. It posts at once, and the invoice shows **Part paid
 - An invoice in another currency paid into an account in that currency takes the rate on the bank's
   advice, or the day's rate; paid into an SGD account, enter what the account received in SGD.
 
+## Recurring invoices
+
+**Sales → Recurring** keeps invoices that repeat: a name, a schedule, the customer and the lines. A
+schedule is every week or every two weeks on the start's weekday, or every 1, 3, 6 or 12 months on a day
+of the month; the 29th to the 31st fall on the last day of a shorter month. A start in the past makes the
+invoices of the dates already passed.
+
+Each occurrence's draft invoice is made on its date, dated that day. Check it and issue it as any
+invoice; whoever wrote the lines of the recurring invoice does not approve the issue of its drafts.
+**Check** shows the next invoice's date and anything that would stop its invoices being issued, without
+saving. **Pause** stops it until **Resume**, which skips the dates it missed. A change of lines is a new
+version: invoices already made keep theirs.
+
+## Invoices the scheduler issues and sends
+
+Under **What the scheduler does**, a recurring invoice can **Issue and send** each invoice itself instead
+of making a draft. It does so only once another person approves its content: select **Ask for approval**,
+and another person, not the one who wrote the lines, approves it in the Inbox. Each invoice the scheduler
+issues is emailed to the customer's billing email and listed for the weekly review. A change of content
+needs the approval again; until then, the scheduler makes drafts.
+
 ## Invoices above the self-approval threshold
 
 An invoice whose total is above the self-approval threshold is not issued by the person issuing it.

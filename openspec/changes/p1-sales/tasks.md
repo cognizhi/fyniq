@@ -221,7 +221,11 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   into and what the customer paid; what is beyond the invoice stays as their credit, and a small shortfall settles in
   full within the tolerance. Not yet: applying one receipt across several invoices. Tests: the receipt cases in
   `src/screens/sales/invoices.test.tsx`.)
-  (Still to come: recurring-documents, statements-reminders and customer-document-view.)
+  (In part, 25 Oct 2026: recurring-documents, the invoices' half. **Sales › Recurring**: the recurring invoices with
+  their schedule (weekly to yearly), next date, what the scheduler does and status; the page sets the name, schedule,
+  customer, lines and mode, checks it without saving, pauses and resumes it, and asks for approval of the content to
+  issue and send. Recurring bills keep their own page under Purchases. Tests: `src/screens/sales/recurring.test.tsx`.)
+  (Still to come: statements-reminders and customer-document-view.)
 
 ## 9. The oracle and finishing
 
