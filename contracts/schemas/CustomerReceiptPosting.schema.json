@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "Entry.schema.json",
+      "description": "The entry the command posted: the receipt's entry, or its reversing entry."
+    },
+    "receipt": {
+      "$ref": "CustomerReceipt.schema.json",
+      "description": "The receipt after the command."
+    }
+  },
+  "required": [
+    "receipt",
+    "entry"
+  ],
+  "title": "CustomerReceiptPosting",
+  "type": "object"
+}

@@ -1457,6 +1457,47 @@ var matrixCalls = map[string]matrixCall{
 		}
 	},
 	// Invoices (FR-AR-03): read under V, prepared under C, issued, voided and edited under P; asking for approval is issuing.
+	// Customer receipts (FR-AR-18): read under V, recorded and voided under P; asking to void is posting.
+	"listCustomerReceipts": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/customer-receipts", tok, nil), nil
+	},
+	"getCustomerReceipt": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.recordedReceipt()
+		return e.call(http.MethodGet, "/v1/customer-receipts/"+id, tok, nil), nil
+	},
+	"recordCustomerReceipt": func(e *env, tok string) (response, func() bool) {
+		inv, _ := e.issuedInvoice("1", "10.00")
+		r := e.call(http.MethodPost, "/v1/customer-receipts", tok, e.receiptOf(inv, "10.00"))
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/invoices/"+inv, e.as(authz.Accountant), nil).str("states", "settlement") == "open"
+		}
+	},
+	"requestCustomerReceiptVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "customer_receipt")
+		id, tag := e.recordedReceipt()
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/customer-receipts/"+id+"/void-approval", person, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "customer_receipt") == was }
+	},
+	// A void in Founder mode is asked for, so the row voids in an organisation in Standard mode.
+	"voidCustomerReceipt": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.recordedReceipt()
+		r := s.call(http.MethodPost, "/v1/customer-receipts/"+id+"/void", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/customer-receipts/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
+		}
+	},
 	"getReceivables": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/receivables?as_at=2026-10-31", tok, nil), nil
 	},

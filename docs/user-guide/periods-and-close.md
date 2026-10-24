@@ -58,10 +58,10 @@ closes the month.
      end (✖ when they differ by anything Fyniq cannot explain: report it, never adjust it by
      journal); amounts on accounts payable from opening balances or manual journals, which no bill
      supports, show ⚠: support them with the suppliers' statements, or enter the bills;
-   - accounts receivable agrees with the invoices still open at the month's end, in the same way (✖
-     when they differ by anything Fyniq cannot explain); amounts on accounts receivable from opening
-     balances or manual journals, which no invoice supports, show ⚠: support them with the
-     customers' statements, or enter the invoices;
+   - accounts receivable agrees with the invoices still open and the credits with customers at the
+     month's end, in the same way (✖ when they differ by anything Fyniq cannot explain); amounts on
+     accounts receivable from opening balances or manual journals, which no invoice supports, show
+     ⚠: support them with the customers' statements, or enter the invoices;
    - income and expense accounts that moved against the previous month by more than both
      thresholds in **Settings → Organisation** (S$1,000 and 10% unless changed), with no
      explanation of their totals as they are now (✖; see [Explain the variances](#explain-the-variances));

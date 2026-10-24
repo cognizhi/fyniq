@@ -185,7 +185,7 @@ func TestTheARSubLedgerReconcilesWith1100(t *testing.T) {
 	for _, c := range all {
 		got[c.Key] = c
 	}
-	if c := got["receivables"]; c.Severity != closing.OK || c.Detail != "3 open invoice(s)" {
+	if c := got["receivables"]; c.Severity != closing.OK || c.Detail != "3 open invoice(s) and customer credit(s)" {
 		t.Errorf("the sub-ledger check: %+v", c)
 	}
 	if c := got["receivables-unsupported"]; c.Severity != closing.Warning ||

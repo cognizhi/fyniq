@@ -56,11 +56,11 @@ type BillPayment struct {
 // question 32 (S$1.00), far above the cent a part can leave. The database holds a bill payment's base-only line to it.
 const MaxResidual = 1
 
-// Settlement is what a payment settled of one bill: the amount in the bill's currency, the carrying amount it cleared
-// in the base currency, and the realised gain (+) or loss (−) in the base currency (ENG-41), the allocation it records
-// (FR-AR-18).
+// Settlement is what a payment or a receipt settled of one document (a bill, an invoice, or a credit): the amount in the
+// document's currency, the carrying amount it cleared in the base currency, and the realised gain (+) or loss (−) in
+// the base currency (ENG-41), the allocation it records (FR-AR-18).
 type Settlement struct {
-	BillID     uuid.UUID
+	DocumentID uuid.UUID
 	Amount     money.Money
 	Base       money.Money
 	RealisedFX money.Money
@@ -85,6 +85,12 @@ func BillPaymentIdentity(id uuid.UUID, version int, rule string) string {
 //
 // Every rule is checked first and every failure returned together (ENG-22).
 func PostBillPayment(p BillPayment, s Settings) (Entry, []Settlement, error) {
+	return postPayment(p, s, RoleAccountsPayable)
+}
+
+// postPayment is bill_payment@1's legs against the control account with role: accounts payable for a payment of bills
+// (and, negated, a supplier refund), accounts receivable for a receipt from customers, negated (customer_receipt@1).
+func postPayment(p BillPayment, s Settings, role string) (Entry, []Settlement, error) {
 	var probs Problems
 	add := func(code, field, msg, fix string) { probs = append(probs, Problem{code, field, msg, fix}) }
 	if p.Date.IsZero() {
@@ -137,8 +143,11 @@ func PostBillPayment(p BillPayment, s Settings) (Entry, []Settlement, error) {
 	case p.Paid != nil && (p.Paid.Currency() != s.Base || p.Paid.Sign() <= 0):
 		add(CodePaidAmount, "paid", fmt.Sprintf("what the account paid is %s %s", p.Paid, p.Paid.Currency()), fmt.Sprintf("Enter a positive amount in %s", s.Base))
 	}
-	ap, hasAP := s.byRole(RoleAccountsPayable)
-	if !hasAP {
+	ap, hasAP := s.byRole(role)
+	switch {
+	case !hasAP && role == RoleAccountsReceivable:
+		add(CodeSystemRole, "bills", "the chart has no accounts receivable account", "Load the standard chart's 1100 Accounts receivable, or give an asset account the role")
+	case !hasAP:
 		add(CodeSystemRole, "bills", "the chart has no accounts payable account", "Load the standard chart's 2010 Accounts payable, or give a liability account the role")
 	}
 	total := money.Zero(p.Currency)
@@ -220,7 +229,7 @@ func PostBillPayment(p BillPayment, s Settings) (Entry, []Settlement, error) {
 			baseTotal, _ = baseTotal.Add(residual)
 			cleared = *b.Clears
 		}
-		settled = append(settled, Settlement{BillID: b.BillID, Amount: b.Amount, Base: cleared, RealisedFX: gain})
+		settled = append(settled, Settlement{DocumentID: b.BillID, Amount: b.Amount, Base: cleared, RealisedFX: gain})
 	}
 	if !p.Unapplied.IsZero() {
 		base, err := rounding.FX(p.Unapplied, settleRate)

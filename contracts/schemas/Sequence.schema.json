@@ -19,7 +19,8 @@
         "vendor_credit",
         "supplier_refund",
         "purchase_order",
-        "invoice"
+        "invoice",
+        "customer_receipt"
       ],
       "examples": [
         "journal"

@@ -69,6 +69,7 @@ type API struct {
 	journals     journal.Service
 	bills        journal.Bills
 	invoices     journal.Invoices
+	receipts     journal.CustomerReceipts
 	payments     journal.BillPayments
 	applications journal.CreditApplications
 	refunds      journal.SupplierRefunds
@@ -171,7 +172,8 @@ func New(mux humago.Mux, d Deps) *API {
 	a := &API{deps: d, policies: map[string]authz.Policy{}, journals: journal.Service{Store: d.Store}, bills: journal.Bills{Store: d.Store, Clock: d.Clock},
 		payments: journal.BillPayments{Store: d.Store}, applications: journal.CreditApplications{Store: d.Store},
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
-		closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+		receipts: journal.CustomerReceipts{Store: d.Store},
+		closing:  closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -186,6 +188,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.applications.AfterPosting = a.afterPosting
 	a.refunds.AfterPosting = a.afterPosting
 	a.invoices.AfterPosting = a.afterPosting
+	a.receipts.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)
@@ -239,6 +242,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerInvoices(a)
 	registerInvoiceEvidence(a)
 	registerReceivables(a)
+	registerCustomerReceipts(a)
 	registerPurchaseOrders(a)
 	registerWithholding(a)
 	registerBillPlans(a)

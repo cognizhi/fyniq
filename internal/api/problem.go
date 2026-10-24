@@ -36,6 +36,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
+	"github.com/cognizhi/fyniq/internal/domain/receipt"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -373,6 +374,16 @@ var codeFacts = map[string]struct {
 	CodeInvoiceVoidApproval:       {409, "Voiding needs a second person"},
 	CodeOwnInvoice:                {403, "You prepared it, so another person approves it"},
 	CodeInvoiceEditApproval:       {409, "Editing needs a second person"},
+	receipt.CodeNotReceipt:        {404, "Not a customer receipt"},
+	receipt.CodeBadDraft:          {422, "The saved receipt cannot be read"},
+	receipt.CodeCustomer:          {422, "The receipt's customer is not a customer"},
+	receipt.CodeInvoice:           {422, "Not an issued invoice of the receipt's customer in its currency"},
+	receipt.CodeOverpaid:          {422, "More than the invoice has open"},
+	receipt.CodeNotPosted:         {409, "The receipt is not posted"},
+	receipt.CodeVoidDate:          {422, "The void is dated before the receipt"},
+	receipt.CodeTooLong:           {422, "A text of the receipt is too long"},
+	receipt.CodeTooMany:           {422, "The receipt settles too many invoices"},
+	CodeReceiptVoidApproval:       {409, "Voiding needs a second person"},
 	billpayment.CodeNotPayment:    {404, "Not a payment of bills"},
 	billpayment.CodeBadDraft:      {422, "The saved payment cannot be read"},
 	billpayment.CodeSupplier:      {422, "The payment's supplier is not a vendor"},
@@ -587,6 +598,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		je  *journal.Error
 		be  *bill.Error
 		ie  *invoice.Error
+		re  *receipt.Error
 		bpe *billpayment.Error
 		cre *credits.Error
 		poe *purchaseorder.Error
@@ -613,6 +625,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(be.Code, sentence(be.Message), sentence(be.Fix))
 	case errors.As(err, &ie):
 		return problem(ie.Code, sentence(ie.Message), sentence(ie.Fix))
+	case errors.As(err, &re):
+		return problem(re.Code, sentence(re.Message), sentence(re.Fix))
 	case errors.As(err, &bpe):
 		return problem(bpe.Code, sentence(bpe.Message), sentence(bpe.Fix))
 	case errors.As(err, &cre):

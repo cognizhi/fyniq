@@ -67,6 +67,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void-approval` (requestCreditApplicationVoid): Ask for approval to void a credit applied to a bill
+- `GET /v1/customer-receipts` (listCustomerReceipts): List the customer receipts
+- `POST /v1/customer-receipts` (recordCustomerReceipt): Record a customer receipt
+- `GET /v1/customer-receipts/{receipt_id}` (getCustomerReceipt): Get a customer receipt
+- `POST /v1/customer-receipts/{receipt_id}/void` (voidCustomerReceipt): Void a customer receipt
+- `POST /v1/customer-receipts/{receipt_id}/void-approval` (requestCustomerReceiptVoid): Ask for approval to void a customer receipt
 - `GET /v1/document-template-bundle` (exportDocumentTemplates): Export templates as a bundle
 - `POST /v1/document-template-bundles` (importDocumentTemplates): Import templates from a bundle
 - `GET /v1/document-template-catalogue/{document_type}` (getDocumentTemplateCatalogue): Read what a template is made of

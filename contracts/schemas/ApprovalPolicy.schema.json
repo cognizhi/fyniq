@@ -42,7 +42,8 @@
         "supplier_refund",
         "purchase_order",
         "document_template",
-        "invoice"
+        "invoice",
+        "customer_receipt"
       ],
       "examples": [
         "organisation_setting"

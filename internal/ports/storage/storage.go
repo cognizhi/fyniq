@@ -401,6 +401,9 @@ const (
 	DocumentPurchaseOrder DocumentType = "purchase_order"
 	// DocumentInvoice is a customer's invoice (FR-AR-03; p1-sales).
 	DocumentInvoice DocumentType = "invoice"
+	// DocumentCustomerReceipt is money a customer paid, recorded by hand until bank import matches it (FR-AR-18; the
+	// owner's decision of 24 Oct 2026).
+	DocumentCustomerReceipt DocumentType = "customer_receipt"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).

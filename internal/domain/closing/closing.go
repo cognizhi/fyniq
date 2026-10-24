@@ -362,11 +362,11 @@ func receivablesChecks(ctx context.Context, u storage.UnitOfWork, cur money.Curr
 		var parts []string
 		for _, c := range r.Currencies {
 			if !c.Unexplained.IsZero() {
-				parts = append(parts, fmt.Sprintf("in %s, %s says %s is owed and the open invoices %s", c.Currency, ar.Code, c.Control, c.SubLedger))
+				parts = append(parts, fmt.Sprintf("in %s, %s says %s is owed and the open invoices and credits %s", c.Currency, ar.Code, c.Control, c.SubLedger))
 			}
 		}
 		if b := r.Base; !b.Unexplained.IsZero() {
-			parts = append(parts, fmt.Sprintf("in carrying amounts (%s), %s says %s and the open invoices %s", b.Currency, ar.Code, b.Control, b.SubLedger))
+			parts = append(parts, fmt.Sprintf("in carrying amounts (%s), %s says %s and the open invoices and credits %s", b.Currency, ar.Code, b.Control, b.SubLedger))
 		}
 		out = append(out, Check{"receivables", Failed, "The AR sub-ledger does not agree with accounts receivable",
 			strings.Join(parts, "; ") + ": a posting and its document disagree; report it, never adjust it by journal"})
@@ -375,7 +375,7 @@ func receivablesChecks(ctx context.Context, u storage.UnitOfWork, cur money.Curr
 		for _, c := range l.Customers {
 			items += len(c.Items)
 		}
-		out = append(out, Check{"receivables", OK, "The AR sub-ledger agrees with accounts receivable", fmt.Sprintf("%d open invoice(s)", items)})
+		out = append(out, Check{"receivables", OK, "The AR sub-ledger agrees with accounts receivable", fmt.Sprintf("%d open invoice(s) and customer credit(s)", items)})
 	}
 	var held []string
 	for _, c := range r.Currencies {

@@ -135,7 +135,7 @@ func TestEverySupplierRefundRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 				t.Fatalf("%s, %s: %v", rule, c.name, err)
 			}
 			b.WriteString(render(c.name, e))
-			fmt.Fprintf(&b, "settles %s %s = %s, realised %s\n", x.BillID, x.Amount, x.Base, x.RealisedFX)
+			fmt.Fprintf(&b, "settles %s %s = %s, realised %s\n", x.DocumentID, x.Amount, x.Base, x.RealisedFX)
 		}
 		path := filepath.Join("testdata", "replay", rule+".golden")
 		if *update {
