@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "pdf": {
+      "contentEncoding": "base64",
+      "description": "The document, as PDF/A-2a and PDF/UA-1, base64.",
+      "examples": [
+        "JVBERi0xLjc="
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The PDF's SHA-256, in hex.",
+      "examples": [
+        "a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "pdf",
+    "sha256"
+  ],
+  "title": "PublicPDF",
+  "type": "object"
+}

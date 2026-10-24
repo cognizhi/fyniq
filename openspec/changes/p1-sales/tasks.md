@@ -157,9 +157,16 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `TestInvoicesAndQuotesAreEmailed`, `TestASendIsOfAnIssuedInvoicesCurrentVersion`, `TestAMessageCarriesItsEvidenceFiles`,
   `TestDeliveryFollowsTheLatestSend`, the adapters' attachment tests, the matrix rows. The link in the email follows
   with task 5.3.)
-- [ ] 5.3 The online link: a hashed 256-bit token per version, the public read endpoint, viewed recorded once, the
+- [x] 5.3 The online link: a hashed 256-bit token per version, the public read endpoint, viewed recorded once, the
   quote accepted or declined as evidence, expiry and revocation; its threat model. Tests `// req: FR-AR-06`,
   `// req: FR-AR-16`
+  (24 Oct 2026, PRD-001 rev 0.134: a link per email rather than per version, so each email's link is revoked on its
+  own; the token in the URL's fragment and the `Fyniq-Link` header, never a path; `document_link`,
+  `document_link_token`, `document_link_route` (migration 000133); `salesdoc.NewToken`, `TokenHash`, `Live`; the
+  public operations and `revokeDocumentLink`; `docs/security/threat-models/document-links.md`. Tests:
+  `TestDocumentLinksOpenTheirDocumentOnly`, `TestAQuoteIsAnsweredThroughItsLink`, `TestDocumentLinksAreRateLimited`,
+  `TestALinkChangesOnlyInItsViewAndRevocation`, `TestALinkTokenIsRandomAndKeptHashed`, `TestALinkIsLiveUntilItEnds`, the
+  matrix rows. The public page itself comes with the screens, task 8.1.)
 
 ## 6. Recurring invoices
 

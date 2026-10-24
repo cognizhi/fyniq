@@ -536,8 +536,12 @@ var codeFacts = map[string]struct {
 	salesdoc.CodeNotSent:     {409, "Only an issued invoice or a sent quote is emailed"},
 	salesdoc.CodeNoRecipient: {422, "There is no address to send it to"},
 	salesdoc.CodeParticulars: {422, "The tax invoice lacks a particular IRAS requires"},
+	salesdoc.CodeLink:        {404, "The link opens no document"},
 
 	storage.CodeQuoteOutcome: {409, "The quote's answer is recorded once, of a sent quote"},
+
+	storage.CodeSend: {409, "A send is of an issued invoice's or sent quote's current version"},
+	storage.CodeLink: {409, "A link changes only in its first view and its revocation, once each"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -557,6 +561,9 @@ var storageFixes = map[string]string{
 	storage.CodeFXRate:        "Enter rates of currencies other than the base, a monthly rate on its month's first day; withdraw a rate and enter another rather than changing one",
 	storage.CodeFXRevaluation: "Revalue the period while it is open, from its own last day; the scheduler saves only the revaluation the application worked out",
 	storage.CodeTemplate:      "Publish a new version, or roll back to an earlier one: a published version never changes and a template is never deleted",
+
+	storage.CodeSend: "Send the issued invoice or sent quote as it stands now",
+	storage.CodeLink: "Email the document again for a new link",
 }
 
 // problem builds a Problem for one of the catalogue's codes.

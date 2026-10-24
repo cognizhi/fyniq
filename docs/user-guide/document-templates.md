@@ -98,8 +98,20 @@ A draft invoice whose date is more than 30 days before today shows ⚠: IRAS exp
 - A draft is never emailed: issue the invoice or send the quote first. A tax invoice that lacks a
   particular IRAS requires, such as the customer's address, is not sent until the detail is added.
 - Fyniq keeps the PDF it sent in the document's evidence, and the document lists each time it was
-  emailed with its delivery: **Sent**, **Delivered** or **Bounced**. Emailing it again sends the same
-  version again.
+  emailed with its delivery: **Sent**, **Delivered**, **Viewed** or **Bounced**. Emailing it again sends
+  the same version again, with a new link.
+
+## The link in the email
+
+- Each email carries a secure link, with **{{document.link}}** in the email template (the starter
+  emails have it). Whoever opens it sees the document and its PDF, without signing in, and nothing else.
+- The first time it is opened, the document's delivery shows **Viewed**: the time, never who opened it
+  or from where.
+- On a quote, the customer can **accept** it, giving the name of who accepts, or **decline** it, with a
+  comment, while it is still valid and has no answer. The answer is recorded on the quote with its
+  date, the name and the comment.
+- A link works for 180 days at most. It stops sooner when you **revoke** it from the document's links,
+  when the invoice is voided or edited or the quote cancelled, and when the invoice is paid in full.
 
 ## Move templates with a bundle
 

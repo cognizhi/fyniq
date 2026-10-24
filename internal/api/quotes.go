@@ -75,6 +75,7 @@ type Quote struct {
 	// Email (FR-AR-06; rev 0.133).
 	Delivery string            `json:"delivery" enum:"not_sent,sent,delivered,viewed,bounced" doc:"From its latest email: not_sent until emailQuote sends it; then sent, delivered or bounced; viewed comes with the online link." example:"not_sent"`
 	Sends    []DocumentSendOut `json:"sends" nullable:"false" doc:"Each time it was emailed, newest first, with its delivery."`
+	Links    []DocumentLinkOut `json:"links" nullable:"false" doc:"The online links its emails carried, newest first, with their status; never their tokens."`
 }
 
 // QuoteLineInvoicing is what a quote line has been invoiced (FR-AR-02): each invoice line made from it takes its own
@@ -301,9 +302,14 @@ func (a *API) quoteOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 	if err != nil {
 		return Quote{}, err
 	}
-	out.Sends = sendsOut(sends)
+	links, err := u.DocumentLinks().OfDocument(ctx, doc.ID)
+	if err != nil {
+		return Quote{}, err
+	}
+	viewed := viewedBy(links)
+	out.Sends, out.Links = sendsOut(sends, viewed), linksOut(links, doc, false, a.deps.Clock.Now())
 	if len(sends) > 0 {
-		out.Delivery = salesdoc.Delivery(&sends[0])
+		out.Delivery = salesdoc.Delivery(&sends[0], viewed[sends[0].MessageID])
 	}
 	for i, s := range states {
 		out.Invoicing = append(out.Invoicing, QuoteLineInvoicing{Line: i + 1, Quoted: s.Quoted.String(), Invoiced: s.Invoiced.String(), Drafted: s.Drafted.String(),

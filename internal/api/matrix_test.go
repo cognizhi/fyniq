@@ -1759,6 +1759,31 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/quotes/"+id, e.as(authz.Accountant), nil).str("delivery") == "not_sent"
 		}
 	},
+	// The online link (FR-AR-06, FR-AR-16): public, so every caller opens it; revoking is P.
+	"getPublicDocument": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/public/document", tok, nil, "Fyniq-Link", e.sharedLink("document")), nil
+	},
+	"getPublicDocumentPDF": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/public/document/pdf", tok, nil, "Fyniq-Link", e.sharedLink("pdf")), nil
+	},
+	"acceptQuoteByLink": func(e *env, tok string) (response, func() bool) {
+		_, link := e.emailedQuoteLink()
+		return e.call(http.MethodPost, "/v1/public/document/accept", tok, map[string]any{"name": "Jane Tan"}, "Fyniq-Link", link), nil
+	},
+	"declineQuoteByLink": func(e *env, tok string) (response, func() bool) {
+		_, link := e.emailedQuoteLink()
+		return e.call(http.MethodPost, "/v1/public/document/decline", tok, map[string]any{"comment": "No"}, "Fyniq-Link", link), nil
+	},
+	"revokeDocumentLink": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.emailedInvoiceLink("1", "10.00")
+		links := e.call(http.MethodGet, "/v1/invoices/"+id, e.as(authz.Accountant), nil).Body["links"].([]any)
+		link := links[0].(map[string]any)["id"].(string)
+		r := e.call(http.MethodPost, "/v1/document-links/"+link+"/revoke", tok, nil)
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/invoices/"+id, e.as(authz.Accountant), nil).Body["links"].([]any)
+			return l[0].(map[string]any)["status"] == "live"
+		}
+	},
 	"createInvoice": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/invoices", tok, e.invoiceDraft("1", "10.00")), nil
 	},

@@ -317,6 +317,27 @@ type FyniqDocument struct {
 	PostedAt       *time.Time
 }
 
+type FyniqDocumentLink struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	DocumentID      uuid.UUID
+	DocumentVersion int32
+	MessageID       uuid.UUID
+	TokenHash       string
+	ExpiresAt       time.Time
+	CreatedBy       string
+	CreatedAt       time.Time
+	FirstViewedAt   *time.Time
+	RevokedAt       *time.Time
+	RevokedBy       *string
+}
+
+type FyniqDocumentLinkToken struct {
+	TokenHash string
+	Owner     uuid.UUID
+	LinkID    uuid.UUID
+}
+
 type FyniqDocumentNumber struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

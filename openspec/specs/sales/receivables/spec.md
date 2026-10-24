@@ -210,6 +210,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** it goes to the customer's billing email from the invoices sender with its email template and its current version's PDF attached, kept as its evidence; a draft never goes, nor a tax invoice lacking a particular
 - **AND** the send records the version, message, file and template, and its delivery follows the provider's events
 
+#### Scenario: The online link as built (rev 0.134)
+- **WHEN** a customer opens the link an email carried, with no session
+- **THEN** they see the document and its PDF only, never cached or indexed, and its delivery shows viewed; the token is kept only hashed and travels in the URL's fragment
+- **AND** the link stops after 180 days, when revoked, voided, cancelled or edited, or an invoice is paid; one that opens nothing answers LINK-01
+
 ### Requirement: FR-AR-07 Recurring invoices
 The system SHALL create recurring invoices at frequencies from weekly to yearly, as drafts or sent automatically, with month-end date handling.
 
@@ -532,6 +537,10 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 #### Scenario: Customer accepts or declines a quote online
 - **WHEN** a customer accepts or declines a quote through its online link
 - **THEN** their name, the date and their comment are recorded as evidence (FR-DOC-05)
+
+#### Scenario: Answering online as built (rev 0.134)
+- **WHEN** a customer accepts, naming who accepts, or declines a sent, still valid quote with no answer through its link
+- **THEN** it is the quote's one answer (QUOTE-07), recorded as the link with the comment and the request's address in the audit trail
 
 #### Scenario: Accepted quote converts in one action
 - **GIVEN** a quote the customer accepted

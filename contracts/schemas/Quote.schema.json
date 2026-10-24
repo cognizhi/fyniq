@@ -115,6 +115,13 @@
       },
       "type": "array"
     },
+    "links": {
+      "description": "The online links its emails carried, newest first, with their status; never their tokens.",
+      "items": {
+        "$ref": "DocumentLinkOut.schema.json"
+      },
+      "type": "array"
+    },
     "net": {
       "$ref": "Money.schema.json",
       "description": "Every line's net, in its currency."
@@ -213,7 +220,8 @@
     "invoicing",
     "invoices",
     "delivery",
-    "sends"
+    "sends",
+    "links"
   ],
   "title": "Quote",
   "type": "object"

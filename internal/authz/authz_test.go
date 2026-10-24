@@ -172,15 +172,19 @@ func TestParseCell(t *testing.T) {
 }
 
 // Only the installation's operations (setup, Super admins), the caller's own session and joining an
-// organisation by invitation bypass the organisation, and only the setup status and the sign-in providers
-// need no credential.
+// organisation by invitation bypass the organisation, and only the setup status, the sign-in providers and the
+// online link's operations (whose token is the credential) need no credential.
 // req: SEC-02
+// req: FR-AR-06
 // asvs: V8.2.1
 func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 	for op, p := range authz.Policies {
 		installation := p.Capability == authz.Setup || p.Capability == authz.SuperAdmins || p.Capability == authz.Session ||
 			p.Capability == authz.Joining
-		public := op == "getSetupStatus" || op == "listSignInProviders"
+		// The online link's operations are public by design: the link's token is the credential, and they reach one
+		// document of one organisation (FR-AR-06, FR-AR-16; docs/security/threat-models/document-links.md).
+		link := op == "getPublicDocument" || op == "getPublicDocumentPDF" || op == "acceptQuoteByLink" || op == "declineQuoteByLink"
+		public := op == "getSetupStatus" || op == "listSignInProviders" || link
 		noOrg := installation && !public
 		if p.Public != public || p.NoOrganisation != noOrg {
 			t.Errorf("%s: Public %v, NoOrganisation %v; want %v, %v", op, p.Public, p.NoOrganisation, public, noOrg)

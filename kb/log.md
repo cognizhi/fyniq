@@ -173,3 +173,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-24] compile | docs/user-guide/organisation-settings.md, docs/user-guide/document-templates.md → settings.organisation, settings.templates, settings.change (simplified tax invoices setting; what an invoice shows: tax invoice particulars, SGD amounts, the 30-day warning)
 
 ## [2026-10-24] compile | docs/user-guide/document-templates.md → settings.templates (emailing invoices and quotes, their delivery)
+
+## [2026-10-24] compile | docs/user-guide/document-templates.md → settings.templates (the online link: viewing, answering a quote, expiry, revocation)

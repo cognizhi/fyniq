@@ -85,6 +85,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/customer-refunds/{refund_id}` (getCustomerRefund): Get a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void` (voidCustomerRefund): Void a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void-approval` (requestCustomerRefundVoid): Ask for approval to void a refund to a customer
+- `POST /v1/document-links/{link_id}/revoke` (revokeDocumentLink): Revoke a quote's or invoice's online link
 - `GET /v1/document-template-bundle` (exportDocumentTemplates): Export templates as a bundle
 - `POST /v1/document-template-bundles` (importDocumentTemplates): Import templates from a bundle
 - `GET /v1/document-template-catalogue/{document_type}` (getDocumentTemplateCatalogue): Read what a template is made of
@@ -215,6 +216,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/periods/{period_id}/variances/{account_id}/explanation` (explainVariance): Explain a variance
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
+- `GET /v1/public/document` (getPublicDocument): Open a quote or invoice through its link
+- `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
+- `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link
+- `GET /v1/public/document/pdf` (getPublicDocumentPDF): Get the PDF of a quote or invoice through its link
 - `GET /v1/purchase-orders` (listPurchaseOrders): List the purchase orders
 - `POST /v1/purchase-orders` (createPurchaseOrder): Raise a purchase order
 - `GET /v1/purchase-orders/{purchase_order_id}` (getPurchaseOrder): Get a purchase order

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Its amount before GST."
+    },
+    "description": {
+      "description": "What the line is for.",
+      "examples": [
+        "Analytics platform, October"
+      ],
+      "type": "string"
+    },
+    "gst_rate": {
+      "description": "Its GST: a rate such as 9%, or a code such as ES; none before the supplier is GST-registered.",
+      "examples": [
+        "9%"
+      ],
+      "type": "string"
+    },
+    "quantity": {
+      "description": "How many.",
+      "examples": [
+        "2"
+      ],
+      "type": "string"
+    },
+    "unit_price": {
+      "description": "The price of one before GST.",
+      "examples": [
+        "1500.00"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "description",
+    "amount"
+  ],
+  "title": "PublicLine",
+  "type": "object"
+}

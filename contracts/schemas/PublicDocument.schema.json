@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount_due": {
+      "$ref": "Money.schema.json",
+      "description": "An invoice's amount still due."
+    },
+    "answer": {
+      "$ref": "PublicAnswer.schema.json",
+      "description": "A quote's answer, once given."
+    },
+    "can_answer": {
+      "description": "Whether the customer can accept or decline it here: a sent quote, still valid, with no answer.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "customer": {
+      "description": "Whom it is for.",
+      "examples": [
+        "Acme Trading Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "date": {
+      "description": "Its date.",
+      "examples": [
+        "2026-10-23"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "due_date": {
+      "description": "An invoice's due date.",
+      "examples": [
+        "2026-11-22"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "gst": {
+      "$ref": "Money.schema.json",
+      "description": "Its GST."
+    },
+    "kind": {
+      "description": "What it is.",
+      "enum": [
+        "invoice",
+        "quote",
+        "sales_order"
+      ],
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "Its lines.",
+      "items": {
+        "$ref": "PublicLine.schema.json"
+      },
+      "type": "array"
+    },
+    "link_expires_at": {
+      "description": "When the link stops working, at the latest.",
+      "examples": [
+        "2027-04-22T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "INV-0042"
+      ],
+      "type": "string"
+    },
+    "reference": {
+      "description": "The customer's reference.",
+      "examples": [
+        "PO-4411"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "A quote's status.",
+      "enum": [
+        "sent",
+        "accepted",
+        "declined",
+        "expired",
+        "invoiced"
+      ],
+      "examples": [
+        "sent"
+      ],
+      "type": "string"
+    },
+    "subtotal": {
+      "$ref": "Money.schema.json",
+      "description": "Its total before GST."
+    },
+    "supplier": {
+      "description": "Who issued it.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "tax_invoice": {
+      "description": "Whether it is a tax invoice: the supplier is GST-registered on its date.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Its total with GST."
+    },
+    "valid_until": {
+      "description": "A quote's last valid day.",
+      "examples": [
+        "2026-11-22"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "supplier",
+    "customer",
+    "number",
+    "date",
+    "tax_invoice",
+    "lines",
+    "subtotal",
+    "gst",
+    "total",
+    "can_answer",
+    "link_expires_at"
+  ],
+  "title": "PublicDocument",
+  "type": "object"
+}

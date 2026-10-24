@@ -19,9 +19,9 @@ var recipients = map[string]string{
 // emails are the default subject and body of each document type's email, in the catalogue's fields.
 var emails = map[string][2]string{
 	Invoice: {"Invoice {{document.number}} from {{organisation.name}}",
-		"Dear {{customer.name}},\n\nPlease find attached invoice {{document.number}} for {{document.total}}, due on {{document.due_date|long}}.\n\nThank you,\n{{organisation.name}}"},
+		"Dear {{customer.name}},\n\nPlease find attached invoice {{document.number}} for {{document.total}}, due on {{document.due_date|long}}. You can also view it online: {{document.link}}\n\nThank you,\n{{organisation.name}}"},
 	Quote: {"Quotation {{document.number}} from {{organisation.name}}",
-		"Dear {{customer.name}},\n\nPlease find attached our quotation {{document.number}} for {{document.total}}, valid until {{document.valid_until|long}}.\n\nKind regards,\n{{organisation.name}}"},
+		"Dear {{customer.name}},\n\nPlease find attached our quotation {{document.number}} for {{document.total}}, valid until {{document.valid_until|long}}. You can view it, and accept or decline it, online: {{document.link}}\n\nKind regards,\n{{organisation.name}}"},
 	CreditNote: {"Credit note {{document.number}} from {{organisation.name}}",
 		"Dear {{customer.name}},\n\nPlease find attached credit note {{document.number}} for {{document.total}}, against invoice {{document.invoice_number}}.\n\nKind regards,\n{{organisation.name}}"},
 	Receipt: {"Receipt {{document.number}} from {{organisation.name}}",

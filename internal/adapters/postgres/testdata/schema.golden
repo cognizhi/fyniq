@@ -235,6 +235,21 @@ document | current_version | integer | not null | 1
 document | created_at | timestamp with time zone | not null | now()
 document | posted_by | text | null | 
 document | posted_at | timestamp with time zone | null | 
+document_link | organisation_id | uuid | not null | current_org()
+document_link | id | uuid | not null | uuidv7()
+document_link | document_id | uuid | not null | 
+document_link | document_version | integer | not null | 
+document_link | message_id | uuid | not null | 
+document_link | token_hash | text | not null | 
+document_link | expires_at | timestamp with time zone | not null | 
+document_link | created_by | text | not null | 
+document_link | created_at | timestamp with time zone | not null | now()
+document_link | first_viewed_at | timestamp with time zone | null | 
+document_link | revoked_at | timestamp with time zone | null | 
+document_link | revoked_by | text | null | 
+document_link_token | token_hash | text | not null | 
+document_link_token | owner | uuid | not null | 
+document_link_token | link_id | uuid | not null | 
 document_number | organisation_id | uuid | not null | current_org()
 document_number | id | uuid | not null | 
 document_number | document_type | text | not null | 
@@ -1266,6 +1281,28 @@ document | document_status_not_null | NOT NULL status
 document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text])))
 document | document_type_not_null | NOT NULL type
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document_link | document_link_created_at_not_null | NOT NULL created_at
+document_link | document_link_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+document_link | document_link_created_by_not_null | NOT NULL created_by
+document_link | document_link_document_id_not_null | NOT NULL document_id
+document_link | document_link_document_version_not_null | NOT NULL document_version
+document_link | document_link_expires_at_not_null | NOT NULL expires_at
+document_link | document_link_expires_later | CHECK ((expires_at > created_at))
+document_link | document_link_id_not_null | NOT NULL id
+document_link | document_link_message_fkey | FOREIGN KEY (organisation_id, message_id) REFERENCES email_message(organisation_id, id)
+document_link | document_link_message_id_not_null | NOT NULL message_id
+document_link | document_link_message_once | UNIQUE (organisation_id, message_id)
+document_link | document_link_organisation_id_not_null | NOT NULL organisation_id
+document_link | document_link_pkey | PRIMARY KEY (organisation_id, id)
+document_link | document_link_revoked_by | CHECK ((((revoked_at IS NULL) = (revoked_by IS NULL)) AND ((revoked_by IS NULL) OR (revoked_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+document_link | document_link_token_format | CHECK ((token_hash ~ '^[0-9a-f]{64}$'::text))
+document_link | document_link_token_hash_not_null | NOT NULL token_hash
+document_link | document_link_version_fkey | FOREIGN KEY (organisation_id, document_id, document_version) REFERENCES document_version(organisation_id, document_id, version)
+document_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document_link_token | document_link_token_link_id_not_null | NOT NULL link_id
+document_link_token | document_link_token_owner_not_null | NOT NULL owner
+document_link_token | document_link_token_pkey | PRIMARY KEY (token_hash)
+document_link_token | document_link_token_token_hash_not_null | NOT NULL token_hash
 document_number | document_number_created_at_not_null | NOT NULL created_at
 document_number | document_number_document_fkey | FOREIGN KEY (organisation_id, id) REFERENCES document(organisation_id, id)
 document_number | document_number_document_type_not_null | NOT NULL document_type
@@ -2282,6 +2319,7 @@ CREATE INDEX capture_sender_latest ON fyniq.capture_sender USING btree (organisa
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
+CREATE INDEX document_link_document ON fyniq.document_link USING btree (organisation_id, document_id, created_at)
 CREATE INDEX document_send_document ON fyniq.document_send USING btree (organisation_id, document_id, sent_at)
 CREATE INDEX document_template_default_latest ON fyniq.document_template_default USING btree (organisation_id, kind, document_type, set_at)
 CREATE INDEX document_template_type ON fyniq.document_template USING btree (organisation_id, document_type, kind, id)
@@ -2355,6 +2393,9 @@ CREATE UNIQUE INDEX contact_document_template_pkey ON fyniq.contact_document_tem
 CREATE UNIQUE INDEX contact_pkey ON fyniq.contact USING btree (organisation_id, id)
 CREATE UNIQUE INDEX currency_code_minor_units_key ON fyniq.currency USING btree (code, minor_units)
 CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
+CREATE UNIQUE INDEX document_link_message_once ON fyniq.document_link USING btree (organisation_id, message_id)
+CREATE UNIQUE INDEX document_link_pkey ON fyniq.document_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX document_link_token_pkey ON fyniq.document_link_token USING btree (token_hash)
 CREATE UNIQUE INDEX document_number_pkey ON fyniq.document_number USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_number_unique ON fyniq.document_number USING btree (organisation_id, document_type, number)
 CREATE UNIQUE INDEX document_pkey ON fyniq.document USING btree (organisation_id, id)
@@ -2508,6 +2549,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_address DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_address', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.email_suppression DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_suppression', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
@@ -2557,6 +2599,10 @@ CREATE TRIGGER close_checklist_template_no_truncate BEFORE TRUNCATE ON fyniq.clo
 CREATE TRIGGER contact_document_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.contact_document_template FOR EACH ROW EXECUTE FUNCTION document_template_choice_guard()
 CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.contact_document_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
+CREATE TRIGGER document_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION document_link_guard()
+CREATE TRIGGER document_link_no_truncate BEFORE TRUNCATE ON fyniq.document_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER document_link_token_guard BEFORE DELETE OR UPDATE ON fyniq.document_link_token FOR EACH ROW EXECUTE FUNCTION document_link_token_guard()
+CREATE TRIGGER document_link_token_no_truncate BEFORE TRUNCATE ON fyniq.document_link_token FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_send_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_send FOR EACH ROW EXECUTE FUNCTION document_send_guard()
 CREATE TRIGGER document_send_no_truncate BEFORE TRUNCATE ON fyniq.document_send FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -2673,6 +2719,7 @@ close_checklist_template | tenant_isolation | * | (organisation_id = current_org
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact_document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_send | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2764,6 +2811,9 @@ create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1f0d61ef9570468fad74328f6db07239
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
+document_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88e84bdb34f498a2ef91479f46bfcd43
+document_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 97397fe0fb679efd098ac3a2a47a0ab0
+document_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b39187a31e2fab3a93259dce0e8ed0aa
 document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 13c2b954d81df6b355accc9a639f9c62
 document_send_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9746ec412855d5ac04833daf1a7b1d1
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c

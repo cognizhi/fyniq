@@ -4,7 +4,7 @@ type: task
 title: Design documents with templates
 summary: How templates set the look of invoices and other documents; what a tax invoice shows; start, edit, publish, roll back, choose the default, bundles
 sources:
-  - docs/user-guide/document-templates.md sha256:4b6953a3c7e6d1d82bf791bdaf4c520001654fc14282c09edfe0ab9f41494f02
+  - docs/user-guide/document-templates.md sha256:e2617c562408e06b5f378469131f49198e95151161048a4a57b9f675ade993e3
 data_class: general
 taint: trusted
 status: published
@@ -25,6 +25,9 @@ aliases:
   - email an invoice
   - send a quote by email
   - delivery status
+  - online link
+  - accept a quote online
+  - revoke a link
 ---
 
 # Design documents with templates
@@ -90,9 +93,18 @@ aliases:
 - An issued invoice, or a sent quote or sales order, can be emailed: to the customer's billing email or an address you give, from the invoices sender in **Settings → Email**.
 - The subject and text come from the email template that applies to the customer; the PDF made with its document template is attached.
 - A draft is never emailed; a tax invoice lacking an IRAS particular, such as the customer's address, is not sent until the detail is added.
-- The PDF sent is kept in the document's evidence; the document lists each email with its delivery: **Sent**, **Delivered** or **Bounced**. Emailing again sends the same version.
+- The PDF sent is kept in the document's evidence; the document lists each email with its delivery: **Sent**, **Delivered**, **Viewed** or **Bounced**. Emailing again sends the same version, with a new link.
 
 (src: docs/user-guide/document-templates.md#email-an-invoice-or-a-quote)
+
+## The link in the email
+
+- Each email carries a secure link (**{{document.link}}** in the email template; the starter emails have it): whoever opens it sees the document and its PDF without signing in, and nothing else.
+- The first opening shows the delivery as **Viewed**: the time, never who or from where.
+- On a quote the customer can **accept** (naming who accepts) or **decline** (with a comment) while it is valid and unanswered; the answer is recorded on the quote with its date, name and comment.
+- A link works 180 days at most; it stops sooner when revoked from the document's links, when the invoice is voided or edited or the quote cancelled, and when the invoice is paid in full.
+
+(src: docs/user-guide/document-templates.md#the-link-in-the-email)
 
 ## Move templates with a bundle
 

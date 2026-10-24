@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
@@ -17,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/render"
@@ -221,7 +223,7 @@ func TestASendIsOfAnIssuedInvoicesCurrentVersion(t *testing.T) {
 		}
 		return &x
 	}
-	if l := latest(); l == nil || l.ID != sent.ID || salesdoc.Delivery(l) != salesdoc.Sent {
+	if l := latest(); l == nil || l.ID != sent.ID || salesdoc.Delivery(l, false) != salesdoc.Sent {
 		t.Fatalf("its delivery: %+v", l)
 	}
 	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error { // the provider's webhook, as the api receives it
@@ -231,10 +233,109 @@ func TestASendIsOfAnIssuedInvoicesCurrentVersion(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if l := latest(); l == nil || l.LastEvent != storage.EventDelivered || salesdoc.Delivery(l) != salesdoc.Delivered {
+	if l := latest(); l == nil || l.LastEvent != storage.EventDelivered || salesdoc.Delivery(l, false) != salesdoc.Delivered {
 		t.Fatalf("after the provider's delivered: %+v", l)
 	}
 	if got := actions(t, b.Org, sent.ID); len(got) != 1 || got[0] != "document_send.recorded" {
 		t.Errorf("the send's audit trail: %v", got)
+	}
+}
+
+// FR-AR-06 (p1-sales task 5.3): an online link. Only of an issued invoice's current version (FY198); kept as its
+// token's hash, which the registry routes to the organisation and link before any tenant is set; viewed once and
+// revoked once, each audited, and otherwise never changed, deleted or truncated, whoever asks (FY197, the threat
+// model's T7). The audit trail names the link, never its hash.
+// req: FR-AR-06
+// req: CTL-AUD-06
+func TestALinkChangesOnlyInItsViewAndRevocation(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
+	s := store(t, "fyniq_api")
+	b := newSalesBooks(t, ctx, s, "Links Pte Ltd")
+	invoices := journal.Invoices{Store: s}
+	inv, err := invoices.Create(ctx, b.Org, invoice.Draft{CustomerID: b.Customer.ID, Date: porttest.Day(10, 14), Currency: money.MustLookup("SGD"),
+		Lines: []invoice.Line{invoiceLine(t, b, "1", "100.00", "", "SR", "SGD")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	token, hash, err := salesdoc.NewToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	link := func() (storage.DocumentLink, error) {
+		var out storage.DocumentLink
+		err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			m, err := u.EmailMessages().Queue(ctx, "invoice", "ap@acme.example", "Invoice INV-0001")
+			if err != nil {
+				return err
+			}
+			out, err = u.DocumentLinks().Create(ctx, storage.NewDocumentLink{DocumentID: inv.ID, DocumentVersion: 1, MessageID: m.ID, TokenHash: hash,
+				ExpiresAt: porttest.Day(10, 15).AddDate(0, 0, salesdoc.LinkDays)})
+			return err
+		})
+		return out, err
+	}
+	var se *storage.Error
+	if _, err := link(); !errors.As(err, &se) || se.Code != storage.CodeLink {
+		t.Fatalf("a draft's link: %v", err)
+	}
+	if _, err := invoices.Post(ctx, b.Org, inv.ID); err != nil {
+		t.Fatal(err)
+	}
+	l, err := link()
+	if err != nil || l.CreatedBy != "user:ar-specialist" || l.FirstViewedAt != nil || l.RevokedAt != nil {
+		t.Fatalf("the issued invoice's link: %+v %v", l, err)
+	}
+	var routes storage.LinkRoutes = s
+	if org, id, err := routes.LinkRoute(context.Background(), hash); err != nil || org != b.Org || id != l.ID {
+		t.Fatalf("the route: %s %s %v", org, id, err)
+	}
+	if _, _, err := routes.LinkRoute(context.Background(), strings.Repeat("0", 64)); !errors.Is(err, ports.ErrNotFound) {
+		t.Errorf("an unknown hash: %v", err)
+	}
+	if _, err := link(); !errors.As(err, &se) || se.Code != storage.CodeLink {
+		t.Errorf("the same token twice: %v", err)
+	}
+	do := func(fn func(u storage.UnitOfWork) error) error {
+		return s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error { return fn(u) })
+	}
+	var first, again bool
+	if err := do(func(u storage.UnitOfWork) (err error) {
+		if _, first, err = u.DocumentLinks().Viewed(ctx, l.ID, porttest.Day(10, 16)); err != nil {
+			return err
+		}
+		_, again, err = u.DocumentLinks().Viewed(ctx, l.ID, porttest.Day(10, 17))
+		return err
+	}); err != nil || !first || again {
+		t.Fatalf("viewed: %v %v %v", first, again, err)
+	}
+	if err := do(func(u storage.UnitOfWork) error { _, err := u.DocumentLinks().Revoke(ctx, l.ID); return err }); err != nil {
+		t.Fatal(err)
+	}
+	if err := do(func(u storage.UnitOfWork) error { _, err := u.DocumentLinks().Revoke(ctx, l.ID); return err }); !errors.As(err, &se) || se.Code != storage.CodeLink {
+		t.Errorf("revoking twice: %v", err)
+	}
+	if got := actions(t, b.Org, l.ID); strings.Join(got, ",") != "document_link.created,document_link.viewed,document_link.revoked" {
+		t.Errorf("the link's audit trail: %v", got)
+	}
+	for _, e := range events(t, b.Org) {
+		if strings.Contains(e.Body, hash) || strings.Contains(e.Body, token) {
+			t.Fatalf("an audit event holds the token or its hash: %s", e.Body)
+		}
+	}
+	for _, role := range allRoles {
+		c := conn(t, role)
+		for _, stmt := range []string{
+			"UPDATE fyniq.document_link SET revoked_at = NULL, revoked_by = NULL",
+			"UPDATE fyniq.document_link SET first_viewed_at = now()",
+			"UPDATE fyniq.document_link SET expires_at = expires_at + interval '1 year'",
+			"UPDATE fyniq.document_link SET token_hash = repeat('ab', 32)",
+			"DELETE FROM fyniq.document_link",
+			"TRUNCATE fyniq.document_link",
+			"UPDATE fyniq.document_link_token SET owner = gen_random_uuid()",
+			"DELETE FROM fyniq.document_link_token",
+		} {
+			err := asOrg(ctx, c, b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, stmt); return err })
+			wantState(t, role+": "+stmt, err, "42501", "FY197", "FY002")
+		}
 	}
 }

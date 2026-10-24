@@ -1204,6 +1204,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/document-links/{link_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a quote's or invoice's online link
+         * @description Stops a link working at once (FR-AR-06): whoever holds it then gets LINK-01. A link is revoked once; to share the document again, email it again, which makes a new link. Side effects: the revocation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview revokes nothing.
+         */
+        post: operations["revokeDocumentLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/document-template-bundle": {
         parameters: {
             query?: never;
@@ -3414,6 +3434,86 @@ export interface paths {
          * @description Creates the periods of the next financial year: the first year runs from the books start to the first year end, each later one the twelve months after; its periods are calendar months, the first one short when the books start mid-month (FR-ORG-02; PRD-001 rev 0.47, provisional). The body names the year's first day, as listPeriods' next_year gives it, and any other year is refused, as is a year that starts more than a year after the one that holds today. Once a period exists, when the books start and how the years run no longer change. Side effects: the periods and an audit event for each. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["openFinancialYear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open a quote or invoice through its link
+         * @description Public: no session. Opens the quote or invoice a link's token (in the Fyniq-Link header, from the link's fragment) was made for (FR-AR-06, FR-AR-16): what its PDF shows, a quote's status and answer, and whether the customer can answer it here. The first opening is recorded as the document's delivery viewed (the time only, never the reader's address). A link opens its own document's version and nothing else, for 180 days at most, until revoked, voided or cancelled, or an invoice is paid in full; every link that opens nothing answers the same 404 LINK-01. At most 30 a minute per link. Never cached or indexed.
+         */
+        get: operations["getPublicDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/document/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a quote through its link
+         * @description Public: no session. The customer accepts the sent quote or order a link's token opens (FR-AR-16), with the name of who accepts and a comment, kept as the quote's answer and its evidence (FR-DOC-05): recorded as the link, with the request's address in the audit trail. Only a sent quote, still valid, with no answer: a quote has one answer, which never changes (QUOTE-07). At most 5 answers a minute per link. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+         */
+        post: operations["acceptQuoteByLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/document/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline a quote through its link
+         * @description Public: no session. The customer declines the sent quote or order a link's token opens (FR-AR-16), with a comment, kept as the quote's answer: recorded as the link, with the request's address in the audit trail. Only a sent quote, still valid, with no answer (QUOTE-07). At most 5 answers a minute per link. Idempotent with Idempotency-Key; Prefer: return=preview checks it and records nothing.
+         */
+        post: operations["declineQuoteByLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/document/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the PDF of a quote or invoice through its link
+         * @description Public: no session. The PDF of the quote or invoice a link's token opens (FR-AR-06), rendered with the template that applies to its customer, as emailing it rendered it. Refused as getPublicDocument refuses. At most 30 a minute per link. Never cached or indexed.
+         */
+        get: operations["getPublicDocumentPDF"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7988,13 +8088,57 @@ export interface components {
              */
             ended: number;
         };
+        DocumentLinkOut: {
+            /**
+             * Format: date-time
+             * @description When it was made, with the email that carried it.
+             * @example 2026-10-24T09:30:00Z
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When it stops working at the latest: 180 days after.
+             * @example 2027-04-22T09:30:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: date-time
+             * @description When the customer first opened it; never their address.
+             * @example 2026-10-25T02:10:00Z
+             */
+            first_viewed_at?: string;
+            /**
+             * Format: uuid
+             * @description The link's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e90
+             */
+            id: string;
+            /**
+             * Format: date-time
+             * @description When it was revoked.
+             * @example 2026-10-26T09:00:00Z
+             */
+            revoked_at?: string;
+            /**
+             * @description live; revoked by a person; or ended: past its expiry, its document voided, cancelled or changed, or an invoice paid in full.
+             * @example live
+             * @enum {string}
+             */
+            status: "live" | "revoked" | "ended";
+            /**
+             * Format: int64
+             * @description The document's version it opens.
+             * @example 1
+             */
+            version: number;
+        };
         DocumentSendOut: {
             /**
-             * @description sent until the provider says more; delivered; or bounced, when the provider refused or returned it.
+             * @description sent until the provider says more; delivered; viewed, once the customer opened the link it carried; or bounced, when the provider refused or returned it.
              * @example sent
              * @enum {string}
              */
-            delivery: "sent" | "delivered" | "bounced";
+            delivery: "sent" | "delivered" | "viewed" | "bounced";
             /**
              * Format: uuid
              * @description The PDF that was sent, kept in the document's evidence.
@@ -9451,6 +9595,8 @@ export interface components {
             ledger_impact: components["schemas"]["EntryLine"][];
             /** @description The lines as entered, each with its net. */
             lines: components["schemas"]["InvoiceLine"][];
+            /** @description getInvoice only: the online links its emails carried, newest first, with their status; never their tokens (FR-AR-06). */
+            links: components["schemas"]["DocumentLinkOut"][];
             /** @description Every line's net, in the invoice's currency. */
             net?: components["schemas"]["Money"];
             /**
@@ -11925,6 +12071,153 @@ export interface components {
              */
             website?: string;
         };
+        PublicAnswer: {
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-10-30
+             */
+            date: string;
+            /**
+             * @description Who accepted it.
+             * @example Jane Tan
+             */
+            name?: string;
+            /**
+             * @description What happened.
+             * @example accepted
+             * @enum {string}
+             */
+            outcome: "accepted" | "declined" | "expired";
+        };
+        PublicAnswerRequest: {
+            /**
+             * @description A comment, kept with the answer.
+             * @example Please start on 1 November
+             */
+            comment?: string;
+            /**
+             * @description Who answers, as they want it recorded: required to accept.
+             * @example Jane Tan
+             */
+            name?: string;
+        };
+        PublicDocument: {
+            /** @description An invoice's amount still due. */
+            amount_due?: components["schemas"]["Money"];
+            /** @description A quote's answer, once given. */
+            answer?: components["schemas"]["PublicAnswer"];
+            /**
+             * @description Whether the customer can accept or decline it here: a sent quote, still valid, with no answer.
+             * @example true
+             */
+            can_answer: boolean;
+            /**
+             * @description Whom it is for.
+             * @example Acme Trading Pte Ltd
+             */
+            customer: string;
+            /**
+             * Format: date
+             * @description Its date.
+             * @example 2026-10-23
+             */
+            date: string;
+            /**
+             * Format: date
+             * @description An invoice's due date.
+             * @example 2026-11-22
+             */
+            due_date?: string;
+            /** @description Its GST. */
+            gst: components["schemas"]["Money"];
+            /**
+             * @description What it is.
+             * @example invoice
+             * @enum {string}
+             */
+            kind: "invoice" | "quote" | "sales_order";
+            /** @description Its lines. */
+            lines: components["schemas"]["PublicLine"][];
+            /**
+             * Format: date-time
+             * @description When the link stops working, at the latest.
+             * @example 2027-04-22T09:30:00Z
+             */
+            link_expires_at: string;
+            /**
+             * @description Its number.
+             * @example INV-0042
+             */
+            number: string;
+            /**
+             * @description The customer's reference.
+             * @example PO-4411
+             */
+            reference?: string;
+            /**
+             * @description A quote's status.
+             * @example sent
+             * @enum {string}
+             */
+            status?: "sent" | "accepted" | "declined" | "expired" | "invoiced";
+            /** @description Its total before GST. */
+            subtotal: components["schemas"]["Money"];
+            /**
+             * @description Who issued it.
+             * @example Northwind Analytics Pte. Ltd.
+             */
+            supplier: string;
+            /**
+             * @description Whether it is a tax invoice: the supplier is GST-registered on its date.
+             * @example true
+             */
+            tax_invoice: boolean;
+            /** @description Its total with GST. */
+            total: components["schemas"]["Money"];
+            /**
+             * Format: date
+             * @description A quote's last valid day.
+             * @example 2026-11-22
+             */
+            valid_until?: string;
+        };
+        PublicLine: {
+            /** @description Its amount before GST. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description What the line is for.
+             * @example Analytics platform, October
+             */
+            description: string;
+            /**
+             * @description Its GST: a rate such as 9%, or a code such as ES; none before the supplier is GST-registered.
+             * @example 9%
+             */
+            gst_rate?: string;
+            /**
+             * @description How many.
+             * @example 2
+             */
+            quantity?: string;
+            /**
+             * @description The price of one before GST.
+             * @example 1500.00
+             */
+            unit_price?: string;
+        };
+        PublicPDF: {
+            /**
+             * @description The document, as PDF/A-2a and PDF/UA-1, base64.
+             * @example JVBERi0xLjc=
+             */
+            pdf: string;
+            /**
+             * @description The PDF's SHA-256, in hex.
+             * @example a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda
+             */
+            sha256: string;
+        };
         PurchaseGSTCodes: {
             /** @description The codes for purchases, in the pack's order. */
             codes: components["schemas"]["GSTCode"][];
@@ -12271,6 +12564,8 @@ export interface components {
             kind: "quote" | "sales_order";
             /** @description Its lines, each with its net. */
             lines: components["schemas"]["InvoiceLine"][];
+            /** @description The online links its emails carried, newest first, with their status; never their tokens. */
+            links: components["schemas"]["DocumentLinkOut"][];
             /** @description Every line's net, in its currency. */
             net?: components["schemas"]["Money"];
             /**
@@ -24586,6 +24881,119 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokeDocumentLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The link's ID. */
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentLinkOut"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LINK-01` A link changes only in its first view and its revocation, once each; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -40646,6 +41054,384 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPublicDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The link's token, from the fragment of the link the email carried (after #/d/#). Never put it in a URL. */
+                "Fyniq-Link": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Referrer-Policy"?: string;
+                    "X-Robots-Tag"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicDocument"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `LINK-01` The link opens no document. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `SALESDOC-02` The invoice's checks stop it being laid out. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    acceptQuoteByLink: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The link's token, from the fragment of the link the email carried (after #/d/#). Never put it in a URL. */
+                "Fyniq-Link": string;
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    "Referrer-Policy"?: string;
+                    "X-Robots-Tag"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicDocument"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `LINK-01` The link opens no document. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-QUOTE-01` The quote's answer is recorded once, of a sent quote. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `QUOTE-03` The quote's validity date is missing or before its date; `QUOTE-08` The answer has no date, or a text is too long; `SALESDOC-02` The invoice's checks stop it being laid out. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    declineQuoteByLink: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The link's token, from the fragment of the link the email carried (after #/d/#). Never put it in a URL. */
+                "Fyniq-Link": string;
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    "Referrer-Policy"?: string;
+                    "X-Robots-Tag"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicDocument"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `LINK-01` The link opens no document. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-QUOTE-01` The quote's answer is recorded once, of a sent quote. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `QUOTE-03` The quote's validity date is missing or before its date; `QUOTE-08` The answer has no date, or a text is too long; `SALESDOC-02` The invoice's checks stop it being laid out. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPublicDocumentPDF: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The link's token, from the fragment of the link the email carried (after #/d/#). Never put it in a URL. */
+                "Fyniq-Link": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Referrer-Policy"?: string;
+                    "X-Robots-Tag"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPDF"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `LINK-01` The link opens no document. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `SALESDOC-02` The invoice's checks stop it being laid out. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now. */
             503: {
                 headers: {
                     [name: string]: unknown;

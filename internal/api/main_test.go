@@ -79,6 +79,9 @@ type env struct {
 	queue  *local.Memory // the outbox's tasks
 	// standard is a second organisation of the same database and server in Standard mode, once inStandardMode made it.
 	standard *env
+	// emailing says readyToEmail ran; links are the online links tests share, by name.
+	emailing bool
+	links    map[string]string
 }
 
 var orgs int

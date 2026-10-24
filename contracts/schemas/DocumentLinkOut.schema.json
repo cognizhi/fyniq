@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "description": "When it was made, with the email that carried it.",
+      "examples": [
+        "2026-10-24T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When it stops working at the latest: 180 days after.",
+      "examples": [
+        "2027-04-22T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "first_viewed_at": {
+      "description": "When the customer first opened it; never their address.",
+      "examples": [
+        "2026-10-25T02:10:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The link's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e90"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "revoked_at": {
+      "description": "When it was revoked.",
+      "examples": [
+        "2026-10-26T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "live; revoked by a person; or ended: past its expiry, its document voided, cancelled or changed, or an invoice paid in full.",
+      "enum": [
+        "live",
+        "revoked",
+        "ended"
+      ],
+      "examples": [
+        "live"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The document's version it opens.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "status",
+    "created_at",
+    "expires_at"
+  ],
+  "title": "DocumentLinkOut",
+  "type": "object"
+}

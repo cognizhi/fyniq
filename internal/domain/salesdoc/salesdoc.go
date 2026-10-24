@@ -32,21 +32,25 @@ const (
 )
 
 // The delivery states of a document sent by email (FR-AR-06; the owner's decision of 24 Oct 2026): sent until the
-// provider says more, delivered, or bounced; viewed comes with the online link (FR-AR-16).
+// provider says more, delivered, or bounced; viewed once the customer opened its online link (FR-AR-16).
 const (
 	NotSent   = "not_sent"
 	Sent      = "sent"
 	Delivered = "delivered"
+	Viewed    = "viewed"
 	Bounced   = "bounced"
 )
 
-// Delivery is how a document stands from its latest send, nil for none: bounced when the provider refused the message
-// or its latest event is a bounce, a suppression or a failure; delivered when that event is a delivery or a complaint
-// (it arrived); else sent, as for providers that never report delivered (FR-INT-21).
-func Delivery(latest *storage.DocumentSend) string {
+// Delivery is how a document stands from its latest send, nil for none: viewed when that send's link was opened
+// (viewed), whatever the provider said; bounced when the provider refused the message or its latest event is a
+// bounce, a suppression or a failure; delivered when that event is a delivery or a complaint (it arrived); else sent,
+// as for providers that never report delivered (FR-INT-21).
+func Delivery(latest *storage.DocumentSend, viewed bool) string {
 	switch {
 	case latest == nil:
 		return NotSent
+	case viewed:
+		return Viewed
 	case latest.MessageStatus == storage.EmailFailed:
 		return Bounced
 	}
