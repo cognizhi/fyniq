@@ -369,6 +369,12 @@ func isJournal(doc storage.Document) error {
 	return nil
 }
 
+// LoadSettings reads what the engine needs, for a reader that finds a document's amounts the way the rules do, such as
+// what is left of a customer deposit.
+func LoadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, error) {
+	return loadSettings(ctx, u)
+}
+
 // loadSettings reads what the engine needs: the base currency and the chart of accounts.
 func loadSettings(ctx context.Context, u storage.UnitOfWork) (ledger.Settings, error) {
 	org, err := u.Organisation(ctx)

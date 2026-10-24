@@ -10,13 +10,15 @@
 #   (Fyniq's five types, FR-COA-02); the report group keeps the distinction;
 # - source "workbook-moved": 7050, the workbook's 7040 (disposals), because 7040 is unrealised FX in Fyniq;
 # - source "prd-b5": 2120, 3300 and 7040, which PRD-001 B.5 adds, and (rev 0.90) 2330, withholding tax payable
-#   (FR-AP-19) [accountant to confirm the code];
+#   (FR-AP-19) [accountant to confirm the code]; (rev 0.126) the role customer-deposits on 2410 (FR-AR-09), whose help
+#   text now says the final invoice deducts a deposit [accountant to confirm the classification];
 # - control_account on the sub-ledger accounts (1100, 2010, 2500, 2120), payroll_cost on 5050, 6011-6013,
 #   6050, 6020 and 6030 (FR-COA-02, read as rev 0.31 records [verify]), and the role of each system
 #   account of B.5 (FR-COA-03, rev 0.32), share-capital on 3010 and 3020;
 # - revalue (rev 0.72, FR-GL-04) on the monetary items whose foreign-currency balances are revalued at month end: the
 #   money accounts (1010-1050 and the card, 2030), 1100, 2010, 1250, 2500 and 2120. 2700 waits for the accountant to
-#   classify the instrument (FR-EQ-18); prepayments and deferred revenue are never revalued [accountant to confirm].
+#   classify the instrument (FR-EQ-18); prepayments, deferred revenue and customer deposits are never revalued
+#   [accountant to confirm].
 code,name,type,report_group,cash_flow_line,function,money_account,default_gst_code,control_account,payroll_cost,role,source,guidance,revalue
 1010,Petty cash,asset,Cash & bank,Cash & cash equivalents,,yes,NA,no,no,,workbook,Cash kept in the office for small purchases.,yes
 1020,Bank - Operating account,asset,Cash & bank,Cash & cash equivalents,,yes,NA,no,no,,workbook,"Main business current account. Rename to your bank, e.g. 'DBS Current'.",yes
@@ -44,7 +46,7 @@ code,name,type,report_group,cash_flow_line,function,money_account,default_gst_co
 2300,Income tax payable,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,income-tax-payable,workbook,Corporate income tax owed to IRAS. Choose this when paying corporate tax.,no
 2330,Withholding tax payable,liability,Tax liabilities,Tax liabilities,,no,NA,no,no,withholding-tax-payable,prd-b5,"SYSTEM. Tax withheld from payments to non-resident suppliers, owed to IRAS (filled automatically when a bill withholds it). Choose this when paying it to IRAS.",no
 2400,Deferred revenue,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,deferred-revenue,workbook,SYSTEM. Customer money received in advance for future months (filled automatically when revenue is spread).,no
-2410,Customer deposits & retainers,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,,workbook,Advance payments / retainers received before any invoice. Apply them later with a Journal.,no
+2410,Customer deposits & retainers,liability,Deferred revenue,Deferred revenue,,no,NA,no,no,customer-deposits,workbook,SYSTEM. Deposits and retainers a customer paid before an invoice (filled when a deposit is recorded; the final invoice deducts it).,no
 2500,Loan from director / shareholder,liability,Borrowings,Borrowings,,no,NA,yes,no,director-loan,workbook,"Money lent to the company by founders or shareholders, and repayments of it.",yes
 2600,Bank loan,liability,Borrowings,Borrowings,,no,NA,no,no,,workbook,Bank or government-assisted loans (principal only; interest goes to Interest expense).,no
 2700,Convertible notes / SAFE,liability,Borrowings,Borrowings,,no,NA,no,no,,workbook,"Investor money received under a SAFE or convertible note, before it converts into shares.",no

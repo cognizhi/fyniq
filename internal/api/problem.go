@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/contact"
 	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/customercredit"
+	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
@@ -497,6 +498,18 @@ var codeFacts = map[string]struct {
 	CodeCustomerApplicationVoidApproval: {409, "Voiding needs a second person"},
 	customercredit.CodeNotRefund:        {404, "Not a customer refund"},
 	CodeCustomerRefundVoidApproval:      {409, "Voiding needs a second person"},
+
+	// Customer deposits (FR-AR-09).
+	deposit.CodeNotDeposit:  {404, "Not a customer deposit"},
+	deposit.CodeBadDraft:    {422, "The saved deposit cannot be read"},
+	deposit.CodeCustomer:    {422, "The deposit's customer is not a customer"},
+	deposit.CodeKind:        {422, "Not a part payment or a security deposit"},
+	deposit.CodeGSTCode:     {422, "The deposit's GST code is not one it takes"},
+	deposit.CodeNotPosted:   {409, "The deposit is not posted"},
+	deposit.CodeVoidDate:    {422, "The void is dated before the deposit"},
+	deposit.CodeUsed:        {409, "Invoices or refunds use the deposit"},
+	deposit.CodeTooLong:     {422, "A text of the deposit is too long"},
+	CodeDepositVoidApproval: {409, "Voiding needs a second person"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).

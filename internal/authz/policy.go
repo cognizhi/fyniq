@@ -479,6 +479,13 @@ var (
 	RecordCustomerRefund      = Policy{Operation: "recordCustomerRefund", Capability: Invoices, Need: Post}
 	VoidCustomerRefund        = Policy{Operation: "voidCustomerRefund", Capability: Invoices, Need: Post}
 	RequestCustomerRefundVoid = Policy{Operation: "requestCustomerRefundVoid", Capability: Invoices, Need: Post}
+	// Customer deposits (FR-AR-09): the money has come in already, so recording one posts (P on "Invoices, credit
+	// notes"), as recording a receipt does; voiding one is FM-1's void of a posted document.
+	ListCustomerDeposits       = Policy{Operation: "listCustomerDeposits", Capability: Invoices, Need: View}
+	GetCustomerDeposit         = Policy{Operation: "getCustomerDeposit", Capability: Invoices, Need: View}
+	RecordCustomerDeposit      = Policy{Operation: "recordCustomerDeposit", Capability: Invoices, Need: Post}
+	VoidCustomerDeposit        = Policy{Operation: "voidCustomerDeposit", Capability: Invoices, Need: Post}
+	RequestCustomerDepositVoid = Policy{Operation: "requestCustomerDepositVoid", Capability: Invoices, Need: Post}
 	// Write-offs of invoices (FR-AR-17): read under V, drafted under C, and posted only on another person's approval
 	// (FR-APR-01; SOD-9), asked for under P, as issuing is; voiding one is FM-1's void of a posted document.
 	ListWriteOffs       = Policy{Operation: "listWriteOffs", Capability: Invoices, Need: View}
@@ -723,6 +730,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListWriteOffs, GetWriteOff, CreateWriteOff, ReplaceWriteOff, RequestWriteOffPost, VoidWriteOff, RequestWriteOffVoid,
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
+	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

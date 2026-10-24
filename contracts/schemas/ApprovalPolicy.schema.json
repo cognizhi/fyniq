@@ -46,7 +46,8 @@
         "customer_receipt",
         "write_off",
         "customer_credit_application",
-        "customer_refund"
+        "customer_refund",
+        "customer_deposit"
       ],
       "examples": [
         "organisation_setting"

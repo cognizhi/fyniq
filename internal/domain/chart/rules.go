@@ -61,13 +61,13 @@ func checkAttributes(name string, a storage.AccountAttributes, add func(code, fi
 }
 
 // checkRevalue refuses month-end revaluation on an account that is not a monetary item (FR-GL-04; rev 0.72): only an
-// asset or a liability, never prepayments or deferred revenue, whose amounts are not settled in money.
+// asset or a liability, never prepayments, deferred revenue or customer deposits, whose amounts are not settled in money.
 func checkRevalue(t storage.AccountType, role storage.AccountRole, revalue bool, add func(code, field, message, fix string)) {
 	switch {
 	case !revalue:
 	case t != storage.Asset && t != storage.Liability:
 		add(CodeRevalue, "revalue", fmt.Sprintf("a %s account is not revalued at month end", t), "Revalue only asset and liability accounts settled in money")
-	case role == "prepayments" || role == "deferred-revenue":
+	case role == "prepayments" || role == "deferred-revenue" || role == "customer-deposits":
 		add(CodeRevalue, "revalue", fmt.Sprintf("the %s account is not settled in money, so it is not revalued", role),
 			"Leave it at the rate it was recorded at (FR-GL-04)")
 	}

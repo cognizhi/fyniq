@@ -259,6 +259,20 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **WHEN** a security deposit is received
 - **THEN** it is a liability without GST until it is applied
 
+#### Scenario: Deducted on the final invoice (rev 0.126)
+- **WHEN** a customer's deposit is used for an invoice
+- **THEN** the invoice lists it and issuing it settles the deposit, charging GST only on what the deposit did not already bear (the owner's decision of 24 Oct 2026)
+
+#### Scenario: Deposits in any currency (rev 0.126)
+- **WHEN** a deposit is received in another currency
+- **THEN** 2410 holds it in the base currency at the rate it came in and it is never revalued [verify]
+
+#### Scenario: Deposits received, built (rev 0.126)
+- **WHEN** a part payment or a security deposit is recorded by hand
+- **THEN** it takes the next DP- number and posts customer_deposit@1: Dr the money account, Cr 2410, and Cr 2200 with a part payment's GST under RND-GST-INCL once registered
+- **AND** a security deposit names no GST code (DEPOSIT-05); a deposit an invoice or a refund uses is voided only once those are (DEPOSIT-08)
+
+
 ### Requirement: FR-AR-18 Allocations and credits
 The system SHALL apply receipts, credit notes and deposits to documents by allocation records, each with its source, document, amount in the document currency and in base, date, and realised FX per allocation (ENG-41).
 

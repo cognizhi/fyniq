@@ -12,7 +12,7 @@
   remittance emails, and their own templates (`p1-templates-email`); items have a price, a revenue account and a
   GST code (FR-CT-02).
 - **The chart:** 1100 Accounts receivable (role `accounts-receivable`), 2200 GST control, 2400 Deferred revenue,
-  2410 Customer deposits & retainers (no role yet), 4010 to 4095 revenue, 7030 FX & rounding. **No bad-debt
+  2410 Customer deposits & retainers (role `customer-deposits` from rev 0.126), 4010 to 4095 revenue, 7030 FX & rounding. **No bad-debt
   account:** Appendix B.5 leaves its code to the CoA review.
 - **Templates and email (`p1-templates-email`):** document templates per type with a default and a customer's
   own; the render service makes the PDF; outbound email through the outbox with the delivery log and the
