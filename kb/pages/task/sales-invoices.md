@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:e205377f4aeeb1bd85e3d2d9d43b3afb47c1c5c040912dd3b131bfb5577923f0
+  - docs/user-guide/invoices.md sha256:af4bb30fdd1e0e1e4131a3b407e4be11c46fa3949403557f97995a0c8c4d08a1
 data_class: general
 taint: trusted
 status: draft
@@ -106,6 +106,12 @@ aliases:
 - Set to **Issue and send** under **What the scheduler does**, the scheduler issues and emails each invoice itself, but only once another person (not the one who wrote the lines) approves the content through **Ask for approval**; each is listed for the weekly review, and a change of content needs the approval again.
 
 (src: docs/user-guide/invoices.md#invoices-the-scheduler-issues-and-sends)
+
+## What the customer sees
+
+- The email's secure link opens the invoice or quote without signing in: the document as its PDF shows it, the amount due or total, and **Download the PDF**; on a sent quote still valid, the customer accepts with their name or declines, with a comment kept as a record ([[sales.quotes]]). It shows nothing else, works until it ends or is revoked, and the first opening marks the invoice **Viewed**.
+
+(src: docs/user-guide/invoices.md#what-the-customer-sees)
 
 ## Approval
 

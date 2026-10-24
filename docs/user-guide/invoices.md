@@ -101,6 +101,14 @@ and another person, not the one who wrote the lines, approves it in the Inbox. E
 issues is emailed to the customer's billing email and listed for the weekly review. A change of content
 needs the approval again; until then, the scheduler makes drafts.
 
+## What the customer sees
+
+The secure link in an email opens the invoice or quote for the customer without signing in: the
+document as its PDF shows it, the amount due or the total, and **Download the PDF**. On a sent quote
+still valid, the customer accepts it with their name, or declines it, with a comment kept as a record of
+the decision. The link shows nothing else, works until it ends or is revoked, and the first time it is
+opened the invoice shows **Viewed**.
+
 ## Invoices above the self-approval threshold
 
 An invoice whose total is above the self-approval threshold is not issued by the person issuing it.
