@@ -84,9 +84,17 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
 // AppFrame is the frame of every signed-in page (MASTER.md §5, §5.1; docs/design/screens AppShell):
 // the sidebar (a rail in the medium class, a bottom bar in compact) cut to the person's roles and
 // the organisation's feature switches (FR-UX-40), the header with search and commands (Ctrl+K or
-// ⌘K), the Basic | Expert switch, appearance and sign out, and the main region. The organisation
-// switcher, notifications and the AI button join it with p1-app-shell 2.1–4.1 and wave 6.
-export function AppFrame({ session, title, mode, children }: { session: Pick<Session, "roles" | "features">; title: string; mode: Mode; children: ReactNode }) {
+// ⌘K), the Basic | Expert switch, the notification bell, appearance and sign out, and the main region with the
+// banners on top (FR-NTF-01, FR-NTF-03; the signed-in layout passes both, which read the API). The organisation
+// switcher and the AI button join it with p1-app-shell 2.1–4.1 and wave 6.
+export function AppFrame({ session, title, mode, bell, banners, children }: {
+  session: Pick<Session, "roles" | "features">;
+  title: string;
+  mode: Mode;
+  bell?: ReactNode;
+  banners?: ReactNode;
+  children: ReactNode;
+}) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [wanted, setWanted] = useState(false); // load the palette's code only once it is asked for
@@ -148,6 +156,7 @@ export function AppFrame({ session, title, mode, children }: { session: Pick<Ses
           <Button variant="ghost" size="icon" className="fy-until-expanded" onClick={openPalette} aria-label={search.label} title={search.tooltip}>
             <Icon of={Search} size={20} />
           </Button>
+          {bell}
           <AppearanceMenu />
           <form method="post" action="/api/auth/signout">
             <button className={buttonVariants({ variant: "ghost", size: "icon" })} type="submit" aria-label={signOut.label} title={signOut.tooltip}>
@@ -157,6 +166,7 @@ export function AppFrame({ session, title, mode, children }: { session: Pick<Ses
         </div>
       </header>
       <main className="fy-main" id="main" tabIndex={-1}>
+        {banners}
         {children}
       </main>
       <nav className="fy-bottom" aria-label="Main, bottom bar">

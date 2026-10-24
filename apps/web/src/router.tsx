@@ -61,6 +61,8 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-team-mode": lazyRouteComponent(() => import("./screens/settings/TeamMode"), "TeamMode"),
   "settings-approval-policies": lazyRouteComponent(() => import("./screens/settings/ApprovalPolicies"), "ApprovalPolicies"),
   "settings-templates": lazyRouteComponent(() => import("./screens/settings/Templates"), "Templates"),
+  "settings-notifications": lazyRouteComponent(() => import("./screens/settings/Notifications"), "Notifications"),
+  "settings-announcements": lazyRouteComponent(() => import("./screens/settings/Announcements"), "Announcements"),
   "settings-template": lazyRouteComponent(() => import("./screens/settings/TemplateEditor"), "TemplateEditor"),
 };
 

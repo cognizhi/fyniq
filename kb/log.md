@@ -159,3 +159,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-24] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the notification email details setting, rev 0.108)
 
 ## [2026-10-24] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the notification email details setting, rev 0.108)
+
+## [2026-10-24] compile | docs/user-guide/notifications.md, announcements.md → settings.notifications, settings.announcements (the notification centre, preferences, banners and announcements screens, p1-templates-email 4.1)

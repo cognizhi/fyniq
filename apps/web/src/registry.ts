@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { BookCheck, BookOpen, Building, Contact, House, Inbox, LayoutTemplate, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, LayoutTemplate, Megaphone, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -92,6 +92,8 @@ export const routes = [
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
   { kind: "route", id: "settings-approval-policies", path: "/settings/approval-policies", mode: "expert", signedIn: true, help: "settings.approval-policies", guide: "approvals.policies" },
   { kind: "route", id: "settings-templates", path: "/settings/templates", mode: "basic", signedIn: true, help: "settings.templates", guide: "settings.templates" },
+  { kind: "route", id: "settings-notifications", path: "/settings/notifications", mode: "basic", signedIn: true, help: "settings.notifications", guide: "settings.notifications" },
+  { kind: "route", id: "settings-announcements", path: "/settings/announcements", mode: "expert", signedIn: true, help: "settings.announcements", guide: "settings.announcements" },
   { kind: "route", id: "settings-template", path: "/settings/templates/$templateId", mode: "basic", signedIn: true, help: "settings.template", guide: "settings.templates#edit-a-template" },
 ] as const satisfies readonly RouteFeature[];
 
@@ -121,6 +123,17 @@ export const actions = [
   { kind: "action", id: "accounting.confirm-framework", mode: "expert", help: "accounting.confirm-framework", guide: "settings.accounting#confirm-and-approve" },
   { kind: "action", id: "accounting.record-policy", mode: "expert", help: "accounting.record-policy", guide: "settings.accounting#write-a-policy" },
   { kind: "action", id: "accounting.approve-policy", mode: "expert", help: "accounting.approve-policy", guide: "settings.accounting#confirm-and-approve" },
+  { kind: "action", id: "notification.centre", mode: "basic", help: "notification.centre", guide: "settings.notifications#your-notifications" },
+  { kind: "action", id: "notification.read", mode: "basic", help: "notification.read", guide: "settings.notifications#your-notifications" },
+  { kind: "action", id: "notification.unread", mode: "basic", help: "notification.unread", guide: "settings.notifications#your-notifications" },
+  { kind: "action", id: "notification.archive", mode: "basic", help: "notification.archive", guide: "settings.notifications#your-notifications" },
+  { kind: "action", id: "notification.read-all", mode: "basic", help: "notification.read-all", guide: "settings.notifications#your-notifications" },
+  { kind: "action", id: "notification.preference", mode: "basic", help: "notification.preference", guide: "settings.notifications#choose-how-they-reach-you" },
+  { kind: "action", id: "notification.quiet-hours", mode: "basic", help: "notification.quiet-hours", guide: "settings.notifications#quiet-hours" },
+  { kind: "action", id: "notification.test", mode: "basic", help: "notification.test", guide: "settings.notifications#send-yourself-a-test" },
+  { kind: "action", id: "banner.dismiss", mode: "basic", help: "banner.dismiss", guide: "settings.notifications#banners" },
+  { kind: "action", id: "announcement.publish", mode: "expert", help: "announcement.publish", guide: "settings.announcements#publish-an-announcement" },
+  { kind: "action", id: "announcement.withdraw", mode: "expert", help: "announcement.withdraw", guide: "settings.announcements#end-an-announcement" },
   { kind: "action", id: "pack.activate", mode: "expert", help: "pack.activate", guide: "settings.statutory-packs#activate-a-version" },
   { kind: "action", id: "template.new", mode: "basic", help: "template.new", guide: "settings.templates#start-a-template" },
   { kind: "action", id: "template.save", mode: "basic", help: "template.save", guide: "settings.templates#edit-a-template" },
@@ -235,6 +248,7 @@ export const nav = [
 // settings, then the organisation's. Cut like the sidebar, by role and mode; the API still decides.
 export const settingsNav = [
   { kind: "nav", id: "settings.profile", route: "/settings/profile", icon: UserRound, group: "you", roles: "all", mode: "basic", help: "settings.profile", guide: "preferences.security" },
+  { kind: "nav", id: "settings.notifications", route: "/settings/notifications", icon: Bell, group: "you", roles: "all", mode: "basic", help: "settings.notifications", guide: "settings.notifications" },
   // The organisation's pages show to the roles that may view them (Appendix D, V or more); the API decides the rest.
   { kind: "nav", id: "settings.organisation", route: "/settings/organisation", icon: Building, group: "organisation", roles: "all", mode: "expert", help: "settings.organisation", guide: "settings.organisation" },
   { kind: "nav", id: "settings.accounting", route: "/settings/accounting", icon: BookCheck, group: "organisation", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "ar_specialist", "ap_specialist", "payroll_administrator", "payment_releaser", "approver", "auditor", "tax_agent", "board_viewer", "company_secretary", "dpo"], mode: "expert", help: "settings.accounting", guide: "settings.accounting" },
@@ -243,6 +257,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.approval-policies", route: "/settings/approval-policies", icon: Stamp, group: "organisation", roles: ["owner", "administrator", "controller", "accountant", "auditor", "dpo"], mode: "expert", help: "settings.approval-policies", guide: "approvals.policies" },
   { kind: "nav", id: "settings.statutory-packs", route: "/settings/statutory-packs", icon: Scale, group: "organisation", roles: ["owner", "controller", "accountant", "tax_agent", "payroll_administrator", "auditor"], mode: "expert", help: "settings.statutory-packs", guide: "settings.statutory-packs" },
   { kind: "nav", id: "settings.templates", route: "/settings/templates", icon: LayoutTemplate, group: "organisation", roles: ["owner", "controller", "accountant", "ar_specialist", "ap_specialist", "auditor"], mode: "basic", help: "settings.templates", guide: "settings.templates" },
+  { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },
 ] as const satisfies readonly NavFeature[];
 
 export type RouteId = (typeof routes)[number]["id"];
