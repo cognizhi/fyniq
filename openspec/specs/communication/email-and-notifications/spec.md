@@ -366,6 +366,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** each notification and digest about it is produced from that event
 - **AND** its email goes through the outbox, so each attempt is recorded and retried
 
+#### Scenario: The delivery log and a test per channel as built (rev 0.113)
+- **WHEN** an Administrator or Auditor reads the delivery log, or a person sends themselves a test notification
+- **THEN** every email queued shows newest first with its attempts and outcome, never its body
+- **AND** the test reaches its sender in the app and by email through the same stream as any notification
+
 ### Requirement: FR-NTF-06 Ask from chat
 Linked users SHALL be able to ask the assistant read-only questions in Slack or Cliq through the same tools, permissions and exclusions as the assistant, as an `agent`-class client (§9.7).
 

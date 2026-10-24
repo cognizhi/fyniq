@@ -456,6 +456,12 @@ var matrixCalls = map[string]matrixCall{
 	"setQuietHours": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPut, "/v1/notification-quiet-hours", asMatrixMember(e, tok), map[string]any{"from": "22:00", "to": "07:00"}, "If-Match", "*"), nil
 	},
+	"sendTestNotification": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/notifications/test-messages", asMatrixMember(e, tok), nil), nil
+	},
+	"listEmailMessages": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/organisation/email/messages", tok, nil), nil
+	},
 	"listBanners": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/banners", tok, nil), nil
 	},

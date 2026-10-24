@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "email": {
+      "description": "How it goes by email, as the caller's preference for test notifications says: at once unless they chose otherwise, and not at all without a verified sign-in email.",
+      "enum": [
+        "immediate",
+        "daily",
+        "weekly",
+        "off"
+      ],
+      "examples": [
+        "immediate"
+      ],
+      "type": "string"
+    },
+    "event_id": {
+      "description": "The event: the worker fans it out to the caller in a moment.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "title": {
+      "description": "What the notification says.",
+      "examples": [
+        "A test notification you sent at 10:05 Singapore time"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "title",
+    "email"
+  ],
+  "title": "TestNotification",
+  "type": "object"
+}

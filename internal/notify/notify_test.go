@@ -55,7 +55,8 @@ func TestAPersonsCadence(t *testing.T) {
 	}
 }
 
-// Security and approvals go by email at once, everything else in the daily digest, as the owner decided; every type
+// Security and approvals go by email at once, everything else in the daily digest, as the owner decided, but a test
+// notification, whose point is checking the email, at once; every type
 // names a known category and severity, and a locked type is a security one.
 // req: FR-NTF-02
 func TestTheCatalogueFollowsTheOwnersDecisions(t *testing.T) {
@@ -63,7 +64,8 @@ func TestTheCatalogueFollowsTheOwnersDecisions(t *testing.T) {
 		switch {
 		case ty.Category == Approvals && ty.Email != storage.EmailImmediate,
 			ty.Category == Security && ty.Email != storage.EmailImmediate && ty.Note == "",
-			ty.Category != Security && ty.Category != Approvals && ty.Email != storage.EmailDaily,
+			ty.Category != Security && ty.Category != Approvals && ty.Key != TestType && ty.Email != storage.EmailDaily,
+			ty.Key == TestType && ty.Email != storage.EmailImmediate,
 			ty.Locked != (ty.Category == Security),
 			!slices.Contains([]string{"info", "warning", "critical"}, ty.Severity):
 			t.Errorf("%s: %+v", ty.Key, ty)

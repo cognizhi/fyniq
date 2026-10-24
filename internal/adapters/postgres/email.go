@@ -51,6 +51,26 @@ func (r emails) Queue(ctx context.Context, purpose, recipient, subject string) (
 	return m, nil
 }
 
+func (r emails) List(ctx context.Context, f storage.EmailMessageFilter) ([]storage.EmailMessage, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	var before *uuid.UUID
+	if f.Before != uuid.Nil {
+		before = &f.Before
+	}
+	rows, err := r.u.q.ListEmailMessages(ctx, sqlcdb.ListEmailMessagesParams{Status: opt(f.Status), Purpose: opt(f.Purpose), Before: before,
+		MaxRows: int32(min(max(f.Limit, 1), 1000))}) // #nosec G115 -- clamped to 1..1000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.EmailMessage, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, toEmail(emailRow(x)))
+	}
+	return out, nil
+}
+
 func (r emails) Get(ctx context.Context, id uuid.UUID) (storage.EmailMessage, error) {
 	if err := r.u.check(); err != nil {
 		return storage.EmailMessage{}, err

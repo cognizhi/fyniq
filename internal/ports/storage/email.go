@@ -18,7 +18,7 @@ const (
 // EmailMessage is the record of an outbound email (FR-INT-21): never its body.
 type EmailMessage struct {
 	ID               uuid.UUID
-	Purpose          string // "test" or "sign_in_alert" so far
+	Purpose          string // test, sign_in_alert, notification or digest so far
 	Recipient        string
 	Subject          string
 	Status           string
@@ -29,6 +29,14 @@ type EmailMessage struct {
 	AcceptedAt       *time.Time
 	LastError        string
 	CreatedAt        time.Time
+}
+
+// EmailMessageFilter narrows the delivery log: a status and a purpose when set, messages before (older than) Before
+// when set, at most Limit.
+type EmailMessageFilter struct {
+	Status, Purpose string
+	Before          uuid.UUID
+	Limit           int
 }
 
 // EmailOutcome is how a message ended.
@@ -43,6 +51,8 @@ type EmailOutcome struct {
 type EmailMessages interface {
 	Queue(ctx context.Context, purpose, recipient, subject string) (EmailMessage, error)
 	Get(ctx context.Context, id uuid.UUID) (EmailMessage, error)
+	// List is the delivery log: messages newest first, of a status or purpose when the filter names one (FR-NTF-05).
+	List(ctx context.Context, f EmailMessageFilter) ([]EmailMessage, error)
 	// Start marks an attempt through provider on a queued message and returns the message as it was before: a
 	// mark already set means an earlier attempt (through the provider it names) may have handed it over, and
 	// nothing is marked.

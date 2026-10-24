@@ -87,6 +87,7 @@ type bannerListOutput struct{ Body BannerList }
 type bannerListInput struct{ PageQuery }
 type announcementListOutput struct{ Body AnnouncementList }
 type announcementOutput struct {
+	Status   int
 	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
 	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
 	Body     Announcement
@@ -359,7 +360,7 @@ func registerBanners(a *API) {
 		if err != nil {
 			return nil, err
 		}
-		return &announcementOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		return &announcementOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
 
 	register(a, authz.WithdrawAnnouncement, huma.Operation{
@@ -391,7 +392,7 @@ func registerBanners(a *API) {
 		if err != nil {
 			return nil, err
 		}
-		return &announcementOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		return &announcementOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
 
 	admin := append([]string{CodeNotSuperAdmin, CodeStepUpRequired, CodeSessionRequired, CodeUnavailable}, locks...)
@@ -440,7 +441,7 @@ func registerBanners(a *API) {
 		if err != nil {
 			return nil, err
 		}
-		return &announcementOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		return &announcementOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
 
 	register(a, authz.WithdrawInstallationAnnouncement, huma.Operation{
@@ -477,6 +478,6 @@ func registerBanners(a *API) {
 		if err != nil {
 			return nil, err
 		}
-		return &announcementOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		return &announcementOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
 }

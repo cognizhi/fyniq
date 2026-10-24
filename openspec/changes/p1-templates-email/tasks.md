@@ -131,7 +131,11 @@
   listBanners, dismissBanner, listAnnouncements, publishAnnouncement, withdrawAnnouncement and the installation's three
   (NTF-04 to NTF-06); the threat model `banners.md`. Tests: `TestBannersAndAnnouncements`, `TestAnnouncementsToEveryone`,
   `TestBannersKeepTheirHistory` and eight matrix rows. The screens are task 4.1.)
-- [ ] 3.3 One event stream feeding every channel, with delivery attempts logged and retried and a test message per channel. Test `// req: FR-NTF-05`
+- [x] 3.3 One event stream feeding every channel, with delivery attempts logged and retried and a test message per channel. Test `// req: FR-NTF-05`
+  (24 Oct 2026, PRD-001 rev 0.113: the delivery log `listEmailMessages` and `sendTestNotification`, the type
+  `notification.test`; with the organisation's test email (task 2.1) every P1 channel has a test message, and every
+  notification and digest is produced from one event (task 3.1). Tests: `TestTheDeliveryLogAndATestNotification`,
+  `TestNotificationsAreFannedOutEmailedAndDigested` and two matrix rows.)
 
 ## 4. Screens
 

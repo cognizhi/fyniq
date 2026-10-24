@@ -66,7 +66,12 @@ var Catalogue = []Type{
 	{Key: "recurring.made", Label: "A recurring journal or bill made a draft", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "bills.due", Label: "Bills to pay soon", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
+	{Key: TestType, Label: "A test notification you sent", Category: Operations, Severity: "info", Email: storage.EmailImmediate},
 }
+
+// TestType is the notification a person sends themselves to check their channels (FR-NTF-05): emailed at once unless
+// they choose otherwise, since checking the email is its point.
+const TestType = "notification.test"
 
 // Lookup is the type with key.
 func Lookup(key string) (Type, bool) {
