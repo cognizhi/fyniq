@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it moved: positive when the customer owes more."
+    },
+    "balance": {
+      "$ref": "Money.schema.json",
+      "description": "The running balance after it."
+    },
+    "date": {
+      "description": "The document's date, or the void's.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "description": {
+      "description": "The line as the statement prints it.",
+      "examples": [
+        "Invoice INV-0012, due 13 Nov 2026"
+      ],
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The document.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What moved the balance: an invoice, a credit note, a payment received, a refund of a credit, a write-off, or the void of one of them.",
+      "enum": [
+        "invoice",
+        "credit_note",
+        "receipt",
+        "refund",
+        "write_off",
+        "void"
+      ],
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "INV-0012"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "kind",
+    "document_id",
+    "description",
+    "amount",
+    "balance"
+  ],
+  "title": "StatementLine",
+  "type": "object"
+}

@@ -104,16 +104,8 @@ func (f fields) day(path string, t time.Time) {
 
 func (f fields) amount(path string, m money.Money) { f[path] = render.Value{Amount: amountOf(m)} }
 
-// common is what every sales document shows, from its content as an invoice reads it (p): the organisation's details
-// and its GST registration number on the document's date when registered, the customer's, the number, date, currency
-// and reference, each line with its GST rate when registered, the GST summary and the totals; and when it was issued.
-func common(ctx context.Context, u storage.UnitOfWork, doc storage.Document, p invoice.Prepared) (Invoice, fields, error) {
-	d := p.Draft
-	f := fields{}
-	o, err := u.Organisation(ctx)
-	if err != nil {
-		return Invoice{}, nil, err
-	}
+// organisation fills the organisation's details and how to pay it.
+func (f fields) organisation(o storage.Organisation) {
 	pr := o.Profile
 	f.text("organisation.name", cmpOr(pr.LegalName, o.Name))
 	f.text("organisation.uen", pr.UEN)
@@ -124,6 +116,19 @@ func common(ctx context.Context, u storage.UnitOfWork, doc storage.Document, p i
 	f.text("payment.account_name", pr.BankAccountName)
 	f.text("payment.account_number", pr.BankAccountNumber)
 	f.text("payment.paynow", pr.PayNowUEN)
+}
+
+// common is what every sales document shows, from its content as an invoice reads it (p): the organisation's details
+// and its GST registration number on the document's date when registered, the customer's, the number, date, currency
+// and reference, each line with its GST rate when registered, the GST summary and the totals; and when it was issued.
+func common(ctx context.Context, u storage.UnitOfWork, doc storage.Document, p invoice.Prepared) (Invoice, fields, error) {
+	d := p.Draft
+	f := fields{}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return Invoice{}, nil, err
+	}
+	f.organisation(o)
 	if p.Registered {
 		regs, err := u.GSTRegistrations().List(ctx)
 		if err != nil {

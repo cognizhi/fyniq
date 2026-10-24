@@ -504,6 +504,15 @@ var (
 	ListSalesReminders = Policy{Operation: "listSalesReminders", Capability: Invoices, Need: View}
 	SendSalesReminder  = Policy{Operation: "sendSalesReminder", Capability: Invoices, Need: Post}
 	SkipSalesReminder  = Policy{Operation: "skipSalesReminder", Capability: Invoices, Need: Post}
+
+	// Statements of account (FR-AR-08): worked out and read by those who read invoices, made by those who prepare them,
+	// and emailed, which speaks for the company, under P as an invoice is.
+	GetCustomerStatement = Policy{Operation: "getCustomerStatement", Capability: Invoices, Need: View}
+	ListStatements       = Policy{Operation: "listStatements", Capability: Invoices, Need: View}
+	GetStatement         = Policy{Operation: "getStatement", Capability: Invoices, Need: View}
+	CreateStatement      = Policy{Operation: "createStatement", Capability: Invoices, Need: Create}
+	EmailStatement       = Policy{Operation: "emailStatement", Capability: Invoices, Need: Post}
+
 	// The online link (FR-AR-06, FR-AR-16): opened by whoever holds it, with no session (public); revoked under P.
 	GetPublicDocument    = Policy{Operation: "getPublicDocument", Capability: Invoices, Need: View, Public: true}
 	GetPublicDocumentPDF = Policy{Operation: "getPublicDocumentPDF", Capability: Invoices, Need: View, Public: true}
@@ -777,7 +786,8 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
 	GetSupplierRefund, RecordSupplierRefund, VoidSupplierRefund, RequestSupplierRefundVoid,
-	ListInvoices, GetInvoice, GetInvoiceDocument, EmailInvoice, EmailQuote, ListSalesReminders, SendSalesReminder, SkipSalesReminder, GetPublicDocument, GetPublicDocumentPDF, AcceptQuoteByLink,
+	ListInvoices, GetInvoice, GetInvoiceDocument, EmailInvoice, EmailQuote, ListSalesReminders, SendSalesReminder, SkipSalesReminder,
+	GetCustomerStatement, ListStatements, GetStatement, CreateStatement, EmailStatement, GetPublicDocument, GetPublicDocumentPDF, AcceptQuoteByLink,
 	DeclineQuoteByLink, RevokeDocumentLink, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
 	RequestInvoiceEdit, AddInvoiceEvidence, ListInvoiceEvidence, GetInvoiceEvidence, RemoveInvoiceEvidence, GetReceivables,
 	ListCustomerReceipts, GetCustomerReceipt, RecordCustomerReceipt, VoidCustomerReceipt, RequestCustomerReceiptVoid,

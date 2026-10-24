@@ -2015,6 +2015,36 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPost, "/v1/sales-reminders/"+id+"/skip", tok, map[string]any{"step": 7})
 		return r, func() bool { return e.remindersDue()[id] != nil }
 	},
+	// Statements of account (FR-AR-08): read under V, made under C and emailed under P on "Invoices, credit notes".
+	"getCustomerStatement": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/contacts/"+e.customer()+"/statement?from=2026-10-01&to=2026-10-15", tok, nil), nil
+	},
+	"listStatements": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/statements", tok, nil), nil
+	},
+	"getStatement": func(e *env, tok string) (response, func() bool) {
+		id, _ := matrixStatement(e)
+		return e.call(http.MethodGet, "/v1/statements/"+id, tok, nil), nil
+	},
+	"createStatement": func(e *env, tok string) (response, func() bool) {
+		e.readyToEmail()
+		e.invoiceDue("2026-10-01", "2026-10-31")
+		count := func() int {
+			items, _ := e.call(http.MethodGet, "/v1/statements?page_size=500", e.as(authz.Accountant), nil).Body["items"].([]any)
+			return len(items)
+		}
+		was := count()
+		r := e.call(http.MethodPost, "/v1/statements", tok, map[string]any{"customer_id": e.customer(), "from": "2026-10-01", "to": "2026-10-15"})
+		return r, func() bool { return count() == was }
+	},
+	"emailStatement": func(e *env, tok string) (response, func() bool) {
+		id, tag := matrixStatement(e)
+		r := e.call(http.MethodPost, "/v1/statements/"+id+"/email", tok, map[string]any{"to": "ap@acme.example"}, "If-Match", tag)
+		return r, func() bool {
+			sends, _ := e.call(http.MethodGet, "/v1/statements/"+id, e.as(authz.Accountant), nil).Body["sends"].([]any)
+			return len(sends) == 0
+		}
+	},
 	"listCustomerGroups": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/customer-groups", tok, nil), nil
 	},

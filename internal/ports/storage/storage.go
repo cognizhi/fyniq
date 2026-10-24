@@ -434,6 +434,9 @@ const (
 	DocumentCustomerReceipt DocumentType = "customer_receipt"
 	// DocumentWriteOff writes off what is left of an invoice, for a reason, on another person's approval (FR-AR-17).
 	DocumentWriteOff DocumentType = "write_off"
+	// DocumentStatement is a statement of account sent to a customer (FR-AR-08; p1-sales task 7.2): what it said, kept
+	// as it was sent. It posts nothing and is never reversed; posted is sent.
+	DocumentStatement DocumentType = "statement"
 )
 
 // DocumentStatus is where a document is in its life (FR-GL-12).
@@ -585,6 +588,7 @@ const (
 	CodeLink           = "STORAGE-LINK-01"       // a link is of a sent quote's or issued invoice's current version, and changes only in its view and revocation
 	CodeScheduled      = "STORAGE-SCHEDULED-01"  // the scheduler issues and sends only the invoices of an approved recurring invoice set to issue and send
 	CodeReminder       = "STORAGE-REMINDER-01"   // a reminder is of an issued invoice or a sent quote, decided once per step, never changed
+	CodeStatement      = "STORAGE-STATEMENT-01"  // a statement posts nothing and is never reversed
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation

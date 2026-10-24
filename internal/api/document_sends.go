@@ -123,7 +123,7 @@ func sendProblem(kind string, err error) error {
 
 // emailDocument runs a send end to end: read and render, stage the PDF, and record the send with run's view of the
 // document after it, under the request's Idempotency-Key and If-Match.
-func emailDocument[B any](ctx context.Context, a *API, id uuid.UUID, invoiceSend bool, in emailDocumentInput, request any,
+func emailDocument[B any](ctx context.Context, a *API, id uuid.UUID, what salesmail.What, in emailDocumentInput, request any,
 	etagOf func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (string, error),
 	view func(ctx context.Context, u storage.UnitOfWork) (B, error)) (written[B], error) {
 	if strings.TrimSpace(in.IfMatch) == "" {
@@ -147,7 +147,7 @@ func emailDocument[B any](ctx context.Context, a *API, id uuid.UUID, invoiceSend
 	p, _ := authn.From(ctx)
 	sender := a.sender()
 	var tag string
-	s, err := sender.Prepare(ctx, p.Organisation, id, invoiceSend, to, !preview, func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (err error) {
+	s, err := sender.Prepare(ctx, p.Organisation, id, what, to, !preview, func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (err error) {
 		tag, err = etagOf(ctx, u, doc)
 		return err
 	})
@@ -212,7 +212,7 @@ func registerDocumentSends(a *API) {
 				}
 				return a.invoiceOf(ctx, u, v, doc, true)
 			}
-			w, err := emailDocument(ctx, a, id, true, emailDocumentInput{in.IdempotencyKey, in.IfMatch, in.Prefer, in.Body}, in,
+			w, err := emailDocument(ctx, a, id, salesmail.Invoice, emailDocumentInput{in.IdempotencyKey, in.IfMatch, in.Prefer, in.Body}, in,
 				func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (string, error) {
 					i, err := view(ctx, u, doc)
 					return invoiceETag(i), err
@@ -255,7 +255,7 @@ func registerDocumentSends(a *API) {
 				}
 				return a.quoteOf(ctx, u, base, doc, false)
 			}
-			w, err := emailDocument(ctx, a, id, false, emailDocumentInput{in.IdempotencyKey, in.IfMatch, in.Prefer, in.Body}, in,
+			w, err := emailDocument(ctx, a, id, salesmail.Quote, emailDocumentInput{in.IdempotencyKey, in.IfMatch, in.Prefer, in.Body}, in,
 				func(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (string, error) {
 					q, err := view(ctx, u, doc)
 					return quoteETag(q), err

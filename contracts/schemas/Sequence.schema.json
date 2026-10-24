@@ -26,7 +26,8 @@
         "customer_refund",
         "customer_deposit",
         "quote",
-        "sales_order"
+        "sales_order",
+        "statement"
       ],
       "examples": [
         "journal"

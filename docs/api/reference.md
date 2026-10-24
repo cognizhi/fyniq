@@ -3019,6 +3019,30 @@ Asks for another person's approval to void a refund on the date given, with a re
 
 Invoices to customers: drafted, approved, issued and voided; posted history never changes (FR-AR-03, FR-GL-12).
 
+### `GET /v1/contacts/{contact_id}/statement`
+
+**Work out a customer's statement** (`getCustomerStatement`)
+
+Works out a customer's statement of account in one currency from one day to another (FR-AR-08; PRD-001 rev 0.138): the balance brought forward, each invoice, credit note, payment received, refund of a credit, write-off and void in the period with a running balance, the balance due from the AR sub-ledger, what of it is overdue, and its ageing by days past due, which adds up to it; adds_up says whether the lines come to the balance due, and currencies lists the customer's currencies in the period. Nothing is kept: createStatement makes one to send. Read-only; no side effects.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `contact_id` (path, required): The contact's ID.
+  - `currency` (query): Its currency, ISO 4217; left out, the customer's own, else the organisation's base currency.
+  - `from` (query, required): Its first day.
+  - `to` (query, required): Its last day, today at the latest.
+- **Responses:**
+  - `200` OK [`Statement`](../../contracts/schemas/Statement.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `STATEMENT-01` The statement's period is not valid; `STATEMENT-02` Statements are of customers.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STATEMENT-01`, `STATEMENT-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/customer-credit-applications`
 
 **Apply a customer credit to an invoice** (`applyCustomerCredit`)
@@ -4485,6 +4509,99 @@ Skips the reminder due on an invoice, quote or order at the step the list gives,
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `REMINDER-02`, `STORAGE-LOCK-01`, `STORAGE-REMINDER-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/statements`
+
+**List the statements made** (`listStatements`)
+
+The statements of account made, newest first, a page at a time, of one customer when customer_id is given, each as it was made, with its emails (FR-AR-08; PRD-001 rev 0.138). Read-only; no side effects.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `customer_id` (query): Only this customer's statements.
+- **Responses:**
+  - `200` OK [`StatementPage`](../../contracts/schemas/StatementPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
+### `POST /v1/statements`
+
+**Make a statement to send** (`createStatement`)
+
+Makes a customer's statement of account in one currency for a period ending today at the latest, as getCustomerStatement works it out, and keeps it as a statement document numbered from its sequence (ST-), saying what it said, never changed or voided (FR-AR-08; PRD-001 rev 0.138); emailStatement sends it. One that does not add up (STATEMENT-03), or of a currency in which the customer has nothing in the period (STATEMENT-04), is refused. Side effects: the statement and its audit events; it posts nothing. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Invoices, credit notes
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`StatementRequest`](../../contracts/schemas/StatementRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Statement`](../../contracts/schemas/Statement.schema.json)
+  - `201` Created [`Statement`](../../contracts/schemas/Statement.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STATEMENT-03` The statement does not add up; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `STATEMENT-01` The statement's period is not valid; `STATEMENT-02` Statements are of customers; `STATEMENT-04` The customer has nothing in that currency.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STATEMENT-01`, `STATEMENT-02`, `STATEMENT-03`, `STATEMENT-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/statements/{statement_id}`
+
+**Get a statement made** (`getStatement`)
+
+Returns a statement of account as it was made, with its emails and its ETag (FR-AR-08; PRD-001 rev 0.138). Read-only; no side effects.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `statement_id` (path, required): The statement's ID.
+- **Responses:**
+  - `200` OK [`Statement`](../../contracts/schemas/Statement.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `STATEMENT-05` Not a statement.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STATEMENT-05`
+
+### `POST /v1/statements/{statement_id}/email`
+
+**Email a statement to the customer** (`emailStatement`)
+
+Emails a statement of account made (FR-AR-08; PRD-001 rev 0.138) to the customer's billing email, or the address given, from the organisation's invoices sender, with the subject and body of the statement email template that applies to the customer and the PDF of it attached, rendered with the statement document template that applies (FR-TPL-05) as of the day it was made. Sending again sends the same statement again. Side effects: the PDF in the statement's evidence (source generated), the email message in the delivery log, the send, and their audit events. Needs If-Match with the statement's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and sends nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `statement_id` (path, required): The statement's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`EmailDocument`](../../contracts/schemas/EmailDocument.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Statement`](../../contracts/schemas/Statement.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `STATEMENT-05` Not a statement.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SALESDOC-03` Only an issued invoice or a sent quote is emailed; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SALESDOC-04` There is no address to send it to.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `SALESDOC-03`, `SALESDOC-04`, `STATEMENT-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `TPL-17`
 
 ### `GET /v1/write-offs`
 

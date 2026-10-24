@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Outbound email through ZeptoMail with a Resend failover, senders per purpose, provider webhooks and the suppression list: FR-INT-21 (PRD-001 rev 0.102, rev 0.103); notification and digest email: FR-NTF-01, FR-NTF-02 (rev 0.108); quotes and invoices emailed with their PDFs: FR-AR-06, FR-AR-16 (rev 0.133); payment reminders and reminders of quotes about to expire, sent from the Inbox: FR-AR-08 (rev 0.137) |
+| Feature and requirement IDs | Outbound email through ZeptoMail with a Resend failover, senders per purpose, provider webhooks and the suppression list: FR-INT-21 (PRD-001 rev 0.102, rev 0.103); notification and digest email: FR-NTF-01, FR-NTF-02 (rev 0.108); quotes and invoices emailed with their PDFs: FR-AR-06, FR-AR-16 (rev 0.133); payment reminders and reminders of quotes about to expire, sent from the Inbox, and statements of account: FR-AR-08 (rev 0.137, rev 0.138) |
 | Author, reviewer, date | Claude Code for the owner, 23 Oct 2026; second review waived before production (AGENTS.md), held with `needs-human-review` if wanted |
 | Data and its class | Recipients' email addresses, subjects and bodies (personal data, PDPA); the PDFs of invoices and quotes sent (amounts, customers' names and addresses, the company's bank details: confidential business data); a provider's bounce and complaint reasons; the providers' send keys and webhook secrets (secrets) |
 | Who acts | The Administrator (senders, test sends, releases); the worker (sends); ZeptoMail and Resend (webhooks); everyone with View on Organisation integrations (reads) |
@@ -62,7 +62,7 @@ every table has `organisation_id` and `FORCE ROW LEVEL SECURITY`. The AI and MCP
 | T13 | The PDF sent is kept as the document's evidence (append-only, retention-locked); the send records the version, the message, the PDF's SHA-256 and the template version, and never changes (FY195, FY196); delivery comes from the provider's signed events | `TestASendIsOfAnIssuedInvoicesCurrentVersion`, `TestInvoicesAndQuotesAreEmailed` |
 | T14 | A typed recipient must parse as one bare address; attachment names match a header-safe pattern and only PDFs go, at most 5 and 10 MB; each adapter refuses anything else before sending | `TestAnInvoicesPDFTravelsAsAnAttachment`, `TestAnAttachmentIsTheDocumentedField`, the address case in `TestInvoicesAndQuotesAreEmailed` (`// asvs: V1.2.4`) |
 | T15 | No reminder goes by itself while receipts are recorded by hand (the owner's decision of 24 Oct 2026): each due one waits in the Inbox for a person to send or skip; the list counts only what is still open on the invoice, so a receipt recorded takes it off; a reminder step is recorded once per document (`sales_reminder`, unique, append-only, FY203), so a second send of the same step is refused | `TestRemindersWaitForAPerson`, `TestARemindersStepIsDecidedOnce` |
-| T16 | Sending or skipping needs P on "Invoices, credit notes", as emailing an invoice does; each decision names who made it, when, and a skip's reason, and is audited | The matrix rows `sendSalesReminder` and `skipSalesReminder` |
+| T16 | Sending or skipping a reminder, or emailing a statement, needs P on "Invoices, credit notes", as emailing an invoice does; a statement goes as it was made (FY204), with no online link; each decision names who made it, when, and a skip's reason, and is audited | The matrix rows `sendSalesReminder` and `skipSalesReminder` |
 
 ## 4. What remains
 

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "Its currency, ISO 4217; left out, the customer's own, else the organisation's base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "customer_id": {
+      "description": "The customer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "from": {
+      "description": "Its first day.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "to": {
+      "description": "Its last day, today at the latest; at most two years after from.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "from",
+    "to"
+  ],
+  "title": "StatementRequest",
+  "type": "object"
+}

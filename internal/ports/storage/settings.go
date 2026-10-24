@@ -91,6 +91,7 @@ var DefaultSequences = map[DocumentType]SequenceSettings{
 	DocumentCustomerDeposit: {Prefix: "DP-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentQuote:           {Prefix: "QT-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentSalesOrder:      {Prefix: "SO-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentStatement:       {Prefix: "ST-", NextNumber: 1, Digits: 4, GapFree: true},
 }
 
 // FormatNumber is a document number as the sequence s prints it: its prefix and the number, zero-padded.

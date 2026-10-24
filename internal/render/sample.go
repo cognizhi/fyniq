@@ -54,8 +54,10 @@ func Sample(documentType string) Data {
 	case doctemplate.Statement:
 		f["document.number"], f["document.period_start"], f["document.period_end"] = text("STM-2026-10"), day("2026-10-01"), day("2026-10-31")
 		f["document.opening_balance"], f["document.balance_due"], f["document.overdue"] = sgd("545.00"), sgd("2180.00"), sgd("545.00")
-		d.Lines = []Line{{Description: "INV-0031 of 15 Sep 2026, due 15 Oct 2026", Amount: amount("545.00", "SGD")},
-			{Description: "INV-0042 of 23 Oct 2026, due 22 Nov 2026", Amount: amount("1635.00", "SGD")}}
+		f["document.not_yet_due"], f["document.overdue_month_one"] = sgd("1635.00"), sgd("545.00")
+		f["document.overdue_month_two"], f["document.overdue_month_three"], f["document.overdue_older"] = sgd("0.00"), sgd("0.00"), sgd("0.00")
+		// What moved the balance in the period: INV-0031 (545.00, due 15 Oct) was brought forward.
+		d.Lines = []Line{{Description: "23 Oct 2026 Invoice INV-0042, due 22 Nov 2026", Amount: amount("1635.00", "SGD")}}
 	case doctemplate.Reminder:
 		f["document.number"], f["document.amount_due"], f["document.overdue"] = text("REM-0004"), sgd("545.00"), sgd("545.00")
 		f["document.oldest_due_date"], f["document.days_overdue"] = day("2026-10-15"), Value{Number: &n}

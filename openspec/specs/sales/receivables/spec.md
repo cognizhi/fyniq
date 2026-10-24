@@ -298,6 +298,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P1 / P2 (disputes and promise-to-pa
 - **WHEN** its validity date is 3 days away or less
 - **THEN** its reminder is listed in the same way
 
+#### Scenario: Statements as built (rev 0.138)
+- **WHEN** a customer's statement is worked out in one currency for a period ending today at the latest
+- **THEN** it brings the balance forward, lists each invoice, credit note, payment received, refund, write-off and void with a running balance, and shows the balance due with an ageing that adds up to it
+- **AND** one whose lines do not come to the balance due is never made; made, it is numbered ST-, kept as it said, never voided (FY204), and emailed with its PDF
+
 ### Requirement: FR-AR-09 Customer deposits and retainers
 The system SHALL record customer deposits and retainers and apply them to invoices.
 
