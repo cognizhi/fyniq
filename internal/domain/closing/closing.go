@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payables"
@@ -212,6 +213,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, receivables...)
+	deposits, err := depositsChecks(ctx, u, cur, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, deposits...)
 	tolerances, err := toleranceCheck(ctx, u, cur, p)
 	if err != nil {
 		return nil, err
@@ -394,6 +400,59 @@ func receivablesChecks(ctx context.Context, u storage.UnitOfWork, cur money.Curr
 	if len(held) > 0 {
 		out = append(out, Check{"receivables-unsupported", Warning, "Accounts receivable holds amounts no invoice supports",
 			fmt.Sprintf("%s holds %s: support them with the customers' statements, or enter the invoices", ar.Code, strings.Join(held, ", "))})
+	}
+	return out, nil
+}
+
+// depositsChecks reconcile the deposits sub-ledger with the customer deposits account at the period's end (FR-AR-09;
+// p1-sales task 3.2), as receivablesChecks do for accounts receivable: ✖ when they differ by anything no source explains;
+// ⚠ when the account holds amounts from opening balances or manual journals that no deposit supports; ✔ otherwise.
+// Nothing is said when the chart has no customer deposits account, or it and the sub-ledger are empty.
+func depositsChecks(ctx context.Context, u storage.UnitOfWork, cur money.Currency, p storage.Period) ([]Check, error) {
+	accounts, err := u.Accounts().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var held *storage.Account
+	for i := range accounts {
+		if string(accounts[i].Role) == ledger.RoleCustomerDeposits {
+			held = &accounts[i]
+		}
+	}
+	if held == nil {
+		return nil, nil
+	}
+	r, l, err := deposit.Reconcile(ctx, u, cur, held.ID, p.EndsOn)
+	if err != nil {
+		return nil, err
+	}
+	if len(r.Currencies) == 0 && len(l.Customers) == 0 {
+		return nil, nil
+	}
+	var out []Check
+	if r.Unexplained() {
+		b := r.Base
+		out = append(out, Check{"deposits", Failed, "The deposits do not agree with customer deposits",
+			fmt.Sprintf("%s holds %s %s and the deposits left %s: a posting and its document disagree; report it, never adjust it by journal",
+				held.Code, b.Control, b.Currency, b.SubLedger)})
+	} else {
+		items := 0
+		for _, c := range l.Customers {
+			items += len(c.Items)
+		}
+		out = append(out, Check{"deposits", OK, "The deposits agree with customer deposits", fmt.Sprintf("%d deposit(s) held", items)})
+	}
+	var other []string
+	for _, c := range r.Currencies {
+		for _, e := range c.Explained {
+			if w, ok := explainedWords[e.SourceType]; ok && !e.Amount.IsZero() {
+				other = append(other, fmt.Sprintf("%s %s from %s", e.Amount, c.Currency, w))
+			}
+		}
+	}
+	if len(other) > 0 {
+		out = append(out, Check{"deposits-unsupported", Warning, "Customer deposits holds amounts no deposit supports",
+			fmt.Sprintf("%s holds %s: support them with the customers' statements, or record the deposits", held.Code, strings.Join(other, ", "))})
 	}
 	return out, nil
 }

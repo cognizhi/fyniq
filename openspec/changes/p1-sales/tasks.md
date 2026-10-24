@@ -99,7 +99,7 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   with the approval object `customer_refund`. Tests: `TestPostCustomerRefund`, `TestACustomerRefundIsAReceiptNegated`,
   `TestEveryCustomerRefundRuleVersionReplaysItsGoldenEntries`, `TestCustomerRefundsSettleCredits`,
   `TestCustomerRefundsThroughTheAPI`, the matrix rows. The oracle posts none of 3.1 yet: task 9.1.)
-- [ ] 3.2 Deposits and retainers to 2410 (role `customer-deposits`), applied to invoices; security deposits without
+- [x] 3.2 Deposits and retainers to 2410 (role `customer-deposits`), applied to invoices; security deposits without
   GST; a part-payment deposit's GST when GST-registered. Tests `// req: FR-AR-09`,
   `// req: ledger/posting-rules Customer refunds and deposits`
   (In part, 24 Oct 2026, PRD-001 rev 0.126, on the owner's decisions of 24 Oct 2026: a deposit is deducted on the final
@@ -117,6 +117,11 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `TestAnInvoiceWithDepositsBalances`, `TestDepositPartPinnedCases`, `TestDepositPartProperties`,
   `TestInvoicesDeductDeposits`, `TestInvoicesDeductDepositsThroughTheAPI`. Still to come: refunds of deposits and the
   2410 reconciliation.)
+  (24 Oct 2026, PRD-001 rev 0.128: refunds of deposits (`deposit_refund@1` with its replay golden, through
+  `/v1/customer-refunds`), the deposits sub-ledger (`deposit.Held`, `deposit.Reconcile`) and the close checks
+  `deposits` and `deposits-unsupported` (INV-07, C.2 #2). Tests: `TestPostDepositRefund`,
+  `TestDepositsAreRefundedAndReconciled`, `TestDepositsAreRefundedThroughTheAPI`. The oracle posts none of 3.2 yet:
+  task 9.1.)
 
 ## 4. Quotes and sales orders
 

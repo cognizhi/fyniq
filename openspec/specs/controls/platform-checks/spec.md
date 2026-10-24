@@ -37,6 +37,10 @@ Source: PRD-001 §C.2
 - **THEN** those amounts show ⚠, named by their source
 - **AND** only a difference no source explains fails the check and blocks the close
 
+#### Scenario: Customer deposits, built (rev 0.128)
+- **WHEN** the close checks run
+- **THEN** the deposits sub-ledger is compared with 2410 in the same way: ✖ only for a difference no source explains, ⚠ for amounts from opening balances or manual journals
+
 ### Requirement: C.2 #3 Audit hash chain intact and anchored
 The system SHALL check nightly that the audit hash chain is intact and anchored (INV-12); a failure blocks the close.
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -90,12 +91,22 @@ func ReadRefund(doc storage.Document, base money.Currency) (RefundDraft, error) 
 	return d, nil
 }
 
-// PreparedRefund is a refund version as the rule reads it, with the credit it settles and its customer.
+// PreparedRefund is a refund version as the rule reads it, with the credit it settles and its customer. Deposit is set
+// when the credit is a customer deposit (FR-AR-09), which deposit_refund@1 posts.
 type PreparedRefund struct {
 	Draft    RefundDraft
 	Refund   ledger.CustomerRefund
 	Credit   Credit
 	Customer storage.Contact
+	Deposit  *deposit.Open
+}
+
+// Rule is the rule version a prepared refund posts with: deposit_refund@1 for a deposit, else customer_refund@1.
+func (p PreparedRefund) Rule() string {
+	if p.Deposit != nil {
+		return ledger.RuleDepositRefund
+	}
+	return ledger.RuleCustomerRefund
 }
 
 // PrepareRefund reads one version of a refund for the rule: the credit as it stands (an issued credit note, or a
@@ -111,6 +122,9 @@ func PrepareRefund(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 	var probs ledger.Problems
 	add := func(code, field, msg, fix string) {
 		probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix})
+	}
+	if dep, err := u.Documents().Get(ctx, d.CreditID); err == nil && deposit.IsDeposit(dep) {
+		return prepareDepositRefund(ctx, u, doc, dep, d, out, s)
 	}
 	c, err := CreditOf(ctx, u, d.CreditID, s)
 	var ce *Error
@@ -166,6 +180,76 @@ func PrepareRefund(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 		case cmp == 0:
 			left := c.Carrying
 			r.Credit.Clears = &left
+		}
+	}
+	out.Refund = r
+	return out, probs, nil
+}
+
+// prepareDepositRefund reads a refund of a customer deposit (FR-AR-09): the deposit as it stands, at most what is left
+// of it (APPLY-05), and its part of the deposit's base amount and GST (RND-DEPOSIT); the rate as a refund of a credit
+// takes it.
+func prepareDepositRefund(ctx context.Context, u storage.UnitOfWork, doc, dep storage.Document, d RefundDraft, out PreparedRefund, s ledger.Settings) (PreparedRefund, ledger.Problems, error) {
+	var probs ledger.Problems
+	add := func(code, field, msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: code, Field: field, Message: msg, Fix: fix})
+	}
+	o, err := deposit.OpenDeposit(ctx, u, dep.ID, s.Base, uuid.Nil)
+	var de *deposit.Error
+	if errors.As(err, &de) {
+		add(CodeCredit, "credit_id", de.Message, de.Fix)
+		return out, probs, nil
+	}
+	if err != nil {
+		return PreparedRefund{}, nil, err
+	}
+	out.Deposit = &o
+	out.Credit = Credit{Doc: dep, Customer: o.Customer, Left: o.Left, Carrying: o.BaseLeft, Rate: money.Identity(s.Base)}
+	if cust, err := u.Contacts().Get(ctx, o.Customer); err == nil {
+		out.Customer = cust
+	} else if !errors.Is(err, ports.ErrNotFound) {
+		return PreparedRefund{}, nil, err
+	}
+	cur := o.Total.Currency()
+	memo := fmt.Sprintf("Refund of %s", Label(dep))
+	if out.Customer.LegalName != "" {
+		memo = out.Customer.LegalName + ", " + memo
+	}
+	if d.Reference != "" {
+		memo += ", " + d.Reference
+	}
+	if len(memo) > ledger.MaxMemo {
+		memo = memo[:ledger.MaxMemo]
+	}
+	r := ledger.CustomerRefund{ID: doc.ID, Version: doc.Version, Date: d.Date, Memo: memo, Account: d.AccountID, Currency: cur, Rate: d.Rate, Paid: d.Paid,
+		Credit: ledger.PaidBill{BillID: dep.ID, Amount: d.Amount, StoredRate: money.Identity(s.Base)}}
+	acc, known := s.Accounts[d.AccountID]
+	if cur != s.Base && d.Rate == nil && known && acc.Currency == cur.Code && !d.Date.IsZero() {
+		f, err := fx.Lookup(ctx, u, s.Base, cur, d.Date)
+		var fe *fx.Error
+		switch {
+		case errors.As(err, &fe):
+			add(fe.Code, "fx_rate", fe.Message, fe.Fix)
+		case err != nil:
+			return PreparedRefund{}, nil, err
+		default:
+			rate := f.Rate
+			r.Rate = &rate
+		}
+	}
+	if d.Amount.Currency() == cur && d.Amount.Sign() > 0 {
+		c, err := d.Amount.Cmp(o.Left)
+		if err != nil {
+			return PreparedRefund{}, nil, err
+		}
+		if c > 0 {
+			add(CodeTooMuch, "amount", fmt.Sprintf("%s has %s %s left; the refund is %s", Label(dep), o.Left, cur, d.Amount), "Record at most what is left of the deposit")
+		} else {
+			b, t, err := o.Use(d.Amount)
+			if err != nil {
+				return PreparedRefund{}, nil, err
+			}
+			r.Deposit = &ledger.DepositPart{Base: b, Tax: t}
 		}
 	}
 	out.Refund = r

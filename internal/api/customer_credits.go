@@ -52,7 +52,7 @@ type CustomerCreditApplicationDraft struct {
 // CustomerAppliedDocument names a document a customer credit application settles.
 type CustomerAppliedDocument struct {
 	ID     string `json:"id" format:"uuid" doc:"The document." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	Kind   string `json:"kind" enum:"invoice,credit_note,customer_receipt" doc:"What it is." example:"invoice"`
+	Kind   string `json:"kind" enum:"invoice,credit_note,customer_receipt,customer_deposit" doc:"What it is." example:"invoice"`
 	Number string `json:"number,omitempty" doc:"Its number." example:"INV-0042"`
 }
 
@@ -124,6 +124,8 @@ func customerAppliedDocument(ctx context.Context, u storage.UnitOfWork, id uuid.
 			out.Kind = "credit_note"
 		case storage.DocumentCustomerReceipt:
 			out.Kind = "customer_receipt"
+		case storage.DocumentCustomerDeposit:
+			out.Kind = "customer_deposit"
 		}
 	}
 	return out

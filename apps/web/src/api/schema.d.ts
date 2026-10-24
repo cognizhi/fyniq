@@ -1135,7 +1135,7 @@ export interface paths {
         put?: never;
         /**
          * Record a refund to a customer
-         * @description Records money paid back to a customer against a credit with it (an issued credit note, or what a customer receipt left unapplied), by hand, and posts it at once under customer_refund@1 (FR-AR-04, FR-AR-18): Dr 1100 with the amount at the credit's rate, Cr the money account with what left it, and the realised FX to 7030 (ENG-41). It settles at most what is left of the credit (APPLY-05). Side effects: the refund, its number (CR-), the entry, an allocation, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview posts nothing.
+         * @description Records money paid back to a customer against a credit with it (an issued credit note, or what a customer receipt left unapplied), by hand, and posts it at once under customer_refund@1 (FR-AR-04, FR-AR-18): Dr 1100 with the amount at the credit's rate, Cr the money account with what left it, and the realised FX to 7030 (ENG-41). It settles at most what is left of the credit (APPLY-05). A customer deposit is refunded under deposit_refund@1 (FR-AR-09): Dr 2410 with its part of the deposit less its GST part, Dr 2200 with that GST part, Cr the money account, and the realised FX to 7030 (RND-DEPOSIT). Side effects: the refund, its number (CR-), the entry, an allocation, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview posts nothing.
          */
         post: operations["recordCustomerRefund"];
         delete?: never;
@@ -7178,7 +7178,7 @@ export interface components {
              * @example invoice
              * @enum {string}
              */
-            kind: "invoice" | "credit_note" | "customer_receipt";
+            kind: "invoice" | "credit_note" | "customer_receipt" | "customer_deposit";
             /**
              * @description Its number.
              * @example INV-0042
@@ -7662,7 +7662,7 @@ export interface components {
             amount: components["schemas"]["Money"];
             /**
              * Format: uuid
-             * @description The credit refunded: an issued credit note, or a customer receipt with an amount unapplied.
+             * @description The credit refunded: an issued credit note, a customer receipt with an amount unapplied, or a customer deposit (FR-AR-09), whose refund debits 2410 and takes back its part of the GST the deposit bore (deposit_refund@1).
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70
              */
             credit_id: string;
@@ -23483,7 +23483,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APPLY-02` The saved application cannot be read; `APPLY-03` Not an issued credit note or a receipt with an amount unapplied; `APPLY-05` More than the invoice has open or the credit has left; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-24` A line is in another currency; `LEDGER-25` Not an active money account; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-27` What a base-currency account paid is missing or not wanted; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid; `MONEY-05` An exchange rate is not valid; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APPLY-02` The saved application cannot be read; `APPLY-03` Not an issued credit note or a receipt with an amount unapplied; `APPLY-05` More than the invoice has open or the credit has left; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-24` A line is in another currency; `LEDGER-25` Not an active money account; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-27` What a base-currency account paid is missing or not wanted; `LEDGER-33` A deposit the invoice deducts is not one it takes; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `MONEY-04` A currency is not valid; `MONEY-05` An exchange rate is not valid; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
             422: {
                 headers: {
                     [name: string]: unknown;

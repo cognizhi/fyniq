@@ -174,6 +174,10 @@ Source: PRD-001 §10.2
 - **THEN** it posts Dr 1100 with the amount at the credit's rate, Cr the money account with what left it, and the realised FX to 7030 (ENG-41)
 - **AND** an allocation from the refund settles the credit
 
+#### Scenario: A deposit refunded, built as deposit_refund@1 (rev 0.128)
+- **WHEN** a refund of a customer deposit is recorded
+- **THEN** it posts Dr 2410 with its part of the deposit less its GST part, Dr 2200 with the GST part, Cr the money account, and the realised FX to 7030 [verify]
+
 #### Scenario: Deposit received, then applied
 - **WHEN** a customer deposit is received
 - **THEN** it posts Dr Bank; Cr the deposits account
