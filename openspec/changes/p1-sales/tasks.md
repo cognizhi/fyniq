@@ -207,6 +207,13 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 - [ ] 8.1 Build invoice-editor, invoice-record, quotes-list, record-payment, recurring-documents,
   statements-reminders and customer-document-view as designed. Add help keys and `docs/user-guide/` pages
   compiled into `kb/`
+  (In part, 25 Oct 2026: invoice-editor and invoice-record. **Sales › Invoices** in the navigation (Basic), the list
+  of invoices and credit notes with their states, and the invoice page: a new invoice or credit note, a draft its
+  preparer saves and an AR specialist or Accountant issues (or asks approval for), and an issued one, emailed,
+  voided or edited with a reason; its checks, totals, emails, ledger impact and evidence. `getSalesGSTCodes` gives
+  the line's codes. Help keys, `docs/user-guide/invoices.md` and `kb/pages/task/sales-invoices.md`. Tests:
+  `src/screens/sales/invoices.test.tsx`, the matrix row. Still to come: quotes-list, record-payment,
+  recurring-documents, statements-reminders and customer-document-view.)
 
 ## 9. The oracle and finishing
 

@@ -10,7 +10,7 @@ import { helpText } from "../../i18n";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 
-type Evidence = components["schemas"]["Evidence"] | components["schemas"]["BillEvidence"];
+type Evidence = components["schemas"]["Evidence"] | components["schemas"]["BillEvidence"] | components["schemas"]["InvoiceEvidence"];
 type DataClass = "general" | "personal" | "bank";
 
 // Who attaches evidence to a journal: C on "Evidence: add, supersede" and a view of the journal (Appendix D): the Owner,
@@ -20,9 +20,12 @@ export const attachers = ["owner", "controller", "accountant", "tax_agent"];
 // Who attaches evidence to a bill: C on "Evidence: add, supersede" and a view of bills (Appendix D). The API decides.
 export const billAttachers = ["owner", "controller", "accountant", "bookkeeper", "ap_specialist", "approver", "tax_agent"];
 
-// A record evidence goes on: a journal, or a bill or vendor credit (FR-DOC-05), at its ETag.
+// Who attaches evidence to an invoice: C on "Evidence: add, supersede" and a view of invoices (Appendix D). The API decides.
+export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeeper", "ar_specialist", "approver", "tax_agent"];
+
+// A record evidence goes on: a journal, a bill or vendor credit, or an invoice or credit note (FR-DOC-05), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill";
+  kind: "journal" | "bill" | "invoice";
   id: string;
   etag: string;
 }
@@ -31,6 +34,7 @@ export interface EvidenceRecord {
 const kindsOf = {
   journal: ["calculation", "invoice", "receipt", "statement", "agreement", "board resolution", "screenshot"],
   bill: ["invoice", "receipt", "quotation", "statement", "agreement", "screenshot"],
+  invoice: ["purchase order", "contract", "delivery confirmation", "timesheet", "agreement", "screenshot"],
 };
 
 // Result is an evidence call's answer, whichever record it went to.
@@ -41,7 +45,9 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
   const out =
     r.kind === "bill"
       ? await api.GET("/v1/bills/{bill_id}/evidence", { params: { path: { bill_id: r.id }, query: { page_size: 100 } } })
-      : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
+      : r.kind === "invoice"
+        ? await api.GET("/v1/invoices/{invoice_id}/evidence", { params: { path: { invoice_id: r.id }, query: { page_size: 100 } } })
+        : await api.GET("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: r.id }, query: { page_size: 100 } } });
   if (out.error) throw out.error;
   return out.data.items ?? [];
 }
@@ -80,7 +86,7 @@ export function JournalEvidence({ journalId, journalEtag, draft, mayAttach, onCh
 // first. Those who attach evidence add a file with what it is; on a draft a file comes off again, and once the record
 // is posted its files are kept, append-only, until the retention ends.
 export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record: EvidenceRecord; draft: boolean; mayAttach: boolean; onChanged: (message: string) => void }) {
-  const noun = record.kind === "bill" ? "bill" : "journal";
+  const noun = record.kind;
   const kinds = kindsOf[record.kind];
   const queries = useQueryClient();
   const confirm = useConfirm();
@@ -121,7 +127,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
     const post = (): Promise<Result> =>
       record.kind === "bill"
         ? api.POST("/v1/bills/{bill_id}/evidence", { params: { path: { bill_id: record.id }, header }, body, bodySerializer })
-        : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
+        : record.kind === "invoice"
+          ? api.POST("/v1/invoices/{invoice_id}/evidence", { params: { path: { invoice_id: record.id }, header }, body, bodySerializer })
+          : api.POST("/v1/journals/{journal_id}/evidence", { params: { path: { journal_id: record.id }, header }, body, bodySerializer });
     const out = await guarded(confirm, post);
     setBusy(false);
     setFailed("The file was not attached");
@@ -141,12 +149,16 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
     const read: Result & { response: Response } =
       record.kind === "bill"
         ? await api.GET("/v1/bills/{bill_id}/evidence/{evidence_id}", { params: { path: { bill_id: record.id, evidence_id: e.id } } })
-        : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
+        : record.kind === "invoice"
+          ? await api.GET("/v1/invoices/{invoice_id}/evidence/{evidence_id}", { params: { path: { invoice_id: record.id, evidence_id: e.id } } })
+          : await api.GET("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id } } });
     const header = { "If-Match": etagOf(read.response) };
     const del = (): Promise<Result> =>
       record.kind === "bill"
         ? api.DELETE("/v1/bills/{bill_id}/evidence/{evidence_id}", { params: { path: { bill_id: record.id, evidence_id: e.id }, header } })
-        : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
+        : record.kind === "invoice"
+          ? api.DELETE("/v1/invoices/{invoice_id}/evidence/{evidence_id}", { params: { path: { invoice_id: record.id, evidence_id: e.id }, header } })
+          : api.DELETE("/v1/journals/{journal_id}/evidence/{evidence_id}", { params: { path: { journal_id: record.id, evidence_id: e.id }, header } });
     const out = read.error ? read : await guarded(confirm, del);
     setBusy(false);
     setFailed("The file was not removed");
@@ -165,7 +177,11 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
           ? draft
             ? "The supplier's invoice, and any other file the bill rests on. While it is a draft, a file can come off again."
             : "The supplier's invoice, and any other file the bill rests on. Once it is posted they are kept, and never deleted, for as long as the records are."
-          : draft
+          : record.kind === "invoice"
+            ? draft
+              ? "What the invoice rests on, such as the customer's purchase order or a delivery confirmation. While it is a draft, a file can come off again."
+              : "What the invoice rests on, and each PDF sent to the customer. Once it is issued they are kept, and never deleted, for as long as the records are."
+            : draft
             ? "Files that support the journal, such as a calculation or an invoice. While it is a draft, a file can come off again."
             : "Files that support the journal. Once it is posted they are kept, and never deleted, for as long as the records are."}
       </p>
@@ -247,7 +263,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
             </datalist>
             {missing.kind && (
               <span className="fy-error" id={`${id}-kind-error`}>
-                {record.kind === "bill" ? "Say what the file is, such as the invoice or a receipt." : "Say what the file is, such as a calculation or an invoice."}
+                {record.kind === "bill" ? "Say what the file is, such as the invoice or a receipt." : record.kind === "invoice" ? "Say what the file is, such as the customer's purchase order." : "Say what the file is, such as a calculation or an invoice."}
               </span>
             )}
           </div>

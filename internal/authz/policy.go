@@ -577,6 +577,7 @@ var (
 		Note: "Names the tax agent who gave it; their advice is attached to the bill as evidence. AI and MCP clients never record one (§9.6)."}
 	// The GST codes a bill's line takes are read with the bills (V).
 	GetPurchaseGSTCodes = Policy{Operation: "getPurchaseGSTCodes", Capability: Bills, Need: View}
+	GetSalesGSTCodes    = Policy{Operation: "getSalesGSTCodes", Capability: Invoices, Need: View}
 	RequestBillEdit     = Policy{Operation: "requestBillEdit", Capability: Bills, Need: Post}
 	// Recurring bills (FR-AP-09; rev 0.84) are kept by whoever prepares bills (C), as recurring journals are; they post
 	// nothing: the scheduler makes draft bills, which a person posts under P.
@@ -773,7 +774,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
-	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes,
+	ListBills, GetBill, CreateBill, ReplaceBill, PostBill, VoidBill, RequestBillPost, RequestBillVoid, EditBill, RequestBillEdit, GetPurchaseGSTCodes, GetSalesGSTCodes,
 	ListWithholdingDecisions, RecordWithholdingDecision, PlanBillPayment, ListBillReminders,
 	ListDocumentTemplates, GetDocumentTemplate, GetDocumentTemplateCatalogue, ListDocumentTemplateVersions, GetDocumentTemplateVersion,
 	CreateDocumentTemplate, ReplaceDocumentTemplate, RequestDocumentTemplatePublication, PublishDocumentTemplate, PreviewDocumentTemplate,
