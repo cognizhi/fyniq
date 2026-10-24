@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Customers' invoices saved, issued, voided and edited through the API, and approved as bills are posted: FR-AR-03, FR-GL-12, FR-APR-01, FM-1, FM-2, FM-3, SOD-3, FR-DOC-05, FR-DOC-13 (PRD-001 rev 0.117, provisional; `p1-sales` tasks 1.3 and 1.4) |
+| Feature and requirement IDs | Customers' invoices and credit notes saved, issued, voided and edited through the API, and approved as bills are posted: FR-AR-03, FR-AR-04, FR-GL-12, FR-APR-01, FM-1, FM-2, FM-3, SOD-3, FR-DOC-05, FR-DOC-13 (PRD-001 rev 0.117, provisional; `p1-sales` tasks 1.3 and 1.4; credit notes rev 0.123, task 3.1 in part) |
 | Author, reviewer, date | Claude Code for the founders, 24 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
 | Data and its class | Customers, accounts, quantities, prices, references, notes and attached files (confidential); a customer's name may name a person; no bank details or secrets |
 | Who acts | Whoever holds C on "Invoices, credit notes" (the Bookkeeper, the AR specialist, the Accountant) saves drafts and attaches files; whoever holds P (the AR specialist, the Accountant) issues, voids and edits, at or below the self-approval threshold and outside Founder mode for a void or an edit; above it, or in Founder mode, a member who holds A on that row approves through the approval engine; the API's database role `fyniq_api` |
@@ -14,6 +14,11 @@ notes. A draft has no number. Issuing it takes the next number from the invoice 
 `invoice@1` (Dr 1100, Cr revenue or 2400, Cr 2200 once GST-registered) in the same transaction. A void reverses the
 entry; an edit saves the next version, reverses the old entry and posts the new one. Files attach to a draft and
 are committed to the retention-locked store once it is issued.
+
+A credit note to a customer (rev 0.123) is an invoice of kind `credit_note` through the same operations: numbered from
+its own sequence (`CN-`) when it is issued, posted under `credit_note@1` (an invoice's legs reversed: Cr 1100, Dr
+revenue, Dr 2200), linked to the issued invoice it credits or standalone. A linked credit note adjusts GST at the rates
+and the registration of that invoice's date and credits at most its total.
 
 Trust boundaries: **person ↔ API** (Appendix D's row, the threshold, the approval engine with step-up); **API ↔
 database** (`fyniq_api`, RLS per organisation, the document lifecycle checks, the posting invariants).
@@ -29,6 +34,8 @@ database** (`fyniq_api`, RLS per organisation, the document lifecycle checks, th
 | T5 | person ↔ API | Repudiation: nobody can tell who issued, voided or edited an invoice, or why | No accountability for revenue | Low |
 | T6 | person ↔ API | Spoofing: the AI or an integration issues, voids or edits an invoice | A posting no person stands behind | Low |
 | T7 | person ↔ API | Information disclosure: one organisation reads another's invoices or files | Customers and prices leak | Low |
+| T8 | person ↔ API | Tampering and elevation of privilege (teeming and lading): a credit note is issued to take a customer's debt off the books, hiding cash received and kept, or giving away revenue | Receivables and revenue understated; money taken | Medium |
+| T9 | person ↔ API | Tampering: a credit note names an invoice of another customer, another currency or a smaller total, or one not issued, so GST or a customer's balance is adjusted wrongly | Output tax and a customer's balance misstated | Low |
 
 ## 3. What we do about it
 
@@ -41,6 +48,8 @@ database** (`fyniq_api`, RLS per organisation, the document lifecycle checks, th
 | T5 | Every save, issue, void and edit is audited in its transaction with the actor and, for a void or an edit, the reason; the version records who prepared it and the document who posted it | `TestInvoicesThroughTheAPI` |
 | T6 | Every invoice operation needs a person or a client holding the row's right; the AI's cell is a proposal only, and no proposal task issues invoices yet (§9.6) | `TestAuthorisationMatrix` |
 | T7 | RLS on every table by organisation; a file is found only under its own invoice | `TestEvidenceOnAnInvoice`, the tenancy attack suites |
+| T8 | A credit note is judged on its size by the invoice's threshold (INVOICE-10) and approved as an invoice is, never by whoever prepared it (INVOICE-12, SOD-3); at or below it a Founder-mode issue is logged for the weekly review (FM-3) under its own kind; it is audited, numbered from a gap-free sequence, and voided only with a second person in Founder mode (FM-1) | `TestCreditNotesThroughTheAPI` |
+| T9 | Issuing refuses a link to a document that is not an issued invoice of the credit note's customer, in its currency, dated on or before it, or to a total below the credit note's (INVOICE-15); an invoice that names an invoice is refused | `TestCreditNotesPostThroughThePostingService`, `TestCreditNotesThroughTheAPI` |
 
 ## 4. What remains
 
@@ -49,3 +58,9 @@ database** (`fyniq_api`, RLS per organisation, the document lifecycle checks, th
 - The AR sub-ledger's reconciliation with 1100 (INV-07) arrives with task 1.6; until then a manual journal to 1100 is
   not compared with the invoices.
 - The independent oracle posts invoices in its own session (task 9.1).
+- Applying credit notes to invoices and refunding them arrive with the rest of task 3.1; until then an issued credit
+  note stays a credit with the customer in the AR sub-ledger, and a linked one does not settle its invoice. The
+  credit check is one credit note against its invoice's total: several linked credit notes together are bounded when
+  they are applied, which never takes more than is open.
+- Approval policies for credit notes apart from invoices (FR-APR-01 lists "credit note") follow with the policies per
+  amount; until then a credit note takes the invoice's.

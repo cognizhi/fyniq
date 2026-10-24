@@ -1,6 +1,6 @@
 // Package receivables is the AR sub-ledger (FR-AR-03, FR-AR-10, INV-07): what each customer owes the company as at a day,
-// from the documents themselves (the issued invoices and what is allocated to them; credit notes, receipts' unapplied
-// amounts and deposits join with p1-sales tasks 2 and 3), and its reconciliation with the accounts-receivable account
+// from the documents themselves (the issued invoices and what is allocated to them, the credit notes and receipts'
+// unapplied amounts less what is applied of them; deposits join with p1-sales task 3.2), and its reconciliation with the accounts-receivable account
 // the balance service gives (ENG-04). Read from the documents rather than from 1100's lines, the sub-ledger shows when
 // a posting and its document disagree; what 1100 holds from other sources (opening balances, manual journals, the
 // month-end revaluation) is named apart.
@@ -29,7 +29,7 @@ import (
 // The kinds of open items.
 const (
 	KindInvoice = "invoice"
-	KindCredit  = subledger.KindCredit // a customer credit: a receipt's unapplied amount (FR-AR-18), and credit notes as they arrive
+	KindCredit  = subledger.KindCredit // a customer credit: a credit note (FR-AR-04), or a receipt's unapplied amount (FR-AR-18)
 )
 
 // Item is one open document of the sub-ledger as at a day: what is owed on it in its currency (a credit negative) and
@@ -59,8 +59,9 @@ func (l Ledger) groups() []subledger.Group {
 }
 
 // Open is the AR sub-ledger as at a day: each issued invoice dated on or before it and not voided by then, less what
-// was allocated to it by then; and each receipt dated on or before it and not voided by then that left an amount
-// unapplied, a credit with the customer. ar is the accounts-receivable account, whose lines carry a document's carrying
+// was allocated to it by then; each issued credit note dated on or before it and not voided by then, less what was
+// applied or refunded of it by then, a credit with the customer; and each receipt dated on or before it and not voided
+// by then that left an amount unapplied, a credit too. ar is the accounts-receivable account, whose lines carry a document's carrying
 // amount.
 func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar uuid.UUID, asAt time.Time) (Ledger, error) {
 	out := Ledger{AsAt: asAt}
@@ -132,6 +133,49 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar uui
 			return nil
 		}
 		add(d.CustomerID, it)
+		return nil
+	})
+	if err != nil {
+		return Ledger{}, err
+	}
+	err = subledger.Pages(ctx, u, storage.DocumentCreditNote, asAt, func(doc storage.Document) error {
+		if doc.Status == storage.DocumentDraft {
+			return nil
+		}
+		identity := ledger.CreditNoteIdentity(doc.ID, doc.Version, ledger.RuleCreditNote)
+		if gone, err := subledger.VoidedBy(ctx, u, identity, asAt); err != nil || gone {
+			return err
+		}
+		d, err := invoice.Read(doc, base)
+		if err != nil {
+			return err
+		}
+		e, err := u.Ledger().ByIdentity(ctx, identity)
+		if err != nil {
+			return err
+		}
+		credited, creditedBase, err := subledger.ControlLines(e, ar, d.Currency, base) // its total, as its entry credited it
+		if err != nil {
+			return err
+		}
+		allocs, err := u.Allocations().OfDocument(ctx, doc.ID) // what is applied to invoices or refunded of it (FR-AR-18)
+		if err != nil {
+			return err
+		}
+		used, usedBase, err := subledger.Settled(allocs, d.Currency, base, asAt, nil)
+		if err != nil {
+			return err
+		}
+		it := Item{Kind: KindCredit, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, Total: credited.Neg()}
+		if it.Open, err = credited.Add(used); err != nil {
+			return err
+		}
+		if it.Carrying, err = creditedBase.Add(usedBase); err != nil {
+			return err
+		}
+		if !it.Open.IsZero() || !it.Carrying.IsZero() {
+			add(d.CustomerID, it)
+		}
 		return nil
 	})
 	if err != nil {
@@ -258,10 +302,14 @@ type (
 	Reconciliation = subledger.Reconciliation
 )
 
-// own says whether a source type is one of the documents the AR sub-ledger accounts for: invoices, receipts and
-// write-offs (and, as they arrive, credit notes and applications).
+// own says whether a source type is one of the documents the AR sub-ledger accounts for: invoices, credit notes,
+// receipts and write-offs (and, as they arrive, applications and refunds).
 func own(sourceType string) bool {
-	return sourceType == ledger.SourceInvoice || sourceType == ledger.SourceCustomerReceipt || sourceType == ledger.SourceWriteOff
+	switch sourceType {
+	case ledger.SourceInvoice, ledger.SourceCreditNote, ledger.SourceCustomerReceipt, ledger.SourceWriteOff:
+		return true
+	}
+	return false
 }
 
 // Reconcile is INV-07 for accounts receivable as at a day (FR-CTL-05): the sub-ledger's open documents against the

@@ -16,7 +16,8 @@ import (
 )
 
 // Invoices runs the invoice commands (FR-AR-03; p1-sales) against a store: each in one unit of work, the document and
-// its entry together (ENG-02), the entry from the rule invoice@1 (ENG-01). As bills are, an invoice is drafted, issued
+// its entry together (ENG-02), the entry from the rule invoice@1 (ENG-01), or credit_note@1 for a credit note to a
+// customer (FR-AR-04), which runs through the same commands. As bills are, an invoice is drafted, issued
 // (posted), voided by a reversal with a reason, or edited by reversing the entry of the version it had and posting the
 // new one (FR-GL-12); posted history never changes.
 type Invoices struct {
@@ -43,7 +44,8 @@ func (s Invoices) releaseNow(ctx context.Context, org, id uuid.UUID) {
 
 // CheckedInvoice is an invoice version as issuing it would post it, written nowhere: what the rules read, the entry,
 // and the problems that stop it (✖). Receivable is the invoice's total in the base currency, as its entry debits
-// accounts receivable: what its approval is judged on (FM-2); zero when it would not post.
+// accounts receivable (a credit note's, as its entry credits it): what its approval is judged on (FM-2); zero when it
+// would not post.
 type CheckedInvoice struct {
 	Prepared   invoice.Prepared
 	Entry      ledger.Entry
@@ -57,7 +59,11 @@ func checkInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 		return CheckedInvoice{}, err
 	}
 	out := CheckedInvoice{Prepared: p, Problems: probs}
-	entry, err := ledger.PostInvoice(p.Invoice, s)
+	post := ledger.PostInvoice
+	if invoice.IsCreditNote(doc) {
+		post = ledger.PostCreditNote
+	}
+	entry, err := post(p.Invoice, s)
 	if ps, ok := err.(ledger.Problems); ok {
 		for _, x := range ps {
 			if x.Code == ledger.CodeMissingRate && probs.Has(fx.CodeNoRate) {
@@ -74,7 +80,10 @@ func checkInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 	out.Receivable = money.Zero(s.Base)
 	if len(out.Problems) == 0 {
 		out.Entry = entry
-		out.Receivable = entry.Lines[0].Base // invoice@1 debits 1100 first
+		out.Receivable = entry.Lines[0].Base // invoice@1 debits 1100 first, and credit_note@1 credits it first
+		if invoice.IsCreditNote(doc) {
+			out.Receivable = out.Receivable.Neg()
+		}
 	}
 	return out, nil
 }
@@ -86,20 +95,33 @@ func isInvoice(doc storage.Document) error {
 	return nil
 }
 
-// InvoiceIdentityOf is the posting identity of an invoice's version under its rule.
+// InvoiceIdentityOf is the posting identity of an invoice's or a credit note's version under its rule.
 func InvoiceIdentityOf(doc storage.Document) string {
+	if invoice.IsCreditNote(doc) {
+		return ledger.CreditNoteIdentity(doc.ID, doc.Version, ledger.RuleCreditNote)
+	}
 	return ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice)
 }
 
 // Create saves a draft invoice (✎). It is checked when it is issued; Check shows what issuing it would do.
 func (s Invoices) Create(ctx context.Context, org uuid.UUID, d invoice.Draft) (storage.Document, error) {
+	return s.create(ctx, org, storage.DocumentInvoice, d)
+}
+
+// CreateCredit saves a draft credit note to a customer (✎, FR-AR-04): entered as an invoice is, linked to the invoice
+// it credits or standalone, and issued as its reverse; numbered from the credit note sequence when it is issued.
+func (s Invoices) CreateCredit(ctx context.Context, org uuid.UUID, d invoice.Draft) (storage.Document, error) {
+	return s.create(ctx, org, storage.DocumentCreditNote, d)
+}
+
+func (s Invoices) create(ctx context.Context, org uuid.UUID, t storage.DocumentType, d invoice.Draft) (storage.Document, error) {
 	b, err := invoice.Encode(d)
 	if err != nil {
 		return storage.Document{}, err
 	}
 	var doc storage.Document
 	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		doc, err = createNumbered(ctx, u, storage.DocumentInvoice, b)
+		doc, err = createNumbered(ctx, u, t, b)
 		return err
 	})
 	return doc, err
@@ -355,6 +377,10 @@ func unsettled(ctx context.Context, u storage.UnitOfWork, doc storage.Document, 
 		return err
 	}
 	if x, ok := settled[doc.ID]; ok && !isZeroDecimal(string(x)) {
+		if invoice.IsCreditNote(doc) {
+			return &invoice.Error{Code: invoice.CodeSettled, Message: fmt.Sprintf("%s of the credit note is applied or refunded", x),
+				Fix: fmt.Sprintf("Void its applications and refunds first, then %s it", what)}
+		}
 		return &invoice.Error{Code: invoice.CodeSettled, Message: fmt.Sprintf("receipts or credits settle %s of the invoice", x),
 			Fix: fmt.Sprintf("Void them first, then %s it", what)}
 	}
@@ -394,6 +420,9 @@ func replayInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Docume
 		for k := range i.Lines {
 			i.Lines[k].GSTRate = ""
 		}
+	}
+	if invoice.IsCreditNote(doc) {
+		return ledger.ReplayCreditNote(e.RuleVersion, i, s)
 	}
 	return ledger.ReplayInvoice(e.RuleVersion, i, s)
 }

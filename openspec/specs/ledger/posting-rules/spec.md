@@ -91,6 +91,11 @@ Source: PRD-001 §10.2
 - **WHEN** a credit note is posted
 - **THEN** it posts the reverse of the invoice legs
 
+#### Scenario: Built as credit_note@1 (rev 0.123)
+- **WHEN** a credit note to a customer is issued
+- **THEN** every line is the line invoice@1 posts for the same content, amount and base amount negated, so the negation is exact under RND-FX
+- **AND** a spread line is refused (LEDGER-28): crediting a spread invoice debits the revenue account on the credit note's date
+
 #### Scenario: Drafts never post
 - **WHEN** an invoice is saved as a draft
 - **THEN** nothing is posted

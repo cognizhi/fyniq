@@ -1,5 +1,6 @@
-// Package invoice is a customer's invoice (FR-AR-03; PRD-001 §8.5): its content as each version saves it, and what the
-// posting rules need from it. Reading an invoice for the rules happens here: the customer and its terms, each line's
+// Package invoice is a customer's invoice (FR-AR-03; PRD-001 §8.5), and a credit note to a customer (FR-AR-04), whose
+// content is an invoice's and whose entry is an invoice's legs reversed: its content as each version saves it, and what
+// the posting rules need from it. Reading an invoice for the rules happens here: the customer and its terms, each line's
 // net under RND-LINE, the GST codes of the sg-gst pack in force at the invoice's date and whether the organisation is
 // GST-registered then (no GST before it is), the rate the invoice takes (ENG-40), and its warnings (ENG-21). The posting
 // service in package journal writes it (the one posting path).
@@ -37,6 +38,7 @@ const (
 	CodeTooLong    = "INVOICE-08" // the reference or the notes are too long
 	CodeLine       = "INVOICE-09" // a line's quantity, price or discount that cannot be one
 	CodeSettled    = "INVOICE-13" // an invoice receipts or credits settle is not voided or edited until they are voided
+	CodeCredited   = "INVOICE-15" // the invoice a credit note credits: not an issued invoice of its customer in its currency, or less than the credit
 )
 
 // MaxReference and MaxNotes are the longest reference (such as the customer's purchase order) and notes an invoice keeps.
@@ -65,6 +67,9 @@ type Draft struct {
 	Rate       *money.Rate // as typed; nil takes the cascade's rate for the invoice's date (ENG-40)
 	Lines      []Line
 	Notes      string
+	// Credits is the invoice a credit note credits, in full or in part (FR-AR-04); uuid.Nil for a standalone credit note,
+	// and for an invoice.
+	Credits uuid.UUID
 }
 
 // Line is one line of an invoice: what it sells (an item, or a description alone), how many at what price less a
@@ -114,6 +119,7 @@ type payload struct {
 	FXRateSource string        `json:"fx_rate_source,omitempty"`
 	Lines        []payloadLine `json:"lines"`
 	Notes        string        `json:"notes,omitempty"`
+	Credits      *uuid.UUID    `json:"invoice_id,omitempty"` // a credit note's invoice
 }
 
 type payloadLine struct {
@@ -148,6 +154,10 @@ func Encode(d Draft) ([]byte, error) {
 	if d.Rate != nil {
 		p.FXRate, p.FXRateSource = d.Rate.String(), d.Rate.Source
 	}
+	if d.Credits != uuid.Nil {
+		id := d.Credits
+		p.Credits = &id
+	}
 	for i, l := range d.Lines {
 		if l.Discount != "" && !rounding.IsShare(l.Discount) {
 			return nil, &Error{CodeLine, fmt.Sprintf("lines[%d].discount: %q is not a percentage from 0 to 100 with at most two decimals", i+1, l.Discount),
@@ -163,8 +173,21 @@ func Encode(d Draft) ([]byte, error) {
 	return json.Marshal(p)
 }
 
-// IsInvoice says whether a document is an invoice: what this package reads.
-func IsInvoice(doc storage.Document) bool { return doc.Type == storage.DocumentInvoice }
+// IsInvoice says whether a document is an invoice or a credit note: what this package reads.
+func IsInvoice(doc storage.Document) bool {
+	return doc.Type == storage.DocumentInvoice || doc.Type == storage.DocumentCreditNote
+}
+
+// IsCreditNote says whether a document is a credit note to a customer (FR-AR-04).
+func IsCreditNote(doc storage.Document) bool { return doc.Type == storage.DocumentCreditNote }
+
+// Kind is what a document of this package is, in words: an invoice, or a credit note.
+func Kind(doc storage.Document) string {
+	if IsCreditNote(doc) {
+		return "credit note"
+	}
+	return "invoice"
+}
 
 // Read reads an invoice version as it was saved; base is the organisation's base currency, which a typed rate converts
 // into.
@@ -184,6 +207,9 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		return Draft{}, bad(err.Error())
 	}
 	d := Draft{CustomerID: p.CustomerID, Reference: p.Reference, Currency: cur, Notes: p.Notes}
+	if p.Credits != nil {
+		d.Credits = *p.Credits
+	}
 	for _, x := range []struct {
 		text string
 		to   *time.Time
@@ -269,12 +295,39 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		}
 	}
 
-	// The due date: as entered, else the customer's terms, else the organisation's (FR-ORG-04).
-	if out.DueDate, err = Due(ctx, u, d, out.Customer); err != nil {
-		return Prepared{}, nil, err
+	// The due date: as entered, else the customer's terms, else the organisation's (FR-ORG-04). A credit note has none.
+	credit := IsCreditNote(doc)
+	switch {
+	case credit && !d.DueDate.IsZero():
+		add(CodeDueDate, "due_date", "a credit note has no due date", "Remove the due date")
+	case credit:
+	default:
+		if out.DueDate, err = Due(ctx, u, d, out.Customer); err != nil {
+			return Prepared{}, nil, err
+		}
+		if !d.Date.IsZero() && !out.DueDate.IsZero() && out.DueDate.Before(d.Date) {
+			add(CodeDueDate, "due_date", fmt.Sprintf("the invoice falls due on %s, before its date %s", day(out.DueDate), day(d.Date)), "Enter a due date on or after the invoice's date")
+		}
 	}
-	if !d.Date.IsZero() && !out.DueDate.IsZero() && out.DueDate.Before(d.Date) {
-		add(CodeDueDate, "due_date", fmt.Sprintf("the invoice falls due on %s, before its date %s", day(out.DueDate), day(d.Date)), "Enter a due date on or after the invoice's date")
+
+	// The invoice a credit note credits: its GST is adjusted at the rate of the supply it corrects, so the credit note
+	// reads the sg-gst version and the registration in force on that invoice's date, its tax point [verify].
+	taxPoint := d.Date
+	var limit *money.Money
+	if d.Credits != uuid.Nil {
+		if !credit {
+			add(CodeCredited, "invoice_id", "an invoice credits no other invoice", "Remove the invoice it names, or enter a credit note")
+		} else {
+			on, total, problems, err := credited(ctx, u, d, base)
+			if err != nil {
+				return Prepared{}, nil, err
+			}
+			probs = append(probs, problems...)
+			if !on.IsZero() {
+				taxPoint = on
+			}
+			limit = total
+		}
 	}
 
 	// The rate: as typed, else the cascade's for the invoice's date (ENG-40).
@@ -293,21 +346,21 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		}
 	}
 
-	// GST: the codes of the version in force on the invoice's date, and the standard rate only once registered.
-	version, err := gst.Version(ctx, u, d.Date)
+	// GST: the codes of the version in force on the tax point, and the standard rate only once registered.
+	version, err := gst.Version(ctx, u, taxPoint)
 	if err != nil {
 		return Prepared{}, nil, err
 	}
 	out.GSTVersion = version.ID
-	if !d.Date.IsZero() {
+	if !taxPoint.IsZero() {
 		regs, err := u.GSTRegistrations().List(ctx)
 		if err != nil {
 			return Prepared{}, nil, err
 		}
-		_, out.Registered = gst.StatusOn(regs, d.Date)
+		_, out.Registered = gst.StatusOn(regs, taxPoint)
 	}
-	standard, _ := pack.RateOn(version, d.Date)
-	if perLine, err := setting(ctx, u, "gst.round_per_line", d.Date); err != nil {
+	standard, _ := pack.RateOn(version, taxPoint)
+	if perLine, err := setting(ctx, u, "gst.round_per_line", taxPoint); err != nil {
 		return Prepared{}, nil, err
 	} else if perLine == "true" {
 		inv.GSTMethod = rounding.GSTPerLine
@@ -337,8 +390,69 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 	out.Invoice = inv
 	if out.Totals, err = ledger.TotalsOf(inv); err != nil {
 		add(ledger.CodeGSTRate, "lines", err.Error(), "Choose each line's GST code again: its rate comes from the sg-gst pack")
+	} else if limit != nil && out.Totals.Total.Currency() == limit.Currency() {
+		if c, err := out.Totals.Total.Cmp(*limit); err == nil && c > 0 {
+			add(CodeCredited, "lines", fmt.Sprintf("the credit note's total is %s %s, more than the %s %s of the invoice it credits", out.Totals.Total,
+				d.Currency, *limit, limit.Currency()), "Credit at most the invoice's total")
+		}
 	}
 	return out, probs, nil
+}
+
+// credited reads the invoice a credit note names (FR-AR-04): its date, the credit note's tax point; its total in its
+// currency as its entry debited accounts receivable, the most the credit note credits; and why it cannot be credited:
+// not an issued invoice of the credit note's customer, in its currency, dated on or before it.
+func credited(ctx context.Context, u storage.UnitOfWork, d Draft, base money.Currency) (time.Time, *money.Money, ledger.Problems, error) {
+	var probs ledger.Problems
+	add := func(msg, fix string) {
+		probs = append(probs, ledger.Problem{Code: CodeCredited, Field: "invoice_id", Message: msg, Fix: fix})
+	}
+	doc, err := u.Documents().Get(ctx, d.Credits)
+	switch {
+	case errors.Is(err, ports.ErrNotFound):
+		add("the invoice it credits does not exist in this organisation", "Choose an issued invoice of the customer")
+		return time.Time{}, nil, probs, nil
+	case err != nil:
+		return time.Time{}, nil, nil, err
+	case doc.Type != storage.DocumentInvoice:
+		add(fmt.Sprintf("document %s is a %s, not an invoice", doc.ID, doc.Type), "Choose an issued invoice of the customer")
+		return time.Time{}, nil, probs, nil
+	}
+	inv, err := Read(doc, base)
+	if err != nil {
+		return time.Time{}, nil, nil, err
+	}
+	name := doc.Number
+	if name == "" {
+		name = "the invoice"
+	}
+	if doc.Status != storage.DocumentPosted {
+		add(fmt.Sprintf("%s is %s, not issued", name, doc.Status), "Credit an issued invoice: a draft is changed, and a voided one owes nothing")
+	}
+	if d.CustomerID != uuid.Nil && inv.CustomerID != d.CustomerID {
+		add(fmt.Sprintf("%s is to another customer", name), "Choose an invoice of the credit note's customer")
+	}
+	if inv.Currency != d.Currency {
+		add(fmt.Sprintf("%s is in %s; the credit note is in %s", name, inv.Currency.Code, d.Currency.Code), "Credit the invoice in its currency")
+	}
+	if !d.Date.IsZero() && d.Date.Before(inv.Date) {
+		add(fmt.Sprintf("%s is dated %s, after the credit note's %s", name, day(inv.Date), day(d.Date)), "Date the credit note on or after the invoice")
+	}
+	if doc.Status != storage.DocumentPosted || inv.Currency != d.Currency {
+		return inv.Date, nil, probs, nil
+	}
+	e, err := u.Ledger().ByIdentity(ctx, ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice))
+	if err != nil {
+		return time.Time{}, nil, nil, err
+	}
+	if len(e.Lines) == 0 || e.Lines[0].Currency != inv.Currency.Code {
+		return inv.Date, nil, probs, nil
+	}
+	total, err := money.ParseStored(string(e.Lines[0].Amount), inv.Currency) // invoice@1 debits 1100 first, in its currency
+	if err != nil {
+		return time.Time{}, nil, nil, err
+	}
+	return inv.Date, &total, probs, nil
 }
 
 // memo names an invoice in its entry: the customer and the invoice's number, once it has one.
