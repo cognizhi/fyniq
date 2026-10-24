@@ -266,3 +266,170 @@ func TestQuotesAreAnsweredAndExpire(t *testing.T) {
 		}
 	}
 }
+
+// FR-AR-02 (p1-sales task 4.2): invoicing a quote. QT-0001 to Acme, 10 × S$20.00 and 1 × S$300.00, is invoiced only once
+// accepted. INV-0001 takes 4 of line 1 and names it; asking for more than is left, or a line it lacks, is refused.
+// Issued on 21 Oct, the quote cannot be cancelled, and what it has still to invoice is 6 × S$20.00 and the S$300.00.
+// The rest makes INV-0002, changed to 7 delivered before issue: issued invoices then take every line, so it shows
+// invoiced, and nothing is left. A credit note's line, an invoice to Globex and one naming a declined quote are
+// refused (QUOTE-11). Voiding INV-0001 takes it back to accepted.
+// req: FR-AR-02
+func TestQuotesAreInvoiced(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
+	s := store(t, "fyniq_api")
+	b := newSalesBooks(t, ctx, s, "Invoiced Quotes Pte Ltd")
+	quotes, invoices := journal.Quotes{Store: s}, journal.Invoices{Store: s}
+	sgd := money.MustLookup("SGD")
+	send := func(lines ...invoice.Line) storage.Document {
+		t.Helper()
+		doc, err := quotes.Create(ctx, b.Org, quote.Draft{Content: invoice.Draft{CustomerID: b.Customer.ID, Reference: "RFQ-7", Date: porttest.Day(10, 14),
+			Currency: sgd, Lines: lines}, ValidUntil: porttest.Day(11, 13)}, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if doc, err = quotes.Send(ctx, b.Org, doc.ID); err != nil {
+			t.Fatal(err)
+		}
+		return doc
+	}
+	state := func(doc storage.Document) (string, []quote.LineState, quote.Draft) {
+		t.Helper()
+		var st string
+		var states []quote.LineState
+		var d quote.Draft
+		if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			doc, err := u.Documents().Get(ctx, doc.ID)
+			if err != nil {
+				return err
+			}
+			os, err := u.QuoteOutcomes().Of(ctx, []uuid.UUID{doc.ID})
+			if err != nil {
+				return err
+			}
+			var o *storage.QuoteOutcome
+			if x, ok := os[doc.ID]; ok {
+				o = &x
+			}
+			if d, err = quote.Read(doc, sgd); err != nil {
+				return err
+			}
+			if states, _, err = quote.Invoicing(ctx, u, doc.ID, d, sgd, uuid.Nil); err != nil {
+				return err
+			}
+			st = quote.StatusOf(doc, o, states)
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return st, states, d
+	}
+	left := func(states []quote.LineState) string {
+		out := ""
+		for _, x := range states {
+			out += x.Quoted.String() + "/" + x.Invoiced.String() + "/" + x.Drafted.String() + "/" + x.Left().String() + " "
+		}
+		return out
+	}
+	issue := func(doc storage.Document, on time.Time, change func(*invoice.Draft)) error {
+		t.Helper()
+		d, err := invoice.Read(reread(t, ctx, s, b.Org, doc.ID), sgd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		d.Date = on
+		if change != nil {
+			change(&d)
+		}
+		if _, err := invoices.Revise(ctx, b.Org, doc.ID, d); err != nil {
+			t.Fatal(err)
+		}
+		_, err = invoices.Post(ctx, b.Org, doc.ID)
+		return err
+	}
+
+	q := send(invoiceLine(t, b, "10", "20.00", "", "SR", "SGD"), invoiceLine(t, b, "1", "300.00", "", "SR", "SGD"))
+	if _, err := quotes.Invoice(ctx, b.Org, q.ID, nil); !hasQuoteCode(err, quote.CodeNotAccepted) {
+		t.Fatalf("invoicing a quote not accepted: %v", err)
+	}
+	if _, err := quotes.Accept(ctx, b.Org, q.ID, journal.QuoteAnswer{On: porttest.Day(10, 20)}); err != nil {
+		t.Fatal(err)
+	}
+	inv1, err := quotes.Invoice(ctx, b.Org, q.ID, map[int]money.Quantity{1: quantityOf(t, "4")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d1, err := invoice.Read(inv1, sgd)
+	if err != nil || inv1.Type != storage.DocumentInvoice || inv1.Status != storage.DocumentDraft || d1.CustomerID != b.Customer.ID || d1.Reference != "RFQ-7" ||
+		d1.Notes != "From quote QT-0001" || !d1.Date.IsZero() || len(d1.Lines) != 1 || d1.Lines[0].Quantity.String() != "4" ||
+		d1.Lines[0].UnitPrice.String() != "20.00" || d1.Lines[0].Quote == nil || *d1.Lines[0].Quote != (invoice.QuoteRef{QuoteID: q.ID, Line: 1}) {
+		t.Fatalf("INV-0001 drafted from it: %+v %v", d1, err)
+	}
+	if st, states, _ := state(q); st != quote.StatusAccepted || left(states) != "10/0/4/6 1/0/0/1 " {
+		t.Errorf("after the draft: %s %s", st, left(states))
+	}
+	for name, ask := range map[string]map[int]money.Quantity{"more than is left": {1: quantityOf(t, "7")}, "a line it lacks": {3: quantityOf(t, "1")}} {
+		if _, err := quotes.Invoice(ctx, b.Org, q.ID, ask); !hasQuoteCode(err, quote.CodeLeft) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if err := issue(inv1, porttest.Day(10, 21), nil); err != nil {
+		t.Fatalf("issuing INV-0001: %v", err)
+	}
+	if _, err := quotes.Cancel(ctx, b.Org, q.ID, "Withdrawn"); !hasQuoteCode(err, quote.CodeInvoiced) {
+		t.Errorf("cancelling an invoiced quote: %v", err)
+	}
+	st, states, d := state(q)
+	if un := d.Uninvoiced(states); st != quote.StatusAccepted || left(states) != "10/4/0/6 1/0/0/1 " || len(un.Content.Lines) != 2 ||
+		un.Content.Lines[0].Quantity.String() != "6" || un.Content.Lines[1].Quantity.String() != "1" {
+		t.Errorf("after INV-0001: %s %s %+v", st, left(states), un.Content.Lines)
+	}
+
+	inv2, err := quotes.Invoice(ctx, b.Org, q.ID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := issue(inv2, porttest.Day(10, 22), func(d *invoice.Draft) { d.Lines[0].Quantity = quantityOf(t, "7") }); err != nil {
+		t.Fatalf("issuing INV-0002 with 7 delivered: %v", err)
+	}
+	if st, states, _ := state(q); st != quote.StatusInvoiced || left(states) != "10/11/0/0 1/1/0/0 " {
+		t.Errorf("after INV-0002: %s %s", st, left(states))
+	}
+	if _, err := quotes.Invoice(ctx, b.Org, q.ID, nil); !hasQuoteCode(err, quote.CodeLeft) {
+		t.Errorf("invoicing with nothing left: %v", err)
+	}
+
+	// Lines that cannot name the quote.
+	declined := send(invoiceLine(t, b, "1", "50.00", "", "SR", "SGD"))
+	if _, err := quotes.Decline(ctx, b.Org, declined.ID, journal.QuoteAnswer{On: porttest.Day(10, 20)}); err != nil {
+		t.Fatal(err)
+	}
+	naming := func(customer uuid.UUID, id uuid.UUID) invoice.Draft {
+		l := invoiceLine(t, b, "1", "20.00", "", "SR", "SGD")
+		l.Quote = &invoice.QuoteRef{QuoteID: id, Line: 1}
+		return invoice.Draft{CustomerID: customer, Date: porttest.Day(10, 23), Currency: sgd, Lines: []invoice.Line{l}}
+	}
+	for name, make := range map[string]func() (storage.Document, error){
+		"a credit note's line": func() (storage.Document, error) {
+			return invoices.CreateCredit(ctx, b.Org, naming(b.Customer.ID, q.ID))
+		},
+		"an invoice to Globex": func() (storage.Document, error) { return invoices.Create(ctx, b.Org, naming(b.Globex.ID, q.ID)) },
+		"a declined quote": func() (storage.Document, error) {
+			return invoices.Create(ctx, b.Org, naming(b.Customer.ID, declined.ID))
+		},
+	} {
+		doc, err := make()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := invoices.Post(ctx, b.Org, doc.ID); !hasQuoteCode(err, quote.CodeQuoteLine) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+
+	if _, err := invoices.Void(ctx, b.Org, inv1.ID, porttest.Day(10, 24), "Raised in error"); err != nil {
+		t.Fatal(err)
+	}
+	if st, states, _ := state(q); st != quote.StatusAccepted || left(states) != "10/7/0/3 1/1/0/0 " {
+		t.Errorf("after voiding INV-0001: %s %s", st, left(states))
+	}
+}

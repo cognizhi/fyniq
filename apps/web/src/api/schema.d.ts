@@ -3561,7 +3561,7 @@ export interface paths {
         };
         /**
          * Get the sales pipeline
-         * @description What the open quotes and sales orders come to in the base currency on a day (FR-AR-01): those sent or accepted, not declined, expired or cancelled, and still valid on it when they name a validity date, each total at its rate. Read-only; no side effects.
+         * @description What the open quotes and sales orders have still to invoice in the base currency on a day (FR-AR-01, FR-AR-02): those accepted and not invoiced in full, and those sent and still valid on it when they name a validity date; not declined, expired or cancelled. Each counts what no issued invoice takes of its lines, at its rate. Read-only; no side effects.
          */
         get: operations["getSalesPipeline"];
         put?: never;
@@ -3627,7 +3627,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel a quote or sales order
-         * @description Cancels a sent quote or order, with a reason (FR-AR-01): its status becomes cancelled and it leaves the pipeline; it posts nothing. A draft is simply not sent (QUOTE-05). Side effects: the document's change and its audit event with the reason. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.
+         * @description Cancels a sent quote or order, with a reason (FR-AR-01): its status becomes cancelled and it leaves the pipeline; it posts nothing. A draft is simply not sent (QUOTE-05); one that issued invoices are made from is not cancelled until they are voided (QUOTE-12), and a draft invoice made from it can no longer be issued (QUOTE-11). Side effects: the document's change and its audit event with the reason. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.
          */
         post: operations["cancelQuote"];
         delete?: never;
@@ -3650,6 +3650,26 @@ export interface paths {
          * @description Records that the customer declined a sent quote or order (FR-AR-01), on the day given or the organisation's today, with a note: its status becomes declined, and it leaves the pipeline. A quote has one answer, which never changes (QUOTE-07). Side effects: the answer and its audit event. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.
          */
         post: operations["declineQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/quotes/{quote_id}/invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make an invoice from a quote or sales order
+         * @description Makes a draft invoice from a quote or order the customer accepted (FR-AR-02; QUOTE-09): of each line, the quantity asked for, at most what no invoice, issued or draft, takes yet (QUOTE-10), or everything that is left. Each invoice line is the quote's line at that quantity and names it (lines[].quote); the invoice is for the quote's customer, in its currency, with its reference, and takes its own date and the rate for it. Enter the invoice's date, change it to what was delivered, and issue it as any invoice; the quote shows invoiced once issued invoices take every line. Side effects: the draft invoice and its audit event. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key; Prefer: return=preview makes nothing.
+         */
+        post: operations["invoiceQuote"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9704,6 +9724,8 @@ export interface components {
              * @example 2
              */
             quantity: string;
+            /** @description An invoice's line only: the line of a quote or sales order it invoices, for a line made from one; invoiceQuote sets it, and the line's quantity is what it invoices of it. The quote must be one the customer accepted, of the invoice's customer and currency (QUOTE-11). */
+            quote?: components["schemas"]["InvoiceLineQuote"];
             /**
              * Format: date
              * @description The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date.
@@ -9755,6 +9777,8 @@ export interface components {
              * @example 2
              */
             quantity: string;
+            /** @description An invoice's line only: the line of a quote or sales order it invoices, for a line made from one; invoiceQuote sets it, and the line's quantity is what it invoices of it. The quote must be one the customer accepted, of the invoice's customer and currency (QUOTE-11). */
+            quote?: components["schemas"]["InvoiceLineQuote"];
             /**
              * Format: date
              * @description The spread's first month, as any day of it: when the service starts. Left out, the invoice's month. Months before the invoice's date release on its date.
@@ -9772,6 +9796,20 @@ export interface components {
              * @example 1500.00
              */
             unit_price: string;
+        };
+        InvoiceLineQuote: {
+            /**
+             * Format: int64
+             * @description Its line, from 1.
+             * @example 1
+             */
+            line: number;
+            /**
+             * Format: uuid
+             * @description The quote or sales order.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fb0
+             */
+            quote_id: string;
         };
         InvoicePage: {
             items: components["schemas"]["Invoice"][];
@@ -12051,6 +12089,10 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fb0
              */
             id: string;
+            /** @description The invoices made from it, draft and issued; voided ones are left out. */
+            invoices: components["schemas"]["QuoteInvoice"][];
+            /** @description Once sent, each line's invoicing: what was quoted, what issued and draft invoices take, and what is left to invoice. */
+            invoicing: components["schemas"]["QuoteLineInvoicing"][];
             /**
              * @description A quote, or a sales order.
              * @example quote
@@ -12087,11 +12129,11 @@ export interface components {
             /** @description Who sent it. */
             sent_by?: components["schemas"]["Person"];
             /**
-             * @description draft (✎); sent; accepted or declined by the customer; expired, past its validity date with no answer; or cancelled (FR-AR-01). Invoicing follows.
+             * @description draft (✎); sent; accepted or declined by the customer; expired, past its validity date with no answer; invoiced, when issued invoices take every line in full (FR-AR-02); or cancelled (FR-AR-01).
              * @example sent
              * @enum {string}
              */
-            status: "draft" | "sent" | "accepted" | "declined" | "expired" | "cancelled";
+            status: "draft" | "sent" | "accepted" | "declined" | "expired" | "invoiced" | "cancelled";
             /** @description Its net and GST, in its currency; absent while a line cannot be read. */
             total?: components["schemas"]["Money"];
             /**
@@ -12211,6 +12253,70 @@ export interface components {
              * @example 2026-11-23
              */
             valid_until?: string;
+        };
+        QuoteInvoice: {
+            /**
+             * Format: uuid
+             * @description The invoice's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e90
+             */
+            id: string;
+            /**
+             * @description Its number, once issued.
+             * @example INV-0012
+             */
+            number?: string;
+            /**
+             * @description draft (✎), or posted (issued).
+             * @example draft
+             * @enum {string}
+             */
+            status: "draft" | "posted";
+        };
+        QuoteInvoiceLine: {
+            /**
+             * Format: int64
+             * @description The quote's line, from 1.
+             * @example 1
+             */
+            line: number;
+            /**
+             * @description How much of it the invoice takes: at most what is left of it (QUOTE-10).
+             * @example 2
+             */
+            quantity: string;
+        };
+        QuoteInvoiceRequest: {
+            /** @description The lines to invoice and how much of each; left out, everything no invoice takes yet. */
+            lines?: components["schemas"]["QuoteInvoiceLine"][] | null;
+        };
+        QuoteLineInvoicing: {
+            /**
+             * @description What draft invoices take of it.
+             * @example 2
+             */
+            drafted: string;
+            /**
+             * @description What issued invoices take of it.
+             * @example 4
+             */
+            invoiced: string;
+            /**
+             * @description What no invoice takes yet: what invoiceQuote invoices when asked for everything; never below zero, as an invoice may invoice more than was quoted.
+             * @example 4
+             */
+            left: string;
+            /**
+             * Format: int64
+             * @description The quote's line, from 1.
+             * @example 1
+             */
+            line: number;
+            /**
+             * @description The quantity quoted.
+             * @example 10
+             */
+            quoted: string;
         };
         QuotePage: {
             items: components["schemas"]["Quote"][];
@@ -42050,7 +42156,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `QUOTE-12` Invoices are made from the quote; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -42208,6 +42314,158 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `QUOTE-02` The saved quote cannot be read; `QUOTE-03` The quote's validity date is missing or before its date; `QUOTE-08` The answer has no date, or a text is too long. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    invoiceQuote: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The quote's ID. */
+                quote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QuoteInvoiceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `QUOTE-01` Not a quote or a sales order. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-09` The quote is not accepted; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `MONEY-01` An amount is not a plain decimal; `MONEY-02` An amount has too many decimals; `MONEY-03` An amount is too large; `QUOTE-02` The saved quote cannot be read; `QUOTE-03` The quote's validity date is missing or before its date; `QUOTE-10` More than is left of the quote to invoice. */
             422: {
                 headers: {
                     [name: string]: unknown;

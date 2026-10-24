@@ -1674,7 +1674,7 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/customer-deposits/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
-	// Quotes and sales orders (FR-AR-01): read under V, drafted under C, sent and cancelled under P.
+	// Quotes and sales orders (FR-AR-01): read under V, drafted and invoiced under C, sent, answered and cancelled under P.
 	"listQuotes": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/quotes", tok, nil), nil
 	},
@@ -1714,6 +1714,14 @@ var matrixCalls = map[string]matrixCall{
 		r := e.call(http.MethodPost, "/v1/quotes/"+id+"/decline", tok, map[string]any{"date": "2026-10-20"}, "If-Match", tag)
 		return r, func() bool {
 			return e.call(http.MethodGet, "/v1/quotes/"+id, e.as(authz.Accountant), nil).str("status") == "sent"
+		}
+	},
+	"invoiceQuote": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.sentQuote()
+		a := e.call(http.MethodPost, "/v1/quotes/"+id+"/accept", e.as(authz.Accountant), map[string]any{"date": "2026-10-20"}, "If-Match", tag)
+		r := e.call(http.MethodPost, "/v1/quotes/"+id+"/invoice", tok, nil, "If-Match", a.Header.Get("ETag"))
+		return r, func() bool {
+			return len(e.call(http.MethodGet, "/v1/quotes/"+id, e.as(authz.Accountant), nil).Body["invoices"].([]any)) == 0
 		}
 	},
 	"cancelQuote": func(e *env, tok string) (response, func() bool) {

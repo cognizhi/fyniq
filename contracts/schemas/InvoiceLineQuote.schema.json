@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "line": {
+      "description": "Its line, from 1.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "quote_id": {
+      "description": "The quote or sales order.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fb0"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "quote_id",
+    "line"
+  ],
+  "title": "InvoiceLineQuote",
+  "type": "object"
+}

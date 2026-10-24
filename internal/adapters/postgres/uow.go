@@ -497,6 +497,23 @@ func (r documents) BillsOfOrder(ctx context.Context, orderID uuid.UUID) ([]stora
 	return out, nil
 }
 
+func (r documents) InvoicesOfQuote(ctx context.Context, quoteID uuid.UUID) ([]storage.Document, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.InvoicesOfQuote(ctx, quoteID.String())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Document, len(rows))
+	for i, row := range rows {
+		out[i] = storage.Document{ID: row.ID, Type: storage.DocumentType(row.Type), Status: storage.DocumentStatus(row.Status),
+			Version: int(row.CurrentVersion), Payload: row.Payload, Number: str(row.Number), SavedBy: str(row.CreatedBy),
+			PostedBy: str(row.PostedBy), PostedAt: row.PostedAt, Date: row.Date}
+	}
+	return out, nil
+}
+
 func (r documents) WaitingReversals(ctx context.Context, afterOn string, afterID *uuid.UUID, limit int) ([]storage.Document, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

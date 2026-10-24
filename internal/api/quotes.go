@@ -25,8 +25,9 @@ import (
 // A quote to a customer, or a sales order a customer placed, has the lines an invoice would have and a validity date,
 // and posts nothing: it is drafted, checked as an invoice of the same content is, sent (numbered QT- or SO-, posted with
 // no entry) and cancelled (reversed, with no entry). The customer's answer (accepted, declined) is recorded once, and a
-// quote past its validity date with no answer is expired by the scheduler. The pipeline adds up what the open ones
-// come to in the base currency. Conversion to an invoice follows.
+// quote past its validity date with no answer is expired by the scheduler. An accepted one is invoiced, in full or in
+// part, by draft invoices whose lines name its lines (FR-AR-02). The pipeline adds up what the open ones have still to
+// invoice in the base currency.
 
 // QuoteDraft is a quote or a sales order as entered.
 type QuoteDraft struct {
@@ -46,7 +47,7 @@ type Quote struct {
 	ID         string           `json:"id" format:"uuid" doc:"The quote's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fb0"`
 	Kind       string           `json:"kind" enum:"quote,sales_order" doc:"A quote, or a sales order." example:"quote"`
 	Number     string           `json:"number,omitempty" doc:"Its number from its sequence, given when it is sent (QT- or SO-); a draft has none." example:"QT-0007"`
-	Status     string           `json:"status" enum:"draft,sent,accepted,declined,expired,cancelled" doc:"draft (✎); sent; accepted or declined by the customer; expired, past its validity date with no answer; or cancelled (FR-AR-01). Invoicing follows." example:"sent"`
+	Status     string           `json:"status" enum:"draft,sent,accepted,declined,expired,invoiced,cancelled" doc:"draft (✎); sent; accepted or declined by the customer; expired, past its validity date with no answer; invoiced, when issued invoices take every line in full (FR-AR-02); or cancelled (FR-AR-01)." example:"sent"`
 	Version    int              `json:"version" doc:"The version of its content; with the status it makes the ETag." example:"1"`
 	Customer   *InvoiceCustomer `json:"customer,omitempty" doc:"The customer, with its name."`
 	Reference  string           `json:"reference,omitempty" doc:"The customer's reference for it." example:"RFQ-2291"`
@@ -67,6 +68,37 @@ type Quote struct {
 	SentBy     *Person          `json:"sent_by,omitempty" doc:"Who sent it."`
 	SentAt     *time.Time       `json:"sent_at,omitempty" doc:"When it was sent." example:"2026-10-24T09:30:00Z"`
 	Answer     *QuoteAnswered   `json:"answer,omitempty" doc:"The customer's answer, or its expiry, once recorded."`
+	// Invoicing (FR-AR-02; rev 0.131).
+	Invoicing []QuoteLineInvoicing `json:"invoicing" nullable:"false" doc:"Once sent, each line's invoicing: what was quoted, what issued and draft invoices take, and what is left to invoice."`
+	Invoices  []QuoteInvoice       `json:"invoices" nullable:"false" doc:"The invoices made from it, draft and issued; voided ones are left out."`
+}
+
+// QuoteLineInvoicing is what a quote line has been invoiced (FR-AR-02): each invoice line made from it takes its own
+// quantity.
+type QuoteLineInvoicing struct {
+	Line     int    `json:"line" doc:"The quote's line, from 1." example:"1"`
+	Quoted   string `json:"quoted" doc:"The quantity quoted." example:"10"`
+	Invoiced string `json:"invoiced" doc:"What issued invoices take of it." example:"4"`
+	Drafted  string `json:"drafted" doc:"What draft invoices take of it." example:"2"`
+	Left     string `json:"left" doc:"What no invoice takes yet: what invoiceQuote invoices when asked for everything; never below zero, as an invoice may invoice more than was quoted." example:"4"`
+}
+
+// QuoteInvoice is an invoice made from a quote.
+type QuoteInvoice struct {
+	ID     string `json:"id" format:"uuid" doc:"The invoice's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e90"`
+	Number string `json:"number,omitempty" doc:"Its number, once issued." example:"INV-0012"`
+	Status string `json:"status" enum:"draft,posted" doc:"draft (✎), or posted (issued)." example:"draft"`
+}
+
+// QuoteInvoiceLine is how much of a quote line an invoice made from it takes.
+type QuoteInvoiceLine struct {
+	Line     int    `json:"line" minimum:"1" doc:"The quote's line, from 1." example:"1"`
+	Quantity string `json:"quantity" pattern:"^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$" doc:"How much of it the invoice takes: at most what is left of it (QUOTE-10)." example:"2"`
+}
+
+// QuoteInvoiceRequest says what an invoice made from a quote takes: some of its lines, or, left out, all that is left.
+type QuoteInvoiceRequest struct {
+	Lines []QuoteInvoiceLine `json:"lines,omitempty" maxItems:"200" doc:"The lines to invoice and how much of each; left out, everything no invoice takes yet."`
 }
 
 // QuoteAnswered is the customer's answer to a quote, or its expiry, as recorded.
@@ -155,6 +187,23 @@ type quoteAnswerInput struct {
 	Body QuoteAnswer
 }
 
+type quoteInvoiceInput struct {
+	QuotePath
+	KeyHeader
+	IfMatchHeader
+	PreferHeader
+	Body *QuoteInvoiceRequest `required:"false"`
+}
+
+type quoteInvoiceOutput struct {
+	Status   int
+	ETag     string `header:"ETag" doc:"The invoice's version and status, for If-Match."`
+	Location string `header:"Location" doc:"The invoice's URL."`
+	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+	Body     Invoice
+}
+
 type quoteCancelInput struct {
 	QuotePath
 	KeyHeader
@@ -236,9 +285,21 @@ func (a *API) quoteOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 	if o, ok := outcomes[doc.ID]; ok {
 		outcome = &o
 	}
-	out := Quote{ID: doc.ID.String(), Kind: quoteKind(doc), Number: doc.Number, Status: quote.Status(doc, outcome), Version: doc.Version, Reference: c.Reference,
+	states, invoices, err := quoteInvoicing(ctx, u, base, doc, d)
+	if err != nil {
+		return Quote{}, err
+	}
+	out := Quote{ID: doc.ID.String(), Kind: quoteKind(doc), Number: doc.Number, Status: quote.StatusOf(doc, outcome, states), Version: doc.Version, Reference: c.Reference,
 		Date: dayText(c.Date), ValidUntil: dayText(d.ValidUntil), Currency: c.Currency.Code, Lines: invoiceLinesOut(c), Notes: c.Notes, GST: []InvoiceGST{},
-		Checks: []InvoiceCheck{}, PreparedBy: personOf(doc.SavedBy), SentBy: personOf(doc.PostedBy), SentAt: utc(doc.PostedAt)}
+		Checks: []InvoiceCheck{}, PreparedBy: personOf(doc.SavedBy), SentBy: personOf(doc.PostedBy), SentAt: utc(doc.PostedAt),
+		Invoicing: []QuoteLineInvoicing{}, Invoices: []QuoteInvoice{}}
+	for i, s := range states {
+		out.Invoicing = append(out.Invoicing, QuoteLineInvoicing{Line: i + 1, Quoted: s.Quoted.String(), Invoiced: s.Invoiced.String(), Drafted: s.Drafted.String(),
+			Left: s.Left().String()})
+	}
+	for _, inv := range invoices {
+		out.Invoices = append(out.Invoices, QuoteInvoice{ID: inv.ID.String(), Number: inv.Number, Status: string(inv.Status)})
+	}
 	if c.Rate != nil {
 		out.FXRate = c.Rate.String()
 	}
@@ -279,6 +340,15 @@ func (a *API) quoteOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 		answeredBy = out.Answer.RecordedBy
 	}
 	return out, a.name(ctx, u, out.PreparedBy, out.SentBy, answeredBy)
+}
+
+// quoteInvoicing is each line's invoicing of a sent quote or order, and the invoices made from it; none for a draft or
+// a cancelled one, which no invoice takes.
+func quoteInvoicing(ctx context.Context, u storage.UnitOfWork, base money.Currency, doc storage.Document, d quote.Draft) ([]quote.LineState, []storage.Document, error) {
+	if doc.Status == storage.DocumentDraft {
+		return nil, nil, nil
+	}
+	return quote.Invoicing(ctx, u, doc.ID, d, base, uuid.Nil)
 }
 
 // quoteProblems turns the checks' problems into the API's, naming the quote.
@@ -348,9 +418,9 @@ func registerQuotes(a *API) {
 	register(a, authz.GetSalesPipeline, huma.Operation{
 		OperationID: "getSalesPipeline", Method: http.MethodGet, Path: "/v1/quotes/pipeline", Tags: []string{"Sales"},
 		Summary: "Get the sales pipeline",
-		Description: "What the open quotes and sales orders come to in the base currency on a day (FR-AR-01): those sent or accepted, " +
-			"not declined, expired or cancelled, and still valid on it when they name a validity date, each total at its rate. Read-only; no " +
-			"side effects.",
+		Description: "What the open quotes and sales orders have still to invoice in the base currency on a day (FR-AR-01, FR-AR-02): " +
+			"those accepted and not invoiced in full, and those sent and still valid on it when they name a validity date; not declined, " +
+			"expired or cancelled. Each counts what no issued invoice takes of its lines, at its rate. Read-only; no side effects.",
 	}, []string{CodeInvalid}, func(ctx context.Context, in *pipelineInput) (*pipelineOutput, error) {
 		p, _ := authn.From(ctx)
 		var out Pipeline
@@ -398,8 +468,29 @@ func registerQuotes(a *API) {
 						if x, ok := answered[doc.ID]; ok {
 							o = &x
 						}
-						if !quote.Open(doc, o, qp.Draft.ValidUntil, on) || len(probs) > 0 && qp.Base.IsZero() {
-							continue // declined, expired, past its validity date, or what it comes to cannot be read
+						states, _, err := quoteInvoicing(ctx, u, base, doc, qp.Draft)
+						if err != nil {
+							return err
+						}
+						if !quote.Open(quote.StatusOf(doc, o, states), qp.Draft.ValidUntil, on) {
+							continue // declined, expired, invoiced, or sent and past its validity date
+						}
+						for _, s := range states {
+							if s.Invoiced.Sign() > 0 { // invoiced in part: what is left of it
+								left, err := quote.Encode(qp.Draft.Uninvoiced(states))
+								if err != nil {
+									return err
+								}
+								as := doc
+								as.Payload = left
+								if qp, probs, err = journal.CheckQuote(ctx, u, as); err != nil {
+									return err
+								}
+								break
+							}
+						}
+						if len(probs) > 0 && qp.Base.IsZero() {
+							continue // what it comes to cannot be read
 						}
 						totals[t], _ = totals[t].Add(qp.Base)
 						counts[t]++
@@ -650,11 +741,99 @@ func registerQuotes(a *API) {
 		OperationID: "cancelQuote", Method: http.MethodPost, Path: "/v1/quotes/{quote_id}/cancel", Tags: []string{"Sales"},
 		Summary: "Cancel a quote or sales order",
 		Description: "Cancels a sent quote or order, with a reason (FR-AR-01): its status becomes cancelled and it leaves the pipeline; it " +
-			"posts nothing. A draft is simply not sent (QUOTE-05). Side effects: the document's change and its audit event with the " +
-			"reason. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.",
-	}, append([]string{CodeInvalid, quote.CodeNotOpen, quote.CodeAnswered}, commandCodes...), func(ctx context.Context, in *quoteCancelInput) (*quoteOutput, error) {
+			"posts nothing. A draft is simply not sent (QUOTE-05); one that issued invoices are made from is not cancelled until they are " +
+			"voided (QUOTE-12), and a draft invoice made from it can no longer be issued (QUOTE-11). Side effects: the document's change " +
+			"and its audit event with the reason. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.",
+	}, append([]string{CodeInvalid, quote.CodeNotOpen, quote.CodeAnswered, quote.CodeInvoiced}, commandCodes...), func(ctx context.Context, in *quoteCancelInput) (*quoteOutput, error) {
 		return command(ctx, in.QuoteID, in.IdempotencyKey, in.IfMatch, in.Prefer, in, func(ctx context.Context, p authn.Principal, id uuid.UUID) (storage.Document, error) {
 			return a.quotes.Cancel(ctx, p.Organisation, id, strings.TrimSpace(in.Body.Reason))
 		})
 	})
+
+	register(a, authz.InvoiceQuote, huma.Operation{
+		OperationID: "invoiceQuote", Method: http.MethodPost, Path: "/v1/quotes/{quote_id}/invoice", Tags: []string{"Sales"},
+		DefaultStatus: http.StatusCreated, Summary: "Make an invoice from a quote or sales order",
+		Description: "Makes a draft invoice from a quote or order the customer accepted (FR-AR-02; QUOTE-09): of each line, the quantity " +
+			"asked for, at most what no invoice, issued or draft, takes yet (QUOTE-10), or everything that is left. Each invoice line is " +
+			"the quote's line at that quantity and names it (lines[].quote); the invoice is for the quote's customer, in its currency, " +
+			"with its reference, and takes its own date and the rate for it. Enter the invoice's date, change it to what was delivered, " +
+			"and issue it as any invoice; the quote shows invoiced once issued invoices take every line. Side effects: the draft invoice " +
+			"and its audit event. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key; Prefer: return=preview makes nothing.",
+	}, append([]string{CodeInvalid, quote.CodeNotAccepted, quote.CodeLeft, money.CodeNotDecimal, money.CodePrecision, money.CodeRange}, commandCodes...),
+		func(ctx context.Context, in *quoteInvoiceInput) (*quoteInvoiceOutput, error) {
+			id, err := parseID("quote_id", in.QuoteID)
+			if err != nil {
+				return nil, err
+			}
+			if strings.TrimSpace(in.IfMatch) == "" {
+				return nil, checkIfMatch(in.IfMatch, "")
+			}
+			var quantities map[int]money.Quantity
+			var bad []FieldProblem
+			var lines []QuoteInvoiceLine
+			if in.Body != nil {
+				lines = in.Body.Lines
+			}
+			for i, l := range lines {
+				field := fmt.Sprintf("body.lines[%d].quantity", i)
+				q, err := money.ParseQuantity(l.Quantity, field)
+				if err != nil {
+					bad = append(bad, fieldOf(err, field))
+					continue
+				}
+				if quantities == nil {
+					quantities = map[int]money.Quantity{}
+				}
+				quantities[l.Line] = q
+			}
+			if len(bad) > 0 {
+				return nil, invalid(bad)
+			}
+			p, _ := authn.From(ctx)
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (Invoice, error) {
+				doc, err := u.Documents().Lock(ctx, id)
+				if err != nil {
+					return Invoice{}, err
+				}
+				base, err := baseOf(ctx, u)
+				if err != nil {
+					return Invoice{}, err
+				}
+				before, err := a.quoteOf(ctx, u, base, doc, false)
+				if err != nil {
+					return Invoice{}, err
+				}
+				if err := checkIfMatch(in.IfMatch, quoteETag(before)); err != nil {
+					return Invoice{}, err
+				}
+				made, err := a.quotes.Invoice(ctx, p.Organisation, id, quantities)
+				if probs, ok := err.(ledger.Problems); ok && len(probs) > 0 {
+					fields := make([]FieldProblem, 0, len(probs))
+					for _, x := range probs {
+						fields = append(fields, FieldProblem{Code: x.Code, Field: journalField(x.Field), Message: x.Message, Fix: x.Fix})
+					}
+					return Invoice{}, problem(probs[0].Code, fmt.Sprintf("The invoice cannot be made from the quote: %d problem(s), each listed in errors.", len(probs)),
+						"Ask for at most what is left of each line.", fields...)
+				}
+				if err != nil {
+					return Invoice{}, err
+				}
+				v, err := a.invoiceView(ctx, u)
+				if err != nil {
+					return Invoice{}, err
+				}
+				if made, err = u.Documents().Get(ctx, made.ID); err != nil {
+					return Invoice{}, err
+				}
+				return a.invoiceOf(ctx, u, v, made, true)
+			})
+			if err != nil {
+				return nil, err
+			}
+			if w.Previewed {
+				return &quoteInvoiceOutput{Status: w.Status, Applied: applied(w), Body: w.Body}, nil
+			}
+			return &quoteInvoiceOutput{Status: w.Status, ETag: invoiceETag(w.Body), Location: "/v1/invoices/" + w.Body.ID, Replayed: replayedHeader(w.Replayed),
+				Body: w.Body}, nil
+		})
 }

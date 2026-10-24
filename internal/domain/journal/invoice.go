@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -60,6 +61,12 @@ func checkInvoice(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 	if err != nil {
 		return CheckedInvoice{}, err
 	}
+	// A line made from a quote or sales order invoices one the customer accepted (FR-AR-02).
+	quotes, err := quote.CheckInvoiceLines(ctx, u, doc, p.Draft, s.Base)
+	if err != nil {
+		return CheckedInvoice{}, err
+	}
+	probs = append(probs, quotes...)
 	out := CheckedInvoice{Prepared: p, Problems: probs}
 	post := ledger.PostInvoice
 	if invoice.IsCreditNote(doc) {

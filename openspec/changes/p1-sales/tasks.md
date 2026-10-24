@@ -134,7 +134,11 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   (24 Oct 2026, PRD-001 rev 0.130: the customer's answer and expiry: the table `quote_outcome` (migration 000130),
   `Quotes.Accept`, `Decline`, `ExpireDue`, the daily job `quotes.expiry`, `acceptQuote` and `declineQuote`. Tests:
   `TestQuotesAreAnsweredAndExpire`, `TestQuotesAreAnsweredThroughTheAPI`, the matrix rows.)
-- [ ] 4.2 Conversion to a draft invoice in full or in part, linked both ways. Tests `// req: FR-AR-02`
+- [x] 4.2 Conversion to a draft invoice in full or in part, linked both ways. Tests `// req: FR-AR-02`
+  (24 Oct 2026, PRD-001 rev 0.131: `Quotes.Invoice`, `quote.Invoicing`, `quote.CheckInvoiceLines` in the invoice
+  checks, invoice lines naming their quote line (`lines[].quote`), the query `InvoicesOfQuote`, `invoiceQuote`, the
+  quote's `invoicing` and `invoices`, the status invoiced and the pipeline at what is left. Tests:
+  `TestQuotesAreInvoiced`, `TestQuotesAreInvoicedThroughTheAPI`, the matrix row.)
 
 ## 5. Sending, the online link and tax-invoice particulars
 
