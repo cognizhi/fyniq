@@ -91,6 +91,11 @@ Source: PRD-001 §10.2
 - **WHEN** a credit note is posted
 - **THEN** it posts the reverse of the invoice legs
 
+#### Scenario: An invoice that deducts deposits (rev 0.127)
+- **WHEN** an invoice deducts customer deposits (FR-AR-09)
+- **THEN** it posts Dr 1100 with its total less what they take, Dr 2410 with each deposit's part less its GST part, Cr revenue, and Cr 2200 with its GST less what the deposits bore
+- **AND** the deposits' parts against what they take at the invoice's rate go to 7030 as realised FX [verify]
+
 #### Scenario: Built as credit_note@1 (rev 0.123)
 - **WHEN** a credit note to a customer is issued
 - **THEN** every line is the line invoice@1 posts for the same content, amount and base amount negated, so the negation is exact under RND-FX

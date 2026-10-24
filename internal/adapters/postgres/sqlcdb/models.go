@@ -79,6 +79,7 @@ type FyniqAllocation struct {
 	WrittenBy      string
 	WrittenAt      time.Time
 	Tolerance      string
+	Tax            string
 }
 
 type FyniqAnnouncement struct {

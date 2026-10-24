@@ -35,6 +35,9 @@ var asCreditNote = strings.NewReplacer(
 // is never spread (FR-GL-03): what it credits leaves the account the revenue is in when the credit note is dated.
 func PostCreditNote(i Invoice, s Settings) (Entry, error) {
 	var spread Problems
+	if len(i.Deposits) > 0 {
+		spread = append(spread, Problem{CodeDeposit, "deposits", "a credit note deducts no deposit", "Remove the deposits; refund a deposit instead"})
+	}
 	for k, l := range i.Lines {
 		if l.Spread != nil {
 			spread = append(spread, Problem{CodeSpread, fmt.Sprintf("lines[%d].spread_months", k+1), "a credit note's line is not spread",

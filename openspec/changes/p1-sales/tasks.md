@@ -111,6 +111,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `TestGSTInclPinnedCases`, `TestGSTInclProperties`, `TestCustomerDepositsPostThroughThePostingService`,
   `TestCustomerDepositsThroughTheAPI`, the matrix rows. Still to come: deducting on the invoice, refunds of deposits,
   and the 2410 reconciliation.)
+  (In part, 24 Oct 2026, PRD-001 rev 0.127: deducting on the final invoice: the invoice's `deposits`, `invoice@1`'s new
+  input (two replay cases added), `RND-DEPOSIT` (`rounding.DepositPart`, `deposit.Open.Use`), the allocation's `tax`,
+  migrations 000126 and 000127; voiding or editing an invoice reopens its deposits. Tests: `TestAnInvoiceDeductsDeposits`,
+  `TestAnInvoiceWithDepositsBalances`, `TestDepositPartPinnedCases`, `TestDepositPartProperties`,
+  `TestInvoicesDeductDeposits`, `TestInvoicesDeductDepositsThroughTheAPI`. Still to come: refunds of deposits and the
+  2410 reconciliation.)
 
 ## 4. Quotes and sales orders
 

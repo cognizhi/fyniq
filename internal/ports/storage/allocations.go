@@ -22,6 +22,7 @@ type Allocation struct {
 	BaseAmount    Decimal
 	RealisedFX    Decimal // the gain (+) or loss (−), in the base currency
 	Tolerance     Decimal // the carrying amount a settlement tolerance cleared, in the base currency (FR-BNK-08); 0 for none
+	Tax           Decimal // a use of a customer deposit: the part of the output tax it bore that the use takes, in the base currency (FR-AR-09)
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -39,6 +40,7 @@ type NewAllocation struct {
 	BaseAmount    Decimal
 	RealisedFX    Decimal
 	Tolerance     Decimal // empty for none
+	Tax           Decimal // empty for none
 	ReversesID    *uuid.UUID
 }
 

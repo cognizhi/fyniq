@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -39,6 +40,7 @@ const (
 	CodeLine       = "INVOICE-09" // a line's quantity, price or discount that cannot be one
 	CodeSettled    = "INVOICE-13" // an invoice receipts or credits settle is not voided or edited until they are voided
 	CodeCredited   = "INVOICE-15" // the invoice a credit note credits: not an issued invoice of its customer in its currency, or less than the credit
+	CodeDeposit    = "INVOICE-16" // a deposit the invoice deducts: not a posted deposit of its customer in its currency, named twice, or more than is left
 )
 
 // MaxReference and MaxNotes are the longest reference (such as the customer's purchase order) and notes an invoice keeps.
@@ -70,6 +72,15 @@ type Draft struct {
 	// Credits is the invoice a credit note credits, in full or in part (FR-AR-04); uuid.Nil for a standalone credit note,
 	// and for an invoice.
 	Credits uuid.UUID
+	// Deposits are the customer's deposits the invoice deducts, each with the amount it takes in the invoice's currency
+	// (FR-AR-09; the owner's decision of 24 Oct 2026).
+	Deposits []DepositUse
+}
+
+// DepositUse is a deposit an invoice deducts and the amount it takes of it.
+type DepositUse struct {
+	DepositID uuid.UUID
+	Amount    money.Money
 }
 
 // Line is one line of an invoice: what it sells (an item, or a description alone), how many at what price less a
@@ -120,6 +131,12 @@ type payload struct {
 	Lines        []payloadLine `json:"lines"`
 	Notes        string        `json:"notes,omitempty"`
 	Credits      *uuid.UUID    `json:"invoice_id,omitempty"` // a credit note's invoice
+	Deposits     []payloadUse  `json:"deposits,omitempty"`
+}
+
+type payloadUse struct {
+	DepositID uuid.UUID   `json:"deposit_id"`
+	Amount    money.Money `json:"amount"`
 }
 
 type payloadLine struct {
@@ -157,6 +174,9 @@ func Encode(d Draft) ([]byte, error) {
 	if d.Credits != uuid.Nil {
 		id := d.Credits
 		p.Credits = &id
+	}
+	for _, x := range d.Deposits {
+		p.Deposits = append(p.Deposits, payloadUse{DepositID: x.DepositID, Amount: x.Amount})
 	}
 	for i, l := range d.Lines {
 		if l.Discount != "" && !rounding.IsShare(l.Discount) {
@@ -209,6 +229,9 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	d := Draft{CustomerID: p.CustomerID, Reference: p.Reference, Currency: cur, Notes: p.Notes}
 	if p.Credits != nil {
 		d.Credits = *p.Credits
+	}
+	for _, x := range p.Deposits {
+		d.Deposits = append(d.Deposits, DepositUse{DepositID: x.DepositID, Amount: x.Amount})
 	}
 	for _, x := range []struct {
 		text string
@@ -387,6 +410,55 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, ba
 		}
 		inv.Lines = append(inv.Lines, line)
 	}
+	// The deposits it deducts (FR-AR-09): each a posted deposit of its customer in its currency, at most what is left of
+	// it, its uses by this invoice left out; each takes its part of the deposit's base amount and GST (RND-DEPOSIT).
+	if credit && len(d.Deposits) > 0 {
+		add(CodeDeposit, "deposits", "a credit note deducts no deposit", "Remove the deposits; refund a deposit instead")
+	} else {
+		seen := map[uuid.UUID]bool{}
+		for k, x := range d.Deposits {
+			field := fmt.Sprintf("deposits[%d].deposit_id", k+1)
+			if seen[x.DepositID] {
+				add(CodeDeposit, field, "the invoice names the deposit twice", "Deduct each deposit once, with the whole amount it takes")
+				continue
+			}
+			seen[x.DepositID] = true
+			o, err := deposit.OpenDeposit(ctx, u, x.DepositID, base, doc.ID)
+			var de *deposit.Error
+			if errors.As(err, &de) {
+				add(CodeDeposit, field, de.Message, de.Fix)
+				continue
+			}
+			if err != nil {
+				return Prepared{}, nil, err
+			}
+			name := o.Number
+			switch {
+			case d.CustomerID != uuid.Nil && o.Customer != d.CustomerID:
+				add(CodeDeposit, field, fmt.Sprintf("%s is another customer's", name), "Deduct the invoice's customer's deposits")
+				continue
+			case o.Total.Currency() != d.Currency:
+				add(CodeDeposit, field, fmt.Sprintf("%s is in %s; the invoice is in %s", name, o.Total.Currency(), d.Currency), "Deduct a deposit of the invoice's currency")
+				continue
+			case x.Amount.Currency() != d.Currency || x.Amount.Sign() <= 0:
+				add(CodeDeposit, fmt.Sprintf("deposits[%d].amount", k+1), fmt.Sprintf("the amount deducted is %s %s", x.Amount, x.Amount.Currency()),
+					fmt.Sprintf("Enter a positive amount in %s", d.Currency))
+				continue
+			}
+			if c, err := x.Amount.Cmp(o.Left); err != nil {
+				return Prepared{}, nil, err
+			} else if c > 0 {
+				add(CodeDeposit, fmt.Sprintf("deposits[%d].amount", k+1), fmt.Sprintf("%s has %s %s left; the invoice deducts %s", name, o.Left, d.Currency, x.Amount),
+					"Deduct at most what is left of the deposit")
+				continue
+			}
+			b, t, err := o.Use(x.Amount)
+			if err != nil {
+				return Prepared{}, nil, err
+			}
+			inv.Deposits = append(inv.Deposits, ledger.InvoiceDeposit{DepositID: x.DepositID, Number: name, Amount: x.Amount, Base: b, Tax: t})
+		}
+	}
 	out.Invoice = inv
 	if out.Totals, err = ledger.TotalsOf(inv); err != nil {
 		add(ledger.CodeGSTRate, "lines", err.Error(), "Choose each line's GST code again: its rate comes from the sg-gst pack")
@@ -441,18 +513,54 @@ func credited(ctx context.Context, u storage.UnitOfWork, d Draft, base money.Cur
 	if doc.Status != storage.DocumentPosted || inv.Currency != d.Currency {
 		return inv.Date, nil, probs, nil
 	}
-	e, err := u.Ledger().ByIdentity(ctx, ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice))
-	if err != nil {
-		return time.Time{}, nil, nil, err
-	}
-	if len(e.Lines) == 0 || e.Lines[0].Currency != inv.Currency.Code {
-		return inv.Date, nil, probs, nil
-	}
-	total, err := money.ParseStored(string(e.Lines[0].Amount), inv.Currency) // invoice@1 debits 1100 first, in its currency
+	total, err := Charged(ctx, u, doc, inv.Currency)
 	if err != nil {
 		return time.Time{}, nil, nil, err
 	}
 	return inv.Date, &total, probs, nil
+}
+
+// Charged is what an issued invoice charged in its currency, net and GST: what its entry debited to accounts
+// receivable, and what the deposits it deducts took (FR-AR-09).
+func Charged(ctx context.Context, u storage.UnitOfWork, doc storage.Document, cur money.Currency) (money.Money, error) {
+	out := money.Zero(cur)
+	e, err := u.Ledger().ByIdentity(ctx, ledger.InvoiceIdentity(doc.ID, doc.Version, ledger.RuleInvoice))
+	if err != nil {
+		return out, err
+	}
+	for _, l := range e.Lines {
+		if l.Currency != cur.Code {
+			continue
+		}
+		acc, err := u.Accounts().Get(ctx, l.AccountID)
+		if err != nil {
+			return out, err
+		}
+		if string(acc.Role) != ledger.RoleAccountsReceivable {
+			continue
+		}
+		x, err := money.ParseStored(string(l.Amount), cur)
+		if err != nil {
+			return out, err
+		}
+		if out, err = out.Add(x); err != nil {
+			return out, err
+		}
+	}
+	allocs, err := u.Allocations().OfSource(ctx, doc.ID) // the deposits it deducts, net of the uses its edits reversed
+	if err != nil {
+		return out, err
+	}
+	for _, a := range allocs {
+		x, err := money.ParseStored(string(a.Amount), cur)
+		if err != nil {
+			return out, err
+		}
+		if out, err = out.Add(x); err != nil {
+			return out, err
+		}
+	}
+	return out, nil
 }
 
 // memo names an invoice in its entry: the customer and the invoice's number, once it has one.

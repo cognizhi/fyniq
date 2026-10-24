@@ -510,6 +510,8 @@ var codeFacts = map[string]struct {
 	deposit.CodeUsed:        {409, "Invoices or refunds use the deposit"},
 	deposit.CodeTooLong:     {422, "A text of the deposit is too long"},
 	CodeDepositVoidApproval: {409, "Voiding needs a second person"},
+	invoice.CodeDeposit:     {422, "The invoice cannot deduct that deposit"},
+	ledger.CodeDeposit:      {422, "A deposit the invoice deducts is not one it takes"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).

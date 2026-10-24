@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -102,18 +104,14 @@ func TestCustomerDepositsPostThroughThePostingService(t *testing.T) {
 
 	// What is left of each: all of it; what 2410 holds, at the rate it came in.
 	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
-		settings, err := journal.LoadSettings(ctx, u)
-		if err != nil {
-			return err
-		}
-		o, err := deposit.OpenDeposit(ctx, u, usdDeposit.Deposit.ID, settings)
+		o, err := deposit.OpenDeposit(ctx, u, usdDeposit.Deposit.ID, sgd, uuid.Nil)
 		if err != nil {
 			return err
 		}
 		if o.Left.String() != "1000.00" || o.Base.String() != "1350.00" || o.Net.String() != "1238.53" || o.GST.String() != "111.47" || o.Kind != deposit.KindPartPayment {
 			t.Errorf("DP-0004 open: %+v", o)
 		}
-		if _, err := deposit.OpenDeposit(ctx, u, b.Customer.ID, settings); !hasDepositCode(err, deposit.CodeNotDeposit) {
+		if _, err := deposit.OpenDeposit(ctx, u, b.Customer.ID, sgd, uuid.Nil); !hasDepositCode(err, deposit.CodeNotDeposit) {
 			t.Errorf("a contact as a deposit: %v", err)
 		}
 		return nil

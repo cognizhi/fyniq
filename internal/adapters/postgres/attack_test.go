@@ -503,6 +503,29 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"allocation.tolerance": func(t *testing.T, b porttest.Books, v string) error {
 		return rawAllocation(t, b, "1.00", "1.00", "0.00", v)
 	},
+	"allocation.tax": func(t *testing.T, b porttest.Books, v string) error {
+		return rawDepositUse(t, b, v)
+	},
+}
+
+// rawDepositUse settles a customer deposit from the invoice that deducts it, with the output tax the use takes, as the
+// owner, both made in the same transaction, so only the allocation's own checks can fail.
+func rawDepositUse(t *testing.T, b porttest.Books, tax string) error {
+	t.Helper()
+	ctx := context.Background()
+	return asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
+		var inv, dep uuid.UUID
+		if err := tx.QueryRow(ctx, "INSERT INTO fyniq.document (type) VALUES ('invoice') RETURNING id").Scan(&inv); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, "INSERT INTO fyniq.document (type) VALUES ('customer_deposit') RETURNING id").Scan(&dep); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.allocation (source_id, source_version, document_id, on_date, currency, minor_units, amount,
+  base_currency, base_minor_units, base_amount, realised_fx, tax, written_by, written_at)
+VALUES ($1, 1, $2, '2026-10-14', 'SGD', 2, 1.00, 'SGD', 2, 1.00, 0, $3::numeric, 'user:attack-test', now())`, inv, dep, tax)
+		return err
+	})
 }
 
 // rawAllocation settles a bill from a bill payment as the owner, both made in the same transaction, so only the

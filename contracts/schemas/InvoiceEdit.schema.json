@@ -26,6 +26,17 @@
       "format": "date",
       "type": "string"
     },
+    "deposits": {
+      "description": "An invoice only: the customer's deposits it deducts (FR-AR-09), each a posted deposit of the same customer and currency, at most what is left of it. Issuing settles them; the invoice charges GST only on what they did not already bear.",
+      "items": {
+        "$ref": "InvoiceDepositUse.schema.json"
+      },
+      "maxItems": 20,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "due_date": {
       "description": "When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04). A credit note has none.",
       "examples": [
