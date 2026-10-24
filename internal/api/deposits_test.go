@@ -166,3 +166,23 @@ func TestDepositsAreRefundedThroughTheAPI(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/customer-refunds", ahkow, e.refundingCredit(dep, "60.01")), "recordCustomerRefund", 422, customercredit.CodeTooMuch)
 }
+
+// The deposit's and the customer credit application's own refusals answer with their codes, not a failure: voiding a
+// deposit twice (DEPOSIT-06) and an application dated before it (APPLY-07), in Standard mode.
+// req: ENG-23
+// req: FR-AR-09
+// req: FR-AR-04
+func TestDepositAndApplicationRefusalsAnswerTheirCodes(t *testing.T) {
+	e := inStandardMode(newEnv(t))
+	acc := e.as(authz.Accountant)
+	id, tag := e.recordedDeposit()
+	v := e.call(http.MethodPost, "/v1/customer-deposits/"+id+"/void", acc, map[string]any{"date": "2026-10-23", "reason": "Recorded twice"}, "If-Match", tag)
+	if v.Status != 200 {
+		t.Fatalf("voiding the deposit: %d %s", v.Status, v.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/customer-deposits/"+id+"/void", acc, map[string]any{"date": "2026-10-23", "reason": "Again"}, "If-Match", v.Header.Get("ETag")),
+		"voidCustomerDeposit", 409, deposit.CodeNotPosted)
+	app, appTag := e.appliedCustomerCredit()
+	e.problemIs(e.call(http.MethodPost, "/v1/customer-credit-applications/"+app+"/void", acc, map[string]any{"date": "2026-10-01", "reason": "Too early"}, "If-Match", appTag),
+		"voidCustomerCreditApplication", 422, customercredit.CodeVoidDate)
+}

@@ -27,6 +27,12 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **WHEN** a quote or sales order is created, sent, accepted or cancelled
 - **THEN** nothing is posted to the ledger
 
+#### Scenario: Quotes and orders as built (rev 0.129)
+- **WHEN** a quote or a sales order is saved with an invoice's content and a validity date, and sent
+- **THEN** it is checked as an invoice is, a quote needs a validity date on or after its date (QUOTE-03), it takes the next QT- or SO- number and posts nothing
+- **AND** a sent one never changes (QUOTE-04); cancelling reverses it with no entry; the pipeline adds up the sent ones still valid, each in the base currency at its rate
+
+
 ### Requirement: FR-AR-02 Convert a quote or order to an invoice
 The system SHALL convert a quote or sales order into an invoice, in full or in part, keeping the links between them.
 

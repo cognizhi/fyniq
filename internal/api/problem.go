@@ -38,6 +38,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
+	"github.com/cognizhi/fyniq/internal/domain/quote"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/domain/team"
@@ -512,6 +513,14 @@ var codeFacts = map[string]struct {
 	CodeDepositVoidApproval: {409, "Voiding needs a second person"},
 	invoice.CodeDeposit:     {422, "The invoice cannot deduct that deposit"},
 	ledger.CodeDeposit:      {422, "A deposit the invoice deducts is not one it takes"},
+
+	// Quotes and sales orders (FR-AR-01).
+	quote.CodeNotQuote: {404, "Not a quote or a sales order"},
+	quote.CodeBadDraft: {422, "The saved quote cannot be read"},
+	quote.CodeValidity: {422, "The quote's validity date is missing or before its date"},
+	quote.CodeNotDraft: {409, "The quote is not a draft"},
+	quote.CodeNotOpen:  {409, "The quote is not sent"},
+	quote.CodeContent:  {422, "A quote credits no invoice and deducts no deposit"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
@@ -648,6 +657,9 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		bpe *billpayment.Error
 		cre *credits.Error
 		poe *purchaseorder.Error
+		cce *customercredit.Error
+		dpe *deposit.Error
+		qe  *quote.Error
 		pe  *period.Error
 		ae  *accounting.Error
 		ce  *closing.Error
@@ -681,6 +693,12 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(cre.Code, sentence(cre.Message), sentence(cre.Fix))
 	case errors.As(err, &poe):
 		return problem(poe.Code, sentence(poe.Message), sentence(poe.Fix))
+	case errors.As(err, &cce):
+		return problem(cce.Code, sentence(cce.Message), sentence(cce.Fix))
+	case errors.As(err, &dpe):
+		return problem(dpe.Code, sentence(dpe.Message), sentence(dpe.Fix))
+	case errors.As(err, &qe):
+		return problem(qe.Code, sentence(qe.Message), sentence(qe.Fix))
 	case errors.As(err, &pe):
 		return problem(pe.Code, sentence(pe.Message), sentence(pe.Fix))
 	case errors.As(err, &ae):

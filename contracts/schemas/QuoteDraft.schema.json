@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The quote's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "customer_id": {
+      "description": "The customer: a contact marked as a customer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The quote's date.",
+      "examples": [
+        "2026-10-24"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "For a quote in another currency: base currency per one unit. Left out, the cascade's rate for its date (ENG-40).",
+      "examples": [
+        "1.34"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "quote, the default, or sales_order: an order the customer placed. Fixed once saved.",
+      "enum": [
+        "quote",
+        "sales_order"
+      ],
+      "examples": [
+        "quote"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "Its lines, as an invoice's.",
+      "items": {
+        "$ref": "InvoiceLineDraft.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "notes": {
+      "description": "Notes kept with it.",
+      "examples": [
+        "Prices valid for 30 days"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "reference": {
+      "description": "The customer's reference for it.",
+      "examples": [
+        "RFQ-2291"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    },
+    "valid_until": {
+      "description": "The last day the quote is valid: required for a quote, on or after its date (QUOTE-03); an order may name none.",
+      "examples": [
+        "2026-11-23"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "lines"
+  ],
+  "title": "QuoteDraft",
+  "type": "object"
+}

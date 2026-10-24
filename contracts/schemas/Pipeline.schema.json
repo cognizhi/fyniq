@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The day it is read for.",
+      "examples": [
+        "2026-10-24"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "orders": {
+      "$ref": "PipelineLine.schema.json",
+      "description": "The sent sales orders, still valid on the day when they name a validity date."
+    },
+    "quotes": {
+      "$ref": "PipelineLine.schema.json",
+      "description": "The sent quotes still valid on the day."
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Both together."
+    }
+  },
+  "required": [
+    "as_at",
+    "quotes",
+    "orders",
+    "total"
+  ],
+  "title": "Pipeline",
+  "type": "object"
+}

@@ -412,6 +412,11 @@ const (
 	// DocumentCustomerDeposit is money a customer paid ahead of an invoice: a part payment, or a security deposit
 	// (FR-AR-09; p1-sales), recorded by hand and held on 2410 until an invoice deducts it or it is refunded.
 	DocumentCustomerDeposit DocumentType = "customer_deposit"
+	// DocumentQuote is a quote to a customer, and DocumentSalesOrder an order a customer placed (FR-AR-01; p1-sales):
+	// the lines an invoice would have, a validity date, and statuses; they post nothing. Sent is posted, and cancelled
+	// reversed, with no entry.
+	DocumentQuote      DocumentType = "quote"
+	DocumentSalesOrder DocumentType = "sales_order"
 	// DocumentCustomerReceipt is money a customer paid, recorded by hand until bank import matches it (FR-AR-18; the
 	// owner's decision of 24 Oct 2026).
 	DocumentCustomerReceipt DocumentType = "customer_receipt"

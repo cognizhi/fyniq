@@ -215,11 +215,17 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	if !IsInvoice(doc) {
 		return Draft{}, &Error{CodeNotInvoice, fmt.Sprintf("document %s is a %s, not an invoice", doc.ID, doc.Type), "Open it with its own module"}
 	}
+	return ReadContent(doc.Payload, base)
+}
+
+// ReadContent reads an invoice's content as Encode stored it, whatever document holds it: an invoice, a credit note, or
+// a quote or sales order, whose lines are an invoice's (FR-AR-01).
+func ReadContent(payloadJSON []byte, base money.Currency) (Draft, error) {
 	bad := func(what string) error {
 		return &Error{CodeBadDraft, fmt.Sprintf("the saved invoice cannot be read: %s", what), "Save the invoice again"}
 	}
 	var p payload
-	if err := json.Unmarshal(doc.Payload, &p); err != nil {
+	if err := json.Unmarshal(payloadJSON, &p); err != nil {
 		return Draft{}, bad(err.Error())
 	}
 	cur, err := money.Lookup(p.Currency)

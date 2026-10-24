@@ -83,6 +83,7 @@ type API struct {
 	customerApplications journal.CustomerCreditApplications
 	customerRefunds      journal.CustomerRefunds
 	deposits             journal.CustomerDeposits // customer deposits (FR-AR-09)
+	quotes               journal.Quotes           // quotes and sales orders (FR-AR-01)
 }
 
 func init() {
@@ -181,7 +182,7 @@ func New(mux humago.Mux, d Deps) *API {
 		refunds: journal.SupplierRefunds{Store: d.Store}, orders: journal.PurchaseOrders{Store: d.Store}, invoices: journal.Invoices{Store: d.Store, Clock: d.Clock},
 		receipts: journal.CustomerReceipts{Store: d.Store}, writeOffs: journal.WriteOffs{Store: d.Store},
 		customerApplications: journal.CustomerCreditApplications{Store: d.Store}, customerRefunds: journal.CustomerRefunds{Store: d.Store},
-		deposits: journal.CustomerDeposits{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
+		deposits: journal.CustomerDeposits{Store: d.Store}, quotes: journal.Quotes{Store: d.Store}, closing: closing.Service{Store: d.Store, Clock: d.Clock}}
 	if d.Origin != "" {
 		rp, err := passkey.New(d.Origin)
 		if err != nil {
@@ -259,6 +260,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerCustomerCreditApplications(a)
 	registerCustomerRefunds(a)
 	registerDeposits(a)
+	registerQuotes(a)
 	registerPurchaseOrders(a)
 	registerWithholding(a)
 	registerBillPlans(a)

@@ -24,7 +24,9 @@
         "customer_receipt",
         "write_off",
         "customer_refund",
-        "customer_deposit"
+        "customer_deposit",
+        "quote",
+        "sales_order"
       ],
       "examples": [
         "journal"

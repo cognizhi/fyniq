@@ -1674,6 +1674,41 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/customer-deposits/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	// Quotes and sales orders (FR-AR-01): read under V, drafted under C, sent and cancelled under P.
+	"listQuotes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/quotes", tok, nil), nil
+	},
+	"getSalesPipeline": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/quotes/pipeline?as_at=2026-10-31", tok, nil), nil
+	},
+	"getQuote": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.sentQuote()
+		return e.call(http.MethodGet, "/v1/quotes/"+id, tok, nil), nil
+	},
+	"createQuote": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/quotes", tok, e.quoteDraft("quote", "1", "10.00")), nil
+	},
+	"replaceQuote": func(e *env, tok string) (response, func() bool) {
+		c := e.call(http.MethodPost, "/v1/quotes", e.as(authz.Accountant), e.quoteDraft("quote", "1", "10.00"))
+		r := e.call(http.MethodPut, "/v1/quotes/"+c.str("id"), tok, e.quoteDraft("quote", "2", "10.00"), "If-Match", c.Header.Get("ETag"))
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/quotes/"+c.str("id"), e.as(authz.Accountant), nil).Body["version"] == float64(1)
+		}
+	},
+	"sendQuote": func(e *env, tok string) (response, func() bool) {
+		c := e.call(http.MethodPost, "/v1/quotes", e.as(authz.Accountant), e.quoteDraft("quote", "1", "10.00"))
+		r := e.call(http.MethodPost, "/v1/quotes/"+c.str("id")+"/send", tok, nil, "If-Match", c.Header.Get("ETag"))
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/quotes/"+c.str("id"), e.as(authz.Accountant), nil).str("status") == "draft"
+		}
+	},
+	"cancelQuote": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.sentQuote()
+		r := e.call(http.MethodPost, "/v1/quotes/"+id+"/cancel", tok, map[string]any{"reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/quotes/"+id, e.as(authz.Accountant), nil).str("status") == "sent"
+		}
+	},
 	"getReceivables": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/receivables?as_at=2026-10-31", tok, nil), nil
 	},
