@@ -953,6 +953,34 @@ type FyniqRecurringBillVersion struct {
 	EditedAt        time.Time
 }
 
+type FyniqRecurringInvoice struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Status         string
+	EveryMonths    int32
+	EveryWeeks     int32
+	DayOfMonth     int32
+	StartsOn       time.Time
+	EndsOn         pgtype.Date
+	NextOn         pgtype.Date
+	Version        int32
+	ContentVersion int32
+	LastOn         pgtype.Date
+	LastInvoiceID  *uuid.UUID
+	CreatedAt      time.Time
+}
+
+type FyniqRecurringInvoiceVersion struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	RecurringInvoiceID uuid.UUID
+	Version            int32
+	Content            []byte
+	EditedBy           string
+	EditedAt           time.Time
+}
+
 type FyniqRecurringJournal struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -45,6 +45,13 @@ func TestRecurringOccurrences(t *testing.T) {
 		{"from before the start", storage.Schedule{EveryMonths: 6, DayOfMonth: 1, StartsOn: date("2026-11-01")}, "2026-01-01", "2026-11-01"},
 		{"on its end", storage.Schedule{EveryMonths: 1, DayOfMonth: 31, StartsOn: date("2026-10-01"), EndsOn: &end}, "2027-03-02", "2027-03-31"},
 		{"after its end", storage.Schedule{EveryMonths: 1, DayOfMonth: 1, StartsOn: date("2026-10-01"), EndsOn: &end}, "2027-03-02", "none"},
+		// A recurring invoice's weekly schedules (FR-AR-07, rev 0.135): on the start's weekday, every week or two.
+		{"weekly, on its start", storage.Schedule{EveryWeeks: 1, StartsOn: date("2026-10-05")}, "2026-10-05", "2026-10-05"},
+		{"weekly, the next Monday", storage.Schedule{EveryWeeks: 1, StartsOn: date("2026-10-05")}, "2026-10-06", "2026-10-12"},
+		{"fortnightly, from before the start", storage.Schedule{EveryWeeks: 2, StartsOn: date("2026-10-05")}, "2026-09-01", "2026-10-05"},
+		{"fortnightly, skipping the week between", storage.Schedule{EveryWeeks: 2, StartsOn: date("2026-10-05")}, "2026-10-06", "2026-10-19"},
+		{"fortnightly, across a year", storage.Schedule{EveryWeeks: 2, StartsOn: date("2026-12-21")}, "2026-12-22", "2027-01-04"},
+		{"weekly, after its end", storage.Schedule{EveryWeeks: 1, StartsOn: date("2027-03-01"), EndsOn: &end}, "2027-03-30", "none"},
 	}
 	for _, c := range cases {
 		if got := dateText(FirstOn(c.schedule, date(c.from))); got != c.want {

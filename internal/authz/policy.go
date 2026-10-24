@@ -565,6 +565,15 @@ var (
 	ReplaceRecurringBill = Policy{Operation: "replaceRecurringBill", Capability: Bills, Need: Create}
 	PauseRecurringBill   = Policy{Operation: "pauseRecurringBill", Capability: Bills, Need: Create}
 	ResumeRecurringBill  = Policy{Operation: "resumeRecurringBill", Capability: Bills, Need: Create}
+
+	// Recurring invoices (FR-AR-07; rev 0.135): set up under C, as recurring bills are; their drafts are issued under the
+	// usual approvals.
+	ListRecurringInvoices   = Policy{Operation: "listRecurringInvoices", Capability: Invoices, Need: View}
+	GetRecurringInvoice     = Policy{Operation: "getRecurringInvoice", Capability: Invoices, Need: View}
+	CreateRecurringInvoice  = Policy{Operation: "createRecurringInvoice", Capability: Invoices, Need: Create}
+	ReplaceRecurringInvoice = Policy{Operation: "replaceRecurringInvoice", Capability: Invoices, Need: Create}
+	PauseRecurringInvoice   = Policy{Operation: "pauseRecurringInvoice", Capability: Invoices, Need: Create}
+	ResumeRecurringInvoice  = Policy{Operation: "resumeRecurringInvoice", Capability: Invoices, Need: Create}
 	// Purchase orders (FR-AP-01; rev 0.87) sit on the bills' row: whoever prepares bills (C) raises, changes, closes and
 	// bills them, and approves one at or below the self-approval threshold (FM-2, the owner's decision of 23 Oct 2026);
 	// above it another person who holds A approves it through the approval engine (SOD-3).
@@ -747,6 +756,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ExportDocumentTemplates, ImportDocumentTemplates, ListDocumentTemplateDefaults, SetDocumentTemplateDefault, GetAppliedDocumentTemplate,
 	ListContactDocumentTemplates, SetContactDocumentTemplate,
 	ListRecurringBills, GetRecurringBill, CreateRecurringBill, ReplaceRecurringBill, PauseRecurringBill, ResumeRecurringBill,
+	ListRecurringInvoices, GetRecurringInvoice, CreateRecurringInvoice, ReplaceRecurringInvoice, PauseRecurringInvoice, ResumeRecurringInvoice,
 	ListPurchaseOrders, GetPurchaseOrder, CreatePurchaseOrder, ReplacePurchaseOrder, ApprovePurchaseOrder, RequestPurchaseOrderApproval, ClosePurchaseOrder, BillPurchaseOrder,
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,

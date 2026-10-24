@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "id": {
-      "description": "The recurring journal's ID.",
+      "description": "The recurring journal's or invoice's ID.",
       "examples": [
         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
       ],
@@ -11,7 +11,7 @@
       "type": "string"
     },
     "version": {
-      "description": "The version of its content the journal was made from.",
+      "description": "The version of its content the draft was made from.",
       "examples": [
         2
       ],

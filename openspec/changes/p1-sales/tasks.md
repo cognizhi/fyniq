@@ -173,6 +173,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 - [ ] 6.1 Recurring invoices made by the scheduler as drafts, or issued and sent once a second person approved
   their content (the owner's decision of 24 Oct 2026), listed for the weekly review; month-end dates. Tests
   `// req: FR-AR-07`, `// req: FM-3`
+  (In part, 24 Oct 2026, PRD-001 rev 0.135: making drafts, with weekly and fortnightly schedules beside the monthly
+  ones: `recurring_invoice`, `create_scheduled_invoice_draft` (migration 000134), `journal.Invoices.CreateRecurring`
+  and `MakeDue`, the job `invoices.recurring`, `/v1/recurring-invoices`, SOD-3 on its drafts. Tests:
+  `TestRecurringInvoicesMakeDraftsTheSchedulerCannotIssue`, `TestRecurringInvoicesThroughTheAPI`,
+  `TestARecurringInvoicesAuthorDoesNotApproveItsDrafts`, `TestRecurringOccurrences`, the matrix rows. Still to come:
+  issue and send once a second person approved the content, and the weekly review.)
 
 ## 7. Reminders and statements
 

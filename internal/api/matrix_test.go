@@ -1261,6 +1261,42 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/recurring-bills/"+id, e.as(authz.Accountant), nil).str("status") == "paused"
 		}
 	},
+	"listRecurringInvoices": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/recurring-invoices", tok, nil), nil
+	},
+	"getRecurringInvoice": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/recurring-invoices/"+matrixRecurringInvoice(e), tok, nil), nil
+	},
+	"createRecurringInvoice": func(e *env, tok string) (response, func() bool) {
+		name := "Matrix " + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/recurring-invoices", tok, e.recurringInvoice(name, "10.00", monthly(1, "2026-11-01")))
+		return r, func() bool {
+			l := e.call(http.MethodGet, "/v1/recurring-invoices?page_size=500", e.as(authz.Accountant), nil)
+			return !strings.Contains(l.Raw, `"name":"`+name+`"`)
+		}
+	},
+	"replaceRecurringInvoice": func(e *env, tok string) (response, func() bool) {
+		id, name := matrixRecurringInvoice(e), "Matrix "+uuid.NewString()[:8]
+		r := e.call(http.MethodPut, "/v1/recurring-invoices/"+id, tok, e.recurringInvoice(name, "10.00", monthly(1, "2026-11-01")), "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-invoices/"+id, e.as(authz.Accountant), nil).str("name") != name
+		}
+	},
+	"pauseRecurringInvoice": func(e *env, tok string) (response, func() bool) {
+		id := matrixRecurringInvoice(e)
+		r := e.call(http.MethodPost, "/v1/recurring-invoices/"+id+"/pause", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-invoices/"+id, e.as(authz.Accountant), nil).str("status") == "active"
+		}
+	},
+	"resumeRecurringInvoice": func(e *env, tok string) (response, func() bool) {
+		id := matrixRecurringInvoice(e)
+		e.call(http.MethodPost, "/v1/recurring-invoices/"+id+"/pause", e.as(authz.Accountant), nil, "If-Match", "*")
+		r := e.call(http.MethodPost, "/v1/recurring-invoices/"+id+"/resume", tok, nil, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/recurring-invoices/"+id, e.as(authz.Accountant), nil).str("status") == "paused"
+		}
+	},
 	"replaceJournal": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createDraft("10.00")
 		r := e.call(http.MethodPut, "/v1/journals/"+id, tok, e.draft("11.00"), "If-Match", "*")

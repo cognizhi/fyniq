@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
+	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
@@ -1053,8 +1054,21 @@ func (a *API) executable(ctx context.Context, u storage.UnitOfWork, r storage.Ap
 		if err != nil {
 			return err
 		}
-		if doc.SavedBy == (storage.Actor{Type: "user", ID: signer.String()}).String() {
+		me := (storage.Actor{Type: "user", ID: signer.String()}).String()
+		if doc.SavedBy == me {
 			return problem(CodeOwnInvoice, "You prepared this invoice, so another person approves it (SOD-3).", "Ask another person who holds the approval right")
+		}
+		// A draft the scheduler made from a recurring invoice was prepared by whoever wrote that version of it, read from
+		// the recurring invoice's own immutable versions, never from the draft (SOD-3; FR-AR-07, PRD-001 rev 0.135).
+		if ref := invoice.RecurringOf(doc); ref != nil {
+			v, err := u.RecurringInvoices().Version(ctx, ref.ID, ref.Version)
+			if err != nil {
+				return err
+			}
+			if v.EditedBy == me {
+				return problem(CodeOwnInvoice, "You wrote the recurring invoice this draft was made from, so another person approves it (SOD-3).",
+					"Ask another person who holds the approval right")
+			}
 		}
 		return nil
 	case approval.OpWriteOffPost: // SOD-9: neither whoever prepared the write-off nor one who recorded a receipt of the invoice approves it

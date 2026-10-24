@@ -30,6 +30,8 @@ type Invoices struct {
 	// Clock, when set, makes issuing or editing an invoice post at once the releases of its spread already due by the
 	// organisation's today (FR-GL-03), so its revenue is never held on 2400 until the hourly job; nil leaves them to it.
 	Clock ports.Clock
+	// AfterMaking runs inside the unit of work that made a recurring invoice's draft (Made); nil does nothing.
+	AfterMaking Made
 }
 
 // releaseNow posts a just-issued invoice's releases due by the organisation's today, after its unit of work commits.
@@ -157,6 +159,13 @@ func (s Invoices) Revise(ctx context.Context, org, id uuid.UUID, d invoice.Draft
 		}
 		if doc.Status != storage.DocumentDraft {
 			return &invoice.Error{Code: invoice.CodeNotDraft, Message: fmt.Sprintf("the invoice is %s, not a draft", doc.Status), Fix: "Only a draft changes; edit an issued invoice instead"}
+		}
+		// A draft the scheduler made keeps the recurring invoice it came from, so SOD-3 still reads who wrote it.
+		if d.RecurringInvoice == nil && invoice.RecurringOf(doc) != nil {
+			d.RecurringInvoice = invoice.RecurringOf(doc)
+			if b, err = invoice.Encode(d); err != nil {
+				return err
+			}
 		}
 		out, err = u.Documents().Revise(ctx, id, b)
 		return err

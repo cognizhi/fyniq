@@ -176,6 +176,11 @@ fyniq_api       SELECT    recurring_bill
 fyniq_api       UPDATE    recurring_bill (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
 fyniq_api       INSERT    recurring_bill_version (content, edited_by, recurring_bill_id, version)
 fyniq_api       SELECT    recurring_bill_version
+fyniq_api       INSERT    recurring_invoice (day_of_month, ends_on, every_months, every_weeks, name, next_on, starts_on, status)
+fyniq_api       SELECT    recurring_invoice
+fyniq_api       UPDATE    recurring_invoice (content_version, day_of_month, ends_on, every_months, every_weeks, name, next_on, starts_on, status, version)
+fyniq_api       INSERT    recurring_invoice_version (content, edited_by, recurring_invoice_id, version)
+fyniq_api       SELECT    recurring_invoice_version
 fyniq_api       INSERT    recurring_journal (day_of_month, ends_on, every_months, name, next_on, starts_on, status)
 fyniq_api       SELECT    recurring_journal
 fyniq_api       UPDATE    recurring_journal (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
@@ -278,6 +283,8 @@ fyniq_executor  SELECT    period_variance_explanation
 fyniq_executor  SELECT    quote_outcome
 fyniq_executor  SELECT    recurring_bill
 fyniq_executor  SELECT    recurring_bill_version
+fyniq_executor  SELECT    recurring_invoice
+fyniq_executor  SELECT    recurring_invoice_version
 fyniq_executor  SELECT    recurring_journal
 fyniq_executor  SELECT    recurring_journal_version
 fyniq_executor  SELECT    review_log_entry
@@ -356,6 +363,8 @@ fyniq_readonly  SELECT    quote_outcome
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    recurring_bill
 fyniq_readonly  SELECT    recurring_bill_version
+fyniq_readonly  SELECT    recurring_invoice
+fyniq_readonly  SELECT    recurring_invoice_version
 fyniq_readonly  SELECT    recurring_journal
 fyniq_readonly  SELECT    recurring_journal_version
 fyniq_readonly  SELECT    review_log_entry
@@ -391,6 +400,7 @@ fyniq_worker    SELECT    contact_document_template
 fyniq_worker    EXECUTE   count_super_admins()
 fyniq_worker    EXECUTE   create_scheduled_bill_draft()
 fyniq_worker    EXECUTE   create_scheduled_draft()
+fyniq_worker    EXECUTE   create_scheduled_invoice_draft()
 fyniq_worker    EXECUTE   create_scheduled_revaluation()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
@@ -466,6 +476,9 @@ fyniq_worker    EXECUTE   record_feed_rate()
 fyniq_worker    SELECT    recurring_bill
 fyniq_worker    UPDATE    recurring_bill (next_on)
 fyniq_worker    SELECT    recurring_bill_version
+fyniq_worker    SELECT    recurring_invoice
+fyniq_worker    UPDATE    recurring_invoice (next_on)
+fyniq_worker    SELECT    recurring_invoice_version
 fyniq_worker    SELECT    recurring_journal
 fyniq_worker    UPDATE    recurring_journal (next_on)
 fyniq_worker    SELECT    recurring_journal_version

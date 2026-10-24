@@ -247,6 +247,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/recurring-bills/{recurring_bill_id}` (replaceRecurringBill): Change a recurring bill
 - `POST /v1/recurring-bills/{recurring_bill_id}/pause` (pauseRecurringBill): Pause a recurring bill
 - `POST /v1/recurring-bills/{recurring_bill_id}/resume` (resumeRecurringBill): Resume a recurring bill
+- `GET /v1/recurring-invoices` (listRecurringInvoices): List the recurring invoices
+- `POST /v1/recurring-invoices` (createRecurringInvoice): Add a recurring invoice
+- `GET /v1/recurring-invoices/{recurring_invoice_id}` (getRecurringInvoice): Get a recurring invoice
+- `PUT /v1/recurring-invoices/{recurring_invoice_id}` (replaceRecurringInvoice): Change a recurring invoice
+- `POST /v1/recurring-invoices/{recurring_invoice_id}/pause` (pauseRecurringInvoice): Pause a recurring invoice
+- `POST /v1/recurring-invoices/{recurring_invoice_id}/resume` (resumeRecurringInvoice): Resume a recurring invoice
 - `GET /v1/recurring-journals` (listRecurringJournals): List the recurring journals
 - `POST /v1/recurring-journals` (createRecurringJournal): Add a recurring journal
 - `GET /v1/recurring-journals/{recurring_journal_id}` (getRecurringJournal): Get a recurring journal
