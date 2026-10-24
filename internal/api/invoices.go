@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/team"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -145,7 +146,7 @@ type InvoiceGST struct {
 type InvoiceStates struct {
 	Approval   string `json:"approval" enum:"draft,awaiting_approval,approved,rejected" doc:"draft until it is issued or asked for; awaiting_approval while a request to issue it waits; approved once issued; rejected when the latest request was rejected and it is still a draft." example:"draft"`
 	Ledger     string `json:"ledger" enum:"not_posted,posted,voided" doc:"not_posted, posted (issued), or voided by a reversal." example:"not_posted"`
-	Delivery   string `json:"delivery" enum:"not_sent,sent,delivered,viewed,bounced" doc:"not_sent until sending arrives (FR-AR-06): then sent, delivered, viewed (the customer first opened its secure link) or bounced." example:"not_sent"`
+	Delivery   string `json:"delivery" enum:"not_sent,sent,delivered,viewed,bounced" doc:"From its latest email (FR-AR-06): not_sent until emailInvoice sends it; then sent, delivered, or bounced when the provider refused or returned it; viewed (the customer first opened its secure link) comes with the online link." example:"not_sent"`
 	Settlement string `json:"settlement" enum:"open,part_paid,paid,written_off,part_applied,applied" doc:"What is settled of it, from the receipts, credits and write-offs applied to it net of their voids (FR-AR-18): open, part_paid, paid, or written_off when it is settled and a write-off settles part of it (FR-AR-17). A credit note: open, part_applied or applied, by what is applied to invoices or refunded of it (FR-AR-04)." example:"open"`
 	Due        string `json:"due" enum:"not_due,overdue" doc:"overdue once its due date has passed while it is issued and not paid in full; not_due otherwise." example:"not_due"`
 }
@@ -192,6 +193,9 @@ type Invoice struct {
 	PostedBy      *Person          `json:"posted_by,omitempty" doc:"Who issued it."`
 	PostedAt      *time.Time       `json:"posted_at,omitempty" doc:"When it was issued." example:"2026-10-24T09:30:00Z"`
 	ApprovalAsked string           `json:"approval_asked,omitempty" format:"uuid" doc:"getInvoice only: the pending request to issue, void or edit it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd2"`
+
+	// Email (FR-AR-06; rev 0.133).
+	Sends []DocumentSendOut `json:"sends" nullable:"false" doc:"getInvoice only: each time it was emailed, newest first, with its delivery (FR-AR-06)."`
 }
 
 // InvoiceRef names an invoice another document refers to.
@@ -523,7 +527,7 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	}
 	out := Invoice{ID: doc.ID.String(), Kind: invoiceKind(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Reference: d.Reference,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: invoiceLinesOut(d),
-		GST: []InvoiceGST{}, Deposits: []InvoiceDeposit{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
+		GST: []InvoiceGST{}, Deposits: []InvoiceDeposit{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, Sends: []DocumentSendOut{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}
 	if d.Rate != nil {
 		out.FXRate = d.Rate.String()
@@ -668,7 +672,17 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	if doc.Status == storage.DocumentPosted && out.States.Settlement != "paid" && out.DueDate != "" && out.DueDate < dateOf(v.today) {
 		out.States.Due = "overdue"
 	}
-	return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
+	sends, err := u.DocumentSends().OfDocument(ctx, doc.ID) // FR-AR-06
+	if err != nil {
+		return Invoice{}, err
+	}
+	if len(sends) > 0 {
+		out.States.Delivery = salesdoc.Delivery(&sends[0])
+	}
+	if withChecks {
+		out.Sends = sendsOut(sends)
+	}
+	return out, a.name(ctx, u, append(sentBy(out.Sends), out.PreparedBy, out.PostedBy)...)
 }
 
 // invoiceDeposits fills the deposits an invoice deducts and its balance: each as entered, with its parts as issuing

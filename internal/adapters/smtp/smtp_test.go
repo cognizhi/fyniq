@@ -3,6 +3,7 @@ package smtp
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"errors"
 	"net"
 	"strings"
@@ -153,5 +154,49 @@ func TestWhatCannotBeSentIsRefused(t *testing.T) {
 	if _, err := New(srv.ln.Addr().String(), "fyniq.local", false).Send(context.Background(), message()); !errors.Is(err, ports.ErrEmailRefused) ||
 		!strings.Contains(err.Error(), "STARTTLS") {
 		t.Errorf("a relay without STARTTLS: %v", err)
+	}
+}
+
+// A message with an invoice's PDF is multipart/mixed: the text, then the file in base64 lines of 76 with its name;
+// the same key gives the same boundary on each attempt. A file whose name could break a header, one that is not a
+// PDF, an empty one and too many are refused before anything is taken.
+// req: FR-AR-06
+// req: FR-INT-21
+// asvs: V1.2.4
+func TestAnInvoicesPDFTravelsAsAnAttachment(t *testing.T) {
+	srv := newServer(t)
+	s := New(srv.ln.Addr().String(), "fyniq.local", true)
+	pdf := []byte(strings.Repeat("%PDF-1.7 fyniq ", 10))
+	m := message()
+	m.Attachments = []ports.EmailAttachment{{Name: "INV-0001.pdf", ContentType: "application/pdf", Content: pdf}}
+	if _, err := s.Send(context.Background(), m); err != nil {
+		t.Fatal(err)
+	}
+	got := srv.messages()[0]
+	enc := base64.StdEncoding.EncodeToString(pdf)
+	for _, want := range []string{`Content-Type: multipart/mixed; boundary="` + boundary("message-one") + `"`, "Content-Type: text/plain; charset=utf-8",
+		"Hello.\r\nIt works.\r\n--" + boundary("message-one"), "Content-Type: application/pdf; name=INV-0001.pdf",
+		"Content-Disposition: attachment; filename=INV-0001.pdf", "Content-Transfer-Encoding: base64", enc[:76] + "\r\n" + enc[76:152] + "\r\n",
+		"--" + boundary("message-one") + "--"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the message lacks %q:\n%s", want, got)
+		}
+	}
+	for name, as := range map[string][]ports.EmailAttachment{
+		"a name with a line break": {{Name: "INV.pdf\r\nBcc: x@example.com", ContentType: "application/pdf", Content: pdf}},
+		"not a PDF":                {{Name: "run.sh", ContentType: "text/x-shellscript", Content: pdf}},
+		"an empty file":            {{Name: "INV-0001.pdf", ContentType: "application/pdf"}},
+		"too many": {{Name: "a.pdf", ContentType: "application/pdf", Content: pdf}, {Name: "b.pdf", ContentType: "application/pdf", Content: pdf},
+			{Name: "c.pdf", ContentType: "application/pdf", Content: pdf}, {Name: "d.pdf", ContentType: "application/pdf", Content: pdf},
+			{Name: "e.pdf", ContentType: "application/pdf", Content: pdf}, {Name: "f.pdf", ContentType: "application/pdf", Content: pdf}},
+	} {
+		bad := message()
+		bad.Attachments = as
+		if _, err := s.Send(context.Background(), bad); !errors.Is(err, ports.ErrEmailRefused) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if n := len(srv.messages()); n != 1 {
+		t.Fatalf("%d messages reached the server; want the one", n)
 	}
 }

@@ -6,7 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
@@ -153,5 +156,85 @@ func TestInvoicesFillTheirDocument(t *testing.T) {
 	var se *salesdoc.Error
 	if _, err := data(credit); !errors.As(err, &se) || se.Code != salesdoc.CodeNotInvoice {
 		t.Errorf("a credit note: %v", err)
+	}
+}
+
+// FR-AR-06 (p1-sales task 5.2): the record of an invoice sent by email. Only an issued invoice's current version is
+// sent: a draft, or an issued one at a stale version, is refused (FY196). A send names its message and the PDF in the
+// invoice's evidence, is audited, and its delivery follows the provider's events: sent, then delivered.
+// req: FR-AR-06
+// req: FR-INT-21
+func TestASendIsOfAnIssuedInvoicesCurrentVersion(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
+	s := store(t, "fyniq_api")
+	b := newSalesBooks(t, ctx, s, "Sends Pte Ltd")
+	invoices := journal.Invoices{Store: s}
+	sgd := money.MustLookup("SGD")
+	inv, err := invoices.Create(ctx, b.Org, invoice.Draft{CustomerID: b.Customer.ID, Date: porttest.Day(10, 14), Currency: sgd,
+		Lines: []invoice.Line{invoiceLine(t, b, "1", "100.00", "", "SR", "SGD")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	send := func(version int) (storage.DocumentSend, error) {
+		var out storage.DocumentSend
+		err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			m, err := u.EmailMessages().Queue(ctx, "invoice", "ap@acme.example", "Invoice INV-0001")
+			if err != nil {
+				return err
+			}
+			e, err := u.Evidence().Attach(ctx, newEvidence(b.Org, inv.ID, "Invoice as sent"))
+			if err != nil {
+				return err
+			}
+			out, err = u.DocumentSends().Record(ctx, storage.NewDocumentSend{DocumentID: inv.ID, DocumentVersion: version, MessageID: m.ID, EvidenceID: e.ID,
+				Recipient: "ap@acme.example", TemplateSource: "platform", TemplateHash: strings.Repeat("cd", 32), PDFSHA256: strings.Repeat("ab", 32)})
+			return err
+		})
+		return out, err
+	}
+	var se *storage.Error
+	if _, err := send(1); !errors.As(err, &se) || se.Code != storage.CodeSend {
+		t.Fatalf("a draft's send: %v", err)
+	}
+	if _, err := invoices.Post(ctx, b.Org, inv.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := send(2); !errors.As(err, &se) || se.Code != storage.CodeSend {
+		t.Fatalf("a stale version's send: %v", err)
+	}
+	sent, err := send(1)
+	if err != nil || sent.SentBy != "user:ar-specialist" || sent.MessageStatus != storage.EmailQueued {
+		t.Fatalf("the issued invoice's send: %+v %v", sent, err)
+	}
+	latest := func() *storage.DocumentSend {
+		t.Helper()
+		var out map[uuid.UUID]storage.DocumentSend
+		if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = u.DocumentSends().Latest(ctx, []uuid.UUID{inv.ID})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		x, ok := out[inv.ID]
+		if !ok {
+			return nil
+		}
+		return &x
+	}
+	if l := latest(); l == nil || l.ID != sent.ID || salesdoc.Delivery(l) != salesdoc.Sent {
+		t.Fatalf("its delivery: %+v", l)
+	}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error { // the provider's webhook, as the api receives it
+		_, _, err := u.EmailMessages().RecordEvent(ctx, storage.EmailEvent{MessageID: sent.MessageID, Provider: "resend", DeliveryID: "evt-1",
+			Kind: storage.EventDelivered, Recipient: "ap@acme.example", OccurredAt: porttest.Day(10, 15)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if l := latest(); l == nil || l.LastEvent != storage.EventDelivered || salesdoc.Delivery(l) != salesdoc.Delivered {
+		t.Fatalf("after the provider's delivered: %+v", l)
+	}
+	if got := actions(t, b.Org, sent.ID); len(got) != 1 || got[0] != "document_send.recorded" {
+		t.Errorf("the send's audit trail: %v", got)
 	}
 }

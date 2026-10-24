@@ -26,6 +26,8 @@ const (
 	SourcePaste  EvidenceSource = "paste"
 	SourceEmail  EvidenceSource = "email"
 	SourceAPI    EvidenceSource = "api"
+	// SourceGenerated is a file Fyniq made, such as the PDF of an invoice it sent (FR-AR-06).
+	SourceGenerated EvidenceSource = "generated"
 )
 
 // DataClass is the kind of personal data a file holds (FR-DOC-09).

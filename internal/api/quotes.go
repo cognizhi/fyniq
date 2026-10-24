@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/quote"
+	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -71,6 +72,9 @@ type Quote struct {
 	// Invoicing (FR-AR-02; rev 0.131).
 	Invoicing []QuoteLineInvoicing `json:"invoicing" nullable:"false" doc:"Once sent, each line's invoicing: what was quoted, what issued and draft invoices take, and what is left to invoice."`
 	Invoices  []QuoteInvoice       `json:"invoices" nullable:"false" doc:"The invoices made from it, draft and issued; voided ones are left out."`
+	// Email (FR-AR-06; rev 0.133).
+	Delivery string            `json:"delivery" enum:"not_sent,sent,delivered,viewed,bounced" doc:"From its latest email: not_sent until emailQuote sends it; then sent, delivered or bounced; viewed comes with the online link." example:"not_sent"`
+	Sends    []DocumentSendOut `json:"sends" nullable:"false" doc:"Each time it was emailed, newest first, with its delivery."`
 }
 
 // QuoteLineInvoicing is what a quote line has been invoiced (FR-AR-02): each invoice line made from it takes its own
@@ -292,7 +296,15 @@ func (a *API) quoteOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 	out := Quote{ID: doc.ID.String(), Kind: quoteKind(doc), Number: doc.Number, Status: quote.StatusOf(doc, outcome, states), Version: doc.Version, Reference: c.Reference,
 		Date: dayText(c.Date), ValidUntil: dayText(d.ValidUntil), Currency: c.Currency.Code, Lines: invoiceLinesOut(c), Notes: c.Notes, GST: []InvoiceGST{},
 		Checks: []InvoiceCheck{}, PreparedBy: personOf(doc.SavedBy), SentBy: personOf(doc.PostedBy), SentAt: utc(doc.PostedAt),
-		Invoicing: []QuoteLineInvoicing{}, Invoices: []QuoteInvoice{}}
+		Invoicing: []QuoteLineInvoicing{}, Invoices: []QuoteInvoice{}, Delivery: salesdoc.NotSent}
+	sends, err := u.DocumentSends().OfDocument(ctx, doc.ID)
+	if err != nil {
+		return Quote{}, err
+	}
+	out.Sends = sendsOut(sends)
+	if len(sends) > 0 {
+		out.Delivery = salesdoc.Delivery(&sends[0])
+	}
 	for i, s := range states {
 		out.Invoicing = append(out.Invoicing, QuoteLineInvoicing{Line: i + 1, Quoted: s.Quoted.String(), Invoiced: s.Invoiced.String(), Drafted: s.Drafted.String(),
 			Left: s.Left().String()})
@@ -339,7 +351,7 @@ func (a *API) quoteOf(ctx context.Context, u storage.UnitOfWork, base money.Curr
 	if out.Answer != nil {
 		answeredBy = out.Answer.RecordedBy
 	}
-	return out, a.name(ctx, u, out.PreparedBy, out.SentBy, answeredBy)
+	return out, a.name(ctx, u, append(sentBy(out.Sends), out.PreparedBy, out.SentBy, answeredBy)...)
 }
 
 // quoteInvoicing is each line's invoicing of a sent quote or order, and the invoices made from it; none for a draft or

@@ -1768,6 +1768,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invoices/{invoice_id}/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email an invoice to the customer
+         * @description Emails an issued invoice (FR-AR-06) to the customer's billing email, or the address given, from the organisation's invoices sender, with the subject and body of the email template that applies to the customer and the PDF of its current version attached, rendered with the document template that applies (FR-TPL-05). A tax invoice that lacks a particular IRAS requires, such as the customer's address, is not sent (SALESDOC-05); a draft or voided one never is (SALESDOC-03). Sending again sends the same version again. Side effects: the PDF in the invoice's evidence (source generated), the email message in the delivery log, the send, and their audit events; its delivery state follows the provider's events. Needs If-Match with the invoice's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and sends nothing.
+         */
+        post: operations["emailInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invoices/{invoice_id}/evidence": {
         parameters: {
             query?: never;
@@ -3670,6 +3690,26 @@ export interface paths {
          * @description Records that the customer declined a sent quote or order (FR-AR-01), on the day given or the organisation's today, with a note: its status becomes declined, and it leaves the pipeline. A quote has one answer, which never changes (QUOTE-07). Side effects: the answer and its audit event. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.
          */
         post: operations["declineQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/quotes/{quote_id}/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email a quote or sales order to the customer
+         * @description Emails a sent quote or order (FR-AR-06, FR-AR-16) to the customer's billing email, or the address given, from the organisation's invoices sender, with the subject and body of the email template that applies to the customer and the PDF of its current version attached, rendered with the quote template that applies (FR-TPL-05). A draft or cancelled one is never sent (SALESDOC-03); sendQuote sends a draft first. Side effects: the PDF in the quote's evidence (source generated), the email message in the delivery log, the send, and their audit events. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and sends nothing.
+         */
+        post: operations["emailQuote"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6044,11 +6084,11 @@ export interface components {
              */
             size_bytes: number;
             /**
-             * @description How it arrived.
+             * @description How it arrived: generated for a file Fyniq made, such as the PDF of a quote or invoice it emailed (FR-AR-06).
              * @example upload
              * @enum {string}
              */
-            source: "upload" | "paste" | "email" | "api";
+            source: "upload" | "paste" | "email" | "api" | "generated";
             /**
              * @description Attached (in staging while the bill is a draft), removed from a draft, or final: committed to the retention-locked store, append-only.
              * @example attached
@@ -7948,6 +7988,68 @@ export interface components {
              */
             ended: number;
         };
+        DocumentSendOut: {
+            /**
+             * @description sent until the provider says more; delivered; or bounced, when the provider refused or returned it.
+             * @example sent
+             * @enum {string}
+             */
+            delivery: "sent" | "delivered" | "bounced";
+            /**
+             * Format: uuid
+             * @description The PDF that was sent, kept in the document's evidence.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e80
+             */
+            evidence_id: string;
+            /**
+             * Format: uuid
+             * @description The send's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70
+             */
+            id: string;
+            /**
+             * @description The email message's own outcome, as the delivery log shows it.
+             * @example accepted
+             * @enum {string}
+             */
+            message_status: "queued" | "accepted" | "failed" | "unknown";
+            /**
+             * @description The PDF's SHA-256, in hex.
+             * @example a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda
+             */
+            pdf_sha256: string;
+            /**
+             * Format: date-time
+             * @description When it was sent.
+             * @example 2026-10-24T09:30:00Z
+             */
+            sent_at: string;
+            /** @description Who sent it. */
+            sent_by?: components["schemas"]["Person"];
+            /**
+             * @description The document template that rendered it: the customer's, the organisation's default, or the Classic starter.
+             * @example platform
+             * @enum {string}
+             */
+            template_source: "contact" | "default" | "platform";
+            /**
+             * Format: int64
+             * @description That template's published version; 0 for the starter.
+             * @example 0
+             */
+            template_version: number;
+            /**
+             * @description Whom it was sent to.
+             * @example accounts@acme.example
+             */
+            to: string;
+            /**
+             * Format: int64
+             * @description The document's version that was sent.
+             * @example 1
+             */
+            version: number;
+        };
         DocumentTemplate: {
             /**
              * @description The document it serves.
@@ -8138,6 +8240,13 @@ export interface components {
              */
             value: string;
         };
+        EmailDocument: {
+            /**
+             * @description The address to send it to; left out, the customer's billing email.
+             * @example accounts@acme.example
+             */
+            to?: string;
+        };
         EmailEvent: {
             /**
              * @description The provider's reason.
@@ -8201,11 +8310,11 @@ export interface components {
              */
             provider?: string;
             /**
-             * @description Why it was sent: a test message, a sign-in alert, a notification, or a digest of them.
+             * @description Why it was sent: a test message, a sign-in alert, a notification, a digest of them, or an invoice or a quote emailed to a customer (FR-AR-06).
              * @example test
              * @enum {string}
              */
-            purpose: "test" | "sign_in_alert" | "notification" | "digest";
+            purpose: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote";
             /**
              * @description Who it goes to.
              * @example accounts@example.com
@@ -8517,11 +8626,11 @@ export interface components {
              */
             size_bytes: number;
             /**
-             * @description How it arrived.
+             * @description How it arrived: generated for a file Fyniq made, such as the PDF of a quote or invoice it emailed (FR-AR-06).
              * @example upload
              * @enum {string}
              */
-            source: "upload" | "paste" | "email" | "api";
+            source: "upload" | "paste" | "email" | "api" | "generated";
             /**
              * @description Attached (in staging while the journal is a draft), removed from a draft, or final: committed to the retention-locked store, append-only.
              * @example attached
@@ -9375,6 +9484,8 @@ export interface components {
             reference?: string;
             /** @description getInvoice only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05). */
             releases: components["schemas"]["InvoiceRelease"][];
+            /** @description getInvoice only: each time it was emailed, newest first, with its delivery (FR-AR-06). */
+            sends: components["schemas"]["DocumentSendOut"][];
             /** @description Its approval, ledger, delivery, settlement and due states. */
             states: components["schemas"]["InvoiceStates"];
             /**
@@ -9688,11 +9799,11 @@ export interface components {
              */
             size_bytes: number;
             /**
-             * @description How it arrived.
+             * @description How it arrived: generated for a file Fyniq made, such as the PDF of a quote or invoice it emailed (FR-AR-06).
              * @example upload
              * @enum {string}
              */
-            source: "upload" | "paste" | "email" | "api";
+            source: "upload" | "paste" | "email" | "api" | "generated";
             /**
              * @description Attached (in staging while the invoice is a draft), removed from a draft, or final: committed to the retention-locked store, append-only.
              * @example attached
@@ -9965,7 +10076,7 @@ export interface components {
              */
             approval: "draft" | "awaiting_approval" | "approved" | "rejected";
             /**
-             * @description not_sent until sending arrives (FR-AR-06): then sent, delivered, viewed (the customer first opened its secure link) or bounced.
+             * @description From its latest email (FR-AR-06): not_sent until emailInvoice sends it; then sent, delivered, or bounced when the provider refused or returned it; viewed (the customer first opened its secure link) comes with the online link.
              * @example not_sent
              * @enum {string}
              */
@@ -12123,6 +12234,12 @@ export interface components {
              */
             date?: string;
             /**
+             * @description From its latest email: not_sent until emailQuote sends it; then sent, delivered or bounced; viewed comes with the online link.
+             * @example not_sent
+             * @enum {string}
+             */
+            delivery: "not_sent" | "sent" | "delivered" | "viewed" | "bounced";
+            /**
              * @description The rate typed for it, if one was.
              * @example 1.34
              */
@@ -12173,6 +12290,8 @@ export interface components {
              * @example RFQ-2291
              */
             reference?: string;
+            /** @description Each time it was emailed, newest first, with its delivery. */
+            sends: components["schemas"]["DocumentSendOut"][];
             /**
              * Format: date-time
              * @description When it was sent.
@@ -28598,6 +28717,145 @@ export interface operations {
             };
         };
     };
+    emailInvoice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The invoice's ID. */
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EmailDocument"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `INVOICE-01` Not an invoice. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SALESDOC-01` Not laid out as an invoice; `SALESDOC-03` Only an issued invoice or a sent quote is emailed; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `SALESDOC-02` The invoice's checks stop it being laid out; `SALESDOC-04` There is no address to send it to; `SALESDOC-05` The tax invoice lacks a particular IRAS requires. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listInvoiceEvidence: {
         parameters: {
             query?: {
@@ -36529,7 +36787,7 @@ export interface operations {
                 /** @description Only messages with this outcome. */
                 status?: "queued" | "accepted" | "failed" | "unknown";
                 /** @description Only messages of this purpose. */
-                purpose?: "test" | "sign_in_alert" | "notification" | "digest";
+                purpose?: "test" | "sign_in_alert" | "notification" | "digest" | "invoice" | "quote";
             };
             header?: never;
             path?: never;
@@ -42514,6 +42772,145 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    emailQuote: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The quote's ID. */
+                quote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EmailDocument"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `QUOTE-01` Not a quote or a sales order. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SALESDOC-03` Only an issued invoice or a sent quote is emailed; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `QUOTE-02` The saved quote cannot be read; `SALESDOC-02` The invoice's checks stop it being laid out; `SALESDOC-04` There is no address to send it to; `SALESDOC-05` The tax invoice lacks a particular IRAS requires. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now. */
             503: {
                 headers: {
                     [name: string]: unknown;

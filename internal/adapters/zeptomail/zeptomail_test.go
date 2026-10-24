@@ -111,3 +111,31 @@ func TestTheReferenceGoesAsClientReference(t *testing.T) {
 		t.Fatalf("client_reference %v, %v", got["client_reference"], err)
 	}
 }
+
+// An invoice's PDF goes in the documented attachments field, its content in base64 (FR-AR-06); a file that is not a PDF
+// is refused before anything is sent.
+// req: FR-AR-06
+// req: FR-INT-21
+func TestAnAttachmentIsTheDocumentedField(t *testing.T) {
+	var got map[string]any
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &got)
+		_, _ = w.Write([]byte(`{"data":[{"code":"EM_104","additional_info":[],"message":"Email request received"}],"message":"OK","request_id":"req-42"}`))
+	}))
+	defer srv.Close()
+	m := message
+	m.Attachments = []ports.EmailAttachment{{Name: "INV-0001.pdf", ContentType: "application/pdf", Content: []byte("%PDF-1.7")}}
+	if _, err := zeptomail.New(srv.URL, "token-1").Send(context.Background(), m); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := json.Marshal(got["attachments"]); string(b) != `[{"content":"JVBERi0xLjc=","mime_type":"application/pdf","name":"INV-0001.pdf"}]` {
+		t.Errorf("the attachments: %s", b)
+	}
+	m.Attachments = []ports.EmailAttachment{{Name: "run.sh", ContentType: "text/x-shellscript", Content: []byte("echo")}}
+	if _, err := zeptomail.New(srv.URL, "token-1").Send(context.Background(), m); !errors.Is(err, ports.ErrEmailRefused) || calls != 1 {
+		t.Errorf("a file that is not a PDF: %v, %d calls", err, calls)
+	}
+}

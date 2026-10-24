@@ -25,19 +25,29 @@ import (
 const Kind = "email.send"
 
 type payload struct {
-	MessageID uuid.UUID `json:"message_id"`
-	To        string    `json:"to"`
-	Subject   string    `json:"subject"`
-	Text      string    `json:"text"`
+	MessageID   uuid.UUID   `json:"message_id"`
+	To          string      `json:"to"`
+	Subject     string      `json:"subject"`
+	Text        string      `json:"text"`
+	Attachments []uuid.UUID `json:"attachments,omitempty"` // the evidence files it carries, such as an invoice's PDF
 }
+
+// Files reads the organisation's evidence files a message carries (evidence.Files).
+type Files func(ctx context.Context, org uuid.UUID, ids []uuid.UUID) ([]ports.EmailAttachment, error)
 
 // Queue records a message to one recipient and writes its send to the outbox, in the unit of work u.
 func Queue(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, purpose, to, subject, text string) (storage.EmailMessage, error) {
+	return QueueWith(ctx, d, u, org, purpose, to, subject, text, nil)
+}
+
+// QueueWith is Queue for a message that carries evidence files, such as the PDF of an invoice sent (FR-AR-06): the
+// outbox job names them, and the worker reads them as it sends, so a file never travels in the job.
+func QueueWith(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, purpose, to, subject, text string, files []uuid.UUID) (storage.EmailMessage, error) {
 	m, err := u.EmailMessages().Queue(ctx, purpose, to, subject)
 	if err != nil {
 		return storage.EmailMessage{}, err
 	}
-	b, err := json.Marshal(payload{MessageID: m.ID, To: to, Subject: subject, Text: text})
+	b, err := json.Marshal(payload{MessageID: m.ID, To: to, Subject: subject, Text: text, Attachments: files})
 	if err != nil {
 		return storage.EmailMessage{}, err
 	}
@@ -62,14 +72,23 @@ func ParseReference(s string) (org, message uuid.UUID, ok bool) {
 	return o, m, true
 }
 
-// SenderOf is the sender purpose of a message's purpose (FR-INT-21): a sign-in alert is security's; the rest so far
-// are notifications.
+// SenderOf is the sender purpose of a message's purpose (FR-INT-21): a sign-in alert is security's; an invoice or a
+// quote sent to a customer (FR-AR-06) the invoices sender's; the rest so far are notifications.
 func SenderOf(messagePurpose string) string {
-	if messagePurpose == "sign_in_alert" {
+	switch messagePurpose {
+	case "sign_in_alert":
 		return storage.SenderSecurity
+	case PurposeInvoice, PurposeQuote:
+		return storage.SenderInvoices
 	}
 	return storage.SenderNotifications
 }
+
+// The purposes of the email that carries a document to a customer (FR-AR-06).
+const (
+	PurposeInvoice = "invoice"
+	PurposeQuote   = "quote"
+)
 
 // fromOf is the address a message of purpose is sent from: the organisation's sender in force for it, or the
 // platform's, from.
@@ -95,6 +114,13 @@ func fromOf(senders []storage.EmailSender, purpose, from string) string {
 //     message is failed.
 //   - Any other error leaves the attempt marked with its provider: the next run reconciles it.
 func Work(providers []ports.Email, store storage.Store, from string, clock ports.Clock) outbox.Work {
+	return WorkWith(providers, store, from, clock, nil)
+}
+
+// WorkWith is Work with the reader of the files messages carry. The files are read before any attempt is marked, so a
+// file that cannot be read yet leaves the message to the outbox's retry, and fails it on the last attempt; nil files
+// fails a message that carries any.
+func WorkWith(providers []ports.Email, store storage.Store, from string, clock ports.Clock, files Files) outbox.Work {
 	return func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
 		var p payload
 		if err := json.Unmarshal(row.Payload, &p); err != nil || p.MessageID == uuid.Nil {
@@ -108,6 +134,21 @@ func Work(providers []ports.Email, store storage.Store, from string, clock ports
 				_, err := u.EmailMessages().Finish(ctx, p.MessageID, o)
 				return err
 			})
+		}
+		var attached []ports.EmailAttachment
+		if len(p.Attachments) > 0 {
+			var err error
+			if files == nil {
+				err = errors.New("no reader of evidence files is configured")
+			} else {
+				attached, err = files(ctx, org, p.Attachments)
+			}
+			if err != nil {
+				if row.MaxAttempts > 0 && row.Attempts >= row.MaxAttempts {
+					return finish(storage.EmailOutcome{Status: storage.EmailFailed, LastError: "not sent: its attachment could not be read: " + err.Error()})
+				}
+				return fmt.Errorf("email: the attachments of message %s: %w", p.MessageID, err)
+			}
 		}
 		accepted := func(by ports.Email, r ports.EmailReceipt) error {
 			now := clock.Now()
@@ -153,7 +194,7 @@ func Work(providers []ports.Email, store storage.Store, from string, clock ports
 				suppressed.SuppressedAt.UTC().Format(time.DateOnly))})
 		}
 		m := ports.OutboundEmail{Key: p.MessageID.String(), Reference: Reference(org, p.MessageID), From: fromOf(senders, before.Purpose, from),
-			To: []string{p.To}, Subject: p.Subject, Text: p.Text, Date: clock.Now()}
+			To: []string{p.To}, Subject: p.Subject, Text: p.Text, Date: clock.Now(), Attachments: attached}
 		if before.AttemptStartedAt != nil {
 			i := slices.IndexFunc(providers, func(e ports.Email) bool { return e.Name() == before.Provider })
 			if i < 0 {

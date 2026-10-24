@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "delivery": {
+      "description": "sent until the provider says more; delivered; or bounced, when the provider refused or returned it.",
+      "enum": [
+        "sent",
+        "delivered",
+        "bounced"
+      ],
+      "examples": [
+        "sent"
+      ],
+      "type": "string"
+    },
+    "evidence_id": {
+      "description": "The PDF that was sent, kept in the document's evidence.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "id": {
+      "description": "The send's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "message_status": {
+      "description": "The email message's own outcome, as the delivery log shows it.",
+      "enum": [
+        "queued",
+        "accepted",
+        "failed",
+        "unknown"
+      ],
+      "examples": [
+        "accepted"
+      ],
+      "type": "string"
+    },
+    "pdf_sha256": {
+      "description": "The PDF's SHA-256, in hex.",
+      "examples": [
+        "a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda"
+      ],
+      "type": "string"
+    },
+    "sent_at": {
+      "description": "When it was sent.",
+      "examples": [
+        "2026-10-24T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "sent_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who sent it."
+    },
+    "template_source": {
+      "description": "The document template that rendered it: the customer's, the organisation's default, or the Classic starter.",
+      "enum": [
+        "contact",
+        "default",
+        "platform"
+      ],
+      "examples": [
+        "platform"
+      ],
+      "type": "string"
+    },
+    "template_version": {
+      "description": "That template's published version; 0 for the starter.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "to": {
+      "description": "Whom it was sent to.",
+      "examples": [
+        "accounts@acme.example"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The document's version that was sent.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "to",
+    "sent_at",
+    "delivery",
+    "message_status",
+    "evidence_id",
+    "pdf_sha256",
+    "template_source",
+    "template_version"
+  ],
+  "title": "DocumentSendOut",
+  "type": "object"
+}

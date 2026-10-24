@@ -325,6 +325,23 @@ type FyniqDocumentNumber struct {
 	CreatedAt      time.Time
 }
 
+type FyniqDocumentSend struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	DocumentID      uuid.UUID
+	DocumentVersion int32
+	MessageID       uuid.UUID
+	EvidenceID      uuid.UUID
+	Recipient       string
+	TemplateSource  string
+	TemplateID      *uuid.UUID
+	TemplateVersion int32
+	TemplateHash    string
+	PdfSha256       string
+	SentBy          string
+	SentAt          time.Time
+}
+
 type FyniqDocumentSequence struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

@@ -99,12 +99,13 @@
       "type": "integer"
     },
     "source": {
-      "description": "How it arrived.",
+      "description": "How it arrived: generated for a file Fyniq made, such as the PDF of a quote or invoice it emailed (FR-AR-06).",
       "enum": [
         "upload",
         "paste",
         "email",
-        "api"
+        "api",
+        "generated"
       ],
       "examples": [
         "upload"

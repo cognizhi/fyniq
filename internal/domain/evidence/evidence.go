@@ -416,3 +416,50 @@ func Sweep(ctx context.Context, store storage.Store, staging, locked ports.BlobS
 	}
 	return r, errors.Join(errs...)
 }
+
+// Files reads evidence files whole, for the email worker to attach to a message (FR-AR-06): from the locked store once
+// a file is final, else from staging, or the locked store when it was committed meanwhile; each checked against the
+// SHA-256 its row records.
+type Files struct {
+	Store   storage.Store
+	Staging ports.BlobStore
+	Locked  ports.BlobStore
+}
+
+// Read returns the organisation's files with ids, in order, as a message carries them. A removed file is refused.
+func (f Files) Read(ctx context.Context, org uuid.UUID, ids []uuid.UUID) ([]ports.EmailAttachment, error) {
+	rows := make([]storage.Evidence, len(ids))
+	if err := f.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for i, id := range ids {
+			e, err := u.Evidence().Get(ctx, id)
+			if err != nil {
+				return err
+			}
+			rows[i] = e
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	out := make([]ports.EmailAttachment, 0, len(rows))
+	for _, e := range rows {
+		if e.State == storage.EvidenceRemoved {
+			return nil, fmt.Errorf("evidence %s was removed", e.ID)
+		}
+		var data []byte
+		var err error
+		if e.LockedKey != "" {
+			data, err = read(ctx, f.Locked, e.LockedKey)
+		} else if data, err = read(ctx, f.Staging, e.StagingKey); errors.Is(err, ports.ErrNotFound) {
+			data, err = read(ctx, f.Locked, LockedKey(org, e.ID)) // committed since the row was read
+		}
+		if err != nil {
+			return nil, err
+		}
+		if hash(data) != e.SHA256 {
+			return nil, ErrHashMismatch
+		}
+		out = append(out, ports.EmailAttachment{Name: e.FileName, ContentType: e.MediaType, Content: data})
+	}
+	return out, nil
+}

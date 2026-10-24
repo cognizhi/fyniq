@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"cmp"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,12 +58,21 @@ type recipient struct {
 	EmailAddress address `json:"email_address"`
 }
 
+// attachment is a file as ZeptoMail's send API takes it: its content in base64, its type and its name
+// (zoho.com/zeptomail/help/api/email-sending.html, checked 24 Oct 2026).
+type attachment struct {
+	Content  string `json:"content"`
+	MimeType string `json:"mime_type"`
+	Name     string `json:"name"`
+}
+
 type request struct {
-	From            address     `json:"from"`
-	To              []recipient `json:"to"`
-	Subject         string      `json:"subject"`
-	TextBody        string      `json:"textbody"`
-	ClientReference string      `json:"client_reference"`
+	From            address      `json:"from"`
+	To              []recipient  `json:"to"`
+	Subject         string       `json:"subject"`
+	TextBody        string       `json:"textbody"`
+	ClientReference string       `json:"client_reference"`
+	Attachments     []attachment `json:"attachments,omitempty"`
 }
 
 // Send implements ports.Email.
@@ -74,7 +84,13 @@ func (s *Sender) Send(ctx context.Context, m ports.OutboundEmail) (ports.EmailRe
 	if len(m.To) == 0 || strings.ContainsAny(m.Subject, "\r\n") || m.Key == "" {
 		return ports.EmailReceipt{}, fmt.Errorf("%w: no recipient, a subject with a line break, or no key", ports.ErrEmailRefused)
 	}
+	if err := ports.CheckAttachments(m.Attachments); err != nil {
+		return ports.EmailReceipt{}, err
+	}
 	body := request{From: address{Address: from.Address, Name: from.Name}, Subject: m.Subject, TextBody: m.Text, ClientReference: cmp.Or(m.Reference, m.Key)}
+	for _, a := range m.Attachments {
+		body.Attachments = append(body.Attachments, attachment{Content: base64.StdEncoding.EncodeToString(a.Content), MimeType: a.ContentType, Name: a.Name})
+	}
 	for _, t := range m.To {
 		a, err := netmail.ParseAddress(t)
 		if err != nil {

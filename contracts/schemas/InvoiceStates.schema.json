@@ -16,7 +16,7 @@
       "type": "string"
     },
     "delivery": {
-      "description": "not_sent until sending arrives (FR-AR-06): then sent, delivered, viewed (the customer first opened its secure link) or bounced.",
+      "description": "From its latest email (FR-AR-06): not_sent until emailInvoice sends it; then sent, delivered, or bounced when the provider refused or returned it; viewed (the customer first opened its secure link) comes with the online link.",
       "enum": [
         "not_sent",
         "sent",

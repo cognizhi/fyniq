@@ -1745,6 +1745,20 @@ var matrixCalls = map[string]matrixCall{
 		id, _ := e.createInvoice("1", "10.00")
 		return e.call(http.MethodGet, "/v1/invoices/"+id+"/document", tok, nil), nil
 	},
+	"emailInvoice": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.issuedInvoice("1", "10.00")
+		r := e.call(http.MethodPost, "/v1/invoices/"+id+"/email", tok, map[string]any{"to": "ap@acme.example"}, "If-Match", tag)
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/invoices/"+id, e.as(authz.Accountant), nil).str("states", "delivery") == "not_sent"
+		}
+	},
+	"emailQuote": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.sentQuote()
+		r := e.call(http.MethodPost, "/v1/quotes/"+id+"/email", tok, map[string]any{"to": "ap@acme.example"}, "If-Match", tag)
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/quotes/"+id, e.as(authz.Accountant), nil).str("delivery") == "not_sent"
+		}
+	},
 	"createInvoice": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/invoices", tok, e.invoiceDraft("1", "10.00")), nil
 	},

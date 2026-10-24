@@ -63,6 +63,8 @@ fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)
 fyniq_api       INSERT    document_number (document_type, id, number)
 fyniq_api       SELECT    document_number
+fyniq_api       INSERT    document_send (document_id, document_version, evidence_id, message_id, pdf_sha256, recipient, sent_by, template_hash, template_id, template_source, template_version)
+fyniq_api       SELECT    document_send
 fyniq_api       INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
 fyniq_api       SELECT    document_sequence
 fyniq_api       UPDATE    document_sequence (digits, gap_free, next_number, prefix, version)
@@ -237,6 +239,7 @@ fyniq_executor  SELECT    document
 fyniq_executor  UPDATE    document (current_version, posted_at, posted_by, status)
 fyniq_executor  INSERT    document_number (document_type, id, number)
 fyniq_executor  SELECT    document_number
+fyniq_executor  SELECT    document_send
 fyniq_executor  INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
 fyniq_executor  SELECT    document_sequence
 fyniq_executor  UPDATE    document_sequence (next_number)
@@ -305,6 +308,7 @@ fyniq_readonly  SELECT    currencies
 fyniq_readonly  EXECUTE   current_org()
 fyniq_readonly  SELECT    document
 fyniq_readonly  SELECT    document_number
+fyniq_readonly  SELECT    document_send
 fyniq_readonly  SELECT    document_sequence
 fyniq_readonly  SELECT    document_template
 fyniq_readonly  SELECT    document_template_default
@@ -387,6 +391,7 @@ fyniq_worker    EXECUTE   current_org()
 fyniq_worker    SELECT    document
 fyniq_worker    UPDATE    document (status)
 fyniq_worker    SELECT    document_number
+fyniq_worker    SELECT    document_send
 fyniq_worker    SELECT    document_sequence
 fyniq_worker    SELECT    document_template
 fyniq_worker    SELECT    document_template_default

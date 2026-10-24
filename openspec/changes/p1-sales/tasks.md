@@ -149,8 +149,14 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   the setting `sales.simplified_tax_invoices` (the owner's decision: off by default), `getInvoiceDocument`. Tests:
   `TestInvoicesFillTheirDocument`, `TestInvoicesRenderAsTaxInvoices`, `TestBaseTotalsOfAForeignInvoice`, the matrix
   row. Credit notes' layout, with the reason IRAS requires, follows with sending.)
-- [ ] 5.2 Sending quotes and invoices: the issued version's PDF, the email template, the invoices sender, the
+- [x] 5.2 Sending quotes and invoices: the issued version's PDF, the email template, the invoices sender, the
   delivery state from the providers' events. Tests `// req: FR-AR-06`, `// req: FR-AR-16`
+  (24 Oct 2026, PRD-001 rev 0.133: `emailInvoice`, `emailQuote`, `salesdoc.QuoteData`, `salesdoc.Delivery`, the table
+  `document_send` (migrations 000131 and 000132), evidence of source `generated`, the email purposes `invoice` and
+  `quote`, attachments in the email port and its three adapters, `email.QueueWith` and `evidence.Files`. Tests:
+  `TestInvoicesAndQuotesAreEmailed`, `TestASendIsOfAnIssuedInvoicesCurrentVersion`, `TestAMessageCarriesItsEvidenceFiles`,
+  `TestDeliveryFollowsTheLatestSend`, the adapters' attachment tests, the matrix rows. The link in the email follows
+  with task 5.3.)
 - [ ] 5.3 The online link: a hashed 256-bit token per version, the public read endpoint, viewed recorded once, the
   quote accepted or declined as evidence, expiry and revocation; its threat model. Tests `// req: FR-AR-06`,
   `// req: FR-AR-16`

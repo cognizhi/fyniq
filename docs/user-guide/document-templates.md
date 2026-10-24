@@ -88,6 +88,19 @@ An invoice renders with the template that applies to its customer, filled from t
 A draft invoice whose date is more than 30 days before today shows ⚠: IRAS expects a tax invoice within
 30 days of the time of supply. It can still be issued.
 
+## Email an invoice or a quote
+
+- An issued invoice, or a sent quote or sales order, can be emailed to the customer. It goes to the
+  customer's billing email, or to the address you give, from your company's invoices sender in
+  **Settings → Email**.
+- The email's subject and text come from the email template that applies to the customer, and the PDF
+  of the document, made with its document template, is attached.
+- A draft is never emailed: issue the invoice or send the quote first. A tax invoice that lacks a
+  particular IRAS requires, such as the customer's address, is not sent until the detail is added.
+- Fyniq keeps the PDF it sent in the document's evidence, and the document lists each time it was
+  emailed with its delivery: **Sent**, **Delivered** or **Bounced**. Emailing it again sends the same
+  version again.
+
 ## Move templates with a bundle
 
 In Expert mode, **Template bundle** exports your templates as one file: each template's version in force,

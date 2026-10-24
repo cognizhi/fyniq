@@ -118,6 +118,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/invoices/{invoice_id}/document` (getInvoiceDocument): Render an invoice as a document
 - `POST /v1/invoices/{invoice_id}/edit` (editInvoice): Edit an issued invoice
 - `POST /v1/invoices/{invoice_id}/edit-approval` (requestInvoiceEdit): Ask for approval to edit an issued invoice
+- `POST /v1/invoices/{invoice_id}/email` (emailInvoice): Email an invoice to the customer
 - `GET /v1/invoices/{invoice_id}/evidence` (listInvoiceEvidence): List an invoice's evidence
 - `POST /v1/invoices/{invoice_id}/evidence` (addInvoiceEvidence): Attach evidence to an invoice
 - `GET /v1/invoices/{invoice_id}/evidence/{evidence_id}` (getInvoiceEvidence): Get an invoice's evidence file
@@ -231,6 +232,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/quotes/{quote_id}/accept` (acceptQuote): Record that the customer accepted a quote
 - `POST /v1/quotes/{quote_id}/cancel` (cancelQuote): Cancel a quote or sales order
 - `POST /v1/quotes/{quote_id}/decline` (declineQuote): Record that the customer declined a quote
+- `POST /v1/quotes/{quote_id}/email` (emailQuote): Email a quote or sales order to the customer
 - `POST /v1/quotes/{quote_id}/invoice` (invoiceQuote): Make an invoice from a quote or sales order
 - `POST /v1/quotes/{quote_id}/send` (sendQuote): Send a quote or sales order
 - `GET /v1/receivables` (getReceivables): Get AR ageing

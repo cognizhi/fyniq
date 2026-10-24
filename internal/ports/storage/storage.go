@@ -87,6 +87,7 @@ type UnitOfWork interface {
 	WithholdingDecisions() WithholdingDecisions
 	// QuoteOutcomes are the customers' answers to quotes and orders, and their expiry (FR-AR-01).
 	QuoteOutcomes() QuoteOutcomes
+	DocumentSends() DocumentSends
 	BillPlans() BillPlans
 	DocumentTemplates() DocumentTemplates
 	AccountingBasis() AccountingBasis
@@ -574,6 +575,7 @@ const (
 	CodePurchaseOrder  = "STORAGE-PO-01"         // a purchase order posts nothing: no entry names one
 	CodeWithholding    = "STORAGE-WHT-01"        // a withholding decision never changes: a later one replaces it
 	CodeQuoteOutcome   = "STORAGE-QUOTE-01"      // a quote's outcome is of a sent quote or order, recorded once, never changed
+	CodeSend           = "STORAGE-SEND-01"       // a send is of a sent quote's or issued invoice's current version, never changed
 	CodeBillPlan       = "STORAGE-PLAN-01"       // a bill's payment plan never changes: a later one replaces it
 	CodeTemplate       = "STORAGE-TEMPLATE-01"   // a template keeps its kind and type and is never deleted; a published version never changes
 	CodeCaptureName    = "STORAGE-CAPTURE-01"    // an email-in address name belongs to another organisation

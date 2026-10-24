@@ -173,6 +173,13 @@
       },
       "type": "array"
     },
+    "sends": {
+      "description": "getInvoice only: each time it was emailed, newest first, with its delivery (FR-AR-06).",
+      "items": {
+        "$ref": "DocumentSendOut.schema.json"
+      },
+      "type": "array"
+    },
     "states": {
       "$ref": "InvoiceStates.schema.json",
       "description": "Its approval, ledger, delivery, settlement and due states."
@@ -215,7 +222,8 @@
     "states",
     "releases",
     "checks",
-    "ledger_impact"
+    "ledger_impact",
+    "sends"
   ],
   "title": "Invoice",
   "type": "object"

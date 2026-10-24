@@ -11,6 +11,7 @@ package resend
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -65,12 +66,20 @@ type tag struct {
 	Value string `json:"value"`
 }
 
+// attachment is a file as Resend's send API takes it: its name and its content in base64; Resend takes its type from
+// the name's extension (resend.com/docs/api-reference/emails/send-email, checked 24 Oct 2026; at most 40 MB in all).
+type attachment struct {
+	Filename string `json:"filename"`
+	Content  string `json:"content"`
+}
+
 type request struct {
-	From    string   `json:"from"`
-	To      []string `json:"to"`
-	Subject string   `json:"subject"`
-	Text    string   `json:"text"`
-	Tags    []tag    `json:"tags,omitempty"`
+	From        string       `json:"from"`
+	To          []string     `json:"to"`
+	Subject     string       `json:"subject"`
+	Text        string       `json:"text"`
+	Tags        []tag        `json:"tags,omitempty"`
+	Attachments []attachment `json:"attachments,omitempty"`
 }
 
 // RefTag is the tag carrying a message's reference, which Resend echoes in its webhooks.
@@ -84,9 +93,15 @@ func (s *Sender) post(ctx context.Context, m ports.OutboundEmail) (ports.EmailRe
 	if len(m.To) == 0 || len(m.To) > 50 || strings.ContainsAny(m.Subject, "\r\n") || m.Key == "" || len(m.Key) > 256 {
 		return ports.EmailReceipt{}, fmt.Errorf("%w: no recipient or more than 50, a subject with a line break, or no key", ports.ErrEmailRefused)
 	}
+	if err := ports.CheckAttachments(m.Attachments); err != nil {
+		return ports.EmailReceipt{}, err
+	}
 	body := request{From: written(from), Subject: m.Subject, Text: m.Text}
 	if m.Reference != "" {
 		body.Tags = []tag{{RefTag, m.Reference}}
+	}
+	for _, a := range m.Attachments {
+		body.Attachments = append(body.Attachments, attachment{Filename: a.Name, Content: base64.StdEncoding.EncodeToString(a.Content)})
 	}
 	for _, t := range m.To {
 		a, err := netmail.ParseAddress(t)
