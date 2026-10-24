@@ -424,6 +424,10 @@ Source: PRD-001 §10.4
 - **THEN** it is RND-LINE of everything taken so far, this part included, less RND-LINE of what was taken before
 - **AND** the parts add up to the line's amount exactly, each within one minor unit of its own quantity × price (three parts of one of 3 × 33.333333 are 33.33, 33.34 and 33.33)
 
+#### Scenario: A line with a discount rounds once (rev 0.116)
+- **WHEN** an invoice line has a discount
+- **THEN** its amount = round(quantity × unit price × (100 − discount) ÷ 100, the minor units), half away from zero, the discount never rounded apart (3 × 100.00 less 10% is 270.00; 1 × 0.05 less 50% is 0.03)
+
 ### Requirement: RND-DISCOUNT Early-payment discount
 An early-payment discount a supplier offers on a bill (FR-AP-13) SHALL be round(total × percent ÷ 100, the currency's minor units), half away from zero, computed exactly before its one rounding, the percent above 0 and below 100 with at most two decimals (rev 0.93; provisional).
 

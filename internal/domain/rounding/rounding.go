@@ -71,6 +71,37 @@ func Line(q money.Quantity, p money.UnitPrice) (money.Money, error) {
 	return money.FromRounded(halfAwayFromZero(&product, p.Currency().MinorUnits), p.Currency())
 }
 
+// LineDiscounted is RND-LINE for a line with a discount (PRD-001 §10.4, rev 0.116; provisional until the accountant's
+// sign-off): round(quantity × unit price × (100 − discount) ÷ 100, the currency's minor units), half away from zero,
+// computed exactly before its one rounding, so a discounted line rounds once, never on its gross and again on its
+// discount. The discount is a percentage from 0 to 100 with at most two decimals; empty or "0" is Line.
+func LineDiscounted(q money.Quantity, p money.UnitPrice, discount string) (money.Money, error) {
+	if discount == "" || isZeroText(discount) {
+		return Line(q, p)
+	}
+	if !IsShare(discount) {
+		return money.Money{}, fmt.Errorf("%s: the discount %q is not a percentage from 0 to 100 with at most two decimals", LineName, discount)
+	}
+	d, _, err := apd.NewFromString(discount)
+	if err != nil {
+		return money.Money{}, err
+	}
+	var kept, product apd.Decimal
+	if _, err := work.Sub(&kept, apd.New(100, 0), d); err != nil {
+		return money.Money{}, err
+	}
+	if _, err := work.Mul(&product, q.Decimal(), p.Decimal()); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "quantity", Message: err.Error()}
+	}
+	if _, err := work.Mul(&product, &product, &kept); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "quantity", Message: err.Error()}
+	}
+	if _, err := work.Quo(&product, &product, apd.New(100, 0)); err != nil {
+		return money.Money{}, err
+	}
+	return money.FromRounded(halfAwayFromZero(&product, p.Currency().MinorUnits), p.Currency())
+}
+
 // LinePart is part of a line under RND-LINE, after the quantity before was taken by earlier parts, by cumulative
 // rounding as ALLOC-EVEN: RND-LINE of everything taken so far, this part included, less RND-LINE of what was taken
 // before it. The parts of a line then add up exactly to the whole line's amount, and each is within one minor unit of

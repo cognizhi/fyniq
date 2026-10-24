@@ -765,3 +765,48 @@ func amount(t *testing.T, s string, cur money.Currency) money.Money {
 	}
 	return m
 }
+
+// Worked by hand: 3 × 100.00 less 10% is 270.00; 1 × 99.99 less 12.5% is 87.49125, so 87.49; 7 × 1.333333 less 33.33%
+// is 6.2222..., so 6.22; 1 × 0.05 less 50% is 0.025, so 0.03 by its one rounding, where rounding the discount apart
+// (0.03) and taking it off 0.05 would give 0.02. No discount is Line; a discount over 100 or with three decimals is
+// refused.
+// req: RND-LINE
+func TestLineDiscountedPinnedCases(t *testing.T) {
+	for _, c := range []struct {
+		q, p, d string
+		want    string
+	}{{"3", "100.00", "10", "270.00"}, {"1", "99.99", "12.5", "87.49"}, {"7", "1.333333", "33.33", "6.22"}, {"1", "0.05", "50", "0.03"},
+		{"2.5", "1.25", "", "3.13"}, {"2.5", "1.25", "0", "3.13"}, {"4", "25.00", "100", "0.00"}} {
+		got, err := LineDiscounted(qty(t, c.q), price(t, c.p, sgd), c.d)
+		if err != nil || got.String() != c.want {
+			t.Errorf("%s × %s less %s%% = %v, %v; want %s", c.q, c.p, c.d, got, err, c.want)
+		}
+	}
+	for _, d := range []string{"100.01", "12.345", "-5", "ten"} {
+		if _, err := LineDiscounted(qty(t, "1"), price(t, "10.00", sgd), d); err == nil {
+			t.Errorf("the discount %q was taken", d)
+		}
+	}
+}
+
+// A discounted line is never above the line undiscounted.
+// req: RND-LINE
+// req: QA-ENG-03
+func TestLineDiscountedProperties(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		p := price(t, fmt.Sprintf("%d.%06d", rapid.IntRange(0, 99_999).Draw(t, "price units"), rapid.IntRange(0, 999_999).Draw(t, "price decimals")), sgd)
+		q := qty(t, fmt.Sprintf("%d.%03d", rapid.IntRange(0, 1_000).Draw(t, "units"), rapid.IntRange(0, 999).Draw(t, "decimals")))
+		d := fmt.Sprintf("%d.%02d", rapid.IntRange(0, 99).Draw(t, "discount"), rapid.IntRange(0, 99).Draw(t, "discount decimals"))
+		got, err := LineDiscounted(q, p, d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		whole, err := Line(q, p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Decimal().Cmp(whole.Decimal()) > 0 {
+			t.Fatalf("%s less %s%% is %s, above the line's %s", q, d, got, whole)
+		}
+	})
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
+	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -146,6 +147,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 	}
 	if doc.Type == storage.DocumentBillPayment { // a payment of bills, with the rates and carrying amounts it kept (FR-AP-02)
 		want, err := replayBillPayment(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
+	if invoice.IsInvoice(doc) { // a customer's invoice, with the rate and the GST its entry kept (FR-AR-03)
+		want, err := replayInvoice(ctx, u, doc, s, e)
 		if err != nil {
 			return err.Error(), nil
 		}
