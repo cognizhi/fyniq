@@ -212,8 +212,20 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   preparer saves and an AR specialist or Accountant issues (or asks approval for), and an issued one, emailed,
   voided or edited with a reason; its checks, totals, emails, ledger impact and evidence. `getSalesGSTCodes` gives
   the line's codes. Help keys, `docs/user-guide/invoices.md` and `kb/pages/task/sales-invoices.md`. Tests:
-  `src/screens/sales/invoices.test.tsx`, the matrix row. Still to come: quotes-list, record-payment,
-  recurring-documents, statements-reminders and customer-document-view.)
+  `src/screens/sales/invoices.test.tsx`, the matrix row.)
+  (In part, 25 Oct 2026: quotes-list. **Sales › Quotes and orders**: the list of quotes or sales orders with their
+  status and email, the pipeline, and the quote page: a draft saved and sent, emailed, the customer's answer
+  recorded, cancelled with a reason, and an accepted one made into a draft invoice; its invoicing line by line.
+  `docs/user-guide/quotes.md` and `kb/pages/task/sales-quotes.md`. Tests: `src/screens/sales/quotes.test.tsx`.)
+  (In part, 25 Oct 2026: record-payment. **Record a payment** on an issued invoice: the date, the account it came
+  into and what the customer paid; what is beyond the invoice stays as their credit, and a small shortfall settles in
+  full within the tolerance. Not yet: applying one receipt across several invoices. Tests: the receipt cases in
+  `src/screens/sales/invoices.test.tsx`.)
+  (In part, 25 Oct 2026: recurring-documents, the invoices' half. **Sales › Recurring**: the recurring invoices with
+  their schedule (weekly to yearly), next date, what the scheduler does and status; the page sets the name, schedule,
+  customer, lines and mode, checks it without saving, pauses and resumes it, and asks for approval of the content to
+  issue and send. Recurring bills keep their own page under Purchases. Tests: `src/screens/sales/recurring.test.tsx`.)
+  (Still to come: statements-reminders and customer-document-view.)
 
 ## 9. The oracle and finishing
 

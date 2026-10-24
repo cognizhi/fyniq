@@ -751,6 +751,98 @@
     "credit-note.credits": {
       "label": "Invoice it credits",
       "tooltip": "Link it to the customer's issued invoice it corrects: GST is adjusted at that invoice's rates, and it credits at most its total."
+    },
+    "sales.quotes": {
+      "label": "Quotes and orders",
+      "tooltip": "Every quote to a customer and every sales order: its total, validity date, status, and whether it was emailed and answered."
+    },
+    "sales.quote": {
+      "label": "Quote",
+      "tooltip": "One quote or sales order: its lines, totals and GST, its status, the customer's answer, and what has been invoiced of it."
+    },
+    "quote.new": {
+      "label": "New quote",
+      "tooltip": "Offer a customer lines at a price until a date."
+    },
+    "sales-order.new": {
+      "label": "New sales order",
+      "tooltip": "Record an order a customer placed, to invoice later."
+    },
+    "quote.save": {
+      "label": "Save as a draft",
+      "tooltip": "Keep it as a draft (✎); nothing is sent until it is sent."
+    },
+    "quote.send": {
+      "label": "Send",
+      "tooltip": "Number it from its sequence and mark it sent: it counts in the pipeline until it is answered or expires."
+    },
+    "quote.email": {
+      "label": "Email",
+      "tooltip": "Send it to the customer with its PDF and a secure link where they accept or decline it."
+    },
+    "quote.accept": {
+      "label": "Record accepted",
+      "tooltip": "The customer accepted it, by email or phone: record who and when, then invoice it."
+    },
+    "quote.decline": {
+      "label": "Record declined",
+      "tooltip": "The customer said no: record when, and why if they said."
+    },
+    "quote.cancel": {
+      "label": "Cancel",
+      "tooltip": "Withdraw it, with a reason: it stays in the records, marked cancelled, and leaves the pipeline."
+    },
+    "quote.invoice": {
+      "label": "Make the invoice",
+      "tooltip": "Make a draft invoice of everything not invoiced yet, to check and issue."
+    },
+    "sales.pipeline": {
+      "label": "Pipeline",
+      "tooltip": "What the open quotes and sales orders come to in the base currency: those sent or accepted and still valid."
+    },
+    "invoice.record-payment": {
+      "label": "Record a payment",
+      "tooltip": "Record money the customer has already paid into the bank: it posts at once, and what they owe goes down."
+    },
+    "invoice.settle-in-full": {
+      "label": "Settle the invoice in full",
+      "tooltip": "Clear what is left as a settlement difference, within the organisation's settlement tolerance (S$1.00 by default); a larger shortfall stays open, or is written off."
+    },
+    "sales.recurring-invoices": {
+      "label": "Recurring invoices",
+      "tooltip": "Invoices that repeat, weekly to yearly: each one's schedule, its next invoice, what the scheduler does with it and its status."
+    },
+    "sales.recurring-invoice": {
+      "label": "Recurring invoice",
+      "tooltip": "One recurring invoice: its schedule, customer and lines, and whether the scheduler makes drafts or issues and sends."
+    },
+    "recurring-invoice.new": {
+      "label": "New recurring invoice",
+      "tooltip": "Bill a customer the same lines on a schedule, such as a monthly subscription."
+    },
+    "recurring-invoice.save": {
+      "label": "Save",
+      "tooltip": "Save it: a change of lines is a new version, and invoices already made keep theirs."
+    },
+    "recurring-invoice.check": {
+      "label": "Check",
+      "tooltip": "See its next invoice's date and anything that would stop its invoices being issued, without saving."
+    },
+    "recurring-invoice.pause": {
+      "label": "Pause",
+      "tooltip": "Make no invoices until it is resumed."
+    },
+    "recurring-invoice.resume": {
+      "label": "Resume",
+      "tooltip": "Make its invoices again from the next date; the dates it missed are skipped."
+    },
+    "recurring-invoice.mode": {
+      "label": "What the scheduler does",
+      "tooltip": "Make a draft of each invoice for a person to issue, or issue and send each one itself once another person approves the content; a change of content needs the approval again."
+    },
+    "recurring-invoice.ask-approval": {
+      "label": "Ask for approval",
+      "tooltip": "Another person approves this content; until then, and after any change, the scheduler makes drafts."
     }
   }
 }

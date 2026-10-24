@@ -7,6 +7,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { InvoicePage, check } from "./InvoicePage";
 import { Invoices } from "./Invoices";
+import { receiptOf } from "./Receipts";
 
 type Invoice = components["schemas"]["Invoice"];
 
@@ -23,6 +24,7 @@ const accounts = {
       { id: "a4010", code: "4010", name: "Software revenue", type: "revenue", active: true, group: false, version: 1 },
       { id: "a1100", code: "1100", name: "Accounts receivable", type: "asset", active: true, group: false, version: 1 },
       { id: "a2200", code: "2200", name: "GST control", type: "liability", active: true, group: false, version: 1 },
+      { id: "a1010", code: "1010", name: "DBS current", type: "asset", active: true, group: false, version: 1, money_account: true, currency: "SGD" },
     ],
   },
 };
@@ -228,5 +230,49 @@ describe("An invoice", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask to void" }));
     await waitFor(() => expect(sent.some((s) => s.method === "POST" && s.path === "/v1/invoices/v1/void-approval")).toBe(true));
     expect(sent.find((s) => s.path === "/v1/invoices/v1/void-approval")!.body).toMatchObject({ reason: "Billed twice" });
+  });
+
+  // req: FR-AR-18
+  it("records a payment received into the bank", async () => {
+    const sent = answer({
+      ...reads,
+      "GET /v1/invoices/v1": read(issued),
+      "POST /v1/customer-receipts": { status: 201, body: { receipt: { id: "r1", number: "RC-0001", status: "posted", version: 1, currency: "SGD", total: sgd("3270.00"), unapplied: sgd("0.00"), invoices: [], ledger_impact: [] }, entry: { id: "e2" } } },
+    });
+    renderPage(InvoicePage, { path: "/sales/invoices/v1", route: "/sales/invoices/$invoiceId", session: accountant, organisation: standard });
+    fireEvent.click(await screen.findByRole("button", { name: "Record a payment…" }));
+    const dialog = await screen.findByRole("dialog");
+    await within(dialog).findByRole("option", { name: "1010 DBS current" });
+    expect((within(dialog).getByLabelText("Amount received (SGD)") as HTMLInputElement).value).toBe("3270.00");
+    fireEvent.change(within(dialog).getByLabelText("Date received"), { target: { value: "2026-10-28" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record a payment" }));
+    await waitFor(() => expect(sent.some((s) => s.method === "POST" && s.path === "/v1/customer-receipts")).toBe(true));
+    expect(sent.find((s) => s.path === "/v1/customer-receipts")!.body).toMatchObject({
+      customer_id: "c1",
+      date: "2026-10-28",
+      money_account_id: "a1010",
+      currency: "SGD",
+      invoices: [{ invoice_id: "v1", amount: sgd("3270.00") }],
+    });
+  });
+});
+
+// req: FR-AR-18
+describe("A payment of an invoice", () => {
+  const f = { date: "2026-10-28", account: "a1010", accountCurrency: "SGD", amount: "", rate: "", received: "", reference: "", inFull: false };
+  it("keeps what the customer paid beyond the invoice as their credit", () => {
+    const r = receiptOf(issued, "SGD", { ...f, amount: "3,300.00" }).receipt!;
+    expect(r.invoices![0]).toMatchObject({ amount: sgd("3270.00") });
+    expect(r.invoices![0]!.in_full).toBeUndefined();
+    expect(r.unapplied).toEqual(sgd("30.00"));
+  });
+
+  it("settles in full only when asked, and says what to fix", () => {
+    expect(receiptOf(issued, "SGD", { ...f, amount: "3269.50", inFull: true }).receipt!.invoices![0]).toMatchObject({ amount: { amount: "3269.50" }, in_full: true });
+    expect(receiptOf(issued, "SGD", { ...f, amount: "3269.50" }).receipt!.invoices![0]!.in_full).toBeUndefined();
+    const { errors } = receiptOf(issued, "SGD", { ...f, date: "", account: "", amount: "0" });
+    expect(errors.date).toBe("Enter the day the money came into the account.");
+    expect(errors.account).toBe("Choose the account the money came into.");
+    expect(errors.amount).toBe("Enter what the customer paid in SGD, such as 400.00.");
   });
 });
