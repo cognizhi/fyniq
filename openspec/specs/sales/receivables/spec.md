@@ -71,7 +71,7 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 
 #### Scenario: Delivery state
 - **WHEN** an invoice's delivery state is shown
-- **THEN** it is not sent, sent, opened or bounced, with its Peppol transmission status where sent by InvoiceNow (FR-AR-12)
+- **THEN** it is not sent, sent, delivered, viewed (through its online link) or bounced, with its Peppol transmission status where sent by InvoiceNow (FR-AR-12)
 
 #### Scenario: Settlement state is derived from allocations
 - **WHEN** receipts, credits or write-offs are allocated to an invoice
@@ -143,7 +143,8 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 
 #### Scenario: Email with tracking
 - **WHEN** an invoice is sent by email from the platform
-- **THEN** its sent and opened events are tracked
+- **THEN** it is recorded as sent, delivered or bounced from the provider's events, and as viewed the first time the customer opens its online link
+- **AND** no email open pixel or click is tracked (rev 0.115)
 
 #### Scenario: Secure online view link
 - **WHEN** an invoice is sent
@@ -173,6 +174,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **WHEN** a later invoice falls in a shorter month
 - **THEN** it runs on the last day of that month
 
+#### Scenario: Drafts by default, issue and send once approved (rev 0.115)
+- **WHEN** a recurring invoice is set up
+- **THEN** it makes drafts unless set to issue and send, which needs a second person's approval of its content, again after each change
+- **AND** each invoice it issues is listed for the weekly review
+
 ### Requirement: FR-AR-08 Automated reminders and statements
 The system SHALL send automated reminders on a schedule per customer group, with templates, and SHALL produce a statement of account by date range using the workbook Statement logic.
 
@@ -182,6 +188,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P1 / P2 (disputes and promise-to-pa
 - **GIVEN** a reminder schedule and templates for a customer group
 - **WHEN** an invoice of a customer in that group reaches a scheduled point
 - **THEN** a reminder from the group's templates is sent
+
+#### Scenario: Reminders through the Inbox until bank import (rev 0.115)
+- **GIVEN** receipts are recorded by hand
+- **WHEN** an invoice reaches a point on its group's schedule (by default 3 days before due, on the due date, 7 and 30 days overdue)
+- **THEN** its reminder waits in the Inbox to be sent in one click or skipped, until an Owner switches the group to automatic
 
 #### Scenario: Statement of account
 - **WHEN** a statement of account is produced for a date range
@@ -264,6 +275,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 #### Scenario: Supplier credits applied later, built (rev 0.81)
 - **WHEN** a supplier credit is applied to a bill
 - **THEN** one allocation settles the bill and one the credit, each with the carrying amount it cleared
+
+#### Scenario: Receipts recorded by hand until bank import (rev 0.115)
+- **WHEN** a person records a customer's receipt into a money account against one or more invoices
+- **THEN** it settles them in part or full with realised FX per allocation
+- **AND** bank import later matches a statement line to it rather than posting it again
 
 #### Scenario: G4-054 Two receipts allocated at once to one invoice
 - **WHEN** two S$1,000 receipts are allocated at the same time to one S$1,000 invoice
@@ -420,4 +436,4 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 
 #### Scenario: Delivery and document status shown separately
 - **WHEN** a quote or invoice is sent
-- **THEN** its delivery status (sent, opened, bounced) and its own status (a quote: accepted, declined, expired; an invoice: part-paid, paid) show separately on the record and in the customer's timeline
+- **THEN** its delivery status (sent, delivered, viewed, bounced) and its own status (a quote: accepted, declined, expired; an invoice: part-paid, paid) show separately on the record and in the customer's timeline
