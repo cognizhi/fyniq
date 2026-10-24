@@ -44,6 +44,14 @@
       ],
       "type": "boolean"
     },
+    "customer_group_id": {
+      "description": "The customer group whose reminder schedule it follows (FR-AR-08); absent: the standard schedule, 3 days before the due date, on it, and 7 and 30 days after.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "default_account_id": {
       "description": "The category its lines start with.",
       "examples": [

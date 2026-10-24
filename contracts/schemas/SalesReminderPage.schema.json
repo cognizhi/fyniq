@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "The organisation's today.",
+      "examples": [
+        "2026-11-08"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "items": {
+      "description": "The reminders due, earliest first.",
+      "items": {
+        "$ref": "SalesReminder.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjAxOTI4ZjZlIn0"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "as_at",
+    "items"
+  ],
+  "title": "SalesReminderPage",
+  "type": "object"
+}

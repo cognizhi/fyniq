@@ -73,21 +73,25 @@ func ParseReference(s string) (org, message uuid.UUID, ok bool) {
 }
 
 // SenderOf is the sender purpose of a message's purpose (FR-INT-21): a sign-in alert is security's; an invoice or a
-// quote sent to a customer (FR-AR-06) the invoices sender's; the rest so far are notifications.
+// quote sent to a customer (FR-AR-06) the invoices sender's; a reminder of one (FR-AR-08) the reminders sender's; the
+// rest so far are notifications.
 func SenderOf(messagePurpose string) string {
 	switch messagePurpose {
 	case "sign_in_alert":
 		return storage.SenderSecurity
 	case PurposeInvoice, PurposeQuote:
 		return storage.SenderInvoices
+	case PurposeReminder:
+		return storage.SenderReminders
 	}
 	return storage.SenderNotifications
 }
 
-// The purposes of the email that carries a document to a customer (FR-AR-06).
+// The purposes of the email that carries a document to a customer (FR-AR-06), and of a reminder of one (FR-AR-08).
 const (
-	PurposeInvoice = "invoice"
-	PurposeQuote   = "quote"
+	PurposeInvoice  = "invoice"
+	PurposeQuote    = "quote"
+	PurposeReminder = "reminder"
 )
 
 // fromOf is the address a message of purpose is sent from: the organisation's sender in force for it, or the

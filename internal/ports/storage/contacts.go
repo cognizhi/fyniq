@@ -26,6 +26,9 @@ type ContactDetails struct {
 	DiscountDays     *int
 	DefaultAccountID *uuid.UUID // the default category
 	DefaultGSTCode   string
+
+	// The customer group whose reminder schedule a customer follows (FR-AR-08); nil: the standard one.
+	CustomerGroupID *uuid.UUID
 }
 
 // Contact is a customer, a vendor or both.

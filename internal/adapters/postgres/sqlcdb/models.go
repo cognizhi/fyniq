@@ -281,6 +281,7 @@ type FyniqContact struct {
 	TaxResidence     *string
 	DiscountPercent  *string
 	DiscountDays     *int16
+	CustomerGroupID  *uuid.UUID
 }
 
 type FyniqContactDocumentTemplate struct {
@@ -304,6 +305,16 @@ type FyniqCurrency struct {
 	Code       string
 	MinorUnits int16
 	Name       string
+}
+
+type FyniqCustomerGroup struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	ReminderDays   []int32
+	Active         bool
+	Version        int32
+	CreatedAt      time.Time
 }
 
 type FyniqDocument struct {
@@ -1041,6 +1052,18 @@ type FyniqRoleAssignment struct {
 	ExpiresAt      *time.Time
 	CreatedAt      time.Time
 	RevokedAt      *time.Time
+}
+
+type FyniqSalesReminder struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	Step           int32
+	Outcome        string
+	SendID         *uuid.UUID
+	Reason         *string
+	DecidedBy      string
+	DecidedAt      time.Time
 }
 
 type FyniqSodOverride struct {

@@ -50,14 +50,17 @@ fyniq_api       SELECT    close_checklist_entry
 fyniq_api       INSERT    close_checklist_template (tasks, version, written_at, written_by)
 fyniq_api       SELECT    close_checklist_template
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
-fyniq_api       INSERT    contact (address, billing_email, country, currency, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
+fyniq_api       INSERT    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id)
 fyniq_api       SELECT    contact
-fyniq_api       UPDATE    contact (address, billing_email, country, currency, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
+fyniq_api       UPDATE    contact (address, billing_email, country, currency, customer_group_id, default_account_id, default_gst_code, discount_days, discount_percent, is_active, is_customer, is_vendor, legal_name, payment_terms_days, peppol_id, phone, remittance_email, tax_residence, uen_or_tax_id, version)
 fyniq_api       INSERT    contact_document_template (contact_id, document_type, kind, set_at, set_by, template_id)
 fyniq_api       SELECT    contact_document_template
 fyniq_api       EXECUTE   count_super_admins()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
+fyniq_api       INSERT    customer_group (name, reminder_days)
+fyniq_api       SELECT    customer_group
+fyniq_api       UPDATE    customer_group (active, name, reminder_days, version)
 fyniq_api       INSERT    document (type)
 fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)
@@ -193,6 +196,8 @@ fyniq_api       SELECT    review_log_review
 fyniq_api       INSERT    role_assignment (expires_at, membership_id, role)
 fyniq_api       SELECT    role_assignment
 fyniq_api       UPDATE    role_assignment (revoked_at)
+fyniq_api       INSERT    sales_reminder (decided_by, document_id, outcome, reason, send_id, step)
+fyniq_api       SELECT    sales_reminder
 fyniq_api       USAGE     schema fyniq
 fyniq_api       EXECUTE   session_for()
 fyniq_api       EXECUTE   session_step_up()
@@ -243,6 +248,7 @@ fyniq_executor  SELECT    contact
 fyniq_executor  SELECT    contact_document_template
 fyniq_executor  SELECT    currencies
 fyniq_executor  EXECUTE   current_org()
+fyniq_executor  SELECT    customer_group
 fyniq_executor  INSERT    document (type)
 fyniq_executor  SELECT    document
 fyniq_executor  UPDATE    document (current_version, posted_at, posted_by, status)
@@ -289,6 +295,7 @@ fyniq_executor  SELECT    recurring_journal
 fyniq_executor  SELECT    recurring_journal_version
 fyniq_executor  SELECT    review_log_entry
 fyniq_executor  SELECT    review_log_review
+fyniq_executor  SELECT    sales_reminder
 fyniq_executor  USAGE     schema fyniq
 fyniq_executor  SELECT    sod_override
 fyniq_executor  SELECT    statutory_pack_activation
@@ -318,6 +325,7 @@ fyniq_readonly  SELECT    contact
 fyniq_readonly  SELECT    contact_document_template
 fyniq_readonly  SELECT    currencies
 fyniq_readonly  EXECUTE   current_org()
+fyniq_readonly  SELECT    customer_group
 fyniq_readonly  SELECT    document
 fyniq_readonly  SELECT    document_link
 fyniq_readonly  SELECT    document_number
@@ -370,6 +378,7 @@ fyniq_readonly  SELECT    recurring_journal_version
 fyniq_readonly  SELECT    review_log_entry
 fyniq_readonly  SELECT    review_log_review
 fyniq_readonly  SELECT    role_assignment
+fyniq_readonly  SELECT    sales_reminder
 fyniq_readonly  USAGE     schema fyniq
 fyniq_readonly  SELECT    sod_override
 fyniq_readonly  SELECT    statutory_pack_activation
@@ -404,6 +413,7 @@ fyniq_worker    EXECUTE   create_scheduled_invoice_draft()
 fyniq_worker    EXECUTE   create_scheduled_revaluation()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
+fyniq_worker    SELECT    customer_group
 fyniq_worker    SELECT    document
 fyniq_worker    UPDATE    document (posted_at, posted_by, status)
 fyniq_worker    INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
@@ -492,6 +502,7 @@ fyniq_worker    INSERT    review_log_entry (actor, approval_id, kind, logged_at,
 fyniq_worker    SELECT    review_log_entry
 fyniq_worker    SELECT    review_log_review
 fyniq_worker    SELECT    role_assignment
+fyniq_worker    SELECT    sales_reminder
 fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq
 fyniq_worker    SELECT    sod_override

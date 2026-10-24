@@ -59,14 +59,15 @@
       "type": "string"
     },
     "purpose": {
-      "description": "Why it was sent: a test message, a sign-in alert, a notification, a digest of them, or an invoice or a quote emailed to a customer (FR-AR-06).",
+      "description": "Why it was sent: a test message, a sign-in alert, a notification, a digest of them, an invoice or a quote emailed to a customer (FR-AR-06), or a reminder of one (FR-AR-08).",
       "enum": [
         "test",
         "sign_in_alert",
         "notification",
         "digest",
         "invoice",
-        "quote"
+        "quote",
+        "reminder"
       ],
       "examples": [
         "test"

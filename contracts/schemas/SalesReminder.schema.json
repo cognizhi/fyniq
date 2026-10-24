@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What is still open on the invoice, or the quote's total, in its currency."
+    },
+    "customer": {
+      "$ref": "SalesReminderCustomer.schema.json",
+      "description": "Its customer."
+    },
+    "days_overdue": {
+      "description": "Days past an invoice's due date; 0 before it, and for a quote.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "document_id": {
+      "description": "The invoice, quote or order.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "due_on": {
+      "description": "The invoice's due date, or the quote's validity date.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "email_template": {
+      "description": "The email template it is worded with: the payment reminder once the invoice is overdue, else the invoice's or quote's own.",
+      "enum": [
+        "invoice",
+        "quote",
+        "reminder"
+      ],
+      "examples": [
+        "reminder"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "invoice: an issued invoice still open; quote: a sent quote or sales order about to expire.",
+      "enum": [
+        "invoice",
+        "quote"
+      ],
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "INV-0012"
+      ],
+      "type": "string"
+    },
+    "recipient": {
+      "description": "The customer's billing email, where it goes unless another address is given; absent when it has none.",
+      "examples": [
+        "accounts@acme.example"
+      ],
+      "type": "string"
+    },
+    "step": {
+      "description": "The reminder's day in the schedule: days from due_on, negative before it. Send or skip it by this step.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind",
+    "document_id",
+    "number",
+    "customer",
+    "due_on",
+    "step",
+    "days_overdue",
+    "amount",
+    "email_template"
+  ],
+  "title": "SalesReminder",
+  "type": "object"
+}

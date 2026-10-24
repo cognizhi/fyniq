@@ -46,6 +46,13 @@
       ],
       "type": "boolean"
     },
+    "customer_group_id": {
+      "description": "A customer's group, an active one (FR-AR-08); \"\" takes it out of its group, to the standard schedule.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10"
+      ],
+      "type": "string"
+    },
     "default_account_id": {
       "description": "The default category; \"\" clears it.",
       "examples": [

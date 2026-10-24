@@ -22,7 +22,7 @@ func toContact(r contactRow) storage.Contact {
 		LegalName: r.LegalName, Customer: r.IsCustomer, Vendor: r.IsVendor, UENOrTaxID: str(r.UenOrTaxID), PeppolID: str(r.PeppolID),
 		BillingEmail: str(r.BillingEmail), RemittanceEmail: str(r.RemittanceEmail), Phone: str(r.Phone), Address: str(r.Address),
 		Country: str(r.Country), TaxResidence: str(r.TaxResidence), Currency: str(r.Currency), DefaultAccountID: r.DefaultAccountID,
-		DefaultGSTCode: str(r.DefaultGstCode)}}
+		DefaultGSTCode: str(r.DefaultGstCode), CustomerGroupID: r.CustomerGroupID}}
 	if r.PaymentTermsDays != nil {
 		d := int(*r.PaymentTermsDays)
 		c.PaymentTermsDays = &d
@@ -87,6 +87,7 @@ func contactChanges(a, b storage.Contact) map[string][2]any {
 	diff("discount_days", ptr(a.DiscountDays), ptr(b.DiscountDays))
 	diff("default_account_id", ptr(a.DefaultAccountID), ptr(b.DefaultAccountID))
 	diff("default_gst_code", nilIfEmpty(a.DefaultGSTCode), nilIfEmpty(b.DefaultGSTCode))
+	diff("customer_group_id", ptr(a.CustomerGroupID), ptr(b.CustomerGroupID))
 	diff("is_active", a.Active, b.Active)
 	return out
 }
@@ -107,7 +108,7 @@ func (r contacts) Create(ctx context.Context, d storage.ContactDetails) (storage
 		UenOrTaxID: opt(d.UENOrTaxID), PeppolID: opt(d.PeppolID), BillingEmail: opt(d.BillingEmail), RemittanceEmail: opt(d.RemittanceEmail),
 		Phone: opt(d.Phone), Address: opt(d.Address), Country: opt(d.Country), TaxResidence: opt(d.TaxResidence), Currency: opt(d.Currency), PaymentTermsDays: t,
 		DiscountPercent: opt(d.DiscountPercent), DiscountDays: dd,
-		DefaultAccountID: d.DefaultAccountID, DefaultGstCode: opt(d.DefaultGSTCode)})
+		DefaultAccountID: d.DefaultAccountID, DefaultGstCode: opt(d.DefaultGSTCode), CustomerGroupID: d.CustomerGroupID})
 	if err != nil {
 		return storage.Contact{}, mapError(err)
 	}
@@ -154,7 +155,7 @@ func (r contacts) Update(ctx context.Context, id uuid.UUID, version int, d stora
 		UenOrTaxID: opt(d.UENOrTaxID), PeppolID: opt(d.PeppolID), BillingEmail: opt(d.BillingEmail), RemittanceEmail: opt(d.RemittanceEmail),
 		Phone: opt(d.Phone), Address: opt(d.Address), Country: opt(d.Country), TaxResidence: opt(d.TaxResidence), Currency: opt(d.Currency), PaymentTermsDays: t,
 		DiscountPercent: opt(d.DiscountPercent), DiscountDays: dd,
-		DefaultAccountID: d.DefaultAccountID, DefaultGstCode: opt(d.DefaultGSTCode), IsActive: active})
+		DefaultAccountID: d.DefaultAccountID, DefaultGstCode: opt(d.DefaultGSTCode), CustomerGroupID: d.CustomerGroupID, IsActive: active})
 	if err != nil {
 		return storage.Contact{}, mapError(err)
 	}

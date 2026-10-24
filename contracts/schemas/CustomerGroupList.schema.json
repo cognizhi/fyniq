@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The groups, by name.",
+      "items": {
+        "$ref": "CustomerGroup.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjAxOTI4ZjZlIn0"
+      ],
+      "type": "string"
+    },
+    "standard_reminder_days": {
+      "description": "The schedule of a customer in no group: 3 days before the due date, on it, and 7 and 30 days after.",
+      "examples": [
+        [
+          -3,
+          0,
+          7,
+          30
+        ]
+      ],
+      "items": {
+        "description": "Days from an invoice's due date, negative before it.",
+        "examples": [
+          7
+        ],
+        "format": "int32",
+        "maximum": 365,
+        "minimum": -30,
+        "type": "integer"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "standard_reminder_days",
+    "items"
+  ],
+  "title": "CustomerGroupList",
+  "type": "object"
+}

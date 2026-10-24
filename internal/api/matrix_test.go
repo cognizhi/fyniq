@@ -2000,6 +2000,41 @@ var matrixCalls = map[string]matrixCall{
 	"listBillReminders": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/bill-reminders", tok, nil), nil
 	},
+	// Reminders to customers (FR-AR-08): listed under V, sent or skipped under P on "Invoices, credit notes"; customer
+	// groups are contact master data.
+	"listSalesReminders": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/sales-reminders", tok, nil), nil
+	},
+	"sendSalesReminder": func(e *env, tok string) (response, func() bool) {
+		id := matrixOverdueInvoice(e)
+		r := e.call(http.MethodPost, "/v1/sales-reminders/"+id+"/send", tok, map[string]any{"step": 7})
+		return r, func() bool { return e.remindersDue()[id] != nil }
+	},
+	"skipSalesReminder": func(e *env, tok string) (response, func() bool) {
+		id := matrixOverdueInvoice(e)
+		r := e.call(http.MethodPost, "/v1/sales-reminders/"+id+"/skip", tok, map[string]any{"step": 7})
+		return r, func() bool { return e.remindersDue()[id] != nil }
+	},
+	"listCustomerGroups": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/customer-groups", tok, nil), nil
+	},
+	"getCustomerGroup": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/customer-groups/"+matrixCustomerGroup(e), tok, nil), nil
+	},
+	"createCustomerGroup": func(e *env, tok string) (response, func() bool) {
+		name := "Matrix " + uuid.NewString()[:8]
+		r := e.call(http.MethodPost, "/v1/customer-groups", tok, map[string]any{"name": name, "reminder_days": []int{0}})
+		return r, func() bool {
+			return !strings.Contains(e.call(http.MethodGet, "/v1/customer-groups", e.as(authz.Accountant), nil).Raw, `"name":"`+name+`"`)
+		}
+	},
+	"replaceCustomerGroup": func(e *env, tok string) (response, func() bool) {
+		id, name := matrixCustomerGroup(e), "Matrix "+uuid.NewString()[:8]
+		r := e.call(http.MethodPut, "/v1/customer-groups/"+id, tok, map[string]any{"name": name, "reminder_days": []int{1}}, "If-Match", "*")
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/customer-groups/"+id, e.as(authz.Accountant), nil).str("name") != name
+		}
+	},
 	"previewDocumentTemplate": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/document-template-previews", tok, map[string]any{"kind": "email", "document_type": "quote",
 			"content": map[string]any{"schema": "fyniq.template/1", "subject": "Quotation {{document.number}}", "body": "Dear {{customer.name}}"}}), nil

@@ -78,7 +78,7 @@ func (q *Queries) ContactDuplicates(ctx context.Context, arg ContactDuplicatesPa
 }
 
 const getContact = `-- name: GetContact :one
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact WHERE id = $1
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_active, version FROM fyniq.contact WHERE id = $1
 `
 
 type GetContactRow struct {
@@ -100,6 +100,7 @@ type GetContactRow struct {
 	DiscountDays     *int16
 	DefaultAccountID *uuid.UUID
 	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
 	IsActive         bool
 	Version          int32
 }
@@ -126,6 +127,7 @@ func (q *Queries) GetContact(ctx context.Context, id uuid.UUID) (GetContactRow, 
 		&i.DiscountDays,
 		&i.DefaultAccountID,
 		&i.DefaultGstCode,
+		&i.CustomerGroupID,
 		&i.IsActive,
 		&i.Version,
 	)
@@ -134,11 +136,11 @@ func (q *Queries) GetContact(ctx context.Context, id uuid.UUID) (GetContactRow, 
 
 const insertContact = `-- name: InsertContact :one
 INSERT INTO fyniq.contact (legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone,
-  address, country, tax_residence, currency, payment_terms_days, discount_percent, discount_days, default_account_id, default_gst_code)
+  address, country, tax_residence, currency, payment_terms_days, discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id)
 VALUES ($1, $2, $3, $4, $5,
   $6, $7, $8, $9, $10, $11, $12,
-  $13, $14::text::numeric, $15, $16, $17)
-RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, is_active, version
+  $13, $14::text::numeric, $15, $16, $17, $18)
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_active, version
 `
 
 type InsertContactParams struct {
@@ -159,6 +161,7 @@ type InsertContactParams struct {
 	DiscountDays     *int16
 	DefaultAccountID *uuid.UUID
 	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
 }
 
 type InsertContactRow struct {
@@ -180,6 +183,7 @@ type InsertContactRow struct {
 	DiscountDays     *int16
 	DefaultAccountID *uuid.UUID
 	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
 	IsActive         bool
 	Version          int32
 }
@@ -203,6 +207,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 		arg.DiscountDays,
 		arg.DefaultAccountID,
 		arg.DefaultGstCode,
+		arg.CustomerGroupID,
 	)
 	var i InsertContactRow
 	err := row.Scan(
@@ -224,6 +229,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 		&i.DiscountDays,
 		&i.DefaultAccountID,
 		&i.DefaultGstCode,
+		&i.CustomerGroupID,
 		&i.IsActive,
 		&i.Version,
 	)
@@ -231,7 +237,7 @@ func (q *Queries) InsertContact(ctx context.Context, arg InsertContactParams) (I
 }
 
 const lockContact = `-- name: LockContact :one
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact WHERE id = $1 FOR UPDATE
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_active, version FROM fyniq.contact WHERE id = $1 FOR UPDATE
 `
 
 type LockContactRow struct {
@@ -253,6 +259,7 @@ type LockContactRow struct {
 	DiscountDays     *int16
 	DefaultAccountID *uuid.UUID
 	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
 	IsActive         bool
 	Version          int32
 }
@@ -279,6 +286,7 @@ func (q *Queries) LockContact(ctx context.Context, id uuid.UUID) (LockContactRow
 		&i.DiscountDays,
 		&i.DefaultAccountID,
 		&i.DefaultGstCode,
+		&i.CustomerGroupID,
 		&i.IsActive,
 		&i.Version,
 	)
@@ -286,7 +294,7 @@ func (q *Queries) LockContact(ctx context.Context, id uuid.UUID) (LockContactRow
 }
 
 const pageContacts = `-- name: PageContacts :many
-SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, is_active, version FROM fyniq.contact
+SELECT id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_active, version FROM fyniq.contact
 WHERE id > $1::uuid
   AND ($2::text IS NULL OR ($2::text = 'customer' AND is_customer) OR ($2::text = 'vendor' AND is_vendor))
 ORDER BY id LIMIT $3
@@ -317,6 +325,7 @@ type PageContactsRow struct {
 	DiscountDays     *int16
 	DefaultAccountID *uuid.UUID
 	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
 	IsActive         bool
 	Version          int32
 }
@@ -350,6 +359,7 @@ func (q *Queries) PageContacts(ctx context.Context, arg PageContactsParams) ([]P
 			&i.DiscountDays,
 			&i.DefaultAccountID,
 			&i.DefaultGstCode,
+			&i.CustomerGroupID,
 			&i.IsActive,
 			&i.Version,
 		); err != nil {
@@ -369,9 +379,9 @@ UPDATE fyniq.contact SET legal_name = $1, is_customer = $2, is_vendor = $3,
   remittance_email = $7, phone = $8, address = $9, country = $10,
   tax_residence = $11, currency = $12, payment_terms_days = $13,
   discount_percent = $14::text::numeric, discount_days = $15, default_account_id = $16,
-  default_gst_code = $17, is_active = $18, version = version + 1
-WHERE id = $19
-RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, is_active, version
+  default_gst_code = $17, customer_group_id = $18, is_active = $19, version = version + 1
+WHERE id = $20
+RETURNING id, legal_name, is_customer, is_vendor, uen_or_tax_id, peppol_id, billing_email, remittance_email, phone, address, country, tax_residence, currency, payment_terms_days, coalesce(trim_scale(discount_percent)::text, '')::text AS discount_percent, discount_days, default_account_id, default_gst_code, customer_group_id, is_active, version
 `
 
 type UpdateContactParams struct {
@@ -392,6 +402,7 @@ type UpdateContactParams struct {
 	DiscountDays     *int16
 	DefaultAccountID *uuid.UUID
 	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
 	IsActive         bool
 	ID               uuid.UUID
 }
@@ -415,6 +426,7 @@ type UpdateContactRow struct {
 	DiscountDays     *int16
 	DefaultAccountID *uuid.UUID
 	DefaultGstCode   *string
+	CustomerGroupID  *uuid.UUID
 	IsActive         bool
 	Version          int32
 }
@@ -438,6 +450,7 @@ func (q *Queries) UpdateContact(ctx context.Context, arg UpdateContactParams) (U
 		arg.DiscountDays,
 		arg.DefaultAccountID,
 		arg.DefaultGstCode,
+		arg.CustomerGroupID,
 		arg.IsActive,
 		arg.ID,
 	)
@@ -461,6 +474,7 @@ func (q *Queries) UpdateContact(ctx context.Context, arg UpdateContactParams) (U
 		&i.DiscountDays,
 		&i.DefaultAccountID,
 		&i.DefaultGstCode,
+		&i.CustomerGroupID,
 		&i.IsActive,
 		&i.Version,
 	)

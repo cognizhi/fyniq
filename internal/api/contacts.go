@@ -11,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
+	"github.com/cognizhi/fyniq/internal/domain/salesreminder"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -48,6 +49,8 @@ type Contact struct {
 	Active             bool                `json:"active" doc:"An inactive contact is kept for its history and offered for nothing new." example:"true"`
 	Version            int                 `json:"version" doc:"The contact's version; it also makes the ETag." example:"1"`
 	PossibleDuplicates []PossibleDuplicate `json:"possible_duplicates" doc:"Other contacts with the same name, UEN or tax ID, or email (FR-CT-04): review them, and merge or tell them apart."`
+
+	CustomerGroupID string `json:"customer_group_id,omitempty" format:"uuid" doc:"The customer group whose reminder schedule it follows (FR-AR-08); absent: the standard schedule, 3 days before the due date, on it, and 7 and 30 days after." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10"`
 }
 
 // ContactDraft is a new contact.
@@ -69,6 +72,8 @@ type ContactDraft struct {
 	DiscountDays     *int   `json:"discount_days,omitempty" doc:"Its days, 1 to 365, with discount_percent." example:"10"`
 	DefaultAccountID string `json:"default_account_id,omitempty" doc:"The default category: an active account that takes postings." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	DefaultGSTCode   string `json:"default_gst_code,omitempty" doc:"The default GST code." example:"SR"`
+
+	CustomerGroupID string `json:"customer_group_id,omitempty" doc:"A customer's group, an active one, whose reminder schedule it follows (FR-AR-08); left out, the standard schedule." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10"`
 }
 
 // ContactChanges change a contact: a field left out keeps its value, and "" clears a text.
@@ -91,6 +96,8 @@ type ContactChanges struct {
 	DefaultAccountID *string `json:"default_account_id,omitempty" doc:"The default category; \"\" clears it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"`
 	DefaultGSTCode   *string `json:"default_gst_code,omitempty" doc:"The default GST code." example:"SR"`
 	Active           *bool   `json:"active,omitempty" doc:"false keeps it for its history and offers it for nothing new." example:"false"`
+
+	CustomerGroupID *string `json:"customer_group_id,omitempty" doc:"A customer's group, an active one (FR-AR-08); \"\" takes it out of its group, to the standard schedule." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f10"`
 }
 
 // ContactPage is a page of contacts, in the order they were added.
@@ -140,7 +147,7 @@ type contactWriteOutput struct {
 
 // ContactCodes are a contact's rules (internal/domain/contact).
 var ContactCodes = []string{contact.CodeName, contact.CodeRole, contact.CodeEmail, contact.CodeCountry, contact.CodeCurrency,
-	contact.CodeTerms, contact.CodeGSTCode, contact.CodePeppol, contact.CodeText, contact.CodeCategory, contact.CodeDiscount}
+	contact.CodeTerms, contact.CodeGSTCode, contact.CodePeppol, contact.CodeText, contact.CodeCategory, contact.CodeDiscount, salesreminder.CodeGroup}
 
 func contactOf(c storage.Contact, dups []storage.ContactDuplicate) Contact {
 	out := Contact{ID: c.ID.String(), LegalName: c.LegalName, Customer: c.Customer, Vendor: c.Vendor, UENOrTaxID: c.UENOrTaxID,
@@ -151,6 +158,9 @@ func contactOf(c storage.Contact, dups []storage.ContactDuplicate) Contact {
 	if c.DefaultAccountID != nil {
 		out.DefaultAccountID = c.DefaultAccountID.String()
 	}
+	if c.CustomerGroupID != nil {
+		out.CustomerGroupID = c.CustomerGroupID.String()
+	}
 	for _, d := range dups {
 		out.PossibleDuplicates = append(out.PossibleDuplicates, PossibleDuplicate{ID: d.ID.String(), LegalName: d.LegalName,
 			SameName: d.SameName, SameUEN: d.SameUEN, SameEmail: d.SameEmail})
@@ -158,9 +168,24 @@ func contactOf(c storage.Contact, dups []storage.ContactDuplicate) Contact {
 	return out
 }
 
-// checkContact runs a contact's rules, and checks its default category is an account that takes postings.
-func checkContact(ctx context.Context, u storage.UnitOfWork, d storage.ContactDetails, bad []FieldProblem) error {
+// checkContact runs a contact's rules, and checks its default category is an account that takes postings and its
+// customer group (FR-AR-08) one of the organisation's, active unless it was the contact's group already (was).
+func checkContact(ctx context.Context, u storage.UnitOfWork, d storage.ContactDetails, was *uuid.UUID, bad []FieldProblem) error {
 	problems := contact.Check(d)
+	if d.CustomerGroupID != nil {
+		g, err := u.CustomerGroups().Get(ctx, *d.CustomerGroupID)
+		switch {
+		case err != nil:
+			bad = append(bad, FieldProblem{Code: salesreminder.CodeGroup, Field: "body.customer_group_id", Message: "is not a customer group of this organisation",
+				Fix: "Choose one of the customer groups, or leave it out for the standard schedule"})
+		case !d.Customer:
+			bad = append(bad, FieldProblem{Code: salesreminder.CodeGroup, Field: "body.customer_group_id", Message: "is for a customer, and the contact is not one",
+				Fix: "Make the contact a customer, or leave the group out"})
+		case !g.Active && (was == nil || *was != g.ID):
+			bad = append(bad, FieldProblem{Code: salesreminder.CodeGroup, Field: "body.customer_group_id", Message: "names an inactive customer group",
+				Fix: "Choose an active group, or make the group active again"})
+		}
+	}
 	if d.DefaultAccountID != nil {
 		acc, err := u.Accounts().Get(ctx, *d.DefaultAccountID)
 		if err != nil {
@@ -177,6 +202,16 @@ func checkContact(ctx context.Context, u storage.UnitOfWork, d storage.ContactDe
 		return invalid(bad)
 	}
 	return nil
+}
+
+// parseRef reads the ID of a what at field, noting a problem when it is not one.
+func parseRef(field, what, s string, bad *[]FieldProblem) *uuid.UUID {
+	id, err := uuid.Parse(strings.TrimSpace(s))
+	if err != nil {
+		*bad = append(*bad, FieldProblem{Code: CodeInvalid, Field: field, Message: "is not a " + what + " ID", Fix: "Send the " + what + "'s ID"})
+		return nil
+	}
+	return &id
 }
 
 func parseAccountRef(field, s string, bad *[]FieldProblem) *uuid.UUID {
@@ -245,7 +280,10 @@ func registerContacts(a *API) {
 				if b.DefaultAccountID != "" {
 					d.DefaultAccountID = parseAccountRef("body.default_account_id", b.DefaultAccountID, &bad)
 				}
-				if err := checkContact(ctx, u, d, bad); err != nil {
+				if b.CustomerGroupID != "" {
+					d.CustomerGroupID = parseRef("body.customer_group_id", "customer group", b.CustomerGroupID, &bad)
+				}
+				if err := checkContact(ctx, u, d, nil, bad); err != nil {
 					return Contact{}, err
 				}
 				c, err := u.Contacts().Create(ctx, d)
@@ -355,7 +393,13 @@ func registerContacts(a *API) {
 						d.DefaultAccountID = parseAccountRef("body.default_account_id", *b.DefaultAccountID, &bad)
 					}
 				}
-				if err := checkContact(ctx, u, d, bad); err != nil {
+				if b.CustomerGroupID != nil {
+					d.CustomerGroupID = nil
+					if strings.TrimSpace(*b.CustomerGroupID) != "" {
+						d.CustomerGroupID = parseRef("body.customer_group_id", "customer group", *b.CustomerGroupID, &bad)
+					}
+				}
+				if err := checkContact(ctx, u, d, cur.CustomerGroupID, bad); err != nil {
 					return Contact{}, err
 				}
 				c, err := u.Contacts().Update(ctx, id, cur.Version, d, active)

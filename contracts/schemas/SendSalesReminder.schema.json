@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "step": {
+      "description": "The reminder's step, as the list gives it.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "maximum": 365,
+      "minimum": -30,
+      "type": "integer"
+    },
+    "to": {
+      "description": "The address to send it to; left out, the customer's billing email.",
+      "examples": [
+        "accounts@acme.example"
+      ],
+      "maxLength": 254,
+      "type": "string"
+    }
+  },
+  "required": [
+    "step"
+  ],
+  "title": "SendSalesReminder",
+  "type": "object"
+}

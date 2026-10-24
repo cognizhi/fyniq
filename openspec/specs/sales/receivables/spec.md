@@ -287,6 +287,17 @@ Source: PRD-001 §8.5 · Priority S · Phase P1 / P2 (disputes and promise-to-pa
 - **WHEN** AR ageing (FR-AR-10) is shown
 - **THEN** disputed and undisputed amounts are shown separately
 
+#### Scenario: Reminders through the Inbox as built (rev 0.137)
+- **GIVEN** an issued invoice still open whose customer's schedule (its group's, else 3 days before the due date, on it, 7 and 30 days after) reached a day not yet decided
+- **WHEN** the reminders due are listed
+- **THEN** it is listed once, at the latest day reached, for a person to send from the reminders sender with the PDF already sent, or to skip
+- **AND** the day is decided once and never changes (FY203), and a receipt that settles the invoice takes it off
+
+#### Scenario: Quotes about to expire are reminded of (rev 0.137)
+- **GIVEN** a sent quote or sales order not answered
+- **WHEN** its validity date is 3 days away or less
+- **THEN** its reminder is listed in the same way
+
 ### Requirement: FR-AR-09 Customer deposits and retainers
 The system SHALL record customer deposits and retainers and apply them to invoices.
 

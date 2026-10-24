@@ -76,6 +76,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/customer-deposits/{deposit_id}` (getCustomerDeposit): Get a customer deposit
 - `POST /v1/customer-deposits/{deposit_id}/void` (voidCustomerDeposit): Void a customer deposit
 - `POST /v1/customer-deposits/{deposit_id}/void-approval` (requestCustomerDepositVoid): Ask for approval to void a customer deposit
+- `GET /v1/customer-groups` (listCustomerGroups): List the customer groups
+- `POST /v1/customer-groups` (createCustomerGroup): Add a customer group
+- `GET /v1/customer-groups/{customer_group_id}` (getCustomerGroup): Get a customer group
+- `PUT /v1/customer-groups/{customer_group_id}` (replaceCustomerGroup): Change a customer group
 - `GET /v1/customer-receipts` (listCustomerReceipts): List the customer receipts
 - `POST /v1/customer-receipts` (recordCustomerReceipt): Record a customer receipt
 - `GET /v1/customer-receipts/{receipt_id}` (getCustomerReceipt): Get a customer receipt
@@ -263,6 +267,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
 - `GET /v1/review-log` (listReviewLog): List the review log
 - `POST /v1/review-log/reviews` (reviewLogEntries): Review high-risk actions
+- `GET /v1/sales-reminders` (listSalesReminders): List the reminders due to customers
+- `POST /v1/sales-reminders/{document_id}/send` (sendSalesReminder): Send a reminder due
+- `POST /v1/sales-reminders/{document_id}/skip` (skipSalesReminder): Skip a reminder due
 - `GET /v1/session` (getSession): Get your session
 - `GET /v1/session/devices` (listDevices): List your devices
 - `POST /v1/session/devices/sign-out-others` (signOutOtherDevices): Sign out everywhere else
