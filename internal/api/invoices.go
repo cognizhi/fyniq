@@ -31,9 +31,11 @@ import (
 // issuing posts it. Approval as for bills: an invoice whose total in the base currency is above the self-approval
 // threshold is issued only on another person's approval, in any team mode; at or below it, a Founder-mode issue is
 // logged as self-approved for the weekly review (FM-2, FM-3); whoever prepared it never approves it (SOD-3); and in
-// Founder mode voiding or editing an issued invoice needs a second person (FM-1).
+// Founder mode voiding or editing an issued invoice needs a second person (FM-1). A credit note to a customer (FR-AR-04)
+// is an invoice of kind credit_note through the same operations, posted as its reverse (credit_note@1), numbered from
+// its own sequence and judged on its size by the same threshold, as a vendor credit is a bill's.
 
-// The API's codes for invoices' approvals, beside the domain's INVOICE-01 to INVOICE-09 and INVOICE-13.
+// The API's codes for invoices' approvals, beside the domain's INVOICE-01 to INVOICE-09, INVOICE-13 and INVOICE-15.
 const (
 	CodeInvoiceNeedsApproval = "INVOICE-10" // the invoice's total is above the self-approval threshold: ask for approval (FM-2)
 	CodeInvoiceVoidApproval  = "INVOICE-11" // in Founder mode a void needs a second person (FM-1)
@@ -43,7 +45,7 @@ const (
 
 // InvoiceCodes are the codes the posting rules and the invoice's own checks answer.
 var InvoiceCodes = []string{invoice.CodeCustomer, invoice.CodeGSTCode, invoice.CodeDueDate, invoice.CodeTooLong, invoice.CodeLine,
-	ledger.CodeInvoiceTotal, ledger.CodeGSTRate, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread}
+	invoice.CodeCredited, ledger.CodeInvoiceTotal, ledger.CodeGSTRate, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread}
 
 // InvoiceApprovalCodes are the codes an approval of an invoice's issue, void or edit may answer: SOD-3, and the
 // posting's own.
@@ -87,10 +89,12 @@ type InvoiceRelease struct {
 
 // InvoiceDraft is an invoice as entered: checked for its form when saved, and by the posting rules when it is issued.
 type InvoiceDraft struct {
+	Kind       string             `json:"kind,omitempty" enum:"invoice,credit_note" doc:"invoice, the default, or credit_note: a credit note to the customer, entered as an invoice is and issued as its reverse (FR-AR-04). Fixed once saved." example:"invoice"`
+	InvoiceID  string             `json:"invoice_id,omitempty" format:"uuid" doc:"A credit note only: the issued invoice of the same customer and currency it credits, in full or in part; left out, a standalone credit note. A linked credit note adjusts GST at the rates in force on that invoice's date, and credits at most its total." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
 	CustomerID string             `json:"customer_id,omitempty" format:"uuid" doc:"The customer: a contact marked as a customer." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"`
 	Reference  string             `json:"reference,omitempty" maxLength:"60" doc:"The customer's reference for it, such as their purchase order number." example:"PO-88213"`
 	Date       string             `json:"date,omitempty" format:"date" doc:"The invoice's date: its tax point." example:"2026-10-24"`
-	DueDate    string             `json:"due_date,omitempty" format:"date" doc:"When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04)." example:"2026-11-23"`
+	DueDate    string             `json:"due_date,omitempty" format:"date" doc:"When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04). A credit note has none." example:"2026-11-23"`
 	Currency   string             `json:"currency" pattern:"^[A-Z]{3}$" doc:"The invoice's currency." example:"SGD"`
 	FXRate     string             `json:"fx_rate,omitempty" doc:"For an invoice in another currency: base currency per one unit. Left out, the invoice takes the cascade's rate for its date (ENG-40)." example:"1.34"`
 	Lines      []InvoiceLineDraft `json:"lines" maxItems:"200" doc:"The invoice's lines."`
@@ -133,7 +137,9 @@ type InvoiceCheck struct {
 // Invoice is a customer's invoice: its current version, its states and what issuing it does.
 type Invoice struct {
 	ID            string           `json:"id" format:"uuid" doc:"The invoice's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	Number        string           `json:"number,omitempty" doc:"Its number from the invoice sequence, given when it is issued (FR-ORG-04); a draft has none." example:"INV-0042"`
+	Kind          string           `json:"kind" enum:"invoice,credit_note" doc:"invoice, or credit_note: a credit note to the customer, issued as an invoice's reverse (FR-AR-04)." example:"invoice"`
+	Credits       *InvoiceRef      `json:"credits,omitempty" doc:"A credit note linked to an invoice: the invoice it credits."`
+	Number        string           `json:"number,omitempty" doc:"Its number from the invoice sequence (a credit note's, from the credit note sequence), given when it is issued (FR-ORG-04); a draft has none." example:"INV-0042"`
 	Status        string           `json:"status" enum:"draft,posted,reversed" doc:"Draft (✎), posted (issued), or reversed by a void." example:"draft"`
 	Version       int              `json:"version" doc:"The version of its content; with the status it makes the ETag." example:"1"`
 	Customer      *InvoiceCustomer `json:"customer,omitempty" doc:"The customer, with its name."`
@@ -149,8 +155,8 @@ type Invoice struct {
 	Net           *Money           `json:"net,omitempty" doc:"Every line's net, in the invoice's currency."`
 	GSTTotal      *Money           `json:"gst,omitempty" doc:"Its GST, in the invoice's currency."`
 	Total         *Money           `json:"total,omitempty" doc:"Its net and GST, in the invoice's currency: what the customer owes; absent while a line cannot be read."`
-	Receivable    *Money           `json:"receivable,omitempty" doc:"What it adds to accounts receivable in the base currency: as issued, or as issuing would post it; absent while it cannot be issued."`
-	Open          *Money           `json:"open,omitempty" doc:"An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18)."`
+	Receivable    *Money           `json:"receivable,omitempty" doc:"What it adds to accounts receivable in the base currency (a credit note: what it takes off): as issued, or as issuing would post it; absent while it cannot be issued."`
+	Open          *Money           `json:"open,omitempty" doc:"An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). An issued credit note: what is left of it to apply or refund."`
 	States        InvoiceStates    `json:"states" doc:"Its approval, ledger, delivery, settlement and due states."`
 	Releases      []InvoiceRelease `json:"releases" nullable:"false" doc:"getInvoice only: the monthly releases of its spread lines (FR-GL-03), by line and month, each with its state; the months still to come are projections, not in the ledger (ENG-05)."`
 	Checks        []InvoiceCheck   `json:"checks" nullable:"false" doc:"getInvoice only: what stops a draft being issued (✖)."`
@@ -159,6 +165,12 @@ type Invoice struct {
 	PostedBy      *Person          `json:"posted_by,omitempty" doc:"Who issued it."`
 	PostedAt      *time.Time       `json:"posted_at,omitempty" doc:"When it was issued." example:"2026-10-24T09:30:00Z"`
 	ApprovalAsked string           `json:"approval_asked,omitempty" format:"uuid" doc:"getInvoice only: the pending request to issue, void or edit it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4dd2"`
+}
+
+// InvoiceRef names an invoice another document refers to.
+type InvoiceRef struct {
+	ID     string `json:"id" format:"uuid" doc:"The invoice's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
+	Number string `json:"number,omitempty" doc:"Its number, once issued." example:"INV-0042"`
 }
 
 // InvoicePage is a page of invoices, newest date first.
@@ -174,6 +186,7 @@ type InvoicePath struct {
 
 type invoiceListInput struct {
 	PageQuery
+	Kind   string `query:"kind" enum:"invoice,credit_note" default:"invoice" doc:"Invoices, the default, or credit notes." example:"invoice"`
 	Status string `query:"status" enum:"draft,posted,reversed" doc:"Only invoices with this status." example:"draft"`
 	From   string `query:"from" format:"date" doc:"Only invoices dated on or after this day." example:"2026-10-01"`
 	To     string `query:"to" format:"date" doc:"Only invoices dated on or before this day." example:"2026-10-31"`
@@ -287,6 +300,17 @@ func invoiceDraftOf(in InvoiceDraft, base money.Currency) (invoice.Draft, error)
 		}
 		d.CustomerID = id
 	}
+	if in.InvoiceID != "" {
+		id, err := uuid.Parse(in.InvoiceID)
+		switch {
+		case err != nil:
+			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.invoice_id", Message: "is not an ID", Fix: "Send the ID of the invoice it credits"})
+		case in.Kind != "credit_note":
+			fields = append(fields, FieldProblem{Code: invoice.CodeCredited, Field: "body.invoice_id", Message: "names an invoice, which only a credit note credits",
+				Fix: "Leave it out, or send kind credit_note"})
+		}
+		d.Credits = id
+	}
 	d.Reference, d.Notes = strings.TrimSpace(in.Reference), in.Notes
 	for _, x := range []struct {
 		text, field string
@@ -350,6 +374,32 @@ func invoiceDraftOf(in InvoiceDraft, base money.Currency) (invoice.Draft, error)
 		return d, invalid(fields)
 	}
 	return d, nil
+}
+
+// invoiceType is the document type of a kind of invoice; invoiceKind the kind of a document.
+func invoiceType(kind string) storage.DocumentType {
+	if kind == "credit_note" {
+		return storage.DocumentCreditNote
+	}
+	return storage.DocumentInvoice
+}
+
+func invoiceKind(doc storage.Document) string {
+	if invoice.IsCreditNote(doc) {
+		return "credit_note"
+	}
+	return "invoice"
+}
+
+// sameKind refuses a new version of another kind than the document's: an invoice never becomes a credit note. The
+// draft's kind is taken as the document's, so its invoice_id is read as a credit note's.
+func sameKind(in *InvoiceDraft, before Invoice) error {
+	if in.Kind != "" && in.Kind != before.Kind {
+		return invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.kind", Message: "is " + before.Kind + " and never changes",
+			Fix: "Leave it out, or save a new document of the other kind"}})
+	}
+	in.Kind = before.Kind
+	return nil
 }
 
 // invoiceView is what showing invoices reads once per request: the base currency, the organisation's today, the
@@ -422,12 +472,18 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	if err != nil {
 		return Invoice{}, err
 	}
-	out := Invoice{ID: doc.ID.String(), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Reference: d.Reference,
+	out := Invoice{ID: doc.ID.String(), Kind: invoiceKind(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Reference: d.Reference,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: invoiceLinesOut(d),
 		GST: []InvoiceGST{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}
 	if d.Rate != nil {
 		out.FXRate = d.Rate.String()
+	}
+	if d.Credits != uuid.Nil {
+		out.Credits = &InvoiceRef{ID: d.Credits.String()}
+		if x, err := u.Documents().Get(ctx, d.Credits); err == nil {
+			out.Credits.Number = x.Number
+		}
 	}
 	if withChecks {
 		rs, err := journal.ReleasesOf(ctx, u, doc, v.today)
@@ -510,6 +566,9 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 		switch l.AccountID {
 		case v.receivables.String():
 			r := l.BaseAmount
+			if invoice.IsCreditNote(doc) { // what it takes off accounts receivable
+				r.Amount = strings.TrimPrefix(r.Amount, "-")
+			}
 			out.Receivable = &r
 		case v.gst.String():
 			taxed = true
@@ -665,7 +724,8 @@ func (a *API) logInvoiceSelfApproval(ctx context.Context, u storage.UnitOfWork, 
 		actor = &p.UserID
 	}
 	_, err = u.ReviewLog().Log(ctx, storage.NewReviewLogEntry{Kind: storage.ReviewSelfApproved, ObjectType: approval.ObjectInvoice, ObjectKey: id.String(),
-		Summary: fmt.Sprintf("Issued invoice %s of %s %s alone, at or below the self-approval threshold", cmpText(doc.Number, "(a draft)"), total, total.Currency().Code),
+		Summary: fmt.Sprintf("Issued %s %s of %s %s alone, at or below the self-approval threshold", invoice.Kind(doc), cmpText(doc.Number, "(a draft)"), total,
+			total.Currency().Code),
 		Actor:   actor, LoggedAt: a.deps.Clock.Now()})
 	return err
 }
@@ -933,7 +993,7 @@ func (a *API) invoiceRequest(ctx context.Context, rawID, key, ifMatch, prefer st
 }
 
 func invoiceName(doc storage.Document, i Invoice) string {
-	name := cmpText(doc.Number, "the draft invoice")
+	name := cmpText(doc.Number, "the draft "+invoice.Kind(doc))
 	if i.Customer != nil && i.Customer.Name != "" {
 		name += " to " + i.Customer.Name
 	}
@@ -966,7 +1026,7 @@ func registerInvoices(a *API) {
 		p, _ := authn.From(ctx)
 		out := invoiceListOutput{Body: InvoicePage{Items: []Invoice{}}}
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-			docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: storage.DocumentInvoice, Status: storage.DocumentStatus(in.Status),
+			docs, err := u.Documents().Page(ctx, storage.DocumentFilter{Type: invoiceType(in.Kind), Status: storage.DocumentStatus(in.Status),
 				From: in.From, To: in.To, Search: strings.TrimSpace(in.Q), AfterDate: afterDate, AfterID: afterID, Limit: in.PageSize + 1})
 			if err != nil {
 				return err
@@ -1011,7 +1071,11 @@ func registerInvoices(a *API) {
 				if err != nil {
 					return Invoice{}, err
 				}
-				doc, err := a.invoices.Create(ctx, p.Organisation, d)
+				create := a.invoices.Create
+				if in.Body.Kind == "credit_note" {
+					create = a.invoices.CreateCredit
+				}
+				doc, err := create(ctx, p.Organisation, d)
 				if err != nil {
 					return Invoice{}, err
 				}
@@ -1089,6 +1153,9 @@ func registerInvoices(a *API) {
 					return Invoice{}, err
 				}
 				if err := checkIfMatch(in.IfMatch, invoiceETag(before)); err != nil {
+					return Invoice{}, err
+				}
+				if err := sameKind(&in.Body, before); err != nil {
 					return Invoice{}, err
 				}
 				d, err := invoiceDraftOf(in.Body, v.base)
@@ -1251,6 +1318,9 @@ func registerInvoices(a *API) {
 			if err := checkConflicts(ctx, u, p, "Posting"); err != nil {
 				return InvoiceEdited{}, err
 			}
+			if err := sameKind(&in.Body.InvoiceDraft, before); err != nil {
+				return InvoiceEdited{}, err
+			}
 			d, err := invoiceDraftOf(in.Body.InvoiceDraft, v.base)
 			if err != nil {
 				return InvoiceEdited{}, err
@@ -1323,6 +1393,9 @@ func registerInvoices(a *API) {
 			}
 			if i.Open != nil && i.Total != nil && i.Open.Amount != i.Total.Amount {
 				return Approval{}, problem(invoice.CodeSettled, "Receipts or credits settle the invoice.", "Void them first, then edit it")
+			}
+			if err := sameKind(&in.Body.InvoiceDraft, i); err != nil {
+				return Approval{}, err
 			}
 			d, err := invoiceDraftOf(in.Body.InvoiceDraft, v.base)
 			if err != nil {

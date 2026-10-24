@@ -17,6 +17,10 @@
       },
       "type": "array"
     },
+    "credits": {
+      "$ref": "InvoiceRef.schema.json",
+      "description": "A credit note linked to an invoice: the invoice it credits."
+    },
     "currency": {
       "description": "The invoice's currency.",
       "examples": [
@@ -77,6 +81,17 @@
       "format": "uuid",
       "type": "string"
     },
+    "kind": {
+      "description": "invoice, or credit_note: a credit note to the customer, issued as an invoice's reverse (FR-AR-04).",
+      "enum": [
+        "invoice",
+        "credit_note"
+      ],
+      "examples": [
+        "invoice"
+      ],
+      "type": "string"
+    },
     "ledger_impact": {
       "description": "getInvoice only: the lines issuing it writes (a draft), or wrote (issued): debits positive.",
       "items": {
@@ -103,7 +118,7 @@
       "type": "string"
     },
     "number": {
-      "description": "Its number from the invoice sequence, given when it is issued (FR-ORG-04); a draft has none.",
+      "description": "Its number from the invoice sequence (a credit note's, from the credit note sequence), given when it is issued (FR-ORG-04); a draft has none.",
       "examples": [
         "INV-0042"
       ],
@@ -111,7 +126,7 @@
     },
     "open": {
       "$ref": "Money.schema.json",
-      "description": "An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18)."
+      "description": "An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). An issued credit note: what is left of it to apply or refund."
     },
     "posted_at": {
       "description": "When it was issued.",
@@ -131,7 +146,7 @@
     },
     "receivable": {
       "$ref": "Money.schema.json",
-      "description": "What it adds to accounts receivable in the base currency: as issued, or as issuing would post it; absent while it cannot be issued."
+      "description": "What it adds to accounts receivable in the base currency (a credit note: what it takes off): as issued, or as issuing would post it; absent while it cannot be issued."
     },
     "reference": {
       "description": "The customer's reference for it.",
@@ -178,6 +193,7 @@
   },
   "required": [
     "id",
+    "kind",
     "status",
     "version",
     "currency",

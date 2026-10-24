@@ -8478,6 +8478,8 @@ export interface components {
             approval_asked?: string;
             /** @description getInvoice only: what stops a draft being issued (✖). */
             checks: components["schemas"]["InvoiceCheck"][];
+            /** @description A credit note linked to an invoice: the invoice it credits. */
+            credits?: components["schemas"]["InvoiceRef"];
             /**
              * @description The invoice's currency.
              * @example SGD
@@ -8517,6 +8519,12 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
              */
             id: string;
+            /**
+             * @description invoice, or credit_note: a credit note to the customer, issued as an invoice's reverse (FR-AR-04).
+             * @example invoice
+             * @enum {string}
+             */
+            kind: "invoice" | "credit_note";
             /** @description getInvoice only: the lines issuing it writes (a draft), or wrote (issued): debits positive. */
             ledger_impact: components["schemas"]["EntryLine"][];
             /** @description The lines as entered, each with its net. */
@@ -8529,11 +8537,11 @@ export interface components {
              */
             notes?: string;
             /**
-             * @description Its number from the invoice sequence, given when it is issued (FR-ORG-04); a draft has none.
+             * @description Its number from the invoice sequence (a credit note's, from the credit note sequence), given when it is issued (FR-ORG-04); a draft has none.
              * @example INV-0042
              */
             number?: string;
-            /** @description An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). */
+            /** @description An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). An issued credit note: what is left of it to apply or refund. */
             open?: components["schemas"]["Money"];
             /**
              * Format: date-time
@@ -8545,7 +8553,7 @@ export interface components {
             posted_by?: components["schemas"]["Person"];
             /** @description Who saved the current version. */
             prepared_by?: components["schemas"]["Person"];
-            /** @description What it adds to accounts receivable in the base currency: as issued, or as issuing would post it; absent while it cannot be issued. */
+            /** @description What it adds to accounts receivable in the base currency (a credit note: what it takes off): as issued, or as issuing would post it; absent while it cannot be issued. */
             receivable?: components["schemas"]["Money"];
             /**
              * @description The customer's reference for it.
@@ -8632,7 +8640,7 @@ export interface components {
             date?: string;
             /**
              * Format: date
-             * @description When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04).
+             * @description When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04). A credit note has none.
              * @example 2026-11-23
              */
             due_date?: string;
@@ -8641,6 +8649,18 @@ export interface components {
              * @example 1.34
              */
             fx_rate?: string;
+            /**
+             * Format: uuid
+             * @description A credit note only: the issued invoice of the same customer and currency it credits, in full or in part; left out, a standalone credit note. A linked credit note adjusts GST at the rates in force on that invoice's date, and credits at most its total.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            invoice_id?: string;
+            /**
+             * @description invoice, the default, or credit_note: a credit note to the customer, entered as an invoice is and issued as its reverse (FR-AR-04). Fixed once saved.
+             * @example invoice
+             * @enum {string}
+             */
+            kind?: "invoice" | "credit_note";
             /** @description The invoice's lines. */
             lines: components["schemas"]["InvoiceLineDraft"][] | null;
             /**
@@ -8674,7 +8694,7 @@ export interface components {
             date?: string;
             /**
              * Format: date
-             * @description When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04).
+             * @description When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04). A credit note has none.
              * @example 2026-11-23
              */
             due_date?: string;
@@ -8683,6 +8703,18 @@ export interface components {
              * @example 1.34
              */
             fx_rate?: string;
+            /**
+             * Format: uuid
+             * @description A credit note only: the issued invoice of the same customer and currency it credits, in full or in part; left out, a standalone credit note. A linked credit note adjusts GST at the rates in force on that invoice's date, and credits at most its total.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            invoice_id?: string;
+            /**
+             * @description invoice, the default, or credit_note: a credit note to the customer, entered as an invoice is and issued as its reverse (FR-AR-04). Fixed once saved.
+             * @example invoice
+             * @enum {string}
+             */
+            kind?: "invoice" | "credit_note";
             /** @description The invoice's lines. */
             lines: components["schemas"]["InvoiceLineDraft"][] | null;
             /**
@@ -8948,6 +8980,19 @@ export interface components {
             entry: components["schemas"]["Entry"];
             /** @description The invoice after the command. */
             invoice: components["schemas"]["Invoice"];
+        };
+        InvoiceRef: {
+            /**
+             * Format: uuid
+             * @description The invoice's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+             */
+            id: string;
+            /**
+             * @description Its number, once issued.
+             * @example INV-0042
+             */
+            number?: string;
         };
         InvoiceRelease: {
             /** @description What it moves from 2400 Deferred revenue to the line's account, in the base currency: its ALLOC-EVEN part of the line's net. */
@@ -11832,7 +11877,7 @@ export interface components {
              * @example journal
              * @enum {string}
              */
-            document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "customer_receipt" | "write_off";
+            document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off";
             /**
              * @description The number the next document takes, as printed.
              * @example JNL-0042
@@ -15030,7 +15075,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `API-PASSKEY-01` The passkey's answer was refused; `APR-07` A rejection needs its reason; `APR-08` The policy's steps cannot be signed; `BILL-04` The saved bill cannot be read; `BILL-05` The bill's supplier is not an active vendor; `BILL-06` Not a GST code for purchases; `BILL-07` The due date is before the bill's date; `BILL-08` A text of the bill is too long; `BILL-14` An input-tax fact of the bill is not one Fyniq reads; `BILL-15` A line's business share is not a percentage from 0 to 100; `BILL-16` The bill does not say what the non-resident supplier's payment is for; `BILLPAY-02` The saved payment cannot be read; `BILLPAY-07` The void is dated before the payment; `CREDIT-02` The saved application cannot be read; `CREDIT-07` The void is dated before the application; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-21` A bill's total is more than zero; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-26` A payment's amount is not positive or not in its currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-29` A share of a line's GST is not a percentage from 0 to 100; `LEDGER-30` The bill's withholding tax cannot be worked out; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `MEM-01` Not a role a member can hold; `MEM-02` The name is not valid; `MEM-03` No role, or a role named twice; `MEM-04` Not an expiry for these roles; `PO-02` The saved order cannot be read; `PO-03` The order's supplier is not an active vendor; `PO-04` The order has no date; `PO-05` The order has no lines, or no total; `PO-06` A line's account cannot take it; `PO-07` A line's quantity or price is not one an order takes; `PO-08` Not a GST code for purchases; `PO-09` The order's text is too long; `RECEIPT-02` The saved receipt cannot be read; `RECEIPT-07` The void is dated before the receipt; `SET-01` Not a value for this setting; `SET-02` A setting never changes in the past; `SET-03` The setting can only lengthen; `SET-06` Send a value or a reset; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital; `TPL-01` Not a template Fyniq serves; `TPL-02` The template's name is blank or too long; `TPL-03` Not this template format; `TPL-04` A paper size or margin outside the choices; `TPL-05` A font Fyniq does not ship, or an accent colour too pale to read; `TPL-06` A block the document does not take, or one repeated; `TPL-07` IRAS particulars cannot be removed or hidden; `TPL-08` A text the block does not take, or too long; `TPL-09` Not a field of the catalogue; `TPL-10` The email's subject is blank, on several lines or too long; `TPL-11` The email's body is blank or too long; `TPL-13` No such version of the template; `TPL-16` A test document lacks an IRAS particular; `WRITEOFF-02` The saved write-off cannot be read; `WRITEOFF-03` Not an issued invoice; `WRITEOFF-04` More than the invoice has open; `WRITEOFF-05` Not a reason for a write-off; `WRITEOFF-06` No account for the reason; `WRITEOFF-09` The void is dated before the write-off; `WRITEOFF-12` The explanation is missing or too long. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -24497,6 +24542,8 @@ export interface operations {
                 page_size?: number;
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
+                /** @description Invoices, the default, or credit notes. */
+                kind?: "invoice" | "credit_note";
                 /** @description Only invoices with this status. */
                 status?: "draft" | "posted" | "reversed";
                 /** @description Only invoices dated on or after this day. */
@@ -25098,7 +25145,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -25277,7 +25324,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -25969,7 +26016,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -26144,7 +26191,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -26309,7 +26356,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -26488,7 +26535,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `FX-01` No exchange rate for this currency; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -34793,7 +34840,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description The document type. */
-                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "customer_receipt" | "write_off";
+                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off";
             };
             cookie?: never;
         };
@@ -34877,7 +34924,7 @@ export interface operations {
             };
             path: {
                 /** @description The document type. */
-                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "customer_receipt" | "write_off";
+                document_type: "journal" | "bill" | "bill_payment" | "vendor_credit" | "supplier_refund" | "purchase_order" | "invoice" | "credit_note" | "customer_receipt" | "write_off";
             };
             cookie?: never;
         };

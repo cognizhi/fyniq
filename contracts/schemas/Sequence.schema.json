@@ -20,6 +20,7 @@
         "supplier_refund",
         "purchase_order",
         "invoice",
+        "credit_note",
         "customer_receipt",
         "write_off"
       ],

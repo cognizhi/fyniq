@@ -80,6 +80,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 - [ ] 3.1 Credit notes linked to an invoice in full or part, or standalone, posting the reverse of its legs;
   applied by allocation; refunded from a money account. Tests `// req: FR-AR-04`,
   `// req: ledger/posting-rules Credit documents and opening items`
+  (In part, 24 Oct 2026, PRD-001 rev 0.123: the credit note itself: the document `credit_note` (`CN-`) through the
+  invoice API with `kind`, `credit_note@1` with its replay golden, the link to the credited invoice (INVOICE-15) with
+  GST at that invoice's date `[verify]`, credit notes as customer credits in the AR sub-ledger, migrations 000118 and
+  000119. Tests: `TestPostCreditNoteReversesAnInvoicesLegs`, `TestACreditNoteIsAnInvoiceNegated`,
+  `TestEveryCreditNoteRuleVersionReplaysItsGoldenEntries`, `TestCreditNotesPostThroughThePostingService`,
+  `TestCreditNotesThroughTheAPI`. Still to come: applying customer credits to invoices, and customer refunds.)
 - [ ] 3.2 Deposits and retainers to 2410 (role `customer-deposits`), applied to invoices; security deposits without
   GST; a part-payment deposit's GST when GST-registered. Tests `// req: FR-AR-09`,
   `// req: ledger/posting-rules Customer refunds and deposits`

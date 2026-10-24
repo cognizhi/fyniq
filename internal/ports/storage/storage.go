@@ -401,6 +401,9 @@ const (
 	DocumentPurchaseOrder DocumentType = "purchase_order"
 	// DocumentInvoice is a customer's invoice (FR-AR-03; p1-sales).
 	DocumentInvoice DocumentType = "invoice"
+	// DocumentCreditNote is a credit note to a customer (FR-AR-04; p1-sales): entered as an invoice is, linked to the
+	// invoice it credits or standalone, and posted as an invoice's reverse.
+	DocumentCreditNote DocumentType = "credit_note"
 	// DocumentCustomerReceipt is money a customer paid, recorded by hand until bank import matches it (FR-AR-18; the
 	// owner's decision of 24 Oct 2026).
 	DocumentCustomerReceipt DocumentType = "customer_receipt"

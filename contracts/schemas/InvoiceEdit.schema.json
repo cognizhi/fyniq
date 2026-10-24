@@ -27,7 +27,7 @@
       "type": "string"
     },
     "due_date": {
-      "description": "When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04).",
+      "description": "When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04). A credit note has none.",
       "examples": [
         "2026-11-23"
       ],
@@ -38,6 +38,25 @@
       "description": "For an invoice in another currency: base currency per one unit. Left out, the invoice takes the cascade's rate for its date (ENG-40).",
       "examples": [
         "1.34"
+      ],
+      "type": "string"
+    },
+    "invoice_id": {
+      "description": "A credit note only: the issued invoice of the same customer and currency it credits, in full or in part; left out, a standalone credit note. A linked credit note adjusts GST at the rates in force on that invoice's date, and credits at most its total.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "invoice, the default, or credit_note: a credit note to the customer, entered as an invoice is and issued as its reverse (FR-AR-04). Fixed once saved.",
+      "enum": [
+        "invoice",
+        "credit_note"
+      ],
+      "examples": [
+        "invoice"
       ],
       "type": "string"
     },

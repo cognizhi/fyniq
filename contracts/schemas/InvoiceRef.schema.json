@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The invoice's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "number": {
+      "description": "Its number, once issued.",
+      "examples": [
+        "INV-0042"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "title": "InvoiceRef",
+  "type": "object"
+}

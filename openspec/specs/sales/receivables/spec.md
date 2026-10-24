@@ -121,6 +121,16 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** a credit note is refunded to the customer
 - **THEN** the refund is recorded against that credit note
 
+#### Scenario: Credit notes as built (rev 0.123)
+- **WHEN** a credit note is saved through the invoice API with kind credit_note and issued
+- **THEN** it takes the next number of the gap-free CN- sequence, has no due date, posts credit_note@1, and is approved as an invoice is, judged on its size
+- **AND** an issued credit note is a credit with the customer in the AR sub-ledger until it is applied or refunded
+
+#### Scenario: A linked credit note as built (rev 0.123)
+- **WHEN** a credit note names the invoice it credits
+- **THEN** issuing refuses an invoice that is not issued, of another customer or currency, dated after the credit note, or of a smaller total (INVOICE-15)
+- **AND** it adjusts GST at the rates and the registration in force on that invoice's date; a standalone credit note at those of its own date
+
 ### Requirement: FR-AR-05 Tax invoice particulars
 The system SHALL lay out tax invoices to meet the IRAS particulars.
 

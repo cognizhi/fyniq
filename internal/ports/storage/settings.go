@@ -84,6 +84,7 @@ var DefaultSequences = map[DocumentType]SequenceSettings{
 	DocumentSupplierRefund:  {Prefix: "RF-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentPurchaseOrder:   {Prefix: "PO-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentInvoice:         {Prefix: "INV-", NextNumber: 1, Digits: 4, GapFree: true},
+	DocumentCreditNote:      {Prefix: "CN-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentCustomerReceipt: {Prefix: "RC-", NextNumber: 1, Digits: 4, GapFree: true},
 	DocumentWriteOff:        {Prefix: "WO-", NextNumber: 1, Digits: 4, GapFree: true},
 }

@@ -29,6 +29,7 @@ var kinds = map[storage.DocumentType]struct{ name, object, path string }{
 	storage.DocumentCreditApplication: {"credit applied to a bill", approval.ObjectApplication, "/purchases/bills"},
 	storage.DocumentSupplierRefund:    {"supplier refund", approval.ObjectRefund, "/purchases/bills"},
 	storage.DocumentInvoice:           {"invoice", approval.ObjectInvoice, ""}, // no link until the invoice screens (p1-sales task 8.1)
+	storage.DocumentCreditNote:        {"credit note", approval.ObjectInvoice, ""},
 	storage.DocumentCustomerReceipt:   {"receipt", approval.ObjectReceipt, ""}, // nor the receipts'
 	storage.DocumentWriteOff:          {"write-off", approval.ObjectWriteOff, ""},
 }
@@ -51,8 +52,8 @@ func Posted(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org,
 			verb = "reversed"
 		}
 	}
-	if verb == "posted" && doc.Type == storage.DocumentInvoice {
-		verb = "issued" // the user's word for posting an invoice
+	if verb == "posted" && (doc.Type == storage.DocumentInvoice || doc.Type == storage.DocumentCreditNote) {
+		verb = "issued" // the user's word for posting an invoice or a credit note
 	}
 	what, link := k.name, k.path
 	if doc.Number != "" {
