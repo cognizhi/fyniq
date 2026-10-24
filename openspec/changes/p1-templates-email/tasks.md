@@ -121,7 +121,9 @@
   `notify.RecurringMade`, the daily job `notify.bills_due`, `outbox.Dead` with `notify.JobDead`); audiences may name
   several rights. Tests: `TestDeadWorkReachesThoseWhoLookAfterTheOrganisation`, and checks in `TestJournalApprovals`,
   `TestReopeningAClosedPeriod`, `TestRecurringJournals`, `TestRecurringBillsThroughTheAPI` and
-  `TestBillPlansThroughTheAPI`. The screens are task 4.1.)
+  `TestBillPlansThroughTheAPI`. The screens are task 4.1. Rev 0.111: a failed sending domain goes to the Super
+  admins in each organisation they belong to (`super_admin_users`, migration 000107), not the memberless installation
+  organisation.)
 - [ ] 3.2 Announcement banners for everyone (Super admin) and per organisation (Owner, Administrator), with critical banners non-dismissable and publishing audited. Test `// req: FR-NTF-03`
 - [ ] 3.3 One event stream feeding every channel, with delivery attempts logged and retried and a test message per channel. Test `// req: FR-NTF-05`
 

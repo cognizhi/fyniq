@@ -394,6 +394,30 @@ func (q *Queries) SuperAdminForIdentity(ctx context.Context, arg SuperAdminForId
 	return user_id, err
 }
 
+const superAdminUsers = `-- name: SuperAdminUsers :many
+SELECT u::uuid AS user_id FROM fyniq.super_admin_users() AS u
+`
+
+func (q *Queries) SuperAdminUsers(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, superAdminUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var user_id uuid.UUID
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const userForIdentity = `-- name: UserForIdentity :one
 SELECT coalesce(fyniq.user_for_identity($1::text, $2::text), '00000000-0000-0000-0000-000000000000')::uuid AS user_id
 `

@@ -64,6 +64,12 @@ func (s *Store) CountSuperAdmins(ctx context.Context) (int, error) {
 	return int(n), mapError(err)
 }
 
+// SuperAdminUsers implements storage.Installation.
+func (s *Store) SuperAdminUsers(ctx context.Context) ([]uuid.UUID, error) {
+	ids, err := s.q().SuperAdminUsers(ctx)
+	return ids, mapError(err)
+}
+
 // CompleteSetup implements storage.Installation: one transaction that consumes the code, creates the
 // Super admin with their identity and recovery codes, the installation's trail and the first
 // organisation with its Owner.

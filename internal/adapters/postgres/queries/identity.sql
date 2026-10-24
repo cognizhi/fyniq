@@ -47,6 +47,9 @@ SELECT coalesce(fyniq.super_admin_for_identity(sqlc.arg(issuer)::text, sqlc.arg(
 -- name: CountSuperAdmins :one
 SELECT fyniq.count_super_admins()::integer AS active;
 
+-- name: SuperAdminUsers :many
+SELECT u::uuid AS user_id FROM fyniq.super_admin_users() AS u;
+
 -- name: InviteSuperAdmin :exec
 SELECT fyniq.invite_super_admin(sqlc.arg(by_user)::uuid, sqlc.arg(code_hash)::bytea, sqlc.arg(now)::timestamptz, sqlc.arg(expires_at)::timestamptz);
 

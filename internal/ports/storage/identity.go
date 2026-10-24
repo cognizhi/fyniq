@@ -25,6 +25,9 @@ type Installation interface {
 	InstallationOrganisation(ctx context.Context) (uuid.UUID, error)
 	// CountSuperAdmins returns how many active Super admins can sign in (CTL-IAM-07).
 	CountSuperAdmins(ctx context.Context) (int, error)
+	// SuperAdminUsers returns the users of the active Super admins, longest-serving first, for the worker to tell them
+	// of what is the deployment's to fix (FR-NTF-01).
+	SuperAdminUsers(ctx context.Context) ([]uuid.UUID, error)
 	// JoinOrganisation redeems an invitation for a sign-in identity: the user behind it, or a new one, becomes a
 	// member of the inviting organisation with the invitation's roles, in one audited transaction. A wrong,
 	// used, withdrawn or expired code, or a sign-in already a member there, fails with CodeGrant and changes

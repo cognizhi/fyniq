@@ -59,7 +59,8 @@ The Super admins' one-time codes (000012): `super_admin_grant` (invitations, rec
 recovery confirmations and deployment recoveries, each as its SHA-256, used once), reached only
 through `invite_super_admin`, `accept_super_admin_invitation`, `set_recovery_codes`,
 `confirm_super_admin_recovery`, `recover_super_admin` and `super_admin_for_identity` (the API),
-`installation_org` and `count_super_admins` (the API and the worker) and
+`installation_org` and `count_super_admins` (the API and the worker), `super_admin_users` (the
+worker, to tell the Super admins of a failed sending domain, 000107) and
 `issue_deployment_recovery` (the migrator: the two-person recovery,
 `docs/runbooks/super-admin-recovery.md`). At most two Super admins in P0 and never none
 (`super_admin_guard`); a Super admin is removed, never changed or deleted. The web app's first-party
@@ -206,6 +207,11 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY182 | STORAGE-VERSION-01 | An email-in address is only ever retired, once: make a new one |
 | FY183 | STORAGE-CAPTURE-01 | An email-in address name is taken: a name belongs to one organisation for good |
 | FY184 | STORAGE-VERSION-01 | A decision about a sender at an email-in address never changes or goes: decide again |
+| FY185 | STORAGE-VERSION-01 | A received message's status moves forward only, and what it was received as never changes |
+| FY186 | STORAGE-VERSION-01 | A received message's file is only ever removed, once |
+| FY187 | STORAGE-VERSION-01 | A notification event never changes or goes: only its fan-out is recorded, once |
+| FY188 | STORAGE-VERSION-01 | A notification changes only in being read, unread or archived (for good), and in the email that carried it |
+| FY189 | STORAGE-VERSION-01 | A notification digest or preference never changes or goes: add a new one, and the latest is in force |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |
