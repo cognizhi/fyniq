@@ -164,6 +164,11 @@ Source: PRD-001 §10.2
 - **WHEN** a customer credit is refunded
 - **THEN** it posts Dr 1100; Cr Bank
 
+#### Scenario: Built as customer_refund@1 (rev 0.125)
+- **WHEN** a refund of a credit note or of a receipt's unapplied amount is recorded
+- **THEN** it posts Dr 1100 with the amount at the credit's rate, Cr the money account with what left it, and the realised FX to 7030 (ENG-41)
+- **AND** an allocation from the refund settles the credit
+
 #### Scenario: Deposit received, then applied
 - **WHEN** a customer deposit is received
 - **THEN** it posts Dr Bank; Cr the deposits account

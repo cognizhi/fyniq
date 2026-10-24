@@ -130,6 +130,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** an issued credit note is applied to an invoice of its customer
 - **THEN** it shows part applied or applied, and is voided or edited only once its applications are voided (INVOICE-13)
 
+#### Scenario: Refunds of credit notes, built (rev 0.125)
+- **WHEN** money is paid back to the customer against an issued credit note
+- **THEN** a refund numbered CR- (gap-free) posts customer_refund@1 at once and settles at most what is left of it (APPLY-05)
+- **AND** voiding the refund reopens the credit note, in Founder mode with a second person (FM-1)
+
 #### Scenario: A linked credit note as built (rev 0.123)
 - **WHEN** a credit note names the invoice it credits
 - **THEN** issuing refuses an invoice that is not issued, of another customer or currency, dated after the credit note, or of a smaller total (INVOICE-15)
@@ -320,6 +325,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** a credit note or a receipt's unapplied amount is applied to an issued invoice of the customer in its currency
 - **THEN** one allocation settles the invoice and one the credit, at most what each has open (APPLY-05), and customer_credit_application@1 posts only the realised FX
 - **AND** a void reverses both, in Founder mode with a second person; a receipt whose credit is applied is voided only once its applications are (APPLY-08)
+
+#### Scenario: Refunds of customer credits, built (rev 0.125)
+- **WHEN** a receipt's unapplied amount or a credit note is refunded from a money account
+- **THEN** customer_refund@1 posts Dr 1100 at the credit's rate, Cr the money account, and the realised FX to 7030, with one allocation that settles the credit
+- **AND** a receipt whose unapplied amount is refunded is voided only once its refunds are (APPLY-08)
 
 ### Requirement: FR-AR-10 AR ageing
 The system SHALL report AR ageing in the buckets Current, 1–30, 31–60, 61–90 and 90+ by customer and currency, with the unrealised FX exposure.

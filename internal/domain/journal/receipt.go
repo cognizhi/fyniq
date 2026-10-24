@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/customercredit"
+	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/receipt"
@@ -186,13 +186,13 @@ func (s CustomerReceipts) Void(ctx context.Context, org, id uuid.UUID, date time
 		if err := lockBills(ctx, u, invoiceIDs(d)); err != nil {
 			return err
 		}
-		applied, err := u.Allocations().Settled(ctx, []uuid.UUID{doc.ID}) // its unapplied amount applied to invoices since
+		applied, err := u.Allocations().Settled(ctx, []uuid.UUID{doc.ID}) // its unapplied amount applied to invoices or refunded since
 		if err != nil {
 			return err
 		}
 		if x, ok := applied[doc.ID]; ok && !isZeroDecimal(string(x)) {
-			return &customercredit.Error{Code: customercredit.CodeApplied, Message: fmt.Sprintf("%s of what the receipt left unapplied is applied to invoices", x),
-				Fix: "Void those applications first, then void the receipt"}
+			return &customercredit.Error{Code: customercredit.CodeApplied, Message: fmt.Sprintf("%s of what the receipt left unapplied is applied to invoices or refunded", x),
+				Fix: "Void those applications and refunds first, then void the receipt"}
 		}
 		stored, err := u.Ledger().ByIdentity(ctx, ledger.CustomerReceiptIdentity(doc.ID, doc.Version, ledger.RuleCustomerReceipt))
 		if err != nil {

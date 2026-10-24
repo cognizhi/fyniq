@@ -1594,6 +1594,45 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/customer-credit-applications/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	// Refunds to customers (FR-AR-04): read under V, recorded and voided under P; asking to void is posting.
+	"getCustomerRefund": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.refundedCustomerCredit()
+		return e.call(http.MethodGet, "/v1/customer-refunds/"+id, tok, nil), nil
+	},
+	"recordCustomerRefund": func(e *env, tok string) (response, func() bool) {
+		cn := e.issuedCreditNote("1", "10.00")
+		total := e.call(http.MethodGet, "/v1/invoices/"+cn, e.as(authz.Accountant), nil).str("total", "amount")
+		r := e.call(http.MethodPost, "/v1/customer-refunds", tok, e.refundingCredit(cn, total))
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/invoices/"+cn, e.as(authz.Accountant), nil).str("states", "settlement") == "open"
+		}
+	},
+	"requestCustomerRefundVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "customer_refund")
+		id, tag := e.refundedCustomerCredit()
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/customer-refunds/"+id+"/void-approval", person, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "customer_refund") == was }
+	},
+	// A void in Founder mode is asked for, so the row voids in an organisation in Standard mode.
+	"voidCustomerRefund": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.refundedCustomerCredit()
+		r := s.call(http.MethodPost, "/v1/customer-refunds/"+id+"/void", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/customer-refunds/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
+		}
+	},
 	"getReceivables": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/receivables?as_at=2026-10-31", tok, nil), nil
 	},

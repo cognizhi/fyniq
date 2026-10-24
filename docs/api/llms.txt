@@ -76,6 +76,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/customer-receipts/{receipt_id}` (getCustomerReceipt): Get a customer receipt
 - `POST /v1/customer-receipts/{receipt_id}/void` (voidCustomerReceipt): Void a customer receipt
 - `POST /v1/customer-receipts/{receipt_id}/void-approval` (requestCustomerReceiptVoid): Ask for approval to void a customer receipt
+- `POST /v1/customer-refunds` (recordCustomerRefund): Record a refund to a customer
+- `GET /v1/customer-refunds/{refund_id}` (getCustomerRefund): Get a refund to a customer
+- `POST /v1/customer-refunds/{refund_id}/void` (voidCustomerRefund): Void a refund to a customer
+- `POST /v1/customer-refunds/{refund_id}/void-approval` (requestCustomerRefundVoid): Ask for approval to void a refund to a customer
 - `GET /v1/document-template-bundle` (exportDocumentTemplates): Export templates as a bundle
 - `POST /v1/document-template-bundles` (importDocumentTemplates): Import templates from a bundle
 - `GET /v1/document-template-catalogue/{document_type}` (getDocumentTemplateCatalogue): Read what a template is made of

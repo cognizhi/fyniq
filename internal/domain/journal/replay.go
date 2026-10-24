@@ -159,6 +159,13 @@ func replayOne(ctx context.Context, u storage.UnitOfWork, s ledger.Settings, o s
 		}
 		return strings.Join(ledger.Differences(want, stored), "; "), nil
 	}
+	if doc.Type == storage.DocumentCustomerRefund { // money paid back to a customer, with the rates and carrying amount it kept (FR-AR-04)
+		want, err := replayCustomerRefund(ctx, u, doc, s, e)
+		if err != nil {
+			return err.Error(), nil
+		}
+		return strings.Join(ledger.Differences(want, stored), "; "), nil
+	}
 	if doc.Type == storage.DocumentWriteOff { // what is left of an invoice written off, with the rate and carrying amount it kept (FR-AR-17)
 		want, err := replayWriteOff(ctx, u, doc, s, e)
 		if err != nil {

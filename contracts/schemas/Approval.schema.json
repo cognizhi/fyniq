@@ -93,7 +93,8 @@
         "invoice",
         "customer_receipt",
         "write_off",
-        "customer_credit_application"
+        "customer_credit_application",
+        "customer_refund"
       ],
       "examples": [
         "organisation_setting"
@@ -129,7 +130,8 @@
         "customer_receipt.void",
         "write_off.post",
         "write_off.void",
-        "customer_credit_application.void"
+        "customer_credit_application.void",
+        "customer_refund.void"
       ],
       "examples": [
         "organisation_setting.change"

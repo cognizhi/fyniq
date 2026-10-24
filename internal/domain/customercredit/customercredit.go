@@ -31,7 +31,7 @@ const (
 	CodeTooMuch        = "APPLY-05" // more than the invoice has open, or than is left of the credit
 	CodeNotPosted      = "APPLY-06" // only a posted application is voided
 	CodeVoidDate       = "APPLY-07" // a void dated before the application
-	CodeApplied        = "APPLY-08" // a receipt whose unapplied amount is applied is not voided until its applications are
+	CodeApplied        = "APPLY-08" // a receipt whose unapplied amount is applied or refunded is not voided until those are
 )
 
 // Error is an application command's refusal with a stable code.

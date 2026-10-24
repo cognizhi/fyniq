@@ -77,7 +77,7 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 3. Credit notes, refunds and deposits
 
-- [ ] 3.1 Credit notes linked to an invoice in full or part, or standalone, posting the reverse of its legs;
+- [x] 3.1 Credit notes linked to an invoice in full or part, or standalone, posting the reverse of its legs;
   applied by allocation; refunded from a money account. Tests `// req: FR-AR-04`,
   `// req: ledger/posting-rules Credit documents and opening items`
   (In part, 24 Oct 2026, PRD-001 rev 0.123: the credit note itself: the document `credit_note` (`CN-`) through the
@@ -94,6 +94,11 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `TestPostCustomerCreditApplicationProperties`, `TestEveryCustomerCreditApplicationRuleVersionReplaysItsGoldenEntries`,
   `TestCustomerCreditsApplyToInvoices`, `TestCustomerCreditsThroughTheAPI`, the matrix rows. Still to come: customer
   refunds.)
+  (24 Oct 2026, PRD-001 rev 0.125: refunds to customers: `customer_refund@1` with its replay golden,
+  `journal.CustomerRefunds` (record, void), migrations 000122 and 000123, four operations under `/v1/customer-refunds`
+  with the approval object `customer_refund`. Tests: `TestPostCustomerRefund`, `TestACustomerRefundIsAReceiptNegated`,
+  `TestEveryCustomerRefundRuleVersionReplaysItsGoldenEntries`, `TestCustomerRefundsSettleCredits`,
+  `TestCustomerRefundsThroughTheAPI`, the matrix rows. The oracle posts none of 3.1 yet: task 9.1.)
 - [ ] 3.2 Deposits and retainers to 2410 (role `customer-deposits`), applied to invoices; security deposits without
   GST; a part-payment deposit's GST when GST-registered. Tests `// req: FR-AR-09`,
   `// req: ledger/posting-rules Customer refunds and deposits`

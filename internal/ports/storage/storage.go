@@ -407,6 +407,8 @@ const (
 	// DocumentCustomerCreditApplication applies a credit with a customer (a credit note, or what a receipt left unapplied)
 	// to one of the customer's invoices (FR-AR-04, FR-AR-18; p1-sales): it is posted when made, and voided by a reversal.
 	DocumentCustomerCreditApplication DocumentType = "customer_credit_application" // #nosec G101 -- a document type's name, not a credential
+	// DocumentCustomerRefund is money paid back to a customer against a credit with it (FR-AR-04, FR-AR-18; p1-sales).
+	DocumentCustomerRefund DocumentType = "customer_refund"
 	// DocumentCustomerReceipt is money a customer paid, recorded by hand until bank import matches it (FR-AR-18; the
 	// owner's decision of 24 Oct 2026).
 	DocumentCustomerReceipt DocumentType = "customer_receipt"

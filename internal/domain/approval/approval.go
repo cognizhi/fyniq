@@ -55,6 +55,8 @@ const (
 	// ObjectCustomerApplication is a credit with a customer applied to an invoice, to void (FR-AR-04, FR-GL-12, FM-1); its
 	// key is its id.
 	ObjectCustomerApplication = "customer_credit_application" // #nosec G101 -- an object type's name, not a credential
+	// ObjectCustomerRefund is a refund to a customer recorded by hand, to void (FR-AR-04, FR-GL-12, FM-1); its key is its id.
+	ObjectCustomerRefund = "customer_refund"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -91,6 +93,8 @@ const (
 
 	// OpCustomerApplicationVoid voids a credit applied to an invoice.
 	OpCustomerApplicationVoid = "customer_credit_application.void" // #nosec G101 -- an operation's name, not a credential
+	// OpCustomerRefundVoid voids a refund to a customer.
+	OpCustomerRefundVoid = "customer_refund.void"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -103,6 +107,7 @@ var Operations = map[string]string{
 	OpRefundVoid: ObjectRefund, OpOrderApprove: ObjectOrder, OpTemplatePublish: ObjectTemplate,
 	OpInvoicePost: ObjectInvoice, OpInvoiceVoid: ObjectInvoice, OpInvoiceEdit: ObjectInvoice, OpReceiptVoid: ObjectReceipt,
 	OpWriteOffPost: ObjectWriteOff, OpWriteOffVoid: ObjectWriteOff, OpCustomerApplicationVoid: ObjectCustomerApplication,
+	OpCustomerRefundVoid: ObjectCustomerRefund,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -147,6 +152,8 @@ var Dependencies = map[string][]string{
 	ObjectWriteOff: {"write_off_version", "status", "carrying"},
 	// the application's status, and the amount it applied
 	ObjectCustomerApplication: {"status", "applied"},
+	// the refund's status, and what it settled of the credit
+	ObjectCustomerRefund: {"status", "refunded"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -172,6 +179,7 @@ var Rows = map[string]string{
 	ObjectWriteOff:    "Invoices, credit notes",
 
 	ObjectCustomerApplication: "Invoices, credit notes",
+	ObjectCustomerRefund:      "Invoices, credit notes",
 }
 
 // The limits of a policy.
@@ -226,6 +234,7 @@ var Policies = map[string]Policy{
 	ObjectWriteOff:    {ObjectType: ObjectWriteOff, Version: "founder/write_off@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
 
 	ObjectCustomerApplication: {ObjectType: ObjectCustomerApplication, Version: "founder/customer_credit_application@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
+	ObjectCustomerRefund:      {ObjectType: ObjectCustomerRefund, Version: "founder/customer_refund@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

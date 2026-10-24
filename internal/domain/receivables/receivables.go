@@ -303,10 +303,11 @@ type (
 )
 
 // own says whether a source type is one of the documents the AR sub-ledger accounts for: invoices, credit notes,
-// receipts, write-offs and credits applied to invoices (and, as they arrive, refunds).
+// receipts, write-offs, credits applied to invoices, and refunds of credits.
 func own(sourceType string) bool {
 	switch sourceType {
-	case ledger.SourceInvoice, ledger.SourceCreditNote, ledger.SourceCustomerReceipt, ledger.SourceWriteOff, ledger.SourceCustomerCreditApplication:
+	case ledger.SourceInvoice, ledger.SourceCreditNote, ledger.SourceCustomerReceipt, ledger.SourceWriteOff, ledger.SourceCustomerCreditApplication,
+		ledger.SourceCustomerRefund:
 		return true
 	}
 	return false

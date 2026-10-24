@@ -22,7 +22,8 @@
         "invoice",
         "credit_note",
         "customer_receipt",
-        "write_off"
+        "write_off",
+        "customer_refund"
       ],
       "examples": [
         "journal"
