@@ -34,7 +34,7 @@ aliases:
 
 ## What they are
 
-- **Contacts** lists the customers the company invoices and the vendors whose bills it pays; one contact can be both.
+- **Contacts** lists the customers the company invoices ([[sales.invoices]]) and the vendors whose bills it pays; one contact can be both.
 - **Items and prices** lists the products and services it sells, each with a unit price per currency.
 - A Bookkeeper, an AR or AP specialist, an Accountant or a Controller adds and changes them; others with a finance role can see them.
 - Nothing is deleted: making one inactive keeps its history.

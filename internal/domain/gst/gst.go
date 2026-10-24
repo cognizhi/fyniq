@@ -143,3 +143,31 @@ func Version(ctx context.Context, u storage.UnitOfWork, on time.Time) (pack.Vers
 	}
 	return pack.Version{}, fmt.Errorf("this release carries no sg-gst version in force on %s", on.Format(time.DateOnly))
 }
+
+// Codes are the GST codes a document dated on a day is read with: the sg-gst version in force then, its standard rate,
+// and its codes in one direction, supplies (invoices) or purchases (bills).
+type Codes struct {
+	Version string
+	Rate    string // the standard rate then, as a fraction; empty before GST
+	Codes   []pack.GSTCode
+}
+
+// CodesOn are the GST codes of direction (pack.DirSupply or pack.DirPurchase) a document dated on would be read with
+// (ENG-31): from the organisation's active sg-gst version in force then, else the one this release carries; the newest
+// when on is zero.
+func CodesOn(ctx context.Context, u storage.UnitOfWork, on time.Time, direction string) (Codes, error) {
+	v, err := Version(ctx, u, on)
+	if err != nil {
+		return Codes{}, err
+	}
+	out := Codes{Version: v.ID}
+	if !on.IsZero() {
+		out.Rate, _ = pack.RateOn(v, on)
+	}
+	for _, row := range v.Tables["codes"].Rows {
+		if c, ok := pack.Code(v, row[0]); ok && c.Direction == direction {
+			out.Codes = append(out.Codes, c)
+		}
+	}
+	return out, nil
+}

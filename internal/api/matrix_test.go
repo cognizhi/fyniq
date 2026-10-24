@@ -1418,6 +1418,9 @@ var matrixCalls = map[string]matrixCall{
 	"getPurchaseGSTCodes": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/purchases/gst-codes?on=2026-10-14", tok, nil), nil
 	},
+	"getSalesGSTCodes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/sales/gst-codes?on=2026-10-14", tok, nil), nil
+	},
 	"listBills": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/bills", tok, nil), nil
 	},

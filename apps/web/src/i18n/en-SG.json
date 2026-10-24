@@ -679,6 +679,78 @@
     "announcement.withdraw": {
       "label": "End now",
       "tooltip": "End this announcement now, or cancel it before it starts; to say more, publish another."
+    },
+    "nav.sales": {
+      "label": "Sales",
+      "tooltip": "What the company sells: invoices to customers, what they owe, and getting paid."
+    },
+    "sales.invoices": {
+      "label": "Invoices",
+      "tooltip": "Every invoice and credit note to a customer: its total, when it falls due, whether it is issued, sent, paid or overdue."
+    },
+    "sales.invoice": {
+      "label": "Invoice",
+      "tooltip": "One invoice: its lines, its totals and GST, its states, its emails, and what issuing it writes."
+    },
+    "invoice.new": {
+      "label": "New invoice",
+      "tooltip": "Bill a customer: who it is for, its date, and its lines as quantity × price before GST."
+    },
+    "credit-note.new": {
+      "label": "New credit note",
+      "tooltip": "Give a customer credit: for an invoice they were charged too much on, or standalone."
+    },
+    "invoice.save": {
+      "label": "Save as a draft",
+      "tooltip": "Keep it as a draft (✎); nothing posts and nothing is sent until it is issued."
+    },
+    "invoice.issue": {
+      "label": "Issue",
+      "tooltip": "Number it and post it to the ledger on its date: it adds its total to what the customer owes."
+    },
+    "invoice.ask-approval": {
+      "label": "Ask for approval",
+      "tooltip": "Its total is above the self-approval threshold: another person approves it, and it is issued as they do."
+    },
+    "invoice.email": {
+      "label": "Email",
+      "tooltip": "Send it to the customer with its PDF and a secure link they open without signing in."
+    },
+    "invoice.void": {
+      "label": "Void",
+      "tooltip": "Post a reversing entry with a reason; the invoice stays in the books, marked voided."
+    },
+    "invoice.ask-void": {
+      "label": "Ask to void",
+      "tooltip": "In Founder mode another founder approves a void first."
+    },
+    "invoice.edit": {
+      "label": "Edit",
+      "tooltip": "Change an issued invoice: its entry is reversed and the new one posted, with a reason."
+    },
+    "invoice.post-edit": {
+      "label": "Post the edit",
+      "tooltip": "Reverse the old entry and post the new one, in one go, with the reason."
+    },
+    "invoice.ask-edit": {
+      "label": "Ask to edit",
+      "tooltip": "In Founder mode another founder approves the edit first."
+    },
+    "invoice.attach-evidence": {
+      "label": "Attach a file",
+      "tooltip": "Keep what the invoice rests on with it, such as the customer's purchase order."
+    },
+    "invoice.spread": {
+      "label": "Spread over months",
+      "tooltip": "Earn the line's revenue month by month: issuing puts it on Deferred revenue, and one part a month is released."
+    },
+    "invoice.discount": {
+      "label": "Discount",
+      "tooltip": "A percentage off the line's quantity × price, before GST."
+    },
+    "credit-note.credits": {
+      "label": "Invoice it credits",
+      "tooltip": "Link it to the customer's issued invoice it corrects: GST is adjusted at that invoice's rates, and it credits at most its total."
     }
   }
 }

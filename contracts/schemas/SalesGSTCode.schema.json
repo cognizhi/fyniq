@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The code, as an invoice line takes it.",
+      "examples": [
+        "SR"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "What it is for, in the pack's words.",
+      "examples": [
+        "Standard-rated supply"
+      ],
+      "type": "string"
+    },
+    "rated": {
+      "description": "Whether the line bears GST at the standard rate once the organisation is GST-registered on the invoice's date.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "code",
+    "description",
+    "rated"
+  ],
+  "title": "SalesGSTCode",
+  "type": "object"
+}

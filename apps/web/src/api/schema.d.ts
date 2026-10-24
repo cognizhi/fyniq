@@ -4348,6 +4348,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sales/gst-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the GST codes for sales
+         * @description The GST codes an invoice dated on the day given is read with (FR-AR-03, ENG-31): the organisation's active sg-gst version in force then, else the one this release carries; its standard rate on the day; and each code for supplies, with whether it bears GST at the standard rate. Read-only; no side effects.
+         */
+        get: operations["getSalesGSTCodes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/session": {
         parameters: {
             query?: never;
@@ -14022,6 +14042,37 @@ export interface components {
              * @example Founder who also keeps the books until we hire
              */
             sod_override_reason?: string;
+        };
+        SalesGSTCode: {
+            /**
+             * @description The code, as an invoice line takes it.
+             * @example SR
+             */
+            code: string;
+            /**
+             * @description What it is for, in the pack's words.
+             * @example Standard-rated supply
+             */
+            description: string;
+            /**
+             * @description Whether the line bears GST at the standard rate once the organisation is GST-registered on the invoice's date.
+             * @example true
+             */
+            rated: boolean;
+        };
+        SalesGSTCodes: {
+            /** @description The codes for supplies, in the pack's order. */
+            codes: components["schemas"]["SalesGSTCode"][];
+            /**
+             * @description The standard rate of GST on the day, as a fraction.
+             * @example 0.09
+             */
+            rate?: string;
+            /**
+             * @description The sg-gst version they come from (ENG-31).
+             * @example sg-gst@2026.1
+             */
+            version: string;
         };
         SalesReminder: {
             /** @description What is still open on the invoice, or the quote's total, in its currency. */
@@ -48680,6 +48731,84 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSalesGSTCodes: {
+        parameters: {
+            query?: {
+                /** @description The invoice's date; left out, the codes of the newest version. */
+                on?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesGSTCodes"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

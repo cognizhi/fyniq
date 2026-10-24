@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, LayoutTemplate, Megaphone, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Building, Contact, House, Inbox, LayoutTemplate, Megaphone, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -60,6 +60,10 @@ export const routes = [
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
   { kind: "route", id: "items", path: "/items", mode: "basic", signedIn: true, help: "items.overview", guide: "contacts.manage#items-and-prices" },
+  { kind: "route", id: "invoices", path: "/sales/invoices", mode: "basic", signedIn: true, help: "sales.invoices", guide: "sales.invoices" },
+  { kind: "route", id: "invoice-new", path: "/sales/invoices/new", mode: "basic", signedIn: true, help: "invoice.new", guide: "sales.invoices#enter-an-invoice" },
+  { kind: "route", id: "credit-note-new", path: "/sales/credit-notes/new", mode: "basic", signedIn: true, help: "credit-note.new", guide: "sales.invoices#credit-notes" },
+  { kind: "route", id: "invoice", path: "/sales/invoices/$invoiceId", mode: "basic", signedIn: true, help: "sales.invoice", guide: "sales.invoices#check-and-issue-an-invoice" },
   { kind: "route", id: "bills", path: "/purchases/bills", mode: "basic", signedIn: true, help: "purchases.bills", guide: "purchases.bills" },
   { kind: "route", id: "bill-new", path: "/purchases/bills/new", mode: "basic", signedIn: true, help: "bill.new", guide: "purchases.bills#enter-a-bill" },
   { kind: "route", id: "credit-new", path: "/purchases/credits/new", mode: "basic", signedIn: true, help: "credit.new", guide: "purchases.bills#credit-notes" },
@@ -177,6 +181,20 @@ export const actions = [
   { kind: "action", id: "bill.business-share", mode: "basic", help: "bill.business-share", guide: "purchases.bills#input-tax" },
   { kind: "action", id: "bill.tax-agent", mode: "basic", help: "bill.tax-agent", guide: "purchases.bills#input-tax" },
   // Withholding tax (FR-AP-19): the nature, the decision and the hold are safety information, so Basic shows them too.
+  // Invoices and credit notes (FR-AR-03, FR-AR-04, FR-AR-06): Basic, but for the discount and the spread of a line.
+  { kind: "action", id: "invoice.save", mode: "basic", help: "invoice.save", guide: "sales.invoices#enter-an-invoice" },
+  { kind: "action", id: "invoice.issue", mode: "basic", help: "invoice.issue", guide: "sales.invoices#check-and-issue-an-invoice" },
+  { kind: "action", id: "invoice.ask-approval", mode: "basic", help: "invoice.ask-approval", guide: "sales.invoices#invoices-above-the-self-approval-threshold" },
+  { kind: "action", id: "invoice.email", mode: "basic", help: "invoice.email", guide: "sales.invoices#email-an-invoice" },
+  { kind: "action", id: "invoice.void", mode: "basic", help: "invoice.void", guide: "sales.invoices#void-or-edit-an-issued-invoice" },
+  { kind: "action", id: "invoice.ask-void", mode: "basic", help: "invoice.ask-void", guide: "sales.invoices#void-or-edit-an-issued-invoice" },
+  { kind: "action", id: "invoice.edit", mode: "basic", help: "invoice.edit", guide: "sales.invoices#void-or-edit-an-issued-invoice" },
+  { kind: "action", id: "invoice.post-edit", mode: "basic", help: "invoice.post-edit", guide: "sales.invoices#void-or-edit-an-issued-invoice" },
+  { kind: "action", id: "invoice.ask-edit", mode: "basic", help: "invoice.ask-edit", guide: "sales.invoices#void-or-edit-an-issued-invoice" },
+  { kind: "action", id: "invoice.attach-evidence", mode: "basic", help: "invoice.attach-evidence", guide: "sales.invoices#attach-evidence" },
+  { kind: "action", id: "invoice.spread", mode: "expert", help: "invoice.spread", guide: "sales.invoices#spread-revenue-over-months" },
+  { kind: "action", id: "invoice.discount", mode: "expert", help: "invoice.discount", guide: "sales.invoices#enter-an-invoice" },
+  { kind: "action", id: "credit-note.credits", mode: "basic", help: "credit-note.credits", guide: "sales.invoices#credit-notes" },
   // Tracking and paying bills (FR-AP-13): the board, the calendar, planning and the reminders are Basic.
   { kind: "action", id: "bill.calendar", mode: "basic", help: "bill.calendar", guide: "purchases.bills#plan-and-track-payments" },
   { kind: "action", id: "bill.plan-payment", mode: "basic", help: "bill.plan-payment", guide: "purchases.bills#plan-and-track-payments" },
@@ -238,6 +256,7 @@ export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "auditor", "tax_agent", "dpo"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
+  { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
   { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["approver", "bookkeeper", "ap_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
   { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
