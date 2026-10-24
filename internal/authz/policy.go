@@ -486,6 +486,15 @@ var (
 	RecordCustomerDeposit      = Policy{Operation: "recordCustomerDeposit", Capability: Invoices, Need: Post}
 	VoidCustomerDeposit        = Policy{Operation: "voidCustomerDeposit", Capability: Invoices, Need: Post}
 	RequestCustomerDepositVoid = Policy{Operation: "requestCustomerDepositVoid", Capability: Invoices, Need: Post}
+	// Quotes and sales orders (FR-AR-01): they post nothing, so they are drafted under C and sent or cancelled under P, as
+	// issuing an invoice is posted; the pipeline is read under V.
+	ListQuotes       = Policy{Operation: "listQuotes", Capability: Invoices, Need: View}
+	GetQuote         = Policy{Operation: "getQuote", Capability: Invoices, Need: View}
+	GetSalesPipeline = Policy{Operation: "getSalesPipeline", Capability: Invoices, Need: View}
+	CreateQuote      = Policy{Operation: "createQuote", Capability: Invoices, Need: Create}
+	ReplaceQuote     = Policy{Operation: "replaceQuote", Capability: Invoices, Need: Create}
+	SendQuote        = Policy{Operation: "sendQuote", Capability: Invoices, Need: Post}
+	CancelQuote      = Policy{Operation: "cancelQuote", Capability: Invoices, Need: Post}
 	// Write-offs of invoices (FR-AR-17): read under V, drafted under C, and posted only on another person's approval
 	// (FR-APR-01; SOD-9), asked for under P, as issuing is; voiding one is FM-1's void of a posted document.
 	ListWriteOffs       = Policy{Operation: "listWriteOffs", Capability: Invoices, Need: View}
@@ -731,6 +740,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid,
+	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

@@ -1240,7 +1240,7 @@ document | document_posted_together | CHECK (((posted_by IS NULL) = (posted_at I
 document | document_reversed_posted | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | document_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'posted'::text, 'reversed'::text])))
 document | document_status_not_null | NOT NULL status
-document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text])))
+document | document_type_known | CHECK ((type = ANY (ARRAY['journal'::text, 'opening_balance'::text, 'fx_revaluation'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text])))
 document | document_type_not_null | NOT NULL type
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_number | document_number_created_at_not_null | NOT NULL created_at
@@ -1266,7 +1266,7 @@ document_sequence | document_sequence_pkey | PRIMARY KEY (organisation_id, id)
 document_sequence | document_sequence_prefix_format | CHECK ((prefix ~ '^[A-Z0-9][A-Z0-9/-]{0,11}$'::text))
 document_sequence | document_sequence_prefix_not_null | NOT NULL prefix
 document_sequence | document_sequence_type_key | UNIQUE (organisation_id, document_type)
-document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (ARRAY['journal'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_refund'::text, 'customer_deposit'::text])))
+document_sequence | document_sequence_type_known | CHECK ((document_type = ANY (ARRAY['journal'::text, 'bill'::text, 'bill_payment'::text, 'vendor_credit'::text, 'supplier_refund'::text, 'purchase_order'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'credit_note'::text, 'customer_refund'::text, 'customer_deposit'::text, 'quote'::text, 'sales_order'::text])))
 document_sequence | document_sequence_version_not_null | NOT NULL version
 document_sequence | document_sequence_version_positive | CHECK ((version > 0))
 document_sequence | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
@@ -2690,7 +2690,7 @@ create_scheduled_revaluation(p_period uuid, p_payload jsonb, p_at timestamp with
 current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db643e
 document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1f0d61ef9570468fad74328f6db07239
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
-document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6f06bb43a660245029521e7c516c3168
+document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 13c2b954d81df6b355accc9a639f9c62
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_template_choice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fa7935baf02928c3f94dd5979982c7e6
 document_template_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 460a8f1bd5f4af96698ac00b70b265c4

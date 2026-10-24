@@ -127,6 +127,10 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 - [ ] 4.1 Quotes and sales orders: lines, validity, statuses, the pipeline value, nothing posted; expiry by the
   scheduler. Tests `// req: FR-AR-01`
+  (In part, 24 Oct 2026, PRD-001 rev 0.129: `internal/domain/quote`, `journal.Quotes` (create, revise, send, cancel),
+  migrations 000128 and 000129, seven operations under `/v1/quotes` with the pipeline. Tests:
+  `TestQuotesAreSentAndCancelled`, `TestQuotesThroughTheAPI`, the matrix rows. Still to come: the customer's answer
+  (accepted, declined) and expiry by the scheduler.)
 - [ ] 4.2 Conversion to a draft invoice in full or in part, linked both ways. Tests `// req: FR-AR-02`
 
 ## 5. Sending, the online link and tax-invoice particulars
