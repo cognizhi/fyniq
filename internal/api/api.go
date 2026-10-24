@@ -176,11 +176,12 @@ func New(mux humago.Mux, d Deps) *API {
 		}
 		a.passkeys = rp
 	}
-	a.journals.AfterPosting = a.commitEvidence // a posted journal's files go to the locked store (FR-DOC-13)
-	a.bills.AfterPosting = a.commitEvidence
-	a.payments.AfterPosting = a.commitEvidence
-	a.applications.AfterPosting = a.commitEvidence
-	a.refunds.AfterPosting = a.commitEvidence
+	// A posted document's files go to the locked store (FR-DOC-13), and those who oversee it hear of it (FR-NTF-01).
+	a.journals.AfterPosting = a.afterPosting
+	a.bills.AfterPosting = a.afterPosting
+	a.payments.AfterPosting = a.afterPosting
+	a.applications.AfterPosting = a.afterPosting
+	a.refunds.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
 	cfg.Transformers = append(cfg.Transformers, a.mask)
 	a.API = humago.New(limitUploads{mux}, cfg)

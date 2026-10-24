@@ -354,11 +354,15 @@ func (s Service) MakeDue(ctx context.Context, org uuid.UUID, day time.Time) (Rec
 				if err != nil || r.Status != storage.RecurringActive || r.NextOn == nil || r.NextOn.After(day) {
 					return err
 				}
-				if _, err := u.RecurringJournals().MakeDraft(ctx, id, *r.NextOn, NextAfter(r.Schedule, *r.NextOn)); err != nil {
+				draft, err := u.RecurringJournals().MakeDraft(ctx, id, *r.NextOn, NextAfter(r.Schedule, *r.NextOn))
+				if err != nil {
 					return err
 				}
 				made = true
-				return nil
+				if s.AfterMaking == nil {
+					return nil
+				}
+				return s.AfterMaking(ctx, u, org, r.Name, draft, *r.NextOn)
 			})
 			if storage.CodeOf(err) == storage.CodeRecurring {
 				break // changed meanwhile: the next run sees it as it is
@@ -378,11 +382,16 @@ func (s Service) MakeDue(ctx context.Context, org uuid.UUID, day time.Time) (Rec
 // MakeDueAll runs the recurring journals of every organisation up to its own today, in its time zone, at now. An
 // organisation that fails does not stop the others; their errors come back together.
 func MakeDueAll(ctx context.Context, store storage.Store, now time.Time) ([]RecurringRun, error) {
+	return Service{Store: store}.MakeDueAll(ctx, now)
+}
+
+// MakeDueAll is MakeDueAll with s's hooks.
+func (s Service) MakeDueAll(ctx context.Context, now time.Time) ([]RecurringRun, error) {
+	store := s.Store
 	orgs, err := store.Organisations(ctx)
 	if err != nil {
 		return nil, err
 	}
-	s := Service{Store: store}
 	var runs []RecurringRun
 	var errs []error
 	for _, org := range orgs {

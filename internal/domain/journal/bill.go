@@ -28,6 +28,8 @@ type Bills struct {
 	Store storage.Store
 	// AfterPosting runs inside the unit of work after an entry (or its reversal) is written and the document updated.
 	AfterPosting func(ctx context.Context, uow storage.UnitOfWork, doc storage.Document, entry storage.Entry) error
+	// AfterMaking runs inside the unit of work that made a recurring bill's draft (Made); nil does nothing.
+	AfterMaking Made
 	// Clock, when set, makes posting or editing a bill post at once the releases of its spread already due by the
 	// organisation's today (FR-GL-03), so its cost is never held on 1210 until the hourly job; nil leaves them to it.
 	Clock ports.Clock

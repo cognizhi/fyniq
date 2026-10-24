@@ -93,7 +93,13 @@ type Handler struct {
 	Holder string        // this instance, recorded on the lease
 	Lease  time.Duration // how long a lease lasts; 0 means 10 min
 	Kinds  map[string]Work
+	// Dead runs after a row is marked dead, as for the tick; nil does nothing.
+	Dead Dead
 }
+
+// Dead runs in its own unit of work once a row is marked dead after its attempts ran out, with why, such as telling
+// those who look after the organisation (notify.JobDead). Its failure never keeps the row from dying.
+type Dead func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, row storage.OutboxRow, why string) error
 
 // ServeHTTP runs one delivery: check the class's credential, lease the row, run the work, finish.
 // 2xx stops the queue's retries; anything else asks for another delivery.
@@ -165,9 +171,9 @@ func (h *Handler) run(ctx context.Context, m Message) (int, string) {
 	}
 }
 
-// finish ends the lease; a dead row is also recorded in the audit trail (outbox.row.dead) for Checks.
+// finish ends the lease; a dead row is also recorded in the audit trail (outbox.row.dead) for Checks, then told of.
 func (h *Handler) finish(ctx context.Context, org uuid.UUID, row storage.OutboxRow, state storage.OutboxState, msg string) {
-	_ = h.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+	err := h.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		if err := u.Outbox().Finish(ctx, row.ID, h.Holder, state, msg); err != nil {
 			return err
 		}
@@ -178,6 +184,9 @@ func (h *Handler) finish(ctx context.Context, org uuid.UUID, row storage.OutboxR
 			Changes: map[string][2]any{"state": {string(row.State), string(state)}, "kind": {nil, row.Kind},
 				"attempts": {nil, row.Attempts}, "last_error": {nil, msg}}})
 	})
+	if err == nil && state == storage.OutboxDead && h.Dead != nil {
+		_ = h.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error { return h.Dead(ctx, u, org, row, msg) })
+	}
 }
 
 // Once makes a repeated posting harmless: when work's unit of work fails because its posting

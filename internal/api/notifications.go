@@ -39,6 +39,26 @@ func (a *API) notify(ctx context.Context, u storage.UnitOfWork, e notify.Event) 
 	return err
 }
 
+// afterPosting runs in the unit of work of every posting: the document's files go to the locked store (FR-DOC-13), and
+// those who approve postings of its kind hear that the caller posted, voided or reversed it (FR-NTF-01).
+func (a *API) afterPosting(ctx context.Context, u storage.UnitOfWork, doc storage.Document, entry storage.Entry) error {
+	if err := a.commitEvidence(ctx, u, doc, entry); err != nil {
+		return err
+	}
+	p, _ := authn.From(ctx)
+	if a.deps.Outbox == nil || p.UserID == uuid.Nil {
+		return nil
+	}
+	names, err := memberNames(ctx, u, a.deps.Clock.Now())
+	if err != nil {
+		return err
+	}
+	return notify.Posted(ctx, *a.deps.Outbox, u, p.Organisation, p.UserID, names[p.UserID], doc, entry)
+}
+
+// monthName names a period by its month, such as October 2026.
+func monthName(p storage.Period) string { return p.StartsOn.Format("January 2006") }
+
 // Notification is something that happened, as the caller sees it in their centre.
 type Notification struct {
 	ID         string    `json:"id" format:"uuid" doc:"The notification's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"`

@@ -231,6 +231,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** the person, the member at their own address, or those who act on the organisation's email are notified
 - **AND** a sign-in is not emailed again, since the sign-in alert has emailed it
 
+#### Scenario: Operations notices as built (rev 0.110)
+- **WHEN** a person posts, voids or reverses a document, a month closes or reopens, a recurring draft is made, bills fall due or background work dies
+- **THEN** those who approve, close, post, pay or look after the organisation are told, in the daily digest unless they choose otherwise
+- **AND** never the person who did it, and a notification's own failed fan-out tells nobody
+
 ### Requirement: FR-NTF-02 Notification preferences
 Each user SHALL set notification preferences per event type: channels, immediate delivery or a daily or weekly digest, and quiet hours.
 

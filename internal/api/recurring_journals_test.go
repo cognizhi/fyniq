@@ -9,9 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/notify"
+	"github.com/cognizhi/fyniq/internal/outbox"
 )
 
 // makeDrafts runs the scheduler's recurring journals for e's organisation up to day, as the worker does.
@@ -22,7 +25,8 @@ func (e *env) makeDrafts(day time.Time) journal.RecurringRun {
 		e.t.Fatal(err)
 	}
 	e.t.Cleanup(worker.Close)
-	run, err := journal.Service{Store: worker}.MakeDue(context.Background(), e.books.Org, day)
+	run, err := journal.Service{Store: worker, AfterMaking: notify.RecurringMade(outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock})}.MakeDue(
+		context.Background(), e.books.Org, day)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -42,6 +46,7 @@ func monthly(day int, starts string) map[string]any {
 // posts. Its statuses are the workbook's checks of recurring entries: content the posting rules would refuse (C.1
 // #29) and an occurrence due but not made (C.1 #28), which the close checks warn of too.
 // req: FR-GL-02
+// req: FR-NTF-01
 // req: FR-AUT-01
 // req: C.1 #28
 // req: C.1 #29
@@ -145,6 +150,9 @@ func TestRecurringJournals(t *testing.T) {
 	// October): dated on each occurrence, saved by it, named for their recurring journal; a person posts them.
 	if run := e.makeDrafts(time.Date(2026, 10, 31, 0, 0, 0, 0, time.UTC)); run.Made != 3 {
 		t.Fatalf("the run to 31 October made %d drafts", run.Made)
+	}
+	if trail := auditTrail(t, e); !strings.Contains(trail, `made a draft dated 31 Oct 2026: check it and post it`) || !strings.Contains(trail, `"recurring.made"`) {
+		t.Error("those who post journals were not told of the draft")
 	}
 	g := e.call(http.MethodGet, "/v1/recurring-journals/"+id, accountant, nil)
 	draft := e.call(http.MethodGet, "/v1/journals/"+g.str("last_journal_id"), accountant, nil)

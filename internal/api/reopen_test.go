@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,8 +18,10 @@ import (
 )
 
 // A closed period reopens only on another person's approval, with a reason; the reopening keeps the snapshots before
-// and after; only the latest closed period reopens, and a request it no longer fits is void.
+// and after; only the latest closed period reopens, and a request it no longer fits is void. The others who close and
+// post hear of each close and reopening.
 // req: FR-GL-08
+// req: FR-NTF-01
 // req: FM-1
 // req: AUD-04
 func TestReopeningAClosedPeriod(t *testing.T) {
@@ -72,6 +75,18 @@ func TestReopeningAClosedPeriod(t *testing.T) {
 		t.Fatalf("after the reopening: %s", g.Raw)
 	}
 	e.postedJournal("12.00") // October takes postings again
+
+	// Those who close and post hear of the close and the reopening, and why; the approver who reopened it does not.
+	fanOutAll(t, e)
+	told := e.call(http.MethodGet, "/v1/notifications", ahkow, nil).Raw
+	for _, want := range []string{`was closed: nothing more posts into it`, `was reopened: A supplier's October invoice arrived late`, `"type":"period.reopened"`} {
+		if !strings.Contains(told, want) {
+			t.Errorf("Ah Kow was not told %s: %s", want, told)
+		}
+	}
+	if theirs := e.call(http.MethodGet, "/v1/notifications", weiling, nil).Raw; strings.Contains(theirs, "period.reopened") || strings.Contains(theirs, "period.closed") {
+		t.Errorf("Wei Ling, who closed and reopened it, was told: %s", theirs)
+	}
 
 	// Only the latest closed period reopens.
 	closeIt(oct)

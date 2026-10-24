@@ -98,6 +98,8 @@ type Notifications interface {
 	// Emit records an event.
 	Emit(ctx context.Context, e NewNotificationEvent) (NotificationEvent, error)
 	Event(ctx context.Context, id uuid.UUID) (NotificationEvent, error)
+	// Emitted reports whether an event of typ about record was recorded, for work that tells of something once.
+	Emitted(ctx context.Context, typ string, record uuid.UUID) (bool, error)
 	// FannedOut records an event's fan-out, once.
 	FannedOut(ctx context.Context, id uuid.UUID, at time.Time) error
 	// Add adds a person's notification of an event; false when they have it already.

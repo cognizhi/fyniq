@@ -423,6 +423,22 @@ func (q *Queries) MarkNotification(ctx context.Context, arg MarkNotificationPara
 	return id, err
 }
 
+const notificationEventEmitted = `-- name: NotificationEventEmitted :one
+SELECT EXISTS (SELECT 1 FROM fyniq.notification_event WHERE type = $1 AND record_id = $2)
+`
+
+type NotificationEventEmittedParams struct {
+	Type     string
+	RecordID *uuid.UUID
+}
+
+func (q *Queries) NotificationEventEmitted(ctx context.Context, arg NotificationEventEmittedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, notificationEventEmitted, arg.Type, arg.RecordID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const notificationPreferences = `-- name: NotificationPreferences :many
 SELECT DISTINCT ON (type) id, user_id, type, email, quiet_from, quiet_to, set_at
 FROM fyniq.notification_preference WHERE user_id = $1

@@ -5,6 +5,7 @@ package postgres_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -297,5 +298,28 @@ func TestSecurityAndEmailNoticesReachTheirPeople(t *testing.T) {
 	if ev := emitted(t, b.Org, admin, "approval.decided", "Approved: "+strings.Repeat("a long reason ", 30), now); len([]rune(ev.Title)) != 300 ||
 		!strings.HasSuffix(ev.Title, "…") {
 		t.Fatalf("a title over 300 characters is kept as %d characters", len([]rune(ev.Title)))
+	}
+}
+
+// Background work that runs out of attempts reaches the Owner and the Administrator, once it is dead; a fan-out that
+// dies tells nobody, so a failing notification never notifies of itself.
+// req: FR-NTF-01
+func TestDeadWorkReachesThoseWhoLookAfterTheOrganisation(t *testing.T) {
+	b := books(t, "Notify dead work Pte Ltd")
+	now := time.Date(2026, 10, 24, 9, 0, 0, 0, clock.Singapore)
+	owner := founder(t, store(t, "fyniq_api"), b.Org, 65, now)
+	admin := joined(t, b.Org, 66, []string{"administrator"}, now)
+	failing := func(context.Context, uuid.UUID, storage.OutboxRow) error { return errors.New("the provider answered 503") }
+	h := newHarness(t, map[string]outbox.Work{"test.fail": failing, notify.FanoutKind: failing})
+	q := local.NewMemory()
+	h.worker.Dead = notify.JobDead(outbox.Dispatcher{Store: store(t, "fyniq_worker"), Queue: q, Clock: clock.NewFrozen(now)})
+	h.enqueue(t, b.Org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: "test.fail", MaxAttempts: 2})
+	h.enqueue(t, b.Org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: notify.FanoutKind, MaxAttempts: 1, Payload: []byte(`{}`)})
+	fanQueued(t, b.Org, q, now)
+	for _, who := range []uuid.UUID{owner, admin} {
+		ns := mine(t, b.Org, who)
+		if len(ns) != 1 || ns[0].Type != "jobs.failed" || ns[0].Title != "Background work test.fail failed after 2 attempts: the provider answered 503" {
+			t.Fatalf("%s's: %+v", who, ns)
+		}
 	}
 }

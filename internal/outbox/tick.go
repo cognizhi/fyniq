@@ -45,6 +45,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "email.domains", Every: 24 * time.Hour, Offset: 20*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Nightly at 04:45, quarantined mail whose days have passed ends and its files go (FR-INT-22, rev 0.106).
 	{Job: "inbound.expire", Every: 24 * time.Hour, Offset: 20*time.Hour + 45*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Daily at 07:30 Singapore time, before the daily digest, each organisation's bills to pay (FR-NTF-01, FR-AP-13; rev 0.110).
+	{Job: "notify.bills_due", Every: 24 * time.Hour, Offset: 23*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Every hour, notifications' held and digested email (FR-NTF-02, rev 0.108): the daily digest after 08:00 Singapore
 	// time, the weekly on Mondays, and immediate email held in quiet hours once they end.
 	{Job: "notify.digest", Every: time.Hour, Offset: 5 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
@@ -92,6 +94,8 @@ type Ticker struct {
 	Schedules  []Schedule
 	// PendingGrace leaves a just-committed row to its own after-commit dispatch; 0 means a minute.
 	PendingGrace time.Duration
+	// Dead runs after the sweep marks an overrun row dead; nil does nothing.
+	Dead Dead
 }
 
 // TickReport says what one tick did.
@@ -177,8 +181,9 @@ func (t Ticker) sweep(ctx context.Context, now time.Time, r *TickReport) error {
 	}
 	var errs []error
 	for _, org := range orgs {
-		var resend []storage.OutboxRow
+		var resend, dead []storage.OutboxRow
 		err := t.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			resend, dead = nil, nil // a retried unit of work starts again
 			due, err := u.Sweeping().Due(ctx, now, now.Add(-grace))
 			if err != nil {
 				return err
@@ -192,6 +197,7 @@ func (t Ticker) sweep(ctx context.Context, now time.Time, r *TickReport) error {
 						Changes: map[string][2]any{"state": {string(row.State), "dead"}, "kind": {nil, row.Kind}, "attempts": {nil, row.Attempts}}}); err != nil {
 						return err
 					}
+					dead = append(dead, row)
 					r.Dead++
 					continue
 				}
@@ -202,6 +208,16 @@ func (t Ticker) sweep(ctx context.Context, now time.Time, r *TickReport) error {
 		if err != nil {
 			errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
 			continue
+		}
+		for _, row := range dead {
+			if t.Dead == nil {
+				break
+			}
+			if err := t.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+				return t.Dead(ctx, u, org, row, "the attempts ran out and the last one overran its deadline")
+			}); err != nil {
+				errs = append(errs, fmt.Errorf("telling of dead row %s: %w", row.ID, err))
+			}
 		}
 		for _, row := range resend {
 			if err := t.Dispatcher.Dispatch(ctx, org, row); err != nil {

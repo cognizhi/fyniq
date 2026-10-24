@@ -48,7 +48,7 @@ func main() {
 		}
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
-			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds})
+			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds, Dead: kit.JobDead(deps.Clock)})
 		s.Handle("POST /jobs", &outbox.JobsHandler{Tokens: kit.Tokens, Platform: kit.Store, Clock: deps.Clock,
 			Jobs: kit.PlatformJobs(deps.Clock)})
 		return nil
