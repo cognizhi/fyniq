@@ -37,6 +37,9 @@ export function SalesTabs() {
       <Link to="/sales/invoices" activeOptions={{ exact: true }}>
         Invoices
       </Link>
+      <Link to="/sales/quotes" activeOptions={{ exact: true }}>
+        Quotes and orders
+      </Link>
     </nav>
   );
 }

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useParams } from "@tanstack/react-router";
-import { CircleX, Mail, Pencil, Save, Send, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
+import { Mail, Pencil, Save, Send, Undo2, UserCheck, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -9,7 +9,7 @@ import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
-import { date, dateTime } from "../../format/date";
+import { date } from "../../format/date";
 import { typed } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
@@ -20,11 +20,10 @@ import { EvidencePanel, invoiceAttachers } from "../accounting/JournalEvidence";
 import { who } from "../accounting/Journals";
 import { InvoiceLines, lineKey, newLine, type Errors, type Line } from "./InvoiceLines";
 import { issuers, preparers, StateChips, total, type Invoice } from "./Invoices";
+import { Checks, EmailDialog, Sends, Totals } from "./parts";
 
 type Draft = components["schemas"]["InvoiceDraft"];
-type Check = components["schemas"]["InvoiceCheck"];
 type EntryLine = components["schemas"]["EntryLine"];
-type Send = components["schemas"]["DocumentSendOut"];
 
 // The code the API answers when an invoice's total is above the self-approval threshold (FM-2): ask for approval.
 const overThreshold = "INVOICE-10";
@@ -129,84 +128,6 @@ export function check(f: Form, base: string, credit = false): { draft?: Draft; e
   };
 }
 
-// Checks lists what stops a draft being issued (✖) and what it is issued with (⚠).
-function Checks({ checks }: { checks: Check[] }) {
-  const id = useId();
-  if (checks.length === 0) return null;
-  const errors = checks.filter((c) => c.severity === "error").length;
-  return (
-    <section className="fy-card" aria-labelledby={id}>
-      <div className="fy-card__head">
-        <h2 className="fy-h3" id={id}>
-          {errors > 0 ? (errors === 1 ? "1 thing to fix before it can be issued" : `${errors} things to fix before it can be issued`) : "To check before it is issued"}
-        </h2>
-      </div>
-      <ul className="fy-list">
-        {checks.map((c, i) => (
-          <li key={`${c.code}-${c.field ?? ""}-${i}`} className="fy-list__item">
-            <span className={`fy-list__icon ${c.severity === "error" ? "fy-list__icon--critical" : "fy-list__icon--warning"}`}>
-              <Icon of={c.severity === "error" ? CircleX : TriangleAlert} size={20} />
-            </span>
-            <span className="fy-list__main">
-              <span className="fy-list__title whitespace-normal">
-                {c.message} <span className="fy-small fy-muted fy-mono">{c.code}</span>
-              </span>
-              {c.fix && <span className="fy-list__meta whitespace-normal">{c.fix}.</span>}
-            </span>
-            <span className="fy-sr">{c.severity === "error" ? "Stops it being issued" : "Review it"}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-// Totals are the invoice's net, its GST by code, its total, the deposits it deducts and what is left to pay, as the
-// server worked them out: never computed here (FR-UX-22).
-function Totals({ invoice }: { invoice: Invoice }) {
-  const id = useId();
-  const cur = invoice.currency;
-  const row = (label: string, m?: components["schemas"]["Money"], strong = false) =>
-    m && (
-      <div className="fy-row fy-row--between">
-        <span className={strong ? "fy-strong" : "fy-secondary"}>{label}</span>
-        <span className={`fy-num${strong ? " fy-strong" : ""}`}>
-          {formatAmount(m.amount)} {m.currency}
-        </span>
-      </div>
-    );
-  return (
-    <section className="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby={id}>
-      <h2 className="fy-h3" id={id}>
-        Totals
-      </h2>
-      {row("Before GST", invoice.net)}
-      {invoice.gst_charged
-        ? (invoice.gst_subtotals ?? []).map((g) => (
-            <div key={g.gst_code} className="fy-row fy-row--between">
-              <span className="fy-secondary">
-                GST {g.gst_code} on {formatAmount(g.net.amount)}
-              </span>
-              <span className="fy-num">
-                {formatAmount(g.gst.amount)} {cur}
-              </span>
-            </div>
-          ))
-        : invoice.net && <p className="fy-small fy-muted">No GST: the organisation is not GST-registered on the invoice's date.</p>}
-      {row("Total", invoice.total, true)}
-      {(invoice.deposits ?? []).map((d) => (
-        <div key={d.deposit_id} className="fy-row fy-row--between">
-          <span className="fy-secondary">Less deposit {d.number ?? ""}</span>
-          <span className="fy-num">
-            −{formatAmount(d.amount.amount)} {cur}
-          </span>
-        </div>
-      ))}
-      {(invoice.deposits ?? []).length > 0 && row("Left to pay", invoice.balance, true)}
-    </section>
-  );
-}
-
 // Impact is the ledger impact in Expert mode (debits and credits by account), and in Basic mode one plain sentence.
 function Impact({ invoice, lines, accounts, base }: { invoice: Invoice; lines: EntryLine[]; accounts: Map<string, Account>; base: string }) {
   const id = useId();
@@ -262,96 +183,6 @@ function Impact({ invoice, lines, accounts, base }: { invoice: Invoice; lines: E
         </section>
       )}
     </>
-  );
-}
-
-const deliveryWords: Record<Send["delivery"], string> = { sent: "Sent", delivered: "Delivered", viewed: "Viewed", bounced: "Bounced" };
-
-// Sends are each email of the invoice (FR-AR-06): to whom, when, by whom, and its delivery.
-function Sends({ sends }: { sends: Send[] }) {
-  const id = useId();
-  if (sends.length === 0) return null;
-  return (
-    <section className="fy-card" aria-labelledby={id}>
-      <div className="fy-card__head">
-        <h2 className="fy-h3" id={id}>
-          Emails
-        </h2>
-      </div>
-      <ul className="fy-list">
-        {sends.map((s) => (
-          <li key={s.id} className="fy-list__item">
-            <span className="fy-list__icon">
-              <Icon of={Mail} size={20} />
-            </span>
-            <span className="fy-list__main">
-              <span className="fy-list__title whitespace-normal">To {s.to}</span>
-              <span className="fy-list__meta whitespace-normal">
-                {dateTime(s.sent_at)}
-                {s.sent_by ? ` · by ${who(s.sent_by)}` : ""} · version {s.version}
-              </span>
-            </span>
-            <span className={`fy-chip fy-chip--${s.delivery === "bounced" ? "critical" : s.delivery === "sent" ? "neutral" : "good"}`}>{deliveryWords[s.delivery]}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-// EmailDialog emails an issued invoice to the customer's billing email or another address (FR-AR-06).
-function EmailDialog({ open, invoice, etag, onClose, onDone }: { open: boolean; invoice: Invoice; etag: string; onClose: () => void; onDone: (message: string) => void }) {
-  const confirm = useConfirm();
-  const id = useId();
-  const [to, setTo] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<ApiProblem | null>(null);
-  const h = helpText("invoice.email");
-  const run = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setProblem(null);
-    const out = await guarded(confirm, () =>
-      api.POST("/v1/invoices/{invoice_id}/email", {
-        params: { path: { invoice_id: invoice.id }, header: { "If-Match": etag, "Idempotency-Key": newKey() } },
-        body: to.trim() ? { to: to.trim() } : undefined,
-      }),
-    );
-    setBusy(false);
-    if (!out.data) return setProblem(problemOf(out.error));
-    onDone(`Emailed to ${out.data.sends?.[0]?.to ?? "the customer"}, with its PDF and a secure link.`);
-  };
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => !o && onClose()}
-      dismissible={!busy}
-      eyebrow={invoice.number}
-      title="Email this invoice?"
-      description="It goes from the organisation's invoices sender, with the PDF of this version and a secure link the customer opens without signing in. The PDF is kept with the invoice."
-    >
-      {problem && <Refusal problem={problem} title="The invoice was not emailed" />}
-      <form className="fy-stack fy-stack--3" onSubmit={run} noValidate>
-        <div className="fy-field">
-          <label className="fy-label" htmlFor={`${id}-to`}>
-            Send to (optional)
-          </label>
-          <input className="fy-input" id={`${id}-to`} type="email" value={to} maxLength={254} onChange={(e) => setTo(e.target.value)} aria-describedby={`${id}-to-help`} />
-          <span className="fy-help" id={`${id}-to-help`}>
-            Leave it blank for the customer's billing email.
-          </span>
-        </div>
-        <div className="fy-row justify-end gap-2">
-          <Button variant="ghost" type="button" onClick={onClose} disabled={busy}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" disabled={busy} title={h.tooltip}>
-            <Icon of={Mail} />
-            {h.label}
-          </Button>
-        </div>
-      </form>
-    </Dialog>
   );
 }
 
@@ -909,7 +740,7 @@ export function InvoicePage() {
         </div>
       </form>
 
-      {invoice && !editing && !form && <Totals invoice={invoice} />}
+      {invoice && !editing && !form && <Totals doc={invoice} />}
       {invoice && !editing && <Sends sends={invoice.sends ?? []} />}
       {invoice && !editing && !form && <Impact invoice={invoice} lines={invoice.ledger_impact ?? []} accounts={byId} base={base} />}
       {invoice && one.data && !editing && (
@@ -918,7 +749,9 @@ export function InvoicePage() {
       {invoice && emailing && one.data && (
         <EmailDialog
           open={emailing}
-          invoice={invoice}
+          kind="invoice"
+          id={invoice.id}
+          number={invoice.number}
           etag={one.data.etag}
           onClose={() => setEmailing(false)}
           onDone={(message) => {

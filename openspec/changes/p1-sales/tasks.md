@@ -212,8 +212,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   preparer saves and an AR specialist or Accountant issues (or asks approval for), and an issued one, emailed,
   voided or edited with a reason; its checks, totals, emails, ledger impact and evidence. `getSalesGSTCodes` gives
   the line's codes. Help keys, `docs/user-guide/invoices.md` and `kb/pages/task/sales-invoices.md`. Tests:
-  `src/screens/sales/invoices.test.tsx`, the matrix row. Still to come: quotes-list, record-payment,
-  recurring-documents, statements-reminders and customer-document-view.)
+  `src/screens/sales/invoices.test.tsx`, the matrix row.)
+  (In part, 25 Oct 2026: quotes-list. **Sales › Quotes and orders**: the list of quotes or sales orders with their
+  status and email, the pipeline, and the quote page: a draft saved and sent, emailed, the customer's answer
+  recorded, cancelled with a reason, and an accepted one made into a draft invoice; its invoicing line by line.
+  `docs/user-guide/quotes.md` and `kb/pages/task/sales-quotes.md`. Tests: `src/screens/sales/quotes.test.tsx`.
+  Still to come: record-payment, recurring-documents, statements-reminders and customer-document-view.)
 
 ## 9. The oracle and finishing
 

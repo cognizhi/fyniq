@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:00e7a555f5f5c9362fe8c002f14a8ff411067a3838612c76f3f62636030d6161
+  - docs/user-guide/invoices.md sha256:a9613ef5712e6c75321abad9c472e33a823c3554853c8fe54095420d0bb6c5de
 data_class: general
 taint: trusted
 status: draft
@@ -52,6 +52,7 @@ aliases:
 
 - **New invoice**: choose the **Customer** (a contact marked as a customer), enter their reference and the **Invoice date**; leave the **Due date** blank for the customer's payment terms, or the organisation's.
 - Each line takes an **Item** or a description, a **Quantity**, a **Unit price before GST**, a **Revenue account** and a **GST code** such as SR; **Save as a draft** shows the totals and GST as the server works them out ([[contacts.manage]]).
+- An invoice can also be made from an accepted quote ([[sales.quotes]]).
 - In Expert mode a line can take a **Discount**, a percentage off its quantity × price before GST. An invoice in another currency takes the rate for its date unless one is typed ([[accounting.currencies]]).
 
 (src: docs/user-guide/invoices.md#enter-an-invoice)

@@ -44,6 +44,8 @@ In Expert mode a line can also take a **Discount**, a percentage off its quantit
 
 An invoice in another currency takes the rate for its date unless you type one.
 
+An invoice can also be made from an accepted quote: see [Quotes and orders](quotes.md).
+
 ## Check and issue an invoice
 
 The draft lists what stops it being issued (✖) and what it is issued with (⚠), such as a tax
@@ -116,6 +118,7 @@ again; once it is issued its files are kept, and never deleted, for as long as t
 
 ## Related
 
+- [Quotes and orders](quotes.md)
 - [Contacts and items](contacts-and-items.md)
 - [Document templates](document-templates.md)
 - [Approvals](approvals.md)
