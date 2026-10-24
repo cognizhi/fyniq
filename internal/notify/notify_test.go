@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -33,14 +34,34 @@ func TestAnEventConcernsItsAudience(t *testing.T) {
 	}
 }
 
-// A type goes by email as the person chose, else as recommended; a security type always at once.
+// A type goes by email as the person chose, else as recommended; a security type as it says, whatever they chose: a
+// role change at once, a sign-in never, since the sign-in alert emails it.
 // req: FR-NTF-02
 func TestAPersonsCadence(t *testing.T) {
 	approvals, _ := Lookup("approval.requested")
 	roles, _ := Lookup("security.roles")
-	prefs := []storage.NotificationPreference{{Type: "approval.requested", Email: storage.EmailDaily}, {Type: "security.roles", Email: storage.EmailOff}}
-	if Cadence(approvals, nil) != storage.EmailImmediate || Cadence(approvals, prefs) != storage.EmailDaily || Cadence(roles, prefs) != storage.EmailImmediate {
+	signIn, _ := Lookup("security.sign_in")
+	prefs := []storage.NotificationPreference{{Type: "approval.requested", Email: storage.EmailDaily}, {Type: "security.roles", Email: storage.EmailOff},
+		{Type: "security.sign_in", Email: storage.EmailImmediate}}
+	if Cadence(approvals, nil) != storage.EmailImmediate || Cadence(approvals, prefs) != storage.EmailDaily || Cadence(roles, prefs) != storage.EmailImmediate ||
+		Cadence(signIn, prefs) != storage.EmailOff {
 		t.Fatal("cadences")
+	}
+}
+
+// Security and approvals go by email at once, everything else in the daily digest, as the owner decided; every type
+// names a known category and severity, and a locked type is a security one.
+// req: FR-NTF-02
+func TestTheCatalogueFollowsTheOwnersDecisions(t *testing.T) {
+	for _, ty := range Catalogue {
+		switch {
+		case ty.Category == Approvals && ty.Email != storage.EmailImmediate,
+			ty.Category == Security && ty.Email != storage.EmailImmediate && ty.Note == "",
+			ty.Category != Security && ty.Category != Approvals && ty.Email != storage.EmailDaily,
+			ty.Locked != (ty.Category == Security),
+			!slices.Contains([]string{"info", "warning", "critical"}, ty.Severity):
+			t.Errorf("%s: %+v", ty.Key, ty)
+		}
 	}
 }
 

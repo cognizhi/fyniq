@@ -30,16 +30,22 @@ import (
 // installationTrail is the installation's audit trail, as the read-only role sees it.
 func (s *sessionStack) installationTrail(t *testing.T) string {
 	t.Helper()
+	org, err := s.store.InstallationOrganisation(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s.trailOf(t, org)
+}
+
+// trailOf is org's audit trail, as the read-only role sees it.
+func (s *sessionStack) trailOf(t *testing.T, org uuid.UUID) string {
+	t.Helper()
 	ctx := context.Background()
 	reader, err := postgres.Open(ctx, s.readonly)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer reader.Close()
-	org, err := s.store.InstallationOrganisation(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
 	var trail strings.Builder
 	if err := reader.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		events, err := u.Audit().Events(ctx, 0, 10000)
@@ -75,8 +81,9 @@ func credential(t *testing.T, b []byte) map[string]any {
 // person whose session passed one in the last 5 minutes registers a passkey for this site, which then steps any of
 // their sessions up: the challenge is the session's own, works once and only within 5 minutes; the answer must come
 // from this origin and relying party, with the person verified, from a live passkey whose counter went up. Registering
-// and revoking are in the installation's trail.
+// and revoking are in the installation's trail, and each is a security notice to the person, as each sign-in is.
 // req: FR-ADM-02
+// req: FR-NTF-02
 // req: SEC-01
 // req: SEC-05
 // req: FR-APR-04
@@ -206,6 +213,12 @@ func TestPasskeys(t *testing.T) {
 	for _, want := range []string{`"action":"passkey.registered"`, `"action":"passkey.revoked"`, `"object":{"type":"webauthn_credential","id":"` + keyID} {
 		if !strings.Contains(trail, want) {
 			t.Errorf("no %s in the installation's trail", want)
+		}
+	}
+	theirs := s.trailOf(t, uuid.MustParse(laptop.session().str("organisation_id")))
+	for _, want := range []string{"A passkey was added to your account: ", "A passkey was removed from your account: ", `"security.sign_in"`} {
+		if !strings.Contains(theirs, want) {
+			t.Errorf("no notification event %s in the person's organisation's trail", want)
 		}
 	}
 	for _, secret := range []string{string(challenge), "BEGIN", "\"public_key\""} {

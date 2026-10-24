@@ -111,7 +111,12 @@
   `TestNotificationsAreFannedOutEmailedAndDigested`, `TestNotificationsKeepTheirHistory`,
   `TestTheNotificationCentreAndPreferences`, the unit tests in `internal/notify` and eight matrix rows. Second slice:
   the other types (security sign-in and second factor, email-in quarantine, bounces and suppressions, failed domain
-  checks, postings, the close, recurring entries made, bills due, failed jobs).)
+  checks, postings, the close, recurring entries made, bills due, failed jobs). Rev 0.109, second slice, part: the
+  security and email types (`notify.SignedIn` through `signin.NotifyAlert`, `notify.SecondFactor` from the passkey
+  operations, `email.Fetcher.Quarantined`, `mailhooks.Receiver.Notify`, `notify.DomainChecks` after the nightly job);
+  a locked type's email is fixed (a sign-in never, as the sign-in alert sends it). Tests:
+  `TestSecurityAndEmailNoticesReachTheirPeople`, and checks in `TestPasskeys`, `TestReceivedMailIsQuarantinedUntilSomeoneDecides`
+  and `TestTheProvidersWebhooksRecordEventsAndSuppressHardBounces`. Still to come: the operations types.)
 - [ ] 3.2 Announcement banners for everyone (Super admin) and per organisation (Owner, Administrator), with critical banners non-dismissable and publishing audited. Test `// req: FR-NTF-03`
 - [ ] 3.3 One event stream feeding every channel, with delivery attempts logged and retried and a test message per channel. Test `// req: FR-NTF-05`
 

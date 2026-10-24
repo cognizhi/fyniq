@@ -22,6 +22,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/resend"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -42,6 +43,9 @@ type Receiver struct {
 	// MailpitSecret is "user:password" of local mode's Mailpit webhook, the substitute for receiving (ADR-T4, rev 0.107);
 	// empty everywhere else, so the route does not exist.
 	MailpitSecret string
+	// Notify queues the notification of a new suppression to those who release them (FR-NTF-01, rev 0.108); nil tells
+	// nobody.
+	Notify *outbox.Dispatcher
 }
 
 // Inbound is where mail for the email-in addresses goes: the capture domain, the routes of its names, and the outbox
@@ -170,9 +174,13 @@ func (r *Receiver) record(ctx context.Context, provider string, e Event) error {
 		}
 		switch e.Kind {
 		case storage.EventHardBounce, storage.EventComplaint, storage.EventSuppressed:
-			_, _, err = u.EmailSuppressions().Suppress(ctx, m.Recipient, e.Kind, ev.ID)
+			s, created, err := u.EmailSuppressions().Suppress(ctx, m.Recipient, e.Kind, ev.ID)
+			if err != nil || !created || r.Notify == nil {
+				return err
+			}
+			return notify.Suppressed(ctx, *r.Notify, u, org, s)
 		}
-		return err
+		return nil
 	})
 }
 

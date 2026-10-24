@@ -68,7 +68,8 @@ type NotificationTypePreference struct {
 	Category    string `json:"category" enum:"security,approvals,email,operations" doc:"Its group." example:"approvals"`
 	Email       string `json:"email" enum:"immediate,daily,weekly,off" doc:"How it goes by email: at once, in the daily or weekly digest (08:00 Singapore time, weekly on Mondays), or not at all. In the app it always shows." example:"immediate"`
 	Recommended string `json:"recommended" enum:"immediate,daily,weekly,off" doc:"How it goes by email unless the caller chooses otherwise." example:"immediate"`
-	Locked      bool   `json:"locked" doc:"true for security notices, which are always on and emailed at once." example:"false"`
+	Locked      bool   `json:"locked" doc:"true for security notices, which are always on and go by email as email says, whatever the caller chooses." example:"false"`
+	Note        string `json:"note,omitempty" doc:"Why a locked type goes by email as it does, where that needs saying; absent otherwise." example:"Every sign-in is emailed at once by the sign-in alert, so it is not emailed again here"`
 	ETag        string `json:"etag" doc:"The preference in force: send it in If-Match to change it." example:"\"none\""`
 }
 
@@ -207,7 +208,7 @@ func preferencesOf(prefs []storage.NotificationPreference) NotificationPreferenc
 	out := NotificationPreferences{Types: []NotificationTypePreference{}, QuietHoursETag: preferenceETag(preferenceOf(prefs, storage.QuietHours))}
 	for _, t := range notify.Catalogue {
 		out.Types = append(out.Types, NotificationTypePreference{Type: t.Key, Label: t.Label, Category: t.Category, Email: notify.Cadence(t, prefs),
-			Recommended: t.Email, Locked: t.Locked, ETag: preferenceETag(preferenceOf(prefs, t.Key))})
+			Recommended: t.Email, Locked: t.Locked, Note: t.Note, ETag: preferenceETag(preferenceOf(prefs, t.Key))})
 	}
 	if q := preferenceOf(prefs, storage.QuietHours); q != nil && q.QuietFrom != nil && q.QuietTo != nil {
 		out.QuietHours = &QuietHours{From: hhmm(*q.QuietFrom), To: hhmm(*q.QuietTo)}

@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/passkey"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -170,6 +171,21 @@ func (a *API) passkeyPerson(ctx context.Context, what string) (authn.Principal, 
 	}
 	name, err := a.personName(ctx, p)
 	return p, org, name, err
+}
+
+// notifySecondFactor tells p, in their organisation's centre, that a passkey of theirs was added or removed (FR-NTF-02,
+// rev 0.108). Passkeys belong to the installation's trail and the notice to the person's organisation, so it is its own
+// unit of work after the change; a failure is logged, since the change is done.
+func (a *API) notifySecondFactor(ctx context.Context, p authn.Principal, name string, added bool) {
+	if a.deps.Outbox == nil || p.Organisation == uuid.Nil {
+		return
+	}
+	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		return notify.SecondFactor(ctx, *a.deps.Outbox, u, p.Organisation, p.UserID, name, added, a.deps.Clock.Now())
+	})
+	if err != nil {
+		a.deps.Log.Error("api.notify.second_factor", "error", err.Error(), "request_id", requestID(ctx))
+	}
 }
 
 // personName is the caller's name as their organisation knows it, for their authenticator's account list; read before
@@ -357,6 +373,7 @@ func registerPasskeys(a *API) {
 			if err != nil {
 				return nil, err
 			}
+			a.notifySecondFactor(ctx, p, label, true)
 			return &out, nil
 		})
 
@@ -398,6 +415,7 @@ func registerPasskeys(a *API) {
 			if err != nil {
 				return nil, err
 			}
+			a.notifySecondFactor(ctx, p, out.Body.Name, false)
 			return &out, nil
 		})
 

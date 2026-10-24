@@ -115,6 +115,9 @@ type Fetcher struct {
 	Files   ports.BlobStore // the staging store
 	Scanner ports.Scanner
 	Clock   ports.Clock
+	// Quarantined tells whoever decides that a message waits in quarantine, in the unit of work that recorded it
+	// (notify.Quarantined, FR-NTF-01); nil tells nobody.
+	Quarantined func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, m storage.InboundMessage, addr storage.CaptureAddress, at time.Time) error
 }
 
 // Work is the worker's handler of FetchKind:
@@ -167,8 +170,14 @@ func (f Fetcher) Work() outbox.Work {
 						return err
 					}
 				}
-				_, err := u.InboundMessages().Fetched(ctx, m.ID, fx, f.Clock.Now())
-				return err
+				now := f.Clock.Now()
+				if _, err := u.InboundMessages().Fetched(ctx, m.ID, fx, now); err != nil {
+					return err
+				}
+				if fx.Status == storage.InboundQuarantined && f.Quarantined != nil {
+					return f.Quarantined(ctx, u, org, m, addr, now)
+				}
+				return nil
 			})
 		}
 		mail, err := f.Mail.Fetch(ctx, m.ProviderID)

@@ -65,8 +65,11 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		email.DomainsJob: func(ctx context.Context) error {
-			_, err := email.CheckDomains(ctx, k.Store, k.Store, net.DefaultResolver, k.Mail.Domains, k.Mail.DNS)
-			return err
+			results, err := email.CheckDomains(ctx, k.Store, k.Store, net.DefaultResolver, k.Mail.Domains, k.Mail.DNS)
+			if err != nil {
+				return err
+			}
+			return notify.DomainChecks(ctx, k.Store, k.Store, k.dispatcher(clock), results, clock.Now()) // FR-NTF-01
 		},
 		"compliance.evidence": func(ctx context.Context) error {
 			_, err := compliance.RecordEvidence(ctx, k.Store, k.Blobs, clock.Now())
@@ -130,7 +133,18 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 
 // Fanout fans notification events out and sends their digests (FR-NTF-01, FR-NTF-02, FR-NTF-05).
 func (k *Kit) Fanout(clock ports.Clock) notify.Fanout {
-	return notify.Fanout{Store: k.Store, Dispatcher: outbox.Dispatcher{Store: k.Store, Queue: k.Queue, Clock: clock}, Clock: clock, Origin: k.Origin}
+	return notify.Fanout{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Origin: k.Origin}
+}
+
+// dispatcher queues work through the kit's outbox.
+func (k *Kit) dispatcher(clock ports.Clock) outbox.Dispatcher {
+	return outbox.Dispatcher{Store: k.Store, Queue: k.Queue, Clock: clock}
+}
+
+// Fetcher fetches, decides and keeps received mail (FR-INT-22), telling whoever decides of quarantined mail.
+func (k *Kit) Fetcher(clock ports.Clock) email.Fetcher {
+	return email.Fetcher{Mail: k.Mail.Inbound, Store: k.Store, Files: k.Staging, Scanner: k.Scanner, Clock: clock,
+		Quarantined: notify.Quarantined(k.dispatcher(clock))}
 }
 
 // Committer commits attached files of records that are no longer drafts to the locked store (FR-DOC-13);

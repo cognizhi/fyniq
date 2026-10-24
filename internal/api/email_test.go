@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/mailhooks"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -187,7 +188,8 @@ var (
 // hooks serves the email webhooks of e's store.
 func hooks(e *env) *httptest.Server {
 	mux := http.NewServeMux()
-	(&mailhooks.Receiver{Store: e.store, Clock: e.clock, ResendSecret: hookSecret, ZeptoMailKey: "agent-key"}).Register(mux)
+	(&mailhooks.Receiver{Store: e.store, Clock: e.clock, ResendSecret: hookSecret, ZeptoMailKey: "agent-key",
+		Notify: &outbox.Dispatcher{Store: e.store, Queue: e.queue, Clock: e.clock}}).Register(mux)
 	srv := httptest.NewServer(mux)
 	e.t.Cleanup(srv.Close)
 	return srv
@@ -234,8 +236,10 @@ func zeptoHook(t *testing.T, e *env, srv *httptest.Server, payload string) int {
 
 // A provider's signed webhook records its event on the message once, however often it is retried; a hard bounce
 // suppresses the address, a soft bounce does not; a forged request, or an event about another recipient, records
-// nothing. An Administrator releases a suppression, once; each step is audited.
+// nothing. A new suppression is notified to those who release it; an Administrator releases it, once; each step is
+// audited.
 // req: FR-INT-21
+// req: FR-NTF-01
 func TestTheProvidersWebhooksRecordEventsAndSuppressHardBounces(t *testing.T) {
 	e := newEnv(t)
 	srv := hooks(e)
@@ -297,6 +301,9 @@ func TestTheProvidersWebhooksRecordEventsAndSuppressHardBounces(t *testing.T) {
 	}
 	if strings.Count(trail, "email_message.event_recorded") != 2 {
 		t.Errorf("%d events recorded; want 2", strings.Count(trail, "email_message.event_recorded"))
+	}
+	if n := strings.Count(trail, `"email.suppressed"`); n != 1 {
+		t.Errorf("%d notifications of the suppression; want 1, to those who release it", n)
 	}
 }
 

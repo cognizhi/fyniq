@@ -44,8 +44,7 @@ func main() {
 			kinds[email.Kind] = email.Work(kit.Mail.Providers, kit.Store, kit.Mail.From, deps.Clock) // FR-INT-21: send queued mail once
 		}
 		if kit.Mail.Inbound != nil && kit.Staging != nil && kit.Scanner != nil { // FR-INT-22: fetch, decide and keep received mail
-			kinds[email.FetchKind] = email.Fetcher{Mail: kit.Mail.Inbound, Store: kit.Store, Files: kit.Staging, Scanner: kit.Scanner,
-				Clock: deps.Clock}.Work()
+			kinds[email.FetchKind] = kit.Fetcher(deps.Clock).Work()
 		}
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,

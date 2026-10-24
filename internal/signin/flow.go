@@ -50,8 +50,22 @@ type Flow struct {
 	Alert Alert
 }
 
-// Alert tells the person who signed in, with the browser they used, that they did.
-type Alert func(ctx context.Context, who ports.SignedIn, userAgent string, at time.Time) error
+// Alert tells the person who signed in, with the browser they used, that they did; session is the new session's token
+// hash, which finds their user and organisation.
+type Alert func(ctx context.Context, who ports.SignedIn, session []byte, userAgent string, at time.Time) error
+
+// Alerts is every alert of as, in order; each runs whatever the others did.
+func Alerts(as ...Alert) Alert {
+	return func(ctx context.Context, who ports.SignedIn, session []byte, userAgent string, at time.Time) error {
+		var errs []error
+		for _, a := range as {
+			if a != nil {
+				errs = append(errs, a(ctx, who, session, userAgent, at))
+			}
+		}
+		return errors.Join(errs...)
+	}
+}
 
 // Register adds the routes to mux.
 func (f Flow) Register(mux interface {
@@ -132,7 +146,8 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 	}
 	token := rand.Text() + rand.Text()
 	agent := r.UserAgent()
-	if err := f.Sessions.StartSession(r.Context(), storage.NewSession{TokenHash: authn.HashToken(token), Issuer: who.Issuer,
+	hash := authn.HashToken(token)
+	if err := f.Sessions.StartSession(r.Context(), storage.NewSession{TokenHash: hash, Issuer: who.Issuer,
 		Subject: who.Subject, Provider: who.Provider, StepUpAt: stepUp, Now: now, Expires: now.Add(authn.SessionLifetime), UserAgent: agent}); err != nil {
 		f.fail(w, r, CodeFailure, "session", err)
 		return
@@ -144,7 +159,7 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if f.Alert != nil {
-		if err := f.Alert(r.Context(), who, agent, now); err != nil {
+		if err := f.Alert(r.Context(), who, hash, agent, now); err != nil {
 			f.log().Error("auth.signin.alert_failed", "provider", who.Provider, "error", err.Error())
 		}
 	}
