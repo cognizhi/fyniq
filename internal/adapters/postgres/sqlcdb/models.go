@@ -78,6 +78,7 @@ type FyniqAllocation struct {
 	ReversesID     *uuid.UUID
 	WrittenBy      string
 	WrittenAt      time.Time
+	Tolerance      string
 }
 
 type FyniqAnnouncement struct {

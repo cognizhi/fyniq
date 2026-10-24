@@ -57,9 +57,14 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   `TestCustomerReceiptsProperties`, `TestEveryCustomerReceiptRuleVersionReplaysItsGoldenEntries`,
   `TestCustomerReceiptsSettleInvoices`, `TestCustomerReceiptsThroughTheAPI`, the matrix rows. G4-054's second receipt
   is refused (RECEIPT-05) rather than kept unapplied; G4-045 waits for credit applications and bounce, tasks 3.1 and 5.x)
-- [ ] 2.2 Settlement tolerances after realised FX, for invoices and bills, within the caps per document and month
+- [x] 2.2 Settlement tolerances after realised FX, for invoices and bills, within the caps per document and month
   (provisional until question 32). Tests `// req: ledger/posting-rules Settlement tolerances`,
   `// req: ledger/posting-rules Settlement difference on an invoice or bill`
+  (24 Oct 2026, PRD-001 rev 0.121: a part recorded `in_full` in `bill_payment@1` and `customer_receipt@1` clears the
+  difference on its own 7030 line; `subledger.Tolerance` reads the `bank.tolerance_*` settings and the month's
+  allocations; the allocation's `tolerance` (migrations 000114 and 000115); the close's `tolerances` check (C.2 #49).
+  Tests: `TestASettlementDifferenceClearsWithinItsOwnLine`, `TestSettlementDifferencesWithinTolerance`,
+  `TestSettlementDifferencesThroughTheAPI`)
 - [ ] 2.3 Write-offs: reason-coded, with evidence, approved by someone other than whoever recorded the receipt
   (SOD-9), posted to the reason's account; a bad debt tagged for the relief review. Tests `// req: FR-AR-17`,
   `// req: ledger/posting-rules Bad-debt write-off`, `// req: SOD-9`

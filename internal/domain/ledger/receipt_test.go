@@ -263,3 +263,59 @@ func TestEveryCustomerReceiptRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 		t.Errorf("an unknown rule version: %v", err)
 	}
 }
+
+func tolerances(ss []Settlement) string {
+	var parts []string
+	for _, x := range ss {
+		parts = append(parts, fmt.Sprintf("%s %s = %s fx %s tol %s", x.DocumentID.String()[31:], x.Amount, x.Base, x.RealisedFX, x.Tolerance))
+	}
+	return strings.Join(parts, "; ")
+}
+
+// FR-BNK-08 and the posting rule "Settlement difference on an invoice or bill", worked by hand: a settlement difference
+// settles the rest of the document on its control line, and its carrying amount goes to 7030 on a line of its own,
+// apart from the realised FX.
+//   - An SGD bill of 1,000.00 paid 999.50, the 0.50 left cleared: Dr 2010 1,000.00, Cr 7030 0.50 (a gain: the company
+//     paid less than it owed), Cr 1011 999.50.
+//   - A USD invoice of 1,000.00 at 1.34 (S$1,340.00) received USD 990.00 into the wallet at 1.36, the USD 10.00 left
+//     cleared: Cr 1100 USD 1,000.00 = S$1,340.00, Dr 7030 S$13.40 (the difference at its stored rate, a loss), Dr 1021
+//     USD 990.00 = S$1,346.40, and Cr 7030 S$19.80, the realised gain on what came in (990.00 × (1.36 − 1.34)).
+//
+// A difference on a part that does not settle the document in full is refused.
+// req: FR-BNK-08
+// req: ledger/posting-rules Settlement difference on an invoice or bill
+// req: ledger/posting-rules Settlement tolerances
+func TestASettlementDifferenceClearsWithinItsOwnLine(t *testing.T) {
+	short := amt(t, "0.50", sgd)
+	clears := amt(t, "1000.00", sgd)
+	b := paid(t, billID, "999.50", sgd, nil)
+	b.Short, b.Clears = &short, &clears
+	e, ss, err := PostBillPayment(sgdPayment(current, "0", b), paying())
+	if err != nil || legs(paying(), e) != "2010 1000.00 SGD = 1000.00; 7030 -0.50 SGD = -0.50; 1011 -999.50 SGD = -999.50" ||
+		tolerances(ss) != "b1110 1000.00 = 1000.00 fx 0.00 tol 0.50" || e.Lines[1].Description != "Settlement difference within tolerance" {
+		t.Errorf("the bill: %s; %s; %v", legs(paying(), e), tolerances(ss), err)
+	}
+
+	usdShort := amt(t, "10.00", usd)
+	carried := amt(t, "1340.00", sgd)
+	inv := received(t, invoiceID, "990.00", usd, usdRate(t, "1.34"))
+	inv.Short, inv.Clears = &usdShort, &carried
+	s := receiving()
+	e, ss, err = PostCustomerReceipt(usdReceipt(t, wallet, "1.36", inv), s)
+	if err != nil || legs(s, e) != "1100 -1000.00 USD = -1340.00; 7030 13.40 SGD = 13.40; 1021 990.00 USD = 1346.40; 7030 -19.80 SGD = -19.80" ||
+		tolerances(ss) != "a1110 1000.00 = 1340.00 fx 19.80 tol 13.40" {
+		t.Errorf("the invoice: %s; %s; %v", legs(s, e), tolerances(ss), err)
+	}
+
+	open := received(t, invoiceID, "990.00", usd, usdRate(t, "1.34"))
+	open.Short = &usdShort
+	if _, _, err := PostCustomerReceipt(usdReceipt(t, wallet, "1.36", open), s); !slices.Equal(codes(err), []string{CodePaymentAmount}) ||
+		!strings.Contains(err.Error(), "only what is left of an invoice received in full") {
+		t.Errorf("a difference on a part: %v", err)
+	}
+	noFX := receiving()
+	delete(noFX.Accounts, fxRounding.ID)
+	if _, _, err := PostCustomerReceipt(usdReceipt(t, wallet, "1.36", inv), noFX); !slices.Contains(codes(err), CodeSystemRole) {
+		t.Errorf("no FX account: %v", err)
+	}
+}

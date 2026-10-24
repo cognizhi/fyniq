@@ -28,6 +28,10 @@
     "realised_fx": {
       "$ref": "Money.schema.json",
       "description": "The realised gain (positive) or loss (negative) in the base currency: the amount at the payment's rate against the bill's stored rate, with no tolerance (ENG-41)."
+    },
+    "tolerance": {
+      "$ref": "Money.schema.json",
+      "description": "For a bill paid in full with a little less: the carrying amount the settlement difference cleared to 7030, in the base currency (FR-BNK-08)."
     }
   },
   "required": [

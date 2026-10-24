@@ -492,19 +492,22 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 		return rawFeedRate(t, "1.35", v)
 	},
 	"allocation.amount": func(t *testing.T, b porttest.Books, v string) error {
-		return rawAllocation(t, b, v, "1.00", "0.00")
+		return rawAllocation(t, b, v, "1.00", "0.00", "0")
 	},
 	"allocation.base_amount": func(t *testing.T, b porttest.Books, v string) error {
-		return rawAllocation(t, b, "1.00", v, "0.00")
+		return rawAllocation(t, b, "1.00", v, "0.00", "0")
 	},
 	"allocation.realised_fx": func(t *testing.T, b porttest.Books, v string) error {
-		return rawAllocation(t, b, "1.00", "1.00", v)
+		return rawAllocation(t, b, "1.00", "1.00", v, "0")
+	},
+	"allocation.tolerance": func(t *testing.T, b porttest.Books, v string) error {
+		return rawAllocation(t, b, "1.00", "1.00", "0.00", v)
 	},
 }
 
 // rawAllocation settles a bill from a bill payment as the owner, both made in the same transaction, so only the
 // allocation's own checks can fail.
-func rawAllocation(t *testing.T, b porttest.Books, amount, base, fx string) error {
+func rawAllocation(t *testing.T, b porttest.Books, amount, base, fx, tolerance string) error {
 	t.Helper()
 	ctx := context.Background()
 	return asOrg(ctx, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
@@ -516,8 +519,9 @@ func rawAllocation(t *testing.T, b porttest.Books, amount, base, fx string) erro
 			return err
 		}
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.allocation (source_id, source_version, document_id, on_date, currency, minor_units, amount,
-  base_currency, base_minor_units, base_amount, realised_fx, written_by, written_at)
-VALUES ($1, 1, $2, '2026-10-14', 'SGD', 2, $3::numeric, 'SGD', 2, $4::numeric, $5::numeric, 'user:attack-test', now())`, payment, bill, amount, base, fx)
+  base_currency, base_minor_units, base_amount, realised_fx, tolerance, written_by, written_at)
+VALUES ($1, 1, $2, '2026-10-14', 'SGD', 2, $3::numeric, 'SGD', 2, $4::numeric, $5::numeric, $6::numeric, 'user:attack-test', now())`, payment, bill, amount, base, fx,
+			tolerance)
 		return err
 	})
 }

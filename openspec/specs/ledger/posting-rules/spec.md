@@ -145,6 +145,11 @@ Source: PRD-001 §10.2
 - **THEN** it posts Cr 1100 with each invoice's part at that invoice's stored rate and any unapplied amount at the receipt's rate, Dr the money account at the receipt's rate or with what a base-currency account received, and to 7030 each part's realised FX (ENG-41) and the cent RND-FX leaves between the lines
 - **AND** the part that settles what is left of an invoice clears its residual with a base-only line on 1100 of at most S$1.00 (USD 1,000.00 at 1.34 received at 1.36: a gain of S$20.00)
 
+#### Scenario: A settlement difference within tolerance as built (rev 0.121)
+- **WHEN** a part of a payment or receipt is recorded in full with less than is open
+- **THEN** its control line settles all that is open at the document's stored rate, and the difference's carrying amount goes to 7030 on a line of its own, apart from the realised FX
+- **AND** USD 1,000.00 at 1.34 received USD 990.00 in full at 1.36 posts Dr 7030 S$13.40 for the difference and Cr 7030 S$19.80 of realised gain
+
 ### Requirement: Customer refunds and deposits
 Customer refunds and deposits received and applied (FR-AR-18, FR-AR-09) SHALL post through allocation records and SHALL never be netted against AP without an approved contra.
 

@@ -151,7 +151,8 @@ func (s BillPayments) Record(ctx context.Context, org uuid.UUID, d billpayment.D
 		for _, x := range c.Settlements {
 			a, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: x.DocumentID, On: d.Date,
 				Currency: x.Amount.Currency().Code, Amount: storage.Decimal(x.Amount.String()), BaseCurrency: settings.Base.Code,
-				BaseAmount: storage.Decimal(x.Base.String()), RealisedFX: storage.Decimal(x.RealisedFX.String())})
+				BaseAmount: storage.Decimal(x.Base.String()), RealisedFX: storage.Decimal(x.RealisedFX.String()),
+				Tolerance: storage.Decimal(x.Tolerance.String())})
 			if err != nil {
 				return err
 			}
@@ -243,7 +244,7 @@ func (s BillPayments) Void(ctx context.Context, org, id uuid.UUID, date time.Tim
 			id := a.ID
 			r, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: a.SourceID, SourceVersion: a.SourceVersion, DocumentID: a.DocumentID, On: date,
 				Currency: a.Currency, Amount: negated(a.Amount), BaseCurrency: a.BaseCurrency, BaseAmount: negated(a.BaseAmount),
-				RealisedFX: negated(a.RealisedFX), ReversesID: &id})
+				RealisedFX: negated(a.RealisedFX), Tolerance: negated(a.Tolerance), ReversesID: &id})
 			if err != nil {
 				return err
 			}
@@ -332,6 +333,14 @@ func replayBillPayment(ctx context.Context, u storage.UnitOfWork, doc storage.Do
 				return ledger.Entry{}, err
 			}
 			part.Clears = &base
+			// What it settled beyond what it paid was a settlement difference within tolerance (FR-BNK-08).
+			settled, err := money.ParseStored(string(a.Amount), x.Amount.Currency())
+			if err != nil {
+				return ledger.Entry{}, err
+			}
+			if short, err := settled.Sub(x.Amount); err == nil && short.Sign() > 0 {
+				part.Short = &short
+			}
 		}
 		p.Bills = append(p.Bills, part)
 	}

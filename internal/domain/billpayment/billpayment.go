@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/subledger"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -35,6 +36,7 @@ const (
 	CodeTooLong    = "BILLPAY-08" // the reference or the notes are too long
 	CodeTooMany    = "BILLPAY-09" // more bills than one payment settles
 	CodeHeld       = "BILLPAY-11" // a bill whose withholding the tax agent has not decided, or decided anew since it posted (FR-AP-19)
+	CodeTolerance  = "BILLPAY-12" // what a payment in full leaves of a bill is above the settlement tolerance (FR-BNK-08)
 )
 
 // The longest reference and notes a payment keeps, and the most bills it settles.
@@ -53,10 +55,12 @@ type Error struct {
 
 func (e *Error) Error() string { return fmt.Sprintf("%s: %s (%s)", e.Code, e.Message, e.Fix) }
 
-// Part is what a payment settles of one bill, in the bill's currency.
+// Part is what a payment settles of one bill, in the bill's currency. InFull settles the bill in full: what is left of
+// it after Amount clears as a settlement difference within tolerance (FR-BNK-08).
 type Part struct {
 	BillID uuid.UUID
 	Amount money.Money
+	InFull bool
 }
 
 // Draft is a payment as recorded: the supplier, the date the money left, the money account it left, the bills'
@@ -93,6 +97,7 @@ type payload struct {
 type payloadPart struct {
 	BillID uuid.UUID   `json:"bill_id"`
 	Amount money.Money `json:"amount"`
+	InFull bool        `json:"in_full,omitempty"`
 }
 
 // Encode is a draft as a document version stores it.
@@ -115,7 +120,7 @@ func Encode(d Draft) ([]byte, error) {
 		p.FXRate, p.FXRateSource = d.Rate.String(), d.Rate.Source
 	}
 	for _, x := range d.Bills {
-		p.Bills = append(p.Bills, payloadPart{BillID: x.BillID, Amount: x.Amount})
+		p.Bills = append(p.Bills, payloadPart{BillID: x.BillID, Amount: x.Amount, InFull: x.InFull})
 	}
 	return json.Marshal(p)
 }
@@ -154,7 +159,7 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 		d.Rate = &r
 	}
 	for _, x := range p.Bills {
-		d.Bills = append(d.Bills, Part{BillID: x.BillID, Amount: x.Amount})
+		d.Bills = append(d.Bills, Part{BillID: x.BillID, Amount: x.Amount, InFull: x.InFull})
 	}
 	return d, nil
 }
@@ -323,6 +328,7 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s 
 	}
 
 	seen := map[uuid.UUID]bool{}
+	var tol *subledger.Tolerance // read once, when a part settles in full with a difference
 	for i, x := range d.Bills {
 		field := fmt.Sprintf("bills[%d].bill_id", i+1)
 		if seen[x.BillID] {
@@ -375,6 +381,32 @@ func Prepare(ctx context.Context, u storage.UnitOfWork, doc storage.Document, s 
 			case c == 0:
 				left := o.Carrying
 				part.Clears = &left
+			case x.InFull: // a settlement difference within tolerance clears the rest (FR-BNK-08)
+				short, diff, total, err := subledger.Difference(x.Amount, o.Open, o.Total, o.Rate)
+				if err != nil {
+					return Prepared{}, nil, err
+				}
+				if tol == nil {
+					t, err := subledger.LoadTolerance(ctx, u, s.Base, d.Date)
+					if err != nil {
+						return Prepared{}, nil, err
+					}
+					tol = &t
+				}
+				ok, why, err := tol.Allows(diff, total, d.Currency != s.Base)
+				if err != nil {
+					return Prepared{}, nil, err
+				}
+				if !ok {
+					add(CodeTolerance, fmt.Sprintf("bills[%d].in_full", i+1), fmt.Sprintf("%s has %s %s open after this payment: %s", name, short, d.Currency, why),
+						"Leave it open, or record a supplier credit note for what is left")
+					break
+				}
+				if err := tol.Take(diff); err != nil {
+					return Prepared{}, nil, err
+				}
+				left := o.Carrying
+				part.Clears, part.Short = &left, &short
 			}
 		}
 		p.Bills = append(p.Bills, part)

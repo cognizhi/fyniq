@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -20,7 +21,7 @@ type allocations struct{ u *unitOfWork }
 func allocationOf(r sqlcdb.AllocationsOfDocumentRow) storage.Allocation {
 	return storage.Allocation{ID: r.ID, SourceID: r.SourceID, SourceVersion: int(r.SourceVersion), DocumentID: r.DocumentID, On: r.OnDate,
 		Currency: r.Currency, Amount: storage.Decimal(r.Amount), BaseCurrency: r.BaseCurrency,
-		BaseAmount: storage.Decimal(r.BaseAmount), RealisedFX: storage.Decimal(r.RealisedFx),
+		BaseAmount: storage.Decimal(r.BaseAmount), RealisedFX: storage.Decimal(r.RealisedFx), Tolerance: storage.Decimal(r.Tolerance),
 		ReversesID: r.ReversesID, WrittenBy: r.WrittenBy, WrittenAt: r.WrittenAt}
 }
 
@@ -28,8 +29,12 @@ func (r allocations) Add(ctx context.Context, n storage.NewAllocation) (storage.
 	if err := r.u.check(); err != nil {
 		return storage.Allocation{}, err
 	}
+	tolerance := string(n.Tolerance)
+	if tolerance == "" {
+		tolerance = "0"
+	}
 	row, err := r.u.q.InsertAllocation(ctx, sqlcdb.InsertAllocationParams{SourceID: n.SourceID, SourceVersion: int32(n.SourceVersion), // #nosec G115 -- a document's version
-		DocumentID: n.DocumentID, OnDate: dateOf(n.On), Amount: string(n.Amount), BaseAmount: string(n.BaseAmount), RealisedFx: string(n.RealisedFX),
+		DocumentID: n.DocumentID, OnDate: dateOf(n.On), Amount: string(n.Amount), BaseAmount: string(n.BaseAmount), RealisedFx: string(n.RealisedFX), Tolerance: tolerance,
 		ReversesID: n.ReversesID, WrittenBy: r.u.actor(ctx), WrittenAt: r.u.store.clock.Now(), Currency: n.Currency, BaseCurrency: n.BaseCurrency})
 	if errors.Is(mapError(err), ports.ErrNotFound) {
 		return storage.Allocation{}, &storage.Error{Code: storage.CodeAllocation, Message: fmt.Sprintf("%s or %s is not a currency", n.Currency, n.BaseCurrency)}
@@ -41,6 +46,9 @@ func (r allocations) Add(ctx context.Context, n storage.NewAllocation) (storage.
 	changes := map[string][2]any{"source_id": {nil, a.SourceID.String()}, "source_version": {nil, a.SourceVersion}, "document_id": {nil, a.DocumentID.String()},
 		"on": {nil, a.On.Format("2006-01-02")}, "amount": {nil, string(a.Amount) + " " + a.Currency}, "base_amount": {nil, string(a.BaseAmount) + " " + a.BaseCurrency},
 		"realised_fx": {nil, string(a.RealisedFX)}}
+	if !isZeroText(string(a.Tolerance)) {
+		changes["tolerance"] = [2]any{nil, string(a.Tolerance)}
+	}
 	if a.ReversesID != nil {
 		changes["reverses_id"] = [2]any{nil, a.ReversesID.String()}
 	}
@@ -93,4 +101,22 @@ func (r allocations) Settled(ctx context.Context, ids []uuid.UUID) (map[uuid.UUI
 		out[x.DocumentID] = storage.Decimal(x.Settled)
 	}
 	return out, nil
+}
+
+func (r allocations) Tolerance(ctx context.Context, from, to time.Time) (storage.Decimal, error) {
+	if err := r.u.check(); err != nil {
+		return "", err
+	}
+	t, err := r.u.q.ToleranceBetween(ctx, sqlcdb.ToleranceBetweenParams{FromDay: dateOf(from), ToDay: dateOf(to)})
+	return storage.Decimal(t), mapError(err)
+}
+
+// isZeroText says whether a decimal's text is zero: "0", "0.0000", "-0.00".
+func isZeroText(s string) bool {
+	for _, c := range s {
+		if c != '0' && c != '.' && c != '-' {
+			return false
+		}
+	}
+	return true
 }

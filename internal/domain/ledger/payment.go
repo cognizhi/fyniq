@@ -30,11 +30,18 @@ const (
 // base currency when the payment settles all that is open of it; nil otherwise. RND-FX of the parts of a bill paid in
 // parts need not sum to RND-FX of the whole: what the last part leaves is the residual, cleared to 7030 in the month
 // of the last payment (Appendix B, "Settlement difference"), so no cent of the bill stays on 2010.
+//
+// Short, when set, is what is left of the bill after Amount, cleared as a settlement difference within tolerance
+// (FR-BNK-08; Appendix B, "Settlement difference on an invoice or bill"): the payment settles Amount + Short of the bill
+// and pays Amount; Short's carrying amount goes to 7030 on a line of its own, apart from the realised FX. Clears is set
+// with it: the payment settles the bill in full. Whether Short is within the organisation's tolerances is the
+// document's to decide; the rule posts it.
 type PaidBill struct {
 	BillID     uuid.UUID
 	Amount     money.Money
 	StoredRate money.Rate
 	Clears     *money.Money
+	Short      *money.Money
 }
 
 // BillPayment is one version of a payment of bills as the rules read it: the money account it was paid from, the bills'
@@ -59,11 +66,13 @@ const MaxResidual = 1
 // Settlement is what a payment or a receipt settled of one document (a bill, an invoice, or a credit): the amount in the
 // document's currency, the carrying amount it cleared in the base currency, and the realised gain (+) or loss (−) in
 // the base currency (ENG-41), the allocation it records (FR-AR-18).
+// Tolerance is the carrying amount a settlement tolerance cleared, in the base currency; zero for none.
 type Settlement struct {
 	DocumentID uuid.UUID
 	Amount     money.Money
 	Base       money.Money
 	RealisedFX money.Money
+	Tolerance  money.Money
 }
 
 // BillPaymentIdentity is the posting identity of a bill payment version under a rule version (§11.4).
@@ -167,19 +176,36 @@ func postPayment(p BillPayment, s Settings, role string) (Entry, []Settlement, e
 			add(CodeWrongRate, f("bill"), "the bill's stored rate is not of the payment's currency", "Pay bills of one currency together")
 			continue
 		}
+		settles := b.Amount
+		if b.Short != nil {
+			switch {
+			case b.Short.Currency() != p.Currency || b.Short.Sign() <= 0:
+				add(CodePaymentAmount, f("amount"), fmt.Sprintf("the settlement difference is %s %s", b.Short, b.Short.Currency()), fmt.Sprintf("It is a positive amount in %s", p.Currency))
+				continue
+			case b.Clears == nil:
+				add(CodePaymentAmount, f("amount"), "a settlement difference clears only what is left of a bill paid in full", "Settle the bill in full, or leave the difference open")
+				continue
+			}
+			settles, _ = settles.Add(*b.Short)
+			if _, ok := s.byRole(RoleFXRounding); !ok {
+				add(CodeSystemRole, f("amount"), "the chart has no FX and rounding account for the settlement difference",
+					"Load the standard chart's 7030 FX & rounding differences, or give an account the role")
+				continue
+			}
+		}
 		if b.Clears != nil {
 			if b.Clears.Currency() != s.Base || b.Clears.Sign() <= 0 {
 				add(CodePaymentAmount, f("bill"), fmt.Sprintf("the carrying amount left is %s %s", b.Clears, b.Clears.Currency()), fmt.Sprintf("It is a positive amount in %s", s.Base))
 				continue
 			}
-			base, err := rounding.FX(b.Amount, b.StoredRate)
+			base, err := rounding.FX(settles, b.StoredRate)
 			if err != nil {
 				add(CodeBaseRange, f("amount"), err.Error(), "Check the amount")
 				continue
 			}
 			residual, _ := b.Clears.Sub(base)
 			if r := residual.Decimal(); r.Abs(r).Cmp(apd.New(MaxResidual, 0)) > 0 || (!residual.IsZero() && p.Currency == s.Base) {
-				add(CodePaymentAmount, f("amount"), fmt.Sprintf("the bill carries %s %s, but %s %s at its rate is %s", b.Clears, s.Base, b.Amount, p.Currency, base),
+				add(CodePaymentAmount, f("amount"), fmt.Sprintf("the bill carries %s %s, but %s %s at its rate is %s", b.Clears, s.Base, settles, p.Currency, base),
 					"Settle what is open of the bill; a larger difference is a write-off")
 				continue
 			}
@@ -206,7 +232,7 @@ func postPayment(p BillPayment, s Settings, role string) (Entry, []Settlement, e
 		settleRate = r
 	}
 	for _, b := range p.Bills {
-		base, err := rounding.FX(b.Amount, b.StoredRate)
+		paidBase, err := rounding.FX(b.Amount, b.StoredRate)
 		if err != nil {
 			return Entry{}, nil, Problems{{CodeBaseRange, "bills", err.Error(), "Check the amounts"}}
 		}
@@ -215,12 +241,28 @@ func postPayment(p BillPayment, s Settings, role string) (Entry, []Settlement, e
 		if err != nil {
 			return Entry{}, nil, Problems{{CodeBaseRange, "bills", err.Error(), "Check the amounts and the rate"}}
 		}
-		gain, err := base.Sub(cost)
+		gain, err := paidBase.Sub(cost)
 		if err != nil {
 			return Entry{}, nil, err
 		}
-		lines = append(lines, Line{AccountID: ap.ID, Amount: b.Amount, Rate: b.StoredRate, Base: base, Description: p.Memo})
+		// A settlement difference within tolerance settles the rest of the bill on the same line, and its carrying amount
+		// goes to 7030 on a line of its own: a gain when the company pays less than it owed.
+		settles, base, tolerance := b.Amount, paidBase, money.Zero(s.Base)
+		if b.Short != nil {
+			settles, _ = settles.Add(*b.Short)
+			if base, err = rounding.FX(settles, b.StoredRate); err != nil {
+				return Entry{}, nil, Problems{{CodeBaseRange, "bills", err.Error(), "Check the amounts"}}
+			}
+			tolerance, _ = base.Sub(paidBase)
+		}
+		lines = append(lines, Line{AccountID: ap.ID, Amount: settles, Rate: b.StoredRate, Base: base, Description: p.Memo})
 		baseTotal, _ = baseTotal.Add(base)
+		if b.Short != nil {
+			fxAcc, _ := s.byRole(RoleFXRounding)
+			lines = append(lines, Line{AccountID: fxAcc.ID, Amount: tolerance.Neg(), Rate: money.Identity(s.Base), Base: tolerance.Neg(),
+				Description: "Settlement difference within tolerance"})
+			baseTotal, _ = baseTotal.Add(tolerance.Neg())
+		}
 		cleared := base
 		if b.Clears != nil && !b.Clears.Equal(base) {
 			residual, _ := b.Clears.Sub(base)
@@ -229,7 +271,7 @@ func postPayment(p BillPayment, s Settings, role string) (Entry, []Settlement, e
 			baseTotal, _ = baseTotal.Add(residual)
 			cleared = *b.Clears
 		}
-		settled = append(settled, Settlement{DocumentID: b.BillID, Amount: b.Amount, Base: cleared, RealisedFX: gain})
+		settled = append(settled, Settlement{DocumentID: b.BillID, Amount: settles, Base: cleared, RealisedFX: gain, Tolerance: tolerance})
 	}
 	if !p.Unapplied.IsZero() {
 		base, err := rounding.FX(p.Unapplied, settleRate)

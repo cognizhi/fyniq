@@ -166,6 +166,11 @@ Source: PRD-001 §8.4 · Priority M · Phase P1
 - **AND** the bill's S$120.00 stays open likewise
 - **AND** a migrated workbook forced-paid bill keeps G.3's June 7030 figure
 
+#### Scenario: Settlement differences as built (rev 0.121)
+- **WHEN** a payment or receipt recorded by hand settles a bill or an invoice in full with a little less
+- **THEN** the difference's carrying amount clears to 7030 on a line of its own when within the tolerances in force (S$1.00; for another currency the greater of S$1.00 and 3%; at most S$50.00 a document and S$200.00 a month), and is refused above them (RECEIPT-11, BILLPAY-12)
+- **AND** the allocation records it, a void negates it, and the close warns when the month's differences exceed a cap lowered since (C.2 #49)
+
 ### Requirement: FR-BNK-09 Transfers between money accounts
 The system SHALL record a transfer between money accounts once, matched on both sides, and SHALL track transfers in transit.
 

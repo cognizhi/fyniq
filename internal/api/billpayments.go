@@ -36,7 +36,7 @@ const CodePaymentVoidApproval = "BILLPAY-10"
 
 // PaymentCodes are the codes the posting rule and the payment's own checks answer.
 var PaymentCodes = []string{billpayment.CodeSupplier, billpayment.CodeBill, billpayment.CodeOverpaid, billpayment.CodeTooLong, billpayment.CodeTooMany,
-	billpayment.CodeHeld,
+	billpayment.CodeHeld, billpayment.CodeTolerance,
 	ledger.CodeNotMoneyAccount, ledger.CodePaymentAmount, ledger.CodePaidAmount, ledger.CodeSystemRole, ledger.CodeLineCurrency}
 
 // PaymentApprovalCodes are the codes an approval of a payment's void may answer.
@@ -48,6 +48,7 @@ func PaymentApprovalCodes() []string {
 type BillPaymentPart struct {
 	BillID string `json:"bill_id" format:"uuid" doc:"The bill: one of the supplier's posted bills, in the payment's currency." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30"`
 	Amount Money  `json:"amount" doc:"What the payment settles of it, in the bill's currency: at most what is open of it (BILLPAY-05)."`
+	InFull bool   `json:"in_full,omitempty" doc:"Settle the bill in full: what is left of it after the amount clears to 7030 in this payment's month as a settlement difference, when it is within the organisation's settlement tolerances (FR-BNK-08); a larger difference is refused (BILLPAY-12)." example:"false"`
 }
 
 // BillPaymentDraft is a payment as recorded.
@@ -71,6 +72,7 @@ type BillSettled struct {
 	Amount     Money  `json:"amount" doc:"What it settled, in the bill's currency."`
 	Base       Money  `json:"base" doc:"The bill's carrying amount it cleared, in the base currency: the amount at the bill's stored rate, and for the part that settles what is left of a bill, what was left (ENG-14)."`
 	RealisedFX Money  `json:"realised_fx" doc:"The realised gain (positive) or loss (negative) in the base currency: the amount at the payment's rate against the bill's stored rate, with no tolerance (ENG-41)."`
+	Tolerance  *Money `json:"tolerance,omitempty" doc:"For a bill paid in full with a little less: the carrying amount the settlement difference cleared to 7030, in the base currency (FR-BNK-08)."`
 }
 
 // BillPaymentAccount is the money account a payment left.
@@ -226,7 +228,7 @@ func paymentDraftOf(in BillPaymentDraft, base money.Currency) (billpayment.Draft
 			fields = append(fields, *bad)
 			continue
 		}
-		d.Bills = append(d.Bills, billpayment.Part{BillID: id, Amount: m})
+		d.Bills = append(d.Bills, billpayment.Part{BillID: id, Amount: m, InFull: x.InFull})
 	}
 	if len(fields) > 0 {
 		return d, invalid(fields)
@@ -287,6 +289,15 @@ func (a *API) paymentView(ctx context.Context, u storage.UnitOfWork) (paymentVie
 
 func moneyOut(m money.Money) Money { return Money{Amount: m.String(), Currency: m.Currency().Code} }
 
+// toleranceOut is the carrying amount an allocation's settlement difference cleared, nil for none (FR-BNK-08).
+func toleranceOut(a storage.Allocation) *Money {
+	t := storedOut(a.Tolerance, a.BaseCurrency)
+	if t.Amount == "" || strings.Trim(t.Amount, "0.-") == "" {
+		return nil
+	}
+	return &t
+}
+
 // stored reads a stored decimal in a currency as the API shows it, at the currency's scale.
 func storedOut(d storage.Decimal, code string) Money {
 	if c, err := money.Lookup(code); err == nil {
@@ -336,7 +347,7 @@ func (a *API) paymentOf(ctx context.Context, u storage.UnitOfWork, v paymentView
 			continue
 		}
 		s := BillSettled{BillID: x.DocumentID.String(), Amount: storedOut(x.Amount, x.Currency), Base: storedOut(x.BaseAmount, x.BaseCurrency),
-			RealisedFX: storedOut(x.RealisedFX, x.BaseCurrency)}
+			RealisedFX: storedOut(x.RealisedFX, x.BaseCurrency), Tolerance: toleranceOut(x)}
 		if b, err := u.Documents().Get(ctx, x.DocumentID); err == nil {
 			s.BillNumber = b.Number
 		}

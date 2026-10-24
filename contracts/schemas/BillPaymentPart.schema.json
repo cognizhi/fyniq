@@ -13,6 +13,13 @@
       ],
       "format": "uuid",
       "type": "string"
+    },
+    "in_full": {
+      "description": "Settle the bill in full: what is left of it after the amount clears to 7030 in this payment's month as a settlement difference, when it is within the organisation's settlement tolerances (FR-BNK-08); a larger difference is refused (BILLPAY-12).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
     }
   },
   "required": [

@@ -58,6 +58,7 @@ allocation | realised_fx | numeric(20,4) | not null |
 allocation | reverses_id | uuid | null | 
 allocation | written_by | text | not null | 
 allocation | written_at | timestamp with time zone | not null | 
+allocation | tolerance | numeric(20,4) | not null | 0
 announcement | organisation_id | uuid | not null | current_org()
 announcement | id | uuid | not null | uuidv7()
 announcement | message | text | not null | 
@@ -951,6 +952,8 @@ allocation | allocation_sign | CHECK (((reverses_id IS NULL) = (amount > (0)::nu
 allocation | allocation_source_fkey | FOREIGN KEY (organisation_id, source_id) REFERENCES document(organisation_id, id)
 allocation | allocation_source_id_not_null | NOT NULL source_id
 allocation | allocation_source_version_not_null | NOT NULL source_version
+allocation | allocation_tolerance | CHECK (((tolerance <> 'NaN'::numeric) AND (tolerance = trunc(tolerance, (base_minor_units)::integer)) AND (((reverses_id IS NULL) AND (tolerance >= (0)::numeric)) OR ((reverses_id IS NOT NULL) AND (tolerance <= (0)::numeric)))))
+allocation | allocation_tolerance_not_null | NOT NULL tolerance
 allocation | allocation_version_positive | CHECK ((source_version > 0))
 allocation | allocation_written_at_not_null | NOT NULL written_at
 allocation | allocation_written_by_not_null | NOT NULL written_by
@@ -2649,7 +2652,7 @@ accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_sub
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
 account_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 78889030731483263211599be66a7331
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
-allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3cf5b7e5bc1485d2ef8ef4a236f073b1
+allocation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e4abd7874e961d52e2c28cafee18be2a
 announcement_dismissal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5e05644e02afe264e8eef087f5ad7218
 announcement_dismissible() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c4dc44e3777faec4069ed0a9f0f172bd
 announcement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aef10077836a4f9111749cb3181c5788
