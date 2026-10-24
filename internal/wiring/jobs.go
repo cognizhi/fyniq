@@ -10,6 +10,7 @@ import (
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
@@ -20,6 +21,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/render"
+	"github.com/cognizhi/fyniq/internal/salesmail"
 )
 
 // PlatformJobs are the functions behind the platform's schedules (outbox.PlatformSchedules), run by
@@ -115,9 +118,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.Bills{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock))}.MakeDueAll(ctx, clock.Now()) // FR-NTF-01
 			return err
 		},
-		"invoices.recurring": func(ctx context.Context) error {
-			_, err := journal.Invoices{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock))}.MakeDueAll(ctx, clock.Now()) // FR-NTF-01
-			return err
+		"invoices.recurring": func(ctx context.Context) error { // FR-AR-07: drafts, and the approved ones issued and sent
+			return salesmail.Scheduled{Invoices: journal.Invoices{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock)), Clock: clock},
+				Sender: k.SalesSender(clock)}.RunAll(ctx, clock.Now())
 		},
 		"bills.releases": func(ctx context.Context) error {
 			_, err := journal.ReleaseDueAll(ctx, k.Store, clock.Now())
@@ -161,6 +164,18 @@ func (k *Kit) JobDead(clock ports.Clock) outbox.Dead {
 // dispatcher queues work through the kit's outbox.
 func (k *Kit) dispatcher(clock ports.Clock) outbox.Dispatcher {
 	return outbox.Dispatcher{Store: k.Store, Queue: k.Queue, Clock: clock}
+}
+
+// SalesSender emails the invoices the scheduler issues (FR-AR-06, FR-AR-07): rendered by the render service, staged in
+// the staging store, with the web app's origin for their links. Without a render service it sends nothing.
+func (k *Kit) SalesSender(clock ports.Clock) salesmail.Sender {
+	out := salesmail.Sender{Store: k.Store, Staging: k.Staging, Outbox: k.dispatcher(clock), Origin: k.Origin, Clock: clock}
+	if k.Render != nil {
+		out.Render = func(ctx context.Context, documentType string, c doctemplate.Content, d render.Data, created time.Time) (render.Response, error) {
+			return k.Render.Render(ctx, render.Request{DocumentType: documentType, Content: c, Data: d, Created: created, Check: true})
+		}
+	}
+	return out
 }
 
 // Fetcher fetches, decides and keeps received mail (FR-INT-22), telling whoever decides of quarantined mail.

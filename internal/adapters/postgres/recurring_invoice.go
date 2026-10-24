@@ -17,11 +17,17 @@ type recurringInvoices struct{ u *unitOfWork }
 func (u *unitOfWork) RecurringInvoices() storage.RecurringInvoices { return recurringInvoices{u} }
 
 func toRecurringInvoice(row sqlcdb.GetRecurringInvoiceRow) storage.RecurringInvoice {
-	return storage.RecurringInvoice{ID: row.ID, Name: row.Name, Status: storage.RecurringStatus(row.Status),
+	out := storage.RecurringInvoice{ID: row.ID, Name: row.Name, Status: storage.RecurringStatus(row.Status),
 		Schedule: storage.Schedule{EveryMonths: int(row.EveryMonths), EveryWeeks: int(row.EveryWeeks), DayOfMonth: int(row.DayOfMonth), StartsOn: row.StartsOn,
 			EndsOn: nullDate(row.EndsOn)},
 		NextOn: nullDate(row.NextOn), Version: int(row.Version), ContentVersion: int(row.ContentVersion), Content: row.Content,
-		EditedBy: row.EditedBy, EditedAt: row.EditedAt, LastOn: nullDate(row.LastOn), LastInvoiceID: row.LastInvoiceID}
+		EditedBy: row.EditedBy, EditedAt: row.EditedAt, LastOn: nullDate(row.LastOn), LastInvoiceID: row.LastInvoiceID,
+		Mode: row.Mode, ApprovedBy: str(row.ApprovedBy), ApprovedAt: row.ApprovedAt}
+	if row.ApprovedVersion != nil {
+		v := int(*row.ApprovedVersion)
+		out.ApprovedVersion = &v
+	}
+	return out
 }
 
 // recurringInvoiceChanges are the audited differences between two states of a recurring invoice; content only when it
@@ -43,6 +49,7 @@ func recurringInvoiceChanges(a, b storage.RecurringInvoice) (map[string][2]any, 
 		diff("starts_on", nil, b.Schedule.StartsOn.Format(time.DateOnly))
 		diff("ends_on", nil, optDay(b.Schedule.EndsOn))
 		diff("next_on", nil, optDay(b.NextOn))
+		diff("mode", nil, b.Mode)
 	} else {
 		diff("name", a.Name, b.Name)
 		diff("status", string(a.Status), string(b.Status))
@@ -52,6 +59,7 @@ func recurringInvoiceChanges(a, b storage.RecurringInvoice) (map[string][2]any, 
 		diff("starts_on", a.Schedule.StartsOn.Format(time.DateOnly), b.Schedule.StartsOn.Format(time.DateOnly))
 		diff("ends_on", optDay(a.Schedule.EndsOn), optDay(b.Schedule.EndsOn))
 		diff("next_on", optDay(a.NextOn), optDay(b.NextOn))
+		diff("mode", a.Mode, b.Mode)
 		diff("version", a.Version, b.Version)
 	}
 	if a.ContentVersion != b.ContentVersion {
@@ -71,7 +79,7 @@ func (r recurringInvoices) Create(ctx context.Context, d storage.RecurringInvoic
 	}
 	row, err := r.u.q.InsertRecurringInvoice(ctx, sqlcdb.InsertRecurringInvoiceParams{Name: d.Name, Status: string(d.Status),
 		EveryMonths: int32(d.Schedule.EveryMonths), EveryWeeks: int32(d.Schedule.EveryWeeks), DayOfMonth: int32(d.Schedule.DayOfMonth), // #nosec G115 -- small, checked by the database
-		StartsOn: d.Schedule.StartsOn, EndsOn: pgDate(d.Schedule.EndsOn), NextOn: pgDate(d.NextOn)})
+		StartsOn: d.Schedule.StartsOn, EndsOn: pgDate(d.Schedule.EndsOn), NextOn: pgDate(d.NextOn), Mode: modeOf(d.Mode)})
 	if err != nil {
 		return storage.RecurringInvoice{}, mapError(err)
 	}
@@ -139,7 +147,7 @@ func (r recurringInvoices) Update(ctx context.Context, id uuid.UUID, version int
 	if err := r.u.q.UpdateRecurringInvoice(ctx, sqlcdb.UpdateRecurringInvoiceParams{ID: id, Name: d.Name, Status: string(d.Status),
 		EveryMonths: int32(d.Schedule.EveryMonths), EveryWeeks: int32(d.Schedule.EveryWeeks), DayOfMonth: int32(d.Schedule.DayOfMonth), // #nosec G115 -- small, checked by the database
 		StartsOn: d.Schedule.StartsOn, EndsOn: pgDate(d.Schedule.EndsOn), NextOn: pgDate(d.NextOn),
-		Version: int32(before.Version + 1), ContentVersion: int32(contentVersion)}); err != nil { // #nosec G115 -- version counts
+		Version: int32(before.Version + 1), ContentVersion: int32(contentVersion), Mode: modeOf(d.Mode)}); err != nil { // #nosec G115 -- version counts
 		return storage.RecurringInvoice{}, mapError(err)
 	}
 	after, err := r.Get(ctx, id)
@@ -235,4 +243,54 @@ func (r recurringInvoices) MakeDraft(ctx context.Context, id uuid.UUID, on time.
 		return storage.Document{}, err
 	}
 	return doc, nil
+}
+
+// modeOf is a recurring invoice's mode as stored: a draft when none is named.
+func modeOf(mode string) string {
+	if mode == "" {
+		return storage.RecurringDraft
+	}
+	return mode
+}
+
+func (r recurringInvoices) Approve(ctx context.Context, id uuid.UUID, version int) (storage.RecurringInvoice, error) {
+	if err := r.u.check(); err != nil {
+		return storage.RecurringInvoice{}, err
+	}
+	cur, err := r.u.q.LockRecurringInvoice(ctx, id)
+	if err != nil {
+		return storage.RecurringInvoice{}, mapError(err)
+	}
+	before := toRecurringInvoice(sqlcdb.GetRecurringInvoiceRow(cur))
+	if before.ContentVersion != version {
+		return storage.RecurringInvoice{}, &storage.Error{Code: storage.CodeVersion,
+			Message: fmt.Sprintf("the recurring invoice's content is at version %d, not the %d approved", before.ContentVersion, version)}
+	}
+	by := r.u.actor(ctx)
+	v := int32(version) // #nosec G115 -- a version count
+	if err := r.u.q.ApproveRecurringInvoice(ctx, sqlcdb.ApproveRecurringInvoiceParams{ID: id, ApprovedVersion: &v, ApprovedBy: &by}); err != nil {
+		return storage.RecurringInvoice{}, mapError(err)
+	}
+	after, err := r.Get(ctx, id)
+	if err != nil {
+		return storage.RecurringInvoice{}, err
+	}
+	var was any
+	if before.ApprovedVersion != nil {
+		was = *before.ApprovedVersion
+	}
+	if err := r.u.event(ctx, "recurring_invoice.approved", "recurring_invoice", id, &after.Version, map[string][2]any{
+		"approved_version": {was, version}, "approved_by": {nilIfEmpty(before.ApprovedBy), by}, "version": {before.Version, after.Version}}); err != nil {
+		return storage.RecurringInvoice{}, err
+	}
+	return after, nil
+}
+
+func (r recurringInvoices) Unsent(ctx context.Context, limit int) ([]uuid.UUID, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	ids, err := r.u.q.UnsentScheduledInvoices(ctx, sqlcdb.UnsentScheduledInvoicesParams{Since: r.u.store.clock.Now().Add(-storage.ScheduledSendFor),
+		MaxRows: int32(min(max(limit, 1), 1000))}) // #nosec G115 -- bounded
+	return ids, mapError(err)
 }

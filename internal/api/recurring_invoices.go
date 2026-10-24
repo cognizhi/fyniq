@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -42,6 +45,7 @@ type RecurringInvoiceInput struct {
 	Currency   string             `json:"currency" pattern:"^[A-Z]{3}$" doc:"The currency of each draft. One in another currency takes the cascade's rate for its date when it is issued (ENG-40)." example:"SGD"`
 	Lines      []InvoiceLineDraft `json:"lines" maxItems:"200" doc:"The lines of each draft, as on an invoice; a line never names a quote."`
 	Notes      string             `json:"notes,omitempty" maxLength:"2000" doc:"The notes of each draft." example:"Monthly subscription"`
+	Mode       string             `json:"mode,omitempty" enum:"draft,issue_and_send" doc:"draft, the default: the scheduler makes each occurrence's draft, which a person issues. issue_and_send: once another person approves its content (requestRecurringInvoiceApproval), the scheduler issues and emails each occurrence's invoice; until then, and after each change of content, it makes drafts." example:"draft"`
 }
 
 // RecurringInvoice is a recurring invoice at its version (FR-AR-07; PRD-001 rev 0.135).
@@ -63,7 +67,14 @@ type RecurringInvoice struct {
 	ContentVersion int              `json:"content_version" doc:"The version of its content, which drafts name; it changes when the customer, reference, currency, lines or notes change." example:"2"`
 	EditedBy       *Person          `json:"edited_by,omitempty" doc:"Who wrote the current content: they do not approve the issue of its drafts (SOD-3)."`
 	EditedAt       time.Time        `json:"edited_at" doc:"When the current content was written." example:"2026-10-23T09:30:00Z"`
-	Checks         []JournalCheck   `json:"checks" nullable:"false" doc:"Its statuses (Appendix C.1 #28, #29): every problem the invoice rules find in its content (a missing rate aside, which a draft takes when it is issued), as Templates incomplete (✖); a warning when an occurrence before today has no draft yet; or OK, Paused or Ended."`
+	Checks         []JournalCheck   `json:"checks" nullable:"false" doc:"Its statuses (Appendix C.1 #28, #29): every problem the invoice rules find in its content (a missing rate aside, which a draft takes when it is issued), as Templates incomplete (✖); a warning when an occurrence before today has no draft yet, or when it is set to issue and send but its content is not approved; or OK, Paused or Ended."`
+
+	// Issue and send (the owner's decision of 24 Oct 2026; rev 0.136).
+	Mode            string     `json:"mode" enum:"draft,issue_and_send" doc:"draft: the scheduler makes drafts; issue_and_send: it issues and emails each invoice once the current content is approved." example:"draft"`
+	ApprovedVersion int        `json:"approved_version,omitempty" doc:"The content version another person approved for issue and send; the scheduler issues only while it is the current one." example:"2"`
+	ApprovedBy      *Person    `json:"approved_by,omitempty" doc:"Who approved it."`
+	ApprovedAt      *time.Time `json:"approved_at,omitempty" doc:"When." example:"2026-10-24T09:30:00Z"`
+	IssuesAndSends  bool       `json:"issues_and_sends" doc:"Whether the scheduler issues and emails its invoices now: set to, and its current content approved." example:"false"`
 }
 
 // RecurringInvoicePage is a page of recurring invoices, by name.
@@ -136,6 +147,10 @@ func recurringInvoiceOf(ctx context.Context, u storage.UnitOfWork, base money.Cu
 	if r.LastInvoiceID != nil {
 		out.LastInvoiceID = r.LastInvoiceID.String()
 	}
+	out.Mode, out.ApprovedBy, out.ApprovedAt, out.IssuesAndSends = r.Mode, personOf(r.ApprovedBy), utc(r.ApprovedAt), r.IssuesAndSends()
+	if r.ApprovedVersion != nil {
+		out.ApprovedVersion = *r.ApprovedVersion
+	}
 	if d.CustomerID != uuid.Nil {
 		out.Customer = &InvoiceCustomer{ID: d.CustomerID.String()}
 		if c, err := u.Contacts().Get(ctx, d.CustomerID); err == nil {
@@ -147,7 +162,7 @@ func recurringInvoiceOf(ctx context.Context, u storage.UnitOfWork, base money.Cu
 
 // recurringInvoiceInputOf reads a recurring invoice from the request, with every invalid field at once.
 func recurringInvoiceInputOf(in RecurringInvoiceInput, base money.Currency) (journal.RecurringInvoiceInput, error) {
-	out := journal.RecurringInvoiceInput{Name: strings.TrimSpace(in.Name)}
+	out := journal.RecurringInvoiceInput{Name: strings.TrimSpace(in.Name), Mode: in.Mode}
 	var bad []FieldProblem
 	if out.Name == "" {
 		bad = append(bad, FieldProblem{Code: CodeInvalid, Field: "body.name", Message: "is empty", Fix: "Name the recurring invoice"})
@@ -214,9 +229,9 @@ func (a *API) viewRecurringInvoices(ctx context.Context, u storage.UnitOfWork, r
 		}
 		out = append(out, v)
 	}
-	people := make([]*Person, 0, len(out))
+	people := make([]*Person, 0, 2*len(out))
 	for i := range out {
-		people = append(people, out[i].EditedBy)
+		people = append(people, out[i].EditedBy, out[i].ApprovedBy)
 	}
 	return out, a.name(ctx, u, people...)
 }
@@ -425,4 +440,51 @@ func registerRecurringInvoices(a *API) {
 		"Starts a paused recurring invoice again (FR-AR-07; PRD-001 rev 0.135): its next draft is for its first occurrence on or after "+
 			"today, so the occurrences it missed while paused are skipped, not made late. Side effects: the next version and its audit "+
 			"event. Needs If-Match; idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.", storage.RecurringActive)
+
+	register(a, authz.RequestRecurringInvoiceApproval, huma.Operation{
+		OperationID: "requestRecurringInvoiceApproval", Method: http.MethodPost, Path: "/v1/recurring-invoices/{recurring_invoice_id}/approval",
+		Tags: []string{"Sales"}, DefaultStatus: http.StatusAccepted, Summary: "Ask for a recurring invoice to be approved to issue and send",
+		Description: "Asks for the current content version of a recurring invoice set to issue and send to be approved (FR-AR-07; the owner's " +
+			"decision of 24 Oct 2026): another person who holds A on \"Invoices, credit notes\", never who wrote that version (SOD-3), " +
+			"approves it through the approvals, and the scheduler then issues and emails each occurrence's invoice, each listed for the " +
+			"weekly review (FM-3). A change of content withdraws the approval. Refused for one set to make drafts, or whose content is " +
+			"approved already (RECURRING-03). Side effects: the request and its audit event. Needs If-Match; idempotent with " +
+			"Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
+		CodeStepUpRequired, journal.CodeRecurringMode}, RecurringInvoiceCodes...),
+		func(ctx context.Context, in *recurringInvoiceStateInput) (*billRequestOutput, error) {
+			id, err := parseID("recurring_invoice_id", in.RecurringInvoiceID)
+			if err != nil {
+				return nil, err
+			}
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+				r, err := u.RecurringInvoices().Get(ctx, id)
+				if err != nil {
+					return Approval{}, err
+				}
+				if err := checkIfMatch(in.IfMatch, etag(r.Version)); err != nil {
+					return Approval{}, err
+				}
+				switch {
+				case r.Mode != storage.RecurringIssueAndSend:
+					return Approval{}, problem(journal.CodeRecurringMode, "The recurring invoice makes drafts, so it needs no approval.",
+						"Set it to issue_and_send first")
+				case r.IssuesAndSends():
+					return Approval{}, problem(journal.CodeRecurringMode, fmt.Sprintf("Version %d of its content is approved already.", r.ContentVersion),
+						"Nothing to ask: the scheduler issues and sends it")
+				}
+				before := "none"
+				if r.ApprovedVersion != nil {
+					before = strconv.Itoa(*r.ApprovedVersion)
+				}
+				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectRecurringInvoice, ObjectKey: id.String(), Operation: approval.OpRecurringApprove,
+					Summary: fmt.Sprintf("Issue and send the invoices of the recurring invoice %q, content version %d", r.Name, r.ContentVersion),
+					Execute: map[string]any{"recurring_invoice_id": id.String(), "content_version": r.ContentVersion},
+					Diff:    []ApprovalDiff{{Field: "approved_version", Before: before, After: strconv.Itoa(r.ContentVersion)}}})
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &billRequestOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		})
 }

@@ -95,7 +95,8 @@
         "write_off",
         "customer_credit_application",
         "customer_refund",
-        "customer_deposit"
+        "customer_deposit",
+        "recurring_invoice"
       ],
       "examples": [
         "organisation_setting"
@@ -133,7 +134,8 @@
         "write_off.void",
         "customer_credit_application.void",
         "customer_refund.void",
-        "customer_deposit.void"
+        "customer_deposit.void",
+        "recurring_invoice.approve"
       ],
       "examples": [
         "organisation_setting.change"

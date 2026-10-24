@@ -13,6 +13,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const approveRecurringInvoice = `-- name: ApproveRecurringInvoice :exec
+UPDATE fyniq.recurring_invoice
+SET approved_version = $1, approved_by = $2, approved_at = now(), version = version + 1
+WHERE id = $3
+`
+
+type ApproveRecurringInvoiceParams struct {
+	ApprovedVersion *int32
+	ApprovedBy      *string
+	ID              uuid.UUID
+}
+
+// A second person's approval of a content version for issue and send (FR-AR-07): the record's next version.
+func (q *Queries) ApproveRecurringInvoice(ctx context.Context, arg ApproveRecurringInvoiceParams) error {
+	_, err := q.db.Exec(ctx, approveRecurringInvoice, arg.ApprovedVersion, arg.ApprovedBy, arg.ID)
+	return err
+}
+
 const createScheduledInvoiceDraft = `-- name: CreateScheduledInvoiceDraft :one
 SELECT fyniq.create_scheduled_invoice_draft($1::uuid, $2::date)::uuid AS id
 `
@@ -65,7 +83,8 @@ func (q *Queries) DueRecurringInvoices(ctx context.Context, arg DueRecurringInvo
 
 const getRecurringInvoice = `-- name: GetRecurringInvoice :one
 SELECT r.id, r.name, r.status, r.every_months, r.every_weeks, r.day_of_month, r.starts_on, r.ends_on, r.next_on, r.version,
-       r.content_version, r.last_on, r.last_invoice_id, v.content, v.edited_by, v.edited_at
+       r.content_version, r.last_on, r.last_invoice_id, v.content, v.edited_by, v.edited_at, r.mode, r.approved_version,
+       r.approved_by, r.approved_at
 FROM fyniq.recurring_invoice r
 JOIN fyniq.recurring_invoice_version v
   ON v.organisation_id = r.organisation_id AND v.recurring_invoice_id = r.id AND v.version = r.content_version
@@ -73,22 +92,26 @@ WHERE r.id = $1
 `
 
 type GetRecurringInvoiceRow struct {
-	ID             uuid.UUID
-	Name           string
-	Status         string
-	EveryMonths    int32
-	EveryWeeks     int32
-	DayOfMonth     int32
-	StartsOn       time.Time
-	EndsOn         pgtype.Date
-	NextOn         pgtype.Date
-	Version        int32
-	ContentVersion int32
-	LastOn         pgtype.Date
-	LastInvoiceID  *uuid.UUID
-	Content        []byte
-	EditedBy       string
-	EditedAt       time.Time
+	ID              uuid.UUID
+	Name            string
+	Status          string
+	EveryMonths     int32
+	EveryWeeks      int32
+	DayOfMonth      int32
+	StartsOn        time.Time
+	EndsOn          pgtype.Date
+	NextOn          pgtype.Date
+	Version         int32
+	ContentVersion  int32
+	LastOn          pgtype.Date
+	LastInvoiceID   *uuid.UUID
+	Content         []byte
+	EditedBy        string
+	EditedAt        time.Time
+	Mode            string
+	ApprovedVersion *int32
+	ApprovedBy      *string
+	ApprovedAt      *time.Time
 }
 
 func (q *Queries) GetRecurringInvoice(ctx context.Context, id uuid.UUID) (GetRecurringInvoiceRow, error) {
@@ -111,6 +134,10 @@ func (q *Queries) GetRecurringInvoice(ctx context.Context, id uuid.UUID) (GetRec
 		&i.Content,
 		&i.EditedBy,
 		&i.EditedAt,
+		&i.Mode,
+		&i.ApprovedVersion,
+		&i.ApprovedBy,
+		&i.ApprovedAt,
 	)
 	return i, err
 }
@@ -145,8 +172,8 @@ func (q *Queries) GetRecurringInvoiceVersion(ctx context.Context, arg GetRecurri
 }
 
 const insertRecurringInvoice = `-- name: InsertRecurringInvoice :one
-INSERT INTO fyniq.recurring_invoice (name, status, every_months, every_weeks, day_of_month, starts_on, ends_on, next_on)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO fyniq.recurring_invoice (name, status, every_months, every_weeks, day_of_month, starts_on, ends_on, next_on, mode)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id, version, content_version
 `
 
@@ -159,6 +186,7 @@ type InsertRecurringInvoiceParams struct {
 	StartsOn    time.Time
 	EndsOn      pgtype.Date
 	NextOn      pgtype.Date
+	Mode        string
 }
 
 type InsertRecurringInvoiceRow struct {
@@ -177,6 +205,7 @@ func (q *Queries) InsertRecurringInvoice(ctx context.Context, arg InsertRecurrin
 		arg.StartsOn,
 		arg.EndsOn,
 		arg.NextOn,
+		arg.Mode,
 	)
 	var i InsertRecurringInvoiceRow
 	err := row.Scan(&i.ID, &i.Version, &i.ContentVersion)
@@ -206,7 +235,8 @@ func (q *Queries) InsertRecurringInvoiceVersion(ctx context.Context, arg InsertR
 
 const lockRecurringInvoice = `-- name: LockRecurringInvoice :one
 SELECT r.id, r.name, r.status, r.every_months, r.every_weeks, r.day_of_month, r.starts_on, r.ends_on, r.next_on, r.version,
-       r.content_version, r.last_on, r.last_invoice_id, v.content, v.edited_by, v.edited_at
+       r.content_version, r.last_on, r.last_invoice_id, v.content, v.edited_by, v.edited_at, r.mode, r.approved_version,
+       r.approved_by, r.approved_at
 FROM fyniq.recurring_invoice r
 JOIN fyniq.recurring_invoice_version v
   ON v.organisation_id = r.organisation_id AND v.recurring_invoice_id = r.id AND v.version = r.content_version
@@ -215,22 +245,26 @@ FOR UPDATE OF r
 `
 
 type LockRecurringInvoiceRow struct {
-	ID             uuid.UUID
-	Name           string
-	Status         string
-	EveryMonths    int32
-	EveryWeeks     int32
-	DayOfMonth     int32
-	StartsOn       time.Time
-	EndsOn         pgtype.Date
-	NextOn         pgtype.Date
-	Version        int32
-	ContentVersion int32
-	LastOn         pgtype.Date
-	LastInvoiceID  *uuid.UUID
-	Content        []byte
-	EditedBy       string
-	EditedAt       time.Time
+	ID              uuid.UUID
+	Name            string
+	Status          string
+	EveryMonths     int32
+	EveryWeeks      int32
+	DayOfMonth      int32
+	StartsOn        time.Time
+	EndsOn          pgtype.Date
+	NextOn          pgtype.Date
+	Version         int32
+	ContentVersion  int32
+	LastOn          pgtype.Date
+	LastInvoiceID   *uuid.UUID
+	Content         []byte
+	EditedBy        string
+	EditedAt        time.Time
+	Mode            string
+	ApprovedVersion *int32
+	ApprovedBy      *string
+	ApprovedAt      *time.Time
 }
 
 // The recurring invoice as it stands, locked for its change.
@@ -254,13 +288,18 @@ func (q *Queries) LockRecurringInvoice(ctx context.Context, id uuid.UUID) (LockR
 		&i.Content,
 		&i.EditedBy,
 		&i.EditedAt,
+		&i.Mode,
+		&i.ApprovedVersion,
+		&i.ApprovedBy,
+		&i.ApprovedAt,
 	)
 	return i, err
 }
 
 const pageRecurringInvoices = `-- name: PageRecurringInvoices :many
 SELECT r.id, r.name, r.status, r.every_months, r.every_weeks, r.day_of_month, r.starts_on, r.ends_on, r.next_on, r.version,
-       r.content_version, r.last_on, r.last_invoice_id, v.content, v.edited_by, v.edited_at
+       r.content_version, r.last_on, r.last_invoice_id, v.content, v.edited_by, v.edited_at, r.mode, r.approved_version,
+       r.approved_by, r.approved_at
 FROM fyniq.recurring_invoice r
 JOIN fyniq.recurring_invoice_version v
   ON v.organisation_id = r.organisation_id AND v.recurring_invoice_id = r.id AND v.version = r.content_version
@@ -276,22 +315,26 @@ type PageRecurringInvoicesParams struct {
 }
 
 type PageRecurringInvoicesRow struct {
-	ID             uuid.UUID
-	Name           string
-	Status         string
-	EveryMonths    int32
-	EveryWeeks     int32
-	DayOfMonth     int32
-	StartsOn       time.Time
-	EndsOn         pgtype.Date
-	NextOn         pgtype.Date
-	Version        int32
-	ContentVersion int32
-	LastOn         pgtype.Date
-	LastInvoiceID  *uuid.UUID
-	Content        []byte
-	EditedBy       string
-	EditedAt       time.Time
+	ID              uuid.UUID
+	Name            string
+	Status          string
+	EveryMonths     int32
+	EveryWeeks      int32
+	DayOfMonth      int32
+	StartsOn        time.Time
+	EndsOn          pgtype.Date
+	NextOn          pgtype.Date
+	Version         int32
+	ContentVersion  int32
+	LastOn          pgtype.Date
+	LastInvoiceID   *uuid.UUID
+	Content         []byte
+	EditedBy        string
+	EditedAt        time.Time
+	Mode            string
+	ApprovedVersion *int32
+	ApprovedBy      *string
+	ApprovedAt      *time.Time
 }
 
 // By name, then ID, after the cursor's (name, id).
@@ -321,6 +364,10 @@ func (q *Queries) PageRecurringInvoices(ctx context.Context, arg PageRecurringIn
 			&i.Content,
 			&i.EditedBy,
 			&i.EditedAt,
+			&i.Mode,
+			&i.ApprovedVersion,
+			&i.ApprovedBy,
+			&i.ApprovedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -347,10 +394,49 @@ func (q *Queries) SetRecurringInvoiceNext(ctx context.Context, arg SetRecurringI
 	return err
 }
 
+const unsentScheduledInvoices = `-- name: UnsentScheduledInvoices :many
+SELECT d.id
+FROM fyniq.document d
+JOIN fyniq.document_version v ON v.organisation_id = d.organisation_id AND v.document_id = d.id AND v.version = 1
+WHERE d.type = 'invoice' AND d.status = 'posted' AND d.current_version = 1 AND d.posted_by = 'scheduler:invoices.recurring'
+  AND d.posted_at >= $1::timestamptz
+  AND v.created_by = 'scheduler:invoices.recurring'
+  AND NOT EXISTS (SELECT 1 FROM fyniq.document_send s WHERE s.organisation_id = d.organisation_id AND s.document_id = d.id)
+ORDER BY d.id
+LIMIT $2
+`
+
+type UnsentScheduledInvoicesParams struct {
+	Since   time.Time
+	MaxRows int32
+}
+
+// The invoices the scheduler issued from recurring invoices since a time that no send carries yet (FR-AR-07): what it
+// still emails. One older is left for a person to send, so one that cannot be sent is not tried for ever.
+func (q *Queries) UnsentScheduledInvoices(ctx context.Context, arg UnsentScheduledInvoicesParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, unsentScheduledInvoices, arg.Since, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateRecurringInvoice = `-- name: UpdateRecurringInvoice :exec
 UPDATE fyniq.recurring_invoice
 SET name = $2, status = $3, every_months = $4, every_weeks = $5, day_of_month = $6, starts_on = $7, ends_on = $8, next_on = $9,
-    version = $10, content_version = $11
+    version = $10, content_version = $11, mode = $12
 WHERE id = $1
 `
 
@@ -366,6 +452,7 @@ type UpdateRecurringInvoiceParams struct {
 	NextOn         pgtype.Date
 	Version        int32
 	ContentVersion int32
+	Mode           string
 }
 
 func (q *Queries) UpdateRecurringInvoice(ctx context.Context, arg UpdateRecurringInvoiceParams) error {
@@ -381,6 +468,7 @@ func (q *Queries) UpdateRecurringInvoice(ctx context.Context, arg UpdateRecurrin
 		arg.NextOn,
 		arg.Version,
 		arg.ContentVersion,
+		arg.Mode,
 	)
 	return err
 }

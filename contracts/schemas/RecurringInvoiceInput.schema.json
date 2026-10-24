@@ -29,6 +29,17 @@
         "null"
       ]
     },
+    "mode": {
+      "description": "draft, the default: the scheduler makes each occurrence's draft, which a person issues. issue_and_send: once another person approves its content (requestRecurringInvoiceApproval), the scheduler issues and emails each occurrence's invoice; until then, and after each change of content, it makes drafts.",
+      "enum": [
+        "draft",
+        "issue_and_send"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
+    },
     "name": {
       "description": "What it is, as the list shows it.",
       "examples": [

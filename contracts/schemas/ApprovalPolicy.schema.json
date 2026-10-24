@@ -47,7 +47,8 @@
         "write_off",
         "customer_credit_application",
         "customer_refund",
-        "customer_deposit"
+        "customer_deposit",
+        "recurring_invoice"
       ],
       "examples": [
         "organisation_setting"

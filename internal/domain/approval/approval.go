@@ -59,6 +59,9 @@ const (
 	ObjectCustomerRefund = "customer_refund"
 	// ObjectDeposit is a customer deposit recorded by hand, to void (FR-AR-09, FR-GL-12, FM-1); its key is its id.
 	ObjectDeposit = "customer_deposit"
+	// ObjectRecurringInvoice is a recurring invoice whose content a second person approves for issue and send (FR-AR-07,
+	// SOD-3; the owner's decision of 24 Oct 2026); its key is its id.
+	ObjectRecurringInvoice = "recurring_invoice"
 )
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
@@ -99,6 +102,8 @@ const (
 	OpCustomerRefundVoid = "customer_refund.void"
 	// OpDepositVoid voids a customer deposit.
 	OpDepositVoid = "customer_deposit.void"
+	// OpRecurringApprove approves a recurring invoice's content version for issue and send.
+	OpRecurringApprove = "recurring_invoice.approve"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -111,7 +116,7 @@ var Operations = map[string]string{
 	OpRefundVoid: ObjectRefund, OpOrderApprove: ObjectOrder, OpTemplatePublish: ObjectTemplate,
 	OpInvoicePost: ObjectInvoice, OpInvoiceVoid: ObjectInvoice, OpInvoiceEdit: ObjectInvoice, OpReceiptVoid: ObjectReceipt,
 	OpWriteOffPost: ObjectWriteOff, OpWriteOffVoid: ObjectWriteOff, OpCustomerApplicationVoid: ObjectCustomerApplication,
-	OpCustomerRefundVoid: ObjectCustomerRefund, OpDepositVoid: ObjectDeposit,
+	OpCustomerRefundVoid: ObjectCustomerRefund, OpDepositVoid: ObjectDeposit, OpRecurringApprove: ObjectRecurringInvoice,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -160,6 +165,8 @@ var Dependencies = map[string][]string{
 	ObjectCustomerRefund: {"status", "refunded"},
 	// the deposit's status, and what it received
 	ObjectDeposit: {"status", "received"},
+	// the recurring invoice's content version and mode
+	ObjectRecurringInvoice: {"content_version", "mode"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -187,6 +194,7 @@ var Rows = map[string]string{
 	ObjectCustomerApplication: "Invoices, credit notes",
 	ObjectCustomerRefund:      "Invoices, credit notes",
 	ObjectDeposit:             "Invoices, credit notes",
+	ObjectRecurringInvoice:    "Invoices, credit notes",
 }
 
 // The limits of a policy.
@@ -243,6 +251,7 @@ var Policies = map[string]Policy{
 	ObjectCustomerApplication: {ObjectType: ObjectCustomerApplication, Version: "founder/customer_credit_application@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
 	ObjectCustomerRefund:      {ObjectType: ObjectCustomerRefund, Version: "founder/customer_refund@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
 	ObjectDeposit:             {ObjectType: ObjectDeposit, Version: "founder/customer_deposit@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
+	ObjectRecurringInvoice:    {ObjectType: ObjectRecurringInvoice, Version: "founder/recurring_invoice@2026-10-24.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).

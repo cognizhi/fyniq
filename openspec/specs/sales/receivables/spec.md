@@ -249,6 +249,12 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **THEN** the hourly job invoices.recurring makes its draft invoice from the current content version, once, as the scheduler
 - **AND** the draft names that version, whose author does not approve its issue (SOD-3); a content version never changes
 
+#### Scenario: Issuing and sending as built (rev 0.136)
+- **GIVEN** a recurring invoice set to issue and send whose current content version another person approved
+- **WHEN** the job makes an occurrence's draft from that version
+- **THEN** it issues the invoice as the scheduler, lists it for the weekly review and emails it with its PDF to the customer's billing email
+- **AND** a change of content withdraws the approval, and the database lets the worker issue or send no other invoice (FY201, FY202)
+
 ### Requirement: FR-AR-08 Automated reminders and statements
 The system SHALL send automated reminders on a schedule per customer group, with templates, and SHALL produce a statement of account by date range using the workbook Statement logic.
 

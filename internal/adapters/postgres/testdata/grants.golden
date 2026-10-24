@@ -176,9 +176,9 @@ fyniq_api       SELECT    recurring_bill
 fyniq_api       UPDATE    recurring_bill (content_version, day_of_month, ends_on, every_months, name, next_on, starts_on, status, version)
 fyniq_api       INSERT    recurring_bill_version (content, edited_by, recurring_bill_id, version)
 fyniq_api       SELECT    recurring_bill_version
-fyniq_api       INSERT    recurring_invoice (day_of_month, ends_on, every_months, every_weeks, name, next_on, starts_on, status)
+fyniq_api       INSERT    recurring_invoice (day_of_month, ends_on, every_months, every_weeks, mode, name, next_on, starts_on, status)
 fyniq_api       SELECT    recurring_invoice
-fyniq_api       UPDATE    recurring_invoice (content_version, day_of_month, ends_on, every_months, every_weeks, name, next_on, starts_on, status, version)
+fyniq_api       UPDATE    recurring_invoice (approved_at, approved_by, approved_version, content_version, day_of_month, ends_on, every_months, every_weeks, mode, name, next_on, starts_on, status, version)
 fyniq_api       INSERT    recurring_invoice_version (content, edited_by, recurring_invoice_id, version)
 fyniq_api       SELECT    recurring_invoice_version
 fyniq_api       INSERT    recurring_journal (day_of_month, ends_on, every_months, name, next_on, starts_on, status)
@@ -405,11 +405,16 @@ fyniq_worker    EXECUTE   create_scheduled_revaluation()
 fyniq_worker    SELECT    currencies
 fyniq_worker    EXECUTE   current_org()
 fyniq_worker    SELECT    document
-fyniq_worker    UPDATE    document (status)
+fyniq_worker    UPDATE    document (posted_at, posted_by, status)
+fyniq_worker    INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
 fyniq_worker    SELECT    document_link
+fyniq_worker    INSERT    document_number (document_type, id, number)
 fyniq_worker    SELECT    document_number
+fyniq_worker    INSERT    document_send (document_id, document_version, evidence_id, message_id, pdf_sha256, recipient, sent_by, template_hash, template_id, template_source, template_version)
 fyniq_worker    SELECT    document_send
+fyniq_worker    INSERT    document_sequence (digits, document_type, gap_free, next_number, prefix)
 fyniq_worker    SELECT    document_sequence
+fyniq_worker    UPDATE    document_sequence (next_number)
 fyniq_worker    SELECT    document_template
 fyniq_worker    SELECT    document_template_default
 fyniq_worker    SELECT    document_template_version
@@ -420,6 +425,7 @@ fyniq_worker    SELECT    email_message
 fyniq_worker    UPDATE    email_message (accepted_at, attempt_started_at, attempts, last_error, provider, provider_id, status)
 fyniq_worker    SELECT    email_sender
 fyniq_worker    SELECT    email_suppression
+fyniq_worker    INSERT    evidence (data_class, document_id, evidence_type, file_name, media_type, note, original_sha256, relates_on, sha256, size_bytes, source, staging_key, uploaded_by)
 fyniq_worker    SELECT    evidence
 fyniq_worker    UPDATE    evidence (finalised_at, locked_key, retain_until, state, version)
 fyniq_worker    EXECUTE   finish_job_slot()
@@ -482,9 +488,11 @@ fyniq_worker    SELECT    recurring_invoice_version
 fyniq_worker    SELECT    recurring_journal
 fyniq_worker    UPDATE    recurring_journal (next_on)
 fyniq_worker    SELECT    recurring_journal_version
+fyniq_worker    INSERT    review_log_entry (actor, approval_id, kind, logged_at, object_key, object_type, summary)
 fyniq_worker    SELECT    review_log_entry
 fyniq_worker    SELECT    review_log_review
 fyniq_worker    SELECT    role_assignment
+fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq
 fyniq_worker    SELECT    sod_override
 fyniq_worker    SELECT    statutory_pack_activation

@@ -1297,6 +1297,18 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/recurring-invoices/"+id, e.as(authz.Accountant), nil).str("status") == "paused"
 		}
 	},
+	"requestRecurringInvoiceApproval": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "recurring_invoice")
+		body := e.recurringInvoice("Matrix "+uuid.NewString()[:8], "10.00", monthly(1, "2026-11-01"))
+		body["mode"] = "issue_and_send"
+		c := e.call(http.MethodPost, "/v1/recurring-invoices", e.as(authz.Accountant), body)
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/recurring-invoices/"+c.str("id")+"/approval", person, nil, "If-Match", c.Header.Get("ETag"))
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "recurring_invoice") == was }
+	},
 	"replaceJournal": func(e *env, tok string) (response, func() bool) {
 		id, _ := e.createDraft("10.00")
 		r := e.call(http.MethodPut, "/v1/journals/"+id, tok, e.draft("11.00"), "If-Match", "*")

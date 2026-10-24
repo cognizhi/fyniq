@@ -251,6 +251,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/recurring-invoices` (createRecurringInvoice): Add a recurring invoice
 - `GET /v1/recurring-invoices/{recurring_invoice_id}` (getRecurringInvoice): Get a recurring invoice
 - `PUT /v1/recurring-invoices/{recurring_invoice_id}` (replaceRecurringInvoice): Change a recurring invoice
+- `POST /v1/recurring-invoices/{recurring_invoice_id}/approval` (requestRecurringInvoiceApproval): Ask for a recurring invoice to be approved to issue and send
 - `POST /v1/recurring-invoices/{recurring_invoice_id}/pause` (pauseRecurringInvoice): Pause a recurring invoice
 - `POST /v1/recurring-invoices/{recurring_invoice_id}/resume` (resumeRecurringInvoice): Resume a recurring invoice
 - `GET /v1/recurring-journals` (listRecurringJournals): List the recurring journals
