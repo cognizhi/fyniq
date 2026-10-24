@@ -495,6 +495,9 @@ var (
 	ReplaceQuote     = Policy{Operation: "replaceQuote", Capability: Invoices, Need: Create}
 	SendQuote        = Policy{Operation: "sendQuote", Capability: Invoices, Need: Post}
 	CancelQuote      = Policy{Operation: "cancelQuote", Capability: Invoices, Need: Post}
+	// The customer's answer to a quote is recorded under P, as sending it is.
+	AcceptQuote  = Policy{Operation: "acceptQuote", Capability: Invoices, Need: Post}
+	DeclineQuote = Policy{Operation: "declineQuote", Capability: Invoices, Need: Post}
 	// Write-offs of invoices (FR-AR-17): read under V, drafted under C, and posted only on another person's approval
 	// (FR-APR-01; SOD-9), asked for under P, as issuing is; voiding one is FM-1's void of a posted document.
 	ListWriteOffs       = Policy{Operation: "listWriteOffs", Capability: Invoices, Need: View}
@@ -740,7 +743,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid,
-	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote,
+	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

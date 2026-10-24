@@ -867,6 +867,18 @@ type FyniqPeriodVarianceExplanation struct {
 	WrittenAt      time.Time
 }
 
+type FyniqQuoteOutcome struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	Outcome        string
+	OnDate         time.Time
+	Name           *string
+	Note           *string
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
 type FyniqRateLimitWindow struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

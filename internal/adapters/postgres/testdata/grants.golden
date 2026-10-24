@@ -158,6 +158,8 @@ fyniq_api       SELECT    period_reopen
 fyniq_api       INSERT    period_variance_explanation (account_id, current_amount, explanation, period_id, previous_amount, written_at, written_by)
 fyniq_api       SELECT    period_variance_explanation
 fyniq_api       EXECUTE   publish_installation_announcement()
+fyniq_api       INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
+fyniq_api       SELECT    quote_outcome
 fyniq_api       INSERT    rate_limit_window (client_id, kind, window_start)
 fyniq_api       SELECT    rate_limit_window
 fyniq_api       UPDATE    rate_limit_window (used)
@@ -265,6 +267,7 @@ fyniq_executor  SELECT    period_close
 fyniq_executor  SELECT    period_close_check
 fyniq_executor  SELECT    period_reopen
 fyniq_executor  SELECT    period_variance_explanation
+fyniq_executor  SELECT    quote_outcome
 fyniq_executor  SELECT    recurring_bill
 fyniq_executor  SELECT    recurring_bill_version
 fyniq_executor  SELECT    recurring_journal
@@ -339,6 +342,7 @@ fyniq_readonly  SELECT    period_close
 fyniq_readonly  SELECT    period_close_check
 fyniq_readonly  SELECT    period_reopen
 fyniq_readonly  SELECT    period_variance_explanation
+fyniq_readonly  SELECT    quote_outcome
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    recurring_bill
 fyniq_readonly  SELECT    recurring_bill_version
@@ -441,6 +445,8 @@ fyniq_worker    SELECT    period_close
 fyniq_worker    SELECT    period_close_check
 fyniq_worker    SELECT    period_reopen
 fyniq_worker    SELECT    period_variance_explanation
+fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
+fyniq_worker    SELECT    quote_outcome
 fyniq_worker    DELETE    rate_limit_window
 fyniq_worker    SELECT    rate_limit_window (id, organisation_id, window_start)
 fyniq_worker    EXECUTE   rebuild_balances()

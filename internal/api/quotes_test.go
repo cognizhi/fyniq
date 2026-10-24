@@ -101,3 +101,26 @@ func TestQuotesThroughTheAPI(t *testing.T) {
 	e.problemIs(e.call(http.MethodPost, "/v1/quotes/"+b.str("id")+"/cancel", acc, map[string]any{"reason": "Never sent"}, "If-Match", b.Header.Get("ETag")),
 		"cancelQuote", 409, quote.CodeNotOpen)
 }
+
+// FR-AR-01 through the API (p1-sales task 4.1, part): the customer's answer. A sent quote accepted on 20 Oct by Jane Tan
+// shows accepted with the answer and stays in the pipeline; another declined leaves it; answering twice is refused.
+// req: FR-AR-01
+func TestQuotesAreAnsweredThroughTheAPI(t *testing.T) {
+	e := newEnv(t)
+	acc := e.as(authz.Accountant)
+	id, tag := e.sentQuote()
+	a := e.call(http.MethodPost, "/v1/quotes/"+id+"/accept", acc, map[string]any{"date": "2026-10-20", "name": "Jane Tan", "note": "Confirmed by email"}, "If-Match", tag)
+	if a.Status != 200 || a.str("status") != "accepted" || a.str("answer", "outcome") != "accepted" || a.str("answer", "name") != "Jane Tan" ||
+		a.str("answer", "date") != "2026-10-20" || a.str("answer", "recorded_by", "id") == "" {
+		t.Fatalf("accepting it: %d %s", a.Status, a.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/quotes/"+id+"/decline", acc, map[string]any{"note": "Changed their mind"}, "If-Match", a.Header.Get("ETag")),
+		"declineQuote", 409, quote.CodeAnswered)
+	other, otherTag := e.sentQuote()
+	if d := e.call(http.MethodPost, "/v1/quotes/"+other+"/decline", acc, map[string]any{"note": "Too expensive"}, "If-Match", otherTag); d.Status != 200 || d.str("status") != "declined" {
+		t.Fatalf("declining the other: %d %s", d.Status, d.Raw)
+	}
+	if p := e.call(http.MethodGet, "/v1/quotes/pipeline?as_at=2026-11-01", acc, nil); p.Body["quotes"].(map[string]any)["count"] != float64(1) || p.str("quotes", "total", "amount") != "100.00" {
+		t.Errorf("the pipeline: %s", p.Raw)
+	}
+}

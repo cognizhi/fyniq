@@ -73,6 +73,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "bills.releases", Every: time.Hour, Offset: 40 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Hourly, the releases of invoices' spread revenue due by each organisation's own today (FR-GL-03, ENG-05; rev 0.118).
 	{Job: "invoices.releases", Every: time.Hour, Offset: 45 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Daily at 03:20 in Singapore, the quotes past their validity date with no answer expire (FR-AR-01; rev 0.130).
+	{Job: "quotes.expiry", Every: 24 * time.Hour, Offset: 19*time.Hour + 20*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 }
 
 // TickInterval is how often Cloud Scheduler (locally the API's own loop) calls the tick; a setting.

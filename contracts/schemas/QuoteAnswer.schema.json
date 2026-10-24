@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The day the customer answered; left out, the organisation's today.",
+      "examples": [
+        "2026-10-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "name": {
+      "description": "Who answered on the customer's side.",
+      "examples": [
+        "Jane Tan"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "note": {
+      "description": "A note, such as how they answered.",
+      "examples": [
+        "Confirmed by email"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    }
+  },
+  "title": "QuoteAnswer",
+  "type": "object"
+}

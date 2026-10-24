@@ -1702,6 +1702,20 @@ var matrixCalls = map[string]matrixCall{
 			return e.call(http.MethodGet, "/v1/quotes/"+c.str("id"), e.as(authz.Accountant), nil).str("status") == "draft"
 		}
 	},
+	"acceptQuote": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.sentQuote()
+		r := e.call(http.MethodPost, "/v1/quotes/"+id+"/accept", tok, map[string]any{"date": "2026-10-20"}, "If-Match", tag)
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/quotes/"+id, e.as(authz.Accountant), nil).str("status") == "sent"
+		}
+	},
+	"declineQuote": func(e *env, tok string) (response, func() bool) {
+		id, tag := e.sentQuote()
+		r := e.call(http.MethodPost, "/v1/quotes/"+id+"/decline", tok, map[string]any{"date": "2026-10-20"}, "If-Match", tag)
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/quotes/"+id, e.as(authz.Accountant), nil).str("status") == "sent"
+		}
+	},
 	"cancelQuote": func(e *env, tok string) (response, func() bool) {
 		id, tag := e.sentQuote()
 		r := e.call(http.MethodPost, "/v1/quotes/"+id+"/cancel", tok, map[string]any{"reason": "Matrix test"}, "If-Match", tag)
