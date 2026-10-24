@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Outbound email through ZeptoMail with a Resend failover, senders per purpose, provider webhooks and the suppression list: FR-INT-21 (PRD-001 rev 0.102, rev 0.103) |
+| Feature and requirement IDs | Outbound email through ZeptoMail with a Resend failover, senders per purpose, provider webhooks and the suppression list: FR-INT-21 (PRD-001 rev 0.102, rev 0.103); notification and digest email: FR-NTF-01, FR-NTF-02 (rev 0.108) |
 | Author, reviewer, date | Claude Code for the owner, 23 Oct 2026; second review waived before production (AGENTS.md), held with `needs-human-review` if wanted |
 | Data and its class | Recipients' email addresses, subjects and bodies (personal data, PDPA); a provider's bounce and complaint reasons; the providers' send keys and webhook secrets (secrets) |
 | Who acts | The Administrator (senders, test sends, releases); the worker (sends); ZeptoMail and Resend (webhooks); everyone with View on Organisation integrations (reads) |
@@ -31,6 +31,8 @@ Trust boundaries: browser ↔ API (senders, suppressions); worker ↔ provider (
 | T6 | Worker → provider | Repudiation / duplicates: a lost answer leads to a second send, or to the failover sending it too | A customer receives an invoice twice | Medium |
 | T7 | Provider → webhook | Denial of service: large or many requests | API load | Low |
 | T8 | Database | Tampering: an event or suppression rewritten to hide a bounce | Lost evidence of delivery | Low |
+| T9 | Worker → provider | Information disclosure: notification email carries amounts, counterparties and people's reasons to a provider outside Singapore and into mailboxes, which may be personal | Financial and personal data transferred without assessment | High without a control: every approval says what it is |
+| T10 | Worker → database | Elevation: the worker, which now queues notification email, queues a test message or a sign-in alert, or emails a notification to someone it does not concern | Mail to anyone from the platform's sender | Low |
 
 SOD: senders and releases are the Administrator's (Create on Organisation integrations); no money moves. RLS:
 every table has `organisation_id` and `FORCE ROW LEVEL SECURITY`. The AI and MCP have no route to any of it.
@@ -47,6 +49,8 @@ every table has `organisation_id` and `FORCE ROW LEVEL SECURITY`. The AI and MCP
 | T6 | Outbox sends with reconciliation before any retry: Resend's under its Idempotency-Key within 23 hours, ZeptoMail's never resent on a guess; the failover only after a refusal | `TestTheFailoverSendsOnlyWhatThePrimaryRefused`, `TestStatusSendsAgainUnderTheKeyWithinTheWindow`, `TestAnEmailThatMayHaveBeenTakenIsNeverSentAgainOnAGuess` |
 | T7 | Bodies over 256 KB are refused before parsing; the edge's rate limits apply (Cloud Armor in the cloud) | The size check in `mailhooks.handle` |
 | T8 | Events never change or go (FY180); a suppression is only released, once (FY181); each is audited as `integration:<provider>` or its person | `TestEmailEventsAndSuppressionsKeepTheirHistory`, the audit checks in the webhook test |
+| T9 | Notification email names only its type and links to Fyniq unless the organisation turns on `notify.email_details`, which needs a second approver (FM-1; the owner's decision of 24 Oct 2026); the link is the deployment's own origin | `TestNotificationsAreFannedOutEmailedAndDigested` (the subject before and after the setting) |
+| T10 | A trigger lets the worker's role insert only notification and digest email; recipients are members the event concerns with a sign-in email the provider verified, never the person who caused it; a person reads and changes only their own notifications | `TestNotificationsKeepTheirHistory`, `TestTheNotificationCentreAndPreferences`, `TestAnEventConcernsItsAudience` |
 
 ## 4. What remains
 
@@ -54,5 +58,7 @@ every table has `organisation_id` and `FORCE ROW LEVEL SECURITY`. The AI and MCP
   names are `[verify]` against the staging sandbox before go-live (PRD-001 rev 0.103).
 - No per-source rate limit on the webhook routes in the application; the edge's applies. Revisit if the
   providers' IP ranges are published and stable enough to allow-list.
+- With `notify.email_details` on, notification titles reach the provider; turn it on only once the provider's
+  PDPA transfer assessment covers financial data (FR-INT-21).
 - Opens and clicks are not recorded, so no tracking data is kept; turning tracking on in a provider account
   is an operator decision outside the application.

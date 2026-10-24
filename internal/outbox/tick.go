@@ -45,6 +45,9 @@ var PlatformSchedules = []Schedule{
 	{Job: "email.domains", Every: 24 * time.Hour, Offset: 20*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Nightly at 04:45, quarantined mail whose days have passed ends and its files go (FR-INT-22, rev 0.106).
 	{Job: "inbound.expire", Every: 24 * time.Hour, Offset: 20*time.Hour + 45*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Every hour, notifications' held and digested email (FR-NTF-02, rev 0.108): the daily digest after 08:00 Singapore
+	// time, the weekly on Mondays, and immediate email held in quiet hours once they end.
+	{Job: "notify.digest", Every: time.Hour, Offset: 5 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Evidence (FR-DOC-13): hourly, commit the files of records no longer drafts that the outbox missed, and
 	// sweep staging files no row uses after a day, reporting locked files no row knows.
 	{Job: "evidence.commit", Every: time.Hour, Offset: 10 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},

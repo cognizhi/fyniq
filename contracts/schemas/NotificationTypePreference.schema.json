@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "description": "Its group.",
+      "enum": [
+        "security",
+        "approvals",
+        "email",
+        "operations"
+      ],
+      "examples": [
+        "approvals"
+      ],
+      "type": "string"
+    },
+    "email": {
+      "description": "How it goes by email: at once, in the daily or weekly digest (08:00 Singapore time, weekly on Mondays), or not at all. In the app it always shows.",
+      "enum": [
+        "immediate",
+        "daily",
+        "weekly",
+        "off"
+      ],
+      "examples": [
+        "immediate"
+      ],
+      "type": "string"
+    },
+    "etag": {
+      "description": "The preference in force: send it in If-Match to change it.",
+      "examples": [
+        "\"none\""
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "What it is.",
+      "examples": [
+        "An approval waits for you"
+      ],
+      "type": "string"
+    },
+    "locked": {
+      "description": "true for security notices, which are always on and emailed at once.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "recommended": {
+      "description": "How it goes by email unless the caller chooses otherwise.",
+      "enum": [
+        "immediate",
+        "daily",
+        "weekly",
+        "off"
+      ],
+      "examples": [
+        "immediate"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "description": "The type.",
+      "examples": [
+        "approval.requested"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "label",
+    "category",
+    "email",
+    "recommended",
+    "locked",
+    "etag"
+  ],
+  "title": "NotificationTypePreference",
+  "type": "object"
+}

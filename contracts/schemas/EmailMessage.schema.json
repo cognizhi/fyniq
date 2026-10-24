@@ -59,10 +59,12 @@
       "type": "string"
     },
     "purpose": {
-      "description": "Why it was sent: a test message, or a sign-in alert.",
+      "description": "Why it was sent: a test message, a sign-in alert, a notification, or a digest of them.",
       "enum": [
         "test",
-        "sign_in_alert"
+        "sign_in_alert",
+        "notification",
+        "digest"
       ],
       "examples": [
         "test"

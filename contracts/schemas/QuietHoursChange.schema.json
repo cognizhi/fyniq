@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "When they start, as HH:MM.",
+      "examples": [
+        "22:00"
+      ],
+      "maxLength": 5,
+      "type": "string"
+    },
+    "to": {
+      "description": "When they end, as HH:MM.",
+      "examples": [
+        "07:00"
+      ],
+      "maxLength": 5,
+      "type": "string"
+    }
+  },
+  "title": "QuietHoursChange",
+  "type": "object"
+}

@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/httpserver"
+	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/tokens"
@@ -46,6 +47,7 @@ func main() {
 			kinds[email.FetchKind] = email.Fetcher{Mail: kit.Mail.Inbound, Store: kit.Store, Files: kit.Staging, Scanner: kit.Scanner,
 				Clock: deps.Clock}.Work()
 		}
+		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds})
 		s.Handle("POST /jobs", &outbox.JobsHandler{Tokens: kit.Tokens, Platform: kit.Store, Clock: deps.Clock,

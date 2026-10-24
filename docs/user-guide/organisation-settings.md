@@ -49,8 +49,8 @@ the month the year starts in and the end of the first year no longer change.
 
 ## Settings that need a second approver
 
-- Thresholds, retention, the accounting sign-off and the AI assistant need a second approver before they
-  change: they show **Needs a second approver**.
+- Thresholds, retention, the accounting sign-off, the AI assistant and details in notification email need a
+  second approver before they change: they show **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
@@ -153,6 +153,16 @@ quarantine until someone accepts or rejects the sender.
 
 - **Quarantined mail kept for**: 30 days, then quarantined mail nobody accepted is deleted. Set it to 0
   to keep quarantined mail until someone decides.
+
+## Notifications
+
+Everyone gets their notifications in Fyniq, and by email as their own preferences say. This setting decides
+how much an email says.
+
+- **Details in notification email**: off. An email says what kind of thing happened, such as "An approval
+  waits for you", and links to it in Fyniq; amounts, names and reasons stay in Fyniq. The email provider
+  keeps mail outside Singapore, so turn it on only once your email provider's transfer of personal data is
+  assessed. With it on, an email shows the same title as the notification in Fyniq.
 
 ## Related
 

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "When they start, as HH:MM.",
+      "examples": [
+        "22:00"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "When they end, as HH:MM; before From when they run past midnight.",
+      "examples": [
+        "07:00"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ],
+  "title": "QuietHours",
+  "type": "object"
+}

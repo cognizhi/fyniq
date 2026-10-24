@@ -123,6 +123,13 @@ fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name
 fyniq_api       SELECT    member_invitation
 fyniq_api       UPDATE    member_invitation (withdrawn_at)
 fyniq_api       EXECUTE   member_names()
+fyniq_api       SELECT    notification
+fyniq_api       UPDATE    notification (archived_at, read_at)
+fyniq_api       SELECT    notification_digest
+fyniq_api       INSERT    notification_event (actor, audience, link, occurred_at, record_id, record_type, title, type)
+fyniq_api       SELECT    notification_event
+fyniq_api       INSERT    notification_preference (email, quiet_from, quiet_to, set_at, type, user_id)
+fyniq_api       SELECT    notification_preference
 fyniq_api       INSERT    opening_balance (document_id)
 fyniq_api       SELECT    opening_balance
 fyniq_api       INSERT    organisation (base_currency, base_minor_units, kind, name)
@@ -309,6 +316,10 @@ fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
 fyniq_readonly  SELECT    ledger_revision
 fyniq_readonly  SELECT    member_invitation
+fyniq_readonly  SELECT    notification
+fyniq_readonly  SELECT    notification_digest
+fyniq_readonly  SELECT    notification_event
+fyniq_readonly  SELECT    notification_preference
 fyniq_readonly  SELECT    opening_balance
 fyniq_readonly  SELECT    organisation
 fyniq_readonly  SELECT    organisation_setting
@@ -368,6 +379,7 @@ fyniq_worker    SELECT    document_template_default
 fyniq_worker    SELECT    document_template_version
 fyniq_worker    SELECT    document_version
 fyniq_worker    SELECT    email_event
+fyniq_worker    INSERT    email_message (purpose, recipient, subject)
 fyniq_worker    SELECT    email_message
 fyniq_worker    UPDATE    email_message (accepted_at, attempt_started_at, attempts, last_error, provider, provider_id, status)
 fyniq_worker    SELECT    email_sender
@@ -398,6 +410,16 @@ fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    EXECUTE   member_emails()
 fyniq_worker    SELECT    member_invitation
+fyniq_worker    EXECUTE   member_names()
+fyniq_worker    INSERT    notification (actionable, created_at, email, event_id, severity, type, user_id)
+fyniq_worker    SELECT    notification
+fyniq_worker    UPDATE    notification (digest_id, email_message_id)
+fyniq_worker    INSERT    notification_digest (cadence, email_message_id, sent_at, user_id)
+fyniq_worker    SELECT    notification_digest
+fyniq_worker    INSERT    notification_event (actor, audience, link, occurred_at, record_id, record_type, title, type)
+fyniq_worker    SELECT    notification_event
+fyniq_worker    UPDATE    notification_event (fanned_out_at)
+fyniq_worker    SELECT    notification_preference
 fyniq_worker    SELECT    opening_balance
 fyniq_worker    SELECT    organisation
 fyniq_worker    SELECT    organisation_setting

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The notifications, newest first.",
+      "items": {
+        "$ref": "Notification.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjAxOTI4ZjZlIn0"
+      ],
+      "type": "string"
+    },
+    "unread": {
+      "description": "How many of the caller's notifications are unread and not archived: the bell's count.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "items",
+    "unread"
+  ],
+  "title": "NotificationPage",
+  "type": "object"
+}

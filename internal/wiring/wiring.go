@@ -23,6 +23,8 @@ type Kit struct {
 	// file can be attached.
 	Staging, Evidence ports.BlobStore
 	Scanner           ports.Scanner
+	// Origin is the web app's origin, such as https://fyniq.example.com: the links in notifications' email (FR-NTF-01).
+	Origin string
 	// Mail is the outbound email (FR-INT-21): its providers in order (none: no email is sent), the platform's
 	// sender, and the domains an organisation may choose its senders on.
 	Mail MailConfig

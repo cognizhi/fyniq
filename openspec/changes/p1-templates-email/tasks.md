@@ -101,6 +101,17 @@
 ## 3. Notifications
 
 - [ ] 3.1 The notification centre and preferences (channels, digests, quiet hours; security notices always on). Tests `// req: FR-NTF-01` and `// req: FR-NTF-02`
+  (24 Oct 2026, part, PRD-001 rev 0.108, on the owner's decisions: the P1 types are those to act on, security and
+  operations; security and approvals emailed at once, the rest in a daily digest at 08:00 Singapore time; notification
+  email names only the type unless the organisation turns on `notify.email_details`. First slice: `internal/notify`
+  (the catalogue, audiences from Appendix D never including whoever caused the event, cadence, quiet hours, the
+  worker's `notify.fanout` and the hourly `notify.digest` job), migrations 000105 and 000106 (FY187 to FY189; the
+  worker queues only notification and digest email), eight operations (NTF-01 to NTF-03), and the types approval
+  asked for, approval decided and roles changed; `FYNIQ_PUBLIC_ORIGIN` for links. Tests:
+  `TestNotificationsAreFannedOutEmailedAndDigested`, `TestNotificationsKeepTheirHistory`,
+  `TestTheNotificationCentreAndPreferences`, the unit tests in `internal/notify` and eight matrix rows. Second slice:
+  the other types (security sign-in and second factor, email-in quarantine, bounces and suppressions, failed domain
+  checks, postings, the close, recurring entries made, bills due, failed jobs).)
 - [ ] 3.2 Announcement banners for everyone (Super admin) and per organisation (Owner, Administrator), with critical banners non-dismissable and publishing audited. Test `// req: FR-NTF-03`
 - [ ] 3.3 One event stream feeding every channel, with delivery attempts logged and retried and a test message per channel. Test `// req: FR-NTF-05`
 

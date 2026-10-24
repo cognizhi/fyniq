@@ -651,6 +651,56 @@ type FyniqMemberInvitation struct {
 	WithdrawnAt    *time.Time
 }
 
+type FyniqNotification struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EventID        uuid.UUID
+	UserID         uuid.UUID
+	Type           string
+	Severity       string
+	Actionable     bool
+	Email          string
+	EmailMessageID *uuid.UUID
+	DigestID       *uuid.UUID
+	CreatedAt      time.Time
+	ReadAt         *time.Time
+	ArchivedAt     *time.Time
+}
+
+type FyniqNotificationDigest struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Cadence        string
+	EmailMessageID uuid.UUID
+	SentAt         time.Time
+}
+
+type FyniqNotificationEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Type           string
+	RecordType     *string
+	RecordID       *uuid.UUID
+	Title          string
+	Link           *string
+	Actor          string
+	Audience       []byte
+	OccurredAt     time.Time
+	FannedOutAt    *time.Time
+}
+
+type FyniqNotificationPreference struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Type           string
+	Email          *string
+	QuietFrom      *int16
+	QuietTo        *int16
+	SetAt          time.Time
+}
+
 type FyniqOpeningBalance struct {
 	OrganisationID uuid.UUID
 	DocumentID     uuid.UUID

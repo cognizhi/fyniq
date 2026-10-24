@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "quiet_hours": {
+      "$ref": "QuietHours.schema.json",
+      "description": "When immediate email waits until they end; security notices never wait. Absent when there are none."
+    },
+    "quiet_hours_etag": {
+      "description": "Send it in If-Match to change the quiet hours.",
+      "examples": [
+        "\"none\""
+      ],
+      "type": "string"
+    },
+    "types": {
+      "description": "Every notification type, in groups.",
+      "items": {
+        "$ref": "NotificationTypePreference.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "types",
+    "quiet_hours_etag"
+  ],
+  "title": "NotificationPreferences",
+  "type": "object"
+}

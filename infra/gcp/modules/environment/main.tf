@@ -168,6 +168,9 @@ locals {
       FYNIQ_API_AUDIENCE     = "${var.public_origin}/api"
       FYNIQ_MCP_AUDIENCE     = "${var.public_origin}/mcp"
     }
+    # The worker and the jobs link notifications' emails to the web app (FR-NTF-01, PRD-001 rev 0.108).
+    worker        = { FYNIQ_PUBLIC_ORIGIN = var.public_origin }
+    jobs          = { FYNIQ_PUBLIC_ORIGIN = var.public_origin }
     oauth         = local.hydra_env
     oauth-admin   = local.hydra_env
     oauth-migrate = {}
