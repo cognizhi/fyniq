@@ -29,6 +29,7 @@ const (
 	WHTName          = "RND-WHT"
 	DiscountName     = "RND-DISCOUNT"
 	GSTInclName      = "RND-GST-INCL"
+	DepositName      = "RND-DEPOSIT"
 )
 
 // work is the exact context the policies compute in before their one rounding step.
@@ -300,6 +301,38 @@ func GSTIncl(gross money.Money, rate string) (money.Money, error) {
 		return money.Money{}, err
 	}
 	return money.FromRounded(halfAwayFromZero(&quotient, gross.Currency().MinorUnits), gross.Currency())
+}
+
+// DepositPart is RND-DEPOSIT (PRD-001 §10.4, rev 0.127; provisional until the accountant's sign-off): the part of
+// what is left of a customer deposit's base amount, or of the output tax it bore, that a use of amount takes, of the
+// remaining amount of the deposit in its currency = round(left × amount ÷ remaining, the base currency's minor units),
+// half away from zero, computed exactly before its one rounding. A use of all that remains takes all that is left, so
+// the uses of a deposit add up exactly to it, whatever order they are made and voided in.
+func DepositPart(left, amount, remaining money.Money) (money.Money, error) {
+	switch {
+	case amount.Currency() != remaining.Currency():
+		return money.Money{}, fmt.Errorf("%s: the use is in %s, the deposit in %s", DepositName, amount.Currency(), remaining.Currency())
+	case remaining.Sign() <= 0 || amount.Sign() <= 0:
+		return money.Money{}, fmt.Errorf("%s: a use of %s of %s remaining", DepositName, amount, remaining)
+	}
+	c, err := amount.Cmp(remaining)
+	if err != nil {
+		return money.Money{}, err
+	}
+	switch {
+	case c > 0:
+		return money.Money{}, fmt.Errorf("%s: a use of %s is more than the %s remaining", DepositName, amount, remaining)
+	case c == 0:
+		return left, nil
+	}
+	var product, quotient apd.Decimal
+	if _, err := work.Mul(&product, left.Decimal(), amount.Decimal()); err != nil {
+		return money.Money{}, err
+	}
+	if _, err := work.Quo(&quotient, &product, remaining.Decimal()); err != nil {
+		return money.Money{}, err
+	}
+	return money.FromRounded(halfAwayFromZero(&quotient, left.Currency().MinorUnits), left.Currency())
 }
 
 const (

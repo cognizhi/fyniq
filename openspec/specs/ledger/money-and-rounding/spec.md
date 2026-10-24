@@ -432,6 +432,19 @@ Source: PRD-001 §10.4
 - **WHEN** an invoice line has a discount
 - **THEN** its amount = round(quantity × unit price × (100 − discount) ÷ 100, the minor units), half away from zero, the discount never rounded apart (3 × 100.00 less 10% is 270.00; 1 × 0.05 less 50% is 0.03)
 
+### Requirement: RND-DEPOSIT A customer deposit's part
+The part of a customer deposit's base amount, and of the GST it bore, that a use of it takes SHALL be round(what is left of it × the amount used ÷ the amount of the deposit left, the base currency's minor units), half away from zero, a use of all that is left taking all of it (rev 0.127; provisional).
+
+Source: PRD-001 §10.4
+
+#### Scenario: A use's part of a deposit
+- **WHEN** an invoice deducts part of a deposit, or a refund settles part of it
+- **THEN** it takes round(what is left × amount ÷ amount left), half away from zero, of the deposit's base amount and of its GST (USD 300.00 of USD 1,000.00 that came to S$1,350.00 with S$111.47 of GST takes S$405.00 and S$33.44)
+
+#### Scenario: The uses add up to the deposit
+- **WHEN** a use takes all that is left of a deposit
+- **THEN** it takes all that is left of its base amount and GST, so the uses add up to the deposit exactly, whatever order they are made and voided in
+
 ### Requirement: RND-DISCOUNT Early-payment discount
 An early-payment discount a supplier offers on a bill (FR-AP-13) SHALL be round(total × percent ÷ 100, the currency's minor units), half away from zero, computed exactly before its one rounding, the percent above 0 and below 100 with at most two decimals (rev 0.93; provisional).
 

@@ -11,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
+	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -105,4 +106,39 @@ func TestCustomerDepositsThroughTheAPI(t *testing.T) {
 	if g := e.call(http.MethodGet, "/v1/customer-deposits/"+id, ahkow, nil); g.str("status") != "reversed" {
 		t.Errorf("the voided deposit: %s", g.Raw)
 	}
+}
+
+// FR-AR-09 through the API (p1-sales task 3.2, part; the owner's decision of 24 Oct 2026): an invoice deducts S$500.00
+// of a deposit of S$1,090.00; the draft shows the deposit's part and the balance; issuing debits 1100 with the balance
+// and leaves S$590.00 of the deposit; a credit note that deducts one is refused.
+// req: FR-AR-09
+// req: FR-INT-01
+func TestInvoicesDeductDepositsThroughTheAPI(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Accountant, authz.Controller)
+	r := e.call(http.MethodPost, "/v1/customer-deposits", ahkow, e.depositDraft(deposit.KindPartPayment, "1090.00", "SR"))
+	if r.Status != 201 {
+		t.Fatalf("recording the deposit: %d %s", r.Status, r.Raw)
+	}
+	dep := r.str("deposit", "id")
+	d := e.invoiceDraft("1", "2000.00")
+	d["deposits"] = []map[string]any{{"deposit_id": dep, "amount": map[string]any{"amount": "500.00", "currency": "SGD"}}}
+	c := e.call(http.MethodPost, "/v1/invoices", ahkow, d)
+	if c.Status != 201 || !strings.Contains(c.Raw, `"deposits":[{"deposit_id":"`+dep+`","number":"DP-0001","amount":{"amount":"500.00","currency":"SGD"},"base":{"amount":"500.00","currency":"SGD"},"gst":{"amount":"0.00","currency":"SGD"}}]`) ||
+		c.str("balance", "amount") != "1500.00" || c.str("receivable", "amount") != "1500.00" {
+		t.Fatalf("a draft deducting the deposit: %d %s", c.Status, c.Raw)
+	}
+	p := e.call(http.MethodPost, "/v1/invoices/"+c.str("id")+"/issue", ahkow, nil, "If-Match", c.Header.Get("ETag"))
+	if p.Status != 200 || p.str("invoice", "receivable", "amount") != "1500.00" || p.str("invoice", "open", "amount") != "1500.00" ||
+		!strings.Contains(p.Raw, `"number":"DP-0001"`) || !strings.Contains(p.Raw, `"description":"Deposit DP-0001 deducted"`) {
+		t.Fatalf("issuing it: %d %s", p.Status, p.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/customer-deposits/"+dep, ahkow, nil); g.str("left", "amount") != "590.00" || g.str("used", "amount") != "500.00" {
+		t.Errorf("the deposit after the invoice: %s", g.Raw)
+	}
+	cn := e.creditNoteDraft("", "1", "10.00")
+	cn["deposits"] = d["deposits"]
+	x := e.call(http.MethodPost, "/v1/invoices", ahkow, cn)
+	e.problemIs(e.call(http.MethodPost, "/v1/invoices/"+x.str("id")+"/issue", ahkow, nil, "If-Match", x.Header.Get("ETag")), "issueInvoice", 422, invoice.CodeDeposit)
 }

@@ -14,7 +14,7 @@ import (
 
 const allocationsOfDocument = `-- name: AllocationsOfDocument :many
 SELECT id, source_id, source_version, document_id, on_date, currency, amount, base_currency, base_amount, realised_fx,
-  tolerance, reverses_id, written_by, written_at
+  tolerance, tax, reverses_id, written_by, written_at
 FROM fyniq.allocation
 WHERE document_id = $1
 ORDER BY on_date, written_at, id
@@ -32,6 +32,7 @@ type AllocationsOfDocumentRow struct {
 	BaseAmount    string
 	RealisedFx    string
 	Tolerance     string
+	Tax           string
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -59,6 +60,7 @@ func (q *Queries) AllocationsOfDocument(ctx context.Context, documentID uuid.UUI
 			&i.BaseAmount,
 			&i.RealisedFx,
 			&i.Tolerance,
+			&i.Tax,
 			&i.ReversesID,
 			&i.WrittenBy,
 			&i.WrittenAt,
@@ -75,7 +77,7 @@ func (q *Queries) AllocationsOfDocument(ctx context.Context, documentID uuid.UUI
 
 const allocationsOfSource = `-- name: AllocationsOfSource :many
 SELECT id, source_id, source_version, document_id, on_date, currency, amount, base_currency, base_amount, realised_fx,
-  tolerance, reverses_id, written_by, written_at
+  tolerance, tax, reverses_id, written_by, written_at
 FROM fyniq.allocation
 WHERE source_id = $1
 ORDER BY on_date, written_at, id
@@ -93,6 +95,7 @@ type AllocationsOfSourceRow struct {
 	BaseAmount    string
 	RealisedFx    string
 	Tolerance     string
+	Tax           string
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -120,6 +123,7 @@ func (q *Queries) AllocationsOfSource(ctx context.Context, sourceID uuid.UUID) (
 			&i.BaseAmount,
 			&i.RealisedFx,
 			&i.Tolerance,
+			&i.Tax,
 			&i.ReversesID,
 			&i.WrittenBy,
 			&i.WrittenAt,
@@ -136,15 +140,15 @@ func (q *Queries) AllocationsOfSource(ctx context.Context, sourceID uuid.UUID) (
 
 const insertAllocation = `-- name: InsertAllocation :one
 INSERT INTO fyniq.allocation (source_id, source_version, document_id, on_date, currency, minor_units, amount, base_currency,
-  base_minor_units, base_amount, realised_fx, tolerance, reverses_id, written_by, written_at)
+  base_minor_units, base_amount, realised_fx, tolerance, tax, reverses_id, written_by, written_at)
 SELECT $1::uuid, $2::integer, $3::uuid, $4::date,
   c.code, c.minor_units, $5::numeric, b.code, b.minor_units, $6::numeric,
-  $7::numeric, $8::numeric, $9::uuid, $10::text,
-  $11::timestamptz
+  $7::numeric, $8::numeric, $9::numeric, $10::uuid, $11::text,
+  $12::timestamptz
 FROM fyniq.currencies c, fyniq.currencies b
-WHERE c.code = $12::text AND b.code = $13::text
+WHERE c.code = $13::text AND b.code = $14::text
 RETURNING id, source_id, source_version, document_id, on_date, currency, amount, base_currency, base_amount, realised_fx,
-  tolerance, reverses_id, written_by, written_at
+  tolerance, tax, reverses_id, written_by, written_at
 `
 
 type InsertAllocationParams struct {
@@ -156,6 +160,7 @@ type InsertAllocationParams struct {
 	BaseAmount    string
 	RealisedFx    string
 	Tolerance     string
+	Tax           string
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -175,6 +180,7 @@ type InsertAllocationRow struct {
 	BaseAmount    string
 	RealisedFx    string
 	Tolerance     string
+	Tax           string
 	ReversesID    *uuid.UUID
 	WrittenBy     string
 	WrittenAt     time.Time
@@ -191,6 +197,7 @@ func (q *Queries) InsertAllocation(ctx context.Context, arg InsertAllocationPara
 		arg.BaseAmount,
 		arg.RealisedFx,
 		arg.Tolerance,
+		arg.Tax,
 		arg.ReversesID,
 		arg.WrittenBy,
 		arg.WrittenAt,
@@ -210,6 +217,7 @@ func (q *Queries) InsertAllocation(ctx context.Context, arg InsertAllocationPara
 		&i.BaseAmount,
 		&i.RealisedFx,
 		&i.Tolerance,
+		&i.Tax,
 		&i.ReversesID,
 		&i.WrittenBy,
 		&i.WrittenAt,

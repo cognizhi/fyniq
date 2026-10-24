@@ -35,7 +35,8 @@ import (
 // is an invoice of kind credit_note through the same operations, posted as its reverse (credit_note@1), numbered from
 // its own sequence and judged on its size by the same threshold, as a vendor credit is a bill's.
 
-// The API's codes for invoices' approvals, beside the domain's INVOICE-01 to INVOICE-09, INVOICE-13 and INVOICE-15.
+// The API's codes for invoices' approvals, beside the domain's INVOICE-01 to INVOICE-09, INVOICE-13, INVOICE-15 and
+// INVOICE-16.
 const (
 	CodeInvoiceNeedsApproval = "INVOICE-10" // the invoice's total is above the self-approval threshold: ask for approval (FM-2)
 	CodeInvoiceVoidApproval  = "INVOICE-11" // in Founder mode a void needs a second person (FM-1)
@@ -45,7 +46,7 @@ const (
 
 // InvoiceCodes are the codes the posting rules and the invoice's own checks answer.
 var InvoiceCodes = []string{invoice.CodeCustomer, invoice.CodeGSTCode, invoice.CodeDueDate, invoice.CodeTooLong, invoice.CodeLine,
-	invoice.CodeCredited, ledger.CodeInvoiceTotal, ledger.CodeGSTRate, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread}
+	invoice.CodeCredited, invoice.CodeDeposit, ledger.CodeDeposit, ledger.CodeInvoiceTotal, ledger.CodeGSTRate, ledger.CodeSystemRole, ledger.CodeRuleAccount, ledger.CodeLineCurrency, ledger.CodeSpread}
 
 // InvoiceApprovalCodes are the codes an approval of an invoice's issue, void or edit may answer: SOD-3, and the
 // posting's own.
@@ -89,16 +90,32 @@ type InvoiceRelease struct {
 
 // InvoiceDraft is an invoice as entered: checked for its form when saved, and by the posting rules when it is issued.
 type InvoiceDraft struct {
-	Kind       string             `json:"kind,omitempty" enum:"invoice,credit_note" doc:"invoice, the default, or credit_note: a credit note to the customer, entered as an invoice is and issued as its reverse (FR-AR-04). Fixed once saved." example:"invoice"`
-	InvoiceID  string             `json:"invoice_id,omitempty" format:"uuid" doc:"A credit note only: the issued invoice of the same customer and currency it credits, in full or in part; left out, a standalone credit note. A linked credit note adjusts GST at the rates in force on that invoice's date, and credits at most its total." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
-	CustomerID string             `json:"customer_id,omitempty" format:"uuid" doc:"The customer: a contact marked as a customer." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"`
-	Reference  string             `json:"reference,omitempty" maxLength:"60" doc:"The customer's reference for it, such as their purchase order number." example:"PO-88213"`
-	Date       string             `json:"date,omitempty" format:"date" doc:"The invoice's date: its tax point." example:"2026-10-24"`
-	DueDate    string             `json:"due_date,omitempty" format:"date" doc:"When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04). A credit note has none." example:"2026-11-23"`
-	Currency   string             `json:"currency" pattern:"^[A-Z]{3}$" doc:"The invoice's currency." example:"SGD"`
-	FXRate     string             `json:"fx_rate,omitempty" doc:"For an invoice in another currency: base currency per one unit. Left out, the invoice takes the cascade's rate for its date (ENG-40)." example:"1.34"`
-	Lines      []InvoiceLineDraft `json:"lines" maxItems:"200" doc:"The invoice's lines."`
-	Notes      string             `json:"notes,omitempty" maxLength:"2000" doc:"Notes kept with the invoice." example:"Thank you for your business"`
+	Kind       string              `json:"kind,omitempty" enum:"invoice,credit_note" doc:"invoice, the default, or credit_note: a credit note to the customer, entered as an invoice is and issued as its reverse (FR-AR-04). Fixed once saved." example:"invoice"`
+	InvoiceID  string              `json:"invoice_id,omitempty" format:"uuid" doc:"A credit note only: the issued invoice of the same customer and currency it credits, in full or in part; left out, a standalone credit note. A linked credit note adjusts GST at the rates in force on that invoice's date, and credits at most its total." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"`
+	CustomerID string              `json:"customer_id,omitempty" format:"uuid" doc:"The customer: a contact marked as a customer." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"`
+	Reference  string              `json:"reference,omitempty" maxLength:"60" doc:"The customer's reference for it, such as their purchase order number." example:"PO-88213"`
+	Date       string              `json:"date,omitempty" format:"date" doc:"The invoice's date: its tax point." example:"2026-10-24"`
+	DueDate    string              `json:"due_date,omitempty" format:"date" doc:"When it falls due; left out, the customer's payment terms, else the organisation's (FR-ORG-04). A credit note has none." example:"2026-11-23"`
+	Currency   string              `json:"currency" pattern:"^[A-Z]{3}$" doc:"The invoice's currency." example:"SGD"`
+	FXRate     string              `json:"fx_rate,omitempty" doc:"For an invoice in another currency: base currency per one unit. Left out, the invoice takes the cascade's rate for its date (ENG-40)." example:"1.34"`
+	Lines      []InvoiceLineDraft  `json:"lines" maxItems:"200" doc:"The invoice's lines."`
+	Notes      string              `json:"notes,omitempty" maxLength:"2000" doc:"Notes kept with the invoice." example:"Thank you for your business"`
+	Deposits   []InvoiceDepositUse `json:"deposits,omitempty" maxItems:"20" doc:"An invoice only: the customer's deposits it deducts (FR-AR-09), each a posted deposit of the same customer and currency, at most what is left of it. Issuing settles them; the invoice charges GST only on what they did not already bear."`
+}
+
+// InvoiceDepositUse is a deposit an invoice deducts, as entered.
+type InvoiceDepositUse struct {
+	DepositID string `json:"deposit_id" format:"uuid" doc:"The deposit." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa0"`
+	Amount    Money  `json:"amount" doc:"What the invoice deducts of it, in the invoice's currency."`
+}
+
+// InvoiceDeposit is a deposit an invoice deducts, as it shows it.
+type InvoiceDeposit struct {
+	DepositID string `json:"deposit_id" format:"uuid" doc:"The deposit." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa0"`
+	Number    string `json:"number,omitempty" doc:"Its number." example:"DP-0001"`
+	Amount    Money  `json:"amount" doc:"What the invoice deducts of it, in the invoice's currency."`
+	Base      *Money `json:"base,omitempty" doc:"Its part of the deposit's base amount (RND-DEPOSIT): as issued, or as issuing would take it; absent while it cannot."`
+	GST       *Money `json:"gst,omitempty" doc:"Its part of the GST the deposit bore, which comes off the invoice's output tax."`
 }
 
 // InvoiceCustomer is an invoice's customer, as the invoice shows it.
@@ -155,6 +172,8 @@ type Invoice struct {
 	Net           *Money           `json:"net,omitempty" doc:"Every line's net, in the invoice's currency."`
 	GSTTotal      *Money           `json:"gst,omitempty" doc:"Its GST, in the invoice's currency."`
 	Total         *Money           `json:"total,omitempty" doc:"Its net and GST, in the invoice's currency: what the customer owes; absent while a line cannot be read."`
+	Deposits      []InvoiceDeposit `json:"deposits" nullable:"false" doc:"The deposits it deducts (FR-AR-09)."`
+	Balance       *Money           `json:"balance,omitempty" doc:"Its total less the deposits it deducts: what is left to pay, in its currency."`
 	Receivable    *Money           `json:"receivable,omitempty" doc:"What it adds to accounts receivable in the base currency (a credit note: what it takes off): as issued, or as issuing would post it; absent while it cannot be issued."`
 	Open          *Money           `json:"open,omitempty" doc:"An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). An issued credit note: what is left of it to apply or refund."`
 	States        InvoiceStates    `json:"states" doc:"Its approval, ledger, delivery, settlement and due states."`
@@ -370,6 +389,20 @@ func invoiceDraftOf(in InvoiceDraft, base money.Currency) (invoice.Draft, error)
 		}
 		d.Lines = append(d.Lines, line)
 	}
+	for k, x := range in.Deposits {
+		at := func(f string) string { return "body.deposits[" + strconv.Itoa(k) + "]." + f }
+		id, err := uuid.Parse(x.DepositID)
+		if err != nil {
+			fields = append(fields, FieldProblem{Code: CodeInvalid, Field: at("deposit_id"), Message: "is not an ID", Fix: "Send the deposit's ID"})
+			continue
+		}
+		m, bad := moneyIn(x.Amount, at("amount"))
+		if bad != nil {
+			fields = append(fields, *bad)
+			continue
+		}
+		d.Deposits = append(d.Deposits, invoice.DepositUse{DepositID: id, Amount: m})
+	}
 	if len(fields) > 0 {
 		return d, invalid(fields)
 	}
@@ -474,7 +507,7 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	}
 	out := Invoice{ID: doc.ID.String(), Kind: invoiceKind(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, Reference: d.Reference,
 		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: invoiceLinesOut(d),
-		GST: []InvoiceGST{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
+		GST: []InvoiceGST{}, Deposits: []InvoiceDeposit{}, Releases: []InvoiceRelease{}, Checks: []InvoiceCheck{}, LedgerImpact: []EntryLine{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}
 	if d.Rate != nil {
 		out.FXRate = d.Rate.String()
@@ -549,6 +582,7 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 		if readable {
 			invoiceTotals(&out, p.Totals)
 		}
+		invoiceDeposits(&out, d, p.Invoice.Deposits, nil)
 		return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
 	}
 	if withChecks {
@@ -559,21 +593,22 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 		return Invoice{}, err
 	}
 	taxed := false
+	r := Money{Amount: money.Zero(v.base).String(), Currency: v.base.Code} // nothing when deposits cover it whole
 	for _, l := range entryOf(e).Lines {
 		if withChecks {
 			out.LedgerImpact = append(out.LedgerImpact, l)
 		}
 		switch l.AccountID {
 		case v.receivables.String():
-			r := l.BaseAmount
+			r = l.BaseAmount
 			if invoice.IsCreditNote(doc) { // what it takes off accounts receivable
 				r.Amount = strings.TrimPrefix(r.Amount, "-")
 			}
-			out.Receivable = &r
 		case v.gst.String():
 			taxed = true
 		}
 	}
+	out.Receivable = &r
 	if readable {
 		// What it charged is what its entry posted: an invoice issued before a GST registration recorded later charged none,
 		// as its replay reads it.
@@ -587,14 +622,74 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 			}
 		}
 		invoiceTotals(&out, t)
-		if err := invoiceSettled(ctx, u, &out, t.Total); err != nil {
+		owed := t.Total
+		for _, x := range d.Deposits {
+			if x.Amount.Currency() == owed.Currency() {
+				owed, _ = owed.Sub(x.Amount)
+			}
+		}
+		if err := invoiceSettled(ctx, u, &out, owed); err != nil {
 			return Invoice{}, err
+		}
+	}
+	uses, err := u.Allocations().OfSource(ctx, doc.ID) // the deposits this version deducted, as it posted
+	if err != nil {
+		return Invoice{}, err
+	}
+	invoiceDeposits(&out, d, nil, uses)
+	for k := range out.Deposits {
+		if id, err := uuid.Parse(out.Deposits[k].DepositID); err == nil {
+			if x, err := u.Documents().Get(ctx, id); err == nil {
+				out.Deposits[k].Number = x.Number
+			}
 		}
 	}
 	if doc.Status == storage.DocumentPosted && out.States.Settlement != "paid" && out.DueDate != "" && out.DueDate < dateOf(v.today) {
 		out.States.Due = "overdue"
 	}
 	return out, a.name(ctx, u, out.PreparedBy, out.PostedBy)
+}
+
+// invoiceDeposits fills the deposits an invoice deducts and its balance: each as entered, with its parts as issuing
+// would take them (taken, a draft's) or as its version took them (uses, an issued invoice's allocations).
+func invoiceDeposits(out *Invoice, d invoice.Draft, taken []ledger.InvoiceDeposit, uses []storage.Allocation) {
+	for _, x := range d.Deposits {
+		dep := InvoiceDeposit{DepositID: x.DepositID.String(), Amount: moneyOut(x.Amount)}
+		for _, t := range taken {
+			if t.DepositID == x.DepositID {
+				b, g := moneyOut(t.Base), moneyOut(t.Tax)
+				dep.Number, dep.Base, dep.GST = t.Number, &b, &g
+			}
+		}
+		for _, a := range uses {
+			if a.DocumentID == x.DepositID && a.ReversesID == nil && a.SourceVersion == out.Version {
+				b, g := storedOut(a.BaseAmount, a.BaseCurrency), storedOut(cmpStored(a.Tax), a.BaseCurrency)
+				dep.Base, dep.GST = &b, &g
+			}
+		}
+		out.Deposits = append(out.Deposits, dep)
+	}
+	if out.Total != nil {
+		total, err := money.Parse(out.Total.Amount, d.Currency)
+		if err != nil {
+			return
+		}
+		for _, x := range d.Deposits {
+			if x.Amount.Currency() == total.Currency() {
+				total, _ = total.Sub(x.Amount)
+			}
+		}
+		b := moneyOut(total)
+		out.Balance = &b
+	}
+}
+
+// cmpStored is a stored decimal, zero when it is empty.
+func cmpStored(d storage.Decimal) storage.Decimal {
+	if d == "" {
+		return "0"
+	}
+	return d
 }
 
 // invoiceTotals fills an invoice's net, GST by code and total, in its own currency.

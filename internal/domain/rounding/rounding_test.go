@@ -872,3 +872,70 @@ func TestGSTInclProperties(t *testing.T) {
 		}
 	})
 }
+
+// Worked by hand (PRD-001 §10.4, RND-DEPOSIT): a deposit of USD 1,000.00 that came to S$1,350.00 with S$111.47 of GST.
+// A use of USD 300.00 takes S$405.00 of the base amount (1,350 × 300 ÷ 1,000) and S$33.44 of the GST (33.441); a use
+// of the remaining USD 700.00 takes all that is left: S$945.00 and S$78.03. A use of USD 0.01 of S$1.00 left of USD
+// 0.03 takes S$0.33.
+// req: RND-DEPOSIT
+func TestDepositPartPinnedCases(t *testing.T) {
+	usd := money.MustLookup("USD")
+	m := func(s string, c money.Currency) money.Money {
+		x, err := money.Parse(s, c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return x
+	}
+	for _, c := range []struct {
+		left, amount, remaining, want string
+	}{
+		{"1350.00", "300.00", "1000.00", "405.00"},
+		{"111.47", "300.00", "1000.00", "33.44"},
+		{"945.00", "700.00", "700.00", "945.00"},
+		{"78.03", "700.00", "700.00", "78.03"},
+		{"1.00", "0.01", "0.03", "0.33"},
+		{"0.00", "1.00", "2.00", "0.00"},
+	} {
+		got, err := DepositPart(m(c.left, sgd), m(c.amount, usd), m(c.remaining, usd))
+		if err != nil || got.String() != c.want || got.Currency() != sgd {
+			t.Errorf("DepositPart(%s, %s of %s) = %v, %v; want %s", c.left, c.amount, c.remaining, got, err, c.want)
+		}
+	}
+	for _, bad := range [][2]string{{"2.00", "1.00"}, {"0.00", "1.00"}, {"1.00", "0.00"}} {
+		if _, err := DepositPart(m("1.00", sgd), m(bad[0], usd), m(bad[1], usd)); err == nil {
+			t.Errorf("a use of %s of %s: no error", bad[0], bad[1])
+		}
+	}
+	if _, err := DepositPart(m("1.00", sgd), m("1.00", sgd), m("2.00", usd)); err == nil {
+		t.Error("a use in another currency: no error")
+	}
+}
+
+// Any sequence of uses of a deposit, taken from what is left, adds up exactly to its base amount, and each use is within
+// a minor unit of its share.
+// req: RND-DEPOSIT
+// req: QA-ENG-03
+func TestDepositPartProperties(t *testing.T) {
+	usd := money.MustLookup("USD")
+	rapid.Check(t, func(t *rapid.T) {
+		total := money.FromMinor(rapid.Int64Range(1, 100_000_000).Draw(t, "deposit"), usd)
+		base := money.FromMinor(rapid.Int64Range(0, 200_000_000).Draw(t, "base"), sgd)
+		left, remaining, taken := base, total, money.Zero(sgd)
+		for remaining.Sign() > 0 {
+			n, _ := remaining.Minor()
+			units := rapid.Int64Range(1, n).Draw(t, "use")
+			use := money.FromMinor(units, usd)
+			part, err := DepositPart(left, use, remaining)
+			if err != nil {
+				t.Fatal(err)
+			}
+			taken, _ = taken.Add(part)
+			left, _ = left.Sub(part)
+			remaining, _ = remaining.Sub(use)
+		}
+		if !taken.Equal(base) || !left.IsZero() {
+			t.Fatalf("the uses take %s of %s", taken, base)
+		}
+	})
+}

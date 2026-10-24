@@ -202,7 +202,7 @@ func (a *API) depositOf(ctx context.Context, u storage.UnitOfWork, v depositView
 		out.ApprovalAsked = v.asked[out.ID]
 	}
 	if doc.Status != storage.DocumentDraft {
-		o, err := deposit.OpenDeposit(ctx, u, doc.ID, v.settings)
+		o, err := deposit.OpenDeposit(ctx, u, doc.ID, v.base, uuid.Nil)
 		if err == nil {
 			base, gst, held, used, left := moneyOut(o.Base), moneyOut(o.GST), moneyOut(o.Net), moneyOut(o.Used), moneyOut(o.Left)
 			out.Base, out.GST, out.Held, out.Used, out.Left, out.GSTCharged = &base, &gst, &held, &used, &left, !o.GST.IsZero()

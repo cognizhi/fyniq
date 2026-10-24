@@ -10,6 +10,10 @@
       "format": "uuid",
       "type": "string"
     },
+    "balance": {
+      "$ref": "Money.schema.json",
+      "description": "Its total less the deposits it deducts: what is left to pay, in its currency."
+    },
     "checks": {
       "description": "getInvoice only: what stops a draft being issued (✖).",
       "items": {
@@ -39,6 +43,13 @@
       ],
       "format": "date",
       "type": "string"
+    },
+    "deposits": {
+      "description": "The deposits it deducts (FR-AR-09).",
+      "items": {
+        "$ref": "InvoiceDeposit.schema.json"
+      },
+      "type": "array"
     },
     "due_date": {
       "description": "When it falls due: as entered, or from the payment terms.",
@@ -200,6 +211,7 @@
     "lines",
     "gst_charged",
     "gst_subtotals",
+    "deposits",
     "states",
     "releases",
     "checks",
