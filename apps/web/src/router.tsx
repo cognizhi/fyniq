@@ -36,6 +36,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "recurring-invoices": lazyRouteComponent(() => import("./screens/sales/RecurringInvoices"), "RecurringInvoices"),
   "recurring-invoice-new": lazyRouteComponent(() => import("./screens/sales/RecurringInvoicePage"), "RecurringInvoicePage"),
   "recurring-invoice": lazyRouteComponent(() => import("./screens/sales/RecurringInvoicePage"), "RecurringInvoicePage"),
+  statements: lazyRouteComponent(() => import("./screens/sales/Statements"), "Statements"),
   invoices: lazyRouteComponent(() => import("./screens/sales/Invoices"), "Invoices"),
   "invoice-new": lazyRouteComponent(() => import("./screens/sales/InvoicePage"), "InvoicePage"),
   "credit-note-new": lazyRouteComponent(() => import("./screens/sales/InvoicePage"), "InvoicePage"),

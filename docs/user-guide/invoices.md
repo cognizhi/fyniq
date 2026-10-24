@@ -23,6 +23,9 @@ An invoice has separate states:
 - **Part paid** or **Paid** once receipts or credits settle it, or **Written off**;
 - **Overdue** once its due date has passed while it is not paid in full.
 
+Reminders of overdue invoices, and statements of account, are under **Sales → Statements and
+reminders**.
+
 A Bookkeeper, an AR specialist or an Accountant prepares invoices. An AR specialist or an
 Accountant issues, emails, voids and edits them. The Owner, the Auditor and the Tax agent can see
 them.
@@ -156,6 +159,7 @@ again; once it is issued its files are kept, and never deleted, for as long as t
 ## Related
 
 - [Quotes and orders](quotes.md)
+- [Statements and reminders](statements.md)
 - [Contacts and items](contacts-and-items.md)
 - [Document templates](document-templates.md)
 - [Approvals](approvals.md)

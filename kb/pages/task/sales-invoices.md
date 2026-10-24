@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:25325b48b4c9a7bc387964b773e063a2164339df092b3ab1932bc500e33f71e5
+  - docs/user-guide/invoices.md sha256:e205377f4aeeb1bd85e3d2d9d43b3afb47c1c5c040912dd3b131bfb5577923f0
 data_class: general
 taint: trusted
 status: draft
@@ -58,6 +58,7 @@ aliases:
 
 - **Sales → Invoices** keeps each invoice to a customer, with its lines and GST, and each credit note; issuing an invoice adds its total to what the customer owes the company.
 - Its states are separate: **Draft**, **Awaiting approval** or **Rejected**; **Issued** or **Voided**; **Sent**, **Delivered**, **Viewed** or **Bounced** from its latest email; **Part paid**, **Paid** or **Written off**; and **Overdue** once its due date has passed while it is not paid in full.
+- Reminders of overdue invoices and statements of account are under **Sales → Statements and reminders** ([[sales.statements]]).
 - A Bookkeeper, an AR specialist or an Accountant prepares invoices; an AR specialist or an Accountant issues, emails, voids and edits them; the Owner, the Auditor and the Tax agent can see them.
 
 (src: docs/user-guide/invoices.md#what-it-is)

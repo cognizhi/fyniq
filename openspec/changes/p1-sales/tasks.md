@@ -225,7 +225,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   their schedule (weekly to yearly), next date, what the scheduler does and status; the page sets the name, schedule,
   customer, lines and mode, checks it without saving, pauses and resumes it, and asks for approval of the content to
   issue and send. Recurring bills keep their own page under Purchases. Tests: `src/screens/sales/recurring.test.tsx`.)
-  (Still to come: statements-reminders and customer-document-view.)
+  (In part, 25 Oct 2026: statements-reminders. **Sales › Statements and reminders**: the reminders due, each sent
+  or skipped with a reason; a customer's statement for a period, worked out, then made and emailed when it adds up;
+  the reminder schedules (standard and each customer group's), added and changed; and a customer's group on its
+  contact. `docs/user-guide/statements.md` and `kb/pages/task/sales-statements.md`. Tests:
+  `src/screens/sales/statements.test.tsx`, the customer group case in `src/screens/contacts/contacts.test.tsx`.)
+  (Still to come: customer-document-view.)
 
 ## 9. The oracle and finishing
 
