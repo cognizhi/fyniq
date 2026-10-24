@@ -5,6 +5,14 @@ RETURNING id, purpose, recipient, subject, status, provider, provider_id, attemp
 -- name: GetEmailMessage :one
 SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at FROM fyniq.email_message WHERE id = sqlc.arg(id);
 
+-- name: ListEmailMessages :many
+SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at
+FROM fyniq.email_message
+WHERE (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status)::text)
+  AND (sqlc.narg(purpose)::text IS NULL OR purpose = sqlc.narg(purpose)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR id < sqlc.narg(before)::uuid)
+ORDER BY id DESC LIMIT sqlc.arg(max_rows);
+
 -- name: LockEmailMessage :one
 SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at FROM fyniq.email_message WHERE id = sqlc.arg(id) FOR UPDATE;
 

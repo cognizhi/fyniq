@@ -493,6 +493,75 @@ func (q *Queries) InsertEmailSuppression(ctx context.Context, arg InsertEmailSup
 	return i, err
 }
 
+const listEmailMessages = `-- name: ListEmailMessages :many
+SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at
+FROM fyniq.email_message
+WHERE ($1::text IS NULL OR status = $1::text)
+  AND ($2::text IS NULL OR purpose = $2::text)
+  AND ($3::uuid IS NULL OR id < $3::uuid)
+ORDER BY id DESC LIMIT $4
+`
+
+type ListEmailMessagesParams struct {
+	Status  *string
+	Purpose *string
+	Before  *uuid.UUID
+	MaxRows int32
+}
+
+type ListEmailMessagesRow struct {
+	ID               uuid.UUID
+	Purpose          string
+	Recipient        string
+	Subject          string
+	Status           string
+	Provider         *string
+	ProviderID       *string
+	Attempts         int32
+	AttemptStartedAt *time.Time
+	AcceptedAt       *time.Time
+	LastError        *string
+	CreatedAt        time.Time
+}
+
+func (q *Queries) ListEmailMessages(ctx context.Context, arg ListEmailMessagesParams) ([]ListEmailMessagesRow, error) {
+	rows, err := q.db.Query(ctx, listEmailMessages,
+		arg.Status,
+		arg.Purpose,
+		arg.Before,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEmailMessagesRow
+	for rows.Next() {
+		var i ListEmailMessagesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Purpose,
+			&i.Recipient,
+			&i.Subject,
+			&i.Status,
+			&i.Provider,
+			&i.ProviderID,
+			&i.Attempts,
+			&i.AttemptStartedAt,
+			&i.AcceptedAt,
+			&i.LastError,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockEmailMessage = `-- name: LockEmailMessage :one
 SELECT id, purpose, recipient, subject, status, provider, provider_id, attempts, attempt_started_at, accepted_at, last_error, created_at FROM fyniq.email_message WHERE id = $1 FOR UPDATE
 `

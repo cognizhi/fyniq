@@ -49,6 +49,10 @@ func TestBannersAndAnnouncements(t *testing.T) {
 			t.Errorf("%v: %d %s", bad, r.Status, r.Raw)
 		}
 	}
+	if r := e.call(http.MethodPost, "/v1/announcements", owner, map[string]any{"message": "A preview", "severity": "info", "ends_at": at(time.Hour)},
+		"Prefer", "return=preview"); r.Status != http.StatusOK || r.Header.Get("Preference-Applied") != "return=preview" {
+		t.Fatalf("a preview: %d %s", r.Status, r.Raw)
+	}
 	critical := publish(map[string]any{"message": "The bank feed is down: record payments by hand.", "severity": "critical", "roles": []string{"owner"},
 		"ends_at": at(24 * time.Hour)})
 	later := publish(map[string]any{"message": "Year-end close starts next week.", "severity": "warning", "starts_at": at(24 * time.Hour),

@@ -125,6 +125,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/notification-quiet-hours` (setQuietHours): Set your quiet hours
 - `GET /v1/notifications` (listNotifications): List your notifications
 - `POST /v1/notifications/read-all` (readAllNotifications): Mark all your notifications read
+- `POST /v1/notifications/test-messages` (sendTestNotification): Send yourself a test notification
 - `POST /v1/notifications/{notification_id}/archive` (archiveNotification): Archive a notification
 - `POST /v1/notifications/{notification_id}/read` (readNotification): Mark a notification read
 - `POST /v1/notifications/{notification_id}/unread` (unreadNotification): Mark a notification unread
@@ -146,6 +147,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/organisation/email/capture-senders/mine` (decideMyCaptureSender): Accept or reject a sender at your email-in address
 - `GET /v1/organisation/email/inbound-messages` (listInboundMessages): List mail received at the email-in addresses
 - `GET /v1/organisation/email/inbound-messages/mine` (listMyInboundMessages): List mail received at your email-in address
+- `GET /v1/organisation/email/messages` (listEmailMessages): List the email delivery log
 - `GET /v1/organisation/email/messages/{message_id}` (getEmailMessage): Get an email message's outcome
 - `PUT /v1/organisation/email/senders/{purpose}` (setEmailSender): Choose a sender
 - `GET /v1/organisation/email/suppressions` (listEmailSuppressions): List suppressed addresses
