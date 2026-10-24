@@ -1554,6 +1554,46 @@ var matrixCalls = map[string]matrixCall{
 			return s.call(http.MethodGet, "/v1/write-offs/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
 		}
 	},
+	// Customer credits applied to invoices (FR-AR-04): read under V, applied and voided under P; asking to void is posting.
+	"getCustomerCreditApplication": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.appliedCustomerCredit()
+		return e.call(http.MethodGet, "/v1/customer-credit-applications/"+id, tok, nil), nil
+	},
+	"applyCustomerCredit": func(e *env, tok string) (response, func() bool) {
+		inv, _ := e.issuedInvoice("1", "10.00")
+		total := e.call(http.MethodGet, "/v1/invoices/"+inv, e.as(authz.Accountant), nil).str("total", "amount")
+		r := e.call(http.MethodPost, "/v1/customer-credit-applications", tok, applyingCredit(e.issuedCreditNote("1", "10.00"), inv, total))
+		return r, func() bool {
+			return e.call(http.MethodGet, "/v1/invoices/"+inv, e.as(authz.Accountant), nil).str("states", "settlement") == "open"
+		}
+	},
+	"requestCustomerCreditApplicationVoid": func(e *env, tok string) (response, func() bool) {
+		was := requestsOf(e, "customer_credit_application")
+		id, tag := e.appliedCustomerCredit()
+		person := steppedUp(e, tok)
+		r := e.call(http.MethodPost, "/v1/customer-credit-applications/"+id+"/void-approval", person, map[string]any{"date": "2026-10-28", "reason": "Matrix test"},
+			"If-Match", tag)
+		if r.Status == http.StatusAccepted {
+			e.call(http.MethodPost, "/v1/approvals/"+r.str("id")+"/withdraw", person, nil, "If-Match", `"1"`)
+		}
+		return r, func() bool { return requestsOf(e, "customer_credit_application") == was }
+	},
+	// A void in Founder mode is asked for, so the row voids in an organisation in Standard mode.
+	"voidCustomerCreditApplication": func(e *env, tok string) (response, func() bool) {
+		s := inStandardMode(e)
+		e.tokens.mu.Lock()
+		p := e.tokens.m[tok]
+		e.tokens.mu.Unlock()
+		if p.Organisation == e.books.Org {
+			p.Organisation = s.books.Org
+			tok = s.principal(p)
+		}
+		id, tag := s.appliedCustomerCredit()
+		r := s.call(http.MethodPost, "/v1/customer-credit-applications/"+id+"/void", tok, map[string]any{"date": "2026-10-28", "reason": "Matrix test"}, "If-Match", tag)
+		return r, func() bool {
+			return s.call(http.MethodGet, "/v1/customer-credit-applications/"+id, s.as(authz.Accountant), nil).str("status") == "posted"
+		}
+	},
 	"getReceivables": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/receivables?as_at=2026-10-31", tok, nil), nil
 	},

@@ -92,7 +92,8 @@
         "document_template",
         "invoice",
         "customer_receipt",
-        "write_off"
+        "write_off",
+        "customer_credit_application"
       ],
       "examples": [
         "organisation_setting"
@@ -127,7 +128,8 @@
         "invoice.edit",
         "customer_receipt.void",
         "write_off.post",
-        "write_off.void"
+        "write_off.void",
+        "customer_credit_application.void"
       ],
       "examples": [
         "organisation_setting.change"

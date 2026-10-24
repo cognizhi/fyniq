@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Money customers paid, recorded by hand against their invoices: FR-AR-18, ENG-41, INV-05, INV-07, FM-1, FR-GL-12 (PRD-001 rev 0.120, provisional; `p1-sales` task 2.1; the owner's decision of 24 Oct 2026) |
+| Feature and requirement IDs | Money customers paid, recorded by hand against their invoices, and customer credits applied to invoices: FR-AR-18, FR-AR-04, ENG-41, INV-05, INV-07, FM-1, FR-GL-12 (PRD-001 rev 0.120 and 0.124, provisional; `p1-sales` tasks 2.1 and 3.1 in part; the owner's decision of 24 Oct 2026) |
 | Author, reviewer, date | Claude Code for the founders, 24 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
 | Data and its class | The money account a receipt came into, its date, amounts and the bank's reference (internal); the invoices it settles; who recorded and who voided it, with the reason. No bank account numbers or secrets |
 | Who acts | The AR specialist and the Accountant (P on "Invoices, credit notes") record and void; in Founder mode another member who holds A on that row approves a void; the API's database role `fyniq_api` |
@@ -30,6 +30,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
 | T6 | person ↔ API | Spoofing: the AI or an integration records or voids a receipt | A posting no person stands behind | Low |
 | T7 | person ↔ API | Tampering: a retried request records the receipt twice | An invoice settled twice and the bank debited twice | Medium |
 | T8 | person ↔ API | Tampering: an invoice is voided or edited while a receipt settles it, leaving the receipt settling nothing | Money received with no invoice behind it; 1100 and the sub-ledger apart | Low |
+| T9 | person ↔ API | Tampering (rev 0.124): a credit (a credit note, or a receipt's unapplied amount) is applied to an invoice beyond what either has open, applied twice, applied to another customer's invoice, or the credit behind it is voided while it stands | An invoice shown settled by a credit that no longer exists, or one customer's credit clearing another's debt; 1100 and the sub-ledger apart | Low |
 
 ## 3. What we do about it
 
@@ -43,6 +44,7 @@ Trust boundaries: **person ↔ API** (the Appendix D row, SEC-02, step-up for an
 | T6 | Recording and voiding need a person or a client with P on the row; the AI's cell is a proposal only, and no proposal task records receipts (§9.6) | `TestAuthorisationMatrix` |
 | T7 | `recordCustomerReceipt` takes an Idempotency-Key: a retry gets the saved answer and records nothing; a second record of the same money is still possible without the key, and the bank reconciliation shows it | The API conventions' idempotency tests, `TestCustomerReceiptsThroughTheAPI` |
 | T8 | An invoice receipts settle is voided or edited only once they are voided (INVOICE-13); the close's INV-07 check sees any posting and document that disagree | `TestCustomerReceiptsSettleInvoices`, `TestCustomerReceiptsThroughTheAPI` |
+| T9 | An application locks the invoice and the credit, refuses more than either has open (APPLY-05), another customer's invoice or another currency (APPLY-04), and a document that is no credit (APPLY-03), and records both allocations in one transaction; a credit note or a receipt whose credit is applied is voided only once its applications are (INVOICE-13, APPLY-08); `allocation_guard` accepts an allocation from an application only to an invoice, a credit note or a receipt (FY171); the database reverses an application that posted nothing only with the reversal of its allocations (FY056); in Founder mode a void needs a second person (APPLY-09, FM-1) | `TestCustomerCreditsApplyToInvoices`, `TestCustomerCreditsThroughTheAPI` |
 
 ## 4. What remains
 

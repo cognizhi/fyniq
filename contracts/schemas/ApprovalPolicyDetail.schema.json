@@ -54,7 +54,8 @@
         "document_template",
         "invoice",
         "customer_receipt",
-        "write_off"
+        "write_off",
+        "customer_credit_application"
       ],
       "examples": [
         "organisation_setting"

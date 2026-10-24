@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What is applied, in their currency: at most what the invoice has open and what is left of the credit (APPLY-05)."
+    },
+    "credit_id": {
+      "description": "The credit: an issued credit note, or a customer receipt with an amount unapplied.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "date": {
+      "description": "The day the credit is applied.",
+      "examples": [
+        "2026-10-21"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "invoice_id": {
+      "description": "The invoice: an issued invoice of the credit's customer, in its currency.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "credit_id",
+    "invoice_id",
+    "date",
+    "amount"
+  ],
+  "title": "CustomerCreditApplicationDraft",
+  "type": "object"
+}

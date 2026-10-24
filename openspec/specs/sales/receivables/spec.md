@@ -126,6 +126,10 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** it takes the next number of the gap-free CN- sequence, has no due date, posts credit_note@1, and is approved as an invoice is, judged on its size
 - **AND** an issued credit note is a credit with the customer in the AR sub-ledger until it is applied or refunded
 
+#### Scenario: Credit notes applied, built (rev 0.124)
+- **WHEN** an issued credit note is applied to an invoice of its customer
+- **THEN** it shows part applied or applied, and is voided or edited only once its applications are voided (INVOICE-13)
+
 #### Scenario: A linked credit note as built (rev 0.123)
 - **WHEN** a credit note names the invoice it credits
 - **THEN** issuing refuses an invoice that is not issued, of another customer or currency, dated after the credit note, or of a smaller total (INVOICE-15)
@@ -311,6 +315,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** a receipt is recorded by hand against one or more of the customer's issued invoices
 - **THEN** it posts customer_receipt@1 at once, settles at most what each invoice has open (RECEIPT-05) with one allocation each, and keeps any amount beyond them as a credit with the customer
 - **AND** voiding it reverses its entry and allocations, which reopens the invoices, in Founder mode with a second person (FM-1)
+
+#### Scenario: Customer credits applied later, built (rev 0.124)
+- **WHEN** a credit note or a receipt's unapplied amount is applied to an issued invoice of the customer in its currency
+- **THEN** one allocation settles the invoice and one the credit, at most what each has open (APPLY-05), and customer_credit_application@1 posts only the realised FX
+- **AND** a void reverses both, in Founder mode with a second person; a receipt whose credit is applied is voided only once its applications are (APPLY-08)
 
 ### Requirement: FR-AR-10 AR ageing
 The system SHALL report AR ageing in the buckets Current, 1–30, 31–60, 61–90 and 90+ by customer and currency, with the unrealised FX exposure.
