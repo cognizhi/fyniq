@@ -449,6 +449,7 @@ fyniq_worker    SELECT    sod_override
 fyniq_worker    SELECT    statutory_pack_activation
 fyniq_worker    SELECT    statutory_pack_rows
 fyniq_worker    SELECT    statutory_pack_versions
+fyniq_worker    EXECUTE   super_admin_users()
 fyniq_worker    SELECT    team_mode
 fyniq_worker    SELECT    tenants
 fyniq_worker    SELECT    user_membership

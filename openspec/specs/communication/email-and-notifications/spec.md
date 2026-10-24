@@ -228,7 +228,7 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 
 #### Scenario: Security and email notices as built (rev 0.109)
 - **WHEN** a person signs in, a passkey of theirs is added or removed, mail waits in quarantine, an address is suppressed or a sending domain fails its nightly check
-- **THEN** the person, the member at their own address, or those who act on the organisation's email are notified
+- **THEN** the person, the member at their own address, or those who act on the organisation's email are notified, and a failed domain's Super admins in each organisation they belong to (rev 0.111)
 - **AND** a sign-in is not emailed again, since the sign-in alert has emailed it
 
 #### Scenario: Operations notices as built (rev 0.110)

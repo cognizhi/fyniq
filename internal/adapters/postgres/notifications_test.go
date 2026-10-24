@@ -255,15 +255,14 @@ func fanQueued(t *testing.T, org uuid.UUID, q *local.Memory, at time.Time) {
 	}
 }
 
-type installationOf uuid.UUID
+type superAdmins []uuid.UUID
 
-func (i installationOf) InstallationOrganisation(context.Context) (uuid.UUID, error) {
-	return uuid.UUID(i), nil
-}
+func (s superAdmins) SuperAdminUsers(context.Context) ([]uuid.UUID, error) { return s, nil }
 
-// A sending domain that failed the nightly check reaches those who act on the installation organisation's email (the
-// Administrator), not the Owner; a sign-in shows in the centre and is never emailed there, since the sign-in alert has
-// emailed it, even to a person with a verified email. A title too long to keep is cut short, never refused.
+// A sending domain that failed the nightly check reaches the Super admins, who fix the deployment's DNS, in each
+// organisation they belong to, and nobody else; a sign-in shows in the centre and is never emailed there, since the
+// sign-in alert has emailed it, even to a person with a verified email. A title too long to keep is cut short, never
+// refused.
 // req: FR-NTF-01
 // req: FR-NTF-02
 func TestSecurityAndEmailNoticesReachTheirPeople(t *testing.T) {
@@ -271,14 +270,14 @@ func TestSecurityAndEmailNoticesReachTheirPeople(t *testing.T) {
 	b := books(t, "Notify sources Pte Ltd")
 	now := time.Date(2026, 10, 24, 4, 30, 0, 0, clock.Singapore)
 	owner := founder(t, store(t, "fyniq_api"), b.Org, 63, now)
-	admin := joined(t, b.Org, 64, []string{"administrator"}, now)
+	admin := joined(t, b.Org, 64, []string{"administrator"}, now) // a Super admin who is a member here
 	verified(t, b.Org, owner, "owner@example.com")
 
 	q := local.NewMemory()
 	worker := store(t, "fyniq_worker")
 	d := outbox.Dispatcher{Store: worker, Queue: q, Clock: clock.NewFrozen(now)}
 	results := []maildns.Result{{Domain: "mail.example.com", DMARC: "none"}, {Domain: "ok.example.com", DMARC: "reject", OK: true}}
-	if err := notify.DomainChecks(ctx, worker, installationOf(b.Org), d, results, now); err != nil {
+	if err := notify.DomainChecks(ctx, worker, superAdmins{admin, uuid.New()}, d, results, now); err != nil {
 		t.Fatal(err)
 	}
 	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -288,12 +287,18 @@ func TestSecurityAndEmailNoticesReachTheirPeople(t *testing.T) {
 	}
 	fanQueued(t, b.Org, q, now)
 	if ns := mine(t, b.Org, admin); len(ns) != 1 || ns[0].Type != "email.domain_failed" || !strings.Contains(ns[0].Title, "mail.example.com") {
-		t.Fatalf("the Administrator's: %+v", ns)
+		t.Fatalf("the Super admin's: %+v", ns)
 	}
 	ns := mine(t, b.Org, owner)
 	if len(ns) != 1 || ns[0].Type != "security.sign_in" || ns[0].Email != storage.EmailOff || ns[0].EmailMessageID != nil ||
 		ns[0].Title != "You signed in with google on 24 Oct 2026 at 04:30 Singapore time" {
 		t.Fatalf("the Owner's: %+v", ns)
+	}
+	if _, err := store(t, "fyniq_worker").SuperAdminUsers(ctx); err != nil {
+		t.Fatalf("the worker reading the Super admins: %v", err)
+	}
+	if _, err := store(t, "fyniq_api").SuperAdminUsers(ctx); err == nil {
+		t.Fatal("the API read the Super admins' users, which only the worker tells")
 	}
 	if ev := emitted(t, b.Org, admin, "approval.decided", "Approved: "+strings.Repeat("a long reason ", 30), now); len([]rune(ev.Title)) != 300 ||
 		!strings.HasSuffix(ev.Title, "…") {
@@ -309,7 +314,9 @@ func TestDeadWorkReachesThoseWhoLookAfterTheOrganisation(t *testing.T) {
 	now := time.Date(2026, 10, 24, 9, 0, 0, 0, clock.Singapore)
 	owner := founder(t, store(t, "fyniq_api"), b.Org, 65, now)
 	admin := joined(t, b.Org, 66, []string{"administrator"}, now)
-	failing := func(context.Context, uuid.UUID, storage.OutboxRow) error { return errors.New("the provider answered 503") }
+	failing := func(context.Context, uuid.UUID, storage.OutboxRow) error {
+		return errors.New("the provider answered 503")
+	}
 	h := newHarness(t, map[string]outbox.Work{"test.fail": failing, notify.FanoutKind: failing})
 	q := local.NewMemory()
 	h.worker.Dead = notify.JobDead(outbox.Dispatcher{Store: store(t, "fyniq_worker"), Queue: q, Clock: clock.NewFrozen(now)})

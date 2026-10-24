@@ -12,7 +12,6 @@ import (
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/outbox"
-	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -70,31 +69,55 @@ func Suppressed(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, 
 	return err
 }
 
-// Installation finds the installation's organisation (storage.Installation).
-type Installation interface {
-	InstallationOrganisation(ctx context.Context) (uuid.UUID, error)
+// Operators finds the active Super admins (storage.Installation).
+type Operators interface {
+	SuperAdminUsers(ctx context.Context) ([]uuid.UUID, error)
 }
 
-// DomainChecks tells those who act on the installation organisation's email of each sending domain that failed the
-// nightly check; before first-run setup it tells nobody.
-func DomainChecks(ctx context.Context, store storage.Store, inst Installation, d outbox.Dispatcher, results []maildns.Result, at time.Time) error {
-	org, err := inst.InstallationOrganisation(ctx)
-	if errors.Is(err, ports.ErrNotFound) {
+// DomainChecks tells the Super admins of each sending domain that failed the nightly check, since the deployment's
+// DNS is theirs to fix (FR-ADM-07): in each organisation one of them belongs to, never the installation organisation,
+// which has no members. Before first-run setup there is nobody to tell.
+func DomainChecks(ctx context.Context, store storage.Store, ops Operators, d outbox.Dispatcher, results []maildns.Result, at time.Time) error {
+	var failed []string
+	for _, r := range results {
+		if !r.OK {
+			failed = append(failed, r.Domain)
+		}
+	}
+	if len(failed) == 0 {
 		return nil
 	}
+	supers, err := ops.SuperAdminUsers(ctx)
+	if err != nil || len(supers) == 0 {
+		return err
+	}
+	orgs, err := store.Organisations(ctx)
 	if err != nil {
 		return err
 	}
-	return store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		for _, r := range results {
-			if r.OK {
-				continue
-			}
-			if _, err := Emit(ctx, d, u, org, Event{Type: "email.domain_failed", RecordType: "sending_domain", Link: "/settings", At: at,
-				Title: "The sending domain " + r.Domain + " failed its nightly check: its records or DMARC policy need fixing", Audience: emailAdmins}); err != nil {
+	var errs []error
+	for _, org := range orgs {
+		err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			members, err := u.Members().List(ctx, at)
+			if err != nil {
 				return err
 			}
+			here := Recipients(Audience{Users: supers}, members)
+			if len(here) == 0 {
+				return nil
+			}
+			for _, domain := range failed {
+				if _, err := Emit(ctx, d, u, org, Event{Type: "email.domain_failed", RecordType: "sending_domain", Link: "/settings", At: at,
+					Title:    "The sending domain " + domain + " failed its nightly check: its records or DMARC policy need fixing",
+					Audience: Audience{Users: here}}); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
 		}
-		return nil
-	})
+	}
+	return errors.Join(errs...)
 }
