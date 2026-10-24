@@ -37,8 +37,12 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
   lists the releases. Tests: `TestInvoiceReleasesAreTheSpreadSplitByMonth`, `TestPostInvoiceRelease`,
   `TestInvoiceReleasesProperties`, `TestEveryInvoiceReleaseRuleVersionReplaysItsGoldenEntries`,
   `TestTheSchedulerReleasesASpreadInvoice`, `TestAttackAReleaseIsNotTheInvoicesEntry`, `TestSpreadInvoicesThroughTheAPI`)
-- [ ] 1.6 The AR sub-ledger equal to 1100 (INV-07), shown at the close; AR ageing by customer and currency with the
+- [x] 1.6 The AR sub-ledger equal to 1100 (INV-07), shown at the close; AR ageing by customer and currency with the
   unrealised FX exposure. Tests `// req: INV-07`, `// req: FR-AR-10`
+  (24 Oct 2026, PRD-001 rev 0.119: `internal/domain/receivables` (the open invoices, the reconciliation, the ageing and
+  the exposure), the ageing and reconciliation shared with payables in `internal/domain/subledger`, the close's
+  `receivables` and `receivables-unsupported` checks, 1100 revalued invoice by invoice (`journal.SubLedgers`), and
+  `getReceivables`. Tests: `TestTheARSubLedgerReconcilesWith1100`, `TestReceivablesThroughTheAPI`, the matrix row)
 
 ## 2. Receipts, allocations, tolerances and write-offs
 

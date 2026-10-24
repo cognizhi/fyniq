@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at_rate": {
+      "$ref": "Money.schema.json",
+      "description": "What it is worth at the rate, under RND-FX."
+    },
+    "carrying": {
+      "$ref": "Money.schema.json",
+      "description": "Its carrying amount in the base currency, at the invoices' own rates (ENG-14)."
+    },
+    "currency": {
+      "description": "The currency.",
+      "examples": [
+        "USD"
+      ],
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "Base currency per one unit on the day, from the rate cascade (ENG-40); absent when it has none.",
+      "examples": [
+        "1.3456"
+      ],
+      "type": "string"
+    },
+    "fx_rate_source": {
+      "description": "Where the rate came from.",
+      "examples": [
+        "MAS daily feed of 2026-10-31"
+      ],
+      "type": "string"
+    },
+    "missing": {
+      "description": "Why there is no rate (FX-01), when the cascade has none for the day.",
+      "examples": [
+        "No exchange rate for USD on 2026-10-31"
+      ],
+      "type": "string"
+    },
+    "open": {
+      "$ref": "Money.schema.json",
+      "description": "What customers owe in it."
+    },
+    "unrealised": {
+      "$ref": "Money.schema.json",
+      "description": "The unrealised gain (positive) or loss (negative): at the rate less the carrying amount; what the month-end revaluation would post before any earlier run (FR-GL-04)."
+    }
+  },
+  "required": [
+    "currency",
+    "open",
+    "carrying"
+  ],
+  "title": "ReceivablesExposure",
+  "type": "object"
+}

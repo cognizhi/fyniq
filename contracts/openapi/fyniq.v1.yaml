@@ -9826,6 +9826,143 @@ components:
           maxLength: 5
           type: string
       type: object
+    Receivables:
+      additionalProperties: false
+      properties:
+        as_at:
+          description: The day.
+          examples:
+            - "2026-10-31"
+          format: date
+          type: string
+        customers:
+          description: Each customer with something open, by name.
+          items:
+            $ref: "#/components/schemas/ReceivablesCustomer"
+          type: array
+        fx_exposure:
+          description: The unrealised FX of each foreign currency's total at the day's rate; empty when every open invoice is in the base currency.
+          items:
+            $ref: "#/components/schemas/ReceivablesExposure"
+          type: array
+        totals:
+          description: The ageing's totals, a row per currency.
+          items:
+            $ref: "#/components/schemas/ReceivablesRow"
+          type: array
+      required:
+        - as_at
+        - customers
+        - totals
+        - fx_exposure
+      type: object
+    ReceivablesCustomer:
+      additionalProperties: false
+      properties:
+        id:
+          description: The customer's contact ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20
+          format: uuid
+          type: string
+        name:
+          description: The customer's legal name.
+          examples:
+            - Acme Analytics Pte Ltd
+          type: string
+        rows:
+          description: A row per currency.
+          items:
+            $ref: "#/components/schemas/ReceivablesRow"
+          type: array
+      required:
+        - id
+        - name
+        - rows
+      type: object
+    ReceivablesExposure:
+      additionalProperties: false
+      properties:
+        at_rate:
+          $ref: "#/components/schemas/Money"
+          description: What it is worth at the rate, under RND-FX.
+        carrying:
+          $ref: "#/components/schemas/Money"
+          description: Its carrying amount in the base currency, at the invoices' own rates (ENG-14).
+        currency:
+          description: The currency.
+          examples:
+            - USD
+          type: string
+        fx_rate:
+          description: Base currency per one unit on the day, from the rate cascade (ENG-40); absent when it has none.
+          examples:
+            - "1.3456"
+          type: string
+        fx_rate_source:
+          description: Where the rate came from.
+          examples:
+            - MAS daily feed of 2026-10-31
+          type: string
+        missing:
+          description: Why there is no rate (FX-01), when the cascade has none for the day.
+          examples:
+            - No exchange rate for USD on 2026-10-31
+          type: string
+        open:
+          $ref: "#/components/schemas/Money"
+          description: What customers owe in it.
+        unrealised:
+          $ref: "#/components/schemas/Money"
+          description: "The unrealised gain (positive) or loss (negative): at the rate less the carrying amount; what the month-end revaluation would post before any earlier run (FR-GL-04)."
+      required:
+        - currency
+        - open
+        - carrying
+      type: object
+    ReceivablesRow:
+      additionalProperties: false
+      properties:
+        carrying:
+          $ref: "#/components/schemas/Money"
+          description: The total's carrying amount in the base currency, at the invoices' own rates (ENG-14).
+        credits:
+          $ref: "#/components/schemas/Money"
+          description: "Unapplied credits with customers, negative: what receipts and credit notes left over (FR-AR-18), as they arrive."
+        currency:
+          description: The currency.
+          examples:
+            - SGD
+          type: string
+        current:
+          $ref: "#/components/schemas/Money"
+          description: Not yet due, or due on the day.
+        days_1_30:
+          $ref: "#/components/schemas/Money"
+          description: 1 to 30 days past due.
+        days_31_60:
+          $ref: "#/components/schemas/Money"
+          description: 31 to 60 days past due.
+        days_61_90:
+          $ref: "#/components/schemas/Money"
+          description: 61 to 90 days past due.
+        days_90_plus:
+          $ref: "#/components/schemas/Money"
+          description: More than 90 days past due.
+        total:
+          $ref: "#/components/schemas/Money"
+          description: Every bucket and the credits.
+      required:
+        - currency
+        - current
+        - days_1_30
+        - days_31_60
+        - days_61_90
+        - days_90_plus
+        - credits
+        - total
+        - carrying
+      type: object
     RecoveredSuperAdmin:
       additionalProperties: false
       properties:
@@ -45806,6 +45943,105 @@ paths:
         - API-RATE-01
       x-fyniq-permission:
         capability: Bills, vendor credits
+        right: V
+  /v1/receivables:
+    get:
+      description: "What customers owe the company as at a day (FR-AR-10), from the AR sub-ledger (INV-07): each customer's open invoices by days past due (current, 1–30, 31–60, 61–90, 90+) and unapplied credits, by currency, with the totals and their carrying amounts in the base currency, and the unrealised FX exposure of each foreign currency at the day's rate from the cascade (ENG-40). An invoice falls due on its due date as entered, else by the customer's or the organisation's payment terms. Read-only; no side effects."
+      operationId: getReceivables
+      parameters:
+        - description: The day; left out, the organisation's today.
+          explode: false
+          in: query
+          name: as_at
+          schema:
+            description: The day; left out, the organisation's today.
+            examples:
+              - "2026-10-31"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Receivables"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get AR ageing
+      tags:
+        - Sales
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Invoices, credit notes
         right: V
   /v1/recurring-bills:
     get:

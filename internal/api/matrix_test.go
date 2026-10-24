@@ -1457,6 +1457,9 @@ var matrixCalls = map[string]matrixCall{
 		}
 	},
 	// Invoices (FR-AR-03): read under V, prepared under C, issued, voided and edited under P; asking for approval is issuing.
+	"getReceivables": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/receivables?as_at=2026-10-31", tok, nil), nil
+	},
 	"listInvoices": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/invoices", tok, nil), nil
 	},

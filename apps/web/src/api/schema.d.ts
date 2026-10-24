@@ -3200,6 +3200,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/receivables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get AR ageing
+         * @description What customers owe the company as at a day (FR-AR-10), from the AR sub-ledger (INV-07): each customer's open invoices by days past due (current, 1–30, 31–60, 61–90, 90+) and unapplied credits, by currency, with the totals and their carrying amounts in the base currency, and the unrealised FX exposure of each foreign currency at the day's rate from the cascade (ENG-40). An invoice falls due on its due date as entered, else by the customer's or the organisation's payment terms. Read-only; no side effects.
+         */
+        get: operations["getReceivables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/recurring-bills": {
         parameters: {
             query?: never;
@@ -10741,6 +10761,88 @@ export interface components {
              * @example 07:00
              */
             to?: string;
+        };
+        Receivables: {
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-10-31
+             */
+            as_at: string;
+            /** @description Each customer with something open, by name. */
+            customers: components["schemas"]["ReceivablesCustomer"][];
+            /** @description The unrealised FX of each foreign currency's total at the day's rate; empty when every open invoice is in the base currency. */
+            fx_exposure: components["schemas"]["ReceivablesExposure"][];
+            /** @description The ageing's totals, a row per currency. */
+            totals: components["schemas"]["ReceivablesRow"][];
+        };
+        ReceivablesCustomer: {
+            /**
+             * Format: uuid
+             * @description The customer's contact ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20
+             */
+            id: string;
+            /**
+             * @description The customer's legal name.
+             * @example Acme Analytics Pte Ltd
+             */
+            name: string;
+            /** @description A row per currency. */
+            rows: components["schemas"]["ReceivablesRow"][];
+        };
+        ReceivablesExposure: {
+            /** @description What it is worth at the rate, under RND-FX. */
+            at_rate?: components["schemas"]["Money"];
+            /** @description Its carrying amount in the base currency, at the invoices' own rates (ENG-14). */
+            carrying: components["schemas"]["Money"];
+            /**
+             * @description The currency.
+             * @example USD
+             */
+            currency: string;
+            /**
+             * @description Base currency per one unit on the day, from the rate cascade (ENG-40); absent when it has none.
+             * @example 1.3456
+             */
+            fx_rate?: string;
+            /**
+             * @description Where the rate came from.
+             * @example MAS daily feed of 2026-10-31
+             */
+            fx_rate_source?: string;
+            /**
+             * @description Why there is no rate (FX-01), when the cascade has none for the day.
+             * @example No exchange rate for USD on 2026-10-31
+             */
+            missing?: string;
+            /** @description What customers owe in it. */
+            open: components["schemas"]["Money"];
+            /** @description The unrealised gain (positive) or loss (negative): at the rate less the carrying amount; what the month-end revaluation would post before any earlier run (FR-GL-04). */
+            unrealised?: components["schemas"]["Money"];
+        };
+        ReceivablesRow: {
+            /** @description The total's carrying amount in the base currency, at the invoices' own rates (ENG-14). */
+            carrying: components["schemas"]["Money"];
+            /** @description Unapplied credits with customers, negative: what receipts and credit notes left over (FR-AR-18), as they arrive. */
+            credits: components["schemas"]["Money"];
+            /**
+             * @description The currency.
+             * @example SGD
+             */
+            currency: string;
+            /** @description Not yet due, or due on the day. */
+            current: components["schemas"]["Money"];
+            /** @description 1 to 30 days past due. */
+            days_1_30: components["schemas"]["Money"];
+            /** @description 31 to 60 days past due. */
+            days_31_60: components["schemas"]["Money"];
+            /** @description 61 to 90 days past due. */
+            days_61_90: components["schemas"]["Money"];
+            /** @description More than 90 days past due. */
+            days_90_plus: components["schemas"]["Money"];
+            /** @description Every bucket and the credits. */
+            total: components["schemas"]["Money"];
         };
         RecoveredSuperAdmin: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work. */
@@ -36874,6 +36976,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PurchaseGSTCodes"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getReceivables: {
+        parameters: {
+            query?: {
+                /** @description The day; left out, the organisation's today. */
+                as_at?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receivables"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */

@@ -311,6 +311,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** AR ageing is produced
 - **THEN** the unrealised FX exposure on them is shown
 
+#### Scenario: AR ageing as built (rev 0.119)
+- **WHEN** `getReceivables` reads AR as at a day
+- **THEN** each customer's open invoices are aged by days past due from their due date (as entered, else the payment terms) from the AR sub-ledger, by currency, with their carrying amounts
+- **AND** each foreign currency's exposure is its total at the day's cascade rate under RND-FX less its carrying amount, or says there is no rate
+
 ### Requirement: FR-AR-11 Bad-debt write-off with GST relief tracking
 The system SHALL support an approval-gated bad-debt write-off (SOD-9) with tracking of GST bad-debt relief.
 

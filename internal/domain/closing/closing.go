@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/payables"
+	"github.com/cognizhi/fyniq/internal/domain/receivables"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -205,6 +206,11 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 		return nil, err
 	}
 	out = append(out, payables...)
+	receivables, err := receivablesChecks(ctx, u, cur, p)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, receivables...)
 	recurring, err := recurringChecks(ctx, u, p, today)
 	if err != nil {
 		return nil, err
@@ -242,7 +248,7 @@ func run(ctx context.Context, u storage.UnitOfWork, p storage.Period, today time
 // revaluationCheck refuses the close of a period with foreign-currency balances on accounts marked revalue and no
 // revaluation run since the last posting dated in or before it (FR-GL-04; rev 0.73), naming a currency with no rate.
 func revaluationCheck(ctx context.Context, u storage.UnitOfWork, p storage.Period) (Check, error) {
-	plan, err := fx.Prepare(ctx, u, p.ID, payables.SubLedgers())
+	plan, err := fx.Prepare(ctx, u, p.ID, journal.SubLedgers())
 	if err != nil {
 		return Check{}, err
 	}
@@ -262,7 +268,7 @@ func revaluationCheck(ctx context.Context, u storage.UnitOfWork, p storage.Perio
 	return Check{"revaluation", Failed, "Foreign-currency balances are not revalued", detail}, nil
 }
 
-// explainedWords names a source that posts to accounts payable other than bills and their payments.
+// explainedWords names a source that posts to accounts payable or receivable other than the sub-ledger's documents.
 var explainedWords = map[string]string{ledger.SourceOpeningBalance: "opening balances", ledger.SourceManualJournal: "manual journals"}
 
 // payablesChecks reconcile the AP sub-ledger with the accounts-payable account at the period's end (INV-07; the owner's
@@ -322,6 +328,66 @@ func payablesChecks(ctx context.Context, u storage.UnitOfWork, cur money.Currenc
 	if len(held) > 0 {
 		out = append(out, Check{"payables-unsupported", Warning, "Accounts payable holds amounts no bill supports",
 			fmt.Sprintf("%s holds %s: support them with the suppliers' statements, or enter the bills", ap.Code, strings.Join(held, ", "))})
+	}
+	return out, nil
+}
+
+// receivablesChecks reconcile the AR sub-ledger with the accounts-receivable account at the period's end (INV-07;
+// p1-sales task 1.6), as payablesChecks do for accounts payable: ✖ when they differ by anything no source explains,
+// which is a fault; ⚠ when the account holds amounts from opening balances or manual journals that no invoice supports;
+// ✔ otherwise. Nothing is said when the chart has no accounts-receivable account, or it and the sub-ledger are empty.
+func receivablesChecks(ctx context.Context, u storage.UnitOfWork, cur money.Currency, p storage.Period) ([]Check, error) {
+	accounts, err := u.Accounts().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var ar *storage.Account
+	for i := range accounts {
+		if string(accounts[i].Role) == ledger.RoleAccountsReceivable {
+			ar = &accounts[i]
+		}
+	}
+	if ar == nil {
+		return nil, nil
+	}
+	r, l, err := receivables.Reconcile(ctx, u, cur, ar.ID, p.EndsOn)
+	if err != nil {
+		return nil, err
+	}
+	if len(r.Currencies) == 0 && len(l.Customers) == 0 {
+		return nil, nil
+	}
+	var out []Check
+	if r.Unexplained() {
+		var parts []string
+		for _, c := range r.Currencies {
+			if !c.Unexplained.IsZero() {
+				parts = append(parts, fmt.Sprintf("in %s, %s says %s is owed and the open invoices %s", c.Currency, ar.Code, c.Control, c.SubLedger))
+			}
+		}
+		if b := r.Base; !b.Unexplained.IsZero() {
+			parts = append(parts, fmt.Sprintf("in carrying amounts (%s), %s says %s and the open invoices %s", b.Currency, ar.Code, b.Control, b.SubLedger))
+		}
+		out = append(out, Check{"receivables", Failed, "The AR sub-ledger does not agree with accounts receivable",
+			strings.Join(parts, "; ") + ": a posting and its document disagree; report it, never adjust it by journal"})
+	} else {
+		items := 0
+		for _, c := range l.Customers {
+			items += len(c.Items)
+		}
+		out = append(out, Check{"receivables", OK, "The AR sub-ledger agrees with accounts receivable", fmt.Sprintf("%d open invoice(s)", items)})
+	}
+	var held []string
+	for _, c := range r.Currencies {
+		for _, e := range c.Explained {
+			if w, ok := explainedWords[e.SourceType]; ok && !e.Amount.IsZero() {
+				held = append(held, fmt.Sprintf("%s %s from %s", e.Amount, c.Currency, w))
+			}
+		}
+	}
+	if len(held) > 0 {
+		out = append(out, Check{"receivables-unsupported", Warning, "Accounts receivable holds amounts no invoice supports",
+			fmt.Sprintf("%s holds %s: support them with the customers' statements, or enter the invoices", ar.Code, strings.Join(held, ", "))})
 	}
 	return out, nil
 }

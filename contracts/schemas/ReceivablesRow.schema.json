@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "carrying": {
+      "$ref": "Money.schema.json",
+      "description": "The total's carrying amount in the base currency, at the invoices' own rates (ENG-14)."
+    },
+    "credits": {
+      "$ref": "Money.schema.json",
+      "description": "Unapplied credits with customers, negative: what receipts and credit notes left over (FR-AR-18), as they arrive."
+    },
+    "currency": {
+      "description": "The currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "current": {
+      "$ref": "Money.schema.json",
+      "description": "Not yet due, or due on the day."
+    },
+    "days_1_30": {
+      "$ref": "Money.schema.json",
+      "description": "1 to 30 days past due."
+    },
+    "days_31_60": {
+      "$ref": "Money.schema.json",
+      "description": "31 to 60 days past due."
+    },
+    "days_61_90": {
+      "$ref": "Money.schema.json",
+      "description": "61 to 90 days past due."
+    },
+    "days_90_plus": {
+      "$ref": "Money.schema.json",
+      "description": "More than 90 days past due."
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Every bucket and the credits."
+    }
+  },
+  "required": [
+    "currency",
+    "current",
+    "days_1_30",
+    "days_31_60",
+    "days_61_90",
+    "days_90_plus",
+    "credits",
+    "total",
+    "carrying"
+  ],
+  "title": "ReceivablesRow",
+  "type": "object"
+}
