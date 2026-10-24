@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The day the customer answered, or it expired.",
+      "examples": [
+        "2026-10-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "name": {
+      "description": "Who accepted it on the customer's side, as recorded.",
+      "examples": [
+        "Jane Tan"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "The note kept with it.",
+      "examples": [
+        "Confirmed by email"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "What happened.",
+      "enum": [
+        "accepted",
+        "declined",
+        "expired"
+      ],
+      "examples": [
+        "accepted"
+      ],
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When it was recorded.",
+      "examples": [
+        "2026-10-30T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who recorded it: a person, or the scheduler for an expiry."
+    }
+  },
+  "required": [
+    "outcome",
+    "date",
+    "recorded_at"
+  ],
+  "title": "QuoteAnswered",
+  "type": "object"
+}

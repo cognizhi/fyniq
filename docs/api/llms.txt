@@ -227,7 +227,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/quotes/pipeline` (getSalesPipeline): Get the sales pipeline
 - `GET /v1/quotes/{quote_id}` (getQuote): Get a quote or sales order
 - `PUT /v1/quotes/{quote_id}` (replaceQuote): Replace a draft quote or sales order
+- `POST /v1/quotes/{quote_id}/accept` (acceptQuote): Record that the customer accepted a quote
 - `POST /v1/quotes/{quote_id}/cancel` (cancelQuote): Cancel a quote or sales order
+- `POST /v1/quotes/{quote_id}/decline` (declineQuote): Record that the customer declined a quote
 - `POST /v1/quotes/{quote_id}/send` (sendQuote): Send a quote or sales order
 - `GET /v1/receivables` (getReceivables): Get AR ageing
 - `GET /v1/recurring-bills` (listRecurringBills): List the recurring bills

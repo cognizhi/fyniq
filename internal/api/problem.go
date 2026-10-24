@@ -521,6 +521,10 @@ var codeFacts = map[string]struct {
 	quote.CodeNotDraft: {409, "The quote is not a draft"},
 	quote.CodeNotOpen:  {409, "The quote is not sent"},
 	quote.CodeContent:  {422, "A quote credits no invoice and deducts no deposit"},
+	quote.CodeAnswered: {409, "The quote has its answer already"},
+	quote.CodeAnswer:   {422, "The answer has no date, or a text is too long"},
+
+	storage.CodeQuoteOutcome: {409, "The quote's answer is recorded once, of a sent quote"},
 }
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).

@@ -12,11 +12,11 @@
     },
     "orders": {
       "$ref": "PipelineLine.schema.json",
-      "description": "The sent sales orders, still valid on the day when they name a validity date."
+      "description": "The sales orders sent or accepted, still valid on the day when they name a validity date."
     },
     "quotes": {
       "$ref": "PipelineLine.schema.json",
-      "description": "The sent quotes still valid on the day."
+      "description": "The quotes sent or accepted and still valid on the day."
     },
     "total": {
       "$ref": "Money.schema.json",

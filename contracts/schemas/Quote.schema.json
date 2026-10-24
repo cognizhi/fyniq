@@ -2,6 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "answer": {
+      "$ref": "QuoteAnswered.schema.json",
+      "description": "The customer's answer, or its expiry, once recorded."
+    },
     "base": {
       "$ref": "Money.schema.json",
       "description": "Its total in the base currency at its rate: what it adds to the pipeline while it is open."
@@ -125,10 +129,13 @@
       "description": "Who sent it."
     },
     "status": {
-      "description": "draft (✎); sent; cancelled. The customer's answer, expiry and invoicing follow (FR-AR-01).",
+      "description": "draft (✎); sent; accepted or declined by the customer; expired, past its validity date with no answer; or cancelled (FR-AR-01). Invoicing follows.",
       "enum": [
         "draft",
         "sent",
+        "accepted",
+        "declined",
+        "expired",
         "cancelled"
       ],
       "examples": [

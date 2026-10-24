@@ -3561,7 +3561,7 @@ export interface paths {
         };
         /**
          * Get the sales pipeline
-         * @description What the open quotes and sales orders come to in the base currency on a day (FR-AR-01): the sent quotes still valid on it, and the sent orders (still valid when they name a validity date), each total at its rate. Read-only; no side effects.
+         * @description What the open quotes and sales orders come to in the base currency on a day (FR-AR-01): those sent or accepted, not declined, expired or cancelled, and still valid on it when they name a validity date, each total at its rate. Read-only; no side effects.
          */
         get: operations["getSalesPipeline"];
         put?: never;
@@ -3596,6 +3596,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/quotes/{quote_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that the customer accepted a quote
+         * @description Records that the customer accepted a sent quote or order (FR-AR-01), on the day given or the organisation's today, with who accepted it and a note: its status becomes accepted, and it stays in the pipeline. A quote has one answer, which never changes, and one that expired takes none (QUOTE-07). The customer's own acceptance through the online link follows (FR-AR-16). Side effects: the answer and its audit event. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.
+         */
+        post: operations["acceptQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/quotes/{quote_id}/cancel": {
         parameters: {
             query?: never;
@@ -3610,6 +3630,26 @@ export interface paths {
          * @description Cancels a sent quote or order, with a reason (FR-AR-01): its status becomes cancelled and it leaves the pipeline; it posts nothing. A draft is simply not sent (QUOTE-05). Side effects: the document's change and its audit event with the reason. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.
          */
         post: operations["cancelQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/quotes/{quote_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that the customer declined a quote
+         * @description Records that the customer declined a sent quote or order (FR-AR-01), on the day given or the organisation's today, with a note: its status becomes declined, and it leaves the pipeline. A quote has one answer, which never changes (QUOTE-07). Side effects: the answer and its audit event. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key.
+         */
+        post: operations["declineQuote"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11513,9 +11553,9 @@ export interface components {
              * @example 2026-10-24
              */
             as_at: string;
-            /** @description The sent sales orders, still valid on the day when they name a validity date. */
+            /** @description The sales orders sent or accepted, still valid on the day when they name a validity date. */
             orders: components["schemas"]["PipelineLine"];
-            /** @description The sent quotes still valid on the day. */
+            /** @description The quotes sent or accepted and still valid on the day. */
             quotes: components["schemas"]["PipelineLine"];
             /** @description Both together. */
             total: components["schemas"]["Money"];
@@ -11972,6 +12012,8 @@ export interface components {
             to?: string;
         };
         Quote: {
+            /** @description The customer's answer, or its expiry, once recorded. */
+            answer?: components["schemas"]["QuoteAnswered"];
             /** @description Its total in the base currency at its rate: what it adds to the pipeline while it is open. */
             base?: components["schemas"]["Money"];
             /** @description getQuote only: what stops a draft being sent (✖). */
@@ -12045,11 +12087,11 @@ export interface components {
             /** @description Who sent it. */
             sent_by?: components["schemas"]["Person"];
             /**
-             * @description draft (✎); sent; cancelled. The customer's answer, expiry and invoicing follow (FR-AR-01).
+             * @description draft (✎); sent; accepted or declined by the customer; expired, past its validity date with no answer; or cancelled (FR-AR-01). Invoicing follows.
              * @example sent
              * @enum {string}
              */
-            status: "draft" | "sent" | "cancelled";
+            status: "draft" | "sent" | "accepted" | "declined" | "expired" | "cancelled";
             /** @description Its net and GST, in its currency; absent while a line cannot be read. */
             total?: components["schemas"]["Money"];
             /**
@@ -12064,6 +12106,56 @@ export interface components {
              * @example 1
              */
             version: number;
+        };
+        QuoteAnswer: {
+            /**
+             * Format: date
+             * @description The day the customer answered; left out, the organisation's today.
+             * @example 2026-10-30
+             */
+            date?: string;
+            /**
+             * @description Who answered on the customer's side.
+             * @example Jane Tan
+             */
+            name?: string;
+            /**
+             * @description A note, such as how they answered.
+             * @example Confirmed by email
+             */
+            note?: string;
+        };
+        QuoteAnswered: {
+            /**
+             * Format: date
+             * @description The day the customer answered, or it expired.
+             * @example 2026-10-30
+             */
+            date: string;
+            /**
+             * @description Who accepted it on the customer's side, as recorded.
+             * @example Jane Tan
+             */
+            name?: string;
+            /**
+             * @description The note kept with it.
+             * @example Confirmed by email
+             */
+            note?: string;
+            /**
+             * @description What happened.
+             * @example accepted
+             * @enum {string}
+             */
+            outcome: "accepted" | "declined" | "expired";
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-10-30T09:30:00Z
+             */
+            recorded_at: string;
+            /** @description Who recorded it: a person, or the scheduler for an expiry. */
+            recorded_by?: components["schemas"]["Person"];
         };
         QuoteCancel: {
             /**
@@ -41184,7 +41276,7 @@ export interface operations {
                 cursor?: string;
                 /** @description Quotes, the default, or sales orders. */
                 kind?: "quote" | "sales_order";
-                /** @description Only those with this status. */
+                /** @description Only those with this status of their document: draft, sent (whatever the customer answered, or expired) or cancelled. */
                 status?: "draft" | "sent" | "cancelled";
                 /** @description Only those dated on or after this day. */
                 from?: string;
@@ -41751,6 +41843,145 @@ export interface operations {
             };
         };
     };
+    acceptQuote: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The quote's ID. */
+                quote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteAnswer"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `QUOTE-01` Not a quote or a sales order. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-QUOTE-01` The quote's answer is recorded once, of a sent quote. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `QUOTE-02` The saved quote cannot be read; `QUOTE-03` The quote's validity date is missing or before its date; `QUOTE-08` The answer has no date, or a text is too long. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     cancelQuote: {
         parameters: {
             query?: never;
@@ -41819,7 +42050,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -41838,6 +42069,145 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `QUOTE-02` The saved quote cannot be read; `QUOTE-03` The quote's validity date is missing or before its date. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    declineQuote: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The quote's ID. */
+                quote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteAnswer"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `QUOTE-01` Not a quote or a sales order. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `QUOTE-05` The quote is not sent; `QUOTE-07` The quote has its answer already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-QUOTE-01` The quote's answer is recorded once, of a sent quote. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `INVOICE-05` The invoice's customer is not an active customer; `INVOICE-06` Not a GST code for supplies; `INVOICE-07` The due date is before the invoice's date, or on a credit note; `INVOICE-08` A text of the invoice is too long; `INVOICE-09` A line's quantity, price or discount cannot be one; `INVOICE-15` The credit note cannot credit that invoice; `INVOICE-16` The invoice cannot deduct that deposit; `LEDGER-22` A system account is missing; `LEDGER-23` The line is on an account the rule posts to; `LEDGER-24` A line is in another currency; `LEDGER-28` A line's spread is not one the rules allow; `LEDGER-31` An invoice's total is not more than zero; `LEDGER-32` A line's GST rate is not one the rules read; `LEDGER-33` A deposit the invoice deducts is not one it takes; `QUOTE-02` The saved quote cannot be read; `QUOTE-03` The quote's validity date is missing or before its date; `QUOTE-08` The answer has no date, or a text is too long. */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -32,6 +32,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **THEN** it is checked as an invoice is, a quote needs a validity date on or after its date (QUOTE-03), it takes the next QT- or SO- number and posts nothing
 - **AND** a sent one never changes (QUOTE-04); cancelling reverses it with no entry; the pipeline adds up the sent ones still valid, each in the base currency at its rate
 
+#### Scenario: The customer's answer and expiry, built (rev 0.130)
+- **WHEN** a person records that the customer accepted or declined a sent quote, or its validity date passes with no answer
+- **THEN** it shows accepted or declined, or the daily job quotes.expiry shows it expired; a quote has one answer, which never changes (QUOTE-07)
+- **AND** the pipeline counts only the sent and accepted ones still valid
+
 
 ### Requirement: FR-AR-02 Convert a quote or order to an invoice
 The system SHALL convert a quote or sales order into an invoice, in full or in part, keeping the links between them.

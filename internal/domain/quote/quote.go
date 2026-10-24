@@ -28,14 +28,25 @@ const (
 	CodeNotDraft = "QUOTE-04" // only a draft changes or is sent
 	CodeNotOpen  = "QUOTE-05" // only a sent quote or order is cancelled
 	CodeContent  = "QUOTE-06" // a quote that names an invoice it credits or deposits it deducts
+	CodeAnswered = "QUOTE-07" // a quote the customer answered already, or that expired
+	CodeAnswer   = "QUOTE-08" // an answer with no date, or a name or note that is too long
 )
 
-// The statuses a quote or an order shows (FR-AR-01), as far as this package decides them: draft, sent, cancelled. The
-// customer's answer, expiry and invoicing follow with their own slices.
+// The statuses a quote or an order shows (FR-AR-01): draft, sent, the customer's answer (accepted, declined), expired,
+// and cancelled. Invoicing follows with its own slice.
 const (
 	StatusDraft     = "draft"
 	StatusSent      = "sent"
+	StatusAccepted  = "accepted"
+	StatusDeclined  = "declined"
+	StatusExpired   = "expired"
 	StatusCancelled = "cancelled"
+)
+
+// The longest name and note an answer keeps.
+const (
+	MaxName = 200
+	MaxNote = 2000
 )
 
 // Error is a quote command's refusal with a stable code.
@@ -112,15 +123,24 @@ func Read(doc storage.Document, base money.Currency) (Draft, error) {
 	return d, nil
 }
 
-// Status is the status a quote or order shows from its document (FR-AR-01).
-func Status(doc storage.Document) string {
-	switch doc.Status {
-	case storage.DocumentPosted:
-		return StatusSent
-	case storage.DocumentReversed:
+// Status is the status a quote or order shows from its document and its outcome, if any (FR-AR-01): a cancelled one is
+// cancelled whatever its answer.
+func Status(doc storage.Document, outcome *storage.QuoteOutcome) string {
+	switch {
+	case doc.Status == storage.DocumentReversed:
 		return StatusCancelled
+	case doc.Status != storage.DocumentPosted:
+		return StatusDraft
+	case outcome == nil:
+		return StatusSent
 	}
-	return StatusDraft
+	return outcome.Outcome // accepted, declined or expired
+}
+
+// Open says whether a quote or order is in the pipeline: sent, or accepted, and not past its validity date on day.
+func Open(doc storage.Document, outcome *storage.QuoteOutcome, validUntil, day time.Time) bool {
+	s := Status(doc, outcome)
+	return (s == StatusSent || s == StatusAccepted) && (validUntil.IsZero() || !validUntil.Before(day))
 }
 
 // Prepared is a quote or order version as an invoice of the same content would be read: its customer, its totals in

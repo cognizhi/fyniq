@@ -656,6 +656,15 @@ period_variance_explanation | previous_amount | numeric(20,4) | not null |
 period_variance_explanation | explanation | text | not null | 
 period_variance_explanation | written_by | text | not null | 
 period_variance_explanation | written_at | timestamp with time zone | not null | 
+quote_outcome | organisation_id | uuid | not null | current_org()
+quote_outcome | id | uuid | not null | uuidv7()
+quote_outcome | document_id | uuid | not null | 
+quote_outcome | outcome | text | not null | 
+quote_outcome | on_date | date | not null | 
+quote_outcome | name | text | null | 
+quote_outcome | note | text | null | 
+quote_outcome | recorded_by | text | not null | 
+quote_outcome | recorded_at | timestamp with time zone | not null | now()
 rate_limit_window | organisation_id | uuid | not null | current_org()
 rate_limit_window | id | uuid | not null | uuidv7()
 rate_limit_window | client_id | text | not null | 
@@ -1880,6 +1889,21 @@ period_variance_explanation | period_variance_explanation_previous_amount_not_nu
 period_variance_explanation | period_variance_explanation_written_at_not_null | NOT NULL written_at
 period_variance_explanation | period_variance_explanation_written_by_not_null | NOT NULL written_by
 period_variance_explanation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+quote_outcome | quote_outcome_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+quote_outcome | quote_outcome_document_id_not_null | NOT NULL document_id
+quote_outcome | quote_outcome_id_not_null | NOT NULL id
+quote_outcome | quote_outcome_known | CHECK ((outcome = ANY (ARRAY['accepted'::text, 'declined'::text, 'expired'::text])))
+quote_outcome | quote_outcome_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
+quote_outcome | quote_outcome_note_length | CHECK (((length(note) >= 1) AND (length(note) <= 2000)))
+quote_outcome | quote_outcome_on_date_not_null | NOT NULL on_date
+quote_outcome | quote_outcome_once | UNIQUE (organisation_id, document_id)
+quote_outcome | quote_outcome_organisation_id_not_null | NOT NULL organisation_id
+quote_outcome | quote_outcome_outcome_not_null | NOT NULL outcome
+quote_outcome | quote_outcome_pkey | PRIMARY KEY (organisation_id, id)
+quote_outcome | quote_outcome_recorded_at_not_null | NOT NULL recorded_at
+quote_outcome | quote_outcome_recorded_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+quote_outcome | quote_outcome_recorded_by_not_null | NOT NULL recorded_by
+quote_outcome | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 rate_limit_window | rate_limit_window_client_id_not_null | NOT NULL client_id
 rate_limit_window | rate_limit_window_client_key | UNIQUE (organisation_id, client_id, kind, window_start)
 rate_limit_window | rate_limit_window_client_length | CHECK (((length(client_id) >= 1) AND (length(client_id) <= 200)))
@@ -2354,6 +2378,8 @@ CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id
 CREATE UNIQUE INDEX period_reopen_close_key ON fyniq.period_reopen USING btree (organisation_id, close_id)
 CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_variance_explanation_pkey ON fyniq.period_variance_explanation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organisation_id, document_id)
+CREATE UNIQUE INDEX quote_outcome_pkey ON fyniq.quote_outcome USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
 CREATE UNIQUE INDEX recurring_bill_pkey ON fyniq.recurring_bill USING btree (organisation_id, id)
@@ -2419,6 +2445,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_variance_explanation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_variance_explanation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.quote_outcome DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('quote_outcome', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_bill_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'recurring_bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'recurring_journal_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.review_log_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('review_log_entry', 'id')
@@ -2562,6 +2589,7 @@ CREATE TRIGGER period_reopen_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pe
 CREATE TRIGGER period_reopen_no_truncate BEFORE TRUNCATE ON fyniq.period_reopen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_variance_explanation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_variance_explanation FOR EACH ROW EXECUTE FUNCTION period_variance_explanation_guard()
 CREATE TRIGGER period_variance_explanation_no_truncate BEFORE TRUNCATE ON fyniq.period_variance_explanation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
 CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
 CREATE TRIGGER recurring_journal_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_journal_version FOR EACH ROW EXECUTE FUNCTION recurring_journal_version_immutable()
 CREATE TRIGGER review_log_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION review_log_guard()
@@ -2636,6 +2664,7 @@ period_close | tenant_isolation | * | (organisation_id = current_org()) | (organ
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_bill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_bill_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2749,6 +2778,7 @@ period_guard() → trigger | security definer | v | search_path=pg_catalog, fyni
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
+quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8065390735544b09b40908fde2abc973
 record_feed_rate(p_base text, p_currency text, p_on date, p_rate numeric, p_quote numeric, p_quote_form text, p_feed text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c0b4a6a1f6f33b96ce2869ab4921553f
 record_identity_email(p_issuer text, p_subject text, p_email text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2f631281b01b5872840eb07594f8bbe1
