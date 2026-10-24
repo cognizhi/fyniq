@@ -9,6 +9,8 @@ import { setMode, useMode } from "./mode";
 import { routes, type Mode } from "./registry";
 import { go } from "./route";
 import { AppFrame } from "./shell/AppFrame";
+import { Banners } from "./shell/Banners";
+import { NotificationBell } from "./shell/NotificationBell";
 import { ConfirmItsYou, StepUpProvider } from "./stepup";
 import { Brand, Icon } from "./ui";
 
@@ -149,7 +151,7 @@ export function SignedIn() {
   return (
     <Ctx.Provider value={{ session: state.session, organisation: state.organisation, mode }}>
       <StepUpProvider provider={state.session.provider}>
-        <AppFrame session={state.session} title={title} mode={mode}>
+        <AppFrame session={state.session} title={title} mode={mode} bell={<NotificationBell />} banners={<Banners />}>
           {route?.mode === "expert" && mode === "basic" && <ExpertHint />}
           <Outlet />
         </AppFrame>

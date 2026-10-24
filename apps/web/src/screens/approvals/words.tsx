@@ -75,6 +75,9 @@ const roles: Record<string, string> = {
   dpo: "Data protection officer",
 };
 
+// roleNames are the roles of an organisation, in §7.1's order, as the API names them.
+export const roleNames = Object.keys(roles);
+
 // roleLabel names a role as people say it ("AR specialist").
 export function roleLabel(r: string): string {
   return roles[r] ?? r;

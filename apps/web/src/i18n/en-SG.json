@@ -627,6 +627,58 @@
     "ledger.export": {
       "label": "Export CSV",
       "tooltip": "Download the lines as CSV: plain decimals with an ASCII minus, ready for a spreadsheet."
+    },
+    "settings.notifications": {
+      "label": "Notifications",
+      "tooltip": "How each kind of notification reaches you by email, your quiet hours, and a test notification; in the app they always show."
+    },
+    "settings.announcements": {
+      "label": "Announcements",
+      "tooltip": "Banners under the header on every page, for everyone or chosen roles, from a start to an end."
+    },
+    "notification.centre": {
+      "label": "Notifications",
+      "tooltip": "What happened that concerns you: approvals, security notices, email-in and operations. Unread ones are counted on the bell."
+    },
+    "notification.read": {
+      "label": "Mark read",
+      "tooltip": "Mark this notification read; it stays in All until you archive it."
+    },
+    "notification.unread": {
+      "label": "Mark unread",
+      "tooltip": "Mark this notification unread again, so the bell counts it."
+    },
+    "notification.archive": {
+      "label": "Archive",
+      "tooltip": "Move this notification to Archived for good; it stays there for the record."
+    },
+    "notification.read-all": {
+      "label": "Mark all read",
+      "tooltip": "Mark every unread notification read at once."
+    },
+    "notification.preference": {
+      "label": "Reset to recommended",
+      "tooltip": "Go back to how Fyniq recommends this kind reaches you by email."
+    },
+    "notification.quiet-hours": {
+      "label": "Quiet hours",
+      "tooltip": "Hours, in Singapore time, when email that would go at once waits; security notices still go at once."
+    },
+    "notification.test": {
+      "label": "Send me a test notification",
+      "tooltip": "Send yourself a test through every channel you receive notifications on: the app, and email when you have a verified sign-in email."
+    },
+    "banner.dismiss": {
+      "label": "Dismiss",
+      "tooltip": "Hide this banner for you on every device; a critical banner stays until it ends."
+    },
+    "announcement.publish": {
+      "label": "Publish",
+      "tooltip": "Publish the banner: it shows from its start to its end, and never changes once published."
+    },
+    "announcement.withdraw": {
+      "label": "End now",
+      "tooltip": "End this announcement now, or cancel it before it starts; to say more, publish another."
     }
   }
 }

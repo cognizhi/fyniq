@@ -139,11 +139,18 @@
 
 ## 4. Screens
 
-- [ ] 4.1 Build announcements, banners, document-templates, notification-centre, notification-preferences and template-editor as designed. Add help keys and `docs/user-guide/` pages compiled into `kb/`
+- [x] 4.1 Build announcements, banners, document-templates, notification-centre, notification-preferences and template-editor as designed. Add help keys and `docs/user-guide/` pages compiled into `kb/`
   (23 Oct 2026, part, rev 0.100: document-templates (`Templates.tsx` at /settings/templates: each type's document and email
   default chosen over the choice's ETag, the templates, the four-style gallery, waiting publications, the bundle in Expert
   mode) and template-editor, with the help key `settings.templates`, `docs/user-guide/document-templates.md` and
   `kb/pages/task/settings-templates.md`. Still to build: announcements, banners, notification-centre,
   notification-preferences. Rev 0.101: a contact's own templates, Templates next to a contact in Contacts, with the
-  guide's "Their own templates"; the contact record's page (`p1-organisation-chart`) takes the same choices.)
-- [ ] 4.2 Finish with `make check` and `make test`
+  guide's "Their own templates"; the contact record's page (`p1-organisation-chart`) takes the same choices.
+  Rev 0.114: notification-centre (`shell/NotificationBell.tsx`, the header's bell and its sheet), banners
+  (`shell/Banners.tsx`, at the top of every page's main region), notification-preferences
+  (`screens/settings/Notifications.tsx`, /settings/notifications) and announcements
+  (`screens/settings/Announcements.tsx`, /settings/announcements; the whole installation for a Super admin), with the
+  help keys, `docs/user-guide/notifications.md` and `announcements.md`, and `kb/pages/task/settings-notifications.md`
+  and `settings-announcements.md`. Not built from the designs: the chat columns (P2), choosing the digests' time, "What's
+  new" and the break-glass banner (FR-UX-35, FM-8). Checked on the dev stack at 1440 and 390 wide.)
+- [x] 4.2 Finish with `make check` and `make test`
