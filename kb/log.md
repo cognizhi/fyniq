@@ -187,3 +187,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-25] compile | docs/user-guide/statements.md → sales.statements (new: the statements and reminders screen, p1-sales task 8.1)
 
 ## [2026-10-25] compile | docs/user-guide/invoices.md → sales.invoices (where reminders and statements are)
+
+## [2026-10-25] compile | docs/user-guide/invoices.md → sales.invoices (what the customer sees through the link)

@@ -24,6 +24,7 @@ const screens: Record<RouteId, RouteComponent> = {
   home: Home,
   "sign-in": lazyRouteComponent(() => import("./screens/SignIn"), "SignIn"),
   install: lazyRouteComponent(() => import("./screens/Install"), "Install"),
+  "document-view": lazyRouteComponent(() => import("./screens/public/DocumentView"), "DocumentView"),
   inbox: lazyRouteComponent(() => import("./screens/approvals/Inbox"), "Inbox"),
   approval: lazyRouteComponent(() => import("./screens/approvals/ApprovalPage"), "ApprovalPage"),
   "review-log": lazyRouteComponent(() => import("./screens/approvals/ReviewLog"), "ReviewLog"),

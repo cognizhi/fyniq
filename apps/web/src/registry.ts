@@ -55,6 +55,8 @@ export const routes = [
   { kind: "route", id: "home", path: "/", mode: "basic", signedIn: true, help: "home.overview", guide: "home.overview" },
   { kind: "route", id: "sign-in", path: "/sign-in", mode: "basic", signedIn: false, help: "auth.sign-in", guide: "auth.sign-in" },
   { kind: "route", id: "install", path: "/install", mode: "basic", signedIn: false, help: "installation.setup", guide: "installation.setup" },
+  // The customer's view of a quote or invoice through the secure link its email carried (FR-AR-06, FR-AR-16): no sign-in.
+  { kind: "route", id: "document-view", path: "/d", mode: "basic", signedIn: false, help: "public.document", guide: "sales.invoices#what-the-customer-sees" },
   { kind: "route", id: "inbox", path: "/inbox", mode: "basic", signedIn: true, help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "approval", path: "/approvals/$approvalId", mode: "basic", signedIn: true, help: "approvals.request", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
@@ -202,6 +204,7 @@ export const actions = [
   { kind: "action", id: "invoice.attach-evidence", mode: "basic", help: "invoice.attach-evidence", guide: "sales.invoices#attach-evidence" },
   { kind: "action", id: "invoice.spread", mode: "expert", help: "invoice.spread", guide: "sales.invoices#spread-revenue-over-months" },
   { kind: "action", id: "invoice.discount", mode: "expert", help: "invoice.discount", guide: "sales.invoices#enter-an-invoice" },
+  { kind: "action", id: "public.download", mode: "basic", help: "public.download", guide: "sales.invoices#what-the-customer-sees" },
   { kind: "action", id: "credit-note.credits", mode: "basic", help: "credit-note.credits", guide: "sales.invoices#credit-notes" },
   { kind: "action", id: "invoice.record-payment", mode: "basic", help: "invoice.record-payment", guide: "sales.invoices#record-a-payment" },
   { kind: "action", id: "invoice.settle-in-full", mode: "basic", help: "invoice.settle-in-full", guide: "sales.invoices#record-a-payment" },

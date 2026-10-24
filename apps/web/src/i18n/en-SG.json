@@ -883,6 +883,14 @@
     "contact.customer-group": {
       "label": "Customer group",
       "tooltip": "The reminder schedule this customer follows; none for the standard one: 3 days before the due date, on it, and 7 and 30 days after."
+    },
+    "public.document": {
+      "label": "Your document",
+      "tooltip": "A quote or invoice sent to you, opened through its secure link: no sign-in needed."
+    },
+    "public.download": {
+      "label": "Download the PDF",
+      "tooltip": "Save the document as the sender issued it, to keep for your records."
     }
   }
 }
