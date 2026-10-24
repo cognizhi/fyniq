@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Deposits and retainers customers pay ahead of their invoices, recorded by hand: FR-AR-09, ENG-45, FM-1, FR-GL-12 and deducted on the final invoice (PRD-001 rev 0.126 and 0.127, provisional; `p1-sales` task 3.2 in part; the owner's decisions of 24 Oct 2026) |
+| Feature and requirement IDs | Deposits and retainers customers pay ahead of their invoices, recorded by hand: FR-AR-09, ENG-45, FM-1, FR-GL-12 deducted on the final invoice, refunded, and reconciled with 2410 (PRD-001 rev 0.126 to 0.128, provisional; `p1-sales` task 3.2; the owner's decisions of 24 Oct 2026) |
 | Author, reviewer, date | Claude Code for the founders, 24 Oct 2026; second review at sign-off (waived before production, AGENTS.md) |
 | Data and its class | The customer, the money account, the date, the amount, the GST code and the bank's reference (internal); who recorded and who voided it, with the reason. No bank account numbers or secrets |
 | Who acts | The AR specialist and the Accountant (P on "Invoices, credit notes") record and void; in Founder mode another member who holds A on that row approves a void; the API's database role `fyniq_api` |
@@ -30,6 +30,7 @@ Trust boundaries: **person ↔ API** (Appendix D's row, the approval engine with
 | T6 | person ↔ API | Spoofing: the AI or an integration records or voids a deposit | A posting no person stands behind | Low |
 | T7 | person ↔ API | Tampering: a retried request records the deposit twice | Money counted twice | Medium |
 | T8 | person ↔ API | Tampering (rev 0.127): an invoice deducts another customer's deposit, more than is left of one, or one in another currency, or GST is accounted for twice on what a part payment already bore | One customer's money clearing another's invoice; 2410 negative; output tax overstated | Low |
+| T9 | person ↔ API | Tampering and elevation of privilege (rev 0.128): a refund of a deposit pays out more than is left of it, or one already deducted, or is recorded to move money to oneself; 2410 drifts from the deposits unseen | Money paid out with no deposit behind it; 2410 misstated | Medium |
 
 ## 3. What we do about it
 
@@ -43,10 +44,9 @@ Trust boundaries: **person ↔ API** (Appendix D's row, the approval engine with
 | T6 | Recording and voiding need a person or a client with P on the row; the AI's cell is a proposal only, and no proposal task records deposits (§9.6) | `TestAuthorisationMatrix` |
 | T7 | `recordCustomerDeposit` takes an Idempotency-Key: a retry gets the saved answer and records nothing; a second record of the same money without the key shows in the bank reconciliation | The API conventions' idempotency tests |
 | T8 | Issuing locks the deposits and refuses one that is not a posted deposit of the invoice's customer in its currency, named twice, or more than is left (INVOICE-16), and deposits above the invoice's total (LEDGER-33); each use takes its part of the deposit's base amount and GST under RND-DEPOSIT, the last taking all that is left, and the invoice's output tax line is its GST less what the deposits bore; `allocation_guard` accepts a use only from an invoice or a refund to a deposit, and tax only on a use of a deposit (FY171) | `TestInvoicesDeductDeposits`, `TestAnInvoiceDeductsDeposits`, `TestAnInvoiceWithDepositsBalances` |
+| T9 | A refund of a deposit locks it and takes at most what is left (APPLY-05), its part under RND-DEPOSIT; recording needs P and is audited, numbered from a gap-free sequence (CR-), idempotent with Idempotency-Key, and a void in Founder mode needs a second person (FM-1); the bank reconciliation compares the money account; the close reconciles the deposits sub-ledger with 2410 and refuses a difference no source explains, and shows amounts from journals as ⚠ | `TestDepositsAreRefundedAndReconciled`, `TestDepositsAreRefundedThroughTheAPI` |
 
 ## 4. What remains
 
-- Refunding deposits arrives in the rest of task 3.2, with its own controls (at most what is left of a deposit).
-- A reconciliation of 2410 with the deposits that are left, as INV-07 does for 1100, follows with the deductions.
 - The classification of 2410 and the treatment of a foreign-currency deposit's difference at use (7030 or revenue,
   IFRIC 22) wait for the accountant `[verify]`.

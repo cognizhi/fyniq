@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/customercredit"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/team"
@@ -33,7 +34,7 @@ const CodeCustomerRefundVoidApproval = "APPLY-11"
 
 // CustomerRefundCodes are the codes the rule and the refund's own checks answer.
 var CustomerRefundCodes = []string{customercredit.CodeCredit, customercredit.CodeTooMuch, ledger.CodeNotMoneyAccount, ledger.CodePaymentAmount,
-	ledger.CodePaidAmount, ledger.CodeSystemRole, ledger.CodeLineCurrency}
+	ledger.CodePaidAmount, ledger.CodeSystemRole, ledger.CodeLineCurrency, ledger.CodeDeposit}
 
 // CustomerRefundApprovalCodes are the codes an approval of a refund's void may answer.
 func CustomerRefundApprovalCodes() []string {
@@ -42,7 +43,7 @@ func CustomerRefundApprovalCodes() []string {
 
 // CustomerRefundDraft is a refund as recorded.
 type CustomerRefundDraft struct {
-	CreditID       string `json:"credit_id" format:"uuid" doc:"The credit refunded: an issued credit note, or a customer receipt with an amount unapplied." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70"`
+	CreditID       string `json:"credit_id" format:"uuid" doc:"The credit refunded: an issued credit note, a customer receipt with an amount unapplied, or a customer deposit (FR-AR-09), whose refund debits 2410 and takes back its part of the GST the deposit bore (deposit_refund@1)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70"`
 	Date           string `json:"date" format:"date" doc:"The day the money left." example:"2026-10-22"`
 	MoneyAccountID string `json:"money_account_id" format:"uuid" doc:"The bank, card or wallet account it left: an active money account in the credit's currency or in the base currency." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
 	FXRate         string `json:"fx_rate,omitempty" doc:"For a credit in another currency refunded from an account in that currency: base currency per one unit, as on the bank's advice. Left out, the cascade's rate for the date (ENG-40)." example:"1.34"`
@@ -150,7 +151,7 @@ func (a *API) customerRefundOf(ctx context.Context, u storage.UnitOfWork, doc st
 			out.Cleared, out.RealisedFX = storedOut(x.BaseAmount, x.BaseCurrency), storedOut(x.RealisedFX, x.BaseCurrency)
 		}
 	}
-	if e, err := u.Ledger().ByIdentity(ctx, ledger.CustomerRefundIdentity(doc.ID, doc.Version, ledger.RuleCustomerRefund)); err == nil {
+	if e, err := journal.RefundEntry(ctx, u, doc); err == nil {
 		out.LedgerImpact = entryOf(e).Lines
 	}
 	now := a.deps.Clock.Now()
@@ -263,8 +264,10 @@ func registerCustomerRefunds(a *API) {
 		Description: "Records money paid back to a customer against a credit with it (an issued credit note, or what a customer receipt left " +
 			"unapplied), by hand, and posts it at once under customer_refund@1 (FR-AR-04, FR-AR-18): Dr 1100 with the amount at the credit's " +
 			"rate, Cr the money account with what left it, and the realised FX to 7030 (ENG-41). It settles at most what is left of the credit " +
-			"(APPLY-05). Side effects: the refund, its number (CR-), the entry, an allocation, audit events. Every problem comes back together. " +
-			"Idempotent with Idempotency-Key; Prefer: return=preview posts nothing.",
+			"(APPLY-05). A customer deposit is refunded under deposit_refund@1 (FR-AR-09): Dr 2410 with its part of the deposit less its GST " +
+			"part, Dr 2200 with that GST part, Cr the money account, and the realised FX to 7030 (RND-DEPOSIT). Side effects: the refund, its " +
+			"number (CR-), the entry, an allocation, audit events. Every problem comes back together. Idempotent with Idempotency-Key; " +
+			"Prefer: return=preview posts nothing.",
 	}, recordCodes, func(ctx context.Context, in *recordCustomerRefundInput) (*customerRefundPostingOutput, error) {
 		p, _ := authn.From(ctx)
 		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (CustomerRefundPosting, error) {

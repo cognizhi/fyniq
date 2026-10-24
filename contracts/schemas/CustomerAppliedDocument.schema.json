@@ -15,7 +15,8 @@
       "enum": [
         "invoice",
         "credit_note",
-        "customer_receipt"
+        "customer_receipt",
+        "customer_deposit"
       ],
       "examples": [
         "invoice"

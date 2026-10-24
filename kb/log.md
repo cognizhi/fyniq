@@ -167,3 +167,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-24] compile | docs/user-guide/periods-and-close.md → accounting.periods (the AR check counts the credits with customers)
 
 ## [2026-10-24] compile | docs/user-guide/organisation-settings.md, periods-and-close.md → settings.organisation, settings.change, accounting.periods (tolerances clear on a payment in full; the close's tolerance check)
+
+## [2026-10-24] compile | docs/user-guide/periods-and-close.md → accounting.periods (the customer deposits check at close, FR-AR-09)

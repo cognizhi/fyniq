@@ -2,6 +2,7 @@ package journal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/customercredit"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -49,9 +51,9 @@ func (s CustomerRefunds) Record(ctx context.Context, org uuid.UUID, d customercr
 			return err
 		}
 		entry, settled := ledger.Entry{}, ledger.Settlement{}
-		if len(probs) == 0 || p.Credit.Doc.ID != uuid.Nil {
+		if len(probs) == 0 || (p.Credit.Doc.ID != uuid.Nil && p.Deposit == nil) {
 			var perr error
-			entry, settled, perr = ledger.PostCustomerRefund(p.Refund, settings)
+			entry, settled, perr = ledger.CustomerRefundRules[p.Rule()](p.Refund, settings)
 			if ps, ok := perr.(ledger.Problems); ok {
 				probs = append(probs, ps...)
 			} else if perr != nil {
@@ -69,7 +71,7 @@ func (s CustomerRefunds) Record(ctx context.Context, org uuid.UUID, d customercr
 		}
 		if out.Allocation, err = u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: d.CreditID,
 			On: d.Date, Currency: settled.Amount.Currency().Code, Amount: storage.Decimal(settled.Amount.String()), BaseCurrency: settings.Base.Code,
-			BaseAmount: storage.Decimal(settled.Base.String()), RealisedFX: storage.Decimal(settled.RealisedFX.String())}); err != nil {
+			BaseAmount: storage.Decimal(settled.Base.String()), RealisedFX: storage.Decimal(settled.RealisedFX.String()), Tax: depositTax(p.Refund)}); err != nil {
 			return err
 		}
 		if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
@@ -114,7 +116,7 @@ func (s CustomerRefunds) Void(ctx context.Context, org, id uuid.UUID, date time.
 		if err := lockBills(ctx, u, []uuid.UUID{d.CreditID}); err != nil {
 			return err
 		}
-		stored, err := u.Ledger().ByIdentity(ctx, ledger.CustomerRefundIdentity(doc.ID, doc.Version, ledger.RuleCustomerRefund))
+		stored, err := RefundEntry(ctx, u, doc)
 		if err != nil {
 			return err
 		}
@@ -152,6 +154,24 @@ func (s CustomerRefunds) Void(ctx context.Context, org, id uuid.UUID, date time.
 		return s.after(ctx, u, doc, out.Entry)
 	})
 	return out, err
+}
+
+// depositTax is the part of a deposit's GST a refund of it takes, empty for a refund of another credit.
+func depositTax(r ledger.CustomerRefund) storage.Decimal {
+	if r.Deposit == nil {
+		return ""
+	}
+	return storage.Decimal(r.Deposit.Tax.String())
+}
+
+// RefundEntry is the entry of a posted refund's current version, under the rule version that posted it: a refund of a
+// credit (customer_refund@1) or of a deposit (deposit_refund@1).
+func RefundEntry(ctx context.Context, u storage.UnitOfWork, doc storage.Document) (storage.Entry, error) {
+	e, err := u.Ledger().ByIdentity(ctx, ledger.CustomerRefundIdentity(doc.ID, doc.Version, ledger.RuleCustomerRefund))
+	if errors.Is(err, ports.ErrNotFound) {
+		return u.Ledger().ByIdentity(ctx, ledger.CustomerRefundIdentity(doc.ID, doc.Version, ledger.RuleDepositRefund))
+	}
+	return e, err
 }
 
 func (s CustomerRefunds) after(ctx context.Context, u storage.UnitOfWork, doc storage.Document, e storage.Entry) error {
@@ -195,6 +215,13 @@ func replayCustomerRefund(ctx context.Context, u storage.UnitOfWork, doc storage
 				return ledger.Entry{}, err
 			}
 			r.Credit.Clears = &base
+			if e.RuleVersion == ledger.RuleDepositRefund { // what it took of the deposit when it posted (RND-DEPOSIT)
+				tax, err := money.ParseStored(string(cmpDecimal(a.Tax)), s.Base)
+				if err != nil {
+					return ledger.Entry{}, err
+				}
+				r.Deposit, r.Credit.Clears = &ledger.DepositPart{Base: base, Tax: tax}, nil
+			}
 		}
 	}
 	entry, _, err := ledger.ReplayCustomerRefund(e.RuleVersion, r, s)

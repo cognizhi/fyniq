@@ -277,6 +277,10 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **THEN** issuing it debits 1100 with the balance and 2410 with each deposit's part, takes the GST the deposits bore off its output tax, and records the uses (RND-DEPOSIT)
 - **AND** voiding or editing it reverses the uses, which reopens the deposits; a credit note deducts none (INVOICE-16)
 
+#### Scenario: Refunds of deposits, built (rev 0.128)
+- **WHEN** a refund to a customer names a deposit
+- **THEN** it posts deposit_refund@1: Dr 2410 with its part less its GST part, Dr 2200 with that GST part, Cr the money account, and the realised FX to 7030, at most what is left of the deposit (APPLY-05)
+
 
 ### Requirement: FR-AR-18 Allocations and credits
 The system SHALL apply receipts, credit notes and deposits to documents by allocation records, each with its source, document, amount in the document currency and in base, date, and realised FX per allocation (ENG-41).

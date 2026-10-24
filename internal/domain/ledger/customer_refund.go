@@ -31,6 +31,8 @@ type CustomerRefund struct {
 	Rate     *money.Rate
 	Paid     *money.Money
 	Credit   PaidBill
+	// Deposit is set when the credit is a customer deposit (deposit_refund@1): what the refund takes of it.
+	Deposit *DepositPart
 }
 
 // CustomerRefundIdentity is the posting identity of a customer refund version under a rule version (§11.4).
@@ -96,6 +98,7 @@ type CustomerRefundRule func(r CustomerRefund, s Settings) (Entry, Settlement, e
 // version is never removed or changed while an entry names it.
 var CustomerRefundRules = map[string]CustomerRefundRule{
 	RuleCustomerRefund: PostCustomerRefund,
+	RuleDepositRefund:  PostDepositRefund,
 }
 
 // ReplayCustomerRefund re-runs the rule version that posted a customer refund's entry over the same version (ENG-06).

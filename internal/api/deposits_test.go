@@ -10,6 +10,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/customercredit"
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -141,4 +142,27 @@ func TestInvoicesDeductDepositsThroughTheAPI(t *testing.T) {
 	cn["deposits"] = d["deposits"]
 	x := e.call(http.MethodPost, "/v1/invoices", ahkow, cn)
 	e.problemIs(e.call(http.MethodPost, "/v1/invoices/"+x.str("id")+"/issue", ahkow, nil, "If-Match", x.Header.Get("ETag")), "issueInvoice", 422, invoice.CodeDeposit)
+}
+
+// FR-AR-09 through the API (p1-sales task 3.2): a security deposit of S$100.00 refunded in part through
+// recordCustomerRefund posts deposit_refund@1 and leaves the rest of the deposit; more than is left is refused.
+// req: FR-AR-09
+// req: FR-INT-01
+func TestDepositsAreRefundedThroughTheAPI(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Accountant, authz.Controller)
+	dep, _ := e.recordedDeposit()
+	r := e.call(http.MethodPost, "/v1/customer-refunds", ahkow, e.refundingCredit(dep, "40.00"))
+	if r.Status != 201 || r.str("refund", "credit", "kind") != "customer_deposit" || r.str("refund", "credit", "number") != "DP-0001" ||
+		r.str("entry", "rule_version") != ledger.RuleDepositRefund || r.str("refund", "cleared", "amount") != "40.00" {
+		t.Fatalf("refunding the deposit: %d %s", r.Status, r.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/customer-refunds/"+r.str("refund", "id"), ahkow, nil); len(g.Body["ledger_impact"].([]any)) != 2 {
+		t.Errorf("the refund's ledger impact: %s", g.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/customer-deposits/"+dep, ahkow, nil); g.str("left", "amount") != "60.00" || g.str("used", "amount") != "40.00" {
+		t.Errorf("the deposit after the refund: %s", g.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/customer-refunds", ahkow, e.refundingCredit(dep, "60.01")), "recordCustomerRefund", 422, customercredit.CodeTooMuch)
 }

@@ -7,7 +7,7 @@
       "description": "What the refund settles of the credit, in its currency: at most what is left of it (APPLY-05)."
     },
     "credit_id": {
-      "description": "The credit refunded: an issued credit note, or a customer receipt with an amount unapplied.",
+      "description": "The credit refunded: an issued credit note, a customer receipt with an amount unapplied, or a customer deposit (FR-AR-09), whose refund debits 2410 and takes back its part of the GST the deposit bore (deposit_refund@1).",
       "examples": [
         "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f70"
       ],
