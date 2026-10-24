@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "invoice_number": {
+      "description": "The invoice's number; a draft has none.",
+      "examples": [
+        "INV-0042"
+      ],
+      "type": "string"
+    },
+    "missing_particulars": {
+      "description": "Those the rendered document lacks, such as the organisation's address when its profile has none; empty when none is missing.",
+      "items": {
+        "description": "An IRAS particular, such as supplier_gst_number, total_with_gst or reason.",
+        "examples": [
+          "total_with_gst"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "pdf": {
+      "contentEncoding": "base64",
+      "description": "The document, as PDF/A-2a and PDF/UA-1, base64.",
+      "examples": [
+        "JVBERi0xLjc="
+      ],
+      "type": "string"
+    },
+    "required_particulars": {
+      "description": "The IRAS particulars it must show (FR-AR-05); none before the organisation is GST-registered. A draft leaves out number: it takes one when it is issued.",
+      "items": {
+        "description": "An IRAS particular, such as supplier_gst_number, total_with_gst or reason.",
+        "examples": [
+          "total_with_gst"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "sha256": {
+      "description": "The PDF's SHA-256, in hex: the same version and template always give the same bytes.",
+      "examples": [
+        "a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda"
+      ],
+      "type": "string"
+    },
+    "simplified": {
+      "description": "Whether it is a simplified tax invoice: sales.simplified_tax_invoices is on and its total with GST is at most S$1,000.00.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "tax_invoice": {
+      "description": "Whether it is a tax invoice: the organisation is GST-registered on its date.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "template": {
+      "$ref": "AppliedTemplate.schema.json",
+      "description": "The template version it rendered with: the customer's, the organisation's default, or the platform's starter."
+    }
+  },
+  "required": [
+    "template",
+    "pdf",
+    "sha256",
+    "tax_invoice",
+    "simplified",
+    "required_particulars",
+    "missing_particulars"
+  ],
+  "title": "InvoiceDocument",
+  "type": "object"
+}

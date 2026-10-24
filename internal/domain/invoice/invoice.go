@@ -43,6 +43,22 @@ const (
 	CodeDeposit    = "INVOICE-16" // a deposit the invoice deducts: not a posted deposit of its customer in its currency, named twice, or more than is left
 )
 
+// WarnLate is the ⚠ of a tax invoice issued more than LateDays after its date, its time of supply (FR-AR-05): IRAS
+// expects a tax invoice within 30 days of the time of supply. It is still issued. Source: IRAS, "Invoicing customers"
+// (retrieved 23 Oct 2026).
+const (
+	WarnLate = "INVOICE-LATE"
+	LateDays = 30
+)
+
+// Late says whether an invoice issued on day is a late tax invoice: it bears GST, as the organisation is registered on
+// its date (Registered), and day is more than LateDays after its date. Ask it of an invoice: a credit note is not a
+// tax invoice.
+func Late(p Prepared, day time.Time) bool {
+	d := p.Draft.Date
+	return p.Registered && !d.IsZero() && !day.IsZero() && day.After(d.AddDate(0, 0, LateDays))
+}
+
 // MaxReference and MaxNotes are the longest reference (such as the customer's purchase order) and notes an invoice keeps.
 const (
 	MaxReference = 60

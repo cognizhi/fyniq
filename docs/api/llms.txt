@@ -115,6 +115,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/invoices` (createInvoice): Save a draft invoice
 - `GET /v1/invoices/{invoice_id}` (getInvoice): Get an invoice
 - `PUT /v1/invoices/{invoice_id}` (replaceInvoice): Change a draft invoice
+- `GET /v1/invoices/{invoice_id}/document` (getInvoiceDocument): Render an invoice as a document
 - `POST /v1/invoices/{invoice_id}/edit` (editInvoice): Edit an issued invoice
 - `POST /v1/invoices/{invoice_id}/edit-approval` (requestInvoiceEdit): Ask for approval to edit an issued invoice
 - `GET /v1/invoices/{invoice_id}/evidence` (listInvoiceEvidence): List an invoice's evidence

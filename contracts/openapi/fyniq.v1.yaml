@@ -6809,7 +6809,7 @@ components:
           $ref: "#/components/schemas/Money"
           description: "Its total less the deposits it deducts: what is left to pay, in its currency."
         checks:
-          description: "getInvoice only: what stops a draft being issued (✖)."
+          description: "getInvoice only: what stops a draft being issued (✖), and the warnings it is issued with (⚠), such as INVOICE-LATE: a tax invoice dated more than 30 days before today (FR-AR-05)."
           items:
             $ref: "#/components/schemas/InvoiceCheck"
           type: array
@@ -7055,6 +7055,63 @@ components:
       required:
         - deposit_id
         - amount
+      type: object
+    InvoiceDocument:
+      additionalProperties: false
+      properties:
+        invoice_number:
+          description: The invoice's number; a draft has none.
+          examples:
+            - INV-0042
+          type: string
+        missing_particulars:
+          description: Those the rendered document lacks, such as the organisation's address when its profile has none; empty when none is missing.
+          items:
+            description: An IRAS particular, such as supplier_gst_number, total_with_gst or reason.
+            examples:
+              - total_with_gst
+            type: string
+          type: array
+        pdf:
+          contentEncoding: base64
+          description: The document, as PDF/A-2a and PDF/UA-1, base64.
+          examples:
+            - JVBERi0xLjc=
+          type: string
+        required_particulars:
+          description: "The IRAS particulars it must show (FR-AR-05); none before the organisation is GST-registered. A draft leaves out number: it takes one when it is issued."
+          items:
+            description: An IRAS particular, such as supplier_gst_number, total_with_gst or reason.
+            examples:
+              - total_with_gst
+            type: string
+          type: array
+        sha256:
+          description: "The PDF's SHA-256, in hex: the same version and template always give the same bytes."
+          examples:
+            - a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda
+          type: string
+        simplified:
+          description: "Whether it is a simplified tax invoice: sales.simplified_tax_invoices is on and its total with GST is at most S$1,000.00."
+          examples:
+            - false
+          type: boolean
+        tax_invoice:
+          description: "Whether it is a tax invoice: the organisation is GST-registered on its date."
+          examples:
+            - true
+          type: boolean
+        template:
+          $ref: "#/components/schemas/AppliedTemplate"
+          description: "The template version it rendered with: the customer's, the organisation's default, or the platform's starter."
+      required:
+        - template
+        - pdf
+        - sha256
+        - tax_invoice
+        - simplified
+        - required_particulars
+        - missing_particulars
       type: object
     InvoiceDraft:
       additionalProperties: false
@@ -33379,6 +33436,129 @@ paths:
       x-fyniq-permission:
         capability: Invoices, credit notes
         right: C
+  /v1/invoices/{invoice_id}/document:
+    get:
+      description: "Renders an invoice's current version with the template that applies to its customer (FR-TPL-05) through the render service, and finds the IRAS particulars in it (FR-AR-05): once the organisation is GST-registered on its date it is a tax invoice with the supplier's name, address and GST number, the number and date, the customer's name and address, each line's description and GST rate, the total before GST, the GST and the total with GST; in another currency also its totals in SGD at its rate; with sales.simplified_tax_invoices on and a total with GST of at most S$1,000.00, a simplified tax invoice. A draft renders without a number. Read-only; no side effects."
+      operationId: getInvoiceDocument
+      parameters:
+        - description: The invoice's ID.
+          in: path
+          name: invoice_id
+          required: true
+          schema:
+            description: The invoice's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDocument"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found; `INVOICE-01` Not an invoice."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `SALESDOC-01` Not laid out as an invoice."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `SALESDOC-02` The invoice's checks stop it being laid out."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `TPL-17` The document could not be rendered now."
+      summary: Render an invoice as a document
+      tags:
+        - Sales
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - INVOICE-01
+        - INVOICE-04
+        - SALESDOC-01
+        - SALESDOC-02
+        - TPL-17
+      x-fyniq-permission:
+        capability: Invoices, credit notes
+        right: V
   /v1/invoices/{invoice_id}/edit:
     post:
       description: "Corrects an issued invoice in an open period (FR-GL-12): saves the content sent as its next version, reverses the entry it had on that entry's own date, and posts the new version's entry, in one transaction; the invoice stays issued, keeps its number, and records who posted the edit. An invoice that receipts or credits settle is edited only once they are voided (INVOICE-13). An edit needs the approval a void needs: in Founder mode it is refused (INVOICE-14), and in any mode a new version whose total is above the self-approval threshold is refused (INVOICE-10); requestInvoiceEdit asks for the approval. Side effects: a new version, two entries, a new ledger revision, balances, audit events with the reason. Needs If-Match with the invoice's ETag. Idempotent with Idempotency-Key; Prefer: return=preview shows the two entries and saves nothing."

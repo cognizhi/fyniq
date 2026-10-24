@@ -1741,6 +1741,10 @@ var matrixCalls = map[string]matrixCall{
 		id, _ := e.createInvoice("1", "10.00")
 		return e.call(http.MethodGet, "/v1/invoices/"+id, tok, nil), nil
 	},
+	"getInvoiceDocument": func(e *env, tok string) (response, func() bool) {
+		id, _ := e.createInvoice("1", "10.00")
+		return e.call(http.MethodGet, "/v1/invoices/"+id+"/document", tok, nil), nil
+	},
 	"createInvoice": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/invoices", tok, e.invoiceDraft("1", "10.00")), nil
 	},

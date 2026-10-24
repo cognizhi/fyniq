@@ -1708,6 +1708,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invoices/{invoice_id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Render an invoice as a document
+         * @description Renders an invoice's current version with the template that applies to its customer (FR-TPL-05) through the render service, and finds the IRAS particulars in it (FR-AR-05): once the organisation is GST-registered on its date it is a tax invoice with the supplier's name, address and GST number, the number and date, the customer's name and address, each line's description and GST rate, the total before GST, the GST and the total with GST; in another currency also its totals in SGD at its rate; with sales.simplified_tax_invoices on and a total with GST of at most S$1,000.00, a simplified tax invoice. A draft renders without a number. Read-only; no side effects.
+         */
+        get: operations["getInvoiceDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invoices/{invoice_id}/edit": {
         parameters: {
             query?: never;
@@ -9267,7 +9287,7 @@ export interface components {
             approval_asked?: string;
             /** @description Its total less the deposits it deducts: what is left to pay, in its currency. */
             balance?: components["schemas"]["Money"];
-            /** @description getInvoice only: what stops a draft being issued (✖). */
+            /** @description getInvoice only: what stops a draft being issued (✖), and the warnings it is issued with (⚠), such as INVOICE-LATE: a tax invoice dated more than 30 days before today (FR-AR-05). */
             checks: components["schemas"]["InvoiceCheck"][];
             /** @description A credit note linked to an invoice: the invoice it credits. */
             credits?: components["schemas"]["InvoiceRef"];
@@ -9441,6 +9461,39 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4fa0
              */
             deposit_id: string;
+        };
+        InvoiceDocument: {
+            /**
+             * @description The invoice's number; a draft has none.
+             * @example INV-0042
+             */
+            invoice_number?: string;
+            /** @description Those the rendered document lacks, such as the organisation's address when its profile has none; empty when none is missing. */
+            missing_particulars: string[];
+            /**
+             * @description The document, as PDF/A-2a and PDF/UA-1, base64.
+             * @example JVBERi0xLjc=
+             */
+            pdf: string;
+            /** @description The IRAS particulars it must show (FR-AR-05); none before the organisation is GST-registered. A draft leaves out number: it takes one when it is issued. */
+            required_particulars: string[];
+            /**
+             * @description The PDF's SHA-256, in hex: the same version and template always give the same bytes.
+             * @example a18760db1dd480808a9d4b2fd9b460608c4312c8998317e5ef444d83c0061bda
+             */
+            sha256: string;
+            /**
+             * @description Whether it is a simplified tax invoice: sales.simplified_tax_invoices is on and its total with GST is at most S$1,000.00.
+             * @example false
+             */
+            simplified: boolean;
+            /**
+             * @description Whether it is a tax invoice: the organisation is GST-registered on its date.
+             * @example true
+             */
+            tax_invoice: boolean;
+            /** @description The template version it rendered with: the customer's, the organisation's default, or the platform's starter. */
+            template: components["schemas"]["AppliedTemplate"];
         };
         InvoiceDraft: {
             /**
@@ -28086,6 +28139,111 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getInvoiceDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The invoice's ID. */
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDocument"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `INVOICE-01` Not an invoice. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `SALESDOC-01` Not laid out as an invoice. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `SALESDOC-02` The invoice's checks stop it being laid out. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `TPL-17` The document could not be rendered now. */
             503: {
                 headers: {
                     [name: string]: unknown;

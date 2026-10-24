@@ -3602,6 +3602,27 @@ Saves the draft's new content as its next version, recording who saved it; the e
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `INVOICE-01`, `INVOICE-02`, `INVOICE-04`, `INVOICE-08`, `INVOICE-09`, `MONEY-01`, `MONEY-02`, `MONEY-03`, `MONEY-04`, `MONEY-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/invoices/{invoice_id}/document`
+
+**Render an invoice as a document** (`getInvoiceDocument`)
+
+Renders an invoice's current version with the template that applies to its customer (FR-TPL-05) through the render service, and finds the IRAS particulars in it (FR-AR-05): once the organisation is GST-registered on its date it is a tax invoice with the supplier's name, address and GST number, the number and date, the customer's name and address, each line's description and GST rate, the total before GST, the GST and the total with GST; in another currency also its totals in SGD at its rate; with sales.simplified_tax_invoices on and a total with GST of at most S$1,000.00, a simplified tax invoice. A draft renders without a number. Read-only; no side effects.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `invoice_id` (path, required): The invoice's ID.
+- **Responses:**
+  - `200` OK [`InvoiceDocument`](../../contracts/schemas/InvoiceDocument.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `INVOICE-01` Not an invoice.
+  - `409` Conflict: `SALESDOC-01` Not laid out as an invoice.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `SALESDOC-02` The invoice's checks stop it being laid out.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `TPL-17` The document could not be rendered now.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `INVOICE-01`, `INVOICE-04`, `SALESDOC-01`, `SALESDOC-02`, `TPL-17`
+
 ### `POST /v1/invoices/{invoice_id}/edit`
 
 **Edit an issued invoice** (`editInvoice`)

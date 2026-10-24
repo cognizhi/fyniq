@@ -15,7 +15,7 @@
       "description": "Its total less the deposits it deducts: what is left to pay, in its currency."
     },
     "checks": {
-      "description": "getInvoice only: what stops a draft being issued (✖).",
+      "description": "getInvoice only: what stops a draft being issued (✖), and the warnings it is issued with (⚠), such as INVOICE-LATE: a tax invoice dated more than 30 days before today (FR-AR-05).",
       "items": {
         "$ref": "InvoiceCheck.schema.json"
       },

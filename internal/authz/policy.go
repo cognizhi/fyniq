@@ -486,6 +486,9 @@ var (
 	RecordCustomerDeposit      = Policy{Operation: "recordCustomerDeposit", Capability: Invoices, Need: Post}
 	VoidCustomerDeposit        = Policy{Operation: "voidCustomerDeposit", Capability: Invoices, Need: Post}
 	RequestCustomerDepositVoid = Policy{Operation: "requestCustomerDepositVoid", Capability: Invoices, Need: Post}
+	// Rendering an invoice as its document (FR-AR-05) reads it.
+	GetInvoiceDocument = Policy{Operation: "getInvoiceDocument", Capability: Invoices, Need: View}
+
 	// Quotes and sales orders (FR-AR-01): they post nothing, so they are drafted under C and sent or cancelled under P, as
 	// issuing an invoice is posted; the pipeline is read under V.
 	ListQuotes       = Policy{Operation: "listQuotes", Capability: Invoices, Need: View}
@@ -738,7 +741,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	ListBillPayments, GetBillPayment, RecordBillPayment, VoidBillPayment, RequestBillPaymentVoid, GetPayables,
 	GetCreditApplication, ApplyCredit, VoidCreditApplication, RequestCreditApplicationVoid,
 	GetSupplierRefund, RecordSupplierRefund, VoidSupplierRefund, RequestSupplierRefundVoid,
-	ListInvoices, GetInvoice, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
+	ListInvoices, GetInvoice, GetInvoiceDocument, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
 	RequestInvoiceEdit, AddInvoiceEvidence, ListInvoiceEvidence, GetInvoiceEvidence, RemoveInvoiceEvidence, GetReceivables,
 	ListCustomerReceipts, GetCustomerReceipt, RecordCustomerReceipt, VoidCustomerReceipt, RequestCustomerReceiptVoid,
 	ListWriteOffs, GetWriteOff, CreateWriteOff, ReplaceWriteOff, RequestWriteOffPost, VoidWriteOff, RequestWriteOffVoid,
