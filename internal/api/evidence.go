@@ -35,7 +35,7 @@ type Evidence struct {
 	Size           int64  `json:"size_bytes" doc:"Its size as stored, in bytes." example:"48213"`
 	SHA256         string `json:"sha256" doc:"The SHA-256 of the file as stored, in hexadecimal: image metadata such as location is stripped first." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
 	OriginalSHA256 string `json:"original_sha256" doc:"The SHA-256 of the file as received, in hexadecimal." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
-	Source         string `json:"source" enum:"upload,paste,email,api" doc:"How it arrived." example:"upload"`
+	Source         string `json:"source" enum:"upload,paste,email,api,generated" doc:"How it arrived: generated for a file Fyniq made, such as the PDF of a quote or invoice it emailed (FR-AR-06)." example:"upload"`
 	DataClass      string `json:"data_class" enum:"general,personal,bank,payroll,identity" doc:"The personal data it holds (FR-DOC-09)." example:"general"`
 	UploadedBy     string `json:"uploaded_by" doc:"Who uploaded it: an actor of the audit trail." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	UploadedAt     string `json:"uploaded_at" format:"date-time" doc:"When it was attached." example:"2026-10-20T09:15:00Z"`

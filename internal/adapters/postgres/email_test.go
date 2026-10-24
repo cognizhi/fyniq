@@ -3,7 +3,10 @@
 package postgres_test
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,11 +18,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -496,4 +503,93 @@ func TestEmailEventsAndSuppressionsKeepTheirHistory(t *testing.T) {
 		return err
 	})
 	wantState(t, "release a suppression twice as the owner", err, "FY181", "42501")
+}
+
+// A message carries an evidence file, such as an invoice's PDF (FR-AR-06): the outbox job names the file, and the
+// worker reads it from staging, or the locked store once committed, checks its SHA-256 and attaches it. A file that
+// cannot be read leaves the message queued with no attempt marked, for the outbox to retry, and fails it on the last
+// attempt; a file whose bytes changed is never sent.
+// req: FR-AR-06
+// req: FR-INT-21
+// req: FR-DOC-07
+func TestAMessageCarriesItsEvidenceFiles(t *testing.T) {
+	ctx := context.Background()
+	f := &fakeMail{}
+	kinds := map[string]outbox.Work{}
+	h := newHarness(t, kinds)
+	blobs, err := local.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	worker := store(t, "fyniq_worker")
+	work := email.WorkWith([]ports.Email{f}, worker, mailFrom, h.clock, evidence.Files{Store: worker, Staging: blobs, Locked: blobs}.Read)
+	kinds[email.Kind] = work
+	b := books(t, "Attachments Pte Ltd")
+	doc, err := journal.Service{Store: h.store}.Create(ctx, b.Org, saleDraft(t, b, porttest.Day(10, 14), "250.00"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pdf := []byte("%PDF-1.7 the invoice as sent")
+	sum := sha256.Sum256(pdf)
+	key := evidence.StagingKey(b.Org, uuid.Must(uuid.NewV7()))
+	if err := blobs.Put(ctx, key, bytes.NewReader(pdf)); err != nil {
+		t.Fatal(err)
+	}
+	var file storage.Evidence
+	queue := func(files ...uuid.UUID) storage.EmailMessage {
+		t.Helper()
+		var m storage.EmailMessage
+		if err := h.store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			if file.ID == uuid.Nil {
+				if file, err = u.Evidence().Attach(ctx, storage.NewEvidence{DocumentID: doc.ID, EvidenceType: "Invoice as sent", FileName: "INV-0001.pdf",
+					MediaType: "application/pdf", Size: int64(len(pdf)), SHA256: hex.EncodeToString(sum[:]), OriginalSHA256: hex.EncodeToString(sum[:]),
+					Source: storage.SourceUpload, DataClass: storage.ClassGeneral, StagingKey: key, UploadedBy: "user:test"}); err != nil {
+					return err
+				}
+				files = []uuid.UUID{file.ID}
+			}
+			m, err = email.QueueWith(ctx, h.disp, u, b.Org, "test", "accounts@example.com", "Invoice INV-0001", "Attached.\n", files)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		h.push.Wait()
+		return m
+	}
+	m := queue()
+	if got := emailMessage(t, b.Org, m.ID); got.Status != storage.EmailAccepted || f.sends() != 1 || len(f.sent[0].Attachments) != 1 ||
+		f.sent[0].Attachments[0].Name != "INV-0001.pdf" || f.sent[0].Attachments[0].ContentType != "application/pdf" || !bytes.Equal(f.sent[0].Attachments[0].Content, pdf) {
+		t.Fatalf("the message with its file: %+v, %+v", got, f.sent)
+	}
+
+	// A file that cannot be read: retried with no attempt marked, then failed on the last attempt.
+	missing := uuid.Must(uuid.NewV7())
+	var lost storage.EmailMessage
+	if err := h.store.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		lost, err = u.EmailMessages().Queue(ctx, "test", "accounts@example.com", "Invoice INV-0002")
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	payload := fmt.Sprintf(`{"message_id":%q,"to":"accounts@example.com","subject":"Invoice INV-0002","text":"Attached.\n","attachments":[%q]}`, lost.ID, missing)
+	if err := work(ctx, b.Org, storage.OutboxRow{Payload: []byte(payload), MaxAttempts: 5, Attempts: 1}); err == nil {
+		t.Fatal("a missing file was not an error to retry")
+	}
+	if got := emailMessage(t, b.Org, lost.ID); got.Status != storage.EmailQueued || got.AttemptStartedAt != nil || f.sends() != 1 {
+		t.Fatalf("after a first attempt: %+v", got)
+	}
+	if err := work(ctx, b.Org, storage.OutboxRow{Payload: []byte(payload), MaxAttempts: 5, Attempts: 5}); err != nil {
+		t.Fatal(err)
+	}
+	if got := emailMessage(t, b.Org, lost.ID); got.Status != storage.EmailFailed || !strings.Contains(got.LastError, "attachment could not be read") || f.sends() != 1 {
+		t.Fatalf("after the last attempt: %+v", got)
+	}
+
+	// A file whose bytes changed is never sent.
+	if err := blobs.Put(ctx, key, bytes.NewReader([]byte("%PDF-1.7 something else"))); err != nil {
+		t.Fatal(err)
+	}
+	if changed := queue(file.ID); emailMessage(t, b.Org, changed.ID).Status == storage.EmailAccepted || f.sends() != 1 {
+		t.Fatalf("a changed file was sent: %d sends", f.sends())
+	}
 }

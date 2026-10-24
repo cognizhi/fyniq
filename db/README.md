@@ -220,6 +220,10 @@ The database raises its own SQLSTATEs; the adapter maps them to the storage port
 | FY190 | STORAGE-VERSION-01 | A banner changes only in being withdrawn, once: withdraw it and publish another |
 | FY191 | STORAGE-VERSION-01 | A banner's dismissal never changes or goes |
 | FY192 | STORAGE-BANNER-01 | A critical banner, or one published as not dismissible, cannot be dismissed: it stays until it ends |
+| FY193 | STORAGE-QUOTE-01 | A quote's outcome (accepted, declined, expired) never changes or goes: cancel the quote instead |
+| FY194 | STORAGE-QUOTE-01 | An outcome is only of a sent quote or sales order |
+| FY195 | STORAGE-SEND-01 | A send of a quote or invoice never changes or goes: send it again instead |
+| FY196 | STORAGE-SEND-01 | Only the current version of a sent quote or an issued invoice is sent; a draft never is |
 | FY060 | STORAGE-AUDIT-01 | The audit trail cannot be changed or deleted |
 | FY061 | STORAGE-AUDIT-01 | A change has no audit event in its transaction |
 | FY070 | STORAGE-OUTBOX-01 | An outbox row cannot change what it is, count backwards or be deleted |

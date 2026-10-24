@@ -240,6 +240,20 @@ document_number | id | uuid | not null |
 document_number | document_type | text | not null | 
 document_number | number | text | not null | 
 document_number | created_at | timestamp with time zone | not null | now()
+document_send | organisation_id | uuid | not null | current_org()
+document_send | id | uuid | not null | uuidv7()
+document_send | document_id | uuid | not null | 
+document_send | document_version | integer | not null | 
+document_send | message_id | uuid | not null | 
+document_send | evidence_id | uuid | not null | 
+document_send | recipient | text | not null | 
+document_send | template_source | text | not null | 
+document_send | template_id | uuid | null | 
+document_send | template_version | integer | not null | 
+document_send | template_hash | text | not null | 
+document_send | pdf_sha256 | text | not null | 
+document_send | sent_by | text | not null | 
+document_send | sent_at | timestamp with time zone | not null | now()
 document_sequence | organisation_id | uuid | not null | current_org()
 document_sequence | id | uuid | not null | uuidv7()
 document_sequence | document_type | text | not null | 
@@ -1262,6 +1276,30 @@ document_number | document_number_organisation_id_not_null | NOT NULL organisati
 document_number | document_number_pkey | PRIMARY KEY (organisation_id, id)
 document_number | document_number_unique | UNIQUE (organisation_id, document_type, number)
 document_number | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document_send | document_send_document_id_not_null | NOT NULL document_id
+document_send | document_send_document_version_not_null | NOT NULL document_version
+document_send | document_send_evidence_fkey | FOREIGN KEY (organisation_id, evidence_id) REFERENCES evidence(organisation_id, id)
+document_send | document_send_evidence_id_not_null | NOT NULL evidence_id
+document_send | document_send_hashes | CHECK (((template_hash ~ '^[0-9a-f]{64}$'::text) AND (pdf_sha256 ~ '^[0-9a-f]{64}$'::text)))
+document_send | document_send_id_not_null | NOT NULL id
+document_send | document_send_message_fkey | FOREIGN KEY (organisation_id, message_id) REFERENCES email_message(organisation_id, id)
+document_send | document_send_message_id_not_null | NOT NULL message_id
+document_send | document_send_message_once | UNIQUE (organisation_id, message_id)
+document_send | document_send_organisation_id_not_null | NOT NULL organisation_id
+document_send | document_send_pdf_sha256_not_null | NOT NULL pdf_sha256
+document_send | document_send_pkey | PRIMARY KEY (organisation_id, id)
+document_send | document_send_recipient_length | CHECK (((length(recipient) >= 3) AND (length(recipient) <= 254)))
+document_send | document_send_recipient_not_null | NOT NULL recipient
+document_send | document_send_sent_at_not_null | NOT NULL sent_at
+document_send | document_send_sent_by_format | CHECK ((sent_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+document_send | document_send_sent_by_not_null | NOT NULL sent_by
+document_send | document_send_template_fkey | FOREIGN KEY (organisation_id, template_id) REFERENCES document_template(organisation_id, id)
+document_send | document_send_template_hash_not_null | NOT NULL template_hash
+document_send | document_send_template_source | CHECK (((template_source = ANY (ARRAY['contact'::text, 'default'::text, 'platform'::text])) AND ((template_source = 'platform'::text) = (template_id IS NULL)) AND (template_version >= 0)))
+document_send | document_send_template_source_not_null | NOT NULL template_source
+document_send | document_send_template_version_not_null | NOT NULL template_version
+document_send | document_send_version_fkey | FOREIGN KEY (organisation_id, document_id, document_version) REFERENCES document_version(organisation_id, document_id, version)
+document_send | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_sequence | document_sequence_digits_not_null | NOT NULL digits
 document_sequence | document_sequence_digits_range | CHECK (((digits >= 1) AND (digits <= 12)))
 document_sequence | document_sequence_document_type_not_null | NOT NULL document_type
@@ -1368,7 +1406,7 @@ email_message | email_message_lengths | CHECK ((((length(recipient) >= 3) AND (l
 email_message | email_message_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 email_message | email_message_organisation_id_not_null | NOT NULL organisation_id
 email_message | email_message_pkey | PRIMARY KEY (organisation_id, id)
-email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text])))
+email_message | email_message_purpose_known | CHECK ((purpose = ANY (ARRAY['test'::text, 'sign_in_alert'::text, 'notification'::text, 'digest'::text, 'invoice'::text, 'quote'::text])))
 email_message | email_message_purpose_not_null | NOT NULL purpose
 email_message | email_message_recipient_not_null | NOT NULL recipient
 email_message | email_message_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'accepted'::text, 'failed'::text, 'unknown'::text])))
@@ -1419,7 +1457,7 @@ evidence | evidence_pkey | PRIMARY KEY (organisation_id, id)
 evidence | evidence_sha256_not_null | NOT NULL sha256
 evidence | evidence_size_bytes_not_null | NOT NULL size_bytes
 evidence | evidence_size_range | CHECK (((size_bytes >= 1) AND (size_bytes <= 26214400)))
-evidence | evidence_source_known | CHECK ((source = ANY (ARRAY['upload'::text, 'paste'::text, 'email'::text, 'api'::text])))
+evidence | evidence_source_known | CHECK ((source = ANY (ARRAY['upload'::text, 'paste'::text, 'email'::text, 'api'::text, 'generated'::text])))
 evidence | evidence_source_not_null | NOT NULL source
 evidence | evidence_staging_key | UNIQUE (organisation_id, staging_key)
 evidence | evidence_staging_key_not_null | NOT NULL staging_key
@@ -2244,6 +2282,7 @@ CREATE INDEX capture_sender_latest ON fyniq.capture_sender USING btree (organisa
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
+CREATE INDEX document_send_document ON fyniq.document_send USING btree (organisation_id, document_id, sent_at)
 CREATE INDEX document_template_default_latest ON fyniq.document_template_default USING btree (organisation_id, kind, document_type, set_at)
 CREATE INDEX document_template_type ON fyniq.document_template USING btree (organisation_id, document_type, kind, id)
 CREATE INDEX email_event_message ON fyniq.email_event USING btree (organisation_id, message_id, occurred_at)
@@ -2319,6 +2358,8 @@ CREATE UNIQUE INDEX currency_pkey ON fyniq.currency USING btree (code)
 CREATE UNIQUE INDEX document_number_pkey ON fyniq.document_number USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_number_unique ON fyniq.document_number USING btree (organisation_id, document_type, number)
 CREATE UNIQUE INDEX document_pkey ON fyniq.document USING btree (organisation_id, id)
+CREATE UNIQUE INDEX document_send_message_once ON fyniq.document_send USING btree (organisation_id, message_id)
+CREATE UNIQUE INDEX document_send_pkey ON fyniq.document_send USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_sequence_pkey ON fyniq.document_sequence USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_sequence_type_key ON fyniq.document_sequence USING btree (organisation_id, document_type)
 CREATE UNIQUE INDEX document_template_default_pkey ON fyniq.document_template_default USING btree (organisation_id, id)
@@ -2431,6 +2472,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_en
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.close_checklist_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('close_checklist_template', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.contact_document_template DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'contact_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_number DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_send DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_send', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_default DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template_default', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_template_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_template', 'template_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.document_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'document_id')
@@ -2516,6 +2558,8 @@ CREATE TRIGGER contact_document_template_guard BEFORE INSERT OR DELETE OR UPDATE
 CREATE TRIGGER contact_document_template_no_truncate BEFORE TRUNCATE ON fyniq.contact_document_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_no_truncate BEFORE TRUNCATE ON fyniq.document FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER document_send_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_send FOR EACH ROW EXECUTE FUNCTION document_send_guard()
+CREATE TRIGGER document_send_no_truncate BEFORE TRUNCATE ON fyniq.document_send FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_sequence_guard BEFORE UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION document_sequence_guard()
 CREATE TRIGGER document_template_default_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_template_default FOR EACH ROW EXECUTE FUNCTION document_template_choice_guard()
 CREATE TRIGGER document_template_default_no_truncate BEFORE TRUNCATE ON fyniq.document_template_default FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -2630,6 +2674,7 @@ contact | tenant_isolation | * | (organisation_id = current_org()) | (organisati
 contact_document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document_send | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_sequence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_template_default | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -2720,6 +2765,7 @@ current_org() → uuid | security invoker | s |  | ccd639871b0224831bc4e64411db6
 document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1f0d61ef9570468fad74328f6db07239
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
 document_reversed_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 13c2b954d81df6b355accc9a639f9c62
+document_send_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9746ec412855d5ac04833daf1a7b1d1
 document_sequence_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a5baa51eaa4913c8a33d26afa3b4684c
 document_template_choice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fa7935baf02928c3f94dd5979982c7e6
 document_template_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 460a8f1bd5f4af96698ac00b70b265c4

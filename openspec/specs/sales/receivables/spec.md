@@ -205,6 +205,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** an invoice is sent
 - **THEN** it carries a secure link to view it online
 
+#### Scenario: Sending by email as built (rev 0.133)
+- **WHEN** a person emails an issued invoice or a sent quote
+- **THEN** it goes to the customer's billing email from the invoices sender with its email template and its current version's PDF attached, kept as its evidence; a draft never goes, nor a tax invoice lacking a particular
+- **AND** the send records the version, message, file and template, and its delivery follows the provider's events
+
 ### Requirement: FR-AR-07 Recurring invoices
 The system SHALL create recurring invoices at frequencies from weekly to yearly, as drafts or sent automatically, with month-end date handling.
 

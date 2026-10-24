@@ -4,7 +4,7 @@ type: task
 title: Design documents with templates
 summary: How templates set the look of invoices and other documents; what a tax invoice shows; start, edit, publish, roll back, choose the default, bundles
 sources:
-  - docs/user-guide/document-templates.md sha256:cb02a4c98235e487f8fada9e2526a745937ab9f429755c3310d5025ffc1f8f5b
+  - docs/user-guide/document-templates.md sha256:4b6953a3c7e6d1d82bf791bdaf4c520001654fc14282c09edfe0ab9f41494f02
 data_class: general
 taint: trusted
 status: published
@@ -22,6 +22,9 @@ aliases:
   - tax invoice particulars
   - simplified tax invoice
   - invoice in SGD
+  - email an invoice
+  - send a quote by email
+  - delivery status
 ---
 
 # Design documents with templates
@@ -81,6 +84,15 @@ aliases:
 - A draft dated more than 30 days before today shows ⚠ (IRAS expects a tax invoice within 30 days of the time of supply); it can still be issued.
 
 (src: docs/user-guide/document-templates.md#what-an-invoice-shows)
+
+## Email an invoice or a quote
+
+- An issued invoice, or a sent quote or sales order, can be emailed: to the customer's billing email or an address you give, from the invoices sender in **Settings → Email**.
+- The subject and text come from the email template that applies to the customer; the PDF made with its document template is attached.
+- A draft is never emailed; a tax invoice lacking an IRAS particular, such as the customer's address, is not sent until the detail is added.
+- The PDF sent is kept in the document's evidence; the document lists each email with its delivery: **Sent**, **Delivered** or **Bounced**. Emailing again sends the same version.
+
+(src: docs/user-guide/document-templates.md#email-an-invoice-or-a-quote)
 
 ## Move templates with a bundle
 

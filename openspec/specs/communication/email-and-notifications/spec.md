@@ -152,6 +152,11 @@ Source: PRD-001 §8.24 · Priority M · Phase P1
 - **THEN** each record its providers asked for, as the deployment lists them, is found as listed, missing, wrong or failed, beside its DMARC policy
 - **AND** a domain is ok only when every record is there and its policy quarantines or rejects; one that is not is recorded as a failed check
 
+#### Scenario: Attachments as built (rev 0.133)
+- **WHEN** a message carries a stored PDF, such as an invoice sent
+- **THEN** the worker reads it from the evidence store and checks its SHA-256 before marking an attempt, and each adapter sends it as an attachment, up to 5 PDFs and 10 MB
+- **AND** a file not yet readable is retried and failed on the last attempt; a file whose bytes changed is never sent
+
 ### Requirement: FR-INT-22 Inbound email
 The system SHALL receive email for the capture addresses (FR-DOC-12) through an inbound adapter and store everything received as untrusted documents (AI-18).
 

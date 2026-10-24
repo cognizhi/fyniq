@@ -3684,6 +3684,33 @@ Asks for another person's approval to edit an issued invoice with the content se
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `FX-01`, `INVOICE-01`, `INVOICE-02`, `INVOICE-03`, `INVOICE-04`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-13`, `INVOICE-15`, `INVOICE-16`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-28`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/invoices/{invoice_id}/email`
+
+**Email an invoice to the customer** (`emailInvoice`)
+
+Emails an issued invoice (FR-AR-06) to the customer's billing email, or the address given, from the organisation's invoices sender, with the subject and body of the email template that applies to the customer and the PDF of its current version attached, rendered with the document template that applies (FR-TPL-05). A tax invoice that lacks a particular IRAS requires, such as the customer's address, is not sent (SALESDOC-05); a draft or voided one never is (SALESDOC-03). Sending again sends the same version again. Side effects: the PDF in the invoice's evidence (source generated), the email message in the delivery log, the send, and their audit events; its delivery state follows the provider's events. Needs If-Match with the invoice's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and sends nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `invoice_id` (path, required): The invoice's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`EmailDocument`](../../contracts/schemas/EmailDocument.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Invoice`](../../contracts/schemas/Invoice.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `INVOICE-01` Not an invoice.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SALESDOC-01` Not laid out as an invoice; `SALESDOC-03` Only an issued invoice or a sent quote is emailed; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `SALESDOC-02` The invoice's checks stop it being laid out; `SALESDOC-04` There is no address to send it to; `SALESDOC-05` The tax invoice lacks a particular IRAS requires.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `INVOICE-01`, `INVOICE-04`, `SALESDOC-01`, `SALESDOC-02`, `SALESDOC-03`, `SALESDOC-04`, `SALESDOC-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `TPL-17`
+
 ### `POST /v1/invoices/{invoice_id}/issue`
 
 **Issue a draft invoice** (`issueInvoice`)
@@ -4001,6 +4028,33 @@ Records that the customer declined a sent quote or order (FR-AR-01), on the day 
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `INVOICE-04`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-15`, `INVOICE-16`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-28`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `QUOTE-01`, `QUOTE-02`, `QUOTE-03`, `QUOTE-05`, `QUOTE-07`, `QUOTE-08`, `STORAGE-LOCK-01`, `STORAGE-QUOTE-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/quotes/{quote_id}/email`
+
+**Email a quote or sales order to the customer** (`emailQuote`)
+
+Emails a sent quote or order (FR-AR-06, FR-AR-16) to the customer's billing email, or the address given, from the organisation's invoices sender, with the subject and body of the email template that applies to the customer and the PDF of its current version attached, rendered with the quote template that applies (FR-TPL-05). A draft or cancelled one is never sent (SALESDOC-03); sendQuote sends a draft first. Side effects: the PDF in the quote's evidence (source generated), the email message in the delivery log, the send, and their audit events. Needs If-Match with the quote's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and sends nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `quote_id` (path, required): The quote's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read; the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`EmailDocument`](../../contracts/schemas/EmailDocument.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Quote`](../../contracts/schemas/Quote.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `QUOTE-01` Not a quote or a sales order.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SALESDOC-03` Only an issued invoice or a sent quote is emailed; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `INVOICE-04` The saved invoice cannot be read; `QUOTE-02` The saved quote cannot be read; `SALESDOC-02` The invoice's checks stop it being laid out; `SALESDOC-04` There is no address to send it to; `SALESDOC-05` The tax invoice lacks a particular IRAS requires.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `INVOICE-04`, `QUOTE-01`, `QUOTE-02`, `SALESDOC-02`, `SALESDOC-03`, `SALESDOC-04`, `SALESDOC-05`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `TPL-17`
 
 ### `POST /v1/quotes/{quote_id}/invoice`
 

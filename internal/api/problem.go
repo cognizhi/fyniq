@@ -533,6 +533,10 @@ var codeFacts = map[string]struct {
 	salesdoc.CodeNotInvoice: {409, "Not laid out as an invoice"},
 	salesdoc.CodeUnready:    {422, "The invoice's checks stop it being laid out"},
 
+	salesdoc.CodeNotSent:     {409, "Only an issued invoice or a sent quote is emailed"},
+	salesdoc.CodeNoRecipient: {422, "There is no address to send it to"},
+	salesdoc.CodeParticulars: {422, "The tax invoice lacks a particular IRAS requires"},
+
 	storage.CodeQuoteOutcome: {409, "The quote's answer is recorded once, of a sent quote"},
 }
 

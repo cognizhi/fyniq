@@ -6,7 +6,10 @@ package smtp
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"mime"
@@ -82,22 +85,60 @@ func (s *Sender) Send(ctx context.Context, m ports.OutboundEmail) (ports.EmailRe
 	if err := errors.Join(clean("subject", m.Subject), clean("key", m.Key)); err != nil || m.Key == "" {
 		return ports.EmailReceipt{}, fmt.Errorf("%w: the subject or key is not valid", ports.ErrEmailRefused)
 	}
+	if err := ports.CheckAttachments(m.Attachments); err != nil {
+		return ports.EmailReceipt{}, err
+	}
 	id := s.MessageID(m.Key)
+	text := strings.ReplaceAll(strings.ReplaceAll(m.Text, "\r\n", "\n"), "\n", "\r\n")
 	var b strings.Builder
-	for _, h := range [][2]string{
+	headers := [][2]string{
 		{"From", m.From}, {"To", strings.Join(m.To, ", ")}, {"Subject", mime.QEncoding.Encode("utf-8", m.Subject)},
 		{"Date", m.Date.UTC().Format(time.RFC1123Z)}, {"Message-ID", id}, {"MIME-Version", "1.0"},
-		{"Content-Type", "text/plain; charset=utf-8"}, {"Content-Transfer-Encoding", "8bit"},
-	} {
+	}
+	if len(m.Attachments) == 0 {
+		headers = append(headers, [2]string{"Content-Type", "text/plain; charset=utf-8"}, [2]string{"Content-Transfer-Encoding", "8bit"})
+	} else {
+		headers = append(headers, [2]string{"Content-Type", `multipart/mixed; boundary="` + boundary(m.Key) + `"`})
+	}
+	for _, h := range headers {
 		b.WriteString(h[0] + ": " + h[1] + "\r\n")
 	}
 	b.WriteString("\r\n")
-	b.WriteString(strings.ReplaceAll(strings.ReplaceAll(m.Text, "\r\n", "\n"), "\n", "\r\n"))
+	if len(m.Attachments) == 0 {
+		b.WriteString(text)
+	} else {
+		mixed(&b, boundary(m.Key), text, m.Attachments)
+	}
 
 	if err := s.deliver(ctx, from, to, b.String()); err != nil {
 		return ports.EmailReceipt{}, err
 	}
 	return ports.EmailReceipt{ProviderID: id}, nil
+}
+
+// boundary is a multipart boundary for the message with key: "=_" cannot occur in base64 or in the text's lines as
+// Fyniq writes them, and the key's hash keeps a message's bytes the same on each attempt.
+func boundary(key string) string {
+	h := sha256.Sum256([]byte(key))
+	return "=_fyniq_" + hex.EncodeToString(h[:12])
+}
+
+// mixed writes a multipart/mixed body: the text, then each file in base64 in lines of 76 (RFC 2045).
+func mixed(b *strings.Builder, boundary, text string, files []ports.EmailAttachment) {
+	b.WriteString("--" + boundary + "\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n" + text + "\r\n")
+	for _, f := range files {
+		b.WriteString("--" + boundary + "\r\n")
+		b.WriteString("Content-Type: " + mime.FormatMediaType(f.ContentType, map[string]string{"name": f.Name}) + "\r\n")
+		b.WriteString("Content-Disposition: " + mime.FormatMediaType("attachment", map[string]string{"filename": f.Name}) + "\r\n")
+		b.WriteString("Content-Transfer-Encoding: base64\r\n\r\n")
+		enc := base64.StdEncoding.EncodeToString(f.Content)
+		for len(enc) > 76 {
+			b.WriteString(enc[:76] + "\r\n")
+			enc = enc[76:]
+		}
+		b.WriteString(enc + "\r\n")
+	}
+	b.WriteString("--" + boundary + "--\r\n")
 }
 
 // deliver runs one SMTP transaction. Errors before DATA is accepted are refusals (nothing was taken); an

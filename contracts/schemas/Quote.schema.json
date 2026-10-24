@@ -36,6 +36,20 @@
       "format": "date",
       "type": "string"
     },
+    "delivery": {
+      "description": "From its latest email: not_sent until emailQuote sends it; then sent, delivered or bounced; viewed comes with the online link.",
+      "enum": [
+        "not_sent",
+        "sent",
+        "delivered",
+        "viewed",
+        "bounced"
+      ],
+      "examples": [
+        "not_sent"
+      ],
+      "type": "string"
+    },
     "fx_rate": {
       "description": "The rate typed for it, if one was.",
       "examples": [
@@ -130,6 +144,13 @@
       ],
       "type": "string"
     },
+    "sends": {
+      "description": "Each time it was emailed, newest first, with its delivery.",
+      "items": {
+        "$ref": "DocumentSendOut.schema.json"
+      },
+      "type": "array"
+    },
     "sent_at": {
       "description": "When it was sent.",
       "examples": [
@@ -190,7 +211,9 @@
     "gst_subtotals",
     "checks",
     "invoicing",
-    "invoices"
+    "invoices",
+    "delivery",
+    "sends"
   ],
   "title": "Quote",
   "type": "object"

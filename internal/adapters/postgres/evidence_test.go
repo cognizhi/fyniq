@@ -125,9 +125,11 @@ func TestEvidenceIsAppendOnlyOnceItsRecordIsFinal(t *testing.T) {
 			"UPDATE fyniq.evidence SET locked_key = staging_key, version = version + 1 WHERE state = 'final'",
 			"DELETE FROM fyniq.evidence",
 			"TRUNCATE fyniq.evidence",
+			"TRUNCATE fyniq.evidence CASCADE", // with the sends that name its files (FR-AR-06)
 		} {
 			err := asOrg(ctx, c, b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, stmt); return err })
-			wantState(t, role+": "+stmt, err, "42501", "FY120", "FY121", "FY122", "FY123", "FY124", "23514")
+			// 0A000: a plain TRUNCATE stops at the foreign keys of document_send before any trigger runs.
+			wantState(t, role+": "+stmt, err, "42501", "FY120", "FY121", "FY122", "FY123", "FY124", "23514", "0A000")
 		}
 	}
 	// The retain-until moves later, by the worker, audited.
