@@ -50,7 +50,7 @@ func usdPayment(t testing.TB, from Account, rate string, bills ...PaidBill) Bill
 func settlements(ss []Settlement) string {
 	var parts []string
 	for _, x := range ss {
-		parts = append(parts, fmt.Sprintf("%s %s = %s fx %s", x.BillID.String()[31:], x.Amount, x.Base, x.RealisedFX))
+		parts = append(parts, fmt.Sprintf("%s %s = %s fx %s", x.DocumentID.String()[31:], x.Amount, x.Base, x.RealisedFX))
 	}
 	return strings.Join(parts, "; ")
 }
@@ -364,7 +364,7 @@ func TestEveryBillPaymentRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 			}
 			b.WriteString(render(c.name, e))
 			for _, x := range ss {
-				fmt.Fprintf(&b, "settles %s %s %s = %s %s, realised %s\n", x.BillID, x.Amount, x.Amount.Currency().Code, x.Base, x.Base.Currency().Code, x.RealisedFX)
+				fmt.Fprintf(&b, "settles %s %s %s = %s %s, realised %s\n", x.DocumentID, x.Amount, x.Amount.Currency().Code, x.Base, x.Base.Currency().Code, x.RealisedFX)
 			}
 		}
 		path := filepath.Join("testdata", "replay", rule+".golden")

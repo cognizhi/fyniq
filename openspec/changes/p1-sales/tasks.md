@@ -46,10 +46,17 @@ Each slice is one pull request, merged when green. Tests carry `// req:` tags (Q
 
 ## 2. Receipts, allocations, tolerances and write-offs
 
-- [ ] 2.1 Customer receipts recorded by hand (the owner's decision of 24 Oct 2026): from a money account against
+- [x] 2.1 Customer receipts recorded by hand (the owner's decision of 24 Oct 2026): from a money account against
   one or more invoices, realised FX per allocation, unapplied amounts and overpayments as customer credits,
   voided by reversal; the allocations generalised from the bills'. Tests
   `// req: ledger/posting-rules Customer and supplier payments`, `// req: FR-AR-18`, G4-045, G4-054
+  (24 Oct 2026, PRD-001 rev 0.120: `internal/domain/receipt`, `customer_receipt@1` (`bill_payment@1`'s legs on 1100,
+  negated) with its replay golden, `journal.CustomerReceipts`, migrations 000112 and 000113, receipts' credits in the AR
+  sub-ledger, `/v1/customer-receipts` with the approval object `customer_receipt`. Tests:
+  `TestPostCustomerReceiptInTheBaseCurrency`, `TestPostCustomerReceiptRealisesFX`, `TestTheReceiptRuleRefusesWhatCannotPost`,
+  `TestCustomerReceiptsProperties`, `TestEveryCustomerReceiptRuleVersionReplaysItsGoldenEntries`,
+  `TestCustomerReceiptsSettleInvoices`, `TestCustomerReceiptsThroughTheAPI`, the matrix rows. G4-054's second receipt
+  is refused (RECEIPT-05) rather than kept unapplied; G4-045 waits for credit applications and bounce, tasks 3.1 and 5.x)
 - [ ] 2.2 Settlement tolerances after realised FX, for invoices and bills, within the caps per document and month
   (provisional until question 32). Tests `// req: ledger/posting-rules Settlement tolerances`,
   `// req: ledger/posting-rules Settlement difference on an invoice or bill`

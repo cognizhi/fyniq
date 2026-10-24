@@ -90,7 +90,8 @@
         "supplier_refund",
         "purchase_order",
         "document_template",
-        "invoice"
+        "invoice",
+        "customer_receipt"
       ],
       "examples": [
         "organisation_setting"
@@ -122,7 +123,8 @@
         "document_template.publish",
         "invoice.post",
         "invoice.void",
-        "invoice.edit"
+        "invoice.edit",
+        "customer_receipt.void"
       ],
       "examples": [
         "organisation_setting.change"

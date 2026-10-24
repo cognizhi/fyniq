@@ -297,6 +297,11 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **AND** the other becomes a customer credit or stays unapplied
 - **AND** AR is never negative and INV-07 holds
 
+#### Scenario: Customer receipts as built (rev 0.120)
+- **WHEN** a receipt is recorded by hand against one or more of the customer's issued invoices
+- **THEN** it posts customer_receipt@1 at once, settles at most what each invoice has open (RECEIPT-05) with one allocation each, and keeps any amount beyond them as a credit with the customer
+- **AND** voiding it reverses its entry and allocations, which reopens the invoices, in Founder mode with a second person (FM-1)
+
 ### Requirement: FR-AR-10 AR ageing
 The system SHALL report AR ageing in the buckets Current, 1–30, 31–60, 61–90 and 90+ by customer and currency, with the unrealised FX exposure.
 

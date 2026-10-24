@@ -20,6 +20,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/receipt"
 	"github.com/cognizhi/fyniq/internal/domain/subledger"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -28,7 +29,7 @@ import (
 // The kinds of open items.
 const (
 	KindInvoice = "invoice"
-	KindCredit  = subledger.KindCredit // a customer credit: arrives with credit notes and receipts (p1-sales tasks 2 and 3)
+	KindCredit  = subledger.KindCredit // a customer credit: a receipt's unapplied amount (FR-AR-18), and credit notes as they arrive
 )
 
 // Item is one open document of the sub-ledger as at a day: what is owed on it in its currency (a credit negative) and
@@ -58,7 +59,9 @@ func (l Ledger) groups() []subledger.Group {
 }
 
 // Open is the AR sub-ledger as at a day: each issued invoice dated on or before it and not voided by then, less what
-// was allocated to it by then. ar is the accounts-receivable account, whose lines carry an invoice's carrying amount.
+// was allocated to it by then; and each receipt dated on or before it and not voided by then that left an amount
+// unapplied, a credit with the customer. ar is the accounts-receivable account, whose lines carry a document's carrying
+// amount.
 func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar uuid.UUID, asAt time.Time) (Ledger, error) {
 	out := Ledger{AsAt: asAt}
 	byCustomer := map[uuid.UUID]*Customer{}
@@ -73,6 +76,14 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar uui
 		}
 		contacts[id] = c
 		return c, nil
+	}
+	add := func(customer uuid.UUID, it Item) {
+		c := byCustomer[customer]
+		if c == nil {
+			c = &Customer{ID: customer}
+			byCustomer[customer] = c
+		}
+		c.Items = append(c.Items, it)
 	}
 	err := subledger.Pages(ctx, u, storage.DocumentInvoice, asAt, func(doc storage.Document) error {
 		if doc.Status == storage.DocumentDraft {
@@ -120,12 +131,71 @@ func Open(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar uui
 		if it.Open.IsZero() && it.Carrying.IsZero() {
 			return nil
 		}
-		c := byCustomer[d.CustomerID]
-		if c == nil {
-			c = &Customer{ID: d.CustomerID}
-			byCustomer[d.CustomerID] = c
+		add(d.CustomerID, it)
+		return nil
+	})
+	if err != nil {
+		return Ledger{}, err
+	}
+	err = subledger.Pages(ctx, u, storage.DocumentCustomerReceipt, asAt, func(doc storage.Document) error {
+		if doc.Status == storage.DocumentDraft {
+			return nil
 		}
-		c.Items = append(c.Items, it)
+		identity := ledger.CustomerReceiptIdentity(doc.ID, doc.Version, ledger.RuleCustomerReceipt)
+		if gone, err := subledger.VoidedBy(ctx, u, identity, asAt); err != nil || gone {
+			return err
+		}
+		d, err := receipt.Read(doc, base)
+		if err != nil {
+			return err
+		}
+		if d.Unapplied.IsZero() {
+			return nil
+		}
+		e, err := u.Ledger().ByIdentity(ctx, identity)
+		if err != nil {
+			return err
+		}
+		_, creditedBase, err := subledger.ControlLines(e, ar, d.Currency, base)
+		if err != nil {
+			return err
+		}
+		allocs, err := u.Allocations().OfSource(ctx, doc.ID)
+		if err != nil {
+			return err
+		}
+		_, appliedBase, err := subledger.Settled(allocs, d.Currency, base, d.Date, func(a storage.Allocation) bool { return a.ReversesID == nil && a.SourceVersion == doc.Version })
+		if err != nil {
+			return err
+		}
+		total, err := d.Total()
+		if err != nil {
+			return err
+		}
+		later, err := u.Allocations().OfDocument(ctx, doc.ID) // the applications of its unapplied amount to invoices (FR-AR-18)
+		if err != nil {
+			return err
+		}
+		used, usedBase, err := subledger.Settled(later, d.Currency, base, asAt, nil)
+		if err != nil {
+			return err
+		}
+		// A credit with the customer, negative: what the receipt left unapplied less what is applied of it since; carried at
+		// what its credit to 1100 holds beyond the invoices it settled.
+		it := Item{Kind: KindCredit, DocumentID: doc.ID, Number: doc.Number, Date: d.Date, Total: total}
+		if it.Open, err = used.Sub(d.Unapplied); err != nil {
+			return err
+		}
+		held, err := creditedBase.Neg().Sub(appliedBase)
+		if err != nil {
+			return err
+		}
+		if it.Carrying, err = usedBase.Sub(held); err != nil {
+			return err
+		}
+		if !it.Open.IsZero() || !it.Carrying.IsZero() {
+			add(d.CustomerID, it)
+		}
 		return nil
 	})
 	if err != nil {
@@ -188,10 +258,10 @@ type (
 	Reconciliation = subledger.Reconciliation
 )
 
-// own says whether a source type is one of the documents the AR sub-ledger accounts for: invoices (and, as they arrive,
-// credit notes, receipts and their applications).
+// own says whether a source type is one of the documents the AR sub-ledger accounts for: invoices and receipts (and, as
+// they arrive, credit notes and applications).
 func own(sourceType string) bool {
-	return sourceType == ledger.SourceInvoice
+	return sourceType == ledger.SourceInvoice || sourceType == ledger.SourceCustomerReceipt
 }
 
 // Reconcile is INV-07 for accounts receivable as at a day (FR-CTL-05): the sub-ledger's open documents against the

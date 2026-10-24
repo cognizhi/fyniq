@@ -149,7 +149,7 @@ func (s BillPayments) Record(ctx context.Context, org uuid.UUID, d billpayment.D
 			return err
 		}
 		for _, x := range c.Settlements {
-			a, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: x.BillID, On: d.Date,
+			a, err := u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: x.DocumentID, On: d.Date,
 				Currency: x.Amount.Currency().Code, Amount: storage.Decimal(x.Amount.String()), BaseCurrency: settings.Base.Code,
 				BaseAmount: storage.Decimal(x.Base.String()), RealisedFX: storage.Decimal(x.RealisedFX.String())})
 			if err != nil {

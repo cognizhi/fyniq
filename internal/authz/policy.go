@@ -459,6 +459,14 @@ var (
 	RequestInvoiceIssue = Policy{Operation: "requestInvoiceIssue", Capability: Invoices, Need: Post}
 	RequestInvoiceVoid  = Policy{Operation: "requestInvoiceVoid", Capability: Invoices, Need: Post}
 	RequestInvoiceEdit  = Policy{Operation: "requestInvoiceEdit", Capability: Invoices, Need: Post}
+	// Customer receipts recorded by hand (FR-AR-18; the owner's decision of 24 Oct 2026): the money has come in already, so
+	// recording one posts (P on "Invoices, credit notes"), as recording a payment of bills does; voiding one is FM-1's void
+	// of a posted document: posting (P), and in Founder mode asked for and approved by another person who holds A.
+	ListCustomerReceipts       = Policy{Operation: "listCustomerReceipts", Capability: Invoices, Need: View}
+	GetCustomerReceipt         = Policy{Operation: "getCustomerReceipt", Capability: Invoices, Need: View}
+	RecordCustomerReceipt      = Policy{Operation: "recordCustomerReceipt", Capability: Invoices, Need: Post}
+	VoidCustomerReceipt        = Policy{Operation: "voidCustomerReceipt", Capability: Invoices, Need: Post}
+	RequestCustomerReceiptVoid = Policy{Operation: "requestCustomerReceiptVoid", Capability: Invoices, Need: Post}
 	// AR ageing and the FX exposure (FR-AR-10) are read under V on "Invoices, credit notes", as the invoices are.
 	GetReceivables = Policy{Operation: "getReceivables", Capability: Invoices, Need: View}
 	// The tax agent's withholding decisions for a non-resident supplier (FR-AP-19; rev 0.90): read with the bills (V),
@@ -689,6 +697,7 @@ var Policies = index(GetOrganisation, GetOrganisationProfile, UpdateOrganisation
 	GetSupplierRefund, RecordSupplierRefund, VoidSupplierRefund, RequestSupplierRefundVoid,
 	ListInvoices, GetInvoice, CreateInvoice, ReplaceInvoice, IssueInvoice, VoidInvoice, EditInvoice, RequestInvoiceIssue, RequestInvoiceVoid,
 	RequestInvoiceEdit, AddInvoiceEvidence, ListInvoiceEvidence, GetInvoiceEvidence, RemoveInvoiceEvidence, GetReceivables,
+	ListCustomerReceipts, GetCustomerReceipt, RecordCustomerReceipt, VoidCustomerReceipt, RequestCustomerReceiptVoid,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
 	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
 	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,

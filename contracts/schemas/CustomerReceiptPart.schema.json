@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the receipt settles of it, in the invoice's currency: at most what is open of it (RECEIPT-05)."
+    },
+    "invoice_id": {
+      "description": "The invoice: one of the customer's issued invoices, in the receipt's currency.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "invoice_id",
+    "amount"
+  ],
+  "title": "CustomerReceiptPart",
+  "type": "object"
+}

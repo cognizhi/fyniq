@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it settled, in the invoice's currency."
+    },
+    "base": {
+      "$ref": "Money.schema.json",
+      "description": "The invoice's carrying amount it cleared, in the base currency: the amount at the invoice's stored rate, and for the part that settles what is left of an invoice, what was left (ENG-14)."
+    },
+    "invoice_id": {
+      "description": "The invoice.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "invoice_number": {
+      "description": "The invoice's number.",
+      "examples": [
+        "INV-0042"
+      ],
+      "type": "string"
+    },
+    "realised_fx": {
+      "$ref": "Money.schema.json",
+      "description": "The realised gain (positive) or loss (negative) in the base currency: the amount at the receipt's rate against the invoice's stored rate, with no tolerance (ENG-41)."
+    }
+  },
+  "required": [
+    "invoice_id",
+    "amount",
+    "base",
+    "realised_fx"
+  ],
+  "title": "InvoiceSettled",
+  "type": "object"
+}

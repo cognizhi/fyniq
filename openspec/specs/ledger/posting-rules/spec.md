@@ -140,6 +140,11 @@ Source: PRD-001 §10.2
 - **WHEN** the part that settles what is left of it is recorded
 - **THEN** a base-only line on 2010 of at most S$1.00 clears the residual, against 7030, in the month of the last payment
 
+#### Scenario: Built as customer_receipt@1 (rev 0.120)
+- **WHEN** a receipt from a customer is recorded
+- **THEN** it posts Cr 1100 with each invoice's part at that invoice's stored rate and any unapplied amount at the receipt's rate, Dr the money account at the receipt's rate or with what a base-currency account received, and to 7030 each part's realised FX (ENG-41) and the cent RND-FX leaves between the lines
+- **AND** the part that settles what is left of an invoice clears its residual with a base-only line on 1100 of at most S$1.00 (USD 1,000.00 at 1.34 received at 1.36: a gain of S$20.00)
+
 ### Requirement: Customer refunds and deposits
 Customer refunds and deposits received and applied (FR-AR-18, FR-AR-09) SHALL post through allocation records and SHALL never be netted against AP without an approved contra.
 
