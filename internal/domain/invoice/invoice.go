@@ -91,6 +91,26 @@ type Draft struct {
 	// Deposits are the customer's deposits the invoice deducts, each with the amount it takes in the invoice's currency
 	// (FR-AR-09; the owner's decision of 24 Oct 2026).
 	Deposits []DepositUse
+	// RecurringInvoice is the recurring invoice version the scheduler made it from (FR-AR-07; rev 0.135), nil for one a
+	// person made. The database's create_scheduled_invoice_draft writes it, and every later draft version keeps it.
+	RecurringInvoice *RecurringRef
+}
+
+// RecurringRef names the recurring invoice, and the version of its content, that an invoice was made from.
+type RecurringRef struct {
+	ID      uuid.UUID `json:"id"`
+	Version int       `json:"version"`
+}
+
+// RecurringOf is the recurring invoice a document's version was made from, nil when none (or it cannot be read).
+func RecurringOf(doc storage.Document) *RecurringRef {
+	var p struct {
+		RecurringInvoice *RecurringRef `json:"recurring_invoice"`
+	}
+	if json.Unmarshal(doc.Payload, &p) != nil {
+		return nil
+	}
+	return p.RecurringInvoice
 }
 
 // DepositUse is a deposit an invoice deducts and the amount it takes of it.
@@ -156,6 +176,7 @@ type payload struct {
 	Notes        string        `json:"notes,omitempty"`
 	Credits      *uuid.UUID    `json:"invoice_id,omitempty"` // a credit note's invoice
 	Deposits     []payloadUse  `json:"deposits,omitempty"`
+	Recurring    *RecurringRef `json:"recurring_invoice,omitempty"`
 }
 
 type payloadUse struct {
@@ -205,6 +226,7 @@ func Encode(d Draft) ([]byte, error) {
 		id := d.Credits
 		p.Credits = &id
 	}
+	p.Recurring = d.RecurringInvoice
 	for _, x := range d.Deposits {
 		p.Deposits = append(p.Deposits, payloadUse{DepositID: x.DepositID, Amount: x.Amount})
 	}
@@ -266,7 +288,7 @@ func ReadContent(payloadJSON []byte, base money.Currency) (Draft, error) {
 	if err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{CustomerID: p.CustomerID, Reference: p.Reference, Currency: cur, Notes: p.Notes}
+	d := Draft{CustomerID: p.CustomerID, Reference: p.Reference, Currency: cur, Notes: p.Notes, RecurringInvoice: p.Recurring}
 	if p.Credits != nil {
 		d.Credits = *p.Credits
 	}

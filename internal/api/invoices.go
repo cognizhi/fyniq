@@ -197,6 +197,9 @@ type Invoice struct {
 	// Email (FR-AR-06; rev 0.133).
 	Sends []DocumentSendOut `json:"sends" nullable:"false" doc:"getInvoice only: each time it was emailed, newest first, with its delivery (FR-AR-06)."`
 	Links []DocumentLinkOut `json:"links" nullable:"false" doc:"getInvoice only: the online links its emails carried, newest first, with their status; never their tokens (FR-AR-06)."`
+
+	// Recurring invoices (FR-AR-07; rev 0.135).
+	RecurringInvoice *RecurringOrigin `json:"recurring_invoice,omitempty" doc:"The recurring invoice, and the version of its content, the scheduler made this draft from; whoever wrote that version does not approve its issue (SOD-3)."`
 }
 
 // InvoiceRef names an invoice another document refers to.
@@ -571,6 +574,9 @@ func (a *API) invoiceOf(ctx context.Context, u storage.UnitOfWork, v invoiceView
 	readable := !probs.Has(ledger.CodeGSTRate) && len(p.Invoice.Lines) == len(d.Lines)
 
 	out.States = InvoiceStates{Approval: "draft", Ledger: "not_posted", Delivery: "not_sent", Settlement: "open", Due: "not_due"}
+	if ref := d.RecurringInvoice; ref != nil { // FR-AR-07
+		out.RecurringInvoice = &RecurringOrigin{ID: ref.ID.String(), Version: ref.Version}
+	}
 	switch doc.Status {
 	case storage.DocumentPosted:
 		out.States.Approval, out.States.Ledger = "approved", "posted"

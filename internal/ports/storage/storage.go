@@ -89,6 +89,7 @@ type UnitOfWork interface {
 	QuoteOutcomes() QuoteOutcomes
 	DocumentSends() DocumentSends
 	DocumentLinks() DocumentLinks
+	RecurringInvoices() RecurringInvoices
 	BillPlans() BillPlans
 	DocumentTemplates() DocumentTemplates
 	AccountingBasis() AccountingBasis

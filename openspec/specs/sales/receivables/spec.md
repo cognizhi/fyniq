@@ -244,6 +244,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P1
 - **THEN** it makes drafts unless set to issue and send, which needs a second person's approval of its content, again after each change
 - **AND** each invoice it issues is listed for the weekly review
 
+#### Scenario: Making drafts as built (rev 0.135)
+- **WHEN** a recurring invoice recurs every week or two, or every 1, 3, 6 or 12 months, and an occurrence falls due
+- **THEN** the hourly job invoices.recurring makes its draft invoice from the current content version, once, as the scheduler
+- **AND** the draft names that version, whose author does not approve its issue (SOD-3); a content version never changes
+
 ### Requirement: FR-AR-08 Automated reminders and statements
 The system SHALL send automated reminders on a schedule per customer group, with templates, and SHALL produce a statement of account by date range using the workbook Statement logic.
 

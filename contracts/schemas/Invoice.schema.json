@@ -166,6 +166,10 @@
       "$ref": "Money.schema.json",
       "description": "What it adds to accounts receivable in the base currency (a credit note: what it takes off): as issued, or as issuing would post it; absent while it cannot be issued."
     },
+    "recurring_invoice": {
+      "$ref": "RecurringOrigin.schema.json",
+      "description": "The recurring invoice, and the version of its content, the scheduler made this draft from; whoever wrote that version does not approve its issue (SOD-3)."
+    },
     "reference": {
       "description": "The customer's reference for it.",
       "examples": [

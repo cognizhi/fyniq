@@ -115,6 +115,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.Bills{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock))}.MakeDueAll(ctx, clock.Now()) // FR-NTF-01
 			return err
 		},
+		"invoices.recurring": func(ctx context.Context) error {
+			_, err := journal.Invoices{Store: k.Store, AfterMaking: notify.RecurringMade(k.dispatcher(clock))}.MakeDueAll(ctx, clock.Now()) // FR-NTF-01
+			return err
+		},
 		"bills.releases": func(ctx context.Context) error {
 			_, err := journal.ReleaseDueAll(ctx, k.Store, clock.Now())
 			return err

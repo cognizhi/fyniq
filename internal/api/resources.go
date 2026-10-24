@@ -276,8 +276,8 @@ type Journal struct {
 
 // RecurringOrigin is the recurring journal, and the version of its content, that a journal was made from.
 type RecurringOrigin struct {
-	ID      string `json:"id" format:"uuid" doc:"The recurring journal's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
-	Version int    `json:"version" doc:"The version of its content the journal was made from." example:"2"`
+	ID      string `json:"id" format:"uuid" doc:"The recurring journal's or invoice's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
+	Version int    `json:"version" doc:"The version of its content the draft was made from." example:"2"`
 }
 
 func originOf(ref *journal.RecurringRef) *RecurringOrigin {

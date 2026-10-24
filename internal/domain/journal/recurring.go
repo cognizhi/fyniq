@@ -68,6 +68,18 @@ func FirstOn(s storage.Schedule, from time.Time) *time.Time {
 	if from.Before(start) {
 		from = start
 	}
+	if s.EveryWeeks > 0 { // every EveryWeeks weeks from the start's weekday (a recurring invoice's, FR-AR-07)
+		step := 7 * s.EveryWeeks
+		k := 0
+		if days := int(from.Sub(start).Hours() / 24); days > 0 {
+			k = (days + step - 1) / step
+		}
+		t := start.AddDate(0, 0, k*step)
+		if s.EndsOn != nil && t.After(dateOf(*s.EndsOn)) {
+			return nil
+		}
+		return &t
+	}
 	if s.EveryMonths < 1 || s.DayOfMonth < 1 {
 		return nil
 	}

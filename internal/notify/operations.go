@@ -95,15 +95,20 @@ func PeriodReopened(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWo
 	return err
 }
 
-// RecurringMade is the recurring journals' and bills' hook (journal.Made): a draft dated on, made from the recurring
-// journal or bill named name, waits for those who post its kind (P on its row) to check it and post it.
+// RecurringMade is the recurring journals', bills' and invoices' hook (journal.Made): a draft dated on, made from the
+// recurring journal, bill or invoice named name, waits for those who post its kind (P on its row) to check it and post
+// it.
 func RecurringMade(d outbox.Dispatcher) func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, name string, doc storage.Document, on time.Time) error {
 	return func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, name string, doc storage.Document, on time.Time) error {
 		k, ok := kinds[doc.Type]
 		if !ok {
 			return fmt.Errorf("notify: a recurring %s", doc.Type)
 		}
-		_, err := Emit(ctx, d, u, org, Event{Type: "recurring.made", RecordType: "document", RecordID: &doc.ID, Link: k.path + doc.ID.String(),
+		link := ""
+		if k.path != "" { // an invoice has no screen yet: its notification links nowhere
+			link = k.path + doc.ID.String()
+		}
+		_, err := Emit(ctx, d, u, org, Event{Type: "recurring.made", RecordType: "document", RecordID: &doc.ID, Link: link,
 			Title:    fmt.Sprintf("The recurring %s %q made a draft dated %s: check it and post it", k.name, name, on.Format("2 Jan 2006")),
 			Audience: Audience{Capability: approval.Rows[k.object], Need: "P"}, At: d.Clock.Now()})
 		return err
